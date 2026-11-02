@@ -1,0 +1,11 @@
+// Toggles .ad-empty on an ad's container based on GPT's slotRenderEnded event
+// (event.isEmpty), the authoritative "did this ad fill?" signal. CSS handles
+// visibility/spacing off that class — see _googleAd.scss.
+window.googletag = window.googletag || { cmd: [] };
+googletag.cmd.push(function () {
+    googletag.pubads().addEventListener('slotRenderEnded', function (event) {
+        var unit = document.getElementById(event.slot.getSlotElementId());
+        var container = unit && unit.closest('.column.google-ad.display-label');
+        if (container) container.classList.toggle('ad-empty', event.isEmpty);
+    });
+});

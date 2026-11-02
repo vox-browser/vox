@@ -1,0 +1,1 @@
+function convertAuthorEmail(){const t=document.querySelector(".authorBox .content .public_email");if(t){const e=t.textContent.trim();t.innerHTML=`<a href="mailto:${e}">${e}</a>`}}function bootstrap(){convertAuthorEmail()}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",bootstrap):bootstrap();

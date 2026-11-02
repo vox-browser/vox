@@ -1,0 +1,7108 @@
+{
+  "version": 1,
+  "url": "https://www.wired.com/",
+  "source_document_request_method": "GET",
+  "sealed_unix": 1793649869.788946,
+  "responses": {
+    "https://www.wired.com/": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "X-DNS-Prefetch-Control",
+          "value": "off"
+        },
+        {
+          "name": "age",
+          "value": "521"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "back-lae-origin-response-start",
+          "value": "1793649305437"
+        },
+        {
+          "name": "cache-control",
+          "value": "stale-while-revalidate=60, stale-if-error=86400, s-maxage=900"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545be982c771453-ZRH"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "frame-ancestors 'self' https://copilot-app.condenast.io https://stg-copilot-app.condenast.io"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:46 GMT"
+        },
+        {
+          "name": "modified-at",
+          "value": "1793642054"
+        },
+        {
+          "name": "payment",
+          "value": "free"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "via",
+          "value": "1.1 4c908c441c16c2ae0f60f3480e16d480.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "Qs0k3Tpq5GlaA-TtvNKafXzXj3c0W_RKyVdnfGbznJ14tmaSXgZH5Q=="
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-organization-slug",
+          "value": "wired"
+        },
+        {
+          "name": "x-ua-device",
+          "value": "desktop"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "content-length",
+          "value": "1206707"
+        },
+        {
+          "name": "Content-Type",
+          "value": "text/html;charset=utf-8"
+        }
+      ],
+      "sha256": "7c8d66cea24f3115622bcbc0f4576fbfdcb13b9f7baf57ce8e792be7ba6841b8",
+      "bytes": 1206707
+    },
+    "https://www.wired.com/verso/static/assets/growthbook.min.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "ced0.sY4LmBrApPNtIRKuEwSN18Xz8mp"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"a67d6ca631b0707615ae4a361967afb9\""
+        },
+        {
+          "name": "age",
+          "value": "68620"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "DEhWQ9edkY4bQbZ_BLHEpiWJJzb-srZhBoOW_rGzn1f-hXrmqMrTbg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:58:09 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 33bbce3c2eb1494fd9ca9c71d11cf154.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb69401453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "51367"
+        }
+      ],
+      "sha256": "06adba6085f8062dff20a334771ef8d632364a275d914f3fb782f81ad7070d05",
+      "bytes": 51367
+    },
+    "https://www.wired.com/.design/fonts/Apercu/Apercu-Bold-Pro.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "\"ea96e87226e7edc6d46a59d76e2055f5\""
+        },
+        {
+          "name": "age",
+          "value": "529558"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "S1ocvBhPU6UJCwnjyW8NbRKg6ovfNrjjfKk0C1UBvT8DF3oLRXzT9Q=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "woff2"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2026 15:26:21 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 f106bccd16721a0e4902884b35263d12.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb69461453-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "46660"
+        }
+      ],
+      "sha256": "47a6d427b9f549f52ec7103a6ad5ce45c0f69e29b740eb88be8dfa053db21441",
+      "bytes": 46660
+    },
+    "https://www.wired.com/.design/fonts/Proxima%20Nova/ProximaNova-Regular.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "\"e1c9577065f4b5df87ba3d72202ab94c\""
+        },
+        {
+          "name": "age",
+          "value": "529558"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "ExEWEvtRADuq2rDFY_l3seDjxla1cD4uyvjvO7BpVrlYJM8rc3mB0A=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "woff2"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2026 15:26:29 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 3e12e656267276c5b1cf72e129a2193e.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb69561453-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "21512"
+        }
+      ],
+      "sha256": "c000804e8df36f426fa901415774abbbf5fba40252e6ff2288ffe8cf6b91d8f9",
+      "bytes": 21512
+    },
+    "https://www.wired.com/verso/static/wired-us/assets/logo-reverse.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"2cba2fa9380ed2b50927ed9d520aaa3c\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "R7Z08rpZeGeBOBLLoY4QZQnbsbkQkDDd"
+        },
+        {
+          "name": "age",
+          "value": "33734"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "kmGR9aOn_HMMRDpMXndFUQ2uXI8byllpx8mfl0m2c7Q2lX0ALrdsYA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:58:25 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 806ffb6a63af1ca2a021e7e1a06dab74.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb69521453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "1436"
+        }
+      ],
+      "sha256": "af29cacfb5125f85da0f1557bb56456abcc1556dbd3094bb56e569890348c984",
+      "bytes": 1436
+    },
+    "https://www.wired.com/.design/fonts/Apercu/Apercu-BoldItalic.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "\"c21a6632dbe07d535740257473ed42eb\""
+        },
+        {
+          "name": "age",
+          "value": "65030"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "SsSgg74Gi45lxCPhrUVTL5JePqFgUhE5KPaqAEV7lzw46CmioI4_cQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "woff2"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2026 15:26:21 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 fff826c4760294142d4ae4bea736a00c.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb694f1453-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "24720"
+        }
+      ],
+      "sha256": "d004b95ab0198e5f117ea589260e3e6113f9a57f5ae847e054a50faaeb24c373",
+      "bytes": 24720
+    },
+    "https://www.wired.com/.design/fonts/WIRED%20Mono/WiredMono-Regular.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "\"e755d282ae1120887b3b1d207bb930ce\""
+        },
+        {
+          "name": "age",
+          "value": "529558"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "qWAI27scmvEQKUZB96w9iLwUeWjxOU-hbwr984yGdltb3Woy01kZIw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "woff2"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2026 15:26:33 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 f106bccd16721a0e4902884b35263d12.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb69451453-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "18912"
+        }
+      ],
+      "sha256": "c8c9128b649afff93f89f77eb2aa5a4bbbb1443bebc5156d0f697780c8beaa26",
+      "bytes": 18912
+    },
+    "https://www.wired.com/.design/fonts/WIRED%20Mono/WiredMono-Bold.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "\"e9fc9bd7c869bf9ff4a614eaf5ed6757\""
+        },
+        {
+          "name": "age",
+          "value": "463404"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "GUj8Csn0yMEa1zKV0wRuLPLeMDE98BR7AiM2S1-iKEB8eGV0zF5grQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "woff2"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2026 15:26:33 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 16a83c328ec1b5af4d0dc28e1e3a8198.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb694b1453-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "19260"
+        }
+      ],
+      "sha256": "c7eaddc7a5524584ae70d2f3c889c00fd65b03f1460650417da2af029f3685e7",
+      "bytes": 19260
+    },
+    "https://www.wired.com/.design/fonts/Apercu/Apercu-Regular-Pro.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "\"2333a1d21f530639dd033e144c5fd2fb\""
+        },
+        {
+          "name": "age",
+          "value": "342749"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "WHNQYmxGl5_0Aswv8DCjFmf3xZHVxe5I6y3Irzr1H9xZ0OtO_9zTfA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "woff2"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2026 15:26:21 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 806ffb6a63af1ca2a021e7e1a06dab74.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb694a1453-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "47512"
+        }
+      ],
+      "sha256": "e7f9f03b575a718693645cfd1184c7af2baf85d940df3f5925716fb2b5c22657",
+      "bytes": 47512
+    },
+    "https://www.wired.com/.design/fonts/Proxima%20Nova/ProximaNova-RegularItalic.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "\"71c090ffebe400c87126434079b7bf83\""
+        },
+        {
+          "name": "age",
+          "value": "529558"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "seVGOxdtdMETvgJkLOLT74O5OBQOdokAAelQD_n-wFWqZAnOGB6qaw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "woff2"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2026 15:26:29 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 3e12e656267276c5b1cf72e129a2193e.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb69581453-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "21544"
+        }
+      ],
+      "sha256": "5f3038350dcd219ad9cb96818c25278eb436ed85e31c049b83258dfb8d45b678",
+      "bytes": 21544
+    },
+    "https://www.wired.com/.design/fonts/Breve%20Text/BreveText-BookItalic.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "\"cca82ce8c5da622e03d9684f9ce1eba1\""
+        },
+        {
+          "name": "age",
+          "value": "529558"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "KkPsV0RrQW40z84WULGJwRIy41BHWt1imyeEv0gDS_4z1Mrx1iKwVQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "woff2"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 15:44:56 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 b0b28ec8da60bdc40e5fb6dc8ad8eae8.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb695b1453-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "31304"
+        }
+      ],
+      "sha256": "cf00db60107e588886d65a9a797c871aa69d4befed9abd9f2419c02d3e46c980",
+      "bytes": 31304
+    },
+    "https://www.wired.com/.design/fonts/WIRED%20Display/WiredDisplay-BoldCondensed.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "\"b7023cf3677e847b0ba24f9bde35e1cf\""
+        },
+        {
+          "name": "age",
+          "value": "529558"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "QE8n3U702_QvonjSUfWbWH1ESQspMwd_SwDxUiI78iJlXVTvRSvOgQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "woff2"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 05 Oct 2026 15:26:33 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 575f69068c76de3940cf05b92b6ece22.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb694d1453-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "25636"
+        }
+      ],
+      "sha256": "f03326b56dfa4cb5ebbdce6f9330e4b563aac8d6fdbc68ad6ae4e9f758757e8c",
+      "bytes": 25636
+    },
+    "https://www.wired.com/.design/fonts/Breve%20Text/BreveText-Book.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "\"a90fba81f194d76d187ff7b892d99bf5\""
+        },
+        {
+          "name": "age",
+          "value": "529558"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "acwHU3MkkZ5KWv04mrnj35t49rt7PIt7lYE77_D-lN_NZnaox82L4A=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "woff2"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 15:44:56 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 48317b64b1d0bd7c3636d6918b168b5e.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb69421453-ZRH"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "30868"
+        }
+      ],
+      "sha256": "95a5ddb4d296aa34c5ec4d0eec481b24197f42f1cc2d3dba3835c50cd816d4cf",
+      "bytes": 30868
+    },
+    "https://www.wired.com/lEKI_CEVF7gismHXsLe1mAJ4lKy_KMFfFbUscZStEIw8TARvNfV5afdvo3qFMTsDDe5cv4iiJFlda_PIDAna8SFRnQTC6k2VIw-BCPF9LgPpHnQw5E5-OB8VMkGMO2GD0": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "back-lae-origin-response-start",
+          "value": "1793120997056"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"32607799f559dbf32dccd3524e7d298c\""
+        },
+        {
+          "name": "age",
+          "value": "528835"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "4_ajRmi1w2R0lYHNqMtRRAn_i07l4V04bF4_ZHxB6o2Fgs-pJHEVzw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 17:03:23 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-organization-slug",
+          "value": "wired"
+        },
+        {
+          "name": "via",
+          "value": "1.1 67ff75e05c92bc5ca2eabbdc5e6a1ae0.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb693a1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "695540"
+        }
+      ],
+      "sha256": "000ba1dfe5aa895655963bc7e7bfb8cf8fa04bf2aa46c050c6b13681ff77bb1b",
+      "bytes": 695540
+    },
+    "https://www.wired.com/verso/static/4248.1eef3669b3074563d52e.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"06580d07509170cc31e284010f744cf4\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "GlidGCL3iBEKSVWpHsyfTl_UXs0uE2_i"
+        },
+        {
+          "name": "age",
+          "value": "68311"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "KNnc-6YFx4xec0_gHOH9RmQW6spIPMAPm5x7sLDeGQMtaY57rCGeOA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:49 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 4c908c441c16c2ae0f60f3480e16d480.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c4d1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "637845"
+        }
+      ],
+      "sha256": "a228dff0ad82922399d9465e0b091297dfc2315fe133dc7f3196958f2583705d",
+      "bytes": 637845
+    },
+    "https://www.wired.com/verso/static/6311.34afbfcbdd62c658c84c.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"ff5016faf94b77bb924a468ef2da47b0\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "ZtdqYWuFYt75XATjbqBQtTwvCGiJZLX7"
+        },
+        {
+          "name": "age",
+          "value": "60767"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "9zHMAiOFbWH4djAJs9ky_pVZc1BMyjbJhbLMhSBzI1PwVexBXLl7Pw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:50 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 33bbce3c2eb1494fd9ca9c71d11cf154.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c501453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "11359"
+        }
+      ],
+      "sha256": "3774637a2122d0fdaddee208c2945cefb310b0fea5403d3c3150ea3d2c0d8d66",
+      "bytes": 11359
+    },
+    "https://www.wired.com/verso/static/254.39a755799df2cff8d00f.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"4b160be0bc516e6181cb227f4637d03c\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "pRsyKPz.MvjdKMxsXc9dpcs83wy2.f7m"
+        },
+        {
+          "name": "age",
+          "value": "73769"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "cvMqaxC97n6mFX5i5OA2RxG408owtv1NXfGgJGF2-ipkNhvoFlTL3A=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 21 Oct 2026 09:35:15 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 3e12e656267276c5b1cf72e129a2193e.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c551453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "4780"
+        }
+      ],
+      "sha256": "bb47592ceb081eef33090d9bb77ed43bc3babc36697d27e1ef7138834d68aa07",
+      "bytes": 4780
+    },
+    "https://www.wired.com/verso/static/1831.25318163c5b61ad170ca.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Z4IT7RP2eqmjRtwZ7Q.Baj_2sSlpvrhF"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"82fb2524ff670266558ad5cacae1079d\""
+        },
+        {
+          "name": "age",
+          "value": "31258"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "H7gxS-AygFgUpWLsEahlX3AeBWi9bHeLtjP6UASN-OcIHbRWNuId6g=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 10:48:27 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 16a83c328ec1b5af4d0dc28e1e3a8198.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c5b1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "1553636"
+        }
+      ],
+      "sha256": "957f66c7627f838b934e94a496d75d127347d0789749093a42d807e1fa5f69e0",
+      "bytes": 1553636
+    },
+    "https://www.wired.com/verso/static/2067.80490cee93f63d1ba976.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"dde5346c2d4256952ee10c31588aaf36\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "r8Y_PFZlr44CTOf6bF7_DZwZTCMq2AUj"
+        },
+        {
+          "name": "age",
+          "value": "21549"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "jcbbuBT-u2rQV4-YdoL_60jy0S0LFenGZsNOiNnVpl3HUHiHIzPR1w=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 21 Oct 2026 08:05:09 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 fff826c4760294142d4ae4bea736a00c.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c5a1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "22389"
+        }
+      ],
+      "sha256": "c53f84a2f688368c08b9ef6cf423778d53a1ffeb3fa1f9556235fd462827b468",
+      "bytes": 22389
+    },
+    "https://www.wired.com/coupon-element/static/web_components/wired-coupons.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-robots-tag",
+          "value": "noindex, nofollow, noarchive"
+        },
+        {
+          "name": "x-ua-detected",
+          "value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36"
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "Content-Length, Content-Type, Date, Server, Transfer-Encoding, X-GUploader-UploadID, X-Google-Trace"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"dc8737820deae40b217948c9f883b060\""
+        },
+        {
+          "name": "age",
+          "value": "982199"
+        },
+        {
+          "name": "x-ae",
+          "value": "true"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Miss from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "mTE_PoMvNYleJ5GkJNxTmU29LCGovHWp5u6b4pfqd432Zoaemr9CLA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-lga-kjfk8660036-LGA, cache-fra-etou8220135-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "715602, 0"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 01 Sep 2026 12:05:35 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin, X-SU-Forwarded-Host, Authorization"
+        },
+        {
+          "name": "x-guploader-uploadid",
+          "value": "AP6rU80nQPuzeZ1e6aJ_-RHDEJ7JyHfb-DGeWhRqNNdDqk_ikuSs6K_LBoO-j4WAU4tWeNW0Uh32rUY"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=0"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649832.267055,VS0,VE115"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish, 1.1 e88b7159f8022f6a253ca0d3e23a4574.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb69361453-ZRH"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": ""
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "89514"
+        }
+      ],
+      "sha256": "c6008969fbe4258398ad10f9ee63a4a902817f968354f41be0901f1951757208",
+      "bytes": 89514
+    },
+    "https://www.wired.com/verso/static/1621.ec28eb72e0062d65f941.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"c6deef4d3c12cdcbb63a8358c9233fbf\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "0_DRCmIPM50rQOP6LSxHE3o5hL.9hJ7c"
+        },
+        {
+          "name": "age",
+          "value": "53064"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "mkgRbM8m59ckrmzbRsETPjen53nBJBeE1f36SgWYa-vVliFaKfW4tw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:49 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 f106bccd16721a0e4902884b35263d12.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c4a1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "1180785"
+        }
+      ],
+      "sha256": "9460b24c47499af2d3061ba4c5906f1e2631c0330c6013b49f6a22cedf3bf2ec",
+      "bytes": 1180785
+    },
+    "https://www.wired.com/verso/static/4595.be639b17061ba4d8966b.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"4fb6e2d17da3a110dbad52698ecb7a5c\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "oqzAm9sLVJ5NxRj2YEj9djiRLvshVYGx"
+        },
+        {
+          "name": "age",
+          "value": "68311"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "si7nSWEllod--_Y50RxGtdFIVDbeDlIaul3UiNjptSBaPXU_rdB7Yg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:49 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 b0b28ec8da60bdc40e5fb6dc8ad8eae8.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c631453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "17093"
+        }
+      ],
+      "sha256": "1bd3ede55f67a3e7709cec636fcefb7c448356094368ac0b4e760b085f7faa8f",
+      "bytes": 17093
+    },
+    "https://www.wired.com/verso/static/6104.f28d71510029832f8aa5.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "H1GL1rNo1la5KBaoN8X2QxCRw8BKV4iQ"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"ddc95a03da971e153a81173736a36094\""
+        },
+        {
+          "name": "age",
+          "value": "15159"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "hdmsuSVr4UFc6D8I2qoPpzrK2xqbxDhOuaEiVXNkVfPODsCRb6yz7w=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 15:25:01 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 f106bccd16721a0e4902884b35263d12.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c581453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "7042"
+        }
+      ],
+      "sha256": "d12fe6048e9da135e2ceb5d71685bf8ed5e93b341a710f3470f3518a603ea36e",
+      "bytes": 7042
+    },
+    "https://www.wired.com/verso/static/4046.448d38ec785a6cec6026.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"a6b9fb06edeebdd8f9e3a3d311e3e465\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "pcMatuVaRn2W4etO6Tm4SpUj5gaA2WCQ"
+        },
+        {
+          "name": "age",
+          "value": "68311"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "lNp_EFYqxMLnXuTFRvaEI3UhBjyowAF7W9F4pmVXBLU80VV3CbLjoA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:49 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 806ffb6a63af1ca2a021e7e1a06dab74.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c541453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "15396"
+        }
+      ],
+      "sha256": "642c9d125f0da63386ac481d906ec6b140975dca537cb88f545b668ee014f323",
+      "bytes": 15396
+    },
+    "https://www.wired.com/verso/static/5923.f67c291279c17add49e0.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"60897f25aedb3ac5345f1c59b80da7ca\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "pfqAJUD_xU2bbsneQAzixIVq8sL2rkyW"
+        },
+        {
+          "name": "age",
+          "value": "61456"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "deDT1WpDmMmTrPTIZfrzaLAigPM192lwbvSXpCtANmBeOp65h0H7Fw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:50 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 575f69068c76de3940cf05b92b6ece22.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c6a1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "27425"
+        }
+      ],
+      "sha256": "3fa269e1a7007f7a20be8273fea73ad4a45eec64b7a8af54db9539ff7b13e966",
+      "bytes": 27425
+    },
+    "https://www.wired.com/verso/static/9410.26636c5e3f1a5669cb22.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"42390f96760d204a4912af7b44fa8463\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "bj38jh9p0HjiZcSL3lQRd5UsQgxj.mFB"
+        },
+        {
+          "name": "age",
+          "value": "31258"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "d_bBIm1xTsyIa0lQKqwsMgmAeU-MtwzvyO9z07Gs4en0DUl4---Bmg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 10:48:28 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 806ffb6a63af1ca2a021e7e1a06dab74.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c611453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "9977"
+        }
+      ],
+      "sha256": "7414cf0755445f9fc6c7539423299a12901853fb1b8b545b20f738e4788d87cc",
+      "bytes": 9977
+    },
+    "https://www.wired.com/verso/static/8792.19e60e31e9e7f5c86369.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"5494cf47b728563508402cee49d0175c\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "B_A1kuVs6G.GAF6n9IRG7YTxb6uG8E4m"
+        },
+        {
+          "name": "age",
+          "value": "51745"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "g4WIWY3NkN4sOOqfR9cAR0oJld0jN43ujkCBc7stTNMKdgqxf4bD1g=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:50 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 3e12e656267276c5b1cf72e129a2193e.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c641453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "5245"
+        }
+      ],
+      "sha256": "f210ae76ddf3fbdaa9b36df1be1aa75d0aad470b20f277a5ea88fa57bc9bb926",
+      "bytes": 5245
+    },
+    "https://www.wired.com/verso/static/2796.a8d6ecdaab23f708c4b7.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"f5c18ad6709b4552f50a636bdecb0908\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Zg6vf_zWgjwrj1lkbG0mHiM6iOXwBkWl"
+        },
+        {
+          "name": "age",
+          "value": "53629"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "FzEAf_x_3Q6GFO2AdAyTX4m8PHyCCR2WRRmtYBlZ5DByf7f3VDfNrQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:49 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 4c908c441c16c2ae0f60f3480e16d480.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c6f1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "5514"
+        }
+      ],
+      "sha256": "e93527f9d0c40c58db1cb1d600f1e04f3861d3ac852d0ebdec5fec23f04845a5",
+      "bytes": 5514
+    },
+    "https://www.wired.com/verso/static/8213.1b6fcd38be32ce3bf652.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"1ed3fd6e3c722d307356f96e5636290a\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "kXfmZ6kXJ1dWcHinec8NbzNy1.1W8xVa"
+        },
+        {
+          "name": "age",
+          "value": "11774"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "zVp1NIdMT9tWKoGjvw5ItYYI1-NrIIAPynE-NYYlyAzkdTT01UypUQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 16:29:47 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 67ff75e05c92bc5ca2eabbdc5e6a1ae0.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c5f1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "2461043"
+        }
+      ],
+      "sha256": "5dfdfc82002d9e3d7af0414d0e446b2cb130359f497cacd9096154b16b9b30b3",
+      "bytes": 2461043
+    },
+    "https://www.wired.com/verso/static/1956.d1cd64f3b7eae735da95.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"c8a301ce943741ee28c61f178ee45f0f\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "5CxRMFMJ_DrwaFrQ5PhvgipNPYYIshtK"
+        },
+        {
+          "name": "age",
+          "value": "51745"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "VO3Go-_eTvpqMG9ODvjoS-MGwVbtTS8lt9DAY-Fo986I6Zq2yMLPvg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:49 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 48317b64b1d0bd7c3636d6918b168b5e.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c4e1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "16527"
+        }
+      ],
+      "sha256": "34636aa1fd579275677a5e5782059cfedb9932bc710f0b0bf95e4461e081865c",
+      "bytes": 16527
+    },
+    "https://www.wired.com/verso/static/6847.737c085799a676320f02.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"0421ff31f6f8aa6803c8d2790774ee09\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "IsrsIRSoiiganUd432ETfBGNAS_4E2jT"
+        },
+        {
+          "name": "age",
+          "value": "31257"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "JyC2CghF5AZ9ylBPOA9OoDSFMSI65_YDgLvt3x3xjBrmZG5wix3ttw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 10:48:28 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 33bbce3c2eb1494fd9ca9c71d11cf154.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c731453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "8397"
+        }
+      ],
+      "sha256": "8443ca176f6bece8737cb0e5d5be208d53a104060befe68aa94aa4f6faf361db",
+      "bytes": 8397
+    },
+    "https://www.wired.com/verso/static/4307.4f9185f366d114d5d874.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"d77ceb27ef689d544813af0085a90a9b\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "ywo02K4ZzySjWyNlACi4IWUUU.aPXgGI"
+        },
+        {
+          "name": "age",
+          "value": "25403"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "mN6lK7wOaUNhdJr8z3_O_qABmWHPCSgSfTJlweOoVRgRwuCp28FPPQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 12:39:43 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 e88b7159f8022f6a253ca0d3e23a4574.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c721453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "24212"
+        }
+      ],
+      "sha256": "d64bf19639646d93f6dadf834c3c9e7004352fe58fe3c0365d23a3adae017651",
+      "bytes": 24212
+    },
+    "https://www.wired.com/verso/static/3750.9106f4fc00d78672703e.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"a6b1f07dc9e36f4d262d54fc4eb76138\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "PpQ2j58pej2TyhPexH8eNkS5EtljTcwV"
+        },
+        {
+          "name": "age",
+          "value": "68309"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "uqHeOZE27nQteJCfsPVZlPYSJawa0uqvC-qEgDxxiOP40StahynJsQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:49 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 15ec222720b66945bbc5c3c677b15d28.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c6e1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "12804"
+        }
+      ],
+      "sha256": "8a48dda2b5f2f5505a9fdba3a26d6adc46c825173ac3de4ff4702462dd624319",
+      "bytes": 12804
+    },
+    "https://www.wired.com/verso/static/presenter-bundles.4ed4c58bee60d7a7e401.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "pkK47aBVikb3YcBr.EI8x6v3xwdSWe6r"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"1649a3484345238ba59beb3fac1ee716\""
+        },
+        {
+          "name": "age",
+          "value": "15159"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "OoxaKVTzFWMZB3mpDUMDhhc7cz_ClcJuWpDTYt917No3X_YorG5MBA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 15:25:11 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 3e12e656267276c5b1cf72e129a2193e.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c7a1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "127071"
+        }
+      ],
+      "sha256": "d8d628504971ce6f5c7e237d11a99f0807d3c3f721152b6089ab40181532f2d2",
+      "bytes": 127071
+    },
+    "https://www.wired.com/verso/static/9537.44341bbde6737c4f2046.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "zefN9weHeTLC7rjlf3wC4RNpkPpj1HD0"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"94da282250f19cab5ff411ae511e6369\""
+        },
+        {
+          "name": "age",
+          "value": "11774"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "eX3RM50IWE8q4d1O2H3t87g0c_pwuPUZvOPTZPg4e2bqact4Bkurog=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 16:29:47 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 b4404a488b0bf1e6ad3743f3e240e538.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c651453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "10310"
+        }
+      ],
+      "sha256": "c329a479830439f43f27d6153db458da2903352e1385249d676b1c4ae887a34e",
+      "bytes": 10310
+    },
+    "https://www.wired.com/verso/static/8424.db19d9d5849a43e39347.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "cgfOuNghOQbIx6XKOiO_jZ4T4bFOOHTQ"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"fedd3633bdaaca471796f299c7b44a61\""
+        },
+        {
+          "name": "age",
+          "value": "31258"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "dqaNY1gqP7GBb2enCmJv7BpokmPstDHznk5feNBrhpAnsS_TObY_ng=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 10:48:28 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d292fbcc0e65401949e03dd81243d9ee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c671453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "5202"
+        }
+      ],
+      "sha256": "eae7d69cb81c8249c34763272d5516f61bf3b6f8c112e5f8543f80dff2955337",
+      "bytes": 5202
+    },
+    "https://www.wired.com/verso/static/6891.5d68ca8c8c0f85bb8a98.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "7WQ9cXzz.Iqcm264FO7CTEGib27fqgTi"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"ad5d188f66ad3f518f093babc0f43e80\""
+        },
+        {
+          "name": "age",
+          "value": "15159"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "essnk5VrVUVO7kPZNSu2WsPRthnQHihJutmbp4TXosBAPPIiHAR4jQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 15:25:01 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 2fea9bb55456bdcc8f2da3765c8fd6ea.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c791453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "8784"
+        }
+      ],
+      "sha256": "4b03ba122c5df48bfc53d8372d49475848b833618f3148256d0f436acbb7321f",
+      "bytes": 8784
+    },
+    "https://www.wired.com/verso/static/8828.b2a93346169d8f67bda9.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "5GK8PBQGa5fUq6zO7mLHk4vW_BYExvFk"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"686aef577806244591701af836c44711\""
+        },
+        {
+          "name": "age",
+          "value": "31257"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "E3jxqEs3UChhkyCG7JfXivWR1VHB7n9md6BxynGo2q_5-Uj1u36lug=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 10:48:28 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 e88b7159f8022f6a253ca0d3e23a4574.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c681453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "10312"
+        }
+      ],
+      "sha256": "a378395838c30a0c2645cd08be9e41a819ba9245a2fd0a4f6312bcc61c6f49cf",
+      "bytes": 10312
+    },
+    "https://www.wired.com/verso/static/4341.ad913154705b7d64cada.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"666f7929f8ea01b39dd474ff3bb51cf9\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "JOmqCyT_CteiB0mPJiSB2CAmm2QyRMCp"
+        },
+        {
+          "name": "age",
+          "value": "68311"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "DHiITslInMcEmgFNmjCxrmBQIgj1_GYjZRxDmjTWLUaWGtxGpCJKEQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:49 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 67ff75e05c92bc5ca2eabbdc5e6a1ae0.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c751453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "8937"
+        }
+      ],
+      "sha256": "f96f79001469a5c7de4880a021a1ad92eb79e515eb9e88f4a32d7c4715179717",
+      "bytes": 8937
+    },
+    "https://www.wired.com/verso/static/344.6d4deac6482664895721.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"660561ff054afadc9ef1052ef27f50f3\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "ttKQVHFc4zIc897IYe5DQsRr3CrfLD4E"
+        },
+        {
+          "name": "age",
+          "value": "68309"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "MYGyWuHlEhBAocdxizrCSbGhHrvM9fRwcatCacJutv1fT4jlecc_Kg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:49 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 575f69068c76de3940cf05b92b6ece22.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c761453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "28183"
+        }
+      ],
+      "sha256": "fada00e79569cbd5b477179a158cca74c6cc4ed489909d191347de48cd3e316a",
+      "bytes": 28183
+    },
+    "https://www.wired.com/verso/static/6555.f285ccdd47d36ae633ab.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"3a19c8e54887b2dd528523e7725c38e1\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "cOMWfS.Sswln9dtdVK6AwuRxfDsoYcz1"
+        },
+        {
+          "name": "age",
+          "value": "52978"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "qikXBNKLo_u6-9Vp4GSz9lLT2P99NomaUW8cd877knLhDpo7nxH1sA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:50 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 2fea9bb55456bdcc8f2da3765c8fd6ea.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c741453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "9833"
+        }
+      ],
+      "sha256": "29f786fb98e1c3d14345951556801dc9e166912683d362896ede170d5f330499",
+      "bytes": 9833
+    },
+    "https://www.wired.com/verso/static/215.169b5a92aba770a40801.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "0sXvXvSP3yGhyOAUd.rTULW_Rw7ToCMh"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"79a6a078ef6ab8d0bc2f6bccff207b3a\""
+        },
+        {
+          "name": "age",
+          "value": "15159"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "RgplXeviFfddSORFDTwgbLJkXJdHs9lM-MDf10k2u5xP59fSYOvsGQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 15:25:01 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 806ffb6a63af1ca2a021e7e1a06dab74.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c771453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "54025"
+        }
+      ],
+      "sha256": "77353bef42de91a495964920bc50a9450500efe2a7d27e7e91da27ffb9755b45",
+      "bytes": 54025
+    },
+    "https://www.wired.com/verso/static/130.10d681e165cdf0adbf96.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"46d24cf1beb1c379628d3e9d444a6729\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "gdU_0y_j2GNI.optgXpqJB8s9cy7B7KT"
+        },
+        {
+          "name": "age",
+          "value": "68311"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "gHCyim1F_NAXXghH2MWknKgNHCCGXK4yspGLRhFGWXI7xfDNI6t5HA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:57:49 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "via",
+          "value": "1.1 806ffb6a63af1ca2a021e7e1a06dab74.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebc5c6d1453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "5054"
+        }
+      ],
+      "sha256": "36a8872f6d96de8c27f8f04339ac9e12b5552ca2579a615a2d34b9c8243c6437",
+      "bytes": 5054
+    },
+    "https://www.wired.com/ptrl5i4G1oqgG6_s-0OCNQJTDyLjPemo6e1xYfsvx3-m0jfI7Bz9qBqTPLwxtJoh7si5xa6e2A25rI1BHT78vQyQBiz4qWVMQdoz4MMr4V0tm7i11P2nXeHHkiUXjn9NQmH2vJmc3nZwk": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "back-lae-origin-response-start",
+          "value": "1791557632490"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"9baae3320d2f18fd4acde472b91d7fd5\""
+        },
+        {
+          "name": "age",
+          "value": "2092200"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "piv0J58YX3XdLF28YLfjC6LFtuBEubYwQaLvoRKY8qdkLaVklbYSCQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 09 Oct 2026 14:52:54 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-organization-slug",
+          "value": "wired"
+        },
+        {
+          "name": "via",
+          "value": "1.1 2fea9bb55456bdcc8f2da3765c8fd6ea.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bebb69331453-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "20678"
+        }
+      ],
+      "sha256": "7487c81fa273dc527300b214f00d02f23510ecb5a2da1e0a7c3aea0d3296f62a",
+      "bytes": 20678
+    },
+    "https://media.wired.com/photos/6ae8c12c94f342d037f8cab5/1:1/w_960,c_limit/GettyImages-1158416151.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Wk14Z7gbI_pDhe3febZMN6IA8B4OLabI"
+        },
+        {
+          "name": "etag",
+          "value": "\"865376c4e5bb06512e1dfe7a942f5ffc\""
+        },
+        {
+          "name": "age",
+          "value": "6852"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "0hDhuVSAl_hP0eX_X86MkAX1Tn7CoNoqOLaTeJGn6V8YR8xQy1yfxQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 18:09:49 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 18:05:45 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"0hDhuVSAl_hP0eX_X86MkAX1Tn7CoNoqOLaTeJGn6V8YR8xQy1yfxQ==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=6"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 993c0866e705e48daa4fed5e30627712.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "46120"
+        }
+      ],
+      "sha256": "6046276040a3116717259231ce118819c914860c3d55d9ba8419e40c5a0b97a7",
+      "bytes": 46120
+    },
+    "https://media.wired.com/photos/6abd93babaed9055bd40abc5/1:1/w_960,c_limit/culture_comedian_trolling_ai_interviewers.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "oJ1GQ0kH_RM7AT371Y9NpdOmhCGIyprv"
+        },
+        {
+          "name": "etag",
+          "value": "\"ba4e604f88c41dee6927e41ccfc98edf\""
+        },
+        {
+          "name": "age",
+          "value": "26228"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "RqDI3WvLxfVJpOsMzZRX9YjrxpJCRqpTJ3RiEIukUYt0y8S0pczqyg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 12:46:53 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 12:46:35 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"RqDI3WvLxfVJpOsMzZRX9YjrxpJCRqpTJ3RiEIukUYt0y8S0pczqyg==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=6"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 e44e0b24e706487eaec6b9e01f2166dc.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "127256"
+        }
+      ],
+      "sha256": "48e33368295cb9f005ea2e90bfde1b50e60302851cfc188cadd565e63caf8490",
+      "bytes": 127256
+    },
+    "https://media.wired.com/photos/6adfc11328ba980ed3d0219a/1:1/w_960,c_limit/Security_ChinaAppsBehindDeepFakes_v1.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "y5Qhv5HDT88Z0IN5LxkKJaJKhbMKNFXF"
+        },
+        {
+          "name": "etag",
+          "value": "\"b0c572c3610e523fc4b148672631c182\""
+        },
+        {
+          "name": "age",
+          "value": "26228"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "uQKOo6b_w8Kn3SDKYIW3tzyQuxGLYU4CcQTY8Kyh_GAsfRsi33wQaQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 12:46:53 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 12:46:35 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"uQKOo6b_w8Kn3SDKYIW3tzyQuxGLYU4CcQTY8Kyh_GAsfRsi33wQaQ==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=7"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 4d0ae7ca3bb5e2d6eaa1450e1906adb4.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "194474"
+        }
+      ],
+      "sha256": "618642c3e45f75b09c492920ec3f08c43ea1bbcd53d2efa1a297a1ca160b8510",
+      "bytes": 194474
+    },
+    "https://media.wired.com/photos/615e2b8ce78a8cd913bbaa76/16:9/w_1280,c_limit/wired_bug.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "CJ4RhQa6HqoY9RuGSiICbltCfauIBeCe"
+        },
+        {
+          "name": "etag",
+          "value": "\"420a8099397e373bb4e4fa6b96ee957a\""
+        },
+        {
+          "name": "age",
+          "value": "23401854"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "hXWBwbndHt3uT_gcKWx4ImMVbx3awMpE-esn9kf1a1gLXdRQgIDeqQ=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 04 Feb 2026 23:33:07 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 15 Sep 2024 19:48:33 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"hXWBwbndHt3uT_gcKWx4ImMVbx3awMpE-esn9kf1a1gLXdRQgIDeqQ==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=7"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 2af4ee189e50805a67bd62bbd51ad0dc.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "21896"
+        }
+      ],
+      "sha256": "72efa44f6e401ceff037cfb95731adb900969b57be9faa1963fe0d208bf9c2cc",
+      "bytes": 21896
+    },
+    "https://media.wired.com/photos/6ae766c35f52202fa32c5fb1/3:2/w_960,c_limit/Final_SamIsland.gif": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "ytU3Q4Cw0q.AP5eCW0mCWq0yr0TvT1Es"
+        },
+        {
+          "name": "etag",
+          "value": "\"a1d8af3902a0bc6a9c73ed1d95485bd6\""
+        },
+        {
+          "name": "age",
+          "value": "26228"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "21Gc3nHRWNMGewUTxr9nx_fTnIjMaJ1pYK3RZCl4HZsD7tr4VnLhVA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 12:46:53 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/gif"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 11:55:48 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"21Gc3nHRWNMGewUTxr9nx_fTnIjMaJ1pYK3RZCl4HZsD7tr4VnLhVA==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=7"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 e44e0b24e706487eaec6b9e01f2166dc.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "250230"
+        }
+      ],
+      "sha256": "4343207d19dda2775c9ecf4755e8a7988c5bfc1f3caab19c4ad8b1cf88c4a0db",
+      "bytes": 250230
+    },
+    "https://ads-static.conde.digital/production/cns/builds/wired/v6.js?v=13586": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=900, s-maxage=2592000, stale-while-revalidate=3600, stale-if-error=86400"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "xpnK.2YSheNC6S5EyPlQzIgV7YALtdUC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"09c30feca98b5c5121163f17722e5365\""
+        },
+        {
+          "name": "age",
+          "value": "8704"
+        },
+        {
+          "name": "via",
+          "value": "1.1 96896a84a34b54d7e563114b261ab144.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "-gsbLUBGFPEanFxUbgHui-AUoj4RswdHpWNaocqs_LbM5j3s5ootiQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 17:38:56 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 17:38:53 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P6"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "124643"
+        }
+      ],
+      "sha256": "eaf46284c014781dcbea1f62b393f73725e403a61f67e660d0c370d67c89b8b8",
+      "bytes": 124643
+    },
+    "https://apis.google.com/js/platform.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"01c247be43c81cac\""
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"gapi-team\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/gapi-team\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 02 Nov 2026 20:04:00 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:04:00 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/gapi-team"
+        },
+        {
+          "name": "cache-control",
+          "value": "private, max-age=1800, stale-while-revalidate=1800"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "cross-origin-opener-policy",
+          "value": "same-origin; report-to=\"gapi-team\""
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "sffe"
+        },
+        {
+          "name": "content-length",
+          "value": "65028"
+        }
+      ],
+      "sha256": "aac624302133f5a94bab1e3d4ffca01d07d1de805a5dd30dc3fff2ba7c08a26f",
+      "bytes": 65028
+    },
+    "https://news.google.com/swg/js/v1/swg.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "age",
+          "value": "2785"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"news-frontend\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/news-frontend\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 02 Nov 2026 20:07:35 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:17:35 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 17:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3000"
+        },
+        {
+          "name": "cross-origin-opener-policy",
+          "value": "same-origin; report-to=\"news-frontend\""
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "content-security-policy-report-only",
+          "value": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/news-frontend"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "sffe"
+        },
+        {
+          "name": "content-length",
+          "value": "259933"
+        }
+      ],
+      "sha256": "53e1b8bbfb6265627f831bc07fba274306f3539d0989685c126bf4608a5dc837",
+      "bytes": 259933
+    },
+    "https://privacy.condenastdigital.com/fides.js?property_id=FDS-LV9IAK": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"hhgruajfv417eje\""
+        },
+        {
+          "name": "age",
+          "value": "1961"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "PJE_ciCSNrRRZ_I6CH_WbWwDfO4vtoMRIFSBpnG2znNhEP06169N3g=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:31:19 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "cloudfront-viewer-country,cloudfront-viewer-country-region,Accept-Encoding"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "*"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self'; script-src 'self' 'nonce-OTkxNTQxYTgtY2I4Yi00MDc3LTg4NWEtMjU4MDgyZDNiZDcz' 'strict-dynamic' ; style-src 'self' 'unsafe-inline'; connect-src 'self' fides.condenastdigital.com d37q714w4l6dvd.cloudfront.net; img-src * blob: data:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=3600, stale-while-revalidate=86400, stale-if-error=86400, public"
+        },
+        {
+          "name": "via",
+          "value": "1.1 f098596787aeb70e3129d867246db42c.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P7"
+        },
+        {
+          "name": "content-length",
+          "value": "2029078"
+        }
+      ],
+      "sha256": "4a2ee974841de31ebecf6cfbd49be046584b8e7efd75a5f2d10097faa52ed2e3",
+      "bytes": 2029078
+    },
+    "https://martech.condenastdigital.com/lib/martech.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"d6a54c1f959d6121499ce00d9310466d\""
+        },
+        {
+          "name": "via",
+          "value": "1.1 49144b810464ef72923b73139eb77e3c.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Miss from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "gabaaw2rJQjHrMzbvhqKkD9Occy49-z6rzZ2RC4aljFPlNoe9Nq2aw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:04:01 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 09 Oct 2026 08:37:15 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P8"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "122116"
+        }
+      ],
+      "sha256": "173fcd7a3bd9389792490ca1978a83836bf1867097a34cb8bf4ead29324143e1",
+      "bytes": 122116
+    },
+    "https://www.wired.com/cdn-cgi/challenge-platform/h/g/scripts/precursor/5c2e6b612edd/main.js?ray=a545be982c771453": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545befa6ffd6ddf-ZRH"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:04:02 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=UTF-8"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "53942"
+        }
+      ],
+      "sha256": "1a21b0b2fdd0307a73ef35e0f12cecfd5fdf806ddc679510a69f79a593779712",
+      "bytes": 53942
+    },
+    "https://media.wired.com/photos/6ae8a6050f4d264d864a7ac6/1:1/w_960,c_limit/Birdbuddy%20Nook%20vs.%20Birdfy%20Rookie%20102026%20top%20art%20Updated%20SOURCE%20Birdbuddy-Amazon.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "g3ZfMVzQN38Udu9WJqvF0R56sLT6Uft6"
+        },
+        {
+          "name": "etag",
+          "value": "\"d9c4f45a651cc2ce418c794c909dfad6\""
+        },
+        {
+          "name": "age",
+          "value": "17018"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "atRyqgb7WX20OQV4SAV-rotOimX2sFi2KDui-yw7gMy8Dg7Qtwc_Eg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 15:20:23 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 15:20:11 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"atRyqgb7WX20OQV4SAV-rotOimX2sFi2KDui-yw7gMy8Dg7Qtwc_Eg==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=7"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 3aad72975c9da06e6d0903ad874f0b54.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "126664"
+        }
+      ],
+      "sha256": "851fbf4c24838118efafa0eee66e61971ef04b1453f0cb93b26dfe33d0cc8fbf",
+      "bytes": 126664
+    },
+    "https://media.wired.com/photos/6923c66a6436f481adfb1a2f/1:1/w_960,c_limit/Best%20Black%20Friday%20Coffee%20and%20Espresso%20Deals%20of%202025.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "WfQo7AfNIjSP9JWRy.P.XGqjvk.G6lRI"
+        },
+        {
+          "name": "etag",
+          "value": "\"8ea5eb9850ed840f744f2951ec0790ed\""
+        },
+        {
+          "name": "age",
+          "value": "519"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "VoQvjaUNyEjytQwWbS5nz5jCb5v_yyoJKaolSnYXMx2SK_F-Rnft-A=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:55:23 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 28 Nov 2025 10:36:36 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"VoQvjaUNyEjytQwWbS5nz5jCb5v_yyoJKaolSnYXMx2SK_F-Rnft-A==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=15"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 9015971351bc982a04ee209a022bb1f8.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "92290"
+        }
+      ],
+      "sha256": "79c831b9d316e91a82d1e9e7f57c437692bef191af1790b9fea632c7172b1191",
+      "bytes": 92290
+    },
+    "https://media.wired.com/photos/6ae2dc2055ec48169ba25e52/1:1/w_960,c_limit/Update%20Best%20Gifts%20for%20PC%20Gamers%20102026%20top%20art%20SOURCE%20Amazon.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "a.O918lTQVMwnyGHa21M0NeXo8lGmkjF"
+        },
+        {
+          "name": "etag",
+          "value": "\"ab62d1ebe7343c693af0dc14531a400f\""
+        },
+        {
+          "name": "age",
+          "value": "28308"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "Pxy4CJKyrKIp34OUsS_1XCbOJqE7kiYymVO7Mxkt7Zj0Rd3cNDAmrg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 12:12:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 12:07:43 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"Pxy4CJKyrKIp34OUsS_1XCbOJqE7kiYymVO7Mxkt7Zj0Rd3cNDAmrg==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=17"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 666eddda46892ed48d8d771b6142ac24.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "176874"
+        }
+      ],
+      "sha256": "5a80168c9f270180c773ccf1e048dcd38a62f90d8267aed5a1980531e5c7e7c6",
+      "bytes": 176874
+    },
+    "https://media.wired.com/photos/6ae3a32037c72c5b8eae6889/1:1/w_960,c_limit/Backchannel-Top-Art-10302026.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "OwSz9JSXXZIcoVADwCtPY2VFb32.faxa"
+        },
+        {
+          "name": "etag",
+          "value": "\"5234f35bfe7786aa7f64f8312a015ad2\""
+        },
+        {
+          "name": "age",
+          "value": "277083"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "zcKciGIg-sZjgpnssRToynfGUj4j6ZVf5nSb4R9VyKxA_d0_enzlPw=="
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 15:05:59 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 23:34:33 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"zcKciGIg-sZjgpnssRToynfGUj4j6ZVf5nSb4R9VyKxA_d0_enzlPw==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=18"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 3a3c1dcacd115187f53f40028ae4bd24.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "46924"
+        }
+      ],
+      "sha256": "b22f6372e24872660e3d199a467b0abf2b257d95c12a856de8a7c002ef3de5af",
+      "bytes": 46924
+    },
+    "https://media.wired.com/photos/6ae20ca456ee4dcb93f11044/1:1/w_960,c_limit/1027_AppleNF_Illustration_v1.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "5YkGlJpfNXCaCedisqgmr3fI4gQnIbaW"
+        },
+        {
+          "name": "etag",
+          "value": "\"c990d9658d138dea7abdabfd267a466c\""
+        },
+        {
+          "name": "age",
+          "value": "421439"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "Uq_fQN1jnnjnIRIRKu_a2fOgb0BDO_gVHgwi1J6p2GrR43V4RRFrkg=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 23:00:03 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 22:56:35 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"Uq_fQN1jnnjnIRIRKu_a2fOgb0BDO_gVHgwi1J6p2GrR43V4RRFrkg==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=18"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 4a502b22092e94faddf9a5b056e273ae.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "162768"
+        }
+      ],
+      "sha256": "2fa6770c96e6dd6b207481226966184a8a1a7b6a8f6662b49dacb3978c5a1a77",
+      "bytes": 162768
+    },
+    "https://media.wired.com/photos/6adf82fd71d0e77d563766d7/1:1/w_960,c_limit/WIRED-Ghost-Stories-sovereign-babies.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "LAUYPPgiHza3CnkyeN4wfK6ItrPI2sk0"
+        },
+        {
+          "name": "etag",
+          "value": "\"b2cfa18e29248051ef88d1586687418c\""
+        },
+        {
+          "name": "age",
+          "value": "554166"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "Wl7Ic88qDk9puufAWsiBFGa8Mv5TWUsdSCTQ-TIjlj75pQoJ0nmX6A=="
+        },
+        {
+          "name": "date",
+          "value": "Tue, 27 Oct 2026 10:07:56 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 10:07:39 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"Wl7Ic88qDk9puufAWsiBFGa8Mv5TWUsdSCTQ-TIjlj75pQoJ0nmX6A==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=18"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 83f1b8f73f37458f38e2ee1fc0b9e68c.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "149142"
+        }
+      ],
+      "sha256": "b0101fa6fa816701981a1ec46d008a87095efdc47539d019ee8b7a5d7eb7df5f",
+      "bytes": 149142
+    },
+    "https://media.wired.com/photos/6ae108712ec9b10c531020d9/1:1/w_960,c_limit/business_ai_predict_future.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "etag",
+          "value": "\"7a50d6bbb5f9901f6ae13117f4195861\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "zzfwWEx2zSRL7zwLYM2EFLkj6Nghh50L"
+        },
+        {
+          "name": "age",
+          "value": "435538"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "Ab3B9QsuS9d2aHc9DxeuX_JZ00N-cPitUEpDLS4GDR6q0GrdwEpGeQ=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 19:05:02 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 19:03:46 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"Ab3B9QsuS9d2aHc9DxeuX_JZ00N-cPitUEpDLS4GDR6q0GrdwEpGeQ==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=18"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 03ffca0f67e3596b9a0c92342fe91598.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "126626"
+        }
+      ],
+      "sha256": "7e181deb7e2669df55a5901e029578b328fbd3242ce2f399350ae2615803dca0",
+      "bytes": 126626
+    },
+    "https://media.wired.com/photos/6ae29474af20331957eab922/16:9/w_960,c_limit/business-Uncanny-Valley-anthropic-ipo.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "wcxn2onl.nPUOhQ5OoIaV5myEmVyHbIg"
+        },
+        {
+          "name": "etag",
+          "value": "\"6c458fb4efcb2ec60ba3f49aa4df9e67\""
+        },
+        {
+          "name": "age",
+          "value": "254401"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "vVyAqNJDZmT_dmZleCNwfzJVxzAmm-kb6PU3ElhBfLKRr2lOTlZiYw=="
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 21:24:01 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 21:24:00 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"vVyAqNJDZmT_dmZleCNwfzJVxzAmm-kb6PU3ElhBfLKRr2lOTlZiYw==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=19"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 993c0866e705e48daa4fed5e30627712.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "187264"
+        }
+      ],
+      "sha256": "3f5465458a970ec673a2a69b69a4cd82c2a817ce50ddb0fc0425687d5fe3be0e",
+      "bytes": 187264
+    },
+    "https://media.wired.com/photos/6ae4efc2b2333ffd87904225/1:1/w_960,c_limit/Mustard%20Made%20Sitewide%20Sale%20102026%20top%20art%20SOURCE%20Mustard%20Made.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "etag",
+          "value": "\"91d854c3a252d0464c3bd6f8df5096e8\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Hdv9ZbRqWrbBSl8SYS4Fg99hd1kyWqGT"
+        },
+        {
+          "name": "age",
+          "value": "19968"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "ppt81zSHG_D3KUavZ7DiFMB7Vql3c9Z0r417o3-580VuoJ6Pp8Ze2g=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 14:31:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 14:21:01 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"ppt81zSHG_D3KUavZ7DiFMB7Vql3c9Z0r417o3-580VuoJ6Pp8Ze2g==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=19"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 3f3b012fad703fdac0f14efdb7b78b6e.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "185724"
+        }
+      ],
+      "sha256": "88dbde70f1c3892616232b4134b694204ef8e5f4b1addc2d2cbbf3edf75e8cfb",
+      "bytes": 185724
+    },
+    "https://media.wired.com/photos/6ae117bf28ee41eb8014dfa9/1:1/w_960,c_limit/politics_republicans_midterms_spending.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "etag",
+          "value": "\"0ab74e264bf65e733ed6e5ae16a30676\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "ekG2reA37t16OvbeWxaWKn7wKTLnWQAw"
+        },
+        {
+          "name": "age",
+          "value": "427086"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "xujvsdtUihTDNkzA6Gh5V6ATAPqWV5zVjl4DJEPCD2v-Wb68HQDy6w=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 21:25:55 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 21:25:47 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"xujvsdtUihTDNkzA6Gh5V6ATAPqWV5zVjl4DJEPCD2v-Wb68HQDy6w==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=18"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 83f1b8f73f37458f38e2ee1fc0b9e68c.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "284544"
+        }
+      ],
+      "sha256": "311c19492457f3947eb77541feb69088bfede2d17b938351df580188669c9194",
+      "bytes": 284544
+    },
+    "https://media.wired.com/photos/6ae34e2b3b99c3ad51af9ec6/1:1/w_960,c_limit/102926-AI%20Web_.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "etag",
+          "value": "\"e6678d7b3c6658175327fedb47d40cee\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "ycEsvweeKL6yH9A9JdL13_xQjNrgixrS"
+        },
+        {
+          "name": "age",
+          "value": "26229"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "4U3pB0UBXnEq71gOHsh42owT1HLsGqsPtyJBwSQaWT2MhdDF0uxCBg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 12:46:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 12:46:35 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"4U3pB0UBXnEq71gOHsh42owT1HLsGqsPtyJBwSQaWT2MhdDF0uxCBg==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=20"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 e9101023ffbe04130b9d4cac0cf9eebc.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "104962"
+        }
+      ],
+      "sha256": "bb827a5f4b63f911a3736a899aacec65889b8272e7ce8718881349695645fe5e",
+      "bytes": 104962
+    },
+    "https://media.wired.com/photos/6ae4e9f503c2c36f4cfc913c/16:9/w_960,c_limit/KernelPanic_10312026_v1.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Mtb9Wmcuomx0QTpokrr7rogshD.kvjR7"
+        },
+        {
+          "name": "etag",
+          "value": "\"5ba73fa8cf4c7e71946f8f5e6c9f8172\""
+        },
+        {
+          "name": "age",
+          "value": "201462"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "uGx7Fp_swydNCucyUPY7DLD8MF31Lh6qK2ykbmfYfdniJvNLmhQZ7Q=="
+        },
+        {
+          "name": "date",
+          "value": "Sat, 31 Oct 2026 12:06:20 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 31 Oct 2026 12:04:21 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"uGx7Fp_swydNCucyUPY7DLD8MF31Lh6qK2ykbmfYfdniJvNLmhQZ7Q==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=19"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 cb4c4a25e4ef534686959996782c8476.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "110008"
+        }
+      ],
+      "sha256": "81d46e37b5c3359ce432a69b221f7eb51067e180f57d54c05d9e1615b126f294",
+      "bytes": 110008
+    },
+    "https://media.wired.com/photos/6adcb3a50f905f8d56c7065e/1:1/w_960,c_limit/WIRED-Ghost-Stories-Dead-Internet.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "ERum2aYwhcxXn43r3FqmHO1fuRmrCgZ9"
+        },
+        {
+          "name": "etag",
+          "value": "\"38c3c8bcf5640cb9a950c3010ce49ed7\""
+        },
+        {
+          "name": "age",
+          "value": "467603"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "nDHoCw6nftYmo3Kj6q0lcm56-WEThIekx84VHHM0IJtbeJ4uYoahlg=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 10:10:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 10:04:20 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"nDHoCw6nftYmo3Kj6q0lcm56-WEThIekx84VHHM0IJtbeJ4uYoahlg==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=19"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 b9d2ce196c8a711fb15d92175d58476e.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "226570"
+        }
+      ],
+      "sha256": "3743e46e8e3fbc01898c8a85a4b8915a2cf43eaebda9a9029c3d3252e2c96871",
+      "bytes": 226570
+    },
+    "https://media.wired.com/photos/6adbb8a7e6d0c133525c3e7c/1:1/w_960,c_limit/KernelPanic_The%20PHP%20Meltdown%20Shows%20How%20AI%20Makes%20Bugs%20More%20Exploitable.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "u3LnFlVStYAvBcj7yFHaXIdYZqfjlLCP"
+        },
+        {
+          "name": "etag",
+          "value": "\"23020791c4b85b85c02cb8f25c187a41\""
+        },
+        {
+          "name": "age",
+          "value": "437389"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "CKRsZ24EbehU_fUQjH-qP5S97Cyrp-HgJ07J48xtB44r6aQhR7BU2A=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 28 Oct 2026 18:34:13 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 18:33:27 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"CKRsZ24EbehU_fUQjH-qP5S97Cyrp-HgJ07J48xtB44r6aQhR7BU2A==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=19"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 50c53efe331c3da25a4faf191817af8c.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "99804"
+        }
+      ],
+      "sha256": "91f0d90221fe3ed9e03fae66c3cbf0935ced782ccb10c326dd1c730381f6d08e",
+      "bytes": 99804
+    },
+    "https://media.wired.com/photos/6adbec3437abe86dfce58fe9/16:9/w_960,c_limit/WIRED-Ghost-Stories-Death-Clock.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "MbrN9uG3AxS5gvWvEUvs9vFHIjKh1bYV"
+        },
+        {
+          "name": "etag",
+          "value": "\"756187299296bbf090a3674292e704fe\""
+        },
+        {
+          "name": "age",
+          "value": "381022"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "N-u6oI4zFh_wSliR6v4kOIeIEy4Ke08dztE9j-hpb_aR2IPoLqjr-g=="
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 10:13:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 10:07:14 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"N-u6oI4zFh_wSliR6v4kOIeIEy4Ke08dztE9j-hpb_aR2IPoLqjr-g==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=19"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 367a4718be97a49df7ac0500a986437a.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "130824"
+        }
+      ],
+      "sha256": "d79f700df6e465d34443a0ff30b850c5c0be711ca04d1cbde5a3b56442ecddee",
+      "bytes": 130824
+    },
+    "https://cdn.gladly.com/assets/chat-sdk/bundle~169816be212df059.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=31449600"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "null"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"0922ceedb7cf2ab3f78afb36da66a62a\""
+        },
+        {
+          "name": "age",
+          "value": "53887"
+        },
+        {
+          "name": "via",
+          "value": "1.1 dcb94209a19991aca70aaa15ab60d65c.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "Ac_ojSviNMZxCrlh1QqUIc24g75Nck4j3RZz0Vfev9Qw5dFA8n-ysg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 05:05:57 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 02 Oct 2026 18:51:13 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "28492"
+        }
+      ],
+      "sha256": "c13796b385ad31e5cbd902a3795b64e2233159d2c53be56d331ef51807b2190e",
+      "bytes": 28492
+    },
+    "https://news.google.com/swg/js/v1/swg-button.css": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "age",
+          "value": "2775"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"news-frontend\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/news-frontend\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 02 Nov 2026 20:07:49 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:17:49 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 24 Jul 2025 15:45:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3000"
+        },
+        {
+          "name": "cross-origin-opener-policy",
+          "value": "same-origin; report-to=\"news-frontend\""
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "content-security-policy-report-only",
+          "value": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/news-frontend"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "sffe"
+        },
+        {
+          "name": "content-length",
+          "value": "18420"
+        }
+      ],
+      "sha256": "b89be261353798462448c7cbe2300fefee5dbca8dcfab856c03db6699dbc2ca7",
+      "bytes": 18420
+    },
+    "https://www.wired.com/auth/refresh": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Miss from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "XRjCblnzLMMDfktHgyx4M0Ltj8fbhRNWTgulrQSKeObvXJjfaAEghg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:04:05 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "DENY"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "frame-ancestors 'none'"
+        },
+        {
+          "name": "cache-control",
+          "value": "no-cache"
+        },
+        {
+          "name": "via",
+          "value": "1.1 b4404a488b0bf1e6ad3743f3e240e538.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bf0d39876ddf-ZRH"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1079"
+        }
+      ],
+      "sha256": "a7b65db95edd1657f0885da31ac616c5d34aaa011f894245610098f3fc5631b3",
+      "bytes": 1079
+    },
+    "https://cdn.gladly.com/assets/chat-sdk/vendor-node_modules_reduxjs_toolkit_dist_redux-toolkit_cjs_production_min_js-node_modules_bow-f505c7~673e843a0384cd5c.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=31449600"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "null"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"61ee34d34b27221063ad1bc8d23f1e0a\""
+        },
+        {
+          "name": "age",
+          "value": "62578"
+        },
+        {
+          "name": "via",
+          "value": "1.1 dcb94209a19991aca70aaa15ab60d65c.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-storage-class",
+          "value": "INTELLIGENT_TIERING"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "AHBxGQfw5ZpLpEZ_1pZNgS_5fYeRPgkAI6lUo6KzUYOQm91xkDthaQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 02:41:10 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 02 Oct 2026 18:51:14 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "149616"
+        }
+      ],
+      "sha256": "0ad2232be730c2bd12220a54081f3c9ca3e7b15917db3f8fed71c24041cd2897",
+      "bytes": 149616
+    },
+    "https://cdn.gladly.com/assets/chat-sdk/apiBootstrap~0fcf377a6e8df6d0.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=31449600"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "null"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"2cf4e8922b81645208460cdb9304da76\""
+        },
+        {
+          "name": "age",
+          "value": "68448"
+        },
+        {
+          "name": "via",
+          "value": "1.1 dcb94209a19991aca70aaa15ab60d65c.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-storage-class",
+          "value": "INTELLIGENT_TIERING"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "w6XLyvItY-AaLHfriDBTyit9j9hYh_hkAkmPS5S9fZ8kpzDZisimbA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 01:03:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 02 Oct 2026 18:51:13 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "150539"
+        }
+      ],
+      "sha256": "efcdcc5232e32451754ce39e511cbefb47af6aae168145f270d11aac81513d7e",
+      "bytes": 150539
+    },
+    "https://media.wired.com/photos/6a5a7ad15ec8d6a6285c17e0/1:1/w_960,c_limit/kids_these_days.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "mP6ikyUNjoXNmlBexPHozJ7J4Wl5NahN"
+        },
+        {
+          "name": "etag",
+          "value": "\"94512a64c8a403f5bfac518d0278a49f\""
+        },
+        {
+          "name": "age",
+          "value": "3618693"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "_JGVQEFYa7Kuc2MvijoqiQStU1M93xXxLNbkGe28rYonlPFBih3UXg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 21 Sep 2026 22:52:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 18 Aug 2026 12:13:11 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"_JGVQEFYa7Kuc2MvijoqiQStU1M93xXxLNbkGe28rYonlPFBih3UXg==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=21"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 83f1b8f73f37458f38e2ee1fc0b9e68c.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "177076"
+        }
+      ],
+      "sha256": "2c7753c6bce4cae6769a4d2f4dec5cb25e16f4610bdf3ba1c9e3cf09b491ba02",
+      "bytes": 177076
+    },
+    "https://media.wired.com/photos/6abe908cd069a0f57288cc01/1:1/w_960,c_limit/Billions-Registered-Old-WIRED.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "lmxTDpfdJHF2bHvn6yx3Q7LkTJ1h0MOM"
+        },
+        {
+          "name": "etag",
+          "value": "\"63d7715e1a6db5363208588cf40cc5ad\""
+        },
+        {
+          "name": "age",
+          "value": "1328411"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "MZ2E_0dUqNhmrS4n81CgLvKWPRbW1yZFEKAygqzVaw8-GS5r_lScmQ=="
+        },
+        {
+          "name": "date",
+          "value": "Sun, 18 Oct 2026 11:03:51 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 18 Oct 2026 11:01:14 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"MZ2E_0dUqNhmrS4n81CgLvKWPRbW1yZFEKAygqzVaw8-GS5r_lScmQ==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=21"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 11e35514d631a9a9566fd489de935c06.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "82032"
+        }
+      ],
+      "sha256": "f1b0f43e5d2889cca16102eaddb37aac8564bccc09dccfb74030e63a0a6092c4",
+      "bytes": 82032
+    },
+    "https://media.wired.com/photos/6ada50d1133035a6bb08be2d/1:1/w_960,c_limit/WIRED-Ghost-Stories-Wikipedia-Notable-top.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "xtBwANyrmBtcyWLBtflALbRshnsA7OyR"
+        },
+        {
+          "name": "etag",
+          "value": "\"b399a654b83762fa777efc0451e0400d\""
+        },
+        {
+          "name": "age",
+          "value": "640438"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "XW0i4aPETv6QfBd0jzjc8wHzzjlKbPl3Z5VnzeZg6GUBjc0NTB9dIg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 26 Oct 2026 10:10:04 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 26 Oct 2026 10:10:04 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"XW0i4aPETv6QfBd0jzjc8wHzzjlKbPl3Z5VnzeZg6GUBjc0NTB9dIg==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=22"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 2af4ee189e50805a67bd62bbd51ad0dc.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "174674"
+        }
+      ],
+      "sha256": "6dddcdd00fb131239c39e7a2c7bf8099aec6579923a78ce9a306066d5131e100",
+      "bytes": 174674
+    },
+    "https://media.wired.com/photos/6adbf59adee148eb9cc5625f/1:1/w_960,c_limit/WIRED-ghost-stories-top-art.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "r_9O3RpSNKTfIvJyPZwSNuW9Gk3GkBq9"
+        },
+        {
+          "name": "etag",
+          "value": "\"8619ed17820baa6f03d5ba048f8e1d70\""
+        },
+        {
+          "name": "age",
+          "value": "626085"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "UagKrrSSdu8ihKlRqqfEQZ1YEQ5c9VI9saGSFxjfxzifux39xPmdBw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 26 Oct 2026 14:09:17 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 26 Oct 2026 14:09:17 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"UagKrrSSdu8ihKlRqqfEQZ1YEQ5c9VI9saGSFxjfxzifux39xPmdBw==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=17"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 1f0db25765b79d244ad1fa2184395c12.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "267186"
+        }
+      ],
+      "sha256": "261b3be6b4ce8c3a57a477fd107f6c5dea616de1d00d8a413c5785a83f591bdc",
+      "bytes": 267186
+    },
+    "https://media.wired.com/photos/6a7db75b5d9da054fb08fe0c/1:1/w_960,c_limit/WIRED-Galaxy-Brain-Site-Image.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "MG7wR3AbHv4zFZkcNfJszXixRMRNHdzp"
+        },
+        {
+          "name": "etag",
+          "value": "\"11bafb2f3e3811dd334d333c11dff3b8\""
+        },
+        {
+          "name": "age",
+          "value": "6857939"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "6eIB4nub4DMt-jrcF31D6qPxZ7ORXChaqVcm-wffWiuInMwTCJTdKA=="
+        },
+        {
+          "name": "date",
+          "value": "Sat, 15 Aug 2026 11:05:03 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 15 Aug 2026 11:00:23 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"6eIB4nub4DMt-jrcF31D6qPxZ7ORXChaqVcm-wffWiuInMwTCJTdKA==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=18"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 b9d2ce196c8a711fb15d92175d58476e.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "94488"
+        }
+      ],
+      "sha256": "bc024c6fac2549c19862ad7fb2b569931e8208ceb5c5d3a02280c803ddb5bfb3",
+      "bytes": 94488
+    },
+    "https://media.wired.com/photos/636abc617484c01b9b6e966b/16:9/w_960,c_limit/WI120122_FF_DNABarcoding_01.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Qj9yxgVBYXPLJVPSHcD2HI5j4p39Usuy"
+        },
+        {
+          "name": "etag",
+          "value": "\"40b138615d5c6ce8022e9298f2d2b5ea\""
+        },
+        {
+          "name": "age",
+          "value": "408061"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "eZTThNXrCOFErXUQADANfypBJNEeH1AzTJ9G5VMMsEybPwgj2OWDPw=="
+        },
+        {
+          "name": "date",
+          "value": "Thu, 29 Oct 2026 02:43:01 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 06 Mar 2025 15:06:22 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"eZTThNXrCOFErXUQADANfypBJNEeH1AzTJ9G5VMMsEybPwgj2OWDPw==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=18"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 3a3c1dcacd115187f53f40028ae4bd24.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "66728"
+        }
+      ],
+      "sha256": "f795c2add86c9641bd301e567627ad628c35e64e1dfe246043524a2ab239f84a",
+      "bytes": 66728
+    },
+    "https://media.wired.com/photos/6248970e228d429b3df65794/1:1/w_960,c_limit/WI050122_EX_Tracers_WelcomeToVideo_01.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "bgy1927PCIWtHLAY81YeEMUEPxvVGnM_"
+        },
+        {
+          "name": "etag",
+          "value": "\"3a4d8423fe5b5f451098da15cdb62813\""
+        },
+        {
+          "name": "age",
+          "value": "114620"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "cmFL7s9x_8mq094zb_4ZfuH7-a8qljms4lHogPtn2tRerr3FXss26w=="
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 12:13:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 01 Nov 2026 12:05:23 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"cmFL7s9x_8mq094zb_4ZfuH7-a8qljms4lHogPtn2tRerr3FXss26w==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=18"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 367a4718be97a49df7ac0500a986437a.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "159406"
+        }
+      ],
+      "sha256": "8557819484f2850f9a338e27841c1ce574ce91edbf193836f7a580667c43fa6d",
+      "bytes": 159406
+    },
+    "https://media.wired.com/photos/6ad027455e9c3fd970d7352f/1:1/w_960,c_limit/classics_paul_allen_microsoft_zillionaire.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "etag",
+          "value": "\"8811626ee4082ec86d6a9ee71892d1f5\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "byKceCjHQVKjraD5x6_BVV0aTiyK.Mzu"
+        },
+        {
+          "name": "age",
+          "value": "722938"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "KByKgrM5yI2cO2uik-L4_mJqRQnmk1aL1TgRLxTmTRAmsESvO9ouAA=="
+        },
+        {
+          "name": "date",
+          "value": "Sun, 25 Oct 2026 11:15:03 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 25 Oct 2026 11:12:52 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"KByKgrM5yI2cO2uik-L4_mJqRQnmk1aL1TgRLxTmTRAmsESvO9ouAA==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=17"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 6faa38f38a1fee24a829fec7c748876c.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "143654"
+        }
+      ],
+      "sha256": "023882876d26d03ea2041380f4f7ebd55c4f8a1594ccdc2077f671c7675e17b4",
+      "bytes": 143654
+    },
+    "https://media.wired.com/photos/6aad6e714dde4396da3d0434/1:1/w_960,c_limit/wired-women-thumb.jpg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "s_Ci3Ld8VLAVh2hZ8AgKN3Y6sFt4jcgm"
+        },
+        {
+          "name": "etag",
+          "value": "\"df6041e4c7b7e88b13136528603e348a\""
+        },
+        {
+          "name": "age",
+          "value": "3618693"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "tLWdfcaNr-1AIUKQnSnxo0u3IfVWe0YgjoGtta6d-ffDaz-yAmhO9A=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 21 Sep 2026 22:52:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 21 Sep 2026 22:51:31 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"tLWdfcaNr-1AIUKQnSnxo0u3IfVWe0YgjoGtta6d-ffDaz-yAmhO9A==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=17"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 c387974a86541bbcc6c5141a85eeaf36.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "63274"
+        }
+      ],
+      "sha256": "02422e32076cd391dc8a5a4db92a345988b8804d678a0e5de878e5647ef41f07",
+      "bytes": 63274
+    },
+    "https://yusui.conde.digital/v1?applicationID=wired-verso-hp-trending&brand=wired&exclude%5Bcategory%5D=tags%2Fars-technica&exclude%5Bcategory%5D=tags%2Fclimate-desk&exclude%5Bcategory%5D=tags%2Fquanta-magazine&exclude%5Bcategory%5D=tags%2Fdeals&exclude%5Bcategory%5D=tags%2Fcoupons&exclude%5BcopilotId%5D=6ae3707f4c0c94a306d05686&exclude%5BcopilotId%5D=6ae223b96935299a386949bd&exclude%5BcopilotId%5D=6ae4a6daabdd265219e0b4c2&exclude%5BcopilotId%5D=6ace3a4387812505ce91e493&exclude%5BcopilotId%5D=6ae89d7cde4b4307f39ef9f9&exclude%5BcopilotId%5D=6aa03f3e1031f3f481940e94&exclude%5BcopilotId%5D=6ad7d51fa4cc6513f80c0e64&exclude%5BcopilotId%5D=692076bc1d5cbe3df783222e&exclude%5BcopilotId%5D=6ae89d7cde4b4307f39ef9f9&exclude%5BcopilotId%5D=6ae223b96935299a386949bd&exclude%5BcopilotId%5D=6ae36bee66e2c0cc2817b0da&exclude%5BcopilotId%5D=6ae4a6daabdd265219e0b4c2&exclude%5BcopilotId%5D=6ae2572fb8b2eb024a124f0c&exclude%5BcopilotId%5D=692076bc1d5cbe3df783222e&exclude%5BcopilotId%5D=6ae3697a3adb9e1c07663b1d&exclude%5BcopilotId%5D=6acd3db5e46dac0afa5718e0&exclude%5BcopilotId%5D=5dc9ad0a182de80009f7ff25&filter%5Blanguage%5D=en-US&filter%5Bstrategy%5D=POPULAR&page%5Bsize%5D=5&copilotId=61939104403ea76d6f7c2304&url=https%3A%2F%2Fwww.wired.com%2F&xid=a30082ef-dbf3-4aff-b84f-3679eb265b3d": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "v1-x-cache-status",
+          "value": "legacy-cache-hit"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=600, must-revalidate, public"
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "WWW-Authenticate,Server-Authorization"
+        },
+        {
+          "name": "age",
+          "value": "533"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 13b67581ff611543a4bbfc12dfe7dae0.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://www.wired.com"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "F3-uZ2f59-vWj7iPihTi4RXBMHipGbkz0r13_cqnI10xF77FbGVqag=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:55:18 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P2"
+        },
+        {
+          "name": "content-length",
+          "value": "36057"
+        }
+      ],
+      "sha256": "9aed5973bf3373c61bc498b7f77c748ac355d509287faae157d240311cfb722b",
+      "bytes": 36057
+    },
+    "https://media.wired.com/photos/64190b863d47b01ba33146e4/1:1/w_960,c_limit/Screen%20Shot%202023-03-20%20at%206.42.08%20PM.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "XU9n10BjvK73nyZxJidQYqsCzIc2mUS1"
+        },
+        {
+          "name": "etag",
+          "value": "\"32280bf7b17544f9300b2a31bc31fbdf\""
+        },
+        {
+          "name": "age",
+          "value": "1933423"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "deeeLDseq1TZkW8M0X72sQg0ZFOPLesaFDldXiyyMa5bfQ4IkFT7_Q=="
+        },
+        {
+          "name": "date",
+          "value": "Sun, 11 Oct 2026 11:00:19 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 07 Apr 2025 17:01:45 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"deeeLDseq1TZkW8M0X72sQg0ZFOPLesaFDldXiyyMa5bfQ4IkFT7_Q==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=25"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 59d5785a1d012a54118141e7e216a492.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "81434"
+        }
+      ],
+      "sha256": "d127305676bb409bc5d3b701d64aff5c8be716b3837775597b7c413c7d5382f0",
+      "bytes": 81434
+    },
+    "https://media.wired.com/photos/6aaa98648e983d8bad151ad7/original/pass/Wired_App_Rollover_Acquisition_01b.gif?format=original": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "experience",
+          "value": "Spectra (Vulcan)"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "vv0gBDpVSPxqIYp78.3_.UwC4s6om_sw"
+        },
+        {
+          "name": "etag",
+          "value": "\"0b0e3aa6121c7b8bb9afbc7e66082aab\""
+        },
+        {
+          "name": "age",
+          "value": "4080817"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "ZuZEt6Cnfq_73KLLXTNAdbOUuRuj9Gw1u1J-QUd-rQpvtNdRMTxUXQ=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 16 Sep 2026 14:30:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/gif"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 16 Sep 2026 13:23:56 GMT"
+        },
+        {
+          "name": "server-timing",
+          "value": "cdn-cache-hit,cdn-pop;desc=\"MXP63-P3\",cdn-rid;desc=\"ZuZEt6Cnfq_73KLLXTNAdbOUuRuj9Gw1u1J-QUd-rQpvtNdRMTxUXQ==\",cdn-hit-layer;desc=\"EDGE\",cdn-downstream-fbl;dur=2"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3600, s-maxage=31536000, stale-if-error=86400, stale-while-revalidate=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 4d0ae7ca3bb5e2d6eaa1450e1906adb4.cloudfront.net (CloudFront), 1.1 1457b830deed1c2472ac9d931556584a.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "FRA56-P2, MXP63-P3"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "1179531"
+        }
+      ],
+      "sha256": "66c262ae7b487341d73167af3c5ee902cf4c2801417fd5232afa25f02c803a4d",
+      "bytes": 1179531
+    },
+    "https://fides.condenastdigital.com/api/v1/privacy-experience?show_disabled=false&region=ch_vd&component=overlay&has_config=true&systems_applicable=true&exclude_gvl_languages=true&include_meta=true&include_gvl=true&include_non_applicable_notices=true&property_id=FDS-LV9IAK": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-request-id",
+          "value": "1f295458-c51e-49b9-b373-a689268726a6"
+        },
+        {
+          "name": "age",
+          "value": "1978"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-cache-hit",
+          "value": "true"
+        },
+        {
+          "name": "x-fides-version",
+          "value": "2.95.5"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "I2ulc8LTga6tqbCY7YCHTyrjE4E0B06o66-M8CiNg06Nb269bNBRJQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:31:16 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding,Origin"
+        },
+        {
+          "name": "x-cache-source",
+          "value": "redis"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 7df314cad77f77de370e3ff0ca59e604.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://www.wired.com"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P7"
+        },
+        {
+          "name": "server",
+          "value": "uvicorn"
+        },
+        {
+          "name": "content-length",
+          "value": "1846037"
+        }
+      ],
+      "sha256": "d64952748b2d7c7b0acc296f6127d5dc6ac3723cc13bd9ebabe9ff730388e2b4",
+      "bytes": 1846037
+    },
+    "https://cdn.gladly.com/orgs/configs/chat/condenast.com-WIRED.json?q=1793649850047": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "3600"
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "ETag"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "null"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"7d629c3fb659e9ca543c91ff4d147e80\""
+        },
+        {
+          "name": "age",
+          "value": "38"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "WixYXqTlki4LaSj5_J3gI5SKP2IMG3CQBatH9v63-Mf7DIbis7az2A=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:03:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 11 Jun 2026 14:03:58 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Origin,Access-Control-Request-Headers,Access-Control-Request-Method,Accept-Encoding"
+        },
+        {
+          "name": "via",
+          "value": "1.1 00ad10994434a1e80075ff87851a8f64.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "content-length",
+          "value": "8641"
+        }
+      ],
+      "sha256": "c51fdbc70d2d5d954641b50a756c9ebabcf1b1a4080974705814adc3fea57cae",
+      "bytes": 8641
+    },
+    "https://cdn.gladly.com/orgs/configs/chat/condenast.com-WIRED-dynamic.json?q=1793649862171": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "3600"
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "ETag"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "null"
+        },
+        {
+          "name": "etag",
+          "value": "\"55192829b1b86d84f7d84df25343a3cb\""
+        },
+        {
+          "name": "age",
+          "value": "21"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "-HsS2rUE5ht9lDn_HjJ5Pnh0eN-5jCZTJDo4M4x5ejFfI8dfvseg2w=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:04:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 05:01:00 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Origin,Access-Control-Request-Headers,Access-Control-Request-Method,Accept-Encoding"
+        },
+        {
+          "name": "via",
+          "value": "1.1 00ad10994434a1e80075ff87851a8f64.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "content-length",
+          "value": "822"
+        }
+      ],
+      "sha256": "dc581ea129d6518577ed1a9e9d1b531976039e4e1225eeb3625583454ebd984b",
+      "bytes": 822
+    },
+    "https://www.wired.com/verso/static/wired-us/assets/favicon.ico": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"c4bb90a2f083991784426268b02cc6c9\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "fin1bPkVKVb7fx140uWA4LeomdnyzNwS"
+        },
+        {
+          "name": "age",
+          "value": "63268"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "cvIN33wjH5eMR97M3XyD9C02zjyP9wRx3D9Bb7xPJG5XarZbd0QEJw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 20:04:23 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/vnd.microsoft.icon"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 07:58:25 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=604800"
+        },
+        {
+          "name": "via",
+          "value": "1.1 575f69068c76de3940cf05b92b6ece22.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545bf7d0e2a6ddf-ZRH"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ZRH52-P1"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "1150"
+        }
+      ],
+      "sha256": "67755dda169221cbf7325e71348ce17ae87d6a8a7c68b3a8c50d7589e7da664c",
+      "bytes": 1150
+    }
+  },
+  "workload": "Frozen guest DOM; scripts removed; original resource bytes",
+  "live_png_sha256": "eca04fa39f8dd2bae555f12af9b0fc5ce813e38889da6f3718083d858a416343",
+  "capture_report_sha256": "dd3adcd5ca4f84550a65da3f40c457618f92ad803936899b0f110d2ed55002b5"
+}

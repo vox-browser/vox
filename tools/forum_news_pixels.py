@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare ten real sites sequentially with Brave and full uBlock Origin.
+"""Compare registered forum/news sites sequentially with Brave and full uBlock Origin.
 
 Use --capture to freeze a new guest-page workload; normal runs replay sealed
 fixtures without forwarding network requests. Zero differing RGBA pixels are
@@ -364,7 +364,7 @@ def capture_case(site, args, output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--sites', help='Comma-separated catalog IDs; default: all ten sequentially')
+    parser.add_argument('--sites', help='Comma-separated catalog IDs; default: all registered sites sequentially')
     parser.add_argument('--capture', action='store_true', help='Capture new fixtures; never overwrite existing fixtures')
     parser.add_argument('--capture-proxy', help='Process-local Brave proxy for the initial live capture only')
     parser.add_argument('--fixtures', type=Path, default=REPO / 'Tests/Browser/Brave/sites')

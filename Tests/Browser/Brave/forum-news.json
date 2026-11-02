@@ -1,5 +1,5 @@
 {
-  "description": "Ten representative forum, social news, and news sites. This is a coverage set, not a traffic ranking.",
+  "description": "Fifteen representative forum, social news, and news sites. This is a coverage set, not a traffic ranking.",
   "sites": [
     {"id": "hacker-news", "name": "Hacker News", "url": "https://news.ycombinator.com/"},
     {"id": "reddit", "name": "Reddit", "url": "https://www.reddit.com/"},
@@ -10,6 +10,11 @@
     {"id": "cnn", "name": "CNN", "url": "https://edition.cnn.com/"},
     {"id": "guardian", "name": "The Guardian", "url": "https://www.theguardian.com/international"},
     {"id": "theverge", "name": "The Verge", "url": "https://www.theverge.com/"},
-    {"id": "pikabu", "name": "Pikabu", "url": "https://pikabu.ru/"}
+    {"id": "pikabu", "name": "Pikabu", "url": "https://pikabu.ru/"},
+    {"id": "techcrunch", "name": "TechCrunch", "url": "https://techcrunch.com/"},
+    {"id": "engadget", "name": "Engadget", "url": "https://www.engadget.com/"},
+    {"id": "theregister", "name": "The Register", "url": "https://www.theregister.com/"},
+    {"id": "slate", "name": "Slate", "url": "https://slate.com/"},
+    {"id": "wired", "name": "WIRED", "url": "https://www.wired.com/"}
   ]
 }

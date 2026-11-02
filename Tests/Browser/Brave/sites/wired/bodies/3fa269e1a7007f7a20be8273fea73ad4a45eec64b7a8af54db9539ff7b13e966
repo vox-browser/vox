@@ -1,0 +1,594 @@
+"use strict";(globalThis.webpackChunkverso=globalThis.webpackChunkverso||[]).push([[5923],{22761(e,i,t){t.d(i,{N:()=>d});var o=t(38267),n=t(26865),a=t(76955),r=t(96472),s=t(73730);o.Ay.div.withConfig({displayName:"ReviewListLoaderWrapper"})`
+  display: flex;
+  justify-content: center;
+`,o.Ay.div.withConfig({displayName:"CommentMessageWrapper"})`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: ${(0,n.Kq)(3)};
+  border: 1px solid;
+  ${({hideDivider:e})=>e&&o.AH`
+      border: none;
+    `}
+  ${({hasSideBorder:e})=>!e&&o.AH`
+      border-right: none;
+      border-left: none;
+    `}
+  ${(0,n._o)("border-color","colors.consumption.body.standard.divider")};
+  padding: ${(0,n.Kq)(3)} ${(0,n.Kq)(2)};
+  text-align: center;
+`,(0,o.Ay)(a.vm).withConfig({displayName:"CommentInfoHed"})`
+  ${(0,n._o)("color","colors.consumption.lead.standard.heading")};
+  ${(0,n.Gg)("typography.definitions.consumptionEditorial.description-feature")}
+
+  &:not(:last-child) {
+    padding-bottom: ${(0,n.Kq)(2)};
+  }
+`,(0,o.Ay)(a.vm).withConfig({displayName:"CommentInfoDek"})`
+  ${(0,n._o)("color","colors.consumption.lead.standard.context-tertiary")};
+  ${(0,n.Gg)("typography.definitions.utility.assistive-text")}
+
+  &:not(:last-child) {
+    padding-bottom: ${(0,n.Kq)(2)};
+  }
+`,o.Ay.div.withConfig({displayName:"CommentMessageBannerIconWrapper"})`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: ${(0,n.Kq)(2)};
+
+  svg {
+    width: 64px;
+    height: 64px;
+  }
+`;const d=(0,o.Ay)("div").withConfig({displayName:"MessageBannerBookmarkWrapper"})`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+
+  button {
+    margin-top: 0;
+    margin-bottom: 0;
+    ${(0,n.L7)(r.LO.md)} {
+      margin-right: 16px;
+      margin-left: 16px;
+    }
+    ${(0,n._o)("background","colors.interactive.base.brand-primary")};
+
+    &:hover,
+    &:focus,
+    &:active {
+      ${(0,n._o)("background-color","colors.interactive.base.brand-primary")};
+    }
+  }
+
+  span {
+    ${(0,n._o)("color","colors.interactive.base.white")};
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+
+    path {
+      ${(0,n._o)("fill","colors.interactive.base.white")};
+    }
+  }
+`;o.Ay.div.withConfig({displayName:"DualCTAContainer"})`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+`,(0,o.Ay)(a.vm).withConfig({displayName:"SecondarySignInLabel"})`
+  margin-top: ${(0,n.Kq)(3)};
+  text-align: center;
+  ${(0,n.Gg)("typography.definitions.utility.button-core")};
+  ${(0,n._o)("color","colors.interactive.base.brand-secondary")};
+`,(0,o.Ay)(a.sH).withConfig({displayName:"SecondarySignInLink"}).attrs({colorToken:"colors.interactive.base.brand-secondary",typeToken:"typography.definitions.utility.button-core",hasUnderline:!0})`
+  margin-left: ${(0,n.Kq)(.5)};
+`,o.Ay.div.withConfig({displayName:"QaPromptContainer"})`
+  display: flex;
+  align-items: center;
+  gap: ${(0,n.Kq)(2)};
+  padding: ${(0,n.Kq)(3)} ${(0,n.Kq)(2)};
+`,o.Ay.div.withConfig({displayName:"QaTextContent"})`
+  flex: 1;
+`,o.Ay.div.withConfig({displayName:"QaQuestion"})`
+  ${(0,n.Gg)("typography.definitions.globalEditorial.accreditation-core")};
+  ${({theme:e})=>(0,n._o)(e,"color","colors.consumption.lead.standard.accreditation")};
+  margin: 0 0 ${(0,n.Kq)(1)} 0;
+`,(0,o.Ay)(a.sH).withConfig({displayName:"QaCallToAction"}).attrs(e=>({typeToken:"typography.definitions.utility.button-utility",colorToken:"colors.consumption.lead.standard.accreditation",as:"div",...e}))`
+  text-decoration: underline;
+`,o.Ay.div.withConfig({displayName:"QaBannerIconWrapper"})`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 64px;
+    height: 64px;
+  }
+`,o.Ay.div.withConfig({displayName:"CollapsedCommentsPanel"})`
+  display: flex;
+  flex-direction: column;
+  gap: ${(0,n.Kq)(3)};
+  padding: ${(0,n.Kq)(3)} 0;
+  width: 100%;
+`,o.Ay.div.withConfig({displayName:"CollapsedCommentsHeader"})`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${(0,n.Kq)(2)};
+  width: 100%;
+`,(0,o.Ay)(s.A.Utility).withConfig({displayName:"CollapsedCommentsButton"})`
+  width: 100%;
+
+  .button__label {
+    text-transform: uppercase;
+  }
+`,(0,o.Ay)(a.vm).withConfig({displayName:"CollapsedCommentsTitle"}).attrs(e=>({as:"h2",colorToken:"colors.consumption.body.standard.subhed",typeIdentity:"typography.definitions.consumptionEditorial.subhed-aux-primary",...e}))`
+  margin: 0;
+`,(0,o.Ay)(a.sH).withConfig({displayName:"CollapsedCommentsUtilityLink"}).attrs(e=>({colorToken:"colors.interactive.base.black",typeIdentity:"typography.definitions.utility.button-bulletin",...e}))`
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+`,o.Ay.span.withConfig({displayName:"CollapsedCommentsCarat"})`
+  margin-left: ${(0,n.Kq)(1)};
+  border-right: 4px solid transparent;
+  border-bottom: 5px solid;
+  border-left: 4px solid transparent;
+  width: 0;
+  height: 0;
+  ${(0,n._o)("border-bottom-color","colors.interactive.base.black")};
+`,o.Ay.div.withConfig({displayName:"CollapsedCommentsWrapper",shouldForwardProp:e=>"isCollapsed"!==e})`
+  ${({isCollapsed:e})=>e&&o.AH`
+      > .commenting-collapsed-button ~ * {
+        display: none;
+      }
+    `}
+`},92867(e,i,t){(0,t(72267).YK)({utilityLabel:{id:"ReviewListContainer.UtilityLabel",defaultMessage:"Back to top",description:"Utility label for review list container"},collapsedCommentsCtaLabel:{id:"Commenting.CollapsedCommentsCtaLabel",defaultMessage:"Join the discussion",description:"CTA label for expanding collapsed comments"},collapsedCommentsBackToTopLabel:{id:"Commenting.CollapsedCommentsBackToTopLabel",defaultMessage:"Back to top",description:"Utility link label for collapsed comments"},SavedCommentMsgTitle:{id:"Commenting.SavedCommentMsgTitle",defaultMessage:"Comment submitted",description:"Text for the MessageBanner title",isConfigurable:!0},SavedCommentDek:{id:"Commenting.SavedCommentDek",defaultMessage:"Comments are moderated in line with our",description:"Text for the MessageBanner body",isConfigurable:!0},CommunityGuidelines:{id:"Commenting.CommunityGuidelines",defaultMessage:"Community Guidelines",description:"Text for the community guidelines link",isConfigurable:!0},SavedCommentDekTrail:{id:"Commenting.SavedCommentDekTrail",defaultMessage:"before being added.",description:"Text for the MessageBanner body",isConfigurable:!0},SavedCommentSubContent:{id:"Commenting.SavedCommentSubContent",defaultMessage:"Thank you for contributing your thoughts.",description:"Text for the MessageBanner sub content",isConfigurable:!0},likeActionErrorMessage:{id:"Commenting.LikeActionErrorMessage",defaultMessage:"Unable to like this comment. Please try again.",description:"Error message to display while like action fails"},unlikeActionErrorMessage:{id:"Commenting.UnlikeActionErrorMessage",defaultMessage:"Unable to unlike this comment. Please try again.",description:"Error message to display while unlike action fails"},signInModalHed:{id:"Commenting.signInModalHed",defaultMessage:"Sign in to join the",description:"Hed for commenting sign in modal"},signInModalHedSpanTag:{id:"Commenting.signInModalHedSpanTag",defaultMessage:"{brandName} community",description:"Hed span for commenting sign in modal"},signInModalMessage:{id:"Commenting.signInModalMessage",defaultMessage:"Once you're signed in, add your comments and like or reply to others.",description:"Message for commenting sign in modal"},replyDiscardModalHed:{id:"Commenting.replyDiscardModalHed",defaultMessage:"Discard this reply?",description:"Hed for discard reply modal"},closeCommentStreamMessage:{id:"Commenting.closeCommentStreamMessage",defaultMessage:"Comments are closed on this story but you can still browse or upvote them.",description:"Hed for discard reply modal"},emptyCommentMsgHed:{id:"Commenting.emptyCommentMsgHed",defaultMessage:"There aren’t any comments yet.",description:"Hed for empty comments"},emptyCommentMsgDek:{id:"Commenting.emptyCommentMsgDek",defaultMessage:"Add the first to start the conversation.",description:"Dek for empty comments"},signInButtonLabel:{id:"Commenting.signInButtonLabel",defaultMessage:"Sign in or create account",description:"Text for the sign in or create account button"},subscribeButtonLabel:{id:"Commenting.subscribeButtonLabel",defaultMessage:"Subscribe",description:"Text for the subscribe button in dual CTA layout"},alreadySubscriberLabel:{id:"Commenting.alreadySubscriberLabel",defaultMessage:"Already a subscriber?",description:"Text for the secondary sign in link (will not be underlined)"},signInLabel:{id:"Commenting.orSignInLabel",defaultMessage:"sign in",description:"Text for the secondary sign in link (will be underlined)"},signOutEmptyCommentMsgDek:{id:"Commenting.signOutEmptyCommentMsgDek",defaultMessage:"Be the first to start the conversation!<br/> You need an account to add or like comments.",description:"Dek for empty comments for signed out users"},signUpMessageBannerHed:{id:"Commenting.signUpMessageBannerHed",defaultMessage:"Join the {brandName} community to add comments.",description:"Text for signout heading"},saveStory:{id:"Commenting.saveStory",defaultMessage:"Save story",description:"Label for the bookmark icon in commenting section"},pinnedReviewLabel:{id:"ReviewList.pinnedReviewLabel",defaultMessage:"Featured by",description:"Featured by label"},qaReviewLabel:{id:"ReviewList.qaReviewLabel",defaultMessage:"Q&A with",description:"Q&A label"},qaBannerTitle:{id:"Commenting.qaBannerTitle",defaultMessage:"Have a question we missed asking?",description:"Title for QA banner"},qaBannerDek:{id:"Commenting.qaBannerDescription",defaultMessage:"Join the live Q&A",description:"Description for QA banner"},guidelinesLinkText:{id:"Commenting.guidelinesLinkText",defaultMessage:"guidelines.",description:"Text for the guidelines link"}})},92945(e,i,t){t(96540)},16631(e,i,t){t.d(i,{El:()=>h,Q7:()=>b,Vs:()=>y});var o=t(38267),n=t(76955),a=t(26865),r=t(96472),s=t(43438),d=t(73275),l=t(73730),m=t(18161),c=t(97927);(0,o.Ay)(l.A.Primary).withConfig({displayName:"ReviewListButton"})`
+  align-self: center;
+  margin-top: ${(0,a.Kq)(4)};
+  margin-bottom: ${(0,a.Kq)(4)};
+`;const p=o.Ay.ul.withConfig({displayName:"ReviewListItems"})`
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`,g=((0,o.Ay)(s.A).withConfig({displayName:"ReviewListCarat"})`
+  margin-left: ${(0,a.Kq)(1)};
+  width: ${(0,a.Kq)(1)};
+  height: ${(0,a.Kq)(1)};
+  ${({theme:e})=>(0,a._o)(e,"fill","colors.interactive.base.black")};
+
+  path {
+    transform: rotate(180deg);
+    transform-origin: center;
+  }
+`,(0,o.Ay)(n.sH).withConfig({displayName:"ReviewListUtilityLink"}).attrs(e=>({colorToken:"colors.interactive.base.black",typeIdentity:"typography.definitions.utility.button-bulletin",...e}))``,(0,o.Ay)(n.sH).withConfig({displayName:"ReviewListGuidelinesLink"}).attrs(e=>({colorStaticLinkToken:"colors.consumption.body.standard.body-deemphasized",typeToken:"typography.definitions.utility.label",...e}))``,(0,o.Ay)(n.vm).withConfig({displayName:"ReviewListTitle"}).attrs(e=>({as:"h2",colorToken:"colors.consumption.body.standard.subhed",typeIdentity:"typography.definitions.consumptionEditorial.subhed-aux-primary",...e}))``,o.Ay.div.withConfig({displayName:"ReviewListTitleWrapper"})`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: ${(0,a.Kq)(4)} 0 0;
+  padding-bottom: ${({hasSubtext:e})=>e?(0,a.Kq)(1):(0,a.Kq)(4)};
+`,o.Ay.div.withConfig({displayName:"ReviewListSubtext"})`
+  display: block;
+  ${(0,a.H4)(r.LO.lg)} {
+    margin-top: ${(0,a.Kq)(1)};
+  }
+  margin-bottom: ${(0,a.Kq)(3)};
+
+  ${({theme:e})=>(0,a._o)(e,"color","colors.consumption.body.standard.body-deemphasized")};
+  ${({theme:e})=>(0,a.Gg)(e,"typography.definitions.utility.label")};
+`,o.Ay.div.withConfig({displayName:"ReviewListWrapper"})`
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  ${(0,a.L7)(r.LO.md)} {
+    margin-left: calc(-1 * var(--grid-margin));
+    padding-right: var(--grid-margin);
+    padding-left: var(--grid-margin);
+    /* Full bleed effect */
+    width: calc(100% + (2 * var(--grid-margin)));
+  }
+`,(0,o.Ay)(n.vm).withConfig({displayName:"ReviewListError"})`
+  margin: ${(0,a.Kq)(4)} 0;
+  text-align: center;
+`,o.Ay.li.withConfig({displayName:"ReviewItem"})`
+  margin-top: ${(0,a.Kq)(3)};
+  border-width: 1px 0 0;
+  border-style: solid;
+  ${({theme:e})=>(0,a._o)(e,"border-color","colors.consumption.body.standard.divider")};
+  padding-top: ${(0,a.Kq)(3)};
+
+  &:first-child {
+    margin-top: ${(0,a.Kq)(4)};
+    border-top: 0;
+    padding-top: 0;
+    ${(0,a.L7)(r.LO.md)} {
+      margin-top: ${(0,a.Kq)(3)};
+    }
+  }
+
+  .pinned-comment + & {
+    margin-top: ${(0,a.Kq)(3)};
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  &:last-child {
+    margin-bottom: ${(0,a.Kq)(3)};
+    ${(0,a.L7)(r.LO.md)} {
+      margin-bottom: ${(0,a.Kq)(3)};
+    }
+  }
+
+  ${m.f} {
+    ${({theme:e})=>(0,a.Gg)(e,"typography.definitions.foundation.link-utility")};
+
+    background-color: rgba(
+      ${(0,a.HK)("colors.background.brand",{rgbOnly:!0})},
+      ${({shouldUseFullOpacity:e})=>e?1:.2}
+    );
+    ${({theme:e})=>(0,a._o)(e,"color","colors.interactive.base.black")};
+
+    &:not(:first-of-type) {
+      margin-left: ${(0,a.Kq)(1)};
+    }
+
+    &[aria-checked='true'] {
+      transition: none;
+      text-decoration: none;
+    }
+
+    &:hover,
+    &:focus {
+      outline: 0;
+      box-shadow: none;
+      cursor: unset;
+      text-decoration: none;
+    }
+
+    ${({shouldUseTagsInvertedTheme:e,theme:i})=>e&&`\n      ${(0,a._o)(i,"background-color","colors.interactive.base.black")};\n      ${(0,a._o)(i,"color","colors.interactive.base.white")};\n    `}
+  }
+  ${c.Ft} {
+    padding: 0;
+  }
+`),y=(o.Ay.div.withConfig({displayName:"PinnedCommentContainer"})`
+  ${p} {
+    padding: 0 ${(0,a.Kq)(3)};
+  }
+  margin-top: ${(0,a.Kq)(4)};
+  border: 1px solid;
+  border-color: ${({shouldUseDarkPinnedTheme:e})=>(0,a.HK)(e?"colors.background.black":"colors.background.brand")};
+  width: 100%;
+
+  ${({shouldUseSoftRoundedEdges:e})=>e&&`\n    border-radius: ${(0,a.Kq)(1)};\n  `}
+
+  ${g} {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: ${(0,a.Kq)(3)} 0;
+  }
+`,o.Ay.div.withConfig({displayName:"PinnedContainerHeading"})`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background-color: rgba(
+    ${({shouldUseDarkPinnedTheme:e})=>(0,a.HK)(e?"colors.background.black":"colors.background.brand",{rgbOnly:!0})},
+    ${({shouldUseFullOpacity:e})=>e?1:.1}
+  );
+  ${({shouldUseSoftRoundedEdges:e})=>e&&`\n    border-radius: ${(0,a.Kq)(.75)} ${(0,a.Kq)(.75)} 0 0;\n  `}
+
+  padding: 10px;
+  width: 100%;
+  height: ${(0,a.Kq)(4.25)};
+`,o.Ay.div.withConfig({displayName:"PinnedTextLabel"})`
+  ${(0,a.Gg)("typography.definitions.foundation.meta-secondary")}
+  ${({shouldUseAlternateColorToken:e,shouldUseInvertedColor:i})=>e?(0,a._o)("color","colors.interactive.social.primary"):(0,a._o)("color",i?"colors.background.white":"colors.background.brand")};
+  transform: translateY(1px);
+  margin-right: 5px;
+`,(0,o.Ay)(d.A).withConfig({displayName:"CommunityBrandLogoImage"})`
+  img {
+    height: 16px;
+    vertical-align: middle;
+  }
+`,(0,o.Ay)(n.vm).withConfig({displayName:"ReviewerUserName"})`
+  ${({theme:e})=>(0,a._o)(e,"color","colors.consumption.body.standard.body")};
+  ${({theme:e})=>(0,a.Gg)(e,"typography.definitions.globalEditorial.accreditation-core")};
+`,(0,o.Ay)(n.vm).withConfig({displayName:"ReviewListTimeStamp"})`
+  ${({theme:e})=>(0,a._o)(e,"color","colors.interactive.base.dark")};
+  ${({theme:e})=>(0,a.Gg)(e,"typography.definitions.foundation.meta-secondary")};
+`,(0,o.Ay)(n.vm).withConfig({displayName:"ReviewText"})`
+  word-wrap: break-word;
+  white-space: pre-wrap;
+
+  a {
+    overflow-wrap: break-word;
+  }
+  ${({theme:e})=>(0,a._o)(e,"color","colors.consumption.body.standard.body")};
+  ${({theme:e})=>(0,a.Gg)(e,"typography.definitions.consumptionEditorial.body-core")};
+`,o.Ay.img.withConfig({displayName:"ReviewImage"})`
+  cursor: pointer;
+  width: ${(0,a.Kq)(20.5)};
+  max-width: 100%;
+  height: ${(0,a.Kq)(20.5)};
+  object-fit: cover;
+
+  ${(0,a.H4)(r.LO.md)} {
+    width: ${(0,a.Kq)(15)};
+    height: ${(0,a.Kq)(15)};
+  }
+`,(0,o.Ay)(n.vm).withConfig({displayName:"ReviewListRatingStars"})`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  &&& {
+    ${c.By} {
+      left: 0;
+
+      path {
+        ${({theme:e})=>(0,a._o)(e,"fill","colors.consumption.body.special.accent")};
+      }
+    }
+    ${c.Ou} {
+      width: ${(0,a.Kq)(2.5)};
+    }
+    ${c.wb} {
+      &:disabled + ${c.KX} {
+        cursor: unset;
+      }
+    }
+  }
+`,(0,o.Ay)(n.vm).withConfig({displayName:"ReviewLikeCount"})`
+  padding-right: ${(0,a.Kq)(2)};
+  ${({theme:e})=>(0,a._o)(e,"color","colors.interactive.base.dark")};
+  ${({theme:e})=>(0,a.Gg)(e,"typography.definitions.foundation.link-secondary")};
+`,o.Ay.hr.withConfig({displayName:"ReviewListDivider"})`
+  border: none;
+  border-top: 1px solid
+    ${({theme:e})=>(0,a.HK)(e,"colors.consumption.lead.standard.divider")};
+  width: 100%;
+`,o.Ay.ul.withConfig({displayName:"ReviewListMetaInfo"})`
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: ${(0,a.Kq)(4)}, ${(0,a.Kq)(4)};
+  padding: 0;
+  list-style: none;
+
+  &:first-child {
+    margin-bottom: 10px;
+    ${(0,a.L7)(r.LO.md)} {
+      margin-bottom: ${(0,a.Kq)(1)};
+    }
+  }
+
+  &:not(:first-child) {
+    margin-bottom: ${(0,a.Kq)(1.5)};
+    ${(0,a.L7)(r.LO.md)} {
+      margin-bottom: ${(0,a.Kq)(2)};
+    }
+  }
+
+  &:last-child {
+    margin-top: ${(0,a.Kq)(1.5)};
+    margin-bottom: ${(0,a.Kq)(1)};
+    ${(0,a.L7)(r.LO.md)} {
+      margin-top: ${(0,a.Kq)(2)};
+      margin-bottom: 0;
+    }
+  }
+
+  .icon-dots {
+    padding-right: 6px;
+    padding-left: 6px;
+
+    ${({theme:e})=>(0,a._o)(e,"fill","colors.interactive.base.dark")};
+
+    ${(0,a.L7)(r.LO.md)} {
+      padding-right: ${(0,a.Kq)(.5)};
+      padding-left: ${(0,a.Kq)(.5)};
+    }
+  }
+
+  .icon-like,
+  .icon-like-filled,
+  .icon-comment {
+    margin-top: 3px;
+    cursor: pointer;
+    width: ${(0,a.Kq)(4)};
+    height: 18px;
+
+    path {
+      ${({theme:e})=>(0,a._o)(e,"fill","colors.interactive.base.dark")};
+      ${({theme:e})=>(0,a._o)(e,"stroke","colors.interactive.base.dark")};
+    }
+
+    &:hover path {
+      ${({theme:e})=>(0,a._o)(e,"fill","colors.interactive.base.black")};
+      ${({theme:e})=>(0,a._o)(e,"stroke","colors.interactive.base.black")};
+    }
+  }
+
+  .icon-p4k-upvote,
+  .icon-p4k-upvote-filled {
+    margin-right: ${(0,a.Kq)(.5)};
+    cursor: pointer;
+    width: auto;
+    height: auto;
+
+    &:hover path[fill='#757575'] {
+      ${({theme:e})=>(0,a._o)(e,"fill","colors.interactive.base.brand-secondary")};
+    }
+  }
+
+  ${({applyRowGap:e})=>e&&`\n    row-gap: ${(0,a.Kq)(1)};\n  `}
+`,o.Ay.div.withConfig({displayName:"ReviewListMetaInfoItem"})`
+  display: flex;
+  align-items: center;
+
+  &:empty + &:empty + & > .icon-dots:first-child {
+    display: none;
+  }
+`,(0,o.Ay)(l.A.Utility).withConfig({displayName:"ReviewListReactionButton"})`
+  padding: 0;
+
+  &,
+  &:focus,
+  &:hover {
+    border: 0;
+    background-color: transparent;
+  }
+`,o.Ay.div.withConfig({displayName:"ReviewMetaGrid"})`
+  display: grid;
+  grid-template-columns: ${({badgeValue:e})=>e?"repeat(1, max-content)":"repeat(2, max-content)"};
+  align-items: center;
+  column-gap: ${(0,a.Kq)(1.25)};
+  margin-bottom: ${(0,a.Kq)(1.25)};
+  justify-items: start;
+`,o.Ay.div.withConfig({displayName:"UserBadgeWrapper"})`
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  align-items: center;
+  column-gap: ${({badgeValue:e})=>e?(0,a.Kq)(1.25):"0"};
+`,o.Ay.div.withConfig({displayName:"BadgesToggleChipListWrapper"})`
+  margin-left: ${(0,a.Kq)()};
+
+  &&& {
+    ${m.f} {
+      align-self: center;
+      margin-bottom: ${({isReply:e})=>e?(0,a.Kq)(1):"0"};
+      margin-left: ${({isReply:e})=>e?"0":(0,a.Kq)(1.25)};
+      ${({theme:e})=>(0,a._o)(e,"background-color","colors.background.light")};
+      ${({theme:e})=>(0,a._o)(e,"color","colors.background.dark")};
+      ${({theme:e})=>(0,a.Gg)(e,"typography.definitions.foundation.meta-primary")};
+      padding: 8px 16px;
+      height: 40px;
+      box-sizing: border-box;
+      text-transform: none;
+    }
+  }
+`,o.Ay.div.withConfig({displayName:"CircularRatingCircle"})`
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  border: ${({size:e})=>"sm"===e?"2px":(0,a.Kq)(.375)}
+    solid ${(0,a.HK)("colors.interactive.base.black")};
+  border-radius: 50%;
+  background-color: transparent;
+  width: ${({size:e})=>"sm"===e?(0,a.Kq)(5):(0,a.Kq)(9.25)};
+  height: ${({size:e})=>"sm"===e?(0,a.Kq)(5):(0,a.Kq)(9.25)};
+
+  &::before {
+    position: absolute;
+    top: ${({size:e})=>"sm"===e?"-6px":(0,a.Kq)(.375)};
+    right: ${({size:e})=>"sm"===e?"-6px":(0,a.Kq)(.375)};
+    bottom: ${({size:e})=>"sm"===e?"-6px":(0,a.Kq)(.375)};
+    left: ${({size:e})=>"sm"===e?"-6px":(0,a.Kq)(.375)};
+    border: ${({size:e})=>"sm"===e?"2px":(0,a.Kq)(.375)}
+      solid ${(0,a.HK)("colors.interactive.base.black")};
+    border-radius: 50%;
+    content: '';
+  }
+`),h=(0,o.Ay)(n.vm).withConfig({displayName:"CircularRatingNumber"}).attrs(e=>({typeIdentity:"typography.definitions.discovery.hed-bulletin-primary",...e}))`
+  color: ${(0,a.HK)("colors.interactive.base.black")};
+
+  ${({size:e})=>"lg"===e&&"\n    font-size: 24px;\n  "}
+`,b=o.Ay.div.withConfig({displayName:"CircularRatingWrapper"})`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.blurred ${h} {
+    filter: blur(10px);
+  }
+`;o.Ay.div.withConfig({displayName:"ScoreComparisonWrapper"})`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: ${(0,a.Kq)(3)};
+`,o.Ay.div.withConfig({displayName:"ScoreComparisonCard"})`
+  display: flex;
+  align-items: flex-end;
+  border: 1px solid
+    ${({theme:e})=>(0,a.HK)(e,"colors.background.black")};
+  border-radius: 8px;
+  width: 100%;
+  height: 140px;
+  gap: ${(0,a.Kq)(5.5)};
+
+  ${(0,a.H4)(r.LO.md)} {
+    gap: ${(0,a.Kq)(7)};
+  }
+`,o.Ay.div.withConfig({displayName:"ScoreColumn"})`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: ${({align:e})=>e||"center"};
+  justify-content: flex-end;
+  padding-top: ${(0,a.Kq)(1.375)};
+  padding-bottom: ${(0,a.Kq)(2)};
+  height: 140px;
+`,o.Ay.div.withConfig({displayName:"ScoreDivider"})`
+  margin: auto;
+  background-color: #999;
+  width: 1px;
+  height: 113px;
+`,o.Ay.div.withConfig({displayName:"ScoreItemWrapper"})`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`,o.Ay.div.withConfig({displayName:"ScoreLabel"})`
+  margin-top: ${(0,a.Kq)(1)};
+  text-align: center;
+  color: #2b2b2b;
+  font-size: 12px;
+  ${(0,a.Gg)("typography.definitions.globalEditorial.accreditation-core")};
+`,o.Ay.div.withConfig({displayName:"ScoreComparisonMessage"})`
+  margin-top: 8px;
+  border-bottom: 1px solid;
+  padding-bottom: 8px;
+  width: 100%;
+  ${({theme:e})=>(0,a._o)(e,"border-color","colors.consumption.body.standard.divider")};
+  text-align: center;
+  ${(0,a.L7)(r.LO.md)} {
+    text-align: left;
+  }
+  ${({theme:e})=>(0,a._o)(e,"color","colors.consumption.body.standard.body-deemphasized")};
+  ${(0,a.Gg)("typography.definitions.utility.label")};
+`,o.Ay.div.withConfig({displayName:"ScoreComparisonSubscriptionMessage"})`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${(0,a.Kq)(.5)};
+  margin-top: 8px;
+  border-bottom: 1px solid;
+  cursor: pointer;
+  padding-bottom: 8px;
+  width: 100%;
+  ${({theme:e})=>(0,a._o)(e,"border-color","colors.consumption.body.standard.divider")};
+  text-align: center;
+  text-decoration: none;
+  ${(0,a.Gg)("typography.definitions.utility.label")};
+  ${({theme:e})=>(0,a._o)(e,"color","colors.consumption.body.standard.body-deemphasized")};
+
+  .subscribe-link {
+    text-decoration: underline;
+    color: inherit;
+    font-weight: bold;
+
+    &:hover {
+      ${({theme:e})=>(0,a._o)(e,"color","colors.consumption.body.standard.link-hover")};
+      text-decoration: none;
+    }
+  }
+`,o.Ay.span.withConfig({displayName:"ReviewerLocation"})`
+  ${({theme:e})=>(0,a._o)(e,"color","colors.interactive.base.dark")};
+  ${({theme:e})=>(0,a.Gg)(e,"typography.definitions.foundation.meta-primary")};
+`},45516(e,i,t){t.d(i,{A:()=>d});var o=t(96540),n=t(5556),a=t.n(n),r=t(55364),s=t.n(r);const d=(e,i)=>(t,n="mutation")=>{const r=t.displayName||t.name,d={window:i||window};class l extends o.Component{constructor(i){super(i),this.updateMutation=e=>{const i=e.querySelectorAll(":not(div)").length>0;this.setState({hasBeenInjected:i})},this.render=()=>{const e={[n]:{[this.element.name]:this.state.hasBeenInjected}},i=s()({},this.props,e);return o.createElement(t,{...i})},this.state={hasBeenInjected:!1},this.element=i.element||e}componentDidMount(){this.attachObserver()}componentDidUpdate(i){i.element!==this.props.element&&(this.element=this.props.element||e,this.detachObserver(),this.attachObserver())}componentWillUnmount(){this.detachObserver()}attachObserver(){const e=d.window.document.querySelectorAll(`.${this.element.className}, .${this.element.className} .consumer-marketing-unit__slot + div`);if(0===e.length)return void(this.retryTimer=setTimeout(this.attachObserver.bind(this),500));e.forEach(e=>{this.updateMutation(e),this.observer=new d.window.MutationObserver(()=>this.updateMutation(e)),this.observer.observe(e,{childList:!0,subtree:!0})})}detachObserver(){this.retryTimer&&clearTimeout(this.retryTimer),this.observer&&this.observer.disconnect()}}return l.displayName=`withMutationState(${r})`,l.propTypes={element:a().shape({name:a().string,className:a().string})},l}},68545(e,i,t){t.d(i,{A:()=>d});var o=t(96540),n=t(5556),a=t.n(n),r=t(55364),s=t.n(r);const d=(e,i)=>(t,n="visibility")=>{const r=t.displayName||t.name,d={window:i||window};class l extends o.Component{constructor(i){super(i),this.updateVisibility=e=>{const[{isIntersecting:i,isVisible:t}]=e,o=i&&(void 0===t||t);this.state.isVisible!==o&&this.setState({isVisible:o})},this.render=()=>{const e={[n]:{[this.element.name]:this.state.isVisible}},i=s()({},this.props,e);return o.createElement(t,{...i})},this.state={isVisible:!1},this.element=i.element||e}componentDidMount(){this.attachObserver()}componentDidUpdate(i){i.element!==this.props.element&&(this.element=this.props.element||e,this.detachObserver(),this.attachObserver())}componentWillUnmount(){this.detachObserver()}attachObserver(){const e=d.window.document.querySelector(`.${this.element.className}`);e?(this.observer=new d.window.IntersectionObserver(this.updateVisibility,{threshold:[.001,.999],trackVisibility:!0,delay:100}),this.observer.observe(e)):this.retryTimer=setTimeout(this.attachObserver.bind(this),500)}detachObserver(){this.retryTimer&&clearTimeout(this.retryTimer),this.observer&&this.observer.disconnect()}}return l.displayName=`withVisibilityState(${r})`,l.propTypes={element:a().shape({name:a().string,className:a().string})},l}},22914(e,i,t){t.d(i,{KF:()=>o,Vl:()=>n});const o="\n  query coralreviews($siteID: String!, $storyID: String!, $userID: String!) {\n    coralreviews(siteID: $siteID, storyID: $storyID, userID: $userID) {\n      rating {\n        rating\n        siteID\n        storyID\n        authorID\n      }\n      comment {\n        body\n      }\n    }\n  }\n",n="\n  query Story($id: ID!) {\n    story(id: $id) {\n      totalPrimaryCommentsCount\n      commentTagLabel {\n        FEATURED\n        QA\n      }\n    }\n  }\n"}}]);

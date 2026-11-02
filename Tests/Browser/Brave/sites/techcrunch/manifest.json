@@ -1,0 +1,5430 @@
+{
+  "version": 1,
+  "url": "https://techcrunch.com/",
+  "source_document_request_method": "GET",
+  "sealed_unix": 1793649108.2184398,
+  "responses": {
+    "https://techcrunch.com/": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "X-DNS-Prefetch-Control",
+          "value": "off"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "*"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://techcrunch.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300, must-revalidate"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545acdffb7fe49d-DME"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'self' *.techcrunch.com; frame-ancestors 'self'; frame-src 'self' https: data:; style-src 'self' 'unsafe-inline' *; img-src 'self' * data:; connect-src 'self' https: data:; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' * blob:; worker-src 'self' blob:; media-src 'self' * data: blob:; font-src 'self' * data:; upgrade-insecure-requests; block-all-mixed-content; sandbox allow-forms allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox;"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "host-header",
+          "value": "a9130478a60e5f9135f765b23f26593b"
+        },
+        {
+          "name": "link",
+          "value": "<https://techcrunch.com/wp-json/>; rel=\"https://api.w.org/\""
+        },
+        {
+          "name": "permissions-policy",
+          "value": "autoplay=(), camera=(), fullscreen=*, geolocation=*, display-capture=(self), microphone=()"
+        },
+        {
+          "name": "referrer-policy",
+          "value": "no-referrer-when-downgrade"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "x-hacker",
+          "value": "If you're reading this, you should visit https://join.a8c.com/viphacker and apply to join the fun, mention this header."
+        },
+        {
+          "name": "x-powered-by",
+          "value": "WordPress VIP <https://wpvip.com>"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "content-length",
+          "value": "423850"
+        },
+        {
+          "name": "Content-Type",
+          "value": "text/html;charset=utf-8"
+        }
+      ],
+      "sha256": "6c0a0b779fb97ddb14c499e0b56a56b9a78166d30cb7801c9319968c74da5957",
+      "bytes": 423850
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/blocks/autoenqueue/css/techcrunch/site-search.css?m=1791393841g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-15e0\""
+        },
+        {
+          "name": "age",
+          "value": "455403"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "vie2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc4ce49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "5600"
+        }
+      ],
+      "sha256": "4dae12c6fefdfb83b01efc87873a3abe06ae7e73c508d16504afa2bc773e47a6",
+      "bytes": 5600
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/blocks/autoenqueue/css/core/heading.css?m=1791393841g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ac68031-1e3e\""
+        },
+        {
+          "name": "age",
+          "value": "455403"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:24:01 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc54e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "7742"
+        }
+      ],
+      "sha256": "e22aa77500039ebeff26f19efa3943b154c65c3306e22b9be3bf8835ccd50bb6",
+      "bytes": 7742
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/blocks/autoenqueue/css/techcrunch/mega-menu.css?m=1791393841g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-1bad\""
+        },
+        {
+          "name": "age",
+          "value": "455400"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc56e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "7085"
+        }
+      ],
+      "sha256": "b8014a6d259cc22bbfb2f7a2a142e134f7703a71acfcb6482de06a088a5033a0",
+      "bytes": 7085
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/blocks/autoenqueue/css/core/button.css?m=1791393841g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ac68031-6e3b\""
+        },
+        {
+          "name": "age",
+          "value": "455322"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:24:01 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "ams8 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc61e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "28219"
+        }
+      ],
+      "sha256": "0019e4557989f0b4a817f41861ed5a5017da09f18683b68e49a208d737363f21",
+      "bytes": 28219
+    },
+    "https://techcrunch.com/wp-includes/blocks/navigation/style.min.css?m=1793205030g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae2231e-41ef\""
+        },
+        {
+          "name": "age",
+          "value": "440186"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:30:22 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc3de49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "16879"
+        }
+      ],
+      "sha256": "65433802260eba9a7ba737a21be6f679ab25480a3c6cc4e7f109041360cfb52e",
+      "bytes": 16879
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/blocks/autoenqueue/css/core/separator.css?m=1791393841g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ac68031-1abb\""
+        },
+        {
+          "name": "age",
+          "value": "455132"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:24:01 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "vie2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc5fe49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "6843"
+        }
+      ],
+      "sha256": "165572f1425341696cd617b402457cf439bb77f70827822c1e169bc6989f812c",
+      "bytes": 6843
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/blocks/autoenqueue/css/techcrunch/post-collection.css?m=1791393841g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ac68031-1416\""
+        },
+        {
+          "name": "age",
+          "value": "455132"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:24:01 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc66e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "5142"
+        }
+      ],
+      "sha256": "9b3ab5cb246ad34da105fa92ea4347ed06f2d51db0ff1734c7a30f058a84f807",
+      "bytes": 5142
+    },
+    "https://techcrunch.com/wp-content/client-mu-plugins/tc-editor/dist/blocks/techcrunch/mega-menu/view-module.js?ver=995fcb08926d5af3be1c": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6abfd7f0-3db\""
+        },
+        {
+          "name": "age",
+          "value": "2161717"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 02 Oct 2026 16:12:32 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc7be49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "987"
+        }
+      ],
+      "sha256": "43b415b1b1827e6673d127ba8a672a0e11355b27fca9ee431cc11dc125cba48f",
+      "bytes": 987
+    },
+    "https://techcrunch.com/wp-includes/blocks/social-links/style.min.css?m=1793205030g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae22326-2df2\""
+        },
+        {
+          "name": "age",
+          "value": "440186"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:30:30 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc6be49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "11762"
+        }
+      ],
+      "sha256": "7539f7d50824fb6721e43ee5b3a4db2a14838d0b2a767bf81d94845ace4cbec5",
+      "bytes": 11762
+    },
+    "https://techcrunch.com/wp-content/uploads/2024/02/ford-blue-cruise.jpeg?resize=668,501": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"40c3aa6e1ce28ac3\""
+        },
+        {
+          "name": "age",
+          "value": "31810"
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "601193"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 11:01:30 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc7ee49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "29728"
+        }
+      ],
+      "sha256": "6a0c2fdabfa96d65f7c580324a04ede3168cc530947efc0f587127302a4e58c6",
+      "bytes": 29728
+    },
+    "https://techcrunch.com/wp-content/client-mu-plugins/tc-editor/dist/blocks/techcrunch/site-search/view-module.js?ver=ffd4722b28b402f14477": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6abfd7f0-89d\""
+        },
+        {
+          "name": "age",
+          "value": "2161717"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 02 Oct 2026 16:12:32 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc7ae49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "2205"
+        }
+      ],
+      "sha256": "a927eaef349d9b6a58f1ebfd9aa60416cae8ef22ed9da640b8b3694829d88373",
+      "bytes": 2205
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/blocks/autoenqueue/css/techcrunch/card-collection.css?m=1791393841g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ac68031-2757\""
+        },
+        {
+          "name": "age",
+          "value": "455132"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:24:01 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc6ae49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "10071"
+        }
+      ],
+      "sha256": "1a2a58219abc3305d7f24fc2032d5ef7fd83414b5d5602b1407fbdc3f31eabe8",
+      "bytes": 10071
+    },
+    "https://techcrunch.com/wp-content/uploads/2026/11/DSCF1932.jpg?resize=668,445": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"338246c480925a23\""
+        },
+        {
+          "name": "age",
+          "value": "17183"
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "33009435"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 15:05:17 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc7de49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "30446"
+        }
+      ],
+      "sha256": "3598da0413efb545f388773186fad4a8df49d1cbfb5f346db47fae94e858eb89",
+      "bytes": 30446
+    },
+    "https://techcrunch.com/wp-content/uploads/2026/10/NinjaCrispi.png?resize=668,668": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"c499d902df369dae\""
+        },
+        {
+          "name": "age",
+          "value": "16462"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 15:17:18 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc7fe49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "120216"
+        }
+      ],
+      "sha256": "63c93875e2df3441dac7dd8a0d2d5b63cb31386113a21e5d8b96cb819681b5bd",
+      "bytes": 120216
+    },
+    "https://techcrunch.com/wp-includes/js/dist/script-modules/interactivity/index.min.js?ver=30876ce8b5c34f91565f": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae22320-a0ea\""
+        },
+        {
+          "name": "age",
+          "value": "440185"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:30:24 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc7ce49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "41194"
+        }
+      ],
+      "sha256": "222102c59fbeb8df4f97e143c264d83d794d74a6123486b03b9ecf32a5471918",
+      "bytes": 41194
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/blocks/autoenqueue/css/techcrunch/hero-package.css?m=1791393841g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ac68031-202e\""
+        },
+        {
+          "name": "age",
+          "value": "455132"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:24:01 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc5ce49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "8238"
+        }
+      ],
+      "sha256": "481e93412fee04b0480f2eed81fc9634ecaf2b16145e2be12b5c09ac3b615ba8",
+      "bytes": 8238
+    },
+    "https://techcrunch.com/wp-includes/blocks/cover/style.min.css?m=1793205030g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae22326-4ab6\""
+        },
+        {
+          "name": "age",
+          "value": "440097"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:30:30 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc62e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "19126"
+        }
+      ],
+      "sha256": "666570bb7ac88a83bf11ede14a09166cd5cc1d83c4e2610f6b207e8a4596f6b6",
+      "bytes": 19126
+    },
+    "https://techcrunch.com/_static/??-eJyNjMEKg0AMRH+oaZClVA+l32LXRQazUUgW6d839mRvPQ0z83i8b5RX9aLOWRBBtdEmbYYaN9ACp1FRRy/0kjUvxhMsYDP+3cn8LeUax4X/sSKIkwwq0PJdKfrhedZHdx+6NKQ+3T5isz40": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc6de49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css;charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:23:55 GMT"
+        },
+        {
+          "name": "content-length",
+          "value": "7074"
+        }
+      ],
+      "sha256": "ae4cf69324e3f4f08436a2151a6e147cde484641ec8a2bb16d8ea7e20f004a34",
+      "bytes": 7074
+    },
+    "https://techcrunch.com/_static/??/wp-content/plugins/sailthru-widget/js/tag.js,/wp-content/plugins/jw-player-7-for-wp-premium/jw-widget/js/jw-widget-min.js?m=1791393840j": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc76e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:24:00 GMT"
+        },
+        {
+          "name": "content-length",
+          "value": "4065"
+        }
+      ],
+      "sha256": "43bbd6ee6710ac9106801f79870c846160a6f5bd0124f7e5d715c7c1516b551f",
+      "bytes": 4065
+    },
+    "https://techcrunch.com/_static/??/wp-content/themes/tc-24/dist/js/frontend-head.js,/wp-content/plugins/sailthru-widget/js/widget.subscribe.js?m=1791393841j": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc78e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:24:01 GMT"
+        },
+        {
+          "name": "content-length",
+          "value": "2832"
+        }
+      ],
+      "sha256": "488fe4423d3e2fa197db201d2daf0134aeeb694e265e4d3339ce853f6110c8d7",
+      "bytes": 2832
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/assets/svg/arrow-up-right.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-be\""
+        },
+        {
+          "name": "age",
+          "value": "932184"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace12cc0e49d-DME"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "190"
+        }
+      ],
+      "sha256": "4057695459e9ed36b0ba19a0f221dbe6b07d3b30f9f1ee9ccbd158a372b5dbf1",
+      "bytes": 190
+    },
+    "https://techcrunch.com/_static/??/wp-content/themes/tc-24/dist/blocks/autoenqueue/css/techcrunch/site-header.css,/wp-includes/blocks/image/style.min.css?m=1793205030": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc58e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css;charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:30:30 GMT"
+        },
+        {
+          "name": "content-length",
+          "value": "11602"
+        }
+      ],
+      "sha256": "5426d35ba37e06ed5a4213ea9b0862b809a4ec48abfdc589cd48d3089305a4f1",
+      "bytes": 11602
+    },
+    "https://techcrunch.com/_static/??-eJytkutOwzAMhV+ILBRNjP1APEvqeq1HLsWXVbw9aSdgiEkUab9sKz7fkXzip9FByYpZPUSqxSVzY7SesngFdzQm6QiUSnaHUhTZdyR1W8QfeJF2mzrc+b9QoZMV0k/Bcara8I7sdtWXXV0ZGRNZmp8m6no8k74mlyj/wumACRf7h+0/3CVQ1IHt0ujcbsRaAaYWV3i1scCr+GBaML8ZGi4kRRiALcPgM04SUetZnVCfbaalMYDehE45UkYHGm6Cw9Oc6jXa1cChMH7fXIbAuPKr/FRepvWSnpvdvtk3j0/32w/1zAZL": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc6fe49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css;charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 18:40:04 GMT"
+        },
+        {
+          "name": "content-length",
+          "value": "163648"
+        }
+      ],
+      "sha256": "06e818bf18a039b1db8024aeac0e71c15a7a292b54a20aee58732180ef860181",
+      "bytes": 163648
+    },
+    "https://techcrunch.com/_static/??-eJzTLy/QzcxLzilNSS3WzwKiwtLUokoopZebmaeXVayjj0+Rbm5melFiSSpUsX2uraG5pbGRgamBsVEWAK9nIhg=": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc75e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:30:32 GMT"
+        },
+        {
+          "name": "content-length",
+          "value": "101134"
+        }
+      ],
+      "sha256": "ecf7723a32533007ede558c546fc8ba30f508283223b6e7f49c297b7c63c8b50",
+      "bytes": 101134
+    },
+    "https://techcrunch.com/_static/??-eJytzk1OAzEMBeALkbp/CHWBOMvUeep4mjhDYnfa2zcDK9iwYfUky/78aJmDKCePaDQ1itKMYsmhYoiPTRbdTO2F+hYXNagRJ+kRsoc5+UW0kXFAFCv1+/qcCl/7FDxydeWR5lpy6YCrxbJoOA+qqHQTLL91G5HxRe6PP7jBrUA/HY6155/6P9RWLC3BDDU0uaivWJ4Htv4Sa4hG3Pujj/y+ezsd9tvX7WE3PQH6Sn7t": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace0bc72e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:30:31 GMT"
+        },
+        {
+          "name": "content-length",
+          "value": "33278"
+        }
+      ],
+      "sha256": "6d961e09ad1ef3bba6ed00b89b8895bdb7733cb79ab87451b9e4f4d64d13cf52",
+      "bytes": 33278
+    },
+    "https://techcrunch.com/wp-content/uploads/2026/02/FoundersSummit-2026_Logos_founderSummit_logo_horiz_color-blk-01.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"7d1b7ac7b0492148\""
+        },
+        {
+          "name": "age",
+          "value": "1367347"
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "151595"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 18 Oct 2026 00:02:33 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace15ce9e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "54258"
+        }
+      ],
+      "sha256": "9f0942e5f6dc8ff2d1e4e78d95278f35df56769eff40bf14ae96c98b129c8a19",
+      "bytes": 54258
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/vendor/10up/datalayer/src/js/frontend.js?m=1791393841g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-8d3\""
+        },
+        {
+          "name": "age",
+          "value": "455400"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace17d05e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "2259"
+        }
+      ],
+      "sha256": "bf01b55fc6e69854724acb5d4d635ce9db632a457fff78f722f2b3be4c7caa45",
+      "bytes": 2259
+    },
+    "https://techcrunch.com/wp-includes/js/dist/i18n.min.js?ver=c26c3dc7bed366793375": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ac528b2-14c2\""
+        },
+        {
+          "name": "age",
+          "value": "495273"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 06 Oct 2026 16:58:26 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1dd54e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "5314"
+        }
+      ],
+      "sha256": "d4efe709c65438ae90dff385486421fea45762880f21fc4e0dca3fa96210f428",
+      "bytes": 5314
+    },
+    "https://techcrunch.com/wp-includes/js/dist/api-fetch.min.js?ver=3a4d9af2b423048b0dee": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ac528b1-16a7\""
+        },
+        {
+          "name": "age",
+          "value": "849506"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 06 Oct 2026 16:58:25 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1dd58e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "5799"
+        }
+      ],
+      "sha256": "8dd8533a009cc53a4262e3a18bb69f18ddbb17f9201983845c14173d5f54a323",
+      "bytes": 5799
+    },
+    "https://techcrunch.com/wp-includes/js/dist/url.min.js?m=1793205031g": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae22327-2153\""
+        },
+        {
+          "name": "age",
+          "value": "440186"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:30:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1dd55e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "8531"
+        }
+      ],
+      "sha256": "5653ad7b55bdbf5f3bfe2ba676d50c0642d7017322700ab1369149f231efd417",
+      "bytes": 8531
+    },
+    "https://techcrunch.com/wp-content/uploads/2026/05/tc-lockup-hp.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"481e37da8e8b7420\""
+        },
+        {
+          "name": "age",
+          "value": "1017655"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 21 May 2026 14:13:15 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "ams8"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1dd5de49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "3212"
+        }
+      ],
+      "sha256": "376f83cfdfc05c8b4f7b668b38266b3687136391cb35fe4685af1d56f0d2fa81",
+      "bytes": 3212
+    },
+    "https://techcrunch.com/wp-content/client-mu-plugins/tc-editor/dist/blocks/techcrunch/site-header/view-module.js?ver=8b67243caa59c39ad427": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace830e-287c\""
+        },
+        {
+          "name": "age",
+          "value": "1612185"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:22 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1dd65e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "10364"
+        }
+      ],
+      "sha256": "1246fdee4845cb5cf4a9dc70d7c08999e8b8cee813520c744dfbefd528d68845",
+      "bytes": 10364
+    },
+    "https://techcrunch.com/wp-content/uploads/2026/10/GettyImages-1252468735.jpg?resize=1200,800": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"c2acb74e228a91c0\""
+        },
+        {
+          "name": "age",
+          "value": "501076"
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "17007800"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 00:40:24 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1dd5fe49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "44212"
+        }
+      ],
+      "sha256": "3153771872423d56f8cad704d93490cba4e96b382c214f5fc130af8730827908",
+      "bytes": 44212
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/svg/tc-logo.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-f8\""
+        },
+        {
+          "name": "age",
+          "value": "1007198"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "ams8 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1dd63e49d-DME"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "248"
+        }
+      ],
+      "sha256": "225a2482df41a9a7e6f3504adb63f34b52c5625cae219fafd3c4c8130e2f5059",
+      "bytes": 248
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/svg/menu.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6abfd7f8-ad\""
+        },
+        {
+          "name": "age",
+          "value": "2161717"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 02 Oct 2026 16:12:40 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1ed70e49d-DME"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "173"
+        }
+      ],
+      "sha256": "3dfd02f68c31ee52107d4442abe20fbe9bb5fb31e0b1f5e21f5912946ff8af95",
+      "bytes": 173
+    },
+    "https://techcrunch.com/_static/??-eJzTLy/QTc7PK0nNK9FPzskEUrq5pboFOaXpmXnF+iXJQMmiVP2UzOIS/axi/eKMxKLUFL2sYh19kvSlFYGVgnTa59oamlsaGlsaWxgbZwEA1GwtxA==": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1cd44e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes, bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:23:53 GMT"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "4"
+        }
+      ],
+      "sha256": "454e469f584d84800fbf5a4a4041660eff90f8ab6a7a52ba33c3f9725cad0370",
+      "bytes": 4
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/svg/search.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-e5\""
+        },
+        {
+          "name": "age",
+          "value": "1101199"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1ed6be49d-DME"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "229"
+        }
+      ],
+      "sha256": "4b76b003eddf7f1f86f899d8a75618eb604945ca732f7a7eef3534f700e05dae",
+      "bytes": 229
+    },
+    "https://techcrunch.com/_static/??-eJydzN0KwjAMhuEbMsbJUHcgXkuXdpquP6NJHd69sgNBEBWPAh95XpwnoJzUJUUK/DgQK0yhnjkJVoaRFUziaNRBHzKNgpZF0Qu+znBlN4NQ4UnXXlb4sawEvhYWy6ScEww5qyvP9FAWaX8KGSt/wmTCTZm+c7246Bazbd89n+Kx2XdN1+wOm9bfAQPbfmw=": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1dd5ae49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 18:40:04 GMT"
+        },
+        {
+          "name": "content-length",
+          "value": "42025"
+        }
+      ],
+      "sha256": "41459057f6032c50e95f905b44e54b524a4ff6b408be9a390dd999ea1fde8831",
+      "bytes": 42025
+    },
+    "https://techcrunch.com/_static/??/wp-includes/js/dist/html-entities.min.js,/wp-includes/js/dist/hooks.min.js?m=1793205031j": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000"
+        },
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "x-rq",
+          "value": "arn2 0 30 9980"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "DYNAMIC"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace1dd52e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:30:31 GMT"
+        },
+        {
+          "name": "content-length",
+          "value": "6457"
+        }
+      ],
+      "sha256": "1d8de438aba0eb49a4ad3384b2b0f84aa3d205142e892e66a5dcceec8a68d1d2",
+      "bytes": 6457
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/assets/fonts/nb-international-pro/nbinternationalpromed-webfont.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"6abfd7f8-5790\""
+        },
+        {
+          "name": "age",
+          "value": "2161717"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/font-woff2"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 02 Oct 2026 16:12:40 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace21dade49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "22416"
+        }
+      ],
+      "sha256": "eeddaae7934b3c33a58687b313a04e1e375a7be9bc247026487ef7f4db724a76",
+      "bytes": 22416
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/assets/fonts/nb-international-pro/nbinternationalproreg-webfont.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"6ace8317-5564\""
+        },
+        {
+          "name": "age",
+          "value": "1092770"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/font-woff2"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace21da8e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "21860"
+        }
+      ],
+      "sha256": "35357cbc233d8557b2ce25b9a3d7e794b95bc753f5d931961d28a6693042c1f7",
+      "bytes": 21860
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/assets/fonts/nb-international-pro/nbinternationalprobol-webfont.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"6ac68031-541c\""
+        },
+        {
+          "name": "age",
+          "value": "415296"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/font-woff2"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:24:01 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace21da7e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "21532"
+        }
+      ],
+      "sha256": "cb1be8a2ec802c12d894d41716be16ad35ef8e8eaab7135d5579a3398889f74d",
+      "bytes": 21532
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/assets/fonts/yellix/Yellix-ExtraBold.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"6ace8317-a7c4\""
+        },
+        {
+          "name": "age",
+          "value": "1019469"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/font-woff2"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "ams8 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace21dabe49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "42948"
+        }
+      ],
+      "sha256": "c0c38f83346d3840129858e3d55b68ae0d758e203e821efbd3e9c4466ec8dc81",
+      "bytes": 42948
+    },
+    "https://techcrunch.com/wp-content/uploads/2025/09/starlink-direct-to-cell-e1793637818614.jpg?w=444": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"04f06ad03a6aa407\""
+        },
+        {
+          "name": "age",
+          "value": "11204"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/jpeg"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 16:44:56 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace21db0e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "13334"
+        }
+      ],
+      "sha256": "92ecf93a0b93c68190dc845775eb89870a106a8597d22cb471bdaa8cc503a55e",
+      "bytes": 13334
+    },
+    "https://www.google.com/recaptcha/api.js?render=6LcKaMEUAAAAACNhMymsVMHg25lFfksvZZO9EMTZ&ver=0.1.0": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "private, max-age=300"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"coop_38fac9d5b82543fc4729580d18ff2d3d\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/38fac9d5b82543fc4729580d18ff2d3d\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "cross-origin-opener-policy-report-only",
+          "value": "same-origin; report-to=\"coop_38fac9d5b82543fc4729580d18ff2d3d\""
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "server",
+          "value": "ESF"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "content-length",
+          "value": "1582"
+        }
+      ],
+      "sha256": "a4cbe02b6564b972af80d47b61a4048d5ee5809f6064b2e775ef2660a90b807b",
+      "bytes": 1582
+    },
+    "https://techcrunch.com/wp-content/uploads/2024/10/F064_Q324_Refresh_Product_BlueprintPersonalityStep_Press_1920x1080-Logo.jpg?resize=150,84": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"ce08ebe6a2c4ea3e\""
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "667275"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 19:36:59 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace20d9ae49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "6662"
+        }
+      ],
+      "sha256": "ebeb6689da05106edb8e7311e65d305092644223af5b864b53490d919c1481da",
+      "bytes": 6662
+    },
+    "https://techcrunch.com/wp-content/uploads/2024/08/brave-browser.jpg?resize=150,100": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"5a1a4cd8e6be11ae\""
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "1878248"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 19:37:00 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace20d9ce49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "7062"
+        }
+      ],
+      "sha256": "b905ebf7cd7a155a7e02947167da942e68639cf110c68cd3683183e0ae8eec23",
+      "bytes": 7062
+    },
+    "https://challenges.cloudflare.com/turnstile/v0/g/5c2e6b612edd/api.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=31536000, stale-if-error=10800, stale-while-revalidate=31536000, public"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"5c2e6b612edd-api\""
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace26c154a47-ARN"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "server-timing",
+          "value": "cfExtPri"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=UTF-8"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "priority",
+          "value": "u=3,i=?0"
+        },
+        {
+          "name": "content-length",
+          "value": "86756"
+        }
+      ],
+      "sha256": "17b544f84ce1d1288dc2dc80e0b88e3fca8146a1e708c609cba315d96af63044",
+      "bytes": 86756
+    },
+    "https://techcrunch.com/wp-content/uploads/2024/06/snapchat-getty.jpg?resize=150,100": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"412636bda04c6a6f\""
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "912869"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 20:11:25 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace20da2e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "13056"
+        }
+      ],
+      "sha256": "e658947517f534b0506bef4499b4a9f5cfb7aba2de0e518d944ff0e04a3d9ca2",
+      "bytes": 13056
+    },
+    "https://techcrunch.com/wp-content/uploads/2026/08/ios-notification-threat-apple-hero.jpg?resize=150,102": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"dbb0e113d249ea56\""
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "202072"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 19:46:38 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace20d95e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1656"
+        }
+      ],
+      "sha256": "c211f4804b077b4bd1e3f5b80570099f2190f309565bd2e9ee932439f7525508",
+      "bytes": 1656
+    },
+    "https://techcrunch.com/wp-content/uploads/2026/06/Chip-chips-dollar-signs-money.png?resize=150,120": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"0dff0a9c965c810e\""
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "2449796"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 17:55:04 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace21da3e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "33266"
+        }
+      ],
+      "sha256": "827421de23eced1e44f91ece26cc71838c8d49d1f0af454f8c95c59d69c90dc9",
+      "bytes": 33266
+    },
+    "https://techcrunch.com/wp-content/uploads/2026/11/image-6.png?resize=150,84": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"fca108ab3afd9db3\""
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "1349720"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 17:50:25 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace21da6e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "17120"
+        }
+      ],
+      "sha256": "65373deff65a6766866c6e4dd37cfee73eae8fa1a71b50c34243605f76797587",
+      "bytes": 17120
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/svg/clock.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ac68031-117\""
+        },
+        {
+          "name": "age",
+          "value": "440539"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 17:24:01 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace2be43e49d-DME"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "279"
+        }
+      ],
+      "sha256": "a7a9d261041d854224c2701cb4d2e49a43116c411f8b802d256c0ed1f3679f06",
+      "bytes": 279
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/js/383.dfdf3965daa042b2272f.chunk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-132\""
+        },
+        {
+          "name": "age",
+          "value": "1536141"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace2ce50e49d-DME"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "306"
+        }
+      ],
+      "sha256": "296a25fdedf4e790499c1ab4db27c32d629fc748a461812642347740bea775af",
+      "bytes": 306
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/js/689.407c471c208ee80e7ecd.chunk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-450\""
+        },
+        {
+          "name": "age",
+          "value": "1091650"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace31ebbe49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1104"
+        }
+      ],
+      "sha256": "bc303f899979b3739a5285ee43abc482320eea0300a556d85fa02a65896d34bc",
+      "bytes": 1104
+    },
+    "https://techcrunch.com/wp-includes/js/wp-emoji-release.min.js?ver=6.9.11": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ae22328-58ea\""
+        },
+        {
+          "name": "age",
+          "value": "440185"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:30:32 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace33edce49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "22762"
+        }
+      ],
+      "sha256": "fd59b0ebf6282ed71647bf2f6e0d1925bbfd1f270865a832079ebb60259aabca",
+      "bytes": 22762
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/js/4232.52aa6afabc0abe92764b.chunk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-112\""
+        },
+        {
+          "name": "age",
+          "value": "1095069"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace36f4fe49d-DME"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "274"
+        }
+      ],
+      "sha256": "9c33084bf68a664cfa82a314bd2e006a7d9fc31f95242dc3eaf13a1b553a8436",
+      "bytes": 274
+    },
+    "https://www.gstatic.com/recaptcha/releases/bSuJ2xBC8cHT21-c68JXN31m/recaptcha__en.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "age",
+          "value": "251796"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"recaptcha-scs\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/recaptcha-scs\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Sat, 30 Oct 2027 21:55:05 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 21:55:05 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 26 Oct 2026 02:02:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "timing-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "cross-origin-opener-policy",
+          "value": "same-origin-allow-popups; report-to=\"recaptcha-scs\""
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "content-security-policy-report-only",
+          "value": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/recaptcha-scs"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "sffe"
+        },
+        {
+          "name": "content-length",
+          "value": "859260"
+        }
+      ],
+      "sha256": "d2250c8ef38501e9c8d179a29ec247c1f81f114bde5291d8c86ce164cfee889f",
+      "bytes": 859260
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/js/8741.77d75d8bbb25a07754d3.chunk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-6f01\""
+        },
+        {
+          "name": "age",
+          "value": "1020674"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "ams8 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace3dfc8e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "28417"
+        }
+      ],
+      "sha256": "efb6cbe55c83d855a08b9f9f922b83dbe078d9544a5804ab8f1a205472eb4d1c",
+      "bytes": 28417
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/js/1341.bc629fcebae90a7a98db.chunk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-11d5\""
+        },
+        {
+          "name": "age",
+          "value": "1449214"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace3dfcbe49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "4565"
+        }
+      ],
+      "sha256": "f47d0bc81fbe72090183b8bcb2eb216c2eb2c817457ed2d5225e2cccbd13882e",
+      "bytes": 4565
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/js/6138.4f3aa3be16ce954ae8cd.chunk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-4f97\""
+        },
+        {
+          "name": "age",
+          "value": "482023"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace43824e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "20375"
+        }
+      ],
+      "sha256": "5e56afbe861cc139a338711436b1fc5fa88d74656c87333d61357ef33d7c82cf",
+      "bytes": 20375
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/js/642.dae1550f4fdccd414348.chunk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-c20\""
+        },
+        {
+          "name": "age",
+          "value": "1347936"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace43826e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "3104"
+        }
+      ],
+      "sha256": "230b0ce51aa6c1d97d79b35ab57e7bb0500c7ed12aab35b43f151e1f9bc9d3b9",
+      "bytes": 3104
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/js/5538.ab1fff498ff87f34ee3f.chunk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-2a2\""
+        },
+        {
+          "name": "age",
+          "value": "1526478"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace48871e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "674"
+        }
+      ],
+      "sha256": "fcdd6d937d45e4156ef45378c5ffc40f8d131eea0fe075e2ecc85c1ca22a6988",
+      "bytes": 674
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/js/180.f04224858cbe8cc7235e.chunk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-b00\""
+        },
+        {
+          "name": "age",
+          "value": "1530007"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace4e8dae49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "2816"
+        }
+      ],
+      "sha256": "f80f22ed62e49f86bc87940bca68ab3e9be6128b97414a80914a871979c850e6",
+      "bytes": 2816
+    },
+    "https://techcrunch.com/wp-content/themes/tc-24/dist/js/7746.a4e3a49bbe03942a3168.chunk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace8317-76c\""
+        },
+        {
+          "name": "age",
+          "value": "1621015"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:41 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 19:14:31 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2 0 30 9980"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ace58987e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1900"
+        }
+      ],
+      "sha256": "9e3648e9c5a9d6f35751520d763cf58e31c915fde443f30c3fb4cb4bfe465b9b",
+      "bytes": 1900
+    },
+    "https://techcrunch.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=32": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"456575767c9bda2a\""
+        },
+        {
+          "name": "age",
+          "value": "419177"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:42 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 28 Jul 2026 14:17:05 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545aceb0fdae49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "1020"
+        }
+      ],
+      "sha256": "4716cb9cb6d1a285187305dba2a6e2be6e2cba09a997d24a32be091aa1c452ec",
+      "bytes": 1020
+    },
+    "https://techcrunch.com/wp-content/uploads/2024/09/tc-logo-mobile.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"15e4b173459090ec\""
+        },
+        {
+          "name": "age",
+          "value": "499877"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:47 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:47 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 25 Sep 2024 01:34:32 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "hhn2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ad0a890de49d-DME"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "389"
+        }
+      ],
+      "sha256": "26ddc3f8a8a2427b8e3ab0987e35aa802e6369d17836f1e4b242cc0ca85e32b7",
+      "bytes": 389
+    },
+    "https://techcrunch.com/wp-content/uploads/2024/02/ford-blue-cruise.jpeg?resize=1200,900": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-remembering",
+          "value": "Eric Binnion <https://friendsofericbinnion.wordpress.com/>"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "\"f52b586aefa8efd3\""
+        },
+        {
+          "name": "age",
+          "value": "425623"
+        },
+        {
+          "name": "x-bytes-saved",
+          "value": "561537"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, HEAD"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 02 Nov 2027 19:51:47 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:51:47 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 21:38:03 GMT"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=300;includeSubdomains"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "x-rq",
+          "value": "vie2"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545ad0a9923e49d-DME"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "69384"
+        }
+      ],
+      "sha256": "2f398590443018fdb91cb0be09dd8d93831b8a335cafa59dcebe458eb21f3f7b",
+      "bytes": 69384
+    }
+  },
+  "workload": "Frozen guest DOM; scripts removed; original resource bytes",
+  "live_png_sha256": "48076db4a61f97844d1cdcc7578e04ddac0f4dad273f33a3b9c0ec5a7a2f8a5e",
+  "capture_report_sha256": "4a70461b7cae0df890cd4c4e948216f1992eaf94dc3800d0a8ab2b78e77cc05f"
+}

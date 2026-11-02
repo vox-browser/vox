@@ -316,16 +316,30 @@ class ForumNewsPixelTests(unittest.TestCase):
                     common_stream=dict(matches=True),
                     cosmetic=dict(css_matches=True, procedural_matches=True, scriptlet_filters_match=True))
 
-    def test_all_ten_sites_are_registered_once(self):
+    def test_all_fifteen_sites_are_registered_once(self):
         sites = json.loads(CATALOG.read_text())['sites']
-        self.assertEqual(len(sites), 10)
-        self.assertEqual(len({s['url'] for s in sites}), 10)
-        self.assertEqual(len({s['id'] for s in sites}), 10)
+        expected = {'hacker-news', 'reddit', 'lobsters', 'slashdot', 'stackoverflow',
+                    'bbc', 'cnn', 'guardian', 'theverge', 'pikabu',
+                    'techcrunch', 'engadget', 'theregister', 'slate', 'wired'}
+        self.assertEqual(len(sites), len(expected))
+        self.assertEqual(len({s['url'] for s in sites}), len(expected))
+        self.assertEqual({s['id'] for s in sites}, expected)
         self.assertEqual(sites[0]['id'], 'hacker-news')
         self.assertIn('reddit', {s['id'] for s in sites})
         for site in sites:
             directory = CATALOG.parent / 'sites' / site['id']
             self.assertTrue((directory / 'manifest.json').is_file() or (directory / 'status.json').is_file(), site['id'])
+
+    def test_five_news_additions_have_sealed_full_ubo_guest_pages(self):
+        for site in ['techcrunch', 'engadget', 'theregister', 'slate', 'wired']:
+            with self.subTest(site=site):
+                directory = CATALOG.parent / 'sites' / site
+                manifest = load_archive(directory)
+                self.assertEqual(digest((directory / 'live.png').read_bytes()), manifest['live_png_sha256'])
+                report = directory / 'capture.json'
+                self.assertEqual(digest(report.read_bytes()), manifest['capture_report_sha256'])
+                check_filters(json.loads(report.read_text()))
+                self.assertIn(manifest['url'], manifest['responses'])
 
     def test_challenges_and_incomplete_filter_evidence_cannot_pass(self):
         check_filters(self.report())

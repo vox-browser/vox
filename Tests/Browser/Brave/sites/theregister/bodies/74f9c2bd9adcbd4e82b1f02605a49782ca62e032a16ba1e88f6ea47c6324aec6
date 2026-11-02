@@ -1,0 +1,1 @@
+@media(min-width: 1024px){body .pageHeader .row.mainrow>.navigation.topBarMenu .menu-list .first-list-item{width:max-content}body .pageHeader .row.mainrow>.navigation.topBarMenu .menu-list .first-list-item.login-btn{width:max-content}}.pageHeader .row.mainrow>.navigation.topBarMenu .menu-list .first-list-item.login-btn a{padding:.1em}

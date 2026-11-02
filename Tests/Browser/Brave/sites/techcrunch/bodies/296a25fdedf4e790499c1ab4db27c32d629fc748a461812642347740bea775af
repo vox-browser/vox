@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunktc_24=self.webpackChunktc_24||[]).push([[383],{383:function(e,t){t.default=()=>{const e=()=>{const e=window.innerWidth-document.documentElement.clientWidth;document.documentElement.style.setProperty("--scrollbar-width",`${e}px`)};e(),window.addEventListener("resize",e)}}}]);

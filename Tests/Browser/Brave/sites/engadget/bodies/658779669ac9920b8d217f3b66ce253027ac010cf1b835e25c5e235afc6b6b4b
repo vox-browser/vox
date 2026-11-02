@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US"><head><base href="https://www.engadget.com/">
+            
+        <!-- START email detection/removal script -->
+        
+        <!-- END email detection/removal script -->
+        <!-- AdThrive Head Tag Manual -->
+        
+        <!-- End of AdThrive Head Tag -->
+                    <link rel="preload" href="/wp-content/themes/unified/css/home.engadget.min.css?design=3&amp;v=1791925653" as="style">
+<link class="preloadFont" rel="preload" href="https://www.engadget.com/font/Guardian-Text-Sans-Web-Bold.woff2" as="font" crossorigin="">
+<link class="preloadFont" rel="preload" href="https://www.engadget.com/font/Guardian-Text-Sans-Web-Regular.woff2" as="font" crossorigin="">
+
+        <link rel="stylesheet" type="text/css" href="/wp-content/themes/unified/css/home.engadget.min.css?design=3&amp;v=1791925653">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="block-all-mixed-content">
+        <meta http-equiv="X-UA-Compatible" content="IE=10">
+        
+        
+        
+        <title>Engadget | Technology News &amp; Expert Reviews</title>
+        <meta name="description" content="Breaking news from the worlds of technology and entertainment, and expert reviews of the latest consumer tech products.">
+        
+        
+                <meta property="og:site_name" content="Engadget">
+        <meta property="og:title" content="Engadget | Technology News &amp; Expert Reviews">
+        <meta property="og:image" content="https://www.engadget.com/img/engadget-meta-image-1280x720.png">
+        <meta property="og:description" content="Breaking news from the worlds of technology and entertainment, and expert reviews of the latest consumer tech products.">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://www.engadget.com/">
+                <meta name="twitter:title" content="Engadget | Technology News &amp; Expert Reviews">
+        <meta name="twitter:description" content="Breaking news from the worlds of technology and entertainment, and expert reviews of the latest consumer tech products.">
+        <meta name="twitter:site" content="@engadget">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:image" content="https://www.engadget.com/img/engadget-meta-image-1280x720.png">
+        
+        
+        <link rel="shortcut icon" href="https://www.engadget.com/img/engadget-favicon.png">
+        <link rel="icon" href="https://www.engadget.com/img/engadget-favicon.png">
+        <link rel="canonical" href="https://www.engadget.com/">
+        <link rel="alternate" type="application/rss+xml" title="News - Engadget" href="https://www.engadget.com/category/news/feed/">
+
+        
+        
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0" href="https://www.engadget.com/feed/">                <style type="text/css">
+  /** Common styles across all window sizes. */
+  .swg-dialog,
+  .swg-toast,
+  .publisher-toast {
+    box-sizing: border-box;
+  }
+
+  .swg-toast {
+    background-color: rgba(255, 255, 255, 1) !important;
+    max-height: 46px !important;
+  }
+
+  .publisher-toast {
+    background-color: transparent !important;
+    max-width: 360px !important;
+  }
+
+  .swg-toast,
+  .publisher-toast {
+    position: fixed !important;
+    bottom: 0 !important;
+    z-index: 2147483647 !important;
+    border: none !important;
+  }
+
+  /**
+  * Wide desktop screen support, when width is >= 871px and height is >= 641px.
+  */
+  @media (min-width: 871px) and (min-height: 641px) {
+    .swg-dialog.swg-wide-dialog {
+      left: -435px !important;
+    }
+
+    .swg-dialog.swg-wide-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 870px !important;
+    }
+  }
+
+  /** Tablet/Medium screen support, when width OR height is <= 640px. */
+  @media (max-width: 640px), (max-height: 640px) {
+    .swg-dialog,
+    .swg-toast {
+      width: 480px !important;
+      left: -240px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+      border-top-left-radius: 8px !important;
+      border-top-right-radius: 8px !important;
+      box-shadow:
+        rgba(60, 64, 67, 0.3) 0 1px 1px,
+        rgba(60, 64, 67, 0.15) 0 1px 4px 1px !important;
+    }
+
+    .publisher-toast {
+      width: 480px !important;
+      left: -240px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+    }
+
+    [dir='rtl'] .swg-dialog,
+    [dir='rtl'] .swg-toast,
+    [dir='rtl'] .publisher-toast {
+      margin-inline-start: calc(100vw - 100vw / 2 - 240px) !important;
+    }
+  }
+
+  /** Desktop/Large screen support, when width AND height are >= 641px. */
+  @media (min-width: 641px) and (min-height: 641px) {
+    .swg-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 630px !important;
+    }
+
+    .swg-dialog {
+      left: -315px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+      background-color: transparent !important;
+      border: none !important;
+    }
+
+    [dir='rtl'] .swg-dialog {
+      margin-inline-start: calc(100vw - 100vw / 2 - 315px) !important;
+    }
+
+    .swg-toast {
+      border-radius: 4px !important;
+      bottom: 8px !important;
+      box-shadow:
+        0 3px 1px -2px rgb(0 0 0 / 20%),
+        0 2px 2px 0 rgb(0 0 0 / 14%),
+        0 1px 5px 0 rgb(0 0 0 / 12%) !important;
+      left: 8px !important;
+    }
+
+    .publisher-toast {
+      bottom: 8px !important;
+      right: 30px !important;
+    }
+  }
+
+  /** Phone/Small screen support, when width is <= 480px. */
+  @media (max-width: 480px) {
+    .swg-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 100% !important;
+      max-width: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+      margin-inline-start: 0 !important;
+    }
+  }
+
+  /**
+  * Class applied to content page to disable scrolling.
+  */
+  html.swg-disable-scroll,
+  html.swg-disable-scroll * {
+    overflow: hidden !important;
+  }
+</style><link href="https://api-2-0.spot.im" rel="preconnect" crossorigin="use-credentials"><link href="https://static-cdn.spot.im" rel="preconnect" crossorigin="use-credentials"><style>
+        :root {
+          --launcher--global-font-size-level: 0;
+        }
+      
+        /* cyrillic-ext */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 300;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSKmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+        }
+        /* cyrillic */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 300;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSumu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+        }
+        /* greek-ext */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 300;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSOmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+1F00-1FFF;
+        }
+        /* greek */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 300;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSymu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0370-03FF;
+        }
+        /* hebrew */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 300;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS2mu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+        }
+        /* vietnamese */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 300;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSCmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;
+        }
+        /* latin-ext */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 300;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSGmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        /* latin */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 300;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-mu0SC55I.woff2) format('woff2');
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        /* cyrillic-ext */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 400;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSKmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+        }
+        /* cyrillic */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 400;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSumu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+        }
+        /* greek-ext */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 400;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSOmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+1F00-1FFF;
+        }
+        /* greek */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 400;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSymu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0370-03FF;
+        }
+        /* hebrew */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 400;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS2mu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+        }
+        /* vietnamese */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 400;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSCmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;
+        }
+        /* latin-ext */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 400;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSGmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        /* latin */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 400;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-mu0SC55I.woff2) format('woff2');
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        /* cyrillic-ext */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 600;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSKmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+        }
+        /* cyrillic */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 600;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSumu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+        }
+        /* greek-ext */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 600;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSOmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+1F00-1FFF;
+        }
+        /* greek */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 600;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSymu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0370-03FF;
+        }
+        /* hebrew */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 600;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS2mu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+        }
+        /* vietnamese */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 600;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSCmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;
+        }
+        /* latin-ext */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 600;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSGmu0SC55K5gw.woff2) format('woff2');
+          unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+        }
+        /* latin */
+        @font-face {
+          font-family: 'Openweb Open Sans';
+          font-style: normal;
+          font-weight: 600;
+          font-stretch: 100%;
+          font-display: swap;
+          src: local('Open Sans'), url(https://fonts.gstatic.com/s/opensans/v34/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-mu0SC55I.woff2) format('woff2');
+          unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+      @font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6rfjptAgt5VM-kVkqdyU8n1ioStkdvp-8_FtFg95o.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6rfjptAgt5VM-kVkqdyU8n1ioStkdmp-8_FtFg95o.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6rfjptAgt5VM-kVkqdyU8n1ioStkdtp-8_FtFg95o.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6rfjptAgt5VM-kVkqdyU8n1ioStkdsp-8_FtFg95o.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6rfjptAgt5VM-kVkqdyU8n1ioStkdip-8_FtFg.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:200;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSGlZ1jcoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:200;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSGlZ1hMoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:200;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSGlZ1j8oQPttoz6Pz.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:200;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSGlZ1jsoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:200;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSGlZ1gMoQPttozw.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSflV1jcoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSflV1hMoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSflV1j8oQPttoz6Pz.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSflV1jsoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSflV1gMoQPttozw.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n1ioa2HdgregdFOFh.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n1ioa0XdgregdFOFh.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n1ioa2ndgregdFOFh.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n1ioa23dgregdFOFh.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n1ioa1XdgregdFA.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSJlR1jcoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSJlR1hMoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSJlR1j8oQPttoz6Pz.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSJlR1jsoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSJlR1gMoQPttozw.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSClN1jcoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSClN1hMoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSClN1j8oQPttoz6Pz.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSClN1jsoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSClN1gMoQPttozw.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSblJ1jcoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSblJ1hMoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSblJ1j8oQPttoz6Pz.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSblJ1jsoQPttoz6Pz.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:italic;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6sfjptAgt5VM-kVkqdyU8n1ioSblJ1gMoQPttozw.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n3kwa2HdgregdFOFh.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n3kwa0XdgregdFOFh.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n3kwa2ndgregdFOFh.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n3kwa23dgregdFOFh.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:100;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6pfjptAgt5VM-kVkqdyU8n3kwa1XdgregdFA.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:200;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3uALwl1FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:200;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3uALwlRFgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:200;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3uALwl9FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:200;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3uALwl5FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:200;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3uALwlBFgsAXHNk.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3oQIwl1FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3oQIwlRFgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3oQIwl9FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3oQIwl5FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:300;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3oQIwlBFgsAXHNk.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1iIq131nj-otFQ.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1isq131nj-otFQ.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1iAq131nj-otFQ.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1iEq131nj-otFQ.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:400;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1i8q131nj-o.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwl1FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwlRFgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwl9FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwl5FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwlBFgsAXHNk.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwl1FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwlRFgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwl9FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwl5FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:600;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwlBFgsAXHNk.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQPwl1FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQPwlRFgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQPwl9FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQPwl5FgsAXHNlYzg.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:IBM Plex Mono;font-style:normal;font-weight:700;font-display:swap;src:url(https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3pQPwlBFgsAXHNk.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:Open Sans;font-style:italic;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWtE6FxZCJgvAQ.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:Open Sans;font-style:italic;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWvU6FxZCJgvAQ.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:Open Sans;font-style:italic;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWtU6FxZCJgvAQ.woff2) format("woff2");unicode-range:U+1F00-1FFF}@font-face{font-family:Open Sans;font-style:italic;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWuk6FxZCJgvAQ.woff2) format("woff2");unicode-range:U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF}@font-face{font-family:Open Sans;font-style:italic;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWu06FxZCJgvAQ.woff2) format("woff2");unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F}@font-face{font-family:Open Sans;font-style:italic;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWxU6FxZCJgvAQ.woff2) format("woff2");unicode-range:U+0302-0303,U+0305,U+0307-0308,U+0310,U+0312,U+0315,U+031A,U+0326-0327,U+032C,U+032F-0330,U+0332-0333,U+0338,U+033A,U+0346,U+034D,U+0391-03A1,U+03A3-03A9,U+03B1-03C9,U+03D1,U+03D5-03D6,U+03F0-03F1,U+03F4-03F5,U+2016-2017,U+2034-2038,U+203C,U+2040,U+2043,U+2047,U+2050,U+2057,U+205F,U+2070-2071,U+2074-208E,U+2090-209C,U+20D0-20DC,U+20E1,U+20E5-20EF,U+2100-2112,U+2114-2115,U+2117-2121,U+2123-214F,U+2190,U+2192,U+2194-21AE,U+21B0-21E5,U+21F1-21F2,U+21F4-2211,U+2213-2214,U+2216-22FF,U+2308-230B,U+2310,U+2319,U+231C-2321,U+2336-237A,U+237C,U+2395,U+239B-23B7,U+23D0,U+23DC-23E1,U+2474-2475,U+25AF,U+25B3,U+25B7,U+25BD,U+25C1,U+25CA,U+25CC,U+25FB,U+266D-266F,U+27C0-27FF,U+2900-2AFF,U+2B0E-2B11,U+2B30-2B4C,U+2BFE,U+3030,U+FF5B,U+FF5D,U+1D400-1D7FF,U+1EE00-1EEFF}@font-face{font-family:Open Sans;font-style:italic;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqW106FxZCJgvAQ.woff2) format("woff2");unicode-range:U+0001-000C,U+000E-001F,U+007F-009F,U+20DD-20E0,U+20E2-20E4,U+2150-218F,U+2190,U+2192,U+2194-2199,U+21AF,U+21E6-21F0,U+21F3,U+2218-2219,U+2299,U+22C4-22C6,U+2300-243F,U+2440-244A,U+2460-24FF,U+25A0-27BF,U+2800-28FF,U+2921-2922,U+2981,U+29BF,U+29EB,U+2B00-2BFF,U+4DC0-4DFF,U+FFF9-FFFB,U+10140-1018E,U+10190-1019C,U+101A0,U+101D0-101FD,U+102E0-102FB,U+10E60-10E7E,U+1D2C0-1D2D3,U+1D2E0-1D37F,U+1F000-1F0FF,U+1F100-1F1AD,U+1F1E6-1F1FF,U+1F30D-1F30F,U+1F315,U+1F31C,U+1F31E,U+1F320-1F32C,U+1F336,U+1F378,U+1F37D,U+1F382,U+1F393-1F39F,U+1F3A7-1F3A8,U+1F3AC-1F3AF,U+1F3C2,U+1F3C4-1F3C6,U+1F3CA-1F3CE,U+1F3D4-1F3E0,U+1F3ED,U+1F3F1-1F3F3,U+1F3F5-1F3F7,U+1F408,U+1F415,U+1F41F,U+1F426,U+1F43F,U+1F441-1F442,U+1F444,U+1F446-1F449,U+1F44C-1F44E,U+1F453,U+1F46A,U+1F47D,U+1F4A3,U+1F4B0,U+1F4B3,U+1F4B9,U+1F4BB,U+1F4BF,U+1F4C8-1F4CB,U+1F4D6,U+1F4DA,U+1F4DF,U+1F4E3-1F4E6,U+1F4EA-1F4ED,U+1F4F7,U+1F4F9-1F4FB,U+1F4FD-1F4FE,U+1F503,U+1F507-1F50B,U+1F50D,U+1F512-1F513,U+1F53E-1F54A,U+1F54F-1F5FA,U+1F610,U+1F650-1F67F,U+1F687,U+1F68D,U+1F691,U+1F694,U+1F698,U+1F6AD,U+1F6B2,U+1F6B9-1F6BA,U+1F6BC,U+1F6C6-1F6CF,U+1F6D3-1F6D7,U+1F6E0-1F6EA,U+1F6F0-1F6F3,U+1F6F7-1F6FC,U+1F700-1F7FF,U+1F800-1F80B,U+1F810-1F847,U+1F850-1F859,U+1F860-1F887,U+1F890-1F8AD,U+1F8B0-1F8BB,U+1F8C0-1F8C1,U+1F900-1F90B,U+1F93B,U+1F946,U+1F984,U+1F996,U+1F9E9,U+1FA00-1FA6F,U+1FA70-1FA7C,U+1FA80-1FA89,U+1FA8F-1FAC6,U+1FACE-1FADC,U+1FADF-1FAE9,U+1FAF0-1FAF8,U+1FB00-1FBFF}@font-face{font-family:Open Sans;font-style:italic;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWtk6FxZCJgvAQ.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:Open Sans;font-style:italic;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWt06FxZCJgvAQ.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:Open Sans;font-style:italic;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memtYaGs126MiZpBA-UFUIcVXSCEkx2cmqvXlWqWuU6FxZCJgg.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:Open Sans;font-style:normal;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSKmu0SC55K5gw.woff2) format("woff2");unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}@font-face{font-family:Open Sans;font-style:normal;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSumu0SC55K5gw.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:Open Sans;font-style:normal;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSOmu0SC55K5gw.woff2) format("woff2");unicode-range:U+1F00-1FFF}@font-face{font-family:Open Sans;font-style:normal;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSymu0SC55K5gw.woff2) format("woff2");unicode-range:U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF}@font-face{font-family:Open Sans;font-style:normal;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS2mu0SC55K5gw.woff2) format("woff2");unicode-range:U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F}@font-face{font-family:Open Sans;font-style:normal;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTVOmu0SC55K5gw.woff2) format("woff2");unicode-range:U+0302-0303,U+0305,U+0307-0308,U+0310,U+0312,U+0315,U+031A,U+0326-0327,U+032C,U+032F-0330,U+0332-0333,U+0338,U+033A,U+0346,U+034D,U+0391-03A1,U+03A3-03A9,U+03B1-03C9,U+03D1,U+03D5-03D6,U+03F0-03F1,U+03F4-03F5,U+2016-2017,U+2034-2038,U+203C,U+2040,U+2043,U+2047,U+2050,U+2057,U+205F,U+2070-2071,U+2074-208E,U+2090-209C,U+20D0-20DC,U+20E1,U+20E5-20EF,U+2100-2112,U+2114-2115,U+2117-2121,U+2123-214F,U+2190,U+2192,U+2194-21AE,U+21B0-21E5,U+21F1-21F2,U+21F4-2211,U+2213-2214,U+2216-22FF,U+2308-230B,U+2310,U+2319,U+231C-2321,U+2336-237A,U+237C,U+2395,U+239B-23B7,U+23D0,U+23DC-23E1,U+2474-2475,U+25AF,U+25B3,U+25B7,U+25BD,U+25C1,U+25CA,U+25CC,U+25FB,U+266D-266F,U+27C0-27FF,U+2900-2AFF,U+2B0E-2B11,U+2B30-2B4C,U+2BFE,U+3030,U+FF5B,U+FF5D,U+1D400-1D7FF,U+1EE00-1EEFF}@font-face{font-family:Open Sans;font-style:normal;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTUGmu0SC55K5gw.woff2) format("woff2");unicode-range:U+0001-000C,U+000E-001F,U+007F-009F,U+20DD-20E0,U+20E2-20E4,U+2150-218F,U+2190,U+2192,U+2194-2199,U+21AF,U+21E6-21F0,U+21F3,U+2218-2219,U+2299,U+22C4-22C6,U+2300-243F,U+2440-244A,U+2460-24FF,U+25A0-27BF,U+2800-28FF,U+2921-2922,U+2981,U+29BF,U+29EB,U+2B00-2BFF,U+4DC0-4DFF,U+FFF9-FFFB,U+10140-1018E,U+10190-1019C,U+101A0,U+101D0-101FD,U+102E0-102FB,U+10E60-10E7E,U+1D2C0-1D2D3,U+1D2E0-1D37F,U+1F000-1F0FF,U+1F100-1F1AD,U+1F1E6-1F1FF,U+1F30D-1F30F,U+1F315,U+1F31C,U+1F31E,U+1F320-1F32C,U+1F336,U+1F378,U+1F37D,U+1F382,U+1F393-1F39F,U+1F3A7-1F3A8,U+1F3AC-1F3AF,U+1F3C2,U+1F3C4-1F3C6,U+1F3CA-1F3CE,U+1F3D4-1F3E0,U+1F3ED,U+1F3F1-1F3F3,U+1F3F5-1F3F7,U+1F408,U+1F415,U+1F41F,U+1F426,U+1F43F,U+1F441-1F442,U+1F444,U+1F446-1F449,U+1F44C-1F44E,U+1F453,U+1F46A,U+1F47D,U+1F4A3,U+1F4B0,U+1F4B3,U+1F4B9,U+1F4BB,U+1F4BF,U+1F4C8-1F4CB,U+1F4D6,U+1F4DA,U+1F4DF,U+1F4E3-1F4E6,U+1F4EA-1F4ED,U+1F4F7,U+1F4F9-1F4FB,U+1F4FD-1F4FE,U+1F503,U+1F507-1F50B,U+1F50D,U+1F512-1F513,U+1F53E-1F54A,U+1F54F-1F5FA,U+1F610,U+1F650-1F67F,U+1F687,U+1F68D,U+1F691,U+1F694,U+1F698,U+1F6AD,U+1F6B2,U+1F6B9-1F6BA,U+1F6BC,U+1F6C6-1F6CF,U+1F6D3-1F6D7,U+1F6E0-1F6EA,U+1F6F0-1F6F3,U+1F6F7-1F6FC,U+1F700-1F7FF,U+1F800-1F80B,U+1F810-1F847,U+1F850-1F859,U+1F860-1F887,U+1F890-1F8AD,U+1F8B0-1F8BB,U+1F8C0-1F8C1,U+1F900-1F90B,U+1F93B,U+1F946,U+1F984,U+1F996,U+1F9E9,U+1FA00-1FA6F,U+1FA70-1FA7C,U+1FA80-1FA89,U+1FA8F-1FAC6,U+1FACE-1FADC,U+1FADF-1FAE9,U+1FAF0-1FAF8,U+1FB00-1FBFF}@font-face{font-family:Open Sans;font-style:normal;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSCmu0SC55K5gw.woff2) format("woff2");unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB}@font-face{font-family:Open Sans;font-style:normal;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTSGmu0SC55K5gw.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:Open Sans;font-style:normal;font-weight:300 800;font-stretch:100%;font-display:swap;src:url(https://fonts.gstatic.com/s/opensans/v44/memvYaGs126MiZpBA-UvWbX2vVnXBbObj2OVTS-mu0SC55I.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+        ow-canpkdr90as, [ow-canpkdr90as] {
+          display: contents !important;
+        }
+      
+    @keyframes openweb-built-in-host-trigger { from {} to {} }
+    @-webkit-keyframes openweb-built-in-host-trigger { from {} to {} }
+    
+        [data-spotim-module]:not([data-spotim-module=""]):not([data-spotim-module="ads"]):not([data-spotim-module="ads-independent"]):not(script):not([ignore-host]), [data-spotim-app]:not([data-spotim-app=""]):not([data-spotim-app="ads"]):not([data-spotim-app="ads-independent"]):not(script):not([ignore-host]) {
+          -webkit-animation: 1s linear 0s infinite alternate openweb-built-in-host-trigger !important;
+                  animation: 1s linear 0s infinite alternate openweb-built-in-host-trigger !important;
+        }
+      
+        script[data-spotim-module]:not([data-spotim-module=""]):not([data-spotim-module="ads"]):not([data-spotim-module="ads-independent"]):not([autorun=false],[data-spotim-autorun=false]):not([ignore-host]) {
+          display: contents !important;
+          -webkit-animation: 1s linear 0s infinite alternate openweb-built-in-host-trigger !important;
+                  animation: 1s linear 0s infinite alternate openweb-built-in-host-trigger !important;
+        }
+      
+        ow-1kgpmj7epm8 {
+          display: contents !important;
+        }
+      
+    @keyframes openweb-legacy-spot-im-shadow-host-trigger { from {} to {} }
+    @-webkit-keyframes openweb-legacy-spot-im-shadow-host-trigger { from {} to {} }
+    
+        div[data-spot-im-shadow-host]:not([data-spot-im-shadow-host=""]):not(script) {
+          -webkit-animation: 1s linear 0s infinite alternate openweb-legacy-spot-im-shadow-host-trigger !important;
+                  animation: 1s linear 0s infinite alternate openweb-legacy-spot-im-shadow-host-trigger !important;
+        }
+      
+    @keyframes openweb-legacy-spot-im-special-host-trigger { from {} to {} }
+    @-webkit-keyframes openweb-legacy-spot-im-special-host-trigger { from {} to {} }
+    
+        [data-conversation-spotlight]:not(script):not([ignore-host]) {
+          -webkit-animation: 1s linear 0s infinite alternate openweb-legacy-spot-im-special-host-trigger !important;
+                  animation: 1s linear 0s infinite alternate openweb-legacy-spot-im-special-host-trigger !important;
+        }
+      
+    @keyframes spot-im-replies-count-animation { from {} to {} }
+    @-webkit-keyframes spot-im-replies-count-animation { from {} to {} }
+    .spot-im-replies-count.spot-im-replies-count:not([data-spotim-module=messages-count]) {
+            -webkit-animation: 1s linear 0s infinite alternate spot-im-replies-count-animation !important;
+                  animation: 1s linear 0s infinite alternate spot-im-replies-count-animation !important;
+        }</style></head>
+<body>
+    
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TPN2R7LJ" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript><div id="wrapper">
+    <div class="page-wrap">
+        <header id="header" class="index">
+            <div class="nav-drop">
+                <div class="jcf-scrollable">
+                    <div class="aside-holder">
+                                    <nav id="aside-nav">
+                <div class="nav-top">
+                    <div class="logo">
+                        <a href="/" class="logo-holder">
+                            <img src="https://www.engadget.com/img/engadget-logo-RGB-default.svg" alt="Engadget" width="135" height="28">
+                        </a>
+                        <a href="#" class="nav-opener close"></a>
+                    </div>
+                </div>
+                
+                <ul class="main-nav"><li class="navlink navlink-latest"><a href="/latest/">Latest</a></li><li class="navlink navlink-news"><a href="/category/news/">News</a><input type="checkbox" id="subnav-button-news"><label for="subnav-button-news"></label><ul class="main-nav"><li class="subnavlink navlink-ai"><a href="/category/ai/">AI</a></li><li class="subnavlink navlink-apps"><a href="/category/apps/">Apps</a></li><li class="subnavlink navlink-computing"><a href="/category/computing/">Computing</a></li><li class="subnavlink navlink-mobile"><a href="/category/mobile/">Mobile</a></li><li class="subnavlink navlink-social-media"><a href="/category/social-media/">Social Media</a></li><li class="subnavlink navlink-transportation-evs"><a href="/category/transportation-evs/">EVs &amp; Transportation</a></li></ul></li><li class="navlink navlink-reviews"><a href="/category/reviews/">Reviews</a><input type="checkbox" id="subnav-button-reviews"><label for="subnav-button-reviews"></label><ul class="main-nav"><li class="subnavlink navlink-smartphone-reviews"><a href="/category/smartphone-reviews/">Smartphones</a></li><li class="subnavlink navlink-laptop-pc-reviews"><a href="/category/laptop-pc-reviews/">Laptops &amp; PCs</a></li><li class="subnavlink navlink-gaming-reviews"><a href="/category/gaming-reviews/">Gaming</a></li><li class="subnavlink navlink-headphones-reviews"><a href="/category/headphones-reviews/">Headphones</a></li><li class="subnavlink navlink-wearable-reviews"><a href="/category/wearable-reviews/">Wearables</a></li><li class="subnavlink navlink-photography-reviews"><a href="/category/photography-reviews/">Photography</a></li><li class="subnavlink navlink-tablet-reviews"><a href="/category/tablet-reviews/">Tablets</a></li><li class="subnavlink navlink-home-product-reviews"><a href="/category/home-product-reviews/">Home</a></li></ul></li><li class="navlink navlink-best-tech"><a href="/category/best-tech/">Buying Guides</a><input type="checkbox" id="subnav-button-best-tech"><label for="subnav-button-best-tech"></label><ul class="main-nav"><li class="subnavlink navlink-laptop-buying-guides"><a href="/category/laptop-buying-guides/">Laptops</a></li><li class="subnavlink navlink-headphones-buying-guides"><a href="/category/headphones-buying-guides/">Headphones</a></li><li class="subnavlink navlink-smart-home-buying-guides"><a href="/category/smart-home-buying-guides/">Smart Home</a></li><li class="subnavlink navlink-gaming-buying-guides"><a href="/category/gaming-buying-guides/">Gaming</a></li><li class="subnavlink navlink-featured-guide"><a href="/gaming/best-handheld-gaming-system-140018863.html">Best Gaming Handhelds</a></li><li class="subnavlink navlink-featured-guide"><a href="/mobile/tablets/best-e-ink-tablet-130037939.html">Best E-Ink Tablets</a></li><li class="subnavlink navlink-featured-guide"><a href="/computing/accessories/best-power-bank-143048526.html">Best Power Banks</a></li><li class="subnavlink navlink-featured-guide"><a href="/computing/accessories/best-fast-chargers-140011033.html">Best Fast Chargers</a></li><li class="subnavlink navlink-featured-guide"><a href="/entertainment/streaming/best-live-tv-streaming-service-133000410.html">Best Live TV Streaming</a></li><li class="subnavlink navlink-featured-guide"><a href="/audio/headphones/best-wireless-earbuds-120058222.html">Best Wireless Earbuds</a></li></ul></li><li class="navlink navlink-gaming"><a href="/category/gaming/">Gaming</a><input type="checkbox" id="subnav-button-gaming"><label for="subnav-button-gaming"></label><ul class="main-nav"><li class="subnavlink navlink-nintendo"><a href="/category/nintendo/">Nintendo</a></li><li class="subnavlink navlink-pc"><a href="/category/pc/">PC</a></li><li class="subnavlink navlink-playstation"><a href="/category/playstation/">PlayStation</a></li><li class="subnavlink navlink-xbox"><a href="/category/xbox/">Xbox</a></li></ul></li><li class="navlink navlink-big-tech"><a href="/category/big-tech/">Big Tech</a><input type="checkbox" id="subnav-button-big-tech"><label for="subnav-button-big-tech"></label><ul class="main-nav"><li class="subnavlink navlink-amazon"><a href="/category/amazon/">Amazon</a></li><li class="subnavlink navlink-apple"><a href="/category/apple/">Apple</a></li><li class="subnavlink navlink-google"><a href="/category/google/">Google</a></li><li class="subnavlink navlink-meta"><a href="/category/meta/">Meta</a></li><li class="subnavlink navlink-microsoft"><a href="/category/microsoft/">Microsoft</a></li><li class="subnavlink navlink-samsung"><a href="/category/samsung/">Samsung</a></li></ul></li><li class="navlink navlink-entertainment"><a href="/category/entertainment/">Entertainment</a><input type="checkbox" id="subnav-button-entertainment"><label for="subnav-button-entertainment"></label><ul class="main-nav"><li class="subnavlink navlink-tv-movies"><a href="/category/tv-movies/">TV &amp; Movies</a></li><li class="subnavlink navlink-streaming"><a href="/category/streaming/">Streaming</a></li></ul></li><li class="navlink navlink-cybersecurity"><a href="/category/cybersecurity/">Cybersecurity</a><input type="checkbox" id="subnav-button-cybersecurity"><label for="subnav-button-cybersecurity"></label><ul class="main-nav"><li class="subnavlink navlink-vpn"><a href="/category/vpn/">VPN</a></li></ul></li><li class="navlink navlink-wearables"><a href="/category/wearables/">Wearables</a></li><li class="navlink navlink-tomorrow"><a href="/category/tomorrow/">Tomorrow</a><input type="checkbox" id="subnav-button-tomorrow"><label for="subnav-button-tomorrow"></label><ul class="main-nav"><li class="subnavlink navlink-science"><a href="/category/science/">Science</a></li><li class="subnavlink navlink-space"><a href="/category/space/">Space</a></li><li class="subnavlink navlink-robotics"><a href="/category/robotics/">Robotics</a></li></ul></li></ul>        <ul class="social-buttons">
+            <li><a href="https://www.facebook.com/Engadget" target="_blank" title="Facebook" aria-label="Facebook"><svg class="icon"><use xlink:href="#facebook"></use></svg></a></li><li><a href="https://www.instagram.com/engadget" target="_blank" title="Instagram" aria-label="Instagram"><svg class="icon"><use xlink:href="#instagram"></use></svg></a></li><li><a href="https://x.com/engadget" target="_blank" title="Twitter" aria-label="Twitter"><svg class="icon"><use xlink:href="#twitter"></use></svg></a></li><li><a href="https://www.youtube.com/c/engadget" target="_blank" title="YouTube" aria-label="YouTube"><svg class="icon"><use xlink:href="#youtube"></use></svg></a></li><li><a href="https://flipboard.com/@Engadget" target="_blank" title="Flipboard" aria-label="Flipboard"><svg class="icon"><use xlink:href="#flipboard"></use></svg></a></li><li><a href="https://www.threads.com/@engadget" target="_blank" title="Threads" aria-label="Threads"><svg class="icon"><use xlink:href="#threads"></use></svg></a></li><li><a href="https://profile.google.com/@engadget" target="_blank" title="Google" aria-label="Google"><svg class="icon"><use xlink:href="#google"></use></svg></a></li><li><a href="/feed/" target="_blank" title="RSS" aria-label="RSS"><svg class="icon"><use xlink:href="#rss"></use></svg></a></li>
+            
+            <li class="menu-btn newsletter-btn"><a href="https://subscribe.engadget.com/newsletter?utm_source=engadget&amp;utm_medium=side-nav" target="_blank" title="Newsletter" aria-label="Newsletter"><svg class="icon"><use xlink:href="#revue"></use></svg>Newsletter</a></li>
+        </ul><ul class="info-links">
+    <li class="info-link first-info-link"><a href="/about/">About</a></li>
+    <li class="info-link"><a href="/policies/">Editorial Policies</a></li>
+    <li class="info-link"><a href="/ai-policy/">No-AI Writing Policy</a></li>
+    <li class="info-link"><a href="/reviews-policy-guidelines/">Reviews Policy</a></li>
+    
+    <li class="info-link"><a href="/engadget-podcasts-153249552.html">Podcast</a></li>
+    <li class="info-link"><a href="/sitemap/">Archive</a></li>
+    <li class="info-link"><a href="https://www.static.com/engadget-privacy-policy" target="_blank">Privacy Policy</a>
+    </li><li class="info-link"><a href="https://www.static.com/terms" target="_blank">Terms of Use</a></li>
+</ul>
+            </nav>                        <div class="nav-bottom">
+                            <span class="copyright-info">© 2026                                <a href="https://www.static.com/" target="_blank">Static Media</a>. All Rights Reserved
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="bg"></div>
+         
+            <div id="header-container">
+                <div id="hamburger-holder">
+                    <div class="hamburger nav-opener"></div>
+                </div>
+
+                    <h1 id="logo" class="top-nav-standard">
+        <a href="/"><img src="https://www.engadget.com/img/engadget-logo-RGB-default.svg" alt="Engadget" width="135" height="28"></a>
+    </h1>
+                <div id="logo-icon" class="top-nav-scrolled">
+                    <a href="/">
+                        <img src="https://www.engadget.com/img/engadget-icon-RGB-default.svg" alt="Engadget" width="28" height="28">                    </a>
+                </div>
+
+                <div id="top-nav-title" class="top-nav-scrolled">Engadget | Technology News &amp; Expert Reviews</div>
+
+                            <div id="top-nav" class="top-nav-standard">
+                <nav id="top-nav-holder">
+                    
+                    <ul class="main-nav"><li class="navlink navlink-latest"><a href="/latest/">Latest</a></li><li class="navlink navlink-news"><a href="/category/news/">News</a><ul class="main-nav"><li class="subnavlink navlink-ai"><a href="/category/ai/">AI</a></li><li class="subnavlink navlink-apps"><a href="/category/apps/">Apps</a></li><li class="subnavlink navlink-computing"><a href="/category/computing/">Computing</a></li><li class="subnavlink navlink-mobile"><a href="/category/mobile/">Mobile</a></li><li class="subnavlink navlink-social-media"><a href="/category/social-media/">Social Media</a></li><li class="subnavlink navlink-transportation-evs"><a href="/category/transportation-evs/">EVs &amp; Transportation</a></li></ul></li><li class="navlink navlink-reviews"><a href="/category/reviews/">Reviews</a><ul class="main-nav"><li class="subnavlink navlink-smartphone-reviews"><a href="/category/smartphone-reviews/">Smartphones</a></li><li class="subnavlink navlink-laptop-pc-reviews"><a href="/category/laptop-pc-reviews/">Laptops &amp; PCs</a></li><li class="subnavlink navlink-gaming-reviews"><a href="/category/gaming-reviews/">Gaming</a></li><li class="subnavlink navlink-headphones-reviews"><a href="/category/headphones-reviews/">Headphones</a></li><li class="subnavlink navlink-wearable-reviews"><a href="/category/wearable-reviews/">Wearables</a></li><li class="subnavlink navlink-photography-reviews"><a href="/category/photography-reviews/">Photography</a></li><li class="subnavlink navlink-tablet-reviews"><a href="/category/tablet-reviews/">Tablets</a></li><li class="subnavlink navlink-home-product-reviews"><a href="/category/home-product-reviews/">Home</a></li></ul></li><li class="navlink navlink-best-tech"><a href="/category/best-tech/">Buying Guides</a><ul class="main-nav"><li class="subnavlink navlink-laptop-buying-guides"><a href="/category/laptop-buying-guides/">Laptops</a></li><li class="subnavlink navlink-headphones-buying-guides"><a href="/category/headphones-buying-guides/">Headphones</a></li><li class="subnavlink navlink-smart-home-buying-guides"><a href="/category/smart-home-buying-guides/">Smart Home</a></li><li class="subnavlink navlink-gaming-buying-guides"><a href="/category/gaming-buying-guides/">Gaming</a></li><li class="subnavlink navlink-featured-guide"><a href="/gaming/best-handheld-gaming-system-140018863.html">Best Gaming Handhelds</a></li><li class="subnavlink navlink-featured-guide"><a href="/mobile/tablets/best-e-ink-tablet-130037939.html">Best E-Ink Tablets</a></li><li class="subnavlink navlink-featured-guide"><a href="/computing/accessories/best-power-bank-143048526.html">Best Power Banks</a></li><li class="subnavlink navlink-featured-guide"><a href="/computing/accessories/best-fast-chargers-140011033.html">Best Fast Chargers</a></li><li class="subnavlink navlink-featured-guide"><a href="/entertainment/streaming/best-live-tv-streaming-service-133000410.html">Best Live TV Streaming</a></li><li class="subnavlink navlink-featured-guide"><a href="/audio/headphones/best-wireless-earbuds-120058222.html">Best Wireless Earbuds</a></li></ul></li><li class="navlink navlink-gaming"><a href="/category/gaming/">Gaming</a><ul class="main-nav"><li class="subnavlink navlink-nintendo"><a href="/category/nintendo/">Nintendo</a></li><li class="subnavlink navlink-pc"><a href="/category/pc/">PC</a></li><li class="subnavlink navlink-playstation"><a href="/category/playstation/">PlayStation</a></li><li class="subnavlink navlink-xbox"><a href="/category/xbox/">Xbox</a></li></ul></li><li class="navlink navlink-big-tech"><a href="/category/big-tech/">Big Tech</a><ul class="main-nav"><li class="subnavlink navlink-amazon"><a href="/category/amazon/">Amazon</a></li><li class="subnavlink navlink-apple"><a href="/category/apple/">Apple</a></li><li class="subnavlink navlink-google"><a href="/category/google/">Google</a></li><li class="subnavlink navlink-meta"><a href="/category/meta/">Meta</a></li><li class="subnavlink navlink-microsoft"><a href="/category/microsoft/">Microsoft</a></li><li class="subnavlink navlink-samsung"><a href="/category/samsung/">Samsung</a></li></ul></li><li class="navlink navlink-entertainment"><a href="/category/entertainment/">Entertainment</a><ul class="main-nav"><li class="subnavlink navlink-tv-movies"><a href="/category/tv-movies/">TV &amp; Movies</a></li><li class="subnavlink navlink-streaming"><a href="/category/streaming/">Streaming</a></li></ul></li><li class="navlink navlink-cybersecurity"><a href="/category/cybersecurity/">Cybersecurity</a><ul class="main-nav"><li class="subnavlink navlink-vpn"><a href="/category/vpn/">VPN</a></li></ul></li><li class="navlink navlink-wearables"><a href="/category/wearables/">Wearables</a></li><li class="navlink navlink-tomorrow"><a href="/category/tomorrow/">Tomorrow</a><ul class="main-nav"><li class="subnavlink navlink-science"><a href="/category/science/">Science</a></li><li class="subnavlink navlink-space"><a href="/category/space/">Space</a></li><li class="subnavlink navlink-robotics"><a href="/category/robotics/">Robotics</a></li></ul></li>
+                </ul></nav>
+            </div>                <svg width="0" height="0" class="hidden">
+            <symbol version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" id="rss">
+    <path d="M2.13 11.733c-1.175 0-2.13 0.958-2.13 2.126 0 1.174 0.955 2.122 2.13 2.122 1.179 0 2.133-0.948 2.133-2.122-0-1.168-0.954-2.126-2.133-2.126zM0.002 5.436v3.067c1.997 0 3.874 0.781 5.288 2.196 1.412 1.411 2.192 3.297 2.192 5.302h3.080c-0-5.825-4.739-10.564-10.56-10.564zM0.006 0v3.068c7.122 0 12.918 5.802 12.918 12.932h3.076c0-8.82-7.176-16-15.994-16z"></path>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="twitter">
+    <path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z"></path>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" id="facebook">
+    <path d="M19 6h5V0h-5c-3.86 0-7 3.14-7 7v3H8v6h4v16h6V16h5l1-6h-6V7c0-.542.458-1 1-1z"></path>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" id="flipboard">
+    <path d="m 6.9999999,0.99982 5.9993001,0 0,1.99835 0,1.99357 -1.993367,0 -1.9980673,0 -0.014998,1.99357 -0.01,1.99835 -1.9980669,0.01 -1.9933674,0.0146 -0.014998,1.99835 -0.01,1.99357 -1.9834686,0 -1.9836686,0 0,-6.00006 0,-5.99994 5.9992001,0 z"></path>
+</symbol>
+        <symbol viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="instagram">
+    <path d="M17.3183118,0.0772036939 C18.5358869,0.132773211 19.3775594,0.311686093 20.156489,0.614412318 C20.9357539,0.917263935 21.5259307,1.30117806 22.1124276,1.88767349 C22.6988355,2.47414659 23.0827129,3.06422396 23.3856819,3.84361655 C23.688357,4.62263666 23.8672302,5.46418415 23.9227984,6.68172489 C23.9916356,8.19170553 24,8.72394829 24,11.9999742 C24,15.2760524 23.9916355,15.808302 23.9227954,17.3182896 C23.8672306,18.5358038 23.6883589,19.3773584 23.3855877,20.1566258 C23.0826716,20.9358162 22.6987642,21.5259396 22.1124276,22.1122749 C21.5259871,22.6987804 20.9357958,23.0827198 20.1563742,23.3856323 C19.3772192,23.6883583 18.5357324,23.8672318 17.3183209,23.9227442 C15.8086874,23.9916325 15.2765626,24 12,24 C8.72343739,24 8.19131258,23.9916325 6.68172382,23.9227463 C5.46426077,23.8672314 4.62270711,23.6883498 3.84342369,23.3855738 C3.0641689,23.0827004 2.47399369,22.6987612 1.88762592,22.1123283 C1.30117312,21.525877 0.91721975,20.9357071 0.614318116,20.1563835 C0.311643016,19.3773633 0.132769821,18.5358159 0.0772038909,17.3183251 C0.0083529426,15.8092887 0,15.2774634 0,11.9999742 C0,8.7225328 0.00835296697,8.19071076 0.0772047368,6.68165632 C0.132769821,5.46418415 0.311643016,4.62263666 0.614362729,3.84350174 C0.91719061,3.06430165 1.30113536,2.4741608 1.88757245,1.88772514 C2.47399369,1.30123879 3.0641689,0.917299613 3.84345255,0.614414972 C4.62236201,0.311696581 5.46409415,0.132773979 6.68163888,0.0772035898 C8.19074867,0.00835221992 8.72252573,0 12,0 C15.2774788,0 15.8092594,0.00835235053 17.3183118,0.0772036939 Z M12,2.66666667 C8.75959504,2.66666667 8.26400713,2.67445049 6.80319929,2.74109814 C5.87614637,2.78341009 5.31952221,2.90172878 4.80947575,3.09995521 C4.37397765,3.26922052 4.09725505,3.44924273 3.77324172,3.77329203 C3.44916209,4.09737087 3.26913181,4.37408574 3.09996253,4.80937168 C2.90169965,5.31965737 2.78340891,5.87618164 2.74109927,6.80321713 C2.67445122,8.26397158 2.66666667,8.75960374 2.66666667,11.9999742 C2.66666667,15.2403924 2.67445121,15.7360281 2.74109842,17.1967643 C2.78340891,18.1238184 2.90169965,18.6803426 3.09990404,19.1904778 C3.26914133,19.6259017 3.44919889,19.9026659 3.77329519,20.2267614 C4.09725505,20.5507573 4.37397765,20.7307795 4.80932525,20.8999863 C5.31971515,21.0982887 5.87621193,21.2165784 6.80323907,21.2588497 C8.26460439,21.3255353 8.76051223,21.3333333 12,21.3333333 C15.2394878,21.3333333 15.7353956,21.3255353 17.1968056,21.2588476 C18.123775,21.216579 18.6802056,21.0982995 19.1905083,20.9000309 C19.6260288,20.7307713 19.9027426,20.5507596 20.2267583,20.226708 C20.5507492,19.9027179 20.7308046,19.6259456 20.9000375,19.1906283 C21.0983009,18.6803412 21.2165908,18.1238118 21.2588986,17.196779 C21.3255376,15.7350718 21.3333333,15.2390126 21.3333333,11.9999742 C21.3333333,8.76098665 21.3255376,8.26493375 21.2589016,6.80323567 C21.2165911,5.87618164 21.0983004,5.31965737 20.9001178,4.80957831 C20.7308131,4.37403932 20.550774,4.09729207 20.2267583,3.77324038 C19.9027658,3.44924868 19.6260264,3.26922777 19.1905015,3.09996643 C18.6803988,2.90171817 18.1238378,2.78341062 17.1967608,2.74109868 C15.7359966,2.67445057 15.2404012,2.66666667 12,2.66666667 Z M12,18.2222222 C8.56356156,18.2222222 5.77777778,15.4364384 5.77777778,12 C5.77777778,8.56356156 8.56356156,5.77777778 12,5.77777778 C15.4364384,5.77777778 18.2222222,8.56356156 18.2222222,12 C18.2222222,15.4364384 15.4364384,18.2222222 12,18.2222222 Z M12,15.5555556 C13.9636791,15.5555556 15.5555556,13.9636791 15.5555556,12 C15.5555556,10.0363209 13.9636791,8.44444444 12,8.44444444 C10.0363209,8.44444444 8.44444444,10.0363209 8.44444444,12 C8.44444444,13.9636791 10.0363209,15.5555556 12,15.5555556 Z M18.2222222,7.11111111 C17.4858426,7.11111111 16.8888889,6.51415744 16.8888889,5.77777778 C16.8888889,5.04139811 17.4858426,4.44444444 18.2222222,4.44444444 C18.9586019,4.44444444 19.5555556,5.04139811 19.5555556,5.77777778 C19.5555556,6.51415744 18.9586019,7.11111111 18.2222222,7.11111111 Z"></path>
+</symbol>
+         <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" id="linkedin">
+    <path d="M100.3 448H7.4V148.9h92.9zM53.8 108.1C24.1 108.1 0 83.5 0 53.8a53.8 53.8 0 0 1 107.6 0c0 29.7-24.1 54.3-53.8 54.3zM447.9 448h-92.7V302.4c0-34.7-.7-79.2-48.3-79.2-48.3 0-55.7 37.7-55.7 76.7V448h-92.8V148.9h89.1v40.8h1.3c12.4-23.5 42.7-48.3 87.9-48.3 94 0 111.3 61.9 111.3 142.3V448z"></path>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240.1 113.49" id="muckrack">
+    <path class="b" d="M223.2,73.59c11.2-7.6,16.8-20.3,16.9-33.3C240.1,20.39,226.8.09,199.4.09c-8.35-.1-18.27-.1-28.14-.07-9.86.02-19.66.07-27.76.07v113.4h29.6v-35h17l17.1,35h30.6l.8-5-18.7-33.4c2.5-.8,3.3-1.5,3.3-1.5ZM199,54.29h-25.8v-29.7h25.8c8.4,0,12.3,7.4,12.3,14.6s-4.1,15.1-12.3,15.1Z"></path><polygon class="b" points="0 .14 10.9 .14 64.5 49.24 117.9 .14 129.3 .14 129.3 113.34 99.7 113.34 99.7 54.24 66.1 83.74 62.7 83.74 29.6 54.24 29.6 113.34 0 113.34 0 .14"></polygon>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="7 2 2 12" id="youtube">
+    <path d="M15.841 4.8c0 0-0.156-1.103-0.637-1.587-0.609-0.637-1.291-0.641-1.603-0.678-2.237-0.163-5.597-0.163-5.597-0.163h-0.006c0 0-3.359 0-5.597 0.163-0.313 0.038-0.994 0.041-1.603 0.678-0.481 0.484-0.634 1.587-0.634 1.587s-0.159 1.294-0.159 2.591v1.213c0 1.294 0.159 2.591 0.159 2.591s0.156 1.103 0.634 1.588c0.609 0.637 1.409 0.616 1.766 0.684 1.281 0.122 5.441 0.159 5.441 0.159s3.363-0.006 5.6-0.166c0.313-0.037 0.994-0.041 1.603-0.678 0.481-0.484 0.637-1.588 0.637-1.588s0.159-1.294 0.159-2.591v-1.213c-0.003-1.294-0.162-2.591-0.162-2.591zM6.347 10.075v-4.497l4.322 2.256-4.322 2.241z"></path>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="pinterest">
+    <g>
+    <path d="M220.646,338.475C207.223,408.825,190.842,476.269,142.3,511.5
+            c-14.996-106.33,21.994-186.188,39.173-270.971c-29.293-49.292,3.518-148.498,65.285-124.059
+            c76.001,30.066-65.809,183.279,29.38,202.417c99.405,19.974,139.989-172.476,78.359-235.054
+            C265.434-6.539,95.253,81.775,116.175,211.161c5.09,31.626,37.765,41.22,13.062,84.884c-57.001-12.65-74.005-57.6-71.822-117.533
+            c3.53-98.108,88.141-166.787,173.024-176.293c107.34-12.014,208.081,39.398,221.991,140.376
+            c15.67,113.978-48.442,237.412-163.23,228.529C258.085,368.704,245.023,353.283,220.646,338.475z">
+    </path>
+    </g>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" id="tiktok">
+    <path d="M 22.472559,-3.8146973e-6 C 23.000559,4.5408962 25.535059,7.2481962 29.941559,7.5361962 v 5.1073998 c -2.5536,0.2496 -4.7905,-0.5856 -7.3922,-2.1601 v 9.5523 c 0,12.1348 -13.2292004,15.927 -18.5478004,7.2291 -3.4177,-5.597 -1.3248,-15.4181 9.6387004,-15.8117 v 5.3857 c -0.8352,0.1344 -1.728,0.3456 -2.5441,0.6241 -2.4384004,0.8256 -3.8209004,2.3712 -3.4369004,5.0977 0.7392,5.2226 10.3204004,6.7682 9.5235004,-3.4369 V 0.00959619 h 5.2898 z"></path>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" id="twitch">
+    <path d="M3 0l-3 5v23h8v4h4l4-4h5l9-9v-19h-27zM26 17l-5 5h-5l-4 4v-4h-6v-18h20v13z"></path><path d="M19 8h3v8h-3v-8z"></path><path d="M13 8h3v8h-3v-8z"></path>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512.016 512.016" id="snapchat">
+    <g>
+        <g>
+            <path d="M500.459,375.368c-64.521-10.633-93.918-75.887-97.058-83.294c-0.06-0.145-0.307-0.666-0.375-0.819
+                c-3.234-6.571-4.036-11.904-2.347-15.838c3.388-8.013,17.741-12.553,26.931-15.462c2.586-0.836,5.009-1.604,6.938-2.372
+                c18.586-7.339,27.913-16.717,27.716-27.895c-0.179-8.866-7.134-17.007-17.434-20.651c-3.55-1.485-7.774-2.295-11.887-2.295
+                c-2.842,0-7.066,0.401-11.102,2.287c-7.868,3.678-14.865,5.658-20.156,5.888c-2.355-0.094-4.139-0.486-5.427-0.922
+                c0.162-2.79,0.35-5.658,0.529-8.585l0.094-1.493c2.193-34.807,4.915-78.123-6.673-104.081
+                c-34.27-76.834-106.999-82.807-128.478-82.807l-10.018,0.094c-21.436,0-94.029,5.965-128.265,82.756
+                c-11.614,26.018-8.866,69.316-6.664,104.115c0.213,3.422,0.427,6.758,0.614,10.01c-1.468,0.503-3.584,0.947-6.46,0.947
+                c-6.161,0-13.542-1.997-21.931-5.922c-12.126-5.683-34.295,1.911-37.291,17.647c-1.63,8.516,1.801,20.796,27.383,30.908
+                c1.988,0.785,4.489,1.587,7.561,2.56c8.576,2.722,22.929,7.27,26.325,15.266c1.681,3.951,0.879,9.284-2.662,16.512
+                c-1.263,2.944-31.65,72.124-98.765,83.174c-6.963,1.143-11.93,7.322-11.537,14.353c0.111,1.954,0.563,3.917,1.399,5.897
+                c5.641,13.193,27.119,22.349,67.55,28.766c0.887,2.295,1.92,7.006,2.509,9.737c0.853,3.9,1.749,7.927,2.97,12.1
+                c1.229,4.224,4.881,11.307,15.445,11.307c3.575,0,7.714-0.811,12.211-1.681c6.468-1.271,15.309-2.995,26.274-2.995
+                c6.084,0,12.416,0.546,18.825,1.604c12.092,2.005,22.699,9.506,35.004,18.202c18.116,12.809,34.586,22.605,67.524,22.605
+                c0.87,0,1.732-0.026,2.577-0.085c1.22,0.06,2.449,0.085,3.695,0.085c28.851,0,54.246-7.62,75.494-22.63
+                c11.742-8.311,22.835-16.162,34.935-18.176c6.426-1.058,12.766-1.604,18.85-1.604c10.513,0,18.901,1.348,26.385,2.816
+                c5.06,0.998,9.02,1.476,12.672,1.476c7.373,0,12.8-4.053,14.874-11.127c1.195-4.113,2.091-8.021,2.961-12.015
+                c0.461-2.125,1.57-7.211,2.509-9.66c39.851-6.34,60.203-15.138,65.835-28.297c0.845-1.894,1.34-3.9,1.476-6.033
+                C512.372,382.707,507.422,376.529,500.459,375.368z"></path>
+        </g>
+    </g>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" id="threads">
+    <path d="M141.537 88.9883C140.71 88.5919 139.87 88.2104 139.019 87.8451C137.537 60.5382 122.616 44.905 97.5619 44.745C97.4484 44.7443 97.3355 44.7443 97.222 44.7443C82.2364 44.7443 69.7731 51.1409 62.102 62.7807L75.881 72.2328C81.6116 63.5383 90.6052 61.6848 97.2286 61.6848C97.3051 61.6848 97.3819 61.6848 97.4576 61.6855C105.707 61.7381 111.932 64.1366 115.961 68.814C118.893 72.2193 120.854 76.925 121.825 82.8638C114.511 81.6207 106.601 81.2385 98.145 81.7233C74.3247 83.0954 59.0111 96.9879 60.0396 116.292C60.5615 126.084 65.4397 134.508 73.775 140.011C80.8224 144.663 89.899 146.938 99.3323 146.423C111.79 145.74 121.563 140.987 128.381 132.296C133.559 125.696 136.834 117.143 138.28 106.366C144.217 109.949 148.617 114.664 151.047 120.332C155.179 129.967 155.42 145.8 142.501 158.708C131.182 170.016 117.576 174.908 97.0135 175.059C74.2042 174.89 56.9538 167.575 45.7381 153.317C35.2355 139.966 29.8077 120.682 29.6052 96C29.8077 71.3178 35.2355 52.0336 45.7381 38.6827C56.9538 24.4249 74.2039 17.11 97.0132 16.9405C119.988 17.1113 137.539 24.4614 149.184 38.788C154.894 45.8136 159.199 54.6488 162.037 64.9503L178.184 60.6422C174.744 47.9622 169.331 37.0357 161.965 27.974C147.036 9.60668 125.202 0.195148 97.0695 0H96.9569C68.8816 0.19447 47.2921 9.6418 32.7883 28.0793C19.8819 44.4864 13.2244 67.3157 13.0007 95.9325L13 96L13.0007 96.0675C13.2244 124.684 19.8819 147.514 32.7883 163.921C47.2921 182.358 68.8816 191.806 96.9569 192H97.0695C122.03 191.827 139.624 185.292 154.118 170.811C173.081 151.866 172.51 128.119 166.26 113.541C161.776 103.087 153.227 94.5962 141.537 88.9883ZM98.4405 129.507C88.0005 130.095 77.1544 125.409 76.6196 115.372C76.2232 107.93 81.9158 99.626 99.0812 98.6368C101.047 98.5234 102.976 98.468 104.871 98.468C111.106 98.468 116.939 99.0737 122.242 100.233C120.264 124.935 108.662 128.946 98.4405 129.507Z"></path>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="bluesky">
+    <path d="M111.8 62.2C170.2 105.9 233 194.7 256 242.4c23-47.6 85.8-136.4 144.2-180.2c42.1-31.6 110.3-56 110.3 21.8c0 15.5-8.9 130.5-14.1 149.2C478.2 298 412 314.6 353.1 304.5c102.9 17.5 129.1 75.5 72.5 133.5c-107.4 110.2-154.3-27.6-166.3-62.9l0 0c-1.7-4.9-2.6-7.8-3.3-7.8s-1.6 3-3.3 7.8l0 0c-12 35.3-59 173.1-166.3 62.9c-56.5-58-30.4-116 72.5-133.5C100 314.6 33.8 298 15.7 233.1C10.4 214.4 1.5 99.4 1.5 83.9c0-77.8 68.2-53.4 110.3-21.8z"></path>
+</symbol>
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="google">
+    <path d="M500 261.8C500 403.3 403.1 504 260 504 122.8 504 12 393.2 12 256S122.8 8 260 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9c-88.3-85.2-252.5-21.2-252.5 118.2 0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9l-140.8 0 0-85.3 236.1 0c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+</symbol>
+        <symbol id="website" viewBox="0 0 17 17" xmlns="http://www.w3.org/2000/svg">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.91041 1.47245C3.56879 -0.185927 6.25755 -0.185927 7.91592 1.47245L10.9186 4.47521C12.577 6.13361 12.577 8.82231 10.9186 10.4807C10.5041 10.8954 9.83185 10.8954 9.41728 10.4807C9.00271 10.0661 9.00271 9.39389 9.41728 8.97932C10.2465 8.15019 10.2465 6.80573 9.41728 5.97659L6.41454 2.97383C5.58535 2.14465 4.24097 2.14465 3.41178 2.97383C2.58261 3.80302 2.58261 5.1474 3.41178 5.97659L4.16248 6.72728C4.57708 7.14185 4.57707 7.81407 4.16248 8.22864C3.74789 8.64321 3.07569 8.64321 2.6611 8.22864L1.91041 7.47796C0.252031 5.81959 0.252031 3.13083 1.91041 1.47245ZM7.91592 5.9766C8.33049 6.39116 8.33049 7.06339 7.91592 7.47796C7.08678 8.3072 7.08678 9.65155 7.91592 10.4807L10.9186 13.4835C11.7479 14.3127 13.0922 14.3127 13.9215 13.4835C14.7506 12.6543 14.7506 11.3099 13.9215 10.4807L13.1708 9.73C12.7561 9.31544 12.7561 8.64321 13.1708 8.22864C13.5854 7.81407 14.2575 7.81407 14.6722 8.22864L15.4228 8.97932C17.0812 10.6377 17.0812 13.3265 15.4228 14.9849C13.7645 16.6433 11.0757 16.6433 9.41728 14.9849L6.41455 11.9822C4.75618 10.3238 4.75618 7.63498 6.41455 5.9766C6.82912 5.562 7.50135 5.562 7.91592 5.9766Z"></path>
+</symbol>
+            <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="revue">
+        <path d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4L236.8 313.6c11.4 8.5 27 8.5 38.4 0L492.8 150.4c12.1-9.1 19.2-23.3 19.2-38.4c0-26.5-21.5-48-48-48H48zM0 176V384c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V176L294.4 339.2c-22.8 17.1-54 17.1-76.8 0L0 176z"></path>
+    </symbol>
+        
+        
+        
+        <symbol xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" id="advertise">
+            <g clip-path="url(#clip0_1911_5435)">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 1.40497L2.26973 4.27073L0 2.34144V12.6558L2.26967 10.7271L3.84476 11.191V14.1933C3.84529 15.229 4.55813 16.067 5.43904 16.0676H9.23405C9.67247 16.0682 10.0745 15.8571 10.3609 15.5183C10.6488 15.1814 10.8284 14.709 10.8278 14.1932V13.2478L12 13.593V1.40497ZM5.09306 14.5997C5.00434 14.4935 4.95039 14.3537 4.94986 14.1932V11.5168L9.72281 12.9219V14.1932C9.72227 14.3537 9.66885 14.4935 9.5796 14.5997C9.48985 14.7047 9.37052 14.7676 9.23409 14.7676H5.4391C5.30214 14.7676 5.18281 14.7047 5.09306 14.5997Z"></path>
+            <path d="M13 1.11045L17 -0.067627V15.0654L13 13.8875V1.11045Z"></path>
+            </g>
+            <defs>
+            <clipPath id="clip0_1911_5435">
+            <rect width="16" height="16" fill="white"></rect>
+            </clipPath>
+            </defs>
+        </symbol>
+    
+</svg>                    <nav id="social-nav-holder" class="top-nav-standard">
+        <ul class="social-buttons">
+            <li><a href="https://www.facebook.com/Engadget" target="_blank" title="Facebook" aria-label="Facebook"><svg class="icon"><use xlink:href="#facebook"></use></svg></a></li><li><a href="https://www.instagram.com/engadget" target="_blank" title="Instagram" aria-label="Instagram"><svg class="icon"><use xlink:href="#instagram"></use></svg></a></li><li><a href="https://x.com/engadget" target="_blank" title="Twitter" aria-label="Twitter"><svg class="icon"><use xlink:href="#twitter"></use></svg></a></li><li><a href="https://www.youtube.com/c/engadget" target="_blank" title="YouTube" aria-label="YouTube"><svg class="icon"><use xlink:href="#youtube"></use></svg></a></li><li><a href="https://flipboard.com/@Engadget" target="_blank" title="Flipboard" aria-label="Flipboard"><svg class="icon"><use xlink:href="#flipboard"></use></svg></a></li><li><a href="https://www.threads.com/@engadget" target="_blank" title="Threads" aria-label="Threads"><svg class="icon"><use xlink:href="#threads"></use></svg></a></li><li><a href="https://profile.google.com/@engadget" target="_blank" title="Google" aria-label="Google"><svg class="icon"><use xlink:href="#google"></use></svg></a></li><li><a href="/feed/" target="_blank" title="RSS" aria-label="RSS"><svg class="icon"><use xlink:href="#rss"></use></svg></a></li>
+            
+            <li class="menu-btn newsletter-btn"><a href="https://subscribe.engadget.com/newsletter?utm_source=engadget&amp;utm_medium=top-nav" target="_blank" title="Newsletter" aria-label="Newsletter"><svg class="icon"><use xlink:href="#revue"></use></svg>Newsletter</a></li>
+        </ul>
+    </nav>
+                            </div>
+            <div id="is-tablet"></div>
+            <div id="is-mobile"></div>
+        </header>
+    <main id="index" class="engadget">
+        <ul id="featured"><li class="article-item primary">
+    <article class="article-block">
+        <div class="image-holder">
+            <a href="/2302835/dell-xps-googlebook-review/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/dell-xps-googlebook-review-beautiful-hardware-for-a-useless-platform/intro-1793629252.webp" type="image/webp">
+                    <img src="https://www.engadget.com/img/gallery/dell-xps-googlebook-review-beautiful-hardware-for-a-useless-platform/intro-1793629252.jpg" width="426" height="240" alt="The Dell XPS Googlebook.">
+                </picture>
+            </a>
+            <div class="category-label label-laptop-pc-reviews parent-reviews"><a href="/category/laptop-pc-reviews/">Laptops &amp; PCs</a></div>
+        </div>
+        <div class="article-description">
+            <h1>
+                <a href="/2302835/dell-xps-googlebook-review/">Dell XPS Googlebook review: Beautiful hardware for a useless platform</a>
+            </h1>
+            <p class="article-excerpt">Googlebook OS still needs a ton of work.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Devindra Hardawar</span>
+            <span class="read-more"><a href="/2302835/dell-xps-googlebook-review/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="secondary-index"><ul>        <li class="article-item secondary">
+            <article class="article-block">
+                <div class="image-holder">
+                    <a href="/2302459/ai-software-clones-coming-for-big-name-companies-adobe/">
+                        <picture>
+                            <source srcset="https://www.engadget.com/img/gallery/ai-software-clones-are-coming-for-big-name-companies-like-adobe/intro-1793354854.webp" type="image/webp">
+                            <img src="https://www.engadget.com/img/gallery/ai-software-clones-are-coming-for-big-name-companies-like-adobe/intro-1793354854.jpg" width="426" height="240" alt="Logos for Artcraft's Adobe suite clone">
+                        </picture>
+                    </a>
+                    <div class="category-label label-ai parent-news"><a href="/category/ai/">AI</a></div>
+                </div>
+                <div class="article-description">
+                    <h3>
+                        <a href="/2302459/ai-software-clones-coming-for-big-name-companies-adobe/">AI software clones are coming for big-name companies like Adobe</a>
+                    </h3>
+                    <p class="article-excerpt">Vibe-coded clones of Adobe software are shaking things up.</p>
+                    <span class="author"><span class="by">By&nbsp;</span>Steve Dent</span>
+                    <span class="read-more"><a href="/2302459/ai-software-clones-coming-for-big-name-companies-adobe/">Read More</a></span>
+                </div>
+            </article>
+        </li>        <li class="article-item secondary">
+            <article class="article-block">
+                <div class="image-holder">
+                    <a href="/2302896/what-happens-when-ai-starts-self-replicating/">
+                        <picture>
+                            <source srcset="https://www.engadget.com/img/gallery/what-happens-when-ai-starts-self-replicating/intro-1793389611.webp" type="image/webp">
+                            <img src="https://www.engadget.com/img/gallery/what-happens-when-ai-starts-self-replicating/intro-1793389611.jpg" width="426" height="240" alt="A prompt on an iPhone reads, &quot;Claude, can you replicate yourself?&quot;">
+                        </picture>
+                    </a>
+                    <div class="category-label label-ai parent-news"><a href="/category/ai/">AI</a></div>
+                </div>
+                <div class="article-description">
+                    <h3>
+                        <a href="/2302896/what-happens-when-ai-starts-self-replicating/">What happens when AI starts self-replicating?</a>
+                    </h3>
+                    <p class="article-excerpt">Anthropic warns that future is soon, but the threat is less novel than it seems.</p>
+                    <span class="author"><span class="by">By&nbsp;</span>Igor Bonifacic</span>
+                    <span class="read-more"><a href="/2302896/what-happens-when-ai-starts-self-replicating/">Read More</a></span>
+                </div>
+            </article>
+        </li>        <li class="article-item secondary">
+            <article class="article-block">
+                <div class="image-holder">
+                    <a href="/2302681/everything-you-need-to-know-about-googlebooks/">
+                        <picture>
+                            <source srcset="https://www.engadget.com/img/gallery/despite-good-initial-hardware-the-googlebook-os-is-holding-the-platform-back/intro-1793383802.webp" type="image/webp">
+                            <img src="https://www.engadget.com/img/gallery/despite-good-initial-hardware-the-googlebook-os-is-holding-the-platform-back/intro-1793383802.jpg" width="426" height="240" alt="Three Googlebook laptops sitting on a desk.">
+                        </picture>
+                    </a>
+                    <div class="category-label label-google parent-big-tech"><a href="/category/google/">Google</a></div>
+                </div>
+                <div class="article-description">
+                    <h3>
+                        <a href="/2302681/everything-you-need-to-know-about-googlebooks/">Everything you need to know about Googlebooks</a>
+                    </h3>
+                    <p class="article-excerpt">Despite good initial hardware, the Googlebook OS still needs a lot of work. </p>
+                    <span class="author"><span class="by">By&nbsp;</span>Nathan Ingraham</span>
+                    <span class="read-more"><a href="/2302681/everything-you-need-to-know-about-googlebooks/">Read More</a></span>
+                </div>
+            </article>
+        </li>        <li class="article-item secondary">
+            <article class="article-block">
+                <div class="image-holder">
+                    <a href="/2301498/lenovo-googlebook-15-review/">
+                        <picture>
+                            <source srcset="https://www.engadget.com/img/gallery/lenovo-googlebook-15-review-your-android-phones-new-best-friend/intro-1793300409.webp" type="image/webp">
+                            <img src="https://www.engadget.com/img/gallery/lenovo-googlebook-15-review-your-android-phones-new-best-friend/intro-1793300409.jpg" width="426" height="240" alt="One of the first batch of laptops featuring Google's latest OS: The $1,099 Lenovo Googlebook 15.">
+                        </picture>
+                    </a>
+                    <div class="category-label label-laptop-pc-reviews parent-reviews"><a href="/category/laptop-pc-reviews/">Laptops &amp; PCs</a></div>
+                </div>
+                <div class="article-description">
+                    <h3>
+                        <a href="/2301498/lenovo-googlebook-15-review/">Lenovo Googlebook 15 review: Your Android phone's new best friend</a>
+                    </h3>
+                    <p class="article-excerpt">Despite Lenovo providing excellent hardware for Google’s new laptop platform, Googlebook OS will only impress Android die-hards. </p>
+                    <span class="author"><span class="by">By&nbsp;</span>Sam Rutherford</span>
+                    <span class="read-more"><a href="/2301498/lenovo-googlebook-15-review/">Read More</a></span>
+                </div>
+            </article>
+        </li></ul></li></ul>        <div id="index-table">
+            <section id="features">
+                <h2 class="section-header">More Stories</h2><ul id="article-container" class="article-index article-holder"><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2304552/casio-new-keyboard-lets-anyone-play-along-to-songs-without-ever-hitting-a-wrong-note/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/casios-new-keyboard-lets-anyone-play-along-to-songs-without-ever-hitting-a-wrong-note/intro-1793648368.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/casios-new-keyboard-lets-anyone-play-along-to-songs-without-ever-hitting-a-wrong-note/intro-1793648368.jpg" width="426" height="240" alt="A person playing a white keyboard.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2304552/casio-new-keyboard-lets-anyone-play-along-to-songs-without-ever-hitting-a-wrong-note/#conversation">0</a></div>
+                        <div class="category-label label-news"><a href="/category/news/">News</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-news"><a href="/category/news/">News</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Lawrence Bonk</span> <span class="timestamp">14 min ago</span>
+            </div>
+            <h3><a href="/2304552/casio-new-keyboard-lets-anyone-play-along-to-songs-without-ever-hitting-a-wrong-note/">Casio's new keyboard lets anyone play along to songs without ever hitting a wrong note</a></h3>
+            <p class="article-excerpt">Casio's new Feel Sync technology helps keep new players in tune.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Lawrence Bonk</span> <span class="timestamp">14 min ago</span>
+            <span class="read-more"><a href="/2304552/casio-new-keyboard-lets-anyone-play-along-to-songs-without-ever-hitting-a-wrong-note/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300367/what-apple-airpods-chirping-noise-means-battery/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/your-apple-airpods-chirping-noise-doesnt-just-mean-low-battery/intro-1792762136.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/your-apple-airpods-chirping-noise-doesnt-just-mean-low-battery/intro-1792762136.jpg" width="426" height="240" alt="Apple AirPods Pro">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300367/what-apple-airpods-chirping-noise-means-battery/#conversation">0</a></div>
+                        <div class="category-label label-apple parent-big-tech"><a href="/category/apple/">Apple</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-apple parent-big-tech"><a href="/category/apple/">Apple</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Mariella Moon</span> <span class="timestamp">25 min ago</span>
+            </div>
+            <h3><a href="/2300367/what-apple-airpods-chirping-noise-means-battery/">Your Apple AirPods' chirping noise doesn't just mean low battery</a></h3>
+            <p class="article-excerpt">Learn why your Apple AirPods are making a noise — and how to turn the sound off.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Mariella Moon</span> <span class="timestamp">25 min ago</span>
+            <span class="read-more"><a href="/2300367/what-apple-airpods-chirping-noise-means-battery/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2304464/snap-settles-social-media-addiction-lawsuit-to-avoid-trial/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/snap-settles-social-media-addiction-lawsuit-to-avoid-trial/intro-1793646506.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/snap-settles-social-media-addiction-lawsuit-to-avoid-trial/intro-1793646506.jpg" width="426" height="240" alt="Snap CEO Evan Spiegel in a suit staring off to the side.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2304464/snap-settles-social-media-addiction-lawsuit-to-avoid-trial/#conversation">0</a></div>
+                        <div class="category-label label-social-media parent-news"><a href="/category/social-media/">Social Media</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-social-media parent-news"><a href="/category/social-media/">Social Media</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Karissa Bell</span> <span class="timestamp">45 min ago</span>
+            </div>
+            <h3><a href="/2304464/snap-settles-social-media-addiction-lawsuit-to-avoid-trial/">Snap settles social media addiction lawsuit to avoid trial</a></h3>
+            <p class="article-excerpt">Snap CEO Evan Spiegel was due to testify in the upcoming trial.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Karissa Bell</span> <span class="timestamp">45 min ago</span>
+            <span class="read-more"><a href="/2304464/snap-settles-social-media-addiction-lawsuit-to-avoid-trial/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300357/websites-blocking-ai-agents-from-web/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/why-some-websites-are-blocking-ai-agents-from-accessing-the-web/intro-1792775857.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/why-some-websites-are-blocking-ai-agents-from-accessing-the-web/intro-1792775857.jpg" width="426" height="240" alt="A smartphone on a red and blue backlit keyboard displays Meta's white plush Muse mascot with a frowning face.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300357/websites-blocking-ai-agents-from-web/#conversation">0</a></div>
+                        <div class="category-label label-ai parent-news"><a href="/category/ai/">AI</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-ai parent-news"><a href="/category/ai/">AI</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">55 min ago</span>
+            </div>
+            <h3><a href="/2300357/websites-blocking-ai-agents-from-web/">Why some websites are blocking AI agents from accessing the web</a></h3>
+            <p class="article-excerpt">AI agents can be a great tool to help make purchases for you online — but it can become a frustrating problem if the website you're using blocks their access.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">55 min ago</span>
+            <span class="read-more"><a href="/2300357/websites-blocking-ai-agents-from-web/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2302571/think-twice-before-putting-gaming-console-inside-cabinet/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/think-twice-before-putting-your-gaming-console-inside-a-cabinet/intro-1793381114.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/think-twice-before-putting-your-gaming-console-inside-a-cabinet/intro-1793381114.jpg" width="426" height="240" alt="A PS5 console jammed inside a tight cabinet.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2302571/think-twice-before-putting-gaming-console-inside-cabinet/#conversation">0</a></div>
+                        <div class="category-label label-gaming"><a href="/category/gaming/">Gaming</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-gaming"><a href="/category/gaming/">Gaming</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Roger Fingas</span> <span class="timestamp">2 hours ago</span>
+            </div>
+            <h3><a href="/2302571/think-twice-before-putting-gaming-console-inside-cabinet/">Think twice before putting your gaming console inside a cabinet</a></h3>
+            <p class="article-excerpt">A cabinet might seem like a convenient spot for your console, but it can't provide enough airflow for the system to run safely.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Roger Fingas</span> <span class="timestamp">2 hours ago</span>
+            <span class="read-more"><a href="/2302571/think-twice-before-putting-gaming-console-inside-cabinet/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2304301/spacex-is-reportedly-looking-at-buying-boost-mobile-or-using-its-cell-network/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/spacex-is-reportedly-looking-at-buying-boost-mobile-or-using-its-cell-network/intro-1793642642.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/spacex-is-reportedly-looking-at-buying-boost-mobile-or-using-its-cell-network/intro-1793642642.jpg" width="426" height="240" alt="The SpaceX logo in front of its offices.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2304301/spacex-is-reportedly-looking-at-buying-boost-mobile-or-using-its-cell-network/#conversation">2</a></div>
+                        <div class="category-label label-mobile parent-news"><a href="/category/mobile/">Mobile</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-mobile parent-news"><a href="/category/mobile/">Mobile</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Jackson Chen</span> <span class="timestamp">2 hours ago</span>
+            </div>
+            <h3><a href="/2304301/spacex-is-reportedly-looking-at-buying-boost-mobile-or-using-its-cell-network/">SpaceX is reportedly looking at buying Boost Mobile or using its cell network</a></h3>
+            <p class="article-excerpt">A potential deal with Boost Mobile could serve as a shortcut to establishing SpaceX as a mobile carrier.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Jackson Chen</span> <span class="timestamp">2 hours ago</span>
+            <span class="read-more"><a href="/2304301/spacex-is-reportedly-looking-at-buying-boost-mobile-or-using-its-cell-network/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300355/samsung-galaxy-phones-bloatware-problem-easy-fix/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/this-samsung-galaxy-problem-sadly-still-exists-in-2026-but-you-can-easily-fix-it/intro-1792419029.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/this-samsung-galaxy-problem-sadly-still-exists-in-2026-but-you-can-easily-fix-it/intro-1792419029.jpg" width="426" height="240" alt="Samsung Galaxy S26 Ultra displaying Link to Windows app.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300355/samsung-galaxy-phones-bloatware-problem-easy-fix/#conversation">3</a></div>
+                        <div class="category-label label-samsung parent-big-tech"><a href="/category/samsung/">Samsung</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-samsung parent-big-tech"><a href="/category/samsung/">Samsung</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">2 hours ago</span>
+            </div>
+            <h3><a href="/2300355/samsung-galaxy-phones-bloatware-problem-easy-fix/">This Samsung Galaxy problem sadly still exists in 2026, but you can easily fix it</a></h3>
+            <p class="article-excerpt">Your premium Samsung Galaxy phone likely has a bunch of preinstalled software you don't want that just takes up space.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">2 hours ago</span>
+            <span class="read-more"><a href="/2300355/samsung-galaxy-phones-bloatware-problem-easy-fix/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300353/google-gemini-poking-through-email-how-to-stop/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/gemini-could-be-poking-through-your-emails-heres-how-to-stop-it/intro-1793097394.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/gemini-could-be-poking-through-your-emails-heres-how-to-stop-it/intro-1793097394.jpg" width="426" height="240" alt="A person holds up a phone with the Gmail logo pulled up. In the background, a laptop and coffee sit idle.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300353/google-gemini-poking-through-email-how-to-stop/#conversation">1</a></div>
+                        <div class="category-label label-google parent-big-tech"><a href="/category/google/">Google</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-google parent-big-tech"><a href="/category/google/">Google</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Alec Hively</span> <span class="timestamp">3 hours ago</span>
+            </div>
+            <h3><a href="/2300353/google-gemini-poking-through-email-how-to-stop/">Gemini could be poking through your emails - here's how to stop it</a></h3>
+            <p class="article-excerpt">Gemini can read your emails, summarize them and draft replies. If you'd rather it didn't, here's what Google actually does with your data and how to opt out.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Alec Hively</span> <span class="timestamp">3 hours ago</span>
+            <span class="read-more"><a href="/2300353/google-gemini-poking-through-email-how-to-stop/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300351/one-problem-iphone-messages-additional-options-easy-fix/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/one-annoying-problem-with-the-iphone-messages-app-has-an-easy-fix/intro-1793114293.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/one-annoying-problem-with-the-iphone-messages-app-has-an-easy-fix/intro-1793114293.jpg" width="426" height="240" alt="An iPhone screen shows the messages app with a red one, indicating a new message.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300351/one-problem-iphone-messages-additional-options-easy-fix/#conversation">3</a></div>
+                        <div class="category-label label-apple parent-big-tech"><a href="/category/apple/">Apple</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-apple parent-big-tech"><a href="/category/apple/">Apple</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Alec Hively</span> <span class="timestamp">3 hours ago</span>
+            </div>
+            <h3><a href="/2300351/one-problem-iphone-messages-additional-options-easy-fix/">One annoying problem with the iPhone Messages app has an easy fix</a></h3>
+            <p class="article-excerpt">Apple's iMessage app offers a lot of useful features and several default apps included in its latest update. However, they may be in an order you dislike.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Alec Hively</span> <span class="timestamp">3 hours ago</span>
+            <span class="read-more"><a href="/2300351/one-problem-iphone-messages-additional-options-easy-fix/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300349/smart-home-devices-disconnecting-wifi/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/what-to-do-if-your-smart-home-devices-keep-disconnecting-from-wi-fi/intro-1793217315.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/what-to-do-if-your-smart-home-devices-keep-disconnecting-from-wi-fi/intro-1793217315.jpg" width="426" height="240" alt="LIFX's Luna smart lamp casting a cool muticolor glow.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300349/smart-home-devices-disconnecting-wifi/#conversation">1</a></div>
+                        <div class="category-label label-computing parent-news"><a href="/category/computing/">Computing</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-computing parent-news"><a href="/category/computing/">Computing</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Roger Fingas</span> <span class="timestamp">4 hours ago</span>
+            </div>
+            <h3><a href="/2300349/smart-home-devices-disconnecting-wifi/">What to do if your smart home devices keep disconnecting from Wi-Fi</a></h3>
+            <p class="article-excerpt">Smart home devices usually won't work properly when they lose Wi-Fi signal, so it's frustrating when they keep disconnecting. Here's why it might be happening.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Roger Fingas</span> <span class="timestamp">4 hours ago</span>
+            <span class="read-more"><a href="/2300349/smart-home-devices-disconnecting-wifi/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2303975/nagoshi-studio-from-the-creator-of-the-yakuza-series-officially-shuts-down/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/nagoshi-studio-from-the-creator-of-the-yakuza-series-officially-shuts-down/intro-1793635351.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/nagoshi-studio-from-the-creator-of-the-yakuza-series-officially-shuts-down/intro-1793635351.jpg" width="426" height="240" alt="Gameplay screenshot of Gang of Dragon with protagonist throwing an explosive.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2303975/nagoshi-studio-from-the-creator-of-the-yakuza-series-officially-shuts-down/#conversation">1</a></div>
+                        <div class="category-label label-gaming"><a href="/category/gaming/">Gaming</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-gaming"><a href="/category/gaming/">Gaming</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Jackson Chen</span> <span class="timestamp">4 hours ago</span>
+            </div>
+            <h3><a href="/2303975/nagoshi-studio-from-the-creator-of-the-yakuza-series-officially-shuts-down/">Nagoshi Studio, from the creator of the Yakuza series, officially shuts down</a></h3>
+            <p class="article-excerpt">It’s unclear what will happen to the studio’s work on Gang of Dragon.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Jackson Chen</span> <span class="timestamp">4 hours ago</span>
+            <span class="read-more"><a href="/2303975/nagoshi-studio-from-the-creator-of-the-yakuza-series-officially-shuts-down/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2303943/googles-ocarina-of-time-easter-egg-is-a-link-to-a-past-when-search-wasnt-horrible/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/googles-ocarina-of-time-easter-egg-is-a-link-to-a-past-when-search-wasnt-horrible/intro-1793634639.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/googles-ocarina-of-time-easter-egg-is-a-link-to-a-past-when-search-wasnt-horrible/intro-1793634639.jpg" width="426" height="240" alt="Video game screenshot of a young boy in a green tunic pulling a large sword from a pedestal.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2303943/googles-ocarina-of-time-easter-egg-is-a-link-to-a-past-when-search-wasnt-horrible/#conversation">5</a></div>
+                        <div class="category-label label-google parent-big-tech"><a href="/category/google/">Google</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-google parent-big-tech"><a href="/category/google/">Google</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Kris Holt</span> <span class="timestamp">4 hours ago</span>
+            </div>
+            <h3><a href="/2303943/googles-ocarina-of-time-easter-egg-is-a-link-to-a-past-when-search-wasnt-horrible/">Google's Ocarina of Time Easter egg is a link to a past when Search wasn't horrible</a></h3>
+            <p class="article-excerpt">Turn the clock back to 1998, when the internet was a little more functional.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Kris Holt</span> <span class="timestamp">4 hours ago</span>
+            <span class="read-more"><a href="/2303943/googles-ocarina-of-time-easter-egg-is-a-link-to-a-past-when-search-wasnt-horrible/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300348/why-fitbit-edge-lacks-nfc-contactless-payment-feature/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/the-fitbit-edge-lacks-a-useful-contactless-feature/intro-1792612257.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/the-fitbit-edge-lacks-a-useful-contactless-feature/intro-1792612257.jpg" width="426" height="240" alt="A woman outside looking at the Fitbit Edge on her wrist.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300348/why-fitbit-edge-lacks-nfc-contactless-payment-feature/#conversation">0</a></div>
+                        <div class="category-label label-wearables"><a href="/category/wearables/">Wearables</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-wearables"><a href="/category/wearables/">Wearables</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Christine Persaud</span> <span class="timestamp">4 hours ago</span>
+            </div>
+            <h3><a href="/2300348/why-fitbit-edge-lacks-nfc-contactless-payment-feature/">The Fitbit Edge lacks a useful contactless feature</a></h3>
+            <p class="article-excerpt">It's handy, but most people likely won't miss it.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Christine Persaud</span> <span class="timestamp">4 hours ago</span>
+            <span class="read-more"><a href="/2300348/why-fitbit-edge-lacks-nfc-contactless-payment-feature/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300346/nintendo-switch-2-microsd-card-why-its-important-to-use/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/why-its-important-to-use-a-microsd-card-with-your-nintendo-switch-2/intro-1791815329.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/why-its-important-to-use-a-microsd-card-with-your-nintendo-switch-2/intro-1791815329.jpg" width="426" height="240" alt="A Nintendo Switch 2 situated in its dock, with several blurry physical games in the background.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300346/nintendo-switch-2-microsd-card-why-its-important-to-use/#conversation">1</a></div>
+                        <div class="category-label label-nintendo parent-gaming"><a href="/category/nintendo/">Nintendo</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-nintendo parent-gaming"><a href="/category/nintendo/">Nintendo</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Thomas Godwin</span> <span class="timestamp">5 hours ago</span>
+            </div>
+            <h3><a href="/2300346/nintendo-switch-2-microsd-card-why-its-important-to-use/">Why it's important to use a microSD Express card with your Nintendo Switch 2</a></h3>
+            <p class="article-excerpt">The Switch 2 has expandable storage that you should take advantage of. But you can't use the same cards that worked with your original Switch.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Thomas Godwin</span> <span class="timestamp">5 hours ago</span>
+            <span class="read-more"><a href="/2300346/nintendo-switch-2-microsd-card-why-its-important-to-use/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300344/phone-software-updates-unexpected-slow-down-effect/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/why-software-updates-may-have-an-unexpected-effect-on-your-phone/intro-1792415252.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/why-software-updates-may-have-an-unexpected-effect-on-your-phone/intro-1792415252.jpg" width="426" height="240" alt="An iPhone on top of a keyboard shows the iOS 27 update available to download.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300344/phone-software-updates-unexpected-slow-down-effect/#conversation">1</a></div>
+                        <div class="category-label label-smartphones parent-news"><a href="/category/smartphones/">Smartphones</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-smartphones parent-news"><a href="/category/smartphones/">Smartphones</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Filipe Espósito</span> <span class="timestamp">6 hours ago</span>
+            </div>
+            <h3><a href="/2300344/phone-software-updates-unexpected-slow-down-effect/">Why software updates may have an unexpected effect on your phone</a></h3>
+            <p class="article-excerpt">Installing an update can make your phone run worse for a while, but this should be temporary in most cases.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Filipe Espósito</span> <span class="timestamp">6 hours ago</span>
+            <span class="read-more"><a href="/2300344/phone-software-updates-unexpected-slow-down-effect/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300341/how-much-ram-cost-2020-vs-2026/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/heres-how-much-ram-cost-in-2020-vs-2026/intro-1792417103.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/heres-how-much-ram-cost-in-2020-vs-2026/intro-1792417103.jpg" width="426" height="240" alt="Two computer RAM modules leaning against a roll of $100 bills, all on top of scattered $100 bills.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300341/how-much-ram-cost-2020-vs-2026/#conversation">9</a></div>
+                        <div class="category-label label-computing parent-news"><a href="/category/computing/">Computing</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-computing parent-news"><a href="/category/computing/">Computing</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">6 hours ago</span>
+            </div>
+            <h3><a href="/2300341/how-much-ram-cost-2020-vs-2026/">Here's how much RAM cost in 2020 vs. 2026</a></h3>
+            <p class="article-excerpt">We all know RAM has gotten crazy expensive, but some number put it in even better perspective.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">6 hours ago</span>
+            <span class="read-more"><a href="/2300341/how-much-ram-cost-2020-vs-2026/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300337/difference-between-airpods-noise-cancellation-adaptive-audio-modes/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/whats-the-difference-between-airpods-noise-cancellation-and-adaptive-audio-modes/intro-1793049678.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/whats-the-difference-between-airpods-noise-cancellation-and-adaptive-audio-modes/intro-1793049678.jpg" width="426" height="240" alt="A model bathed in low-key blue light, showing off Apple's AirPods 5 earbud in her ear.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300337/difference-between-airpods-noise-cancellation-adaptive-audio-modes/#conversation">1</a></div>
+                        <div class="category-label label-apple parent-big-tech"><a href="/category/apple/">Apple</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-apple parent-big-tech"><a href="/category/apple/">Apple</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Roger Fingas</span> <span class="timestamp">7 hours ago</span>
+            </div>
+            <h3><a href="/2300337/difference-between-airpods-noise-cancellation-adaptive-audio-modes/">What's the difference between AirPods' Noise Cancellation and Adaptive Audio modes?</a></h3>
+            <p class="article-excerpt">Modern AirPods offer several audio modes, and noise cancellation isn't always the best option.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Roger Fingas</span> <span class="timestamp">7 hours ago</span>
+            <span class="read-more"><a href="/2300337/difference-between-airpods-noise-cancellation-adaptive-audio-modes/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2303590/apple-is-reportedly-launching-three-new-ipads-early-next-year/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/apple-is-reportedly-launching-three-new-ipads-early-next-year/intro-1793617622.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/apple-is-reportedly-launching-three-new-ipads-early-next-year/intro-1793617622.jpg" width="426" height="240" alt="Two iPad models are shown against a grey carpet">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2303590/apple-is-reportedly-launching-three-new-ipads-early-next-year/#conversation">4</a></div>
+                        <div class="category-label label-tablets parent-news"><a href="/category/tablets/">Tablets</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-tablets parent-news"><a href="/category/tablets/">Tablets</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Steve Dent</span> <span class="timestamp">9 hours ago</span>
+            </div>
+            <h3><a href="/2303590/apple-is-reportedly-launching-three-new-ipads-early-next-year/">Apple is reportedly launching three new iPads early next year</a></h3>
+            <p class="article-excerpt">Follow its iPad mini launch last week, Apple may unveil three new iPad models early next year.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Steve Dent</span> <span class="timestamp">9 hours ago</span>
+            <span class="read-more"><a href="/2303590/apple-is-reportedly-launching-three-new-ipads-early-next-year/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300332/how-long-new-apple-tv-last-lifespan/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/how-long-is-a-new-apple-tv-actually-supposed-to-last/intro-1793037978.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/how-long-is-a-new-apple-tv-actually-supposed-to-last/intro-1793037978.jpg" width="426" height="240" alt="A white Apple TV retail box, showing an Apple TV streaming device and Siri Remote on the top.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300332/how-long-new-apple-tv-last-lifespan/#conversation">2</a></div>
+                        <div class="category-label label-apple parent-big-tech"><a href="/category/apple/">Apple</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-apple parent-big-tech"><a href="/category/apple/">Apple</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">18 hours ago</span>
+            </div>
+            <h3><a href="/2300332/how-long-new-apple-tv-last-lifespan/">How long is a new Apple TV actually supposed to last?</a></h3>
+            <p class="article-excerpt">Past Apple TV models have seen excellent support from Apple compared to some other product lines, but it's not a guarantee.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">18 hours ago</span>
+            <span class="read-more"><a href="/2300332/how-long-new-apple-tv-last-lifespan/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300327/google-maps-features-work-better-android-auto-vs-carplay/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/6-google-maps-features-that-work-better-on-android-auto-vs-carplay/intro-1793216852.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/6-google-maps-features-that-work-better-on-android-auto-vs-carplay/intro-1793216852.jpg" width="426" height="240" alt="Google Maps route options on Android Auto above the Google Maps settings menu on Apple CarPlay.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300327/google-maps-features-work-better-android-auto-vs-carplay/#conversation">0</a></div>
+                        <div class="category-label label-transportation-evs parent-news"><a href="/category/transportation-evs/">EVs and Transportation</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-transportation-evs parent-news"><a href="/category/transportation-evs/">EVs and Transportation</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">19 hours ago</span>
+            </div>
+            <h3><a href="/2300327/google-maps-features-work-better-android-auto-vs-carplay/">6 Google Maps features that work better on Android Auto vs. CarPlay</a></h3>
+            <p class="article-excerpt">You would think that Maps would be the same regardless of your phone's brand, but there are some differences between the Android Auto and CarPlay experiences.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">19 hours ago</span>
+            <span class="read-more"><a href="/2300327/google-maps-features-work-better-android-auto-vs-carplay/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300335/how-to-add-rearrange-apps-samsung-smart-tv/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/how-to-add-and-rearrange-apps-on-your-samsung-smart-tv/intro-1792793521.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/how-to-add-and-rearrange-apps-on-your-samsung-smart-tv/intro-1792793521.jpg" width="426" height="240" alt="Hand holding a remote control with a smart TV showing apps blurred in the background.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300335/how-to-add-rearrange-apps-samsung-smart-tv/#conversation">3</a></div>
+                        <div class="category-label label-streaming parent-entertainment"><a href="/category/streaming/">Streaming</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-streaming parent-entertainment"><a href="/category/streaming/">Streaming</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Robin Bea</span> <span class="timestamp">19 hours ago</span>
+            </div>
+            <h3><a href="/2300335/how-to-add-rearrange-apps-samsung-smart-tv/">How to add and rearrange apps on your Samsung smart TV</a></h3>
+            <p class="article-excerpt">Though your Samsung smart TV comes pre-loaded with the most popular streaming apps, you may want to add others and do some reorganizing while you're at it.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Robin Bea</span> <span class="timestamp">19 hours ago</span>
+            <span class="read-more"><a href="/2300335/how-to-add-rearrange-apps-samsung-smart-tv/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300324/android-auto-next-update-could-upset-work-life-balance/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/android-auto-could-upset-your-work-life-balance-with-its-next-update/intro-1793021238.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/android-auto-could-upset-your-work-life-balance-with-its-next-update/intro-1793021238.jpg" width="426" height="240" alt="Smartphone beside a keyboard displaying the Android Auto app listing with Update and Uninstall buttons.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300324/android-auto-next-update-could-upset-work-life-balance/#conversation">1</a></div>
+                        <div class="category-label label-google parent-big-tech"><a href="/category/google/">Google</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-google parent-big-tech"><a href="/category/google/">Google</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">19 hours ago</span>
+            </div>
+            <h3><a href="/2300324/android-auto-next-update-could-upset-work-life-balance/">Android Auto could upset your work-life balance with its next update</a></h3>
+            <p class="article-excerpt">A hidden toggle buried in the Android Auto app's code isn't functional yet. Here's what it could do, what it might not, and what Google hasn't said so far.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Husain Parvez</span> <span class="timestamp">19 hours ago</span>
+            <span class="read-more"><a href="/2300324/android-auto-next-update-could-upset-work-life-balance/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2299525/ipad-widgets-didnt-realize-existed/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/10-ipad-widgets-you-probably-didnt-realize-existed/intro-1793198901.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/10-ipad-widgets-you-probably-didnt-realize-existed/intro-1793198901.jpg" width="426" height="240" alt="iPad on a table showing various app icons on its Home Screen.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2299525/ipad-widgets-didnt-realize-existed/#conversation">1</a></div>
+                        <div class="category-label label-apple parent-big-tech"><a href="/category/apple/">Apple</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-apple parent-big-tech"><a href="/category/apple/">Apple</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Ali Salman Zia</span> <span class="timestamp">20 hours ago</span>
+            </div>
+            <h3><a href="/2299525/ipad-widgets-didnt-realize-existed/">10 iPad widgets you probably didn't realize existed</a></h3>
+            <p class="article-excerpt">Widgets take advantage of your iPad's large screen, and some of the best ones are often overlooked.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Ali Salman Zia</span> <span class="timestamp">20 hours ago</span>
+            <span class="read-more"><a href="/2299525/ipad-widgets-didnt-realize-existed/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300320/ai-glasses-replace-prescription-should-they/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/ai-glasses-can-replace-your-prescription-glasses-but-should-they/intro-1792784878.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/ai-glasses-can-replace-your-prescription-glasses-but-should-they/intro-1792784878.jpg" width="426" height="240" alt="A close-up of the built-in camera on the Ray-Ban Meta glasses.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300320/ai-glasses-replace-prescription-should-they/#conversation">7</a></div>
+                        <div class="category-label label-meta parent-big-tech"><a href="/category/meta/">Meta</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-meta parent-big-tech"><a href="/category/meta/">Meta</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Filipe Espósito</span> <span class="timestamp">20 hours ago</span>
+            </div>
+            <h3><a href="/2300320/ai-glasses-replace-prescription-should-they/">AI glasses can replace your prescription glasses, but should they?</a></h3>
+            <p class="article-excerpt">You can easily get AI glasses with prescription if you need them, but before making the investment, it's recommended to learn the pros and cons of them.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Filipe Espósito</span> <span class="timestamp">20 hours ago</span>
+            <span class="read-more"><a href="/2300320/ai-glasses-replace-prescription-should-they/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2301054/using-one-earbud-more-than-other-cause-uneven-wear-and-tear/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/how-using-one-earbud-more-than-the-other-can-cause-uneven-wear-and-tear/intro-1792776566.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/how-using-one-earbud-more-than-the-other-can-cause-uneven-wear-and-tear/intro-1792776566.jpg" width="426" height="240" alt="An overhead view of a woman putting an earbud into her ear.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2301054/using-one-earbud-more-than-other-cause-uneven-wear-and-tear/#conversation">3</a></div>
+                        <div class="category-label label-wearables"><a href="/category/wearables/">Wearables</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-wearables"><a href="/category/wearables/">Wearables</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Christine Persaud</span> <span class="timestamp">20 hours ago</span>
+            </div>
+            <h3><a href="/2301054/using-one-earbud-more-than-other-cause-uneven-wear-and-tear/">How using one earbud more than the other can cause uneven wear and tear</a></h3>
+            <p class="article-excerpt">Using one earbud may feel like the natural choice at times, but the reality is that it can chip away at their lifespan if you don't kick the habit.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Christine Persaud</span> <span class="timestamp">20 hours ago</span>
+            <span class="read-more"><a href="/2301054/using-one-earbud-more-than-other-cause-uneven-wear-and-tear/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300311/this-is-the-right-way-to-clean-your-vinyl-records/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/this-is-the-right-way-to-clean-your-vinyl-records/intro-1793204302.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/this-is-the-right-way-to-clean-your-vinyl-records/intro-1793204302.jpg" width="426" height="240" alt="A record spinning on a turntable.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300311/this-is-the-right-way-to-clean-your-vinyl-records/#conversation">3</a></div>
+                        <div class="category-label label-news"><a href="/category/news/">News</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-news"><a href="/category/news/">News</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Will Shanklin</span> <span class="timestamp">20 hours ago</span>
+            </div>
+            <h3><a href="/2300311/this-is-the-right-way-to-clean-your-vinyl-records/">This is the right way to clean your vinyl records</a></h3>
+            <p class="article-excerpt">The answer depends on your budget — and how hardcore you want to get.&nbsp;</p>
+            <span class="author"><span class="by">By&nbsp;</span>Will Shanklin</span> <span class="timestamp">20 hours ago</span>
+            <span class="read-more"><a href="/2300311/this-is-the-right-way-to-clean-your-vinyl-records/">Read More</a></span>
+        </div>
+    </article>
+</li><li class="article-item">
+    <article class="article-block">
+        <div class="image-holder">
+                        <a href="/2300309/how-to-clean-playstation-5-without-damaging/">
+                <picture>
+                    <source srcset="https://www.engadget.com/img/gallery/how-to-clean-your-playstation-5-without-damaging-it/intro-1793029905.sm.webp" type="image/webp"><img src="https://www.engadget.com/img/gallery/how-to-clean-your-playstation-5-without-damaging-it/intro-1793029905.jpg" width="426" height="240" alt="A PlayStation 5 with the cover removed, exposing the fan beneath.">
+                </picture>
+            </a><div class="comment-count"><a href="https://www.engadget.com/2300309/how-to-clean-playstation-5-without-damaging/#conversation">1</a></div>
+                        <div class="category-label label-playstation parent-gaming"><a href="/category/playstation/">PlayStation</a></div>
+        </div>
+        <div class="article-description">
+            <div class="more-article-info">
+                            <span class="category label-playstation parent-gaming"><a href="/category/playstation/">PlayStation</a></span>
+                <span class="author"><span class="by">By&nbsp;</span>Thomas Godwin</span> <span class="timestamp">21 hours ago</span>
+            </div>
+            <h3><a href="/2300309/how-to-clean-playstation-5-without-damaging/">How to clean your PlayStation 5 without damaging it</a></h3>
+            <p class="article-excerpt">Your PS5 requires occasional maintenance to run at its best, but it only needs a light touch.</p>
+            <span class="author"><span class="by">By&nbsp;</span>Thomas Godwin</span> <span class="timestamp">21 hours ago</span>
+            <span class="read-more"><a href="/2300309/how-to-clean-playstation-5-without-damaging/">Read More</a></span>
+        </div>
+    </article>
+</li></ul>            </section>
+                    </div>
+
+        <div class="loading-more">
+    <svg class="loading-spinner" version="1.1" id="loader-1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="40px" height="40px" viewBox="0 0 50 50" style="enable-background:new 0 0 50 50;" xml:space="preserve">
+        <path d="M43.935,25.145c0-10.318-8.364-18.683-18.683-18.683c-10.318,0-18.683,8.365-18.683,18.683h4.068c0-8.071,6.543-14.615,14.615-14.615c8.072,0,14.615,6.543,14.615,14.615H43.935z">
+            <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.6s" repeatCount="indefinite"></animateTransform>
+        </path>
+    </svg>
+</div>    </main>
+
+            <footer id="footer">
+            <div class="mobile-ad-placeholder footer-ad" data-ad-height="any" data-ad-width="any" data-ad-pos="footer"></div>
+            <div class="holder">
+                <div id="footer-bottom">
+                    <div id="footer-link-container">
+                        <span><a href="/about/">About</a></span>
+                        <span><a href="/sitemap/">Archive</a></span>
+                        <span> <a href="https://www.static.com/engadget-privacy-policy" target="_blank">Privacy Policy</a></span>
+                    </div>
+                    <div id="footer-detail-container">
+                        <span class="copyright-text">© 2026 <a href="https://www.static.com/" target="_blank">Static Media</a><sup>®</sup></span>
+                        <span class="site-domain-name">Engadget.com</span>
+                        <span class="rights-text">All Rights Reserved</span>
+                        <div class="more-label">More From Static Media</div>
+                        <div class="brand-links"><a href="https://www.jalopnik.com/" target="_blank">Jalopnik</a><span></span><a href="https://www.tvline.com/" target="_blank">TVLine</a><span></span><a href="https://www.bgr.com/" target="_blank">BGR</a><span></span><a href="https://www.carscoops.com/" target="_blank">CarScoops</a><span></span><a href="https://www.sciencing.com/" target="_blank">Sciencing</a><span></span><a href="https://www.slashgear.com/" target="_blank">SlashGear</a></div>
+                    </div>
+                    <img src="https://www.engadget.com/img/engadget-icon-RGB-default.svg" alt="Engadget" width="48" height="48">
+                </div>
+            </div>
+        </footer></div>
+</div>
+
+            
+                    
+        
+        
+
+<div data-spotim-module="pitc"><ow-canpkdr90as></ow-canpkdr90as></div>
+        
+        
+            
+
+<iframe title="Subscribe with Google Service" src="https://news.google.com/swg/ui/v1/serviceiframe?_=1793649463435&amp;publicationId=publication-id-free" style="opacity: 0 !important; position: absolute !important; top: -10px !important; left: -10px !important; height: 1px !important; width: 1px !important;"></iframe><div open-web-ui-components-menus=""></div></body></html>

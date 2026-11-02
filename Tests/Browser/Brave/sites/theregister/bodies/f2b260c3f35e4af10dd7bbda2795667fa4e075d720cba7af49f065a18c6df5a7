@@ -1,0 +1,11 @@
+/** _default_loader - 6156b8c81b4d741e051f44c2_20240319T1327 - Kilkaya AS - Copyright 2024 - Config:default */
+
+(function () { 
+    var l = "https://cl.k5a.io/6156b8c81b4d741e051f44c2"
+    var d = document;
+    var c = d.createElement("script");
+    var m = ("noModule" in c);
+    c.type = (m?"module":"");
+    c.src = l+'.'+(m?'':'no')+'module.js';
+    d.getElementsByTagName('head')[0].appendChild(c);          
+})();

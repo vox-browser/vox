@@ -1,0 +1,3360 @@
+{
+  "version": 1,
+  "url": "https://slate.com/",
+  "source_document_request_method": "GET",
+  "sealed_unix": 1793649394.650675,
+  "responses": {
+    "https://slate.com/": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "X-DNS-Prefetch-Control",
+          "value": "off"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "age",
+          "value": "3331"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"7729c-I5jGMxLSWoGprFIDBvrwSC7SrlE\""
+        },
+        {
+          "name": "permissions-policy",
+          "value": "camera=(),microphone=(),geolocation=(),gyroscope=(),magnetometer=(),accelerometer=(),usb=()"
+        },
+        {
+          "name": "referrer-policy",
+          "value": "no-referrer-when-downgrade"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Cookie,X-Native-App-View, Origin"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 27, 0"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200072-IAD, cache-iad-kcgs7270032-IAD, cache-fra-eddf8230229-FRA"
+        },
+        {
+          "name": "x-slate-uuid",
+          "value": "f367e858-6220-436a-851b-6331670a8aa0"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.066051,VS0,VE5"
+        },
+        {
+          "name": "content-length",
+          "value": "318205"
+        },
+        {
+          "name": "Content-Type",
+          "value": "text/html;charset=utf-8"
+        }
+      ],
+      "sha256": "c81958f6ae3384dc80819dc8890654487bf3fc032885a6b5cfb51785faa432df",
+      "bytes": 318205
+    },
+    "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-md5",
+          "value": "GaJSTxWDcv8+UMATgf70jg=="
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "x-ms-request-id,Server,x-ms-version,Content-Type,Content-Encoding,ETag,Last-Modified,Content-MD5,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding"
+        },
+        {
+          "name": "x-ms-version",
+          "value": "2009-09-19"
+        },
+        {
+          "name": "etag",
+          "value": "0x8DF35C71BDD2C60"
+        },
+        {
+          "name": "x-ms-lease-status",
+          "value": "unlocked"
+        },
+        {
+          "name": "age",
+          "value": "65417"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 14:15:39 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "x-ms-request-id",
+          "value": "cfbeebc3-501e-00d8-7310-68345b000000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545b3befd383e67-ARN"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-ms-blob-type",
+          "value": "BlockBlob"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "60167"
+        }
+      ],
+      "sha256": "c417d61d7ec10c6cdee008c3912ce23b5584b3a0396aa2d418daf06206dab55e",
+      "bytes": 60167
+    },
+    "https://cdn.cookielaw.org/opt-out/otCCPAiab.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-md5",
+          "value": "ERttG9+iQk1LCPjR495NRw=="
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "x-ms-request-id,Server,x-ms-version,Content-Type,ETag,Last-Modified,Content-MD5,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding"
+        },
+        {
+          "name": "x-ms-version",
+          "value": "2009-09-19"
+        },
+        {
+          "name": "x-ms-lease-status",
+          "value": "unlocked"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "65514"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 22 Feb 2022 22:01:18 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "x-ms-request-id",
+          "value": "d824d06e-201e-00fe-3f85-3cafef000000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545b3befd3a3e67-ARN"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-ms-blob-type",
+          "value": "BlockBlob"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "22075"
+        }
+      ],
+      "sha256": "a7b7120dffd25546c93c1367b9c86a3dc87e71d2c89ebb39163a71eb3b659f01",
+      "bytes": 22075
+    },
+    "https://slate.com/static/media/components/masthead/sprite.86d1e4c.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"f8bd5d0d5148825db320bc0b33fc5ed8\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Jb2Sv5HEPl8y9lqtSAdqXS5gUV4ggFSU"
+        },
+        {
+          "name": "age",
+          "value": "263821"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 18:37:49 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-khef600051-IAD, cache-fra-eddf8230229-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "8, 2"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "CMAjonihxXdf2bHrHMlPItwxb7FeypCdBX/8p3Qi8xTfecQ82t0tLEx+9a9sRR5fL1Z0ObKWFn8="
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.297582,VS0,VE0"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "3Q5W2RN285B21XS3"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "26683"
+        }
+      ],
+      "sha256": "86d1e4cc2e069a3b78365a9b4f0595b8e881d59a45bde3e5791930cd04017f2e",
+      "bytes": 26683
+    },
+    "https://slate.com/static/media/sites/slate-com/global-sprite.e224d89.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"beb1795e840639e349b4dd26c27432ba\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "omkufHVWNHsg9BpOvkxnnDGPHxz9V4ot"
+        },
+        {
+          "name": "age",
+          "value": "532631"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 16 Mar 2026 14:49:26 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kjyo7100145-IAD, cache-fra-eddf8230229-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "2912, 1"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "nux8NWu1Udz6tZs3v4KChMHtqkN/eusM3rv8EswZ/JksIW0O31ht7rP0yhMm9XvckOKsEOOPZ64="
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.297242,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "C0TNC7CTDYFHBCAS"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "5108"
+        }
+      ],
+      "sha256": "e224d89f98deb8974271cdc3bde911328fd1093c775773d8cf26571d3c09352e",
+      "bytes": 5108
+    },
+    "https://slate.com/media/sites/slate-com/newsletter-sprite.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"6ab53cf1-1dc\""
+        },
+        {
+          "name": "age",
+          "value": "2579"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-khef600046-IAD, cache-iad-khef600028-IAD, cache-fra-eddf8230229-FRA"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 24 Sep 2026 15:08:33 GMT"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 161006, 0"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.297254,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "476"
+        }
+      ],
+      "sha256": "b44d426dd628752cc5324a74e49ca927eaffadfa8721220792c0c30246db36a6",
+      "bytes": 476
+    },
+    "https://slate.com/static/media/sites/slate-com/signifiers-sprite.7a83949.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"dadcaec1e67e6ec42edbfea278566dad\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "InbXyM1gJ4fia0toSAUdxsAvmYZQMpYS"
+        },
+        {
+          "name": "age",
+          "value": "547852"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 16 Mar 2026 14:49:26 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kjyo7100084-IAD, cache-fra-eddf8230229-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "1011, 1"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "FYc4AojT1UxsCfP5afQnPDu9uijirEj/8ZsTJaR0r4Hs2C2gweawA33L4mszf/3Ls/2+IhffxthpRWvywjCtNDIQ0xYbJAvZ"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.301425,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "JM2WR8EKETWPX6WF"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "1524"
+        }
+      ],
+      "sha256": "7a83949c223a4310fe1a9ba05d0fe2280cf1a25057a9e8f50a7b547e9bac1c1e",
+      "bytes": 1524
+    },
+    "https://dot.cdnslate.com/static/fonts/slate-com/Retina-Bold-subset.77f1049.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"4028e2cdfeddda133c688e04f6562713\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "z6G6oBf89WmwKWgNqCI_.Ic4vMsxRWd9"
+        },
+        {
+          "name": "age",
+          "value": "1669191"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 16 Mar 2026 14:49:23 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000059-IAD, cache-fra-eddf8230069-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "30685, 1"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "dWknlRUDSRUEbWnouwWJnSsOpqjBop/0eVyR6Mu1xhBAl/RAzuAmgzJ4tpnKaCqL1RLz7Nr3anaz7ou0RnM4eknqjmKefDqV"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.305819,VS0,VE2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "EFP6C32QNJ20MQ64"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "42296"
+        }
+      ],
+      "sha256": "77f1049a76c92d1b45e0751002bf59f26635d00018946c64213a4c43a840bd1c",
+      "bytes": 42296
+    },
+    "https://dot.cdnslate.com/static/fonts/slate-com/Register-HeavyItalic-subset.d42bb80.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"ebf2021d9b928a72b15881ecbb42bfb2\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "1CfW45Z426foyYneHaYRlGXzvQ6LaLMS"
+        },
+        {
+          "name": "age",
+          "value": "412520"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 16 Mar 2026 14:49:23 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200103-IAD, cache-fra-eddf8230069-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "11226, 1"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "/nLcJQB7nzDaRJOKrJymySfrVXFbtODVCtIUZfHLGHM5qZXV+canFdhS1wbcDmDcMCmgMvsjkOU="
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.305761,VS0,VE2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "EFP0N2T2XTJVHNEM"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "35112"
+        }
+      ],
+      "sha256": "d42bb800a50ddbf348ff64fa765ef182f93e2f8b64d65fc6ed2f5f97d602e64d",
+      "bytes": 35112
+    },
+    "https://slate.com/media/sites/slate-com/web-app-manifest.json": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"6ab53cf1-41b\""
+        },
+        {
+          "name": "age",
+          "value": "3141"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 24 Sep 2026 15:08:33 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200035-IAD, cache-iad-kcgs7200065-IAD, cache-fra-eddf8230081-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 2, 6"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.219698,VS0,VE89"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "1051"
+        }
+      ],
+      "sha256": "5b773f6a1a2f73b3fa59ffa90af2a37cdef24ad453918dceacc543136aafd8e8",
+      "bytes": 1051
+    },
+    "https://slate.com/n4qzk8pw?eventName=Page%2520View&eventData=%257B%2522ab_taboola_layout_test%2522%253Anull%252C%2522pv_count%2522%253A1%252C%2522layoutBreakpoint%2522%253A%2522lg%2522%257D": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "retry-after",
+          "value": "0"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.309560,VS0,VE0"
+        },
+        {
+          "name": "x-slate-uuid",
+          "value": "f367e858-6220-436a-851b-6331670a8aa0"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-fra-eddf8230229-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "content-length",
+          "value": "2"
+        }
+      ],
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "bytes": 2
+    },
+    "https://slate.com/piano/scripts/resize.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"6ae4f56d-902\""
+        },
+        {
+          "name": "age",
+          "value": "24"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200063-IAD, cache-iad-kcgs7200174-IAD, cache-fra-eddf8230229-FRA"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 19:52:13 GMT"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 344654, 1"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=60"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.331950,VS0,VE5"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "2306"
+        }
+      ],
+      "sha256": "731381782641f5f21c279b2076180743865559f25e1d02fb81c21233f812ca16",
+      "bytes": 2306
+    },
+    "https://cdn.cookielaw.org/consent/0e1d2de3-ec2a-48ca-8f78-11045575a199/0e1d2de3-ec2a-48ca-8f78-11045575a199.json": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-md5",
+          "value": "PnDEi3ijA+worCcEfEf98w=="
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "x-ms-request-id,Server,x-ms-version,Content-Type,Content-Encoding,Cache-Control,ETag,Last-Modified,Content-MD5,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding, X-OneTrust-IsBot"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "0x8DF34FDDEEFCECE"
+        },
+        {
+          "name": "age",
+          "value": "20355"
+        },
+        {
+          "name": "x-ms-lease-status",
+          "value": "unlocked"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-ms-version",
+          "value": "2009-09-19"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 03 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 14:15:08 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "x-onetrust-isbot",
+          "value": "true"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin, cross-origin"
+        },
+        {
+          "name": "x-ms-request-id",
+          "value": "a892d4d5-b01e-0073-7ce7-66e349000000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545b3bfaf30f351-ARN"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-ms-blob-type",
+          "value": "BlockBlob"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "7714"
+        }
+      ],
+      "sha256": "b864f99c350b9aafa35752912319830d4a5ffa21b545cc2f33b02d85ffa2746a",
+      "bytes": 7714
+    },
+    "https://dot.cdnslate.com/static/fonts/slate-com/Retina-BoldItalic-subset.c2b4700.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"1d82beec64fa75e84f459cca5c7be754\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "BJkhd2KQCahpvq41giN76LCSbqm0bNzS"
+        },
+        {
+          "name": "age",
+          "value": "403827"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 16 Mar 2026 14:49:23 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000069-IAD, cache-fra-eddf8230069-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "26404, 1"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "zkOLIvlUGoyYwJ4PGE7UIefF5JnCRvF31b2gAdRkhCOdW6AUYoN1ApI2I7rEyBwMlxtN/7xSf3g="
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.306330,VS0,VE2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "EFPC45TT9RF855M5"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "42972"
+        }
+      ],
+      "sha256": "c2b4700d49a18bb29aa7bdfebcb6df3ddc2bb7f672a5e128f5d2979722693b9d",
+      "bytes": 42972
+    },
+    "https://dot.cdnslate.com/static/fonts/slate-com/Retina-BookItalic-subset.e351a4d.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"55d2c91a899f7a0edc0bb24befa75b6b\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "RrtMYbIEt6QVkhMqmSB7hV2dvT9u4CCA"
+        },
+        {
+          "name": "age",
+          "value": "1242238"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 16 Mar 2026 14:49:23 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200078-IAD, cache-fra-eddf8230069-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "1606, 1"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "Mmyo0CJCiNdl1WamAhyifb4vTLdRUlTpYJCy+DSgSFlpL4X5ZETd+Iq1r/emjoJDWWfTcV930jo1Y8MmshLEmg2oLRImIWLp"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.305806,VS0,VE4"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "EFP9XTXKH0ZNTW2K"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "42372"
+        }
+      ],
+      "sha256": "e351a4def3c5e76899bac16564adac935392a33d627a7e478b8f83a09f0d5045",
+      "bytes": 42372
+    },
+    "https://dot.cdnslate.com/static/fonts/slate-com/Retina-Book-subset.dc123e1.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"09f32238805de5eb791b507f4f333b6e\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "Ddfsy84aJE7W1PaYzKn1cc_2lFVyl3Ub"
+        },
+        {
+          "name": "age",
+          "value": "604794"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 16 Mar 2026 14:49:23 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kjyo7100064-IAD, cache-fra-eddf8230069-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "2060, 1"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "OjVrZTaL7DBASlzj58osj3yMvKaS2RGaKIbjTNb302c2ruPvaHNu+H88xo2Rw7w/ZRF8gaggG9aZVydbJHU74/JK7MbsqDzI"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.307396,VS0,VE2"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "2FET49F2S6XBDT8Y"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "41548"
+        }
+      ],
+      "sha256": "dc123e1fdfe40c519213aed6431da35e0b5aa556e35dce4a4146417f02a335c3",
+      "bytes": 41548
+    },
+    "https://dot.cdnslate.com/static/fonts/slate-com/Register-Heavy-subset.a571c0d.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"aa3777e698e82bbfffe4ac6c8748b913\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "7WNqm1c7nqSFsl7JThNBpXiXoxnUuEGW"
+        },
+        {
+          "name": "age",
+          "value": "2869664"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 16 Mar 2026 14:49:23 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000065-IAD, cache-fra-eddf8230069-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "11207, 1"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "tOjCyKodBnNO7PXVm82KFIQNYRWitE1thVjCcF590WnhbA+FzpM0OCJfw9HGBGjBs4xGZIrsO00+Ija/dKTRSZH64zW/LFEl"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.307872,VS0,VE5"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "EFPFTTESW5T0DPXP"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "32432"
+        }
+      ],
+      "sha256": "a571c0d8f7c25bd282e8d038c5c2c8cb13b094f9e0a756989e3764bba404ee1f",
+      "bytes": 32432
+    },
+    "https://dot.cdnslate.com/static/fonts/slate-com/Lora-Regular-subset.0793386.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"7c00bec2d931680e3c238ef15f40b989\""
+        },
+        {
+          "name": "age",
+          "value": "390686"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 08 May 2024 16:26:30 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "font/woff2"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-fra-eddf8230069-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "vVBxnbo91UOpnLm1dJ+a3O9TajJL3miyQWKnaSaxBTKhBfSma0UaQW881RVDE/Jer5ryBuJ60F4="
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Cookie,X-AB,X-Native-App-View, Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.340565,VS0,VE7"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "36WNG52BT4NTZZC6"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "26032"
+        }
+      ],
+      "sha256": "07933861209e28131bb69e64f37c37afdd2999678f8a147f6a6bab05ae7148b8",
+      "bytes": 26032
+    },
+    "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location/dnsfeed": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cf-ray",
+          "value": "a545b3bfe866efdb-ARN"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "85"
+        }
+      ],
+      "sha256": "aa88c1a60cd777d4480eaf7c77826f8edb0f6c8ccd6ffa4548a83473fefa9ca7",
+      "bytes": 85
+    },
+    "https://slate.com/e075d95ba75/?id=": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "expires",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=UTF-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 19:25:50 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-fra-eddf8230151-FRA, cache-fra-eddf8230229-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 0"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Cache-Control"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Cookie,X-AB,X-Native-App-View, Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "private, max-age=900"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.290506,VS0,VE104"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "x-slate-uuid",
+          "value": "f367e858-6220-436a-851b-6331670a8aa0"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "541936"
+        }
+      ],
+      "sha256": "af0127412485e363336bdbc01ddf403888b7cdf330c69c4245f4268afe4712fd",
+      "bytes": 541936
+    },
+    "https://ats-wrapper.privacymanager.io/ats-modules/f6ed6589-5170-40c6-98bc-a4a49ff26fa8/ats.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "must-revalidate,public,max-age=3600"
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "68l2fujIkCQsxWW90emAoo_PSIqg512S"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"d3ecfdff8513e8c74bf7ef94f1fb1817\""
+        },
+        {
+          "name": "age",
+          "value": "3039"
+        },
+        {
+          "name": "via",
+          "value": "1.1 60e14ed0cb79469a4eda743a098574f2.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "9ot5QvBwPqNM3Ofmsv24ff8izC_hx0_OnRLt89_fyLBfoUvO8qBD-Q=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:06:10 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 02 Sep 2026 05:47:05 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "ARN53-P2"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "250980"
+        }
+      ],
+      "sha256": "c2d81ee59156f5e72910d8be5b196512b2f258f8f7993aa09d1521224d78ea94",
+      "bytes": 250980
+    },
+    "https://dot.cdnslate.com/static/media/sites/slate-com/games/games-sprite.8e9ba5a.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"7d0ee34f9cf33c3042ea11b45f59d262\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "pRH1PQMo9R5K3NUaXC6IXk2DaX0NuD.D"
+        },
+        {
+          "name": "age",
+          "value": "1230908"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 26 Aug 2026 17:26:56 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000197-IAD, cache-fra-eddf8230222-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "26802, 0"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "mS7eJIw2IO8qramOyBpI/fOg8mKfaUDRKyQw8h145/JTMv6BXuLIWK7QMKJec4QjwUiTcROaRvY="
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.450199,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "109JP0TBXAF91VVF"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "24892"
+        }
+      ],
+      "sha256": "8e9ba5a514edd885cb4d1d55bb948ed69b58129cb4e6e821a5b26cf620cb86b4",
+      "bytes": 24892
+    },
+    "https://geolocation.onetrust.com/cookieconsentpub/v1/geo/location": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, OPTIONS"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545b3c07907805b-ARN"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Content-Type"
+        },
+        {
+          "name": "content-length",
+          "value": "76"
+        }
+      ],
+      "sha256": "60889ce431247b69181eee426b43c698fa61986c6c271971308d57c57dc93f5b",
+      "bytes": 76
+    },
+    "https://dot.cdnslate.com/static/media/components/homepage-games-hub/slate-games-light.f430d27.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"3acbdaab69e7e85a3d05ab86fa75a349\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "RshMIFdJLQdisuygDBje67wl_Q_jiAnR"
+        },
+        {
+          "name": "age",
+          "value": "206254"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 19 Oct 2026 13:28:45 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-khef600068-IAD, cache-fra-eddf8230167-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "77, 1"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "rsCtasBbTZnraUxiG15nA3pyhUAcyIITzNSPgbxIigGa54nEfCSdcOxes4Xw2DSQfJLFu2i5Pu8="
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.486428,VS0,VE3"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "9N8AZYP5SJ9NY027"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "3733"
+        }
+      ],
+      "sha256": "f430d275e0b80428d66d342d9d7f707ce5b2146de4064e858b4e6ef0b138e210",
+      "bytes": 3733
+    },
+    "https://dot.cdnslate.com/static/media/layouts/layout-homepage/soundbites-promo.6ab3fb0.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"2e853a086c8b0e173f48227a9441b4cc\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "fWjIL8NPQJHae5DvNep6xc3QazxMtA8C"
+        },
+        {
+          "name": "age",
+          "value": "1976340"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 09 Oct 2026 17:43:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000138-IAD, cache-fra-eddf8230167-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "4, 0"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "XqjlqVScUh6BuZmbLghvnR4E0jgnRkbk/na9D6QtRgCY/smUzGdeoutMfYYO440IfceXYHMxJ1wNGdQqftFXpN+tPhHGMmXA"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649382.486639,VS0,VE4"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "YCSJJCQYVE1T9ZAD"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "18992"
+        }
+      ],
+      "sha256": "6ab3fb02d37d272d453027b64cd2d2eb1b0cb313e12b69fca02c1a15b80d465a",
+      "bytes": 18992
+    },
+    "https://compote.slate.com/images/802c476a-96f3-4afe-9594-3fbbf118ba72.jpeg?crop=7774%2C5183%2Cx0%2Cy1&s=image-585": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "fastly-io-info",
+          "value": "ifsz=4746232 idim=7774x5185 ifmt=jpeg ofsz=12629 odim=585x390 ofmt=avif"
+        },
+        {
+          "name": "etag",
+          "value": "\"oEB7Ofmixy0abc2UVCQU1a7B+FeGbsYTvtrL+msOIoM\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "3IyvSmPZj6tRUbzV4XShjFkxZwN1FF7u"
+        },
+        {
+          "name": "age",
+          "value": "24596"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/avif"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000037-IAD, cache-fra-eddf8230118-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "170, 0"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "TmaqcktmuSlXy6QQt7mRNZ7J9icSxEPQpPqI13Ol87JmdamxoGrV5QQ6XZGmK1TtKyrpLjMEIyE="
+        },
+        {
+          "name": "fastly-stats",
+          "value": "io=1"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649383.502392,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "CFV52YM76ZPVPMDC"
+        },
+        {
+          "name": "x-io",
+          "value": "/images/802c476a-96f3-4afe-9594-3fbbf118ba72.jpeg?crop=7774%2C5183%2Cx0%2Cy1&s=image-585&width=585&height=390&auto=avif"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "fastly-io-served-by",
+          "value": "img21-us-east4"
+        },
+        {
+          "name": "fastly-io-transform-stats",
+          "value": "ifsz=4746232 ofsz=12629 ofmt=avif"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "12629"
+        }
+      ],
+      "sha256": "74b6cd0e9f818fe149dca18389f09fbef9c7e72f7b555f9c2e9af91dd40b158d",
+      "bytes": 12629
+    },
+    "https://compote.slate.com/images/2658dce5-16d8-4087-b464-227c25eef17d.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "fastly-io-info",
+          "value": "ifsz=621645 idim=1560x1040 ifmt=jpeg ofsz=13034 odim=390x260 ofmt=avif"
+        },
+        {
+          "name": "etag",
+          "value": "\"/ziqmrlfCiGsehZlSl0CQQDLLITAr5ec+gkgvBNEkbs\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": ".jmgEeDwGOmOpBjZh68W.KbLC2PlM78x"
+        },
+        {
+          "name": "age",
+          "value": "33188"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/avif"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000177-IAD, cache-fra-eddf8230118-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "14, 0"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "WbvE6OBhDjomd0qSKGVxptUfMpZPZwUA/Wpnwty3YnTFvo0EBaT70g7DI+celkHvPijtnE0e/OXRW6BH6JWCAcn9TueliYwg"
+        },
+        {
+          "name": "fastly-stats",
+          "value": "io=1"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649383.501854,VS0,VE6"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "N99ZR3M7BKZNPX8C"
+        },
+        {
+          "name": "x-io",
+          "value": "/images/2658dce5-16d8-4087-b464-227c25eef17d.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390&width=390&height=260&auto=avif"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "fastly-io-served-by",
+          "value": "vpop-kiad7010246"
+        },
+        {
+          "name": "fastly-io-transform-stats",
+          "value": "ifsz=621645 ofsz=13034 ofmt=avif"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "13034"
+        }
+      ],
+      "sha256": "846e82ad4bc98ca6fb99fe33aa6d32a6c92b7a179064f4ff738b2df437c19bbc",
+      "bytes": 13034
+    },
+    "https://cdn.cookielaw.org/scripttemplates/202601.2.0/otBannerSdk.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-md5",
+          "value": "uKADREEOlzv2LBrDlFIfGA=="
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "x-ms-request-id,Server,x-ms-version,Content-Type,Content-Encoding,ETag,Last-Modified,Content-MD5,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding"
+        },
+        {
+          "name": "x-ms-version",
+          "value": "2009-09-19"
+        },
+        {
+          "name": "etag",
+          "value": "0x8DE7518C073F45D"
+        },
+        {
+          "name": "x-ms-lease-status",
+          "value": "unlocked"
+        },
+        {
+          "name": "age",
+          "value": "57557"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 26 Feb 2026 09:23:50 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "x-ms-request-id",
+          "value": "d06b528a-d01e-00eb-77ce-266d76000000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545b3c0c8643e67-ARN"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-ms-blob-type",
+          "value": "BlockBlob"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "541512"
+        }
+      ],
+      "sha256": "38a8c69203c812fdfef2ff1c5781e148fde568d61570660b3f70c6f7b309d8b7",
+      "bytes": 541512
+    },
+    "https://cdn.cookielaw.org/consent/0e1d2de3-ec2a-48ca-8f78-11045575a199/01a17956-c410-7d7b-a9d0-92ab94656060/en.json": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-md5",
+          "value": "tFp8IrdG9JeTuXzn8oJGzg=="
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "x-ms-request-id,Server,x-ms-version,Content-Type,Content-Encoding,Cache-Control,ETag,Last-Modified,Content-MD5,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding, X-OneTrust-IsBot"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "0x8DF34FE035032BA"
+        },
+        {
+          "name": "age",
+          "value": "20351"
+        },
+        {
+          "name": "x-ms-lease-status",
+          "value": "unlocked"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-ms-version",
+          "value": "2009-09-19"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 03 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 14:16:09 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "x-onetrust-isbot",
+          "value": "true"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin, cross-origin"
+        },
+        {
+          "name": "x-ms-request-id",
+          "value": "29817fb8-a01e-0028-60e7-66e435000000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545b3c1595ef351-ARN"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-ms-blob-type",
+          "value": "BlockBlob"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "500119"
+        }
+      ],
+      "sha256": "7e103fe3953ed8f3514a47f3c557999d99cc64a4fce22eb665726a0c05bbfd2e",
+      "bytes": 500119
+    },
+    "https://compote.slate.com/images/cc5829d5-8e67-4506-b83e-f6ae7049f00b.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "fastly-io-info",
+          "value": "ifsz=398576 idim=1560x1040 ifmt=jpeg ofsz=22760 odim=390x260 ofmt=avif"
+        },
+        {
+          "name": "etag",
+          "value": "\"Mar+lQzUjZl7Nfwy1e8bjubEXTtt4q2NpcPrdODYFLA\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "tI92V13YQZO_lh8auSVqXm69voEg6Bw8"
+        },
+        {
+          "name": "age",
+          "value": "252628"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/avif"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200143-IAD, cache-fra-eddf8230118-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "33, 0"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "M1w3pxEBManr7oT+pvfmgyxHQSjR67Jqlw/Gjm3eewuyXLbVKsR4FtErBxNSU/acCxz+ozDHVh8="
+        },
+        {
+          "name": "fastly-stats",
+          "value": "io=1"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649383.627589,VS0,VE3"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "8B3M9ACRGAV9A42S"
+        },
+        {
+          "name": "x-io",
+          "value": "/images/cc5829d5-8e67-4506-b83e-f6ae7049f00b.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390&width=390&height=260&auto=avif"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "fastly-io-served-by",
+          "value": "vpop-kiad7010214"
+        },
+        {
+          "name": "fastly-io-transform-stats",
+          "value": "ifsz=398576 ofsz=22760 ofmt=avif"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "22760"
+        }
+      ],
+      "sha256": "1d7038540c17847d9f2373255f0cf422d8c8f720e840eed93889ccd4b6306435",
+      "bytes": 22760
+    },
+    "https://slate.com/e075d95ba75/oo1aRaRiY0hXljcmFQMVp4pi_VTGc916tWUaVV8QzpcuS_j2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "expires",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=UTF-8"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-fra-eddf8230134-FRA, cache-fra-eddf8230134-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 0"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "Cache-Control"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Cookie,X-AB,X-Native-App-View, Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "private, max-age=900"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649383.535779,VS0,VE127"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "x-slate-uuid",
+          "value": "f367e858-6220-436a-851b-6331670a8aa0"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "542064"
+        }
+      ],
+      "sha256": "47bdf6ad3894b2bc7e2c544797f5e88d1b51c0c1c9ddaac44302c76c3c64ee8a",
+      "bytes": 542064
+    },
+    "https://cdn.cookielaw.org/scripttemplates/202601.2.0/assets/otCommonStyles.css": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-md5",
+          "value": "/JvU+J3LtLbxQIG9SQymoQ=="
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "x-ms-request-id,Server,x-ms-version,Content-Type,ETag,Last-Modified,Content-MD5,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding"
+        },
+        {
+          "name": "x-ms-version",
+          "value": "2009-09-19"
+        },
+        {
+          "name": "x-ms-lease-status",
+          "value": "unlocked"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "60027"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 26 Feb 2026 09:23:53 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "x-ms-request-id",
+          "value": "886a2ad6-401e-00a1-0a1e-295d11000000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545b3c1fa73f351-ARN"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-ms-blob-type",
+          "value": "BlockBlob"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "27608"
+        }
+      ],
+      "sha256": "de45c59da3e4dad94aad246fc9cc415f9ddfaa039256fec0a795b65ff0cda828",
+      "bytes": 27608
+    },
+    "https://cdn.cookielaw.org/consent/0e1d2de3-ec2a-48ca-8f78-11045575a199/01a17956-c410-7d7b-a9d0-92ab94656060/bLayout-en.json": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-expose-headers",
+          "value": "x-ms-request-id,Server,x-ms-version,Content-Type,Content-Encoding,Cache-Control,ETag,Last-Modified,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding, X-OneTrust-IsBot"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "etag",
+          "value": "0x8DF34FE0A92E51A"
+        },
+        {
+          "name": "age",
+          "value": "20346"
+        },
+        {
+          "name": "x-ms-lease-status",
+          "value": "unlocked"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "x-ms-version",
+          "value": "2009-09-19"
+        },
+        {
+          "name": "expires",
+          "value": "Tue, 03 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 14:16:21 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "accept-encoding"
+        },
+        {
+          "name": "x-onetrust-isbot",
+          "value": "true"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin, cross-origin"
+        },
+        {
+          "name": "x-ms-request-id",
+          "value": "8d61cf73-101e-00fd-3be7-66ace8000000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545b3c1fa72f351-ARN"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-ms-blob-type",
+          "value": "BlockBlob"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "17053"
+        }
+      ],
+      "sha256": "f57c3f282a716fdde311d3d852f9115bbc5cdd014b0e2c1eb210cc647b2f345f",
+      "bytes": 17053
+    },
+    "https://compote.slate.com/images/c21aeb41-0a21-4928-a328-a66ac7438f0b.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-585": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "fastly-io-info",
+          "value": "ifsz=335525 idim=1560x1040 ifmt=jpeg ofsz=28278 odim=585x390 ofmt=avif"
+        },
+        {
+          "name": "etag",
+          "value": "\"y+5ncArSKJ2q/omytE96YqUHlC9HMUKrE5wo7Oev2As\""
+        },
+        {
+          "name": "x-amz-version-id",
+          "value": "9klHvTGU3yW5S7lMRjDQV2f7LaFso05G"
+        },
+        {
+          "name": "age",
+          "value": "268071"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/avif"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200124-IAD, cache-fra-eddf8230060-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "74, 0"
+        },
+        {
+          "name": "x-amz-id-2",
+          "value": "FnQvNC+ijWjsA43LXdULIGLLmhOVedRG6IxR1VSIW4uHJClQVSSsc/H85XgrSaL46b1IghlKfcsHyc01sCltmNYnHw2ECiN2"
+        },
+        {
+          "name": "fastly-stats",
+          "value": "io=1"
+        },
+        {
+          "name": "vary",
+          "value": "Accept"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=315360000"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649383.769967,VS0,VE2"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "x-amz-request-id",
+          "value": "CRPQVEP190D3VXDD"
+        },
+        {
+          "name": "x-io",
+          "value": "/images/c21aeb41-0a21-4928-a328-a66ac7438f0b.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-585&width=585&height=390&auto=avif"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "fastly-io-served-by",
+          "value": "vpop-kiad7010250"
+        },
+        {
+          "name": "fastly-io-transform-stats",
+          "value": "ifsz=335525 ofsz=28278 ofmt=avif"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "28278"
+        }
+      ],
+      "sha256": "76372d919dd3b4d1b7384b7b64510b5c1f51a9f3ae43ae318e4f90a3bad580de",
+      "bytes": 28278
+    },
+    "https://cdn.cookielaw.org/logos/static/ot_close.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-md5",
+          "value": "pcXWFGpuVeSg/jVnYCseRg=="
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "x-ms-request-id,Server,x-ms-version,Content-Type,ETag,Last-Modified,Content-MD5,x-ms-lease-status,x-ms-blob-type,Content-Length,Date,Transfer-Encoding"
+        },
+        {
+          "name": "x-ms-version",
+          "value": "2009-09-19"
+        },
+        {
+          "name": "x-ms-lease-status",
+          "value": "unlocked"
+        },
+        {
+          "name": "cf-cache-status",
+          "value": "HIT"
+        },
+        {
+          "name": "age",
+          "value": "49353"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:22 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 14:15:41 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=86400"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "x-ms-request-id",
+          "value": "9ffe65dc-201e-007d-6e35-680f42000000"
+        },
+        {
+          "name": "cf-ray",
+          "value": "a545b3c27b9f3e67-ARN"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-ms-blob-type",
+          "value": "BlockBlob"
+        },
+        {
+          "name": "server",
+          "value": "cloudflare"
+        },
+        {
+          "name": "content-length",
+          "value": "651"
+        }
+      ],
+      "sha256": "901bb0e03b8c3c0a1cf4c487a177417328bb7d8c94106ecefceedd7d7f6c4ddc",
+      "bytes": 651
+    },
+    "https://slate.com/e075d95ba75/as/d/ccm/conversion/794295919/?random=1793649383289&cv=11&fst=1793649383289&fmt=3&bg=ffffff&guid=ON&async=1&en=page_view&gtm=45892e6at0v9176038600za20szb77638237zd77638237xecxf4&gcs=G111&gcd=13t3t3t3t5l1&dma=0&tag_exp=115938465~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121246026~121246034~123691370&u_w=800&u_h=600&url=https%3A%2F%2Fslate.com%2F&rcb=17&evjid=5-pSVVJVqgSAb8Vdbw&frm=0&tiba=Slate%20Magazine%20-%20Politics%2C%20Business%2C%20Technology%2C%20and%20the%20Arts&gdid=dYWJhMj.dNzdkNz&npa=0&us_privacy=1---&pscdl=noapi&auid=1165245865.1793649383&label=T7l2CIX-2ZcaEO_83_oC&did=dYWJhMj&hn=www.googleadservices.com&uaa=arm&uab=64&uafvl=Not%253AA-Brand%3B8.0.0.0%7CChromium%3B156.0.0.0%7CBrave%3B156.0.0.0&uamb=0&uam=&uap=macOS&uapv=27.2.0&uaw=0&ec_mode=a&oid=GG_101937636.1793649383&oidsrc=3&ecsid2=1955025442.1793649383&_tu=ABA&gtb=3&mt=1&gcl_ctr=1~0~0~0&data=event%3Dgtag.config&gap.gtb=3&category=acrcp_v1_512&emd=tvd.1&eme=tv.1~&gap.ch=1&_uip=%3A%3A": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"ascnsrsgac:99:0\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/scaffolding/ascnsrsgac:99:0\"}],}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 01 Jan 1990 00:00:00 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, MISS"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:23 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 17 May 1998 03:00:00 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/gif"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-fra-eddf8230134-FRA, cache-fra-eddf8230134-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 0"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "vary",
+          "value": "Cookie,X-AB,X-Native-App-View, Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "cache-control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "name": "pragma",
+          "value": "no-cache"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649383.337675,VS0,VE64"
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "x-slate-uuid",
+          "value": "f367e858-6220-436a-851b-6331670a8aa0"
+        },
+        {
+          "name": "content-security-policy-report-only",
+          "value": "script-src 'none'; form-action 'none'; frame-src 'none'; report-uri https://csp.withgoogle.com/csp/scaffolding/ascnsrsgac:99:0"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "cross-origin-opener-policy-report-only",
+          "value": "same-origin; report-to=ascnsrsgac:99:0"
+        },
+        {
+          "name": "content-length",
+          "value": "35"
+        }
+      ],
+      "sha256": "8337212354871836e6763a41e615916c89bac5b3f1f0adf60ba43c7c806e1015",
+      "bytes": 35
+    },
+    "https://slate.com/media/sites/slate-com/icon.192x192.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"6ab53cf1-8f7\""
+        },
+        {
+          "name": "age",
+          "value": "3761"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kcgs7200143-IAD, cache-iad-kcgs7200143-IAD, cache-fra-eddf8230134-FRA"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 24 Sep 2026 15:08:33 GMT"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 340, 0"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649389.003018,VS0,VE6"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "2295"
+        }
+      ],
+      "sha256": "e183f8d6e06bc62f6a81e56bc368eda75d7261f9385c1fae6cb19f24578a81ae",
+      "bytes": 2295
+    },
+    "https://slate.com/media/components/meta-icons/favicon.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"6ab53cf1-3a9\""
+        },
+        {
+          "name": "age",
+          "value": "2524"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 24 Sep 2026 15:08:33 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000120-IAD, cache-iad-kiad7000120-IAD, cache-fra-eddf8230134-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 370, 0"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649389.003038,VS0,VE9"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "937"
+        }
+      ],
+      "sha256": "a1ac621592b8f0b6e334f0663e675c2355021d9900c346bf8845f90815a314e1",
+      "bytes": 937
+    },
+    "https://slate.com/favicon.ico": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"6ab53cf1-1536\""
+        },
+        {
+          "name": "age",
+          "value": "3381"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\";ma=86400,h3-29=\":443\";ma=86400,h3-27=\":443\";ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "MISS, HIT, HIT"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:56:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/vnd.microsoft.icon"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 24 Sep 2026 15:08:33 GMT"
+        },
+        {
+          "name": "x-served-by",
+          "value": "cache-iad-kiad7000179-IAD, cache-iad-kiad7000179-IAD, cache-fra-eddf8230134-FRA"
+        },
+        {
+          "name": "x-cache-hits",
+          "value": "0, 566, 1"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "sameorigin"
+        },
+        {
+          "name": "strict-transport-security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "upgrade-insecure-requests;frame-ancestors 'self' slate.com *.slate.com *.my.slate.com"
+        },
+        {
+          "name": "x-timer",
+          "value": "S1793649389.071782,VS0,VE2"
+        },
+        {
+          "name": "x-slate-uuid",
+          "value": "f367e858-6220-436a-851b-6331670a8aa0"
+        },
+        {
+          "name": "via",
+          "value": "1.1 varnish, 1.1 varnish"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "content-length",
+          "value": "5430"
+        }
+      ],
+      "sha256": "a85b0578562d82c677af6b987122ceb5ffbf35bff15a7d4e60f2f3e288bbe47f",
+      "bytes": 5430
+    }
+  },
+  "workload": "Frozen guest DOM; scripts removed; original resource bytes",
+  "live_png_sha256": "5743dcb13bf400ab11c6f7e135bdeb93175c2afe620b69eead3bd4e6be73549d",
+  "capture_report_sha256": "d535d8f8943b4de29dd841dbc7d64e214f338cf2f5056ef07e563ab00e8b958a"
+}

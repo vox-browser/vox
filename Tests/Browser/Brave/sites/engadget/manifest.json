@@ -1,0 +1,4013 @@
+{
+  "version": 1,
+  "url": "https://www.engadget.com/",
+  "source_document_request_method": "GET",
+  "sealed_unix": 1793649482.439008,
+  "responses": {
+    "https://www.engadget.com/": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "X-DNS-Prefetch-Control",
+          "value": "off"
+        },
+        {
+          "name": "age",
+          "value": "112"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:55:22 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "4syuZ5Jt-d_Q2mNB8oGK8YmFmueB-eYdxOlFX79A3oJTF1Pj7vsf-w=="
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-frame-options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "name": "content-length",
+          "value": "152599"
+        },
+        {
+          "name": "Content-Type",
+          "value": "text/html;charset=utf-8"
+        }
+      ],
+      "sha256": "658779669ac9920b8d217f3b66ce253027ac010cf1b835e25c5e235afc6b6b4b",
+      "bytes": 152599
+    },
+    "https://www.engadget.com/wp-content/themes/unified/css/home.engadget.min.css?design=3&v=1791925653": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace9d95-8e02\""
+        },
+        {
+          "name": "age",
+          "value": "1723697"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 08 Oct 2027 21:09:01 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "9TRMPDuouAHLXfZoeC4LJ0rJmkL3xwQ2idLANvQnQQ2zIW-hJrZOMA=="
+        },
+        {
+          "name": "date",
+          "value": "Tue, 13 Oct 2026 21:09:01 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 21:07:33 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx/1.18.0 (Ubuntu)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "36354"
+        }
+      ],
+      "sha256": "5ca3e517ef88adc5038d19fa0bf978527c90fbb42a5421a6d7e7dc37e4a291e6",
+      "bytes": 36354
+    },
+    "https://www.engadget.com/font/Guardian-Text-Sans-Web-Bold.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "etag",
+          "value": "\"39a6b0f0385530939b13fb11fc8dd281\""
+        },
+        {
+          "name": "age",
+          "value": "45024"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "Hu9m4YYkJogS036KlnBhlr5Jc3kqZsqRePKtQ29Cli3paOOVIcsSUA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 07:27:35 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/x-www-form-urlencoded"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 04 Mar 2026 14:57:00 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "40764"
+        }
+      ],
+      "sha256": "077afea67db40d9bdb8552e3fb964536eb675034d6e4fde0df3234df040697bc",
+      "bytes": 40764
+    },
+    "https://www.engadget.com/font/Guardian-Text-Sans-Web-Regular.woff2": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1800"
+        },
+        {
+          "name": "etag",
+          "value": "\"96b84a2938bc18a506d82616d4a68fef\""
+        },
+        {
+          "name": "age",
+          "value": "64608"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "OMO4EtMWbXUzfowF-d0IB3xm9QHUqILBYtOzjJ_veVI3YjXCh17iBw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 02:04:11 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/x-www-form-urlencoded"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 04 Mar 2026 14:57:01 GMT"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "36868"
+        }
+      ],
+      "sha256": "6eb2469dc4c784a7ba5e48806660c2683e20d91363fb6eececfb2c49cb16051d",
+      "bytes": 36868
+    },
+    "https://www.engadget.com/img/engadget-logo-RGB-default.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6cff9e9dbfd1827c73ca3f3d5963d152\""
+        },
+        {
+          "name": "age",
+          "value": "55704"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "qdyRzr49QA3qfrt881zLWr9mn-PHAIEcPw3cKohjic0tKocUDUOaxQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 04:29:02 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 23 Feb 2026 19:41:16 GMT"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "1758"
+        }
+      ],
+      "sha256": "2b875c4c47d193df6263265efb14935c8c7a8813e8c14efe22a3f532e2a409d0",
+      "bytes": 1758
+    },
+    "https://www.engadget.com/img/gallery/casios-new-keyboard-lets-anyone-play-along-to-songs-without-ever-hitting-a-wrong-note/intro-1793648368.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"b5c718d93fbb45f3d409dca8636dcd6a\""
+        },
+        {
+          "name": "age",
+          "value": "722"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "zwP87ecHF2YlTpVrPTBOe7I4OX16GWvJeYm7Snk7dDSiU60gqfbbGA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:45:23 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 19:39:30 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "22772"
+        }
+      ],
+      "sha256": "d0abc28efd5dff5763262ebf44cd2245e65c9b890600d0b57a6a6488a9c26dca",
+      "bytes": 22772
+    },
+    "https://www.engadget.com/img/gallery/snap-settles-social-media-addiction-lawsuit-to-avoid-trial/intro-1793646506.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"ebf9edd8f0f860d7f53fe5e62f24ca05\""
+        },
+        {
+          "name": "age",
+          "value": "2717"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "PkqtBw-VyUSiE1bL_1Ipcx3Bjm8BN4z6twYkQfVasOixS1f72IKhzg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:12:08 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 19:08:29 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "14570"
+        }
+      ],
+      "sha256": "2cb17329c1b85f3d8d9de68bee32c46ee43c009f34b7c36317ec5a4af77abde0",
+      "bytes": 14570
+    },
+    "https://www.engadget.com/img/gallery/why-some-websites-are-blocking-ai-agents-from-accessing-the-web/intro-1792775857.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"4283f299671a81e297832ceb6a06af95\""
+        },
+        {
+          "name": "age",
+          "value": "3334"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "eF0gcm7VpOHvSwPQdU-kq9aoaItnkZ1RzY89ayXqJ1GZJ9CfizS6cw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:01:51 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 23 Oct 2026 17:17:40 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "10966"
+        }
+      ],
+      "sha256": "88ffe4d51fec5b49f7e9d1eccfee66858513e66cbca9289e3f8d48bd0e034ec2",
+      "bytes": 10966
+    },
+    "https://www.engadget.com/img/gallery/think-twice-before-putting-your-gaming-console-inside-a-cabinet/intro-1793381114.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"44d765aac119dcde9c3dcba90c64a214\""
+        },
+        {
+          "name": "age",
+          "value": "6104"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "_CN4agoREnW32uRJgmBxBOFNEAqKs4IVsVxxDMq2jO6gKGCS0K_E1w=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 18:15:41 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 17:25:17 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "12740"
+        }
+      ],
+      "sha256": "080d36d8c3080ad5bda61be7cd231c14e2960f1a512823f5b2ed9954f3ba85b6",
+      "bytes": 12740
+    },
+    "https://www.engadget.com/img/gallery/this-samsung-galaxy-problem-sadly-still-exists-in-2026-but-you-can-easily-fix-it/intro-1792419029.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"a808200ea04322e3024252520114aed6\""
+        },
+        {
+          "name": "age",
+          "value": "7901"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "mUL51qHZGYsPxqA-sRckq3YG0qz55bC7Ynrm_CSb7b4S7ZYCVlnxJg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 17:45:43 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 19 Oct 2026 14:10:32 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "10832"
+        }
+      ],
+      "sha256": "3b0b325cc173a0a709f8bb7b8ec5814e987b33a0f4372a3649772145c88920a0",
+      "bytes": 10832
+    },
+    "https://www.engadget.com/img/engadget-icon-RGB-default.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "etag",
+          "value": "\"ddcb1acb7f6700625a9430e534108b4f\""
+        },
+        {
+          "name": "age",
+          "value": "60172"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "rr0E9wVdX9IzlRDXcqM64Ua6Nv7VxI_lWbCgm1HgblAovWInkTmI7w=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 04:16:48 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 23 Feb 2026 19:41:16 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "408"
+        }
+      ],
+      "sha256": "8d7c838e3a96da135d0ac84951b83ef4e7409f3c995e9e2c0eb7663ede0b3fe0",
+      "bytes": 408
+    },
+    "https://www.engadget.com/img/gallery/dell-xps-googlebook-review-beautiful-hardware-for-a-useless-platform/intro-1793629252.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"f082c0167be3bc3404facde90396338e\""
+        },
+        {
+          "name": "age",
+          "value": "19905"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "qyrnHKlNC44jc9lLpQiIJGgPBjJuJvUMzHPLLSqocKuISz1xftHlxg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 14:25:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 14:20:55 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "58572"
+        }
+      ],
+      "sha256": "8285b5bb088a1bc8402bfb3ca2cd89ffed598d0930164febb13857ba2201783b",
+      "bytes": 58572
+    },
+    "https://www.engadget.com/img/gallery/what-happens-when-ai-starts-self-replicating/intro-1793389611.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"77477de276b8e7e8b43fd2d46332284c\""
+        },
+        {
+          "name": "age",
+          "value": "199559"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "8dvM8uQwTgcVU7Es2IlryMMQar9ThQkrEgC_9zZDnQjSIN5mr4jS-w=="
+        },
+        {
+          "name": "date",
+          "value": "Sat, 31 Oct 2026 12:31:26 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 19:46:53 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "37976"
+        }
+      ],
+      "sha256": "140f1b9b5c98a7117d75f68ab9d5be6340c89dbec08a5ba473ddcd0c7d424939",
+      "bytes": 37976
+    },
+    "https://www.engadget.com/img/gallery/one-annoying-problem-with-the-iphone-messages-app-has-an-easy-fix/intro-1793114293.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"93ac2b710a5e91e9cfdae88c6a1052f4\""
+        },
+        {
+          "name": "age",
+          "value": "11203"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "g8IOmgdsoQPUiLrNzxFHuqTngWoQ3gs18fNhCUM8fT87Sla2cfONHg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 16:50:42 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 15:18:16 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "16788"
+        }
+      ],
+      "sha256": "b27b5ac69dd49f4cbfd793325674a347f678c9bf80ae6d99bbee371ff4663aba",
+      "bytes": 16788
+    },
+    "https://www.engadget.com/img/gallery/ai-software-clones-are-coming-for-big-name-companies-like-adobe/intro-1793354854.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"4609920e086e892d7b6d83acbf8dde6c\""
+        },
+        {
+          "name": "age",
+          "value": "101065"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "R4wMc5MVYkK-pZa47qVwzQ68fIoF9gcLEY96IfcANXXYSTI-PY9H8A=="
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 15:53:00 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 10:07:36 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "42630"
+        }
+      ],
+      "sha256": "42246c824ceeb84557cbd844da40d482561cf4afdf5062955083e0cbe85ab99f",
+      "bytes": 42630
+    },
+    "https://www.engadget.com/img/gallery/what-to-do-if-your-smart-home-devices-keep-disconnecting-from-wi-fi/intro-1793217315.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"a50769a72807549e8854bfeeb7ba3232\""
+        },
+        {
+          "name": "age",
+          "value": "13301"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "D5Gz5qXDKw5AzYpY9m2Q3nb7I03sWIvylAXYPOUvyUv-eKAofqCeUQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 16:15:44 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 19:55:17 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "8196"
+        }
+      ],
+      "sha256": "54f09d3e75eba6c11b27ddd60b8de67729326ede039c3c0cbf6dce3a6fb51dee",
+      "bytes": 8196
+    },
+    "https://www.engadget.com/img/gallery/why-its-important-to-use-a-microsd-card-with-your-nintendo-switch-2/intro-1791815329.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"5624f6b3f232d929551303966f3f67de\""
+        },
+        {
+          "name": "age",
+          "value": "18619"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "pVttoNQYD-MrjxquX4nEg3B7G9xns9rmprgBGJ6nvqJs4XtZbptOVQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 14:47:06 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 12 Oct 2026 14:28:52 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "16968"
+        }
+      ],
+      "sha256": "564f470094d5f2776dbbfcd3938179ffda2e5341d68698ed88e5ef3e95c79eed",
+      "bytes": 16968
+    },
+    "https://www.engadget.com/img/gallery/lenovo-googlebook-15-review-your-android-phones-new-best-friend/intro-1793300409.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"04ff6b96388de3382959ef6f6031358b\""
+        },
+        {
+          "name": "age",
+          "value": "287512"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "pEBTWuW9kzdrCJtbjP28-exFbqhLqtsAAIzSBOq_k649TCkdH7eOOw=="
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 12:05:33 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 19:00:12 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "32798"
+        }
+      ],
+      "sha256": "2fd4d0d9effd8ef023fd102369173f598e32345c073a9754ca8b3ebc19fee443",
+      "bytes": 32798
+    },
+    "https://www.engadget.com/img/gallery/heres-how-much-ram-cost-in-2020-vs-2026/intro-1792417103.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"ddb75100faf888cbc372e800605b5e77\""
+        },
+        {
+          "name": "age",
+          "value": "22096"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "ILnovgaPF3l_jWTxR8rRlJDJxTR0qBC84C5sP-PVSb_2zDXVdLvh7w=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 13:49:09 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 19 Oct 2026 13:38:26 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "17484"
+        }
+      ],
+      "sha256": "9df2175487e5834a54071c1eb46d4ae8b20302c092fdb38fd225fd3dfc0b0d9b",
+      "bytes": 17484
+    },
+    "https://www.engadget.com/img/gallery/apple-is-reportedly-launching-three-new-ipads-early-next-year/intro-1793617622.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"b32b492d45a5f452e17d17ba378cfe7d\""
+        },
+        {
+          "name": "age",
+          "value": "31019"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "I9zKLh7oqM6knNRyZ2nuhaHFwWjWRPYyOw4HDiSJ0eGcOJLVcj8vOQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 11:20:26 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 11:07:04 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "43318"
+        }
+      ],
+      "sha256": "9e4d05a527a06a97215e79b64903b1fc4bf5f9c2c96294c99d561dbd1f383417",
+      "bytes": 43318
+    },
+    "https://www.engadget.com/img/gallery/nagoshi-studio-from-the-creator-of-the-yakuza-series-officially-shuts-down/intro-1793635351.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"8753e67dca09ea83a5ecd47f3df7ed94\""
+        },
+        {
+          "name": "age",
+          "value": "13836"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "Oggp5rHus7TPDPPvqmWICrLk2-Bfrd3_DKHsxT5ecshfIhW4hatXWQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 16:06:49 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 16:02:34 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "28164"
+        }
+      ],
+      "sha256": "b13659cab9b6bcc91c4b461cfead8c191faec7c6c296d80ab62ef441fd590127",
+      "bytes": 28164
+    },
+    "https://www.engadget.com/img/gallery/android-auto-could-upset-your-work-life-balance-with-its-next-update/intro-1793021238.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"c327c1f51464137a64db434f44b8ba70\""
+        },
+        {
+          "name": "age",
+          "value": "69906"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "gKBLU0THPJcnXr8GpTSs4sfM_xE3T_nsD2e6H5TxRc351sn0SuKOvg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 00:32:18 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 26 Oct 2026 13:27:22 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "10782"
+        }
+      ],
+      "sha256": "5a2126fe9dde26bbe3a628045ea5d7d6ce233d5869e0d38e0692118144c2e160",
+      "bytes": 10782
+    },
+    "https://www.engadget.com/img/gallery/despite-good-initial-hardware-the-googlebook-os-is-holding-the-platform-back/intro-1793383802.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"bb867f6ec8daab33107319163f4a5889\""
+        },
+        {
+          "name": "age",
+          "value": "262626"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "pq2vVTiTnVMtJ0pNAm1esD37qAYFRjh8SA5aQ2hGBG50vH_UgTM0-w=="
+        },
+        {
+          "name": "date",
+          "value": "Fri, 30 Oct 2026 19:00:19 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 30 Oct 2026 18:10:04 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "79662"
+        }
+      ],
+      "sha256": "74cfb717da9eeed06ba3109781170adc0ff8a21b804e9850007fd3460575d990",
+      "bytes": 79662
+    },
+    "https://www.engadget.com/img/gallery/this-is-the-right-way-to-clean-your-vinyl-records/intro-1793204302.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"1bed5afe6d67600e4b2cbbd1ce9c2f99\""
+        },
+        {
+          "name": "age",
+          "value": "73601"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "rdKAObvNNBzM_EpoluKFCT7v1WUamwjQyc3zEV9jTO7stXH0jAllkw=="
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 23:30:44 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 16:18:24 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "8522"
+        }
+      ],
+      "sha256": "45cbab5e8a8df9619a092bdd6ea68ea537b6f4a22e45a1447cfeb06b7e5f260f",
+      "bytes": 8522
+    },
+    "https://www.engadget.com/img/gallery/10-ipad-widgets-you-probably-didnt-realize-existed/intro-1793198901.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"d5ddbe22e563052ef59035cdc99449d6\""
+        },
+        {
+          "name": "age",
+          "value": "70556"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "sieozhtDHT4a_LjN1tMJnBNbbyAcmbtuzg8kYYUSPWUyPy39cZQ4nw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 00:21:29 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 14:48:24 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "23000"
+        }
+      ],
+      "sha256": "e53e48381ccaddec435747c0cdfa1016ab5218fb5a428a86d69722e0239a3eb8",
+      "bytes": 23000
+    },
+    "https://www.engadget.com/img/gallery/your-apple-airpods-chirping-noise-doesnt-just-mean-low-battery/intro-1792762136.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"6339347d2c7e16486e6a30beb1ff1ef9\""
+        },
+        {
+          "name": "age",
+          "value": "1324"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "ty7CXOZe_ALpztIxk5pTRCdMbo82MWCz7xSVnJFJ-auI8znuzVs2Nw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:35:21 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 23 Oct 2026 13:28:58 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "2882"
+        }
+      ],
+      "sha256": "73b7c1b636fd3fd02eb2f0a1cea13ee19b3516c6933430696f923ceb5f576e69",
+      "bytes": 2882
+    },
+    "https://www.engadget.com/img/gallery/spacex-is-reportedly-looking-at-buying-boost-mobile-or-using-its-cell-network/intro-1793642642.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"7e5bd5fbf96b04149ac7e0cf8bc52ff8\""
+        },
+        {
+          "name": "age",
+          "value": "6417"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "-Pbp6UDOtQYnibXMU3dQiQkzOZ1tD_aWQhO3xR5GvtSpx17mxR9qrA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 18:10:27 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 18:04:05 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "9052"
+        }
+      ],
+      "sha256": "4d4f11e9ca76d7af75914f69373b228de3bfc83a83a5c401a6db371fd7823082",
+      "bytes": 9052
+    },
+    "https://www.engadget.com/img/gallery/gemini-could-be-poking-through-your-emails-heres-how-to-stop-it/intro-1793097394.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"534865feda6f8a7b8bb5de59a4fd0f8e\""
+        },
+        {
+          "name": "age",
+          "value": "9280"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "ILccByOXyP2yaFAfJzH9ZsStSBIlWcfeZWDayR7iknsmSrKoonmrrg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 17:22:45 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 27 Oct 2026 10:36:36 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "9472"
+        }
+      ],
+      "sha256": "c4ba8cd437c2fea3de96e70ad01435988cb602d2dfd9383fe1e94dac38b101cf",
+      "bytes": 9472
+    },
+    "https://www.engadget.com/img/gallery/how-to-clean-your-playstation-5-without-damaging-it/intro-1793029905.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"852e523ea7c2d01051439a4891f06fca\""
+        },
+        {
+          "name": "age",
+          "value": "75204"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "bXPVB1OGST4_2MIPaKLQVEI85CUN_EVIqtz4mbSoICDULzOqstRtCg=="
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 23:04:00 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 26 Oct 2026 15:51:48 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "18112"
+        }
+      ],
+      "sha256": "81b287b97b60f3fa33ac2df907c102a5725d8e97c301602ad86d44a9d7f90455",
+      "bytes": 18112
+    },
+    "https://www.engadget.com/img/gallery/whats-the-difference-between-airpods-noise-cancellation-and-adaptive-audio-modes/intro-1793049678.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"4b745f63e711e46b74b67ae1be1dda0d\""
+        },
+        {
+          "name": "age",
+          "value": "24051"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "aE_ZVfHfUld43FIoA3V33NV_lvzgeXKK-nSpTAwmBx_rEPhLKpyFvg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 13:16:34 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 26 Oct 2026 21:21:20 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "3600"
+        }
+      ],
+      "sha256": "2fa4865419eb82efa02b5544a4601648f23ce9e17ec7de7da3996ea9cc79841d",
+      "bytes": 3600
+    },
+    "https://www.engadget.com/img/gallery/googles-ocarina-of-time-easter-egg-is-a-link-to-a-past-when-search-wasnt-horrible/intro-1793634639.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"c071dc570325caec2d4aa01fe6ad981e\""
+        },
+        {
+          "name": "age",
+          "value": "14445"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "kDDvgEhf_08e0GrfHPgnIRRYXlzF7jvatpZa9OLSAL9DDHaGrVMgsQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 15:56:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Nov 2026 15:50:41 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "13378"
+        }
+      ],
+      "sha256": "72b8a99bab8002592ddc508c8e55f2cd27a0b6346c7fc20c9c2c9f8bade574b0",
+      "bytes": 13378
+    },
+    "https://www.engadget.com/img/gallery/the-fitbit-edge-lacks-a-useful-contactless-feature/intro-1792612257.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"26d0ef87594b4b12ea782db6c73a036c\""
+        },
+        {
+          "name": "age",
+          "value": "15114"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "M6zXTkfwO2-jdtyDjHaCUqGyAM3J5QCB5vWmLDiVoujrJ73CWMFFww=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 15:45:31 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 21 Oct 2026 19:50:59 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "22560"
+        }
+      ],
+      "sha256": "5a976a39ed6db24a5112811a3859770321c30583ba803e01a9d8d5632167cd11",
+      "bytes": 22560
+    },
+    "https://www.engadget.com/img/gallery/why-software-updates-may-have-an-unexpected-effect-on-your-phone/intro-1792415252.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"d93360c7f09122931360394c1ae38155\""
+        },
+        {
+          "name": "age",
+          "value": "20385"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "fvjslH4bcnMM_Vzk2wYHnLjDBwGJ3PN2Zio-FajbwGt9FdTT4z-HbA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 14:17:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 19 Oct 2026 13:07:35 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "22080"
+        }
+      ],
+      "sha256": "4015d1d6b3bc23e4770582c5bc5f08f6ab4c6c81543ac2358149cb3f6e242989",
+      "bytes": 22080
+    },
+    "https://www.engadget.com/img/gallery/6-google-maps-features-that-work-better-on-android-auto-vs-carplay/intro-1793216852.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"b6319ea31df1669887085daf95f0e024\""
+        },
+        {
+          "name": "age",
+          "value": "68074"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "WGY2bEulR4ClW57_ZFXroMyIDlce8Kyus2AywxxtYtsO4gFITE6fSA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 01:02:51 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 28 Oct 2026 19:47:34 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "21162"
+        }
+      ],
+      "sha256": "b3f5993ef25d284a4a9991656e98124619189296a3aaa0206ff05a54d1c6d7de",
+      "bytes": 21162
+    },
+    "https://www.engadget.com/img/gallery/ai-glasses-can-replace-your-prescription-glasses-but-should-they/intro-1792784878.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"3a03ea7a7f0e58348d0172a1ca379901\""
+        },
+        {
+          "name": "age",
+          "value": "71681"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "QtvgXpXKuoxYgteQ8FrjIqSye7EZx3dg1nc_eV5GQxfNut82_MVC9w=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 00:02:44 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 23 Oct 2026 19:48:01 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "7116"
+        }
+      ],
+      "sha256": "1da6485cc1239ee1bc25257b005abd3e07596df0a954540d3e376d573909d8bc",
+      "bytes": 7116
+    },
+    "https://www.engadget.com/img/rounded-triangle-icon-down.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1800"
+        },
+        {
+          "name": "etag",
+          "value": "\"0d7a24594283deed7fe71adf1d5f597d\""
+        },
+        {
+          "name": "age",
+          "value": "62335"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "jsPfp_LCF1RAuy56XCkPE8_y4dZIu9AXPqlyM8peF6sqGaL2Tj2QLg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 04:16:48 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 20 Apr 2026 17:24:22 GMT"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "316"
+        }
+      ],
+      "sha256": "d3d01b6aebc48677ec4b97c661d49c5d9808dbb87769bb29dbad4456f91b8e8d",
+      "bytes": 316
+    },
+    "https://www.engadget.com/img/gallery/how-long-is-a-new-apple-tv-actually-supposed-to-last/intro-1793037978.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"18d3b7d22c3d57a3649fa093d4bc8bf5\""
+        },
+        {
+          "name": "age",
+          "value": "66273"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "rjqAFFE3VqjCEj2XL3_5M_fcjoC52yfR9bbphGjkGY56NYINny25Mg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 01:32:51 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 26 Oct 2026 18:06:21 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "4686"
+        }
+      ],
+      "sha256": "c2d9626a996f97ac75b7a0635d81f0a42ca3528bb896b547d48e9e8e2bd49aa2",
+      "bytes": 4686
+    },
+    "https://www.engadget.com/img/gallery/how-to-add-and-rearrange-apps-on-your-samsung-smart-tv/intro-1792793521.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"186501b8fc8a6a129a4108170b96ec8e\""
+        },
+        {
+          "name": "age",
+          "value": "68856"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "4NX_ubrJS3TYvdBBVXr-MAv_wU6klJLq_JhI_eeCAhBf9N-rVKUtlw=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 00:49:49 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 23 Oct 2026 22:12:04 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "8306"
+        }
+      ],
+      "sha256": "59941809715281935d8b3cd85e923908297b4cdab6bf41a5811d1d8f820e7d6c",
+      "bytes": 8306
+    },
+    "https://www.engadget.com/img/rounded-triangle-icon-right.svg": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "1800"
+        },
+        {
+          "name": "etag",
+          "value": "\"d3cb55498f9ab62c715d4a8e3d869e60\""
+        },
+        {
+          "name": "age",
+          "value": "56445"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "M3aCk3Etj57rMLmdrzwX3nohvqOP-i4-JLlHPziMdPh5IemAiOlnWA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 04:16:48 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/svg+xml"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 04 Mar 2026 14:57:15 GMT"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "347"
+        }
+      ],
+      "sha256": "353c4727b3e1c4d34e09b9f92a0daa2e2c9ac18d024beefd1542336cb72ea82c",
+      "bytes": 347
+    },
+    "https://www.engadget.com/img/gallery/how-using-one-earbud-more-than-the-other-can-cause-uneven-wear-and-tear/intro-1792776566.sm.webp": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Origin"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "\"f0f3fc4d4271635c46102f6381016bfa\""
+        },
+        {
+          "name": "age",
+          "value": "72486"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "5ybSJo1cmVcnelEupLlsY-NywgTlHicVJjoRe87SoKa-AOUGU5fjpg=="
+        },
+        {
+          "name": "date",
+          "value": "Sun, 01 Nov 2026 23:49:18 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/webp"
+        },
+        {
+          "name": "last-modified",
+          "value": "Fri, 23 Oct 2026 17:29:29 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "9924"
+        }
+      ],
+      "sha256": "737edcd187bdfec5be9d627e490a2560d3a935060647bab52cf716c957d3b3ba",
+      "bytes": 9924
+    },
+    "https://www.engadget.com/wp-content/themes/unified/js/loopin.min.js?v=1791925653": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "max-age=31104000"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6ace9d95-2388\""
+        },
+        {
+          "name": "age",
+          "value": "1723784"
+        },
+        {
+          "name": "via",
+          "value": "1.1 0b57ff1cd2dacb534b673600d9fcfe02.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "expires",
+          "value": "Fri, 08 Oct 2027 21:07:40 GMT"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "nrhM6QjuLHFPRjOwr6DzKCqBKKvXxWtVGWBOyjwyGYYdQn8c9XfPyA=="
+        },
+        {
+          "name": "date",
+          "value": "Tue, 13 Oct 2026 21:07:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 21:07:33 GMT"
+        },
+        {
+          "name": "server",
+          "value": "nginx/1.18.0 (Ubuntu)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "9096"
+        }
+      ],
+      "sha256": "1fa922f78311702f7b5075d48f9a314b1686a7db4351872aaa34ada2928e2d1e",
+      "bytes": 9096
+    },
+    "https://news.google.com/swg/js/v1/publisher.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "age",
+          "value": "2420"
+        },
+        {
+          "name": "report-to",
+          "value": "{\"group\":\"news-frontend\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/news-frontend\"}]}"
+        },
+        {
+          "name": "x-content-type-options",
+          "value": "nosniff"
+        },
+        {
+          "name": "expires",
+          "value": "Mon, 02 Nov 2026 20:07:18 GMT"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:17:18 GMT"
+        },
+        {
+          "name": "last-modified",
+          "value": "Thu, 29 Oct 2026 17:03:52 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "cache-control",
+          "value": "public, max-age=3000"
+        },
+        {
+          "name": "cross-origin-opener-policy",
+          "value": "same-origin; report-to=\"news-frontend\""
+        },
+        {
+          "name": "cross-origin-resource-policy",
+          "value": "cross-origin"
+        },
+        {
+          "name": "content-security-policy-report-only",
+          "value": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/news-frontend"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "*"
+        },
+        {
+          "name": "x-xss-protection",
+          "value": "0"
+        },
+        {
+          "name": "server",
+          "value": "sffe"
+        },
+        {
+          "name": "content-length",
+          "value": "139961"
+        }
+      ],
+      "sha256": "29689c7e9771cebb0ad74def4347604af0fc9bfa35edf8f9e09cc3d86e8a5cc9",
+      "bytes": 139961
+    },
+    "https://launcher.spot.im/spot/sp_f76RE06N": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "jmfEgjpKXOiodpyTqT8xBFBxONTCVQrz"
+        },
+        {
+          "name": "etag",
+          "value": "\"04eea037176cabf40b70a9c191af70e0\""
+        },
+        {
+          "name": "age",
+          "value": "189"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "_MELQk-vcPwE4il_xl-i8oT4Y_QDApCH81jUo0p0_jpZXZACZAy0Gg=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:54:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 30 Sep 2026 13:36:42 GMT"
+        },
+        {
+          "name": "cache-control",
+          "value": "max-age=300"
+        },
+        {
+          "name": "via",
+          "value": "1.1 c564dd6366e334a08696b125b5fb3c52.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P6"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "69354"
+        }
+      ],
+      "sha256": "d74d486abfe37b922a53f806a9335da23a68be80fcbd5809cd43bfc137f65d9d",
+      "bytes": 69354
+    },
+    "https://api-2-0.spot.im/v1.0.0/device-load": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "access-control-max-age",
+          "value": "86400"
+        },
+        {
+          "name": "access-control-expose-headers",
+          "value": "x-spotim-token, x-spotim-networkid, x-access-token, x-openweb-token, x-spotim-device-v2, x-spotim-device-uuid,x-reset-token,x-new-identity-switched, x-ow-canary"
+        },
+        {
+          "name": "access-control-allow-methods",
+          "value": "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        },
+        {
+          "name": "x-cache",
+          "value": "Miss from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "1YGvQs5g6aH3xyCJq2zJROoxDEhDd8_fns6ZAqRlNDkUjnT8V0YtHQ=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 19:57:56 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "name": "x-spotim-device-uuid",
+          "value": "4fbdf37b-9a06-4310-890e-cc09e57289ff"
+        },
+        {
+          "name": "access-control-allow-headers",
+          "value": "content-type,x-user-token,x-spot-id,x-post-id,x-access-token,x-openweb-token,x-spotim-page-view-id, x-spotim-device-v2, x-spotim-device-uuid, x-real-user-mode,x-auth-version,x-spotim-networkid,x-openweb-module-name, \t\t\t\t\t\t\t\t\tx-openweb-module-version,x-full-url, x-tc-string, x-consent-type, x-api-token,x-host-auth-version, x-visit-id, x-source-application, x-openweb-scopes,x-openweb-retry, x-ow-canary"
+        },
+        {
+          "name": "content-security-policy",
+          "value": "default-src 'none'; img-src 'self'; script-src-elem connect.facebook.net; style-src-elem 'unsafe-inline'; style-src 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'; report-uri https://o294277.ingest.sentry.io/api/4505425533272064/security/?sentry_key=f16f012f16c94b179d820f4d5e9c39ff"
+        },
+        {
+          "name": "x-guid",
+          "value": "4fbdf37b-9a06-4310-890e-cc09e57289ff"
+        },
+        {
+          "name": "access-control-allow-credentials",
+          "value": "true"
+        },
+        {
+          "name": "via",
+          "value": "1.1 e2538109288c868c9bbf5ae66cca7500.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "access-control-allow-origin",
+          "value": "https://www.engadget.com"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P6"
+        },
+        {
+          "name": "server",
+          "value": "fasthttp"
+        },
+        {
+          "name": "content-length",
+          "value": "36"
+        }
+      ],
+      "sha256": "a26323595fff145383115c48bad96e6143b27ce458295b5ebd8c61a7f21f9c94",
+      "bytes": 36
+    },
+    "https://www.engadget.com/img/engadget-favicon.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "etag",
+          "value": "\"475146a83f935e643a537df8a275875d\""
+        },
+        {
+          "name": "age",
+          "value": "62852"
+        },
+        {
+          "name": "via",
+          "value": "1.1 f37e85e01ba2eda6f8fdd396b72a2e84.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "HreOO-rvfwINg2Y5SlGd-dDaMk5-s3lkLEqm2Wf2UEqEMtc6lDbijA=="
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 02:32:03 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Mon, 02 Mar 2026 21:02:25 GMT"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP63-P5"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "8648"
+        }
+      ],
+      "sha256": "9d49558c4d5b7ee4748c7fba3bf8d5e746534474da5402a8a2b6d76d467275f2",
+      "bytes": 8648
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/social-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "q4drZRGwTkQDyzyufynMF9Rkj2kCFWdc"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"8a7db9ddd6ae1821fad2a05bb54cae08\""
+        },
+        {
+          "name": "age",
+          "value": "1686143"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "JAWvojT8Rz4SUUgzu-68oFkSDyjLu_-MDcwSBsl7v9c7He8t_gomug=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:42 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "46391"
+        }
+      ],
+      "sha256": "f78be74cf02ca2c0d6ce7f92b02005fdbfe66e8be254a4b60d65981bca8df5b1",
+      "bytes": 46391
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/373-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "2MOWh5SSMlqIbZcCgDriikWv.7JOMnoW"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"db711a7c5cf70db9c48834a80798724c\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "JErA7K0t0n0JK86N4nXOTa1eGAHKoYp0QeCKYMnzHy9yTo_RSrPpuA=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:41 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "119849"
+        }
+      ],
+      "sha256": "fd069c31cef9773759e5b1dce41e2dd0befe50730b14ea47c76ae88b777683b0",
+      "bytes": 119849
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/511-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "1yjs_MKkT7lQyKAJtjfprofrED6zTzpb"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"83ac2fb0ad6fd226169862a15c625cca\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "kZVNENwtehvV-R0k91MmTa2UFViJWlHTO67ek1OjIHwErC9oqgYMuA=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:38 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:42 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "104462"
+        }
+      ],
+      "sha256": "ab25c5c3f5a7e4f7baa2bf59b911289fd5ea2d089f188061cef411de110cfe1c",
+      "bytes": 104462
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/initial-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "qadlZi66zpiKph3Yan1thHTWo_tfauN2"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"be9404ef85541973e62cea2f4cc1bd3c\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "ldYaTbZb12bd30ojAEQo0-KrnureKfY37P_NdukFf62ys_itPwhmig=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:42 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "28516"
+        }
+      ],
+      "sha256": "f503ad7cf95280e7fff9ac8a860880ec37d31800a05f9e80cd4e3332be035db6",
+      "bytes": 28516
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/691-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "09qvgJyTKI8942cSwLslhTyXNcv3_ejw"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"a2accaa73fbcad48840f3869c9235abc\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "OvJWl2hsIJ2JcUmhAG280mn_QjfG2i7nlWjWr2v4ROwmC9MhUHVZgA=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:41 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "378398"
+        }
+      ],
+      "sha256": "2ae913e0a4c72be725941b56d036a343c6afcf170cf720454b04ea30ee03ec7c",
+      "bytes": 378398
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/shell-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "j2mEGlLC0Cl2QQbHiy_MU50QtWdjIK7Q"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"3ce4514c57864f1698ed566b4cbb6071\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "UKXCXopB2oGdK3pm55c3hjlj_yYXF21SRZvwfYMde-5QpcFKsjhKBg=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:42 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "161336"
+        }
+      ],
+      "sha256": "1bd6407dbfda3404589aec94ec0510f19789700430ec785dca6c31719ff5474c",
+      "bytes": 161336
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/223-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "1kLFn7VsNrTtJwkUxok0kK_ceUqg90iV"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"ccf82c7089ae27b9da7d5d8860e5e041\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "jn177lO_-mj2oWinXWA6N7kBLpbQU6R3Ha0yGz_caM7HwpnjWp-hOg=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:41 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "70326"
+        }
+      ],
+      "sha256": "81964eb5f22a2e6b0dde876b8bf280490de996cf696ededc64619c18b9bb532f",
+      "bytes": 70326
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/213-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "NSej.mVE576YYk.GzVDfImNCt95EgA8B"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"fdb262b2f2ce91bde8c09985c9a3dc31\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "qFeyis_z_0MUrxNaQExsUWCoBi3Bv2wrg55PqTA8gCYFFAQ38kb7jQ=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:41 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "39993"
+        }
+      ],
+      "sha256": "e5458b4485cfd9127b232ff706466b6141ec30d6df0be4aaaf40e98d2bc7ba72",
+      "bytes": 39993
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/923-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "jly01Iw1pk_BXP7JDR06NFXadTYpOPny"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"6400237ddd91a599a7e01bc3edd9a85f\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "yQ3D1T83CBO0pl22B-3wvdLZbjfdWJ-mUBEBV4MCpfpfp6ZB1K_b3w=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:42 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "78860"
+        }
+      ],
+      "sha256": "a26da1288236aac6b166a37dc353475d681b3c4dbd3402779908ba8b19f0ff04",
+      "bytes": 78860
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/296-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "EJjYPnvroV1vJzS32V41d_Ot69uFLOsm"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"f855031db7d71f89532f07f6d6286f0d\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "dpcPQBtHJnJYAxxV3vZixYjUskNMSPqIeJMADUEs7Lf4BLGFRZNoXQ=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:41 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "189069"
+        }
+      ],
+      "sha256": "811e6b8ffcacc8200f91278f33439f7121599289bc378e02bac5f6813ab4da62",
+      "bytes": 189069
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/117-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "ZG58goPnFfvOG0Tq39pQdX9t9ukJemM0"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"3bdb858353a8827d1d9eab8f83dee2b9\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "NtXldGB6nRz0DH_vjt30ly2FsO-NKJW_tRxAiASQNeBd4JwE6Ir5GQ=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:39 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:41 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "82862"
+        }
+      ],
+      "sha256": "ec7c41ca6fb3a3340a5ff2f87773f97e10c7be6a75445a2066e7ddd45505cbc3",
+      "bytes": 82862
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/social/with-all-vendors-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "CVJwZKBdZrRMDeD_3dswyDjWcT55Tn32"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"4ab0b8e5407b8f0dd24311e9745830b5\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "HdhMPc4xlOTuUWhzGVxhmeDQf3Ww4zO5DkcbjpiPi_FBOQ3g2q7FPA=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:42 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "7403"
+        }
+      ],
+      "sha256": "d9e88dee08606edb22f8445b70a840b541859019ca3c338edaf4f448c5c8d354",
+      "bytes": 7403
+    },
+    "https://static-cdn.spot.im/production/social/tags/social-v1.7.4/notifications/notifications-bundle.js": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "x-amz-version-id",
+          "value": "SGL9djPjGMtEQQcwHklRsu4KDVIISzKY"
+        },
+        {
+          "name": "etag",
+          "value": "W/\"0028b7bf9375be6a6d83ec4acfda1c06\""
+        },
+        {
+          "name": "age",
+          "value": "1686142"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=86400"
+        },
+        {
+          "name": "x-cache",
+          "value": "Hit from cloudfront"
+        },
+        {
+          "name": "x-amz-cf-id",
+          "value": "ymaA3UrLiakXiwp1rhgk1-3Uib3xZFOQyuV4ZIx5B2Dti0nsWAfGBA=="
+        },
+        {
+          "name": "date",
+          "value": "Wed, 14 Oct 2026 07:35:40 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/javascript; charset=utf-8"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding, Origin"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 13 Oct 2026 09:44:40 GMT"
+        },
+        {
+          "name": "x-amz-replication-status",
+          "value": "COMPLETED"
+        },
+        {
+          "name": "cache-control",
+          "value": "public,max-age=31536000,s-maxage=31536000,immutable"
+        },
+        {
+          "name": "via",
+          "value": "1.1 d77cbef22fc8484811b8c9df43178dee.cloudfront.net (CloudFront)"
+        },
+        {
+          "name": "x-amz-cf-pop",
+          "value": "MXP53-P4"
+        },
+        {
+          "name": "server",
+          "value": "AmazonS3"
+        },
+        {
+          "name": "x-amz-server-side-encryption",
+          "value": "AES256"
+        },
+        {
+          "name": "content-length",
+          "value": "8853"
+        }
+      ],
+      "sha256": "05c560b0df69b5c1ee5b650f15f6089741d8ecbc6efe84f65d8b6acb14fbe69a",
+      "bytes": 8853
+    }
+  },
+  "workload": "Frozen guest DOM; scripts removed; original resource bytes",
+  "live_png_sha256": "1a6c97f2f79fe702dd2da2ecf8866bff0ff9665f49841fe7ac7e9b701019896a",
+  "capture_report_sha256": "7e4c665311c2cb4e909ae0f45206a22b6b4fad911cf24d9559553321083ee45d"
+}

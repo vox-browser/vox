@@ -1,0 +1,27 @@
+window.addEventListener("load", function() {
+    // Exit early if Sailthru was blocked by an ad-blocker
+    if(!window.Sailthru) return console.warn("Sailthru onsite JS failed to load.");
+    
+    console.info("Sailthru onsite JS is loaded. Initializing Sailthru...");
+    if (tag.isCustom) {
+        jQuery(function($) {
+            Sailthru.init({
+                customerId: tag.options.customerId,
+                isCustom: true,
+                autoTrackPageview: tag.options.autoTrackPageview,
+                useStoredTags: tag.options.useStoredTags,
+                excludeContent: tag.options.excludeContent,
+            });
+        });
+    } else {
+        Sailthru.init({
+            customerId: tag.options.customerId
+        });
+    }
+});;
+function outPlayerWidget(a){var c;var w=function(g){function k(){if("spotlight"===h){if("large"===l)return g.length-3;if("medium"===l)return g.length-2;if("small"===l)return g.length-1}else if("shelf"===h){for("large"===l?f=4:"medium"===l?f=3:"small"===l&&(f=2);0<g.length;)n.push(g.splice(0,f));return n.length-1}}function c(b){d+=b;"spotlight"===h&&(p.classList.remove("spotlight"),p.removeChild(m),(p=document.getElementById(h+"-item-"+d)).classList.add("spotlight"),p.append(m),m.classList.add("fade"))}
+var f,d=0,r=0,n=[],e=document.getElementById(a.widgetDivId),z=document.getElementById(a.videoPlayerId),A=(document.querySelector(".jw-"+h),e.querySelector(".jw-widget-content")),v=e.querySelector(".next"),t=e.querySelector(".previous"),w=e.querySelectorAll(".icon"),x=e.querySelectorAll(".jw-widget-item"),u=jwplayer(z),h=a.widgetLayout||"spotlight",l=a.widgetSize||"",y=a.textColor||"#fff",B=a.backgroundColor||"#000",C=a.iconColor||"#fff",D=a.header||"Discover More Videos";if(e.classList.add(l),e.querySelector(".jw-widget-title").innerText=
+D,e.style.backgroundColor=B,e.style.color=y,w.forEach(function(b){b.style.fill=C}),x.forEach(function(b){b.addEventListener("click",function(){u.load("https://cdn.jwplayer.com/v2/media/"+b.dataset.mediaid);u.getViewable()||document.getElementById(z.id).scrollIntoView({behavior:"smooth"});u.on("playlistItem",function(){u.play()})})}),"spotlight"===h){var m=document.createElement("div");m.innerHTML='<svg width="477.9px" height="501.1px" viewBox="0 0 477.9 501.1" style="enable-background:new 0 0 477.9 501.1;" xml:space="preserve" fill="#fff"><g transform="translate(887 1706)"><path d="M-875.6-1206.4c-3.1,2.4-7.5,1.8-9.9-1.3c-1.2-1.6-1.7-3.6-1.4-5.5v-484.5c-0.7-3.8,1.9-7.5,5.7-8.2 c2-0.3,4,0.2,5.5,1.4l461.9,243.1c6.2,3.3,6.2,8.6,0,11.9L-875.6-1206.4z"/></g></svg>';
+var p=e.querySelector(".jw-widget-item");var q=document.querySelector(".jw-widget-item").offsetWidth+10;p.classList.add("spotlight");m.src="src/img/play.svg";m.classList.add("jw-play-button");p.append(m)}else"shelf"===h&&(q=e.offsetWidth);v.addEventListener("click",function(){var b=k()-1,a=n[n.length-1];if(d===b&&v.classList.add("disabled"),d===k())return!1;"shelf"===h&&d===b&&a.length<f&&(b=a.length%f,q=document.querySelector(".jw-widget-item").offsetWidth*b);t.classList.remove("disabled");r-=q;
+A.style.left=r+"px";c(1)});t.addEventListener("click",function(){k();var b=n[n.length-1];"shelf"===h&&d===k()&&b.length<f?(b=b.length%f,q=document.querySelector(".jw-widget-item").offsetWidth*b+b):q=e.offsetWidth;if(0===d)return t.classList.add("disabled"),!1;1===d&&t.classList.add("disabled");r+=q;A.style.left=r+"px";v.classList.remove("disabled");c(-1)})};var x=function(c){var k=[],g=document.getElementById(a.widgetDivId);if(g){g.classList.add(a.widgetLayout);var f=g.querySelector(".jw-widget-content");
+c.playlist.forEach(function(d,c){k.push("<div id='"+a.widgetLayout+"-item-"+c+"' data-mediaid='"+d.mediaid+"' class='jw-widget-item'><div class='jw-content-image'><img src='"+d.image+"'/></div><div class='jw-content-title'>"+d.title+"</div></div>");f.insertAdjacentHTML("beforeend",k[c])});w(k)}};var y=a.playlist;(c=new XMLHttpRequest).open("GET",y,!0);c.onreadystatechange=function(){if(4===c.readyState&&200<=c.status){var a=JSON.parse(c.responseText);x(a)}};c.send()};;
