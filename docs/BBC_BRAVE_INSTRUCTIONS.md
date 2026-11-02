@@ -3129,3 +3129,63 @@ frozen replay scope and rendering/script limitations still apply. The local
 [evidence](benchmark-results/bbc-intrinsic-context-2026-11-02.json) links the
 phase witness, native sample, raw cohort, independent audits and restoration
 receipts; generated evidence remains ignored.
+
+## Definite-width contributions and current workflow profiles
+
+`93c292a58` skips a content-width probe when a noncyclic definite preferred
+width would immediately overwrite its result. The existing resolver still
+converts border-box sizes and clamps negative content sizes. Intrinsic min/max
+constraints still request their content measures; percentages, including
+calculated percentages, keep the original path. `67fb1193e` adds an isolated
+same-app control. Ten focused cases pass enabled and disabled in default,
+no-GC and preallocated modes: **60 executions and nine zero-exit jobs**.
+All **212 instruction-tool tests pass**. An initial test comparison using an
+unsupported CSSPixels operator and an incorrectly named tooling test option
+are retained with their failed receipts. Production eligibility and matched
+unprofiled benefit remain unverified at this checkpoint.
+
+Four separate C-O3 workflow diagnostics use a fresh instrumented executable
+generated from the canonical restored source at `631a19687`, before that
+definite-width change. No browser bundle or canonical tool is copied. Native
+preprocessing is frozen; existing canonical native libraries, filter helper
+and its matching snapshot are referenced directly. Source inputs match across
+V generation and linker inputs match across native compilation. The original
+preprocessing attempt incorrectly included multiple source inputs; the next
+compile exposed a wrapper return-variable collision. Both failures and their
+corrected zero-exit preparations remain retained.
+
+All four fresh diagnostic processes exit zero, pass independent full BBC
+content audits and match the unchanged original PNG exactly. Their runtime
+identities remain unchanged. **All four fail exclusive capture ownership** and
+their driver/guard exits are 1; these are diagnostics, not acceptance attempts
+or selected instruction bounds. The process-counter scopes report no counter
+errors. In the first run, styling uses 4,679,555,125 instructions across 14
+updates; viewport layout uses 6,337,955,606 across 13 passes. The latter includes
+nested measurements. Preparing/committing the DOM attachment uses 69,419,133 /
+189,153,627. Script-engine call totals include native callbacks and cannot be
+reported as isolated JavaScript execution costs. Inclusive scopes overlap and
+must not be summed.
+
+Read-only host-call diagnostics further separate those callbacks. The first
+records 56 geometry reads totaling 5,025,978,026 process instructions, including
+their style/layout work. A separate run divides the same 56 reads into 27
+bounding rectangles (3,080,981,238), nine scroll widths (1,898,625,182), nine
+scroll-left reads (889,765), nine offset widths (882,070), and two client widths
+(193,191). These are instrumented observations from different launches, not
+matched improvements. JavaScriptCore records one context and 1,925/1,948/1,994
+evaluations in the three host-hook runs. The final hook retains author-call
+backtraces for the rectangle and carousel reads. Reports immediately before
+the PNG file write follow native encoding and precede semantic audit/teardown;
+exit reports are labeled separately. Metadata inspection, process background
+work and probe overhead remain included, and only the reporting thread's
+host stack is covered.
+
+The selected scope, frozen bytes, original references, historical RGB policy,
+rendering/script limitations, prior broad failures and **55 cohorts/1,334
+cohort attempts** remain unchanged. No diagnostic or standalone check earns
+instruction savings or a broad-check reset. Raw commands, preprocessed C,
+executable/native identities, guards, PNGs, failures, host telemetry and
+independent audits are under `Build/bbc-workflow-profile-20261102-2300/`, linked
+from the local [workflow evidence](benchmark-results/bbc-workflow-profile-2026-11-02.json).
+The shared production build is already running; pending code validation uses
+its next completed matching bundle without queuing a duplicate build.
