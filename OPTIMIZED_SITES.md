@@ -9,7 +9,7 @@ Provisional entries retain unresolved acceptance checks.
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox RAM (MiB)‡ | Brave RAM (MiB)‡ | Vox scroll FPS | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | Lobsters homepage | 2026-11-02 | 7 | Median | 8,082,180,934 | 27,446,683,211 | **70.55%** | 535.2 | 992.4 | — | — | [Comparison](docs/LOBSTERS_BRAVE_INSTRUCTIONS.md) |
-| Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | 607.1 | 608.3 | 39.2–53.0 | 59.56–59.78 | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
+| Old Reddit /r/programming/ | 2026-11-03 | 7 | Median | 3,953,436,832 | 9,327,192,427 | **57.61%** | 607.1 | 608.3 | 39.2–53.0 | 59.56–59.78 | [Recheck](docs/OLD_REDDIT_PROGRAMMING_RECHECK.md), [earlier cohort](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
 | Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | 559.7 | 639.2 | 59.7–59.8 | 59.78–59.79 | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [scrolling](docs/HACKER_NEWS_SCROLLING.md) |
 | CNN homepage (provisional) | 2026-11-01 | 7 | Median | 21,805,542,771 | 32,665,051,523 | **33.25%** | 1,234.0 | 1,031.5 | — | — | [Comparison](docs/CNN_INSTRUCTIONS.md), [receipts](docs/benchmark-results/cnn-home-thirty-percent-2026-11-01.json) |
 | Wikipedia portal (www.wikipedia.org) | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 515.1 | 614.2 | 3.1–3.6 | 59.57–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
@@ -230,7 +230,8 @@ its own matched measurement.
   script elements removed, normal scripting policy retained, 120 sealed
   successful resource responses and fresh profiles/caches. All 14 captures
   match the same Brave reference exactly and preserve all 25 post IDs. The
-  highest observed Vox count is **45.91% below the lowest Brave count**. Live
+  highest observed Vox count is **56.19% below the lowest Brave count** in the
+  [2026-11-03 recheck](docs/OLD_REDDIT_PROGRAMMING_RECHECK.md). Live
   access is blocked by HTTP 403; no live or current-authentication claim is
   made. This new workload does not reverify the historical home-page fixture.
   The selected Vox page-script runtime is unused on this script-free fixture;

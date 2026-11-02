@@ -1,0 +1,1982 @@
+{
+  "date": "2026-11-03",
+  "workload": "Frozen https://old.reddit.com/r/programming/; 25 posts; scripts removed; fresh processes and private profiles; same archived response bodies; OS filesystem/shader caches retained",
+  "summary": {
+    "vox_median_instructions": 3953436832,
+    "brave_median_observed_instructions": 9327192427,
+    "median_paired_reduction": 0.5735238605175164,
+    "worst_vox_over_best_brave": 0.43807426253561477,
+    "required_reduction": 0.1,
+    "passed": true,
+    "cache_sha256": "042170fd08e84ec1c668e49f9766321229649cd9d1b82ea305273ff08d65eb7f",
+    "selected_js_engines": {
+      "vox": "javascriptcore",
+      "brave": "v8"
+    },
+    "title": "programming",
+    "sample_interval_seconds": 0.005,
+    "collector_environment": {},
+    "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+    "scope": "Compare retired instructions for identical frozen, pixel-exact Reddit captures.\n\nCounts cover process launch through capture. Vox additionally includes teardown;\nboth observed process trees are polling lower bounds. Neither includes GPU\ninstructions or external services. Archived HTTP bodies feed both engines;\nmissing responses fail offline. This does not measure live JavaScript parity.\n",
+    "viewport": [
+      1024,
+      768
+    ],
+    "scripting_policy_enabled": true,
+    "workload_note": "Frozen input has executable script elements removed; preserve normal noscript semantics."
+  },
+  "ratio_of_medians_reduction": 0.5761386008767502,
+  "gate": "10 * max(Vox observed) <= 9 * min(Brave observed); both process-tree totals are polling lower bounds",
+  "engine_optimization_credit": false,
+  "reason": "Existing completed production bundle already exceeds requested 10% observed Brave comparison; no new engine change or matched Vox baseline/candidate credit",
+  "guard": {
+    "command": [
+      "python3",
+      "tools/reddit_browser_instructions.py",
+      "--html",
+      "Build/old-reddit-instructions-20261101/frozen.html",
+      "--expected",
+      "Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+      "--cache",
+      "Build/old-reddit-instructions-20261101/frozen-cache",
+      "--output",
+      "Build/reddit-tab-color-acceptance-20261103",
+      "--network-deny",
+      "Build/wikipedia-instructions-20261101/network-deny.dylib",
+      "--diff-tool",
+      "Build/wikipedia-instructions-20261101/pixel_diff",
+      "--repeat",
+      "7",
+      "--required-reduction",
+      ".10"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1383137280,
+    "elapsed_seconds": 28.571947584,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "trials": [
+    {
+      "pair": 1,
+      "order": [
+        "vox",
+        "brave"
+      ],
+      "vox": {
+        "instructions": 4039994814,
+        "root_instructions": 3701746373,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": true,
+        "missing_final_sample_count": 0,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 19332,
+            "start_ticks": 3450454118553,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "instructions": 3701746373,
+            "cycles": 1473256896,
+            "final_exit_sample": true,
+            "lifetime_max_phys_footprint": 505939312,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19335,
+            "start_ticks": 3450456061195,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+            "instructions": 338248441,
+            "cycles": 167117599,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 27116288,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "process exit after native document capture",
+        "endpoint_note": "includes native capture and process teardown; counters are read from the unreaped root zombie",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--enable-javascript",
+          "--js-engine=javascriptcore",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-1.vox.window.png",
+          "file:///Users/alex/code/vox2/Build/old-reddit-instructions-20261101/frozen.html"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "javascriptcore",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653624.92707,
+        "finished_unix": 1793653626.042125,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.16552734375,
+            8.42626953125,
+            10.5244140625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.16552734375,
+            8.42626953125,
+            10.5244140625
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-1.vox.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-1.vox.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-1.vox.diff.png\n"
+        }
+      },
+      "brave": {
+        "instructions": 9444806396,
+        "root_instructions": 5488841981,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": false,
+        "missing_final_sample_count": 1,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 19558,
+            "start_ticks": 3450509286085,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 5488841981,
+            "cycles": 2671186028,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 80889416,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19566,
+            "start_ticks": 3450511627259,
+            "executable": "/usr/bin/profiles",
+            "instructions": 98294193,
+            "cycles": 34530096,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2982128,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 19570,
+            "start_ticks": 3450514049814,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 1134732322,
+            "cycles": 637671549,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 444466496,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19571,
+            "start_ticks": 3450514088468,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 485974411,
+            "cycles": 286550930,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 26592456,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19576,
+            "start_ticks": 3450514947230,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 290912013,
+            "cycles": 176909344,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 23774528,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19577,
+            "start_ticks": 3450514955912,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)",
+            "instructions": 637923253,
+            "cycles": 277685928,
+            "final_exit_sample": true,
+            "lifetime_max_phys_footprint": 25838720,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19584,
+            "start_ticks": 3450519843856,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 401657030,
+            "cycles": 198820215,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 30377304,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19585,
+            "start_ticks": 3450519861220,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 906471193,
+            "cycles": 408528447,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 52938216,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "completed document and first CDP screenshot response",
+        "endpoint_note": "observed counters from the last complete sampling pass before screenshot response; omit subsequent audit and browser shutdown",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "shutdown_forced": false,
+        "command": [
+          "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "--headless=new",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-background-networking",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/vox-chrome-instructions-runkrhtu",
+          "--no-proxy-server",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost",
+          "about:blank"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "v8",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653627.46913,
+        "finished_unix": 1793653628.330604,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.16552734375,
+            8.42626953125,
+            10.5244140625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.39208984375,
+            8.4853515625,
+            10.53271484375
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-1.brave.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-1.brave.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-1.brave.diff.png\n"
+        },
+        "version": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/156.0.8078.48",
+          "revision": "@52db4b25c0aa3038e9a1c6021428b136cc3cb5f",
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+          "jsVersion": "15.6.75.19"
+        },
+        "final_sample_precedes_capture_ms": 0.8777499999998994
+      }
+    },
+    {
+      "pair": 2,
+      "order": [
+        "brave",
+        "vox"
+      ],
+      "brave": {
+        "instructions": 9398185734,
+        "root_instructions": 5537878342,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": false,
+        "missing_final_sample_count": 3,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 19786,
+            "start_ticks": 3450562647013,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 5537878342,
+            "cycles": 2495468080,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 81987336,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19791,
+            "start_ticks": 3450564158714,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 3596283,
+            "cycles": 1923743,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2474608,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 19793,
+            "start_ticks": 3450564894089,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 98138219,
+            "cycles": 34011244,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2965744,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 19794,
+            "start_ticks": 3450565698674,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 1070098405,
+            "cycles": 532997964,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 431752512,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19795,
+            "start_ticks": 3450565725920,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 481428370,
+            "cycles": 262440838,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 26576048,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19800,
+            "start_ticks": 3450566433493,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 286187363,
+            "cycles": 160478658,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 21775464,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19801,
+            "start_ticks": 3450566445737,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)",
+            "instructions": 632338143,
+            "cycles": 276712236,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 25756800,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 19808,
+            "start_ticks": 3450570861060,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 396253696,
+            "cycles": 174005401,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 30360920,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 19809,
+            "start_ticks": 3450570873410,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 892266913,
+            "cycles": 366342834,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 53052856,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "completed document and first CDP screenshot response",
+        "endpoint_note": "observed counters from the last complete sampling pass before screenshot response; omit subsequent audit and browser shutdown",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "shutdown_forced": false,
+        "command": [
+          "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "--headless=new",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-background-networking",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/vox-chrome-instructions-gwubfnhk",
+          "--no-proxy-server",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost",
+          "about:blank"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "v8",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653629.6924832,
+        "finished_unix": 1793653630.3810198,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.39208984375,
+            8.4853515625,
+            10.53271484375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.39208984375,
+            8.4853515625,
+            10.53271484375
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-2.brave.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-2.brave.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-2.brave.diff.png\n"
+        },
+        "version": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/156.0.8078.48",
+          "revision": "@52db4b25c0aa3038e9a1c6021428b136cc3cb5f",
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+          "jsVersion": "15.6.75.19"
+        },
+        "final_sample_precedes_capture_ms": 5.53837499999954
+      },
+      "vox": {
+        "instructions": 3971856789,
+        "root_instructions": 3638473755,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": true,
+        "missing_final_sample_count": 0,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 20018,
+            "start_ticks": 3450617805193,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "instructions": 3638473755,
+            "cycles": 1305624995,
+            "final_exit_sample": true,
+            "lifetime_max_phys_footprint": 505398616,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20022,
+            "start_ticks": 3450619492216,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+            "instructions": 333383034,
+            "cycles": 149300573,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 27149056,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "process exit after native document capture",
+        "endpoint_note": "includes native capture and process teardown; counters are read from the unreaped root zombie",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--enable-javascript",
+          "--js-engine=javascriptcore",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-2.vox.window.png",
+          "file:///Users/alex/code/vox2/Build/old-reddit-instructions-20261101/frozen.html"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "javascriptcore",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653631.7847612,
+        "finished_unix": 1793653632.575746,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.39208984375,
+            8.4853515625,
+            10.53271484375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.39208984375,
+            8.4853515625,
+            10.53271484375
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-2.vox.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-2.vox.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-2.vox.diff.png\n"
+        }
+      }
+    },
+    {
+      "pair": 3,
+      "order": [
+        "vox",
+        "brave"
+      ],
+      "vox": {
+        "instructions": 3952579581,
+        "root_instructions": 3621036353,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": true,
+        "missing_final_sample_count": 1,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 20225,
+            "start_ticks": 3450664441689,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "instructions": 3621036353,
+            "cycles": 1337307328,
+            "final_exit_sample": true,
+            "lifetime_max_phys_footprint": 505185624,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20229,
+            "start_ticks": 3450666001103,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+            "instructions": 331543228,
+            "cycles": 154260935,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 27198232,
+            "missing_final_sample": true
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "process exit after native document capture",
+        "endpoint_note": "includes native capture and process teardown; counters are read from the unreaped root zombie",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--enable-javascript",
+          "--js-engine=javascriptcore",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-3.vox.window.png",
+          "file:///Users/alex/code/vox2/Build/old-reddit-instructions-20261101/frozen.html"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "javascriptcore",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653633.745107,
+        "finished_unix": 1793653634.477202,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.4404296875,
+            8.51025390625,
+            10.529296875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.4404296875,
+            8.51025390625,
+            10.529296875
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-3.vox.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-3.vox.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-3.vox.diff.png\n"
+        }
+      },
+      "brave": {
+        "instructions": 9223548243,
+        "root_instructions": 5409224481,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": false,
+        "missing_final_sample_count": 3,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 20415,
+            "start_ticks": 3450705326047,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 5409224481,
+            "cycles": 2323438933,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 79676976,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20419,
+            "start_ticks": 3450706512541,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 1835875,
+            "cycles": 1305087,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 1409408,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 20421,
+            "start_ticks": 3450707190351,
+            "executable": "/usr/bin/profiles",
+            "instructions": 52894806,
+            "cycles": 20740163,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2343152,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 20422,
+            "start_ticks": 3450707873254,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 1071755144,
+            "cycles": 531754539,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 433685800,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20423,
+            "start_ticks": 3450707903120,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 484137083,
+            "cycles": 270477045,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 26444976,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20424,
+            "start_ticks": 3450708492368,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 286471339,
+            "cycles": 153425520,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 21709976,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20425,
+            "start_ticks": 3450708502314,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)",
+            "instructions": 632884055,
+            "cycles": 267299898,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 25920664,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 20433,
+            "start_ticks": 3450712313745,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 394935174,
+            "cycles": 172872987,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 30442840,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20434,
+            "start_ticks": 3450712324309,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 889410286,
+            "cycles": 369088158,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 52430312,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "completed document and first CDP screenshot response",
+        "endpoint_note": "observed counters from the last complete sampling pass before screenshot response; omit subsequent audit and browser shutdown",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "shutdown_forced": false,
+        "command": [
+          "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "--headless=new",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-background-networking",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/vox-chrome-instructions-jckqjyuf",
+          "--no-proxy-server",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost",
+          "about:blank"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "v8",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653635.637523,
+        "finished_unix": 1793653636.244307,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.4404296875,
+            8.51025390625,
+            10.529296875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.4404296875,
+            8.51025390625,
+            10.529296875
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-3.brave.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-3.brave.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-3.brave.diff.png\n"
+        },
+        "version": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/156.0.8078.48",
+          "revision": "@52db4b25c0aa3038e9a1c6021428b136cc3cb5f",
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+          "jsVersion": "15.6.75.19"
+        },
+        "final_sample_precedes_capture_ms": 4.853999999999914
+      }
+    },
+    {
+      "pair": 4,
+      "order": [
+        "brave",
+        "vox"
+      ],
+      "brave": {
+        "instructions": 9327192427,
+        "root_instructions": 5461694158,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": false,
+        "missing_final_sample_count": 4,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 20617,
+            "start_ticks": 3450747327843,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 5461694158,
+            "cycles": 2406122288,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 82724616,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20618,
+            "start_ticks": 3450748399938,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 4485749,
+            "cycles": 2894470,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2917024,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 20619,
+            "start_ticks": 3450748430250,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 48728805,
+            "cycles": 18608486,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2736632,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 20620,
+            "start_ticks": 3450749150760,
+            "executable": "/usr/bin/profiles",
+            "instructions": 54251309,
+            "cycles": 20678667,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2408688,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 20621,
+            "start_ticks": 3450749872421,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 1069134754,
+            "cycles": 537731366,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 434160840,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20622,
+            "start_ticks": 3450749894417,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 483129309,
+            "cycles": 270889249,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 26674352,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20626,
+            "start_ticks": 3450750478339,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 285986590,
+            "cycles": 152021256,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 21775488,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20627,
+            "start_ticks": 3450750487789,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)",
+            "instructions": 633988436,
+            "cycles": 273120344,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 25920640,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 20632,
+            "start_ticks": 3450754083371,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 396045520,
+            "cycles": 177795217,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 30213440,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20633,
+            "start_ticks": 3450754093123,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 889747797,
+            "cycles": 372091948,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 52807144,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "completed document and first CDP screenshot response",
+        "endpoint_note": "observed counters from the last complete sampling pass before screenshot response; omit subsequent audit and browser shutdown",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "shutdown_forced": false,
+        "command": [
+          "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "--headless=new",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-background-networking",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/vox-chrome-instructions-z0fg7w_3",
+          "--no-proxy-server",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost",
+          "about:blank"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "v8",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653637.387649,
+        "finished_unix": 1793653637.995898,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.4404296875,
+            8.51025390625,
+            10.529296875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.56494140625,
+            8.55126953125,
+            10.53173828125
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-4.brave.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-4.brave.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-4.brave.diff.png\n"
+        },
+        "version": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/156.0.8078.48",
+          "revision": "@52db4b25c0aa3038e9a1c6021428b136cc3cb5f",
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+          "jsVersion": "15.6.75.19"
+        },
+        "final_sample_precedes_capture_ms": 1.313624999999874
+      },
+      "vox": {
+        "instructions": 3942348450,
+        "root_instructions": 3613785544,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": true,
+        "missing_final_sample_count": 0,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 20814,
+            "start_ticks": 3450793951847,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "instructions": 3613785544,
+            "cycles": 1315430672,
+            "final_exit_sample": true,
+            "lifetime_max_phys_footprint": 505890136,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 20818,
+            "start_ticks": 3450795457450,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+            "instructions": 328562906,
+            "cycles": 148104101,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 27001600,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "process exit after native document capture",
+        "endpoint_note": "includes native capture and process teardown; counters are read from the unreaped root zombie",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--enable-javascript",
+          "--js-engine=javascriptcore",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-4.vox.window.png",
+          "file:///Users/alex/code/vox2/Build/old-reddit-instructions-20261101/frozen.html"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "javascriptcore",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653639.146548,
+        "finished_unix": 1793653639.8581471,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.56494140625,
+            8.55126953125,
+            10.53173828125
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.56494140625,
+            8.55126953125,
+            10.53173828125
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-4.vox.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-4.vox.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-4.vox.diff.png\n"
+        }
+      }
+    },
+    {
+      "pair": 5,
+      "order": [
+        "vox",
+        "brave"
+      ],
+      "vox": {
+        "instructions": 3969331945,
+        "root_instructions": 3638890783,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": true,
+        "missing_final_sample_count": 1,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 21009,
+            "start_ticks": 3450838245003,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "instructions": 3638890783,
+            "cycles": 1304669201,
+            "final_exit_sample": true,
+            "lifetime_max_phys_footprint": 506266968,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21010,
+            "start_ticks": 3450839736158,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+            "instructions": 330441162,
+            "cycles": 149066258,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 27050776,
+            "missing_final_sample": true
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "process exit after native document capture",
+        "endpoint_note": "includes native capture and process teardown; counters are read from the unreaped root zombie",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--enable-javascript",
+          "--js-engine=javascriptcore",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-5.vox.window.png",
+          "file:///Users/alex/code/vox2/Build/old-reddit-instructions-20261101/frozen.html"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "javascriptcore",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653640.9888792,
+        "finished_unix": 1793653641.716164,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.56494140625,
+            8.55126953125,
+            10.53173828125
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.56494140625,
+            8.55126953125,
+            10.53173828125
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-5.vox.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-5.vox.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-5.vox.diff.png\n"
+        }
+      },
+      "brave": {
+        "instructions": 9335636940,
+        "root_instructions": 5475063302,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": false,
+        "missing_final_sample_count": 2,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 21200,
+            "start_ticks": 3450878668201,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 5475063302,
+            "cycles": 2379410758,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 80758320,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21205,
+            "start_ticks": 3450880518293,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 96124953,
+            "cycles": 31097176,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2818288,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 21206,
+            "start_ticks": 3450881232862,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 1074268211,
+            "cycles": 535230226,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 433685800,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21207,
+            "start_ticks": 3450881251454,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 485999961,
+            "cycles": 273116287,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 28689752,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21210,
+            "start_ticks": 3450881866302,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 286281555,
+            "cycles": 155262401,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 21759104,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21212,
+            "start_ticks": 3450881877728,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)",
+            "instructions": 631067656,
+            "cycles": 271574422,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 25756824,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 21217,
+            "start_ticks": 3450885614867,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 395571323,
+            "cycles": 176293250,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 30393640,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21218,
+            "start_ticks": 3450885624679,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 891259979,
+            "cycles": 371448199,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 53102056,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "completed document and first CDP screenshot response",
+        "endpoint_note": "observed counters from the last complete sampling pass before screenshot response; omit subsequent audit and browser shutdown",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "shutdown_forced": false,
+        "command": [
+          "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "--headless=new",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-background-networking",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/vox-chrome-instructions-my002865",
+          "--no-proxy-server",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost",
+          "about:blank"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "v8",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653642.86021,
+        "finished_unix": 1793653643.4831228,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.51953125,
+            8.55859375,
+            10.5224609375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.51953125,
+            8.55859375,
+            10.5224609375
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-5.brave.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-5.brave.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-5.brave.diff.png\n"
+        },
+        "version": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/156.0.8078.48",
+          "revision": "@52db4b25c0aa3038e9a1c6021428b136cc3cb5f",
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+          "jsVersion": "15.6.75.19"
+        },
+        "final_sample_precedes_capture_ms": 1.1535830000006797
+      }
+    },
+    {
+      "pair": 6,
+      "order": [
+        "brave",
+        "vox"
+      ],
+      "brave": {
+        "instructions": 9225743442,
+        "root_instructions": 5399683897,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": false,
+        "missing_final_sample_count": 3,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 21402,
+            "start_ticks": 3450922254940,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 5399683897,
+            "cycles": 2282301871,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 79627872,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21406,
+            "start_ticks": 3450923330200,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 1786713,
+            "cycles": 1018933,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 1376616,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 21408,
+            "start_ticks": 3450924060051,
+            "executable": "/usr/bin/profiles",
+            "instructions": 60482099,
+            "cycles": 22966133,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2506992,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 21409,
+            "start_ticks": 3450924793648,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 1067086674,
+            "cycles": 525607407,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 435094800,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21410,
+            "start_ticks": 3450924822053,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 482992278,
+            "cycles": 261612834,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 26723480,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21412,
+            "start_ticks": 3450925394581,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 287075200,
+            "cycles": 151421337,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 21775488,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21413,
+            "start_ticks": 3450925405770,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)",
+            "instructions": 633468472,
+            "cycles": 275787686,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 25887920,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 21420,
+            "start_ticks": 3450928991391,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 395953202,
+            "cycles": 168090209,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 30278976,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21421,
+            "start_ticks": 3450929002081,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 897214907,
+            "cycles": 364620140,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 52430336,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "completed document and first CDP screenshot response",
+        "endpoint_note": "observed counters from the last complete sampling pass before screenshot response; omit subsequent audit and browser shutdown",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "shutdown_forced": false,
+        "command": [
+          "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "--headless=new",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-background-networking",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/vox-chrome-instructions-e__nhzvq",
+          "--no-proxy-server",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost",
+          "about:blank"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "v8",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653644.676285,
+        "finished_unix": 1793653645.2788239,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.51953125,
+            8.55859375,
+            10.5224609375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.51953125,
+            8.55859375,
+            10.5224609375
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-6.brave.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-6.brave.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-6.brave.diff.png\n"
+        },
+        "version": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/156.0.8078.48",
+          "revision": "@52db4b25c0aa3038e9a1c6021428b136cc3cb5f",
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+          "jsVersion": "15.6.75.19"
+        },
+        "final_sample_precedes_capture_ms": 5.832542000000274
+      },
+      "vox": {
+        "instructions": 3934559447,
+        "root_instructions": 3606134811,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": true,
+        "missing_final_sample_count": 0,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 21591,
+            "start_ticks": 3450965832468,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "instructions": 3606134811,
+            "cycles": 1284785131,
+            "final_exit_sample": true,
+            "lifetime_max_phys_footprint": 505202008,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21594,
+            "start_ticks": 3450967158412,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+            "instructions": 328424636,
+            "cycles": 144328750,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 27018008,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "process exit after native document capture",
+        "endpoint_note": "includes native capture and process teardown; counters are read from the unreaped root zombie",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--enable-javascript",
+          "--js-engine=javascriptcore",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-6.vox.window.png",
+          "file:///Users/alex/code/vox2/Build/old-reddit-instructions-20261101/frozen.html"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "javascriptcore",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653646.322368,
+        "finished_unix": 1793653646.971179,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.51953125,
+            8.55859375,
+            10.5224609375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.51953125,
+            8.55859375,
+            10.5224609375
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-6.vox.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-6.vox.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-6.vox.diff.png\n"
+        }
+      }
+    },
+    {
+      "pair": 7,
+      "order": [
+        "vox",
+        "brave"
+      ],
+      "vox": {
+        "instructions": 3953436832,
+        "root_instructions": 3622482943,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": true,
+        "missing_final_sample_count": 1,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 21772,
+            "start_ticks": 3451006880977,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "instructions": 3622482943,
+            "cycles": 1294384880,
+            "final_exit_sample": true,
+            "lifetime_max_phys_footprint": 505152880,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21773,
+            "start_ticks": 3451008218067,
+            "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+            "instructions": 330953889,
+            "cycles": 149512877,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 27083544,
+            "missing_final_sample": true
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "process exit after native document capture",
+        "endpoint_note": "includes native capture and process teardown; counters are read from the unreaped root zombie",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--enable-javascript",
+          "--js-engine=javascriptcore",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-7.vox.window.png",
+          "file:///Users/alex/code/vox2/Build/old-reddit-instructions-20261101/frozen.html"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "javascriptcore",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653648.030328,
+        "finished_unix": 1793653648.672504,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.1572265625,
+            8.49951171875,
+            10.48974609375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.1572265625,
+            8.49951171875,
+            10.48974609375
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-7.vox.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-7.vox.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-7.vox.diff.png\n"
+        }
+      },
+      "brave": {
+        "instructions": 9222168841,
+        "root_instructions": 5414007474,
+        "counter": "proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions",
+        "aggregate_is_lower_bound": true,
+        "root_final_exit_sample": false,
+        "missing_final_sample_count": 3,
+        "descendant_coverage": "observed descendants; short-lived unsampled children may be omitted",
+        "processes": [
+          {
+            "pid": 21942,
+            "start_ticks": 3451042459491,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 5414007474,
+            "cycles": 2280996546,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 79562264,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21944,
+            "start_ticks": 3451043617806,
+            "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "instructions": 3652886,
+            "cycles": 2093113,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2638496,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 21949,
+            "start_ticks": 3451044354329,
+            "executable": "/usr/bin/profiles",
+            "instructions": 42787819,
+            "cycles": 15825882,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 2212080,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 21950,
+            "start_ticks": 3451044960743,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 1067060885,
+            "cycles": 530131569,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 432899344,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21951,
+            "start_ticks": 3451044988380,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 484348587,
+            "cycles": 263534411,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 26756296,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21952,
+            "start_ticks": 3451045538941,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper",
+            "instructions": 286524058,
+            "cycles": 151877843,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 21808280,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21953,
+            "start_ticks": 3451045547632,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)",
+            "instructions": 631018599,
+            "cycles": 263914167,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 25838720,
+            "missing_final_sample": true
+          },
+          {
+            "pid": 21957,
+            "start_ticks": 3451048773471,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 395522653,
+            "cycles": 171921095,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 30295336,
+            "missing_final_sample": false
+          },
+          {
+            "pid": 21958,
+            "start_ticks": 3451048784650,
+            "executable": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)",
+            "instructions": 897245880,
+            "cycles": 369107894,
+            "final_exit_sample": false,
+            "lifetime_max_phys_footprint": 52823528,
+            "missing_final_sample": false
+          }
+        ],
+        "unreadable_pids": {},
+        "endpoint": "completed document and first CDP screenshot response",
+        "endpoint_note": "observed counters from the last complete sampling pass before screenshot response; omit subsequent audit and browser shutdown",
+        "includes": "CPU instructions in all observed process threads and their charged kernel execution",
+        "excludes": "GPU execution and external services such as WindowServer",
+        "exit": 0,
+        "shutdown_forced": false,
+        "command": [
+          "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "--headless=new",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-background-networking",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/vox-chrome-instructions-vu662vo4",
+          "--no-proxy-server",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost",
+          "about:blank"
+        ],
+        "profile_policy": "fresh empty private profile per observation",
+        "selected_js_engine": "v8",
+        "screenshot_scale": 1,
+        "settle_seconds": 0.0,
+        "started_unix": 1793653649.684845,
+        "finished_unix": 1793653650.25431,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.1572265625,
+            8.49951171875,
+            10.48974609375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.1572265625,
+            8.49951171875,
+            10.48974609375
+          ]
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-7.brave.png",
+          "diff": "/Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-7.brave.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-tab-color-acceptance-20261103/pair-7.brave.diff.png\n"
+        },
+        "version": {
+          "protocolVersion": "1.3",
+          "product": "Chrome/156.0.8078.48",
+          "revision": "@52db4b25c0aa3038e9a1c6021428b136cc3cb5f",
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+          "jsVersion": "15.6.75.19"
+        },
+        "final_sample_precedes_capture_ms": 4.406249999998835
+      }
+    }
+  ],
+  "pinned_sha256": {
+    "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "6db83981936ad3f6629073cc086aabd46e1bcc8a4ffee780140fac6e0d8f6b4e",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "dcad70250f0cc182470282af2a8e48e346278f5bd5bffc6a88e613259ba427bd",
+    "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "1b11d0c3e1abc06e99e6093d8612593b694327ab2ec64cb0ac4e739db8797e6b",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "0bb14e2f940d1ee83a4a57f48179ab40fb3ecf71aa8b7331f199676792ab6974",
+    "/Users/alex/code/vox2/Build/wikipedia-instructions-20261101/pixel_diff": "a222023825404fc66a40a471ad34a6b8aac021a76b6294642f9fa466afb683b1",
+    "/Users/alex/code/vox2/tools/reddit_browser_instructions.py": "0ee2e606e362627473a11450881cf62f7dfde30307be7b9a6be0f8d15f5d4116",
+    "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+    "/Users/alex/code/vox2/tools/process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd",
+    "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927",
+    "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+    "/opt/homebrew/Cellar/angle/1.0.16/lib/libEGL.dylib": "aea6167b43c3e7597c857ea8cdbbaa913d80a89eb140dabb8e6360af01d5ddef",
+    "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/frozen.html": "a432e6846a949c02957b4e880300e588c1e0b4829276daee44d4c9ae100a7e90",
+    "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959",
+    "/Users/alex/code/vox2/tools/measure_browser_instructions.py": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e",
+    "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+    "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": "087c623f738b0a192373c48bdf0ca05a54aaf005f4aef102f2d6ab21a9e4895d",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+    "/Users/alex/code/vox2/tools/probe_frozen_github_chrome.py": "d6652e8d6e980768c68b622d7049a607abe7a186bf2992d82a723a3fafeb729b",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+    "/Users/alex/code/vox2/tools/check_pixel_equality.py": "45bfa1838328c1b7d165364fce76afc09af4850dfcd22afed62db14b43891b6b",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "3d47dd4422000032b360bdbddc4ae8e83d23ba5188f7a2680a4561e787a5a372",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+    "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+    "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2",
+    "/opt/homebrew/Cellar/angle/1.0.16/lib/libGLESv2.dylib": "6ae0bf6748fdf0484766bc0116599f9a9ac5bc907a5b5479f808d35568e357d6",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e",
+    "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1",
+    "/Users/alex/code/vox2/Build/wikipedia-instructions-20261101/network-deny.dylib": "4eefdf2e21482d226226c6c66caece07d82f6237aa65e157780e45a364424cdd",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d",
+    "/Users/alex/code/vox2/Build/old-reddit-instructions-20261101/diagnostic/brave.png": "9f3288c3c281e0cd57aeb7e3830a5c5f6cbfe982031265a3d5e350a11a2ac690",
+    "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "a8af21441309c4a3356366709a7392c704a5de3cd843cea85b713eda9d5e3e51",
+    "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7"
+  },
+  "runtime_diagnostic": {
+    "executable_sha256": "0bb14e2f940d1ee83a4a57f48179ab40fb3ecf71aa8b7331f199676792ab6974",
+    "root_pid": 26665,
+    "capture_exit": 0,
+    "capture_jsc": {
+      "pid": 26665,
+      "contexts": 0,
+      "groups": 0,
+      "evaluations": 0
+    },
+    "scripting_markers": [
+      "Ladybird V scripting: enabled=true runtime=false sources=0 source_bytes=0 preloaded_scripts=0"
+    ],
+    "smoke_exit": 0,
+    "smoke_jsc": [
+      {
+        "pid": 26659,
+        "contexts": 3,
+        "groups": 1,
+        "evaluations": 462
+      }
+    ]
+  },
+  "live_acquisition": {
+    "url": "https://old.reddit.com/",
+    "http_status": 403,
+    "posts": 0,
+    "performance_credit": false
+  },
+  "diagnostic_pair": {
+    "vox": {
+      "instructions": 3980059518,
+      "pixels_exact": true,
+      "exit": 0
+    },
+    "brave": {
+      "instructions": 9301952103,
+      "pixels_exact": true,
+      "exit": 0
+    }
+  },
+  "raw_artifact_sha256": {
+    "Build/reddit-tab-color-acceptance-20261103/pair-1.brave.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-1.brave.json": "05a9d54daf577112c04ae8012184b41adfd695a90e9811db2c676b12bc73520d",
+    "Build/reddit-tab-color-acceptance-20261103/pair-1.brave.log": "506581d84a5799f23bbbf2c6e65c865d84fc6036c5ef76910a9cbe22039be3eb",
+    "Build/reddit-tab-color-acceptance-20261103/pair-1.brave.png": "9f3288c3c281e0cd57aeb7e3830a5c5f6cbfe982031265a3d5e350a11a2ac690",
+    "Build/reddit-tab-color-acceptance-20261103/pair-1.vox.audit.json": "ac488d7ec2ba3ba8cc2278357cc9ac75e3c7d09e5a3be61b869b4851562e2152",
+    "Build/reddit-tab-color-acceptance-20261103/pair-1.vox.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-1.vox.json": "0cb985c97988e349362bea5a6f5c513b93c20690c67c4852cab3b6de7befcca7",
+    "Build/reddit-tab-color-acceptance-20261103/pair-1.vox.log": "7d88e734316f213b8ad79ced8c68d500a1b8f47fb2c93b63c0981bd7ad74b55c",
+    "Build/reddit-tab-color-acceptance-20261103/pair-1.vox.png": "854c4017a8fe13c1b595dc7a2617b76de5d814ee838dafcf67fa2bf7886e5726",
+    "Build/reddit-tab-color-acceptance-20261103/pair-1.vox.window.png": "264a4b15fc0de1f01747a664035e343d5804fba9a9b4d680a8a8dcdf646fe380",
+    "Build/reddit-tab-color-acceptance-20261103/pair-2.brave.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-2.brave.json": "c3c68665f300aaa757023e88f71e2ec3ba78e06fbd08c49651f87366265672b3",
+    "Build/reddit-tab-color-acceptance-20261103/pair-2.brave.log": "2ce105c67f6dc7f76f5373d7eb3345bc1bd6f784e6545e2df560098a76d3da05",
+    "Build/reddit-tab-color-acceptance-20261103/pair-2.brave.png": "9f3288c3c281e0cd57aeb7e3830a5c5f6cbfe982031265a3d5e350a11a2ac690",
+    "Build/reddit-tab-color-acceptance-20261103/pair-2.vox.audit.json": "ac488d7ec2ba3ba8cc2278357cc9ac75e3c7d09e5a3be61b869b4851562e2152",
+    "Build/reddit-tab-color-acceptance-20261103/pair-2.vox.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-2.vox.json": "f68ba91ba7b0717346aacbce37c11311a97385a8aa14af6ae29a83940719298f",
+    "Build/reddit-tab-color-acceptance-20261103/pair-2.vox.log": "e2bc16bd47d23ef4b7892b56fe0f08c78bc7c59a58ca1ce1dd92b78c67b74823",
+    "Build/reddit-tab-color-acceptance-20261103/pair-2.vox.png": "854c4017a8fe13c1b595dc7a2617b76de5d814ee838dafcf67fa2bf7886e5726",
+    "Build/reddit-tab-color-acceptance-20261103/pair-2.vox.window.png": "83a07fde3c33e91ad410bcceb6dfae55e20fc50307cf13aafa29ff86ca96673e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-3.brave.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-3.brave.json": "2ee9d3b1ee8366d98572e7764f1a6e11595e375007604102bb9faac250e6fac1",
+    "Build/reddit-tab-color-acceptance-20261103/pair-3.brave.log": "54ccf5521c145bb970e161a80996449766e871f29b0e68bacf083cf536c64f41",
+    "Build/reddit-tab-color-acceptance-20261103/pair-3.brave.png": "9f3288c3c281e0cd57aeb7e3830a5c5f6cbfe982031265a3d5e350a11a2ac690",
+    "Build/reddit-tab-color-acceptance-20261103/pair-3.vox.audit.json": "ac488d7ec2ba3ba8cc2278357cc9ac75e3c7d09e5a3be61b869b4851562e2152",
+    "Build/reddit-tab-color-acceptance-20261103/pair-3.vox.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-3.vox.json": "c3e1dac42852dbd1fe74fa2a83649330a634db0889b8bb19292f537b900de39f",
+    "Build/reddit-tab-color-acceptance-20261103/pair-3.vox.log": "a7c09655cb9126b6cf1a1601fb6f99fbf01ea29bd1b8e6b9b7f1a43fb51fbbac",
+    "Build/reddit-tab-color-acceptance-20261103/pair-3.vox.png": "854c4017a8fe13c1b595dc7a2617b76de5d814ee838dafcf67fa2bf7886e5726",
+    "Build/reddit-tab-color-acceptance-20261103/pair-3.vox.window.png": "83a07fde3c33e91ad410bcceb6dfae55e20fc50307cf13aafa29ff86ca96673e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-4.brave.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-4.brave.json": "3b7b8b782b184df1e443a9d18d4c16fabd358407d64cb1282df8b732834f6fae",
+    "Build/reddit-tab-color-acceptance-20261103/pair-4.brave.log": "277dbc2114307e0ab4ee31b4c2ec5c20bba71128ed58fb3b2b93419c121f66d2",
+    "Build/reddit-tab-color-acceptance-20261103/pair-4.brave.png": "9f3288c3c281e0cd57aeb7e3830a5c5f6cbfe982031265a3d5e350a11a2ac690",
+    "Build/reddit-tab-color-acceptance-20261103/pair-4.vox.audit.json": "ac488d7ec2ba3ba8cc2278357cc9ac75e3c7d09e5a3be61b869b4851562e2152",
+    "Build/reddit-tab-color-acceptance-20261103/pair-4.vox.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-4.vox.json": "a27ce4e1e0cf8055d26ef68280e7daa8eccc5835947ac1331a1d8b385b229b6c",
+    "Build/reddit-tab-color-acceptance-20261103/pair-4.vox.log": "63288b47fe2bb40ef768dc9916ae702e20384904272f5e9fee56d9f97cf87d76",
+    "Build/reddit-tab-color-acceptance-20261103/pair-4.vox.png": "854c4017a8fe13c1b595dc7a2617b76de5d814ee838dafcf67fa2bf7886e5726",
+    "Build/reddit-tab-color-acceptance-20261103/pair-4.vox.window.png": "9e4ed759dfddaaab5ee981acf50616c8389eaca0ec731496e296d96ba150df4f",
+    "Build/reddit-tab-color-acceptance-20261103/pair-5.brave.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-5.brave.json": "f7c4d1106a836988db5d0dec34646cd2384ab53eb945f46666a5861cf2a22ade",
+    "Build/reddit-tab-color-acceptance-20261103/pair-5.brave.log": "a14f16bcb7eb3d99f07cb5179c212c877dcb6229987842e1d4aa17562a6bd51d",
+    "Build/reddit-tab-color-acceptance-20261103/pair-5.brave.png": "9f3288c3c281e0cd57aeb7e3830a5c5f6cbfe982031265a3d5e350a11a2ac690",
+    "Build/reddit-tab-color-acceptance-20261103/pair-5.vox.audit.json": "ac488d7ec2ba3ba8cc2278357cc9ac75e3c7d09e5a3be61b869b4851562e2152",
+    "Build/reddit-tab-color-acceptance-20261103/pair-5.vox.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-5.vox.json": "2dcd6d3f94c8d275160f28eb50e17360b252a74625a9442d530db7142dce522a",
+    "Build/reddit-tab-color-acceptance-20261103/pair-5.vox.log": "3db7b2770033246e5cfa629f79ff204348b2b890f382d708970a6bcd4370048e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-5.vox.png": "854c4017a8fe13c1b595dc7a2617b76de5d814ee838dafcf67fa2bf7886e5726",
+    "Build/reddit-tab-color-acceptance-20261103/pair-5.vox.window.png": "264a4b15fc0de1f01747a664035e343d5804fba9a9b4d680a8a8dcdf646fe380",
+    "Build/reddit-tab-color-acceptance-20261103/pair-6.brave.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-6.brave.json": "53956bcd6c720f9640e110800e6d9e2066125e184464cfd7e3ade86e7ac52c8a",
+    "Build/reddit-tab-color-acceptance-20261103/pair-6.brave.log": "d4cb7e497d3ea41f98ce7d23409fc478e72020a9d1d00eb01eda441f60aeef71",
+    "Build/reddit-tab-color-acceptance-20261103/pair-6.brave.png": "9f3288c3c281e0cd57aeb7e3830a5c5f6cbfe982031265a3d5e350a11a2ac690",
+    "Build/reddit-tab-color-acceptance-20261103/pair-6.vox.audit.json": "ac488d7ec2ba3ba8cc2278357cc9ac75e3c7d09e5a3be61b869b4851562e2152",
+    "Build/reddit-tab-color-acceptance-20261103/pair-6.vox.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-6.vox.json": "baad53e164b5f807172592c50776fa98664308b35fac90f289666b5be384eff2",
+    "Build/reddit-tab-color-acceptance-20261103/pair-6.vox.log": "abf5b6f54817d09f41a823570c107b94c2a68001c5154d8c78cf55f5ba6d4de5",
+    "Build/reddit-tab-color-acceptance-20261103/pair-6.vox.png": "854c4017a8fe13c1b595dc7a2617b76de5d814ee838dafcf67fa2bf7886e5726",
+    "Build/reddit-tab-color-acceptance-20261103/pair-6.vox.window.png": "f483974f112eef30364368edce7b21fafacf8e3148c531f31054e11c561d4c62",
+    "Build/reddit-tab-color-acceptance-20261103/pair-7.brave.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-7.brave.json": "9611ebdaad0e7da361af7fdbd2333389caeb7c20e264b297965bde9021571c90",
+    "Build/reddit-tab-color-acceptance-20261103/pair-7.brave.log": "e8f5f4fb4a6192f1e5873aa6ab412145e255896a2f40bcaa5dbca93a46c9d94f",
+    "Build/reddit-tab-color-acceptance-20261103/pair-7.brave.png": "9f3288c3c281e0cd57aeb7e3830a5c5f6cbfe982031265a3d5e350a11a2ac690",
+    "Build/reddit-tab-color-acceptance-20261103/pair-7.vox.audit.json": "ac488d7ec2ba3ba8cc2278357cc9ac75e3c7d09e5a3be61b869b4851562e2152",
+    "Build/reddit-tab-color-acceptance-20261103/pair-7.vox.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-acceptance-20261103/pair-7.vox.json": "59807e532210be6c099d0d94b60feb7b4cfb489c546d40fe1c8a26adb2f83009",
+    "Build/reddit-tab-color-acceptance-20261103/pair-7.vox.log": "c798b3c81b787b2d6b1c15bde50480b0514a03c6f99934d976f4c7f520d7cc6c",
+    "Build/reddit-tab-color-acceptance-20261103/pair-7.vox.png": "854c4017a8fe13c1b595dc7a2617b76de5d814ee838dafcf67fa2bf7886e5726",
+    "Build/reddit-tab-color-acceptance-20261103/pair-7.vox.window.png": "f483974f112eef30364368edce7b21fafacf8e3148c531f31054e11c561d4c62",
+    "Build/reddit-tab-color-acceptance-20261103/post-audit-config.json": "6ac6e4868d7cbf13dd72fea4626a2f436f9c7747b6c0e2f2e9a6d5a268177f56",
+    "Build/reddit-tab-color-acceptance-20261103/summary.json": "0f4f89f62f749b083d3de1868ac49e8926d7b9b73a63d93f94ff343f27b89d75",
+    "Build/reddit-tab-color-acceptance-20261103-guard.json": "b10e75711023bc17ee1895e855c851dcf18e438ec9a3fe5bfcea2b97754273c8",
+    "Build/reddit-tab-color-diagnostic-20261103/pair-1.brave.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-diagnostic-20261103/pair-1.brave.json": "b1c205623ef0e7ed5744191af239f9d15ebe67701b924104f1a3fc670dffab0a",
+    "Build/reddit-tab-color-diagnostic-20261103/pair-1.brave.log": "4a8f8f4b122677dbb6482ab8cad542fe64fc527ebfb841a381a1c672d621e6ec",
+    "Build/reddit-tab-color-diagnostic-20261103/pair-1.brave.png": "9f3288c3c281e0cd57aeb7e3830a5c5f6cbfe982031265a3d5e350a11a2ac690",
+    "Build/reddit-tab-color-diagnostic-20261103/pair-1.vox.audit.json": "ac488d7ec2ba3ba8cc2278357cc9ac75e3c7d09e5a3be61b869b4851562e2152",
+    "Build/reddit-tab-color-diagnostic-20261103/pair-1.vox.diff.png": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e",
+    "Build/reddit-tab-color-diagnostic-20261103/pair-1.vox.json": "21d288340a92077262b505ca40b6bec7bdd1fd6dd047cfca260fb9ba1819fe24",
+    "Build/reddit-tab-color-diagnostic-20261103/pair-1.vox.log": "234a4f00bef37e7e130a71d6ad252c0c452ba5fbf60ca7806407ac4ea9257516",
+    "Build/reddit-tab-color-diagnostic-20261103/pair-1.vox.png": "854c4017a8fe13c1b595dc7a2617b76de5d814ee838dafcf67fa2bf7886e5726",
+    "Build/reddit-tab-color-diagnostic-20261103/pair-1.vox.window.png": "2f0ac19072f63492cb17e62011324107b5581de2e5d17db425fafd5aa65763e7",
+    "Build/reddit-tab-color-diagnostic-20261103/post-audit-config.json": "6ac6e4868d7cbf13dd72fea4626a2f436f9c7747b6c0e2f2e9a6d5a268177f56",
+    "Build/reddit-tab-color-diagnostic-20261103/summary.json": "642178101dedd1b5c1bf86bf7049d9e54dc8eef5db2eb55b58dc240a6ea71ba4",
+    "Build/reddit-tab-color-diagnostic-20261103-guard.json": "f35d3fe8d537f8981ccf3d4ca4675bccac248901152fb86c222b9aa3168ca0fa",
+    "Build/reddit-tab-color-live-20261103.headers": "4bdd3082a45e9bcf546a4b878d5bdce2c19ee372dfc8f87a82ff1c8eb5a7404e",
+    "Build/reddit-tab-color-live-20261103.html": "13bcba13bd1bad5aace04e8a76880b710337a8d595224967e874401832cc203c",
+    "Build/reddit-tab-color-live-20261103.status": "97a58cc66d1cd6b51466af8ed52d6a38053b5572fee09a0ae8859c26b82bdf67",
+    "Build/reddit-tab-color-runtime-20261103/capture.log": "200e51a85d503b41ad17b3396ad814649497cf1f731ba1064558dc03d2761bf2",
+    "Build/reddit-tab-color-runtime-20261103/capture.png": "854c4017a8fe13c1b595dc7a2617b76de5d814ee838dafcf67fa2bf7886e5726",
+    "Build/reddit-tab-color-runtime-20261103/capture.window.png": "83a07fde3c33e91ad410bcceb6dfae55e20fc50307cf13aafa29ff86ca96673e",
+    "Build/reddit-tab-color-runtime-20261103/result.json": "e5066db8c3044cbc86354a1cd01ef309d81a7f6126a607b6e626ea14d07df9da",
+    "Build/reddit-tab-color-runtime-20261103/smoke.log": "210801b5b1db3ade6958efdad21522b2f6aec49cad76d3d2c709be85cfec3ef1",
+    "Build/reddit-tab-color-runtime-20261103-guard.json": "db2bc5684ddcb8c8b35cb9f3f2a123547956af08736506875bf65515845857e7"
+  }
+}

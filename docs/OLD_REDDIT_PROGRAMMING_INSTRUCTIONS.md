@@ -1,5 +1,10 @@
 # Cached Old Reddit programming instructions, 2026-11-01
 
+A [2026-11-03 recheck](OLD_REDDIT_PROGRAMMING_RECHECK.md) of the latest completed
+production bundle records seven fresh pairs with **57.61% fewer observed
+instructions** than Brave and unchanged exact pixels. The older cohort below
+is preserved; no new engine optimization is attributed to that recheck.
+
 Across seven alternating fresh-process pairs, Vox's median is **4,954,400,539
 observed retired CPU instructions** versus Brave's **9,248,675,091**: **46.43%
 fewer** by the ratio of medians. The highest observed Vox count is **45.91%
