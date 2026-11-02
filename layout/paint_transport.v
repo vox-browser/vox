@@ -2222,12 +2222,23 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			commands << PaintCommand{ kind: 'begin_background_blend_group' }
 		}
 		mut color_rect := background_box_rect_from_border(box, box.decorations().background_color_clip, background_border_rect)
+		if box.snaps_background_rect && box.uses_own_paint_transform_4x4
+			&& !box.canvas().paints_canvas_background && box_radii_are_zero(box_radii) {
+			// Blink snaps a transformed solid fill in the box's local paint
+			// space. Snapping its absolute edges first changes rotated contours.
+			raw := background_box_rect_from_border(box, box.decorations().background_color_clip, border_rect)
+			local := pixel_snapped_layout_rect(LayoutRect{raw.x - border_left,
+				raw.y - border_top, raw.width, raw.height})
+			color_rect = LayoutRect{local.x + border_left, local.y + border_top,
+				local.width, local.height}
+		}
 		mut color_radii := background_box_radii(box, box.decorations().background_color_clip, box_radii, color_rect)
 		if box.snaps_background_rect && box.decorations().background_color_clip == 'border-box'
 			&& !box.canvas().paints_canvas_background && !box_radii_are_zero(color_radii) {
 			color_rect, color_radii = chromium_background_under_opaque_border(color_rect,
 				color_radii, box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles)
 		}
+		color_background_start := commands.len
 		if native_text_control != '' {
 			scale := unsafe { &Node(box.layout_handle) }.document().layout_coordinate_scale()
 			append_chromium_native_text_control(mut commands, border_rect, native_text_control, scale, opacity)
@@ -2269,6 +2280,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				opacity: opacity
 			}
 		}
+		color_background_end := commands.len
 		// Compatibility-only boxes still carry their single parsed gradient separately. Typed layout
 		// retains gradients in the ordered image layer list below, as BackgroundPainting does.
 		if !box.skip_background_paint && !empty_cell_hidden {
@@ -2667,7 +2679,9 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		overlay_end := commands.len
 		for command_index := command_start; command_index < commands.len; command_index++ {
 			commands[command_index].transform = box.paint_transform
-			chromium_local_background(mut commands[command_index], box)
+			chromium_local_background(mut commands[command_index], box,
+				native_text_control == '' && command_index >= color_background_start
+				&& command_index < color_background_end)
 			chromium_local_border_shadow(mut commands[command_index], box, border_rect)
 			data := commands[command_index].local_border_data
 			if data != unsafe { nil } {
