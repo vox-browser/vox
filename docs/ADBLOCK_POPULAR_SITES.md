@@ -2741,3 +2741,27 @@ and the isolated 54-pixel avatar reproduction. Raw artifacts are retained in
 unchanged. These are frozen guest rendering results with author scripts
 removed; live-site, performance and the earlier saved-live/synthetic reference
 qualifications remain open.
+
+
+### Pikabu avatar composition diagnostic, 2 November 2026
+
+The isolated avatar reproduces the remaining 54 edge pixels. Replacing the
+native outer clip with GPU coverage reduces that fixture to 36 differing
+pixels (maximum channel error two). A joint GPU image/mask group and a dithered
+radial mask shader retain the same 36 pixels. Image metadata confirms that the
+white background is a separate preceding draw, outside the image descriptor.
+
+A private prototype that forces white into the image descriptor, erases the
+preceding draw and replays background, image and rounded mask together matches
+the isolated Brave fixture at zero. **This is not a production fix**: forced
+white, clearing prior content and dropping destination clips are diagnostic
+operations. They cannot safely replace general CSS mask replay. No full-site
+or generic eligibility acceptance is claimed, and the accepted production
+Pikabu comparison remains **92 pixels, including all 54 avatar edges**.
+
+The [avatar diagnostic receipt](benchmark-results/pikabu-avatar-coverage-diagnostics-2026-11-02.json)
+retains all frames, identities, command scopes, source hashes, guard exits and
+the inconclusive manual image-upload reconstruction. The next implementation
+must jointly replay a validated background/image/mask scope while retaining the
+mask's border radius, arbitrary ancestor clipping and fallback behavior. Raw
+artifacts are under `Build/pikabu-avatar-coverage-20261102/`.
