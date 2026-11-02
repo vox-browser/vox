@@ -818,6 +818,12 @@ static void native_draw_solid_rect_srgb(float x, float y, float width, float hei
         ladybird_v_skia_record_rect(context, x, y, width, height,
             color.r, color.g, color.b, color.a);
     }
+    static int (*defer_recorded_rect)(CGContextRef, float, float, float, float);
+    static dispatch_once_t defer_recorded_rect_once;
+    dispatch_once(&defer_recorded_rect_once, ^{
+        defer_recorded_rect = dlsym(RTLD_DEFAULT, "ladybird_v_skia_defer_recorded_rect");
+    });
+    if (defer_recorded_rect && defer_recorded_rect(context, x, y, width, height)) return;
 #endif
 	static CGColorSpaceRef colorSpace;
 	static dispatch_once_t onceToken;

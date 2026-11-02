@@ -14,6 +14,8 @@ struct SharedRootRecording {
     double scroll_y = 0;
     bool root = true;
     bool speculative = false;
+    bool checks_prefix = false;
+    VoxRasterSnapshot original_prefix;
     float origin_x = 0, origin_y = 0, layer_width = 0, layer_height = 0;
     std::vector<SkRect> replay_bounds;
     std::vector<SkRect> blocked_bounds;
@@ -132,7 +134,7 @@ decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw()
 SkCanvas* shared_recording_canvas(CGContextRef destination)
 {
     if (auto* canvas = isolated_input_recording_canvas(destination)) return canvas;
-    if (!(s_raster_layer_is_root ? s_shared_root_enabled : s_shared_layer_enabled)
+    if (!(s_speculative_layer_enabled || (s_raster_layer_is_root ? s_shared_root_enabled : s_shared_layer_enabled))
         || !s_chromium_painting || !destination || !shared_picture_draw()) return nullptr;
     if (!s_shared_root_recording) {
         auto scale = raster_scale_for_context(destination);
@@ -144,7 +146,8 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
         group->canvas_width = width;
         group->canvas_height = height;
         group->scale = scale;
-        group->root = s_raster_layer_is_root;
+        group->checks_prefix = s_raster_layer_is_root && s_speculative_layer_enabled;
+        group->root = s_raster_layer_is_root && !group->checks_prefix;
         group->speculative = s_speculative_layer_enabled;
         group->origin_x = s_raster_origin_x;
         group->origin_y = s_raster_origin_y;
@@ -162,6 +165,9 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
             if (size_t(pixel_width) * pixel_height > 8 * 1024 * 1024) return nullptr;
             auto prefix = read_backdrop(destination, {}, scale, pixel_width, pixel_height);
             if (!prefix.pixels) return nullptr;
+            if (group->checks_prefix)
+                group->original_prefix = VoxRasterSnapshot(prefix.pixels,
+                    size_t(pixel_width) * 4, prefix.pitch, pixel_height);
             int left, top, right, bottom;
             // An empty canvas still uses the layer's fractional local origin.
             // A painted prefix already belongs to the destination's pixel grid.
@@ -401,6 +407,22 @@ void finish_shared_recording()
     if (!group) return;
     DeferredLayerPublication publication {*group};
     if (group->replay_bounds.empty() || !group->columns) return;
+    if (group->checks_prefix) {
+        // Root drawing can include platform operations outside this recorder.
+        // No deferred root picture may overwrite those pixels. Compare the
+        // untouched destination against its owned initial prefix, and replay
+        // the whole frame if an unrecorded or non-deferred draw changed it.
+        int width = CGBitmapContextGetWidth(group->destination);
+        int height = CGBitmapContextGetHeight(group->destination);
+        auto current = read_backdrop(group->destination, {}, group->scale, width, height);
+        if (!current.pixels || !group->original_prefix.equal(current.pixels, size_t(width) * 4, current.pitch, height)) {
+            speculative_picture_decline(*group);
+            if (std::getenv("VOX_SPECULATIVE_PICTURE_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_SPECULATIVE_ROOT_CHANGED leaves=%u t_us=%.3f\n",
+                    group->deferred_leaves, speculative_picture_time());
+            return;
+        }
+    }
 #ifdef VOX_TEST_DEFERRED_LAYERS
     if (s_test_fail_deferred_layer && group->deferred_leaves) return;
 #endif
@@ -422,8 +444,8 @@ void finish_shared_recording()
         if (!group->blocked_bounds.empty() || !(group->layer_width > 0)
             || !(group->layer_height > 0) || !std::isfinite(group->layer_width)
             || !std::isfinite(group->layer_height)
-            || group->layer_width * group->scale > 16384
-            || group->layer_height * group->scale > 16384) return;
+            || group->layer_width * group->scale > (group->checks_prefix ? 16777216 : 16384)
+            || group->layer_height * group->scale > (group->checks_prefix ? 16777216 : 16384)) return;
         float left = group->origin_x;
         float top = group->origin_y + group->page_y - group->scroll_y;
         auto bounds = SkRect::MakeXYWH(left, top, group->layer_width, group->layer_height);
@@ -502,6 +524,9 @@ void finish_shared_recording()
             && std::getenv("VOX_SPECULATIVE_PICTURE_DIAGNOSTICS"))
             std::fprintf(stderr, "VOX_SPECULATIVE_PICTURE_PUBLISH leaves=%u width=%d height=%d t_us=%.3f\n",
                 group->deferred_leaves, width, height, speculative_picture_time());
+        if (publication.published && group->checks_prefix && std::getenv("VOX_SPECULATIVE_PICTURE_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_SPECULATIVE_ROOT_PUBLISH leaves=%u t_us=%.3f\n",
+                group->deferred_leaves, speculative_picture_time());
         if (publication.published && group->deferred_leaves && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
             std::fprintf(stderr, "VOX_DEFERRED_LAYER leaves=%u width=%d height=%d\n",
                 group->deferred_leaves, width, height);
@@ -639,8 +664,20 @@ extern "C" void ladybird_v_skia_set_layer_shared_recording(int enabled)
 {
     s_shared_layer_enabled = enabled != 0;
     s_speculative_layer_enabled = false;
+    if (s_raster_layer_is_root && root_speculative_picture_enabled()
+        && std::getenv("VOX_SPECULATIVE_PICTURE_DIAGNOSTICS")) {
+        auto context = speculative_picture_current_context();
+        auto ctm = context ? CGContextGetCTM(context) : CGAffineTransformIdentity;
+        std::fprintf(stderr, "VOX_SPECULATIVE_ROOT_GATE enabled=%d root_shared=%d frame=%d direct_image=%d layer_width=%.9g layer_height=%.9g bitmap_width=%zu bitmap_height=%zu has_pixels=%d bits=%zu ctm=%.9g,%.9g,%.9g,%.9g,%.9g,%.9g eligible=%d t_us=%.3f\n",
+            enabled, s_shared_root_enabled, s_deferred_layer_frame_enabled, s_direct_image_layer,
+            s_raster_layer_width, s_raster_layer_height,
+            context ? CGBitmapContextGetWidth(context) : 0, context ? CGBitmapContextGetHeight(context) : 0,
+            context && CGBitmapContextGetData(context), context ? CGBitmapContextGetBitsPerPixel(context) : 0,
+            ctm.a, ctm.b, ctm.c, ctm.d, ctm.tx, ctm.ty, speculative_picture_context_eligible(context), speculative_picture_time());
+    }
     if (!enabled && speculative_picture_enabled() && s_deferred_layer_frame_enabled
-        && !s_raster_layer_is_root && !s_direct_image_layer
+        && (!s_raster_layer_is_root || (!s_shared_root_enabled && root_speculative_picture_enabled()))
+        && !s_direct_image_layer
         && s_raster_layer_width > 0 && s_raster_layer_height > 0) {
         auto context = speculative_picture_current_context();
         if (speculative_picture_context_eligible(context)) {
@@ -683,8 +720,30 @@ extern "C" void ladybird_v_skia_record_rect(CGContextRef destination, float x,
     paint.setColor(SkColorSetARGB(alpha, red, green, blue));
     canvas->save();
     shared_recording_clip(destination, canvas);
+    if (input == s_isolated_input_recordings.end() && s_shared_root_recording
+        && s_shared_root_recording->destination == destination && s_shared_root_recording->speculative
+        && complete_speculative_picture_enabled()) {
+        float root_y = canvas_height - s_shared_root_recording->viewport_height - float(s_root_raster_scroll_y);
+        rect.offset(0, -root_y);
+        canvas->setMatrix(SkMatrix::Translate(0, root_y));
+    }
     canvas->drawRect(rect, paint);
     canvas->restore();
+}
+
+// The platform adapter calls this after recording and before its ordinary
+// CGContext fill. Older adapters ignore the new service and retain their
+// ordinary pixels; the strict root-prefix guard then vetoes replacement.
+extern "C" int ladybird_v_skia_defer_recorded_rect(CGContextRef destination,
+    float x, float y, float width, float height)
+{
+    if (!s_shared_root_recording || s_shared_root_recording->destination != destination
+        || !s_shared_root_recording->speculative
+        || !complete_speculative_picture_enabled()) return 0;
+    auto& group = *s_shared_root_recording;
+    auto ink = SkRect::MakeXYWH(x, group.canvas_height - y - height, width, height).makeOutset(2, 2);
+    shared_recording_speculative_content(destination, ink, group.canvas_height - group.viewport_height, 0);
+    return shared_recording_defers_leaf_raster(destination, ink);
 }
 
 extern "C" void ladybird_v_skia_record_caret(CGContextRef destination, float x,

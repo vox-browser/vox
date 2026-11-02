@@ -4799,6 +4799,11 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         // treating it as ink crops the raster tile and changes nearby edges.
         if (recorded) {
             if (!ink.isEmpty()) shared_recording_content(destination, ink, page_y, scroll_y);
+            if (!ink.isEmpty() && s_shared_root_recording && s_shared_root_recording->speculative
+                && complete_speculative_picture_enabled()) {
+                shared_recording_speculative_content(destination, ink.makeOutset(2, 2), page_y, scroll_y);
+                if (shared_recording_defers_leaf_raster(destination, ink.makeOutset(2, 2))) return 1;
+            }
         } else shared_recording_block(bounds);
     }
     RasterRegion region;
@@ -5121,6 +5126,12 @@ extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destinatio
         shared_recording_clip(destination, canvas);
         draw_path(canvas, RasterRegion{}, 1, 1);
         canvas->restore();
+        if (has_fill && !has_stroke && s_shared_root_recording && s_shared_root_recording->speculative
+            && complete_speculative_picture_enabled()) {
+            auto ink = matrix.mapRect(local_bounds).makeOutset(2, 2);
+            shared_recording_speculative_content(destination, ink, page_y, scroll_y);
+            if (shared_recording_defers_leaf_raster(destination, ink)) return 1;
+        }
     }
 	if (s_raster_command_group
 		&& s_raster_command_group->destination == destination) {

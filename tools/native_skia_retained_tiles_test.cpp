@@ -87,6 +87,20 @@ int main()
     ch.finish(); ci.finish();
     assert(ch.valid && ci.valid && ch.draws.size() == 1 && ci.draws.size() == 1);
     assert(ch.draws[0].key == ci.draws[0].key);
+    // Logical document height must not become a GPU target allocation or
+    // silently clip a layer-local picture far below the initial viewport.
+    auto far = group_at(40000); far.origin_x = far.origin_y = 0; far.page_y = 112;
+    SkPictureRecorder far_recorder; auto* far_canvas = far_recorder.beginRecording(SkRect::MakeWH(1024, 880));
+    far_canvas->setMatrix(SkMatrix::Translate(0, far.page_y - float(far.scroll_y)));
+    SkPaint far_paint; far_paint.setColor(SK_ColorRED);
+    far_canvas->drawRect(SkRect::MakeXYWH(0, 40100, 16, 16), far_paint);
+    RetainedLayerCanvas far_canonical(far); far_recorder.finishRecordingAsPicture()->playback(&far_canonical);
+    auto far_picture = far_canonical.finish(); assert(far_canonical.valid);
+    auto far_surface = SkSurfaces::Raster(SkImageInfo::MakeN32Premul(16, 16)); assert(far_surface);
+    far_surface->getCanvas()->clear(SK_ColorTRANSPARENT);
+    far_surface->getCanvas()->translate(0, -40100); far_surface->getCanvas()->drawPicture(far_picture);
+    SkPixmap far_pixels; assert(far_surface->peekPixels(&far_pixels));
+    assert(far_pixels.getColor(8, 8) == SK_ColorRED);
     // A restored clip must not leak into the following independent primitive.
     auto unclipped = scene(first, SK_ColorRED, false);
     RetainedLayerCanvas cc(first); unclipped->playback(&cc); cc.finish();
@@ -133,20 +147,41 @@ int main()
     s_raster_layer_is_root = false; s_chromium_painting = true; s_shared_layer_enabled = true;
     s_msaa_grid_columns = 2; s_msaa_grid_width = 544; s_msaa_grid_height = 256;
     s_root_raster_scroll_y = 20;
+    s_shared_viewport_width = 1024; s_shared_viewport_height = 768;
     auto ink = SkRect::MakeXYWH(120, 230, 60, 30);
     shared_recording_speculative_content(context, ink, 8, 4);
     assert(s_shared_root_recording->replay_bounds.size() == 1);
     assert(s_shared_root_recording->scroll_y == 24 && s_shared_root_recording->page_y == 8);
     assert(s_shared_root_recording->columns == 2 && s_shared_root_recording->tile_width == 544);
+    ladybird_v_skia_begin_deferred_layer_frame(1);
+    ladybird_v_skia_set_deferred_layer_destination(context, 1);
+    ladybird_v_skia_record_rect(context, 120, 498, 60, 20, 200, 100, 50, 255);
+    assert(ladybird_v_skia_defer_recorded_rect(context, 120, 498, 60, 20));
+    assert(s_shared_root_recording->deferred_leaves == 1);
     s_raster_origin_x = 100; s_raster_origin_y = 200;
     s_raster_layer_width = s_raster_layer_height = 512;
     assert(speculative_picture_context_eligible(context));
     speculative_picture_decline(*s_shared_root_recording);
     assert(!speculative_picture_context_eligible(context));
+    s_raster_layer_height = 12000; s_raster_layer_is_root = true;
+    setenv("VOX_ENABLE_ROOT_SPECULATIVE_PICTURES", "1", 1);
+    assert(speculative_picture_context_eligible(context));
+    s_raster_layer_is_root = false; assert(!speculative_picture_context_eligible(context));
+    s_raster_layer_height = 512;
     // An unrelated layer and a graphics-memory purge both release the veto.
     s_raster_origin_x = 101; assert(speculative_picture_context_eligible(context));
     s_raster_origin_x = 100; clear_retained_layer_tiles();
     assert(speculative_picture_context_eligible(context));
-    s_shared_root_recording.reset(); CGContextRelease(context);
+    // A direct, unrecorded destination write must veto a deferred root
+    // publication and leave that write intact for ordinary frame rollback.
+    s_shared_root_recording->checks_prefix = true;
+    s_shared_root_recording->deferred_leaves = 1;
+    auto* raw = static_cast<uint8_t*>(CGBitmapContextGetData(context));
+    s_shared_root_recording->original_prefix = VoxRasterSnapshot(raw, 8192, 8192, 1536);
+    raw[0] = 200;
+    s_deferred_layer_frame_failed = false;
+    finish_shared_recording();
+    assert(s_deferred_layer_frame_failed && raw[0] == 200 && !s_shared_root_recording);
+    CGContextRelease(context);
 
 }

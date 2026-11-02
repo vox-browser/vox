@@ -16,6 +16,11 @@ static bool complete_speculative_picture_enabled()
     auto* value = std::getenv("VOX_ENABLE_COMPLETE_SPECULATIVE_PICTURES");
     return value && !std::strcmp(value, "1");
 }
+static bool root_speculative_picture_enabled()
+{
+    auto* value = std::getenv("VOX_ENABLE_ROOT_SPECULATIVE_PICTURES");
+    return complete_speculative_picture_enabled() && value && !std::strcmp(value, "1");
+}
 static double speculative_picture_time()
 {
     using Clock = double (*)();
@@ -74,10 +79,11 @@ static bool speculative_picture_context_eligible(CGContextRef context)
     if (complete_speculative_picture_enabled()
         && std::find(s_speculative_declined_layers.begin(), s_speculative_declined_layers.end(), key)
             != s_speculative_declined_layers.end()) return false;
+    double layer_axis_limit = s_raster_layer_is_root && root_speculative_picture_enabled() ? 16777216.0 : 16384.0;
     if (!width || !height || width > 16384 || height > 16384
         || size_t(width) * height > 8 * 1024 * 1024
-        || !(s_raster_layer_width * ctm.a >= 1 && s_raster_layer_width * ctm.a <= 16384)
-        || !(s_raster_layer_height * ctm.a >= 1 && s_raster_layer_height * ctm.a <= 16384)
+        || !(s_raster_layer_width * ctm.a >= 1 && s_raster_layer_width * ctm.a <= layer_axis_limit)
+        || !(s_raster_layer_height * ctm.a >= 1 && s_raster_layer_height * ctm.a <= layer_axis_limit)
         || s_raster_layer_width * s_raster_layer_height * ctm.a * ctm.a < 262144) return false;
     auto space = CGBitmapContextGetColorSpace(context);
     auto name = space ? CGColorSpaceCopyName(space) : nullptr;

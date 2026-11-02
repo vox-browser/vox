@@ -81,7 +81,8 @@ class RetainedLayerCanvas final : public SkNoDrawCanvas {
         auto transform = matrix();
         SkRect storage;
         bounds = transform.mapRect(paint.computeFastBounds(bounds, &storage)).makeOutset(2, 2);
-        if (!bounds.isFinite() || draws.size() >= 8192) return valid = false;
+        if (!bounds.isFinite() || draws.size() >= 8192
+            || !SkRect::MakeLTRB(-16777216, -16777216, 16777216, 16777216).contains(bounds)) return valid = false;
         add(key, kind);
         float values[9]; transform.get9(values);
         for (float value : values) add(key, value);
@@ -229,7 +230,7 @@ public:
     std::vector<RetainedLayerDraw> draws;
     explicit RetainedLayerCanvas(SharedRootRecording const& group)
         : SkNoDrawCanvas(SkIRect::MakeLTRB(-32768, -32768, 32768, 32768)), group_(group),
-          output_(recorder_.beginRecording(SkRect::MakeLTRB(-32768, -32768, 32768, 32768))),
+          output_(recorder_.beginRecording(SkRect::MakeLTRB(-16777216, -16777216, 16777216, 16777216))),
           root_y_(group.page_y - float(group.scroll_y)) { }
     sk_sp<SkPicture> finish() { return recorder_.finishRecordingAsPicture(); }
 };
