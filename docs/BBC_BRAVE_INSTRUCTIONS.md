@@ -3189,3 +3189,66 @@ independent audits are under `Build/bbc-workflow-profile-20261102-2300/`, linked
 from the local [workflow evidence](benchmark-results/bbc-workflow-profile-2026-11-02.json).
 The shared production build is already running; pending code validation uses
 its next completed matching bundle without queuing a duplicate build.
+
+## Closed SVG contexts, pending production comparison
+
+`4e6156985` permits independent-context geometry snapshots to include closed
+SVG shape trees. The supported elements are svg, g, path, rect, circle, ellipse,
+line, polyline and polygon. Snapshots retain every qualified attribute and
+namespace, DOM child identity/order, and the existing per-node style, font,
+geometry and tree checks. Paths and transforms use the existing owned
+UsedValues snapshots. Text, resource instances, foreign content, animation
+elements and URL dependencies retain the complete path. Element, child,
+attribute and byte limits bound snapshot work. Inline-flow reuse remains
+unchanged. `df80b0354` adds the isolated comparison control; all **213
+instruction-tool tests pass**.
+
+The mutation checks expose a separate existing omission: CSS path data `d`
+was not classified as affecting layout. It left committed path bounds stale
+after an attribute or CSS edit, including with SVG reuse disabled. Commit
+`b808b55d9` corrects the metadata and adds two direct geometry/paint regressions.
+It follows the pinned upstream property's default layout classification; fill
+remains a paint-only change. Standalone viewBox/transform checks supply an
+unrelated geometry opportunity, as the browser replay owner normally does;
+this does not claim complete standalone SVG mutation support.
+
+All **29 combined focused cases pass enabled and disabled in default, no-GC
+and preallocated modes: 174 executions and nine zero-exit compiler/runtime
+jobs**. Coverage includes movement, unchanged grid identity, immutable old
+paint, CSS geometry and size changes, attributes/namespaces, child reordering,
+non-layout animation insertion, resource exclusions and bounded snapshots.
+Preparatory API/signature, diagnostic formatting and budget-parameter compile
+errors remain retained, along with the failing enabled/disabled path-data
+checks. One preparation overlaps an unrelated optional-mask-bounds edit; that
+compile failure and the later corrected source check remain separate.
+
+The frozen server HTML contains 107 SVG roots: 105 use only path/svg elements,
+and two also contain title. A separate standalone diagnostic positively
+executes reuse during its first layout call, while the disabled control does
+not. Both arms exit zero and retain **2,854 nodes, 902 lines, geometry checksum
+110,113,314, and an identical paint dump** after a subsequent body-padding
+change. The one-shot marker does not establish whether it executes again in
+that second phase. This driver has no resource replay or author-script
+execution, uses layout scale 2 and default-C/no-GC compilation, and cannot
+establish full-browser pixel conformance or instruction savings. Its initial
+summary inferred C-O0; the correction preserves that summary and records the
+exact compiler command without assuming an undumped optimization level.
+
+The full-browser diagnostic enables both the SVG and definite-width paths;
+the same-app control disables both. It requires their markers after navigation
+and before encoded capture, actual JavaScriptCore execution, complete content,
+original pixels, ownership and normal exit. The prepared unprofiled cohort
+retains seven alternating control/Vox/Brave triples under the adoption-aware
+memory guard, using the canonical apps and tools. Native startup, smoke and
+SVG checks are prepared for the matching completed bundle. Repeated shared
+builds are superseded by concurrent input changes; the available completed
+executable remains `0bb14e2f…` at this checkpoint and lacks both optimizations.
+It cannot validate them. No duplicate production build or app/tool copy is
+queued.
+
+There is **no new accepted instruction cohort, broad-check reset or BBC
+catalog entry**. The requested target remains open. All prior failing cohorts,
+fixed references, rendering/script limits and broad failures remain retained.
+The local [SVG evidence](benchmark-results/bbc-simple-svg-2026-11-02.json) links
+the source proofs, focused checks, failed preparations, standalone diagnostics
+and pending canonical runners under `Build/bbc-simple-svg-20261102/`.
