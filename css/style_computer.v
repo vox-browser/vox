@@ -1054,6 +1054,11 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 	process_backdrop := element.rendered_in_top_layer()
 	process_marker := had_list_marker || computed.display().is_list_item()
 	mut mutable_computer := unsafe { &StyleComputer(s) }
+	pseudo_scope := css_style_scope_for(abstract_element)
+	mut candidates := PseudoElementCandidates{}
+	if !disable_batched_pseudo_candidates {
+		candidates = pseudo_scope.pseudo_element_candidates(element)
+	}
 	for pseudo_element in pseudo_elements {
 		if (pseudo_element == .backdrop && !process_backdrop)
 			|| (pseudo_element == .marker && !process_marker) { continue }
@@ -1067,7 +1072,15 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		}
 		scope := css_style_scope_for(pseudo_abstract)
 		mut new_pseudo_style := ?&ComputedProperties(none)
-		has_candidate := scope.has_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element)
+		mut has_candidate := false
+		if disable_batched_pseudo_candidates {
+			has_candidate = scope.has_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element)
+		} else {
+			if !candidates.is_current(scope) {
+				candidates = scope.pseudo_element_candidates(element)
+			}
+			has_candidate = candidates.contains(css_pseudo_element)
+		}
 		if has_candidate {
 			// Bucket admission does not match selectors. Only a cascade needs
 			// the originating element in the ancestor filter for its pseudo.
