@@ -41,11 +41,6 @@ struct RetainedBlockLayout {
 	inline_end        ?StaticPositionRect
 	grid_container_rare ?&UsedValuesRareData
 	result            FormattingContextResult
-	output_width      CSSPixels
-	output_height     CSSPixels
-	output_definite_width bool
-	output_definite_height bool
-	input_bases       []MeasurementContextBasis
 mut:
 	paint_lines_ map[u64]&RetainedBlockPaintLines
 	paint_boxes_ map[u64]&RetainedBlockPaintBox
@@ -122,9 +117,6 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 	mut used UsedValues, mode LayoutMode, space AvailableSpace) FormattingContextResult {
 	mut geometry_scratch := begin_nested_geometry_scratch(box.document(), mode)
 	defer { geometry_scratch.finish() }
-	if state.subtree_root != none && !disable_independent_measurement_reuse {
-		return run_measurement_independent_formatting_context(mut state, box, mut used, mode, space)
-	}
 	styled := box.as_node_with_style() or {
 		return layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
 	}
@@ -201,11 +193,6 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 	definite_height := used.has_definite_height()
 	width_constraint := used.width_constraint
 	height_constraint := used.height_constraint
-	input_bases := if disable_independent_measurement_reuse {
-		[]MeasurementContextBasis{}
-	} else {
-		measurement_context_bases(state, used)
-	}
 	result := layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
 	mut retained := retain_geometry_allocations()
 	defer { retained.finish() }
@@ -235,11 +222,6 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			if rare := used.rare_ { ?&UsedValuesRareData(rare.clone()) } else { none }
 		} else { none }
 		result: result
-		output_width: used.content_width()
-		output_height: used.content_height()
-		output_definite_width: used.has_definite_width()
-		output_definite_height: used.has_definite_height()
-		input_bases: input_bases.clone()
 	}
 	return result
 }

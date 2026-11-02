@@ -995,7 +995,6 @@ mut:
 	intrinsic_seed_stamps_ []u32
 	intrinsic_seed_epoch_ u32
 	inline_measurements_ map[u64][]&InlineMeasurementLayout
-	source_state_ &LayoutState = unsafe { nil }
 }
 
 fn (mut pool MeasurementUsedValuesChunkPool) take() &MeasurementUsedValuesChunk {
@@ -1027,7 +1026,6 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	pool.intrinsic_seed_stamps_ = []u32{}
 	pool.intrinsic_seed_order_ = unsafe { nil }
 	pool.inline_measurements_ = map[u64][]&InlineMeasurementLayout{}
-	pool.source_state_ = unsafe { nil }
 	for chunk in pool.chunks {
 		free_measurement_allocation(chunk)
 	}
@@ -1309,7 +1307,7 @@ pub fn LayoutState.new_for_subtree(subtree_root &NodeWithStyle) &LayoutState {
 fn (mut state LayoutState) enable_measurement_chunk_pool() {
 	assert state.used_values_store.measurement_arena == none
 	assert state.measurement_chunk_pool_ == unsafe { nil }
-	state.measurement_chunk_pool_ = &MeasurementUsedValuesChunkPool{source_state_: &state}
+	state.measurement_chunk_pool_ = &MeasurementUsedValuesChunkPool{}
 }
 
 fn (mut state LayoutState) release_measurement_chunk_pool() {
