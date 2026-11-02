@@ -47,3 +47,13 @@ fn test_descendants_of_the_same_fixed_container_can_share_raster_coverage() {
 	card, icon := fixed_raster_card_and_icon_layers(commands, plan)
 	assert card == icon
 }
+
+fn test_viewport_metadata_planner_preserves_fixed_container_identity() {
+	mut document, commands, _ := fixed_raster_identity_fixture(fixed_raster_icon + fixed_raster_card, '')
+	defer { document.finalize() }
+	mut plan := ChromiumRasterLayerPlan{}
+	update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
+		LayoutRect{0, 0, 1024, 768}, mut plan)
+	card, icon := fixed_raster_card_and_icon_layers(commands, plan)
+	assert card != icon
+}
