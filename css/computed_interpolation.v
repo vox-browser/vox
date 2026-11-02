@@ -5907,11 +5907,8 @@ fn (mut c ComputedProperties) reuse_unchanged_font_cache(previous &ComputedPrope
 			&& !font_computer.cached_cascade_is_current(font_list)) {
 		return false
 	}
-	for property_id in computed_interpolation_longhand_property_ids() {
-		if property_affects_computed_font_list(property_id)
-			&& style_value_option_changed(previous.property(property_id, .yes), c.property(property_id, .yes)) {
-			return false
-		}
+	if !computed_font_inputs_match(previous, &c) {
+		return false
 	}
 	c.cached_computed_font_list_ = font_list
 	c.cached_computed_font_list_generation_ = generation
