@@ -6938,7 +6938,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 							clip_x := if chromium_svg { f64(0) } else { f64(destination.x) }
 							clip_y := if chromium_svg { f64(0) } else { f64(destination.y) }
 							m := replay.transform
-							C.native_add_corner_rounded_clip(f32(clip_x), f32(clip_y), f32(replay.viewport_width), f32(replay.viewport_height), 0, 0, 0, 0, 0, 0, 0, 0, f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+							C.native_add_corner_rounded_clip(f32(clip_x), f32(clip_y), f32(replay.content_width()), f32(replay.content_height()), 0, 0, 0, 0, 0, 0, 0, 0, f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 						}
 					}
 					nested_commands := svg_background_paint_commands_for_replay(&image_data, replay)

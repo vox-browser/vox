@@ -59,7 +59,7 @@ fn append_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, in
 		}
 		commands := svg_background_paint_commands_for_replay(image, replay) or { continue }
 		viewport_bounds := transformed_raster_bounds(replay.transform, f64(offset.x), f64(offset.y),
-			f64(replay.viewport_width), f64(replay.viewport_height))
+			replay.content_width(), replay.content_height())
 		for nested_index in 0 .. commands.len {
 			bounds := chromium_nested_svg_msaa_trigger_rect(unsafe { &commands[nested_index] }, replay.transform,
 				offset) or { continue }

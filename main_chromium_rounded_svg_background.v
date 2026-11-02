@@ -207,6 +207,11 @@ fn (mut app BrowserApp) draw_chromium_rounded_svg_background(command &layout.Pai
 		}
 		outer[0] -= f32(origin_x)
 		outer[1] -= f32(origin_y)
+		// The rounded CSS boundary stays in page geometry while the SVG's
+		// fractional container is scaled into its rounded image destination.
+		sx := f32(f64(replay.viewport_width) / replay.content_width())
+		sy := f32(f64(replay.viewport_height) / replay.content_height())
+		for index in 0 .. outer.len { outer[index] /= if index % 2 == 0 { sx } else { sy } }
 		commands := svg_background_paint_commands_for_replay(image, replay) or { return false }
 		if commands.len == 0 || commands.len > 32768 { return false }
 		mut paths := []C.VoxGraphitePath{cap: commands.len + 1}
@@ -220,9 +225,9 @@ fn (mut app BrowserApp) draw_chromium_rounded_svg_background(command &layout.Pai
 				return false
 			}
 			stride := layout.compatibility_clip_path_segment_stride
-			for i, point in [painting.Point{0, 0}, painting.Point{f64(replay.viewport_width), 0},
-				painting.Point{f64(replay.viewport_width), f64(replay.viewport_height)},
-				painting.Point{0, f64(replay.viewport_height)}] {
+			for i, point in [painting.Point{0, 0}, painting.Point{replay.content_width(), 0},
+				painting.Point{replay.content_width(), replay.content_height()},
+				painting.Point{0, replay.content_height()}] {
 				color_rect[i * stride] = if i == 0 { f32(0) } else { f32(1) }
 				color_rect[i * stride + 1] = f32(point.x)
 				color_rect[i * stride + 2] = f32(point.y)
@@ -267,11 +272,11 @@ fn (mut app BrowserApp) draw_chromium_rounded_svg_background(command &layout.Pai
 			&& chromium_svg_background_has_rounded_ancestor(command)
 		success := if independent_ancestor {
 			C.native_draw_svg_path_batch_with_rounded_ancestor(paths.data, paths.len, &matrix[0], 0, 0,
-				f32(replay.viewport_width), f32(replay.viewport_height), page_x, page_y, 0,
+				f32(replay.content_width()), f32(replay.content_height()), page_x, page_y, 0,
 				f32(app.ctx.width), f32(app.ctx.height), &outer[0])
 		} else {
 			C.native_draw_svg_path_batch(paths.data, paths.len, &matrix[0], 0, 0,
-			f32(replay.viewport_width), f32(replay.viewport_height), page_x, page_y, 0,
+			f32(replay.content_width()), f32(replay.content_height()), page_x, page_y, 0,
 			f32(app.ctx.width), f32(app.ctx.height), &outer[0])
 		}
 		if success == 0 {
