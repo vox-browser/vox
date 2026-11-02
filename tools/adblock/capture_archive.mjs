@@ -48,13 +48,25 @@ export function freezeDocument() {
         scale: devicePixelRatio};
 }
 
-export function archiveHeaders(response, length) {
+export function archiveHeaders(response, length, {completeMediaRange=false}={}) {
     // CDP decodes the transport body. Preserve origin/CORS/content policy;
     // remove only wire compression/framing and recompute its byte length.
     return Object.entries(response.headers).filter(([name]) =>
-        !['content-encoding', 'transfer-encoding', 'content-length'].includes(name.toLowerCase()))
+        !['content-encoding', 'transfer-encoding', 'content-length'].includes(name.toLowerCase())
+        && !(completeMediaRange && name.toLowerCase()==='content-range'))
         .flatMap(([name, value]) => String(value).split('\n').map(value => ({name, value})))
         .concat([{name: 'content-length', value: String(length)}]);
+}
+
+function isCompleteMediaRange(response, length) {
+    const value=Object.entries(response.headers)
+        .find(([name])=>name.toLowerCase()==='content-range')?.[1];
+    if(typeof value!=='string') return false;
+    const match=/^bytes 0-(\d+)\/(\d+)$/i.exec(value.trim());
+    if(!match) return false;
+    const end=Number(match[1]),total=Number(match[2]);
+    return Number.isSafeInteger(end) && Number.isSafeInteger(total)
+        && total>0 && end===total-1 && length===total;
 }
 
 export async function captureArchive(page, directory, expectedURL, {mainFrameID}={}) {
@@ -83,7 +95,8 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
         const method=requests.get(id)?.method;
         const isMain=type==='Document' && response.url===snapshot.url
             && mainFrameID && entry.frameId===mainFrameID;
-        if (!/^https?:/.test(response.url) || response.status !== 200
+        const supportedStatus=response.status===200 || (type==='Media' && response.status===206);
+        if (!/^https?:/.test(response.url) || !supportedStatus
             || (method!=='GET' && !(method==='POST' && isMain)) || !completed.has(id)) continue;
         if(type==='Document' && response.url===snapshot.url && mainFrameID && !isMain) continue;
         const row = {url: response.url, type, status: response.status, method};
@@ -91,11 +104,17 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
             const result = await page.send('Network.getResponseBody', {requestId: id});
             const body = Buffer.from(result.body, result.base64Encoded ? 'base64' : 'utf8');
             if (!body.length || body.length > 16 * 1024 * 1024) throw new Error('Unsupported body size');
+            const completeMediaRange=response.status===206;
+            if(completeMediaRange && !isCompleteMediaRange(response,body.length))
+                throw new Error('Cannot archive an incomplete media range');
             // The replay explicitly chooses this captured representation in
             // both engines; keep the native Accept cache discriminator too.
             const keys = [response.url];
             if (type === 'Image') keys.push(response.url + '\nAccept: ' + imageAccept);
-            const headers = archiveHeaders(response, body.length);
+            // A range covering the entire representation can replay as a full
+            // 200 response. Keep its original 206 status in capture provenance.
+            const headers = archiveHeaders(response, body.length,{completeMediaRange});
+            if(completeMediaRange) row.replayed_status=200;
             for (const key of keys) {
                 const filename = path.join(cache, 'resources', digest(key));
                 await fs.writeFile(filename, body);

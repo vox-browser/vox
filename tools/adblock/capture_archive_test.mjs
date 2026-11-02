@@ -49,6 +49,62 @@ test('empty header values survive archive serialization', () => {
         {name:'X-Empty',value:''},{name:'content-length',value:'0'}]);
 });
 
+async function captureMediaRange(t, range, bytes) {
+    const root=await fs.mkdtemp(path.join(os.tmpdir(),'vox-archive-media-'));
+    t.after(()=>fs.rm(root,{recursive:true,force:true}));
+    const url='https://news.example/',mediaURL=url+'preview.mp4';
+    const entries=[{id:'main',url,type:'Document',status:200,
+        headers:{'Content-Type':'text/html'},body:Buffer.from('original page')},
+        {id:'media',url:mediaURL,type:'Media',status:206,
+            headers:{'Content-Type':'video/mp4','Content-Range':range,
+                'Access-Control-Allow-Origin':'*'},body:bytes}];
+    const page={events:entries.flatMap(e=>[
+        {method:'Network.requestWillBeSent',params:{requestId:e.id,request:{url:e.url,method:'GET'}}},
+        {method:'Network.responseReceived',params:{requestId:e.id,type:e.type,
+            response:{url:e.url,status:e.status,headers:e.headers}}},
+        {method:'Network.loadingFinished',params:{requestId:e.id}},
+    ]),evaluate:async()=>({html:'<!doctype html><video src="preview.mp4"></video>',
+        url,base:url,text:'story '.repeat(300),width:1024,height:768,scale:1}),
+    send:async(method,args)=>{
+        if(method==='Page.captureScreenshot')return {data:Buffer.from('png').toString('base64')};
+        assert.equal(method,'Network.getResponseBody');
+        return {body:entries.find(e=>e.id===args.requestId).body.toString('base64'),base64Encoded:true};
+    }};
+    const directory=path.join(root,'capture');
+    const result=await captureArchive(page,directory,url);
+    const resource=path.join(directory,'cache/resources',crypto.createHash('sha256').update(mediaURL).digest('hex'));
+    return {result,resource,report:JSON.parse(await fs.readFile(path.join(directory,'archive.json'),'utf8'))};
+}
+
+test('a complete media range retains original bytes as a full replay response',async t=>{
+    const bytes=Buffer.from([0,0,0,16,102,116,121,112,105,115,111,109,0,0,0,0]);
+    const {result,resource,report}=await captureMediaRange(t,'bytes 0-15/16',bytes);
+    assert.equal(result.resources,2);
+    assert.equal(result.failed_body_captures,0);
+    assert.deepEqual(await fs.readFile(resource),bytes);
+    assert.equal(await fs.readFile(resource+'.status','utf8'),'200');
+    assert.deepEqual(JSON.parse(await fs.readFile(resource+'.headers.json','utf8')),[
+        {name:'Content-Type',value:'video/mp4'},
+        {name:'Access-Control-Allow-Origin',value:'*'},
+        {name:'content-length',value:'16'},
+    ]);
+    const media=report.resources.find(r=>r.type==='Media');
+    assert.equal(media.status,206);
+    assert.equal(media.replayed_status,200);
+    assert.equal(media.sha256,crypto.createHash('sha256').update(bytes).digest('hex'));
+});
+
+test('partial, malformed and truncated media ranges cannot become complete replay bodies',async t=>{
+    for(const range of ['bytes 0-7/16','bytes 8-15/16','bytes 0-15/16',
+        'bytes 0-7/*','bytes 0-9007199254740992/9007199254740993',undefined]) {
+        const {result,resource,report}=await captureMediaRange(t,range,Buffer.alloc(8));
+        assert.equal(result.resources,1);
+        assert.equal(result.failed_body_captures,1);
+        assert.match(report.resources.find(r=>r.type==='Media').error,/complete media range/i);
+        await assert.rejects(fs.stat(resource),{code:'ENOENT'});
+    }
+});
+
 test('failed main response bodies retain diagnostics without sealing an archive', async t => {
     const root=await fs.mkdtemp(path.join(os.tmpdir(),'vox-archive-failure-'));
     t.after(()=>fs.rm(root,{recursive:true,force:true}));
