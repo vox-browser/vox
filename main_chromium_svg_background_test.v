@@ -16,3 +16,21 @@ fn test_svg_background_replay_composes_outer_transform_and_negative_ties() {
  assert replay.viewport_width == 16 && replay.viewport_height == 20
  assert replay.transform == [f64(2),0,0,3,11,10]!
 }
+
+fn test_svg_background_keeps_fractional_layout_size_separate_from_rounded_recording() {
+ replay := chromium_svg_background_replay(painting.Rect{33,22,146,22.123219241}, [f64(1),0,0,1,0,0]!)
+ assert replay.viewport_width == 146
+ assert replay.viewport_height == 22
+ assert replay.layout_width == 146
+ assert replay.layout_height == 22.109375
+ assert replay.transform == [f64(1),0,0,1,33,22]!
+}
+
+fn test_svg_background_fractional_container_preserves_both_axes_at_negative_origins() {
+ replay := chromium_svg_background_replay(painting.Rect{-10.5,-20.5,146.49,22.51}, [f64(2),0,0,3,11,13]!)
+ assert replay.viewport_width == 146
+ assert replay.viewport_height == 23
+ assert replay.layout_width == 146.484375
+ assert replay.layout_height == 22.5
+ assert replay.transform == [f64(2),0,0,3,-9,-47]!
+}

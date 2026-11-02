@@ -343,6 +343,13 @@ policy changes, namespaces, and `@supports selector()`. The preceding production
 browser differs at 6,761 pixels; native validation of the fix is tracked in the
 Slashdot receipt.
 
+`svg-fractional-background-container` covers SVG background aspect-ratio fitting
+at automatic, integer, and fractional image sizes. Two full-uBO Brave references
+agree at 1024×768, scale 1. The preceding production browser differs at 294
+pixels. Keep the SVG layout container at LayoutUnit precision while rounding
+its recording bounds separately; native validation is tracked in the Slashdot
+receipt.
+
 `stackoverflow-independent-hyphen-shaping` checks inserted system-font hyphens
 at integer and fractional line origins, narrow line fitting, explicit hyphen
 controls, and Arial. Its 800×600, scale 1 reference comes from two agreeing

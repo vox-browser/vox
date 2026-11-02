@@ -68,6 +68,15 @@ struct ChromiumSVGBackgroundReplay {
 	viewport_width  int
 	viewport_height int
 	transform       [6]f64
+	layout_width    f64
+	layout_height   f64
+}
+
+fn svg_background_paint_commands_for_replay(image &layout.PaintImageData,
+	replay ChromiumSVGBackgroundReplay) ?[]layout.PaintCommand {
+	width := if replay.layout_width > 0 { replay.layout_width } else { f64(replay.viewport_width) }
+	height := if replay.layout_height > 0 { replay.layout_height } else { f64(replay.viewport_height) }
+	return svg_background_paint_commands_for_viewport(image, width, height)
 }
 
 // Native replay keeps these paths in the current picture. Inspect the actual
@@ -103,9 +112,13 @@ fn chromium_svg_background_can_share_recording(command &layout.PaintCommand) boo
 		replay := if !plan.repeat_x && !plan.repeat_y {
 			chromium_svg_background_replay(tile, normalized_paint_transform(command.transform))
 		} else {
-			ChromiumSVGBackgroundReplay{math.max(1, destination.width), math.max(1, destination.height), command.transform}
+			ChromiumSVGBackgroundReplay{
+				viewport_width: math.max(1, destination.width)
+				viewport_height: math.max(1, destination.height)
+				transform: command.transform
+			}
 		}
-		commands := svg_background_paint_commands(image, replay.viewport_width, replay.viewport_height) or { return false }
+		commands := svg_background_paint_commands_for_replay(image, replay) or { return false }
 		if commands.len == 0 || commands.len > 32768 { return false }
 		for index in 0 .. commands.len {
 			if !chromium_svg_solid_path_supported(&commands[index]) { return false }
@@ -114,21 +127,29 @@ fn chromium_svg_background_can_share_recording(command &layout.PaintCommand) boo
 	return count > 0
 }
 
-// Non-repeating SVG backgrounds lay out in an independently rounded container.
-// Blink maps that picture to the snapped destination, whose dimensions match
-// the rounded container; fractional CSS tile dimensions do not scale it again.
+// Blink's SVGImage::PaintRecordForCurrentFrame floors its layout container to
+// LayoutUnit precision, but rounds the frame/recording size independently.
+// Preserve both: rounding the layout size changes viewBox aspect-ratio fitting.
+// DrawForContainer's residual source adjustment keeps the snapped destination
+// mapping at unit scale; the fractional layout does not add another scale.
 fn chromium_svg_background_replay(tile painting.Rect, outer [6]f64) ChromiumSVGBackgroundReplay {
 	width := math.max(f64(1.0 / 64.0), math.trunc(tile.width * 64) / 64)
 	height := math.max(f64(1.0 / 64.0), math.trunc(tile.height * 64) / 64)
 	viewport_width := math.max(1, int(math.floor(width + .5)))
 	viewport_height := math.max(1, int(math.floor(height + .5)))
 	local := [f64(1), f64(0), 0, f64(1), math.floor(tile.x + .5), math.floor(tile.y + .5)]!
-	return ChromiumSVGBackgroundReplay{viewport_width, viewport_height, [
+	return ChromiumSVGBackgroundReplay{
+		viewport_width: viewport_width
+		viewport_height: viewport_height
+		layout_width: width
+		layout_height: height
+		transform: [
 		outer[0] * local[0],
 		outer[1] * local[0],
 		outer[2] * local[3],
 		outer[3] * local[3],
 		outer[0] * local[4] + outer[2] * local[5] + outer[4],
 		outer[1] * local[4] + outer[3] * local[5] + outer[5],
-	]!}
+	]!
+	}
 }

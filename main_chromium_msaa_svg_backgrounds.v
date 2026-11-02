@@ -46,16 +46,18 @@ fn append_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, in
 		replay := if !plan.repeat_x && !plan.repeat_y {
 			chromium_svg_background_replay(tile, outer)
 		} else {
-			ChromiumSVGBackgroundReplay{math.max(1, destination.width), math.max(1,
-				destination.height), outer}
+			ChromiumSVGBackgroundReplay{
+				viewport_width: math.max(1, destination.width)
+				viewport_height: math.max(1, destination.height)
+				transform: outer
+			}
 		}
 		offset := if !plan.repeat_x && !plan.repeat_y {
 			painting.IntPoint{}
 		} else {
 			painting.IntPoint{destination.x, destination.y}
 		}
-		commands := svg_background_paint_commands(image, replay.viewport_width,
-			replay.viewport_height) or { continue }
+		commands := svg_background_paint_commands_for_replay(image, replay) or { continue }
 		viewport_bounds := transformed_raster_bounds(replay.transform, f64(offset.x), f64(offset.y),
 			f64(replay.viewport_width), f64(replay.viewport_height))
 		for nested_index in 0 .. commands.len {

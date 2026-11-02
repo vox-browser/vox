@@ -207,7 +207,7 @@ fn (mut app BrowserApp) draw_chromium_rounded_svg_background(command &layout.Pai
 		}
 		outer[0] -= f32(origin_x)
 		outer[1] -= f32(origin_y)
-		commands := svg_background_paint_commands(image, replay.viewport_width, replay.viewport_height) or { return false }
+		commands := svg_background_paint_commands_for_replay(image, replay) or { return false }
 		if commands.len == 0 || commands.len > 32768 { return false }
 		mut paths := []C.VoxGraphitePath{cap: commands.len + 1}
 		// Compose the backing color and SVG before applying their rounded boundary.
