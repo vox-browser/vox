@@ -4705,9 +4705,9 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
                 if (!backdrop) return false;
                 canvas->drawImage(backdrop, 0, 0);
             }
-            if (force_msaa && rounded_clip) {
-                // Select the same parent pass as the complete raster tile.
-                // The SVG paths themselves are isolated by its saveLayer.
+            if (force_msaa) {
+                // Analytic primitives and isolated SVG images do not select
+                // MSAA themselves. Retain the complete parent tile's mode.
                 SkPaint noop;
                 noop.setAntiAlias(true);
                 noop.setShader(SkShaders::Color(SK_ColorTRANSPARENT));
@@ -4739,7 +4739,7 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         }
         all_draws_clipped = false;
         int flags = (has_background ? VOX_GRAPHITE_SVG_BACKDROP : 0)
-            | (force_msaa && rounded_clip ? VOX_GRAPHITE_SVG_FORCE_MSAA : 0);
+            | (force_msaa ? VOX_GRAPHITE_SVG_FORCE_MSAA : 0);
         return draw(reinterpret_cast<uint8_t*>(target.data()), target_width,
             target_height, target_width * 4, flags, paths, count,
             parent_values, viewport, rounded_clip) != 0;

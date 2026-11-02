@@ -1719,8 +1719,8 @@ int vox_graphite_draw_svg_image_pixels(uint8_t* pixels, int width, int height,
     matrix.set9(parent_values);
     SkM44 parent(matrix);
     auto* canvas = surface->getCanvas();
-    // Paths inside the SVG's saveLayer do not select MSAA for the parent
-    // pass. Its rounded boundary still uses the owning raster tile's mode.
+    // Analytic primitives and paths inside the SVG's saveLayer do not select
+    // MSAA for the parent pass. Use the owning raster tile's mode instead.
     if (flags & VOX_GRAPHITE_SVG_FORCE_MSAA) force_msaa_render_pass(canvas, width, height);
     canvas->setMatrix(parent);
     canvas->clipRect(SkRect::MakeXYWH(viewport[0], viewport[1], viewport[2], viewport[3]), true);

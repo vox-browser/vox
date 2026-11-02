@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check SVG clipping, mask backdrops and rounded-underlay colors with sanitizers."""
+"""Check SVG clipping, parent MSAA, mask backdrops and underlay colors with sanitizers."""
 import argparse
 import json
 import os
@@ -30,6 +30,7 @@ def main():
                    if not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_'))}
     environment['ASAN_OPTIONS'] = 'detect_leaks=0'
     for name, source in [('svg-clip', 'native_skia_svg_clip_test.cpp'),
+                         ('svg-parent-msaa', 'native_skia_svg_parent_msaa_test.cpp'),
                          ('svg-mask-backdrop', 'native_skia_svg_mask_backdrop_test.cpp'),
                          ('svg-color', 'native_skia_svg_color_test.cpp'),
                          ('rounded-underlay-color', 'native_skia_rounded_underlay_color_test.cpp'),
@@ -39,7 +40,7 @@ def main():
         executable = output / name
         command = ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address,undefined',
                    '-fno-omit-frame-pointer']
-        if name in ('svg-clip', 'svg-mask-backdrop', 'svg-color', 'rounded-underlay-color',
+        if name in ('svg-clip', 'svg-parent-msaa', 'svg-mask-backdrop', 'svg-color', 'rounded-underlay-color',
                     'uniform-border-clip-layer', 'superellipse-geometry', 'contoured-box'):
             command += ['-x', 'objective-c++', '-I' + str(skia / 'include/skia'),
                         '-I' + str(skia / 'include'), '-L' + str(skia / 'lib'), '-lskia',
