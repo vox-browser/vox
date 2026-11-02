@@ -1307,3 +1307,56 @@ retained. Module-worker execution is also explicitly unsupported by the current
 agent runtime. These diagnostics change no product user-agent behavior and
 make no live pixel-parity claim. User-agent coherence, module execution and
 cross-process port transfer remain required before rich-reply acceptance.
+
+## Native worker prerequisites, 2026-11-02
+
+`c5b553f47` makes HTTP Fetch use the current Loader user agent, including the
+worker-process default before Loader initialization. Explicit request headers
+remain authoritative. The two focused functions pass in default, no-GC and
+preallocated modes in `user-agent-coherence-checks-2/`. The earlier controlled
+override establishes that this coherent identity selects DIL; production
+rich-reply validation with the committed implementation remains pending.
+
+`95963892c` loads dedicated module workers through the worker's HTML module
+map and the native JSC module loader. It covers redirected entries, static
+imports and cycles, dynamic imports, credentials, import metadata, startup
+failures, and top-level await while parent messages continue to run. Runtime
+exceptions dispatch native worker error events. Module evaluation notifications
+now call V directly: the previous JavaScript callback consumed a pending
+exception, making a throwing dynamic import fulfill instead of reject. The
+added caught-import regression passes for window modules and workers. The
+native callback avoids reentering JSC at its
+[module evaluation delegate boundary](https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/API/JSAPIGlobalObject.mm).
+
+The five module-worker functions pass in all three memory modes in
+`module-worker-entry-errors/`. Window modules, worker execution contexts and
+classic script loading pass in `module-worker-window-checks/`,
+`module-worker-context-checks/` and `module-worker-scripts-checks/`.
+`module-worker-scope-checks/` exposed an independent native MessageEvent crash:
+the implicit empty-origin default emitted an invalid sum-type tag. `36abf10e5`
+boxes that default explicitly. Two focused functions and all six worker-global
+functions pass in all three modes in `message-event-origin-checks/` and
+`module-worker-scope-fixed/`. Original failures remain retained.
+
+The macOS JSC module API requires its ordinary global class. Module workers
+therefore expose real native worker members as own properties; their actual
+global prototype chain still lacks WorkerGlobalScope/EventTarget inheritance.
+Classic workers retain their existing native prototype chain. This is an
+explicit module-worker parity limitation, without forged prototype queries or
+Object.prototype pollution. Module execution on Linux remains unsupported.
+
+The saved real worker then failed on a missing `performance` global.
+`75c1deaac` extends the existing Performance and PerformanceObserver bindings
+to the worker's settings, clock, timeline and event loop. Three worker
+functions, the window performance tests and observer regressions pass in all
+three memory modes in `worker-performance-entry-checks-2/`,
+`worker-performance-window-checks/` and `worker-performance-observer-checks/`.
+The window run's full source snapshot also includes two independently changing
+worker-only paths; `focused-source-stable.json` authenticates its unchanged
+performance implementation and actual test input.
+
+`real-module-entry-performance/` executes both unchanged cached ChatGPT worker
+assets, observes its native message handler, and finishes with zero error
+events and zero reported exceptions. The earlier settled audit without
+performance failed and is retained. These are worker startup checks using the
+existing archive, with no new homepage download or browser screenshot credit.
