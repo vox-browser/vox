@@ -26,9 +26,14 @@ fn (mut app BrowserApp) arm_arena_cache_cleanup() {
 	}
 }
 
+fn (app &BrowserApp) uses_native_arena_memory_policy() bool {
+	return app.ctx != unsafe { nil } && app.ctx.native_rendering
+		&& app.document != unsafe { nil }
+}
+
 fn (mut app BrowserApp) release_unused_arena_caches_if_idle(now_ns i64) {
 	$if prealloc {
-		if !app.uses_static_native_memory_policy() || app.pending_navigation != none
+		if !app.uses_native_arena_memory_policy() || app.pending_navigation != none
 			|| app.has_navigation_fetch_in_flight() || app.pending_page_preload != none
 			|| app.background_resource_pending.len > 0 || app.frame_preparation_depth > 0
 			|| app.navigation_work_depth > 0 || app.document.readiness() != .complete {
@@ -37,11 +42,16 @@ fn (mut app BrowserApp) release_unused_arena_caches_if_idle(now_ns i64) {
 		if app.memory_maintenance.cleanup_due(now_ns, 0) {
 			// Only caches with their own recyclable storage can release memory
 			// here. Dropping pointers into document arenas would just orphan it.
-			layout.trim_unused_layout_pages(app.paint_display_list)
+			if app.uses_static_native_memory_policy() {
+				layout.trim_unused_layout_pages(app.paint_display_list)
+				platform.release_unused_text_shaping()
+			}
 			if app.native_replay_scratch != unsafe { nil } {
 				app.native_replay_scratch.trim_empty_pages()
 			}
-			platform.release_unused_text_shaping()
+			// Scripted documents also leave recycled transport/replay pages
+			// behind. These pages contain no live allocations, independently
+			// of the DOM, JavaScript runtime or retained shaping caches.
 			platform.release_unused_browser_memory()
 		}
 	}

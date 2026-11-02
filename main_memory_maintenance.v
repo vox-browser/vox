@@ -77,7 +77,7 @@ fn (mut app BrowserApp) finish_frame_memory_activity(now_ns i64, previous_paint 
 	app.memory_maintenance.frame_finished(now_ns, updated_document)
 	app.schedule_static_graphics_cleanup()
 	$if prealloc {
-		if app.uses_static_native_memory_policy()
+		if app.uses_native_arena_memory_policy()
 			&& app.memory_maintenance.has_pending_cleanup(0)
 			&& (updated_document || app.memory_maintenance.cleanup_timer == unsafe { nil }
 				|| !app.memory_maintenance.cleanup_timer.is_active()) {
