@@ -49,6 +49,13 @@ $if !ui2_custom_rendering ? {
 	pub fn embedded_host_action(action string) {
 		window := state().window
 		match action {
+			'show' {
+				if macos.msg_bool(window, 'isMiniaturized') {
+					macos.msg_void1(window, 'deminiaturize:', native_nil_view())
+				}
+				macos.msg_void1(window, 'makeKeyAndOrderFront:', native_nil_view())
+				macos.msg_void_bool(native_current_app(), 'activateIgnoringOtherApps:', true)
+			}
 			'close' { macos.msg_void1(window, 'performClose:', native_nil_view()) }
 			'minimize' { macos.msg_void1(window, 'performMiniaturize:', native_nil_view()) }
 			'zoom' { macos.msg_void1(window, 'zoom:', native_nil_view()) }

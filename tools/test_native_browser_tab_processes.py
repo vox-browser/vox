@@ -125,6 +125,14 @@ def main():
         os.kill(second, 0)
         command(second, 'navigate', url=second_page.as_uri())
         wait('second process navigated', lambda s: report(second).get('title','').startswith('Process Second'))
+        command(second, 'minimize')
+        wait('selected tab minimized', lambda s: report(second).get('minimized'))
+        command(root.pid, 'reopen')
+        wait('reopening hidden original restores selected tab', lambda s: selected(s) == second and
+             report(second).get('active') and report(second).get('visible') and
+             not report(second).get('minimized') and not report(root.pid).get('visible'))
+        assert report(second)['title'].startswith('Process Second')
+        assert report(second)['frame'] == first_frame
         command(second, 'select', index=0)
         wait('original document retained after switch', lambda s: selected(s) == root.pid and
              report(root.pid).get('visible') and report(root.pid).get('title') == first_title and
@@ -161,7 +169,7 @@ def main():
             time.sleep(.05)
         assert not folder.exists(), 'closing the visible window did not end the group'
         snapshots.append({'check': 'closing the window ends the group', 'pid': replacement})
-        print('PASS native tab processes: unique PIDs, selection, navigation, crashes, parent exit, last-tab replacement, window close')
+        print('PASS native tab processes: unique PIDs, selection, navigation, reopen, crashes, parent exit, last-tab replacement, window close')
     finally:
         state()
         for pid in known:

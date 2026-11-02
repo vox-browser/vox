@@ -41,6 +41,7 @@ pub mut:
 	tabs     []Tab
 	selected string
 	frame    Frame
+	reopen   u64
 }
 
 // Only chrome metadata crosses this boundary. Documents, JSC realms, native
@@ -54,9 +55,10 @@ pub mut:
 	state    State
 	revision u64
 mut:
-	children []int
-	storage  &platform.RetainedArena = unsafe { nil }
-	encoded  string
+	children    []int
+	storage     &platform.RetainedArena = unsafe { nil }
+	encoded     string
+	reopen_seen u64
 }
 
 pub fn create(frame Frame) !&Session {
@@ -171,6 +173,23 @@ pub fn (session &Session) selected_index() int {
 }
 
 pub fn (session &Session) visible() bool { return session.state.selected == session.id }
+
+// LaunchServices can reopen the original, now hidden tab process. Publish the
+// request to the group so its selected document keeps ownership of the window.
+pub fn (mut session Session) request_reopen() ! {
+	fd := session.lock()!
+	defer { C.vox_tabs_unlock(fd) }
+	mut state := session.load()!
+	state.reopen++
+	session.save(state)!
+	session.remember(state)
+}
+
+pub fn (mut session Session) take_reopen_request() bool {
+	pending := session.reopen_seen != session.state.reopen
+	session.reopen_seen = session.state.reopen
+	return pending && session.visible()
+}
 
 // A dead tab is removed without affecting its siblings. Each launcher reaps
 // only its own children; closing the original process does not own their lives.

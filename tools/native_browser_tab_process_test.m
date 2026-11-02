@@ -46,6 +46,18 @@ static void poll(void) {
                 address.stringValue=command[@"url"];
                 [NSApp sendAction:address.action to:address.target from:address];
             } else if([action isEqual:@"window-close"]) [window performClose:nil];
+            else if([action isEqual:@"reopen"]) {
+                // Send the same reopen Apple event as LaunchServices, addressed
+                // to this hidden process even if other Vox groups are running.
+                NSAppleEventDescriptor *event = [NSAppleEventDescriptor
+                    appleEventWithEventClass:kCoreEventClass eventID:kAEReopenApplication
+                    targetDescriptor:[NSAppleEventDescriptor descriptorWithProcessIdentifier:getpid()]
+                    returnID:kAutoGenerateReturnID transactionID:kAnyTransactionID];
+                NSError *error = nil;
+                [event sendEventWithOptions:NSAppleEventSendNoReply timeout:1 error:&error];
+                if (error) { fprintf(stderr, "reopen Apple event failed: %s\n", error.description.UTF8String); abort(); }
+            }
+            else if([action isEqual:@"minimize"]) [window miniaturize:nil];
         }
         NSRect frame=window.frame;
         BOOL painted=page.layer.contents != nil;
@@ -53,6 +65,7 @@ static void poll(void) {
         proc_pidpath(getpid(), executable, sizeof executable);
         const char *firstImage = _dyld_get_image_name(0);
         NSDictionary *report=@{@"pid":@(getpid()), @"visible":@(window.visible && window.alphaValue>0),
+            @"active":@(NSApp.active), @"minimized":@(window.miniaturized),
             @"title":window.title ?: @"", @"address":address.stringValue ?: @"", @"painted":@(painted),
             @"executable":@(executable), @"first_image":firstImage ? @(firstImage) : @"",
             @"frame":@[@(frame.origin.x),@(frame.origin.y),@(frame.size.width),@(frame.size.height)]};

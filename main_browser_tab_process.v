@@ -7,6 +7,7 @@ import os
 import platform
 import sokol.sapp
 import time
+import ui2
 
 $if macos {
 	#include "native_browser_tab_process_darwin.m"
@@ -21,6 +22,15 @@ $if macos {
 
 fn (app &BrowserApp) process_tabs() bool {
 	return app.tabs != unsafe { nil } && app.tabs.session != unsafe { nil }
+}
+
+fn (mut app BrowserApp) request_browser_reopen() {
+	if app.process_tabs() {
+		app.tabs.session.request_reopen() or { eprintln('Vox: cannot reopen window: ${err}') }
+	} else {
+		$if vox_ui2 ? { ui2.embedded_host_action('show') }
+	}
+	request_browser_frame()
 }
 
 fn (app &BrowserApp) browser_tab_count() int {
@@ -222,6 +232,9 @@ fn (mut app BrowserApp) poll_process_tabs() {
 		}
 	}
 	if !visible { app.poll_background_browser_tab() }
+	if session.take_reopen_request() {
+		$if vox_ui2 ? { ui2.embedded_host_action('show') }
+	}
 	if time.sys_mono_now() >= app.tabs.profile_refresh_at {
 		app.tabs.profile_refresh_at = time.sys_mono_now() + 1_000_000_000
 		// Profile writers merge under a process lock; refresh readers without

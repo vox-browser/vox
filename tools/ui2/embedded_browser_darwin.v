@@ -18,6 +18,14 @@ pub fn mount_embedded_browser(parent voidptr, elements []Element, handler EventF
 	mut callbacks := embedded_callbacks()
 	callbacks.handler = handler
 	st.event_handler = embedded_browser_event
+	delegate := macos.msg_id(native_current_app(), 'delegate')
+	if !native_is_nil(delegate) {
+		macos.add_method(macos.msg_id(delegate, 'class'),
+			'applicationShouldHandleReopen:hasVisibleWindows:',
+			voidptr(ui2_embedded_application_reopen), 'B@:@B')
+		// Refresh AppKit's optional-delegate-method cache after extending the host.
+		macos.msg_void1(native_current_app(), 'setDelegate:', delegate)
+	}
 	st.button_handler = native_new_object('UI2ButtonHandler')
 	update_embedded_browser(elements)
 }
@@ -28,6 +36,13 @@ mut:
 }
 const embedded_callbacks_ = &EmbeddedCallbacks{}
 fn embedded_callbacks() &EmbeddedCallbacks { return unsafe { embedded_callbacks_ } }
+
+fn ui2_embedded_application_reopen(_self voidptr, _cmd voidptr, _app voidptr, _visible bool) bool {
+	if native_is_nil(state().window) { return true }
+	embedded_browser_event('host-reopen')
+	return false
+}
+
 fn embedded_browser_event(event string) {
 	mut normalized := event
 	if event.starts_with('pointer:') && !macos.msg_bool(state().root_view, 'isFlipped') {

@@ -106,6 +106,10 @@ fn browser_ui_event(event string) {
 	defer { platform.leave_persistent(persistent) }
 	if address_bar_owner.app == unsafe { nil } { return }
 	mut app := address_bar_owner.app.active_browser_tab()
+	if event == 'host-reopen' {
+		app.request_browser_reopen()
+		return
+	}
 	if event.starts_with('pointer:') {
 		parts := event.split(':')
 		if parts.len != 5 { return }
