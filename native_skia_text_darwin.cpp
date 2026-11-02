@@ -217,6 +217,36 @@ sk_sp<SkFontMgr> font_manager()
     return s_font_manager;
 }
 
+// Loading supplied font bytes does not search installed families. Use the
+// same CoreText stream loader with a bounded collection; retain the full
+// manager for actual system-family matching and the layout-test backend.
+sk_sp<SkFontMgr> file_font_manager(SkData const* data)
+{
+    auto* test_font = std::getenv("LADYBIRD_LAYOUT_TEST_FONT");
+    if (!data || (test_font && *test_font) || std::getenv("VOX_DISABLE_FILE_FONT_MANAGER"))
+        return font_manager();
+    static sk_sp<SkFontMgr> manager;
+    if (manager) return manager;
+    auto bytes = CFDataCreate(nullptr, static_cast<UInt8 const*>(data->data()), data->size());
+    auto descriptor = bytes ? CTFontManagerCreateFontDescriptorFromData(bytes) : nullptr;
+    if (bytes) CFRelease(bytes);
+    if (!descriptor) return font_manager();
+    void const* descriptors[] {descriptor};
+    auto array = CFArrayCreate(nullptr, descriptors, 1, &kCFTypeArrayCallBacks);
+    auto collection = array ? CTFontCollectionCreateWithFontDescriptors(array, nullptr) : nullptr;
+    if (array) CFRelease(array);
+    CFRelease(descriptor);
+    // CoreText returns null for an unmatchable collection. Some supported
+    // Skia revisions assume its descriptor array exists in the constructor.
+    auto matches = collection ? CTFontCollectionCreateMatchingFontDescriptors(collection) : nullptr;
+    if (matches && CFArrayGetCount(matches) > 0) manager = SkFontMgr_New_CoreText(collection);
+    if (matches) CFRelease(matches);
+    if (collection) CFRelease(collection);
+    if (manager && std::getenv("VOX_FILE_FONT_MANAGER_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_FILE_FONT_MANAGER families=%d\n", manager->countFamilies());
+    return manager ? manager : font_manager();
+}
+
 sk_sp<GrDirectContext> s_image_gpu_context;
 bool s_image_gpu_context_attempted = false;
 std::chrono::steady_clock::time_point s_image_gpu_context_last_use;
@@ -409,8 +439,7 @@ SkTypeface* select_typeface(char const* path, int face_index, int font_weight, i
         auto key = std::string(path) + "#" + std::to_string(face_index);
         if (auto found = s_path_typefaces.find(key); found != s_path_typefaces.end())
             return found->second.get();
-        auto manager = font_manager();
-        if (manager) {
+        {
             char const* collection_family = nullptr;
             if (std::strcmp(path, "/System/Library/Fonts/HelveticaNeue.ttc") == 0)
                 collection_family = "Helvetica Neue";
@@ -426,12 +455,13 @@ SkTypeface* select_typeface(char const* path, int face_index, int font_weight, i
             // CoreText can also silently return the collection's default face
             // for a valid non-zero index. Resolve the three macOS collections
             // emitted by platform::Font through the system manager first.
-            auto typeface = collection_family && face_index != 0
-                ? manager->matchFamilyStyle(collection_family, SkFontStyle::Bold())
-                : nullptr;
+            sk_sp<SkTypeface> typeface;
+            if (collection_family && face_index != 0)
+                if (auto manager = font_manager())
+                    typeface = manager->matchFamilyStyle(collection_family, SkFontStyle::Bold());
             if (!typeface) {
                 auto data = SkData::MakeFromFileName(path);
-                if (data) {
+                if (data) if (auto manager = file_font_manager(data.get())) {
                     SkFontArguments arguments;
                     arguments.setCollectionIndex(face_index);
                     typeface = manager->makeFromStream(
@@ -1136,7 +1166,7 @@ extern "C" int ladybird_v_skia_configure_font(char const* path, int slot)
     auto data = SkData::MakeFromFileName(path);
     if (!data)
         return 0;
-    auto manager = font_manager();
+    auto manager = file_font_manager(data.get());
     if (!manager)
         return 0;
     SkFontArguments arguments;
