@@ -1,19 +1,22 @@
 # ChatGPT rendering and startup against Brave
 
-The pinned macOS production browser matches the archived logged-out ChatGPT
-homepage and rich conversation reply **pixel for pixel at 1024×768, scale 1**:
-zero differing pixels out of 786,432 for each capture. Native Enter and a Send
-click five seconds after typing both produce the rich reply “Vox ready.” with
-empty error collections. These conversation checks replay a saved backend
-response, normalize request UUIDs, and execute the unchanged archived frontend
-and its real module worker; they establish frozen-response rendering parity.
+The macOS production browser now completes a fully live logged-out ChatGPT
+conversation through SOCKS and matches Brave **pixel for pixel at 1024×768,
+scale 1**: zero differing pixels out of 786,432. Native typing preserves the
+exact prompt, and clicking Send one second later produces the rich reply
+“Vox ready.” with empty error collections. This check starts with an empty
+profile, cookie store and resource cache; it replays no frontend or backend
+responses. Earlier archived homepage and conversation checks also remain exact.
 
-Live conversation acceptance remains open. The latest live submission receives
-ChatGPT's “Unusual activity has been detected from your device” response. No
-further live conversation submissions were sent after that rejection. The
-approved fresh-session download has already been used; subsequent checks reuse
-the saved homepage. Build identities, earlier failures, replay boundaries and
-focused validation are recorded below.
+The user authorized additional fresh sessions on 2026-11-02. A fresh normal
+Brave capture confirms that both retained references are unchanged. Live
+navigation is still subject to intermittent Cloudflare challenges: a subsequent
+empty-session Enter attempt receives a challenge before composer readiness,
+sends no input, and fails acceptance. A rapid one-turn typing burst followed by
+a blind one-second click can still activate Voice and crash during cleanup;
+full ChatGPT parity remains open. The latest build identities, checks and
+retained failures appear in the final continuation below; earlier sections
+describe their historical build and network conditions.
 
 ## Captured workload
 
@@ -1520,3 +1523,160 @@ or erase that failure. These results cover the saved logged-out homepage and
 single rich reply. Voice, login, other conversation content, module-worker
 prototype inheritance, and active/nested MessagePort transfer remain outside
 this acceptance result.
+
+## Fresh live continuation, 2026-11-02
+
+Private evidence for this continuation is under
+`Build/chatgpt-live-refresh-20261102/`. Fresh sessions are authorized. The
+successful direct Brave capture, `brave-direct-fresh-2/`, uses the real network
+through `socks5h://127.0.0.1:1337`, an empty profile and no response substitution.
+It submits the exact prompt “Reply with exactly: Vox ready.” and receives the
+rich reply with zero runtime exceptions. `direct-fresh-archive-2/` retains 396
+responses with verified body hashes and no body-retrieval errors. Its homepage
+SHA256 is `fc8df84294fcfaa580f669af70f439e5d235a425d03226561aa107000df6af92`.
+Both PNGs are byte-identical to the retained homepage and conversation
+references; `reference-continuity.json` records this comparison.
+
+Three fixes address the native input and worker paths:
+
+- `bab31baea` consumes pending JavaScript effects before native pointer hit
+  testing. It checks document and navigation identity after that work. The
+  focused real-BrowserApp test switches the composer from Voice to Send in an
+  input listener and clicks without an intervening draw or query.
+- `d8714ad8c` initializes saved profile proxy settings in isolated script
+  workers. Worker roles enter before the normal browser settings initializer;
+  previously their requests silently took the direct route. The focused tests
+  cover both scoped SOCKS routing and an explicitly direct profile.
+- `7aae524a2` preserves FIFO order after cooperative document work finishes.
+  New characters, Backspace and mouse releases join older queued input until
+  replay begins. Replay has a reentry guard. The focused tests cover all three
+  input types.
+
+`pointer-state-final/`, `worker-proxy-checks/` and
+`deferred-input-order-checks/` pass in default, no-GC and preallocated modes
+with unchanged focused source hashes. Compiler jobs use the 12 GiB guard and
+V's 10G limit; test executables use separate 3 GiB guards.
+`deferred-navigation-css-coordinates/` also passes all eleven existing
+navigation functions in each mode. Its initial link-click failure used internal
+Retina coordinates as native CSS-pixel coordinates. `8bedb8e20` converts the
+test's coordinates while preserving its queued press/release and navigation
+assertions. The failed original and isolated invocations remain retained.
+
+Final checks use `Build/v/Vox.app` directly and launch fresh processes. Its
+executable SHA256 is
+`e9b1cdeb2197ef69aacf701bb0e12149aecfabed3f2c68cb675d34631c3f681e`,
+and Skia text library SHA256 is
+`40ad586745631516ef2f9e7ddabb2c78db27943ab929a28c271c2cd2a7d4c27b`.
+`final-production/reuse-canonical.json` records all bundled identities and the
+production supervisor receipts. The published build at `d8714ad8c` and the
+subsequent build at committed HEAD `7aae524a2` have the same complete repository
+filename/content digest, `6c2a68e124167f164ece609e3ef087afbd27758e9aa84a2c8fee41410a084662`.
+The published build therefore already contains the input-order changes. Its
+build and headless-smoke receipts both exit 0; the build peaks at
+9,670,606,848 sampled RSS bytes under the default 12 GiB guard. No duplicate
+production build or new app-bundle copy is used for final validation.
+
+`vox-final-ready-direct-click-1/` starts with empty settings storage apart from
+the saved SOCKS endpoint, an empty cookie store and an empty resource cache.
+There is no `VOX_PROXY` override or archive server. The audit verifies the real
+homepage's behavior-ready marker and empty errors before native AppKit input
+begins. Thirty character events arrive in separate native turns; Send follows
+one second after typing. The final audit verifies both the exact user prompt
+and exact assistant reply at a conversation URL, with empty error collections.
+The browser and driver exit 0, and sampled process-tree RSS peaks at
+3,241,918,464 bytes. Executable and native-library identities stay unchanged
+throughout. The actual downloaded homepage SHA256 is
+`e383d7bf02fe4266e269cac271feafc1b46398fff7b492372f5701e0c1d0e836`.
+
+Its conversation PNG has SHA256
+`192b4d28c56970c9f39c56a3041180a807993c1656c6474d067da9a97476a7ca`.
+Both the newly captured Brave reply and the unchanged earlier reference have
+**0 / 786,432 differing pixels, maximum channel error 0 and RGB MAE 0**.
+No backend response, request UUID or frontend bytes are substituted in this
+fully live check. These results establish the logged-out homepage-to-Send
+workflow and this single rich reply at the recorded viewport.
+
+The same production identity also passes these fresh-process checks, with
+empty error collections, normal exits, unchanged references and input hashes:
+
+| Capture | Network policy | Pixel differences | Sampled peak RSS |
+| --- | --- | ---: | ---: |
+| `vox-final-cached-front-home-1/` | Archived frontend 2; later ChatGPT connections live | 0 / 786,432 | 1,862,565,888 bytes |
+| `vox-final-cached-front-live-enter-2/` | Archived frontend 4; conversation requests live | 0 / 786,432 | 3,025,076,224 bytes |
+
+The Enter check uses the latest captured homepage and cookies from
+`brave-direct-home-fresh-4/`. `fresh-merged-archive-4/` retains that unmodified
+homepage and static responses, supplemented with earlier static assets from
+the same URLs. Every archived body hash is verified before use. Conversation,
+Sentinel and other backend response bodies are excluded from the seeded cache;
+later ChatGPT TLS connections tunnel through SOCKS. Neither successful Enter
+nor homepage capture establishes an additional cold-network pass. The homepage
+uses the original controlled frontend bytes and retained homepage reference.
+
+Retained failures qualify the result:
+
+- The earlier live Enter check in `vox-fresh-live-enter-1/` passes with exact
+  pixels and empty errors on executable `7a702c0d…`, using archived frontend
+  bytes and live backend requests. `vox-direct-own-session-home/` also passes
+  direct empty-session homepage loading with exact pixels on that build.
+- Direct conversations before the worker proxy fix hit the 12 GiB guard.
+  `vox-pointer-ready-direct-wire/` retains worker-script HTTP 403 responses
+  and the sampled main-thread microtask loop. An explicit proxy override in
+  `vox-pointer-ready-explicit-proxy/` permits a live reply at about 3.24 GB,
+  but its scrambled user prompt fails content acceptance. That failure led to
+  the FIFO fix. Later successful runs do not erase these memory failures or
+  establish a general memory bound for failed worker startup.
+- `vox-pointer-fixed-cached-click/` still follows Voice on the intermediate
+  pointer-only build and then crashes during tab disposal. The pointer flush
+  alone did not establish rapid-input Send correctness. The native stack,
+  failed content audit and exit 139 remain retained.
+- `vox-final-cached-front-burst-send-1/` also follows Voice and exits 139 on
+  the final build, despite verified homepage readiness and stable inputs.
+  Thirty key events run in one Cocoa turn, followed by a fixed-position click
+  one second later. This differs from the successful per-character native-turn
+  Send check. Its default memory guard peaks at 2,305,654,784 bytes. The final
+  audit has two JavaScript diagnostics from the unsupported Voice route and
+  no conversation. The FIFO fix does not establish correctness for this
+  rapid-click case or repair the disposal crash.
+- `vox-final-ready-direct-enter-1/` and
+  `vox-final-direct-burst-click-1/` receive Cloudflare challenge documents
+  before the behavior-ready gate. Both fail content acceptance with stable
+  identities; the Enter probe sends no input. Thus the successful cold live
+  Send run does not establish reliable challenge handling on every fresh load.
+- `brave-direct-home-fresh-3/` differs by 21 caret pixels from the retained
+  reference and receives no exact-pixel credit. The later
+  `brave-direct-home-fresh-4/` receives the real homepage but fails readiness
+  within its 40-second observation. Its captured document and static bytes
+  remain usable as unchanged archive inputs; the incomplete live run receives
+  no application-readiness or reference credit.
+
+The initial fresh capture's incomplete CDP interception and the first merged
+archive's missing seal are harness failures. Their evidence is retained and
+neither counts as an application pass. Session cookies and response bodies
+remain private under ignored `Build/` paths. Voice, login, other conversation
+content and the previously documented worker/port limitations remain outside
+the checked workflow.
+
+Further diagnostics preserve that distinction. The native
+`nested-frame-composer-diagnostic/` completes two nested animation frames and a
+zero-delay timer after burst typing, then clicks Send with the full prompt and
+empty errors. `navigation-identity-diagnostic/` passes a preallocated check
+that navigates while document and temporary allocation owners are entered;
+it does not reproduce the crash and introduces no product change.
+
+`dispose-disassembly.guard.json` maps the observed crash to the document access
+immediately after `destroy_a_document_and_its_descendants()` in tab disposal.
+This identifies the faulting boundary without proving a lifetime or compiler
+cause. The first debugger attempt stops at exec before the requested breakpoint;
+the second lacks the intended private target environment and is invalid.
+`vox-burst-dispose-debugger-3/` explicitly installs that environment, reaches the
+live rich reply with the exact prompt and empty errors, and exits the browser
+normally after the disposal breakpoint. The later debugger backtrace command
+fails because the browser already exited, so its guard records exit 1. Debugger
+instrumentation changes timing; this result supplies no uninstrumented rapid
+Send acceptance and does not erase the exit-139 failure.
+
+`fresh-live-validation-assessment.json` indexes these captures, focused checks,
+production receipts and retained failures. Basic text-chat rendering passes for
+the recorded workflows; reliable fresh-load challenge handling and the
+rapid-click cleanup failure remain unresolved.
