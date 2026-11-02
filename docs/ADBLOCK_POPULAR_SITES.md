@@ -2991,3 +2991,36 @@ The [updated Slashdot receipt](benchmark-results/slashdot-brave-pixels-2026-11-0
 records the focused checks, independently failing fieldset control, source
 interaction, references, registered fixture and pending production validation.
 Slashdot remains unfinished; Stack Overflow and Pikabu remain deferred.
+
+
+## Slashdot unchecked radio geometry, 2 November 2026
+
+Commit `bfcccf6eb` gives Chromium-policy radio controls their observed **13×13px**
+automatic size and uses a white fill plus a 1px gray circular ring for enabled,
+unchecked light controls. Native replay retains the circular radius and the
+half-pixel center of nonsquare controls. Authored dimensions remain effective;
+the translated LibWeb policy keeps its 12px intrinsic size. Other control states
+retain their previous paint paths and receive no pixel-parity claim.
+
+Four new focused cases pass with default GC and `-gc none`, and all six existing
+checkbox paint cases pass after the shared helper change. Seven special-box
+cases also pass before the centering extension. Two fresh full-uBO Brave
+references agree for the registered `chromium-unchecked-radio` fixture. The
+older canonical browser differs at **556 pixels** after a five-second settle,
+with complete 1024×768 document readiness and unchanged identities.
+
+Immediate captures retain **7,110** differences without labels, and the initial
+labelled diagnostic has **13,293**. They include transient publication and text
+differences and are not accepted radio comparisons. The settle correction earns
+no engine pixel-improvement credit. The existing byline regression now also
+waits five seconds; its settled old-browser result remains **12,341 pixels**.
+The shared production worker is still busy with superseded builds, and the
+latest published browser remains the earlier `e9b1cdeb…` bundle. The new radio
+and byline browser checks, 83-test/88-capture suite, and full-page preservation
+checks remain pending a bundle containing the fixes.
+
+The [radio receipt](benchmark-results/slashdot-radio-pixels-2026-11-02.json)
+retains source/formula references, exact fixture and browser identities, guards,
+failed checks and raw evidence under `Build/slashdot-radio-20261102/`. Slashdot's
+last qualified full-page difference is still **9,190 pixels**, before browser
+validation of these latest fixes. Stack Overflow and Pikabu remain deferred.
