@@ -5,12 +5,92 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from forum_news_pixels import (CATALOG, capture_site_archive, check_filters, check_native, native_capture_environment,
-                               oracle_command, seal_capture, warm_native_cache, warm_oracle_cache, write_json)
+from forum_news_pixels import (CATALOG, brave_identity, capture_site_archive, check_filters, check_native,
+                               native_capture_environment, oracle_command, run_case, seal_capture,
+                               warm_native_cache, warm_oracle_cache, write_json)
 from page_archive import digest, load_archive
 
 
 class ForumNewsPixelTests(unittest.TestCase):
+    def browser_inputs(self, root):
+        root = root.resolve()
+        vox = root / 'Vox.app/Contents/MacOS/Vox'
+        brave = root / 'Brave.app/Contents/MacOS/Brave'
+        framework = root / 'Brave.app/Contents/Frameworks/Brave Framework.framework'
+        files = [vox, vox.parent / 'libpaint.dylib', brave,
+                 framework / 'Versions/1/Brave Framework',
+                 framework / 'Versions/2/Brave Framework',
+                 framework / 'Versions/1/Libraries/libGLESv2.dylib',
+                 framework / 'Versions/1/Helpers/Renderer.app/Contents/MacOS/Renderer']
+        for index, path in enumerate(files):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(bytes.fromhex('cffaedfe') + bytes([index]) * 16)
+        (framework / 'Versions/Current').symlink_to('1', target_is_directory=True)
+        return vox, brave, framework
+
+    def test_brave_identity_includes_framework_gpu_library_and_renderer_helper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            vox, brave, framework = self.browser_inputs(Path(temporary))
+            identity = brave_identity(brave)
+            for path in [brave, framework / 'Versions/1/Brave Framework',
+                         framework / 'Versions/1/Libraries/libGLESv2.dylib',
+                         framework / 'Versions/1/Helpers/Renderer.app/Contents/MacOS/Renderer',
+                         framework / 'Versions/Current/Brave Framework']:
+                self.assertEqual(identity[str(path)], digest(path.read_bytes()))
+
+    def test_comparison_rejects_browser_input_changes_after_a_successful_capture(self):
+        for changed in ['vox', 'vox-library', 'brave-framework', 'brave-gpu',
+                        'brave-helper', 'active-version']:
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                vox, brave, framework = self.browser_inputs(root)
+                args = SimpleNamespace(output=root / 'output', vox=vox, brave=brave)
+                def capture(site, arguments, output):
+                    before = json.loads((output / 'browser-identities.json').read_text())
+                    self.assertIn(str(framework / 'Versions/Current/Brave Framework'), before['brave'])
+                    if changed == 'active-version':
+                        current = framework / 'Versions/Current'
+                        current.unlink()
+                        current.symlink_to('2', target_is_directory=True)
+                    else:
+                        path = {'vox': vox, 'vox-library': vox.parent / 'libpaint.dylib',
+                                'brave-framework': framework / 'Versions/1/Brave Framework',
+                                'brave-gpu': framework / 'Versions/1/Libraries/libGLESv2.dylib',
+                                'brave-helper': framework / 'Versions/1/Helpers/Renderer.app/Contents/MacOS/Renderer'}[changed]
+                        path.write_bytes(path.read_bytes() + b'updated')
+                    return dict(status='pass', different_pixels=0)
+                with patch('forum_news_pixels.capture_case', side_effect=capture):
+                    with self.assertRaisesRegex(RuntimeError, 'Browser inputs changed'):
+                        run_case(dict(id='news'), args)
+                after = json.loads((args.output / 'news/browser-identities-after.json').read_text())
+                before = json.loads((args.output / 'news/browser-identities.json').read_text())
+                self.assertNotEqual(before, after)
+
+    def test_comparison_retains_both_browser_identities_for_an_unchanged_capture(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            vox, brave, framework = self.browser_inputs(root)
+            args = SimpleNamespace(output=root / 'output', vox=vox, brave=brave)
+            expected = dict(status='pass', different_pixels=0)
+            with patch('forum_news_pixels.capture_case', return_value=expected):
+                self.assertEqual(run_case(dict(id='news'), args), expected)
+            output = args.output / 'news'
+            before = json.loads((output / 'browser-identities.json').read_text())
+            self.assertEqual(before, json.loads((output / 'browser-identities-after.json').read_text()))
+            self.assertIn(str(vox.parent / 'libpaint.dylib'), before['vox'])
+
+    def test_failed_capture_retains_final_browser_identities_and_its_original_error(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            vox, brave, framework = self.browser_inputs(root)
+            args = SimpleNamespace(output=root / 'output', vox=vox, brave=brave)
+            with patch('forum_news_pixels.capture_case', side_effect=RuntimeError('not ready')):
+                with self.assertRaisesRegex(RuntimeError, 'not ready'):
+                    run_case(dict(id='news'), args)
+            output = args.output / 'news'
+            self.assertEqual(json.loads((output / 'browser-identities.json').read_text()),
+                             json.loads((output / 'browser-identities-after.json').read_text()))
+
     def test_complete_live_capture_uses_qualified_cache_without_changing_the_replay_template(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary)

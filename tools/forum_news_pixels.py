@@ -110,6 +110,25 @@ def executable_identity(binary):
     return {str(p.resolve()): digest(p.read_bytes()) for p in paths}
 
 
+def brave_identity(binary):
+    identity = executable_identity(binary)
+    frameworks = binary.parent.parent / 'Frameworks'
+    paths = set(frameworks.rglob('*'))
+    # Keep the active-version alias as well: an update can retarget Current
+    # while both old and new version directories remain on disk.
+    paths.update(f / 'Versions/Current' / f.stem for f in frameworks.glob('*.framework'))
+    macho = {bytes.fromhex(magic) for magic in
+             ['feedface', 'cefaedfe', 'feedfacf', 'cffaedfe',
+              'cafebabe', 'bebafeca', 'cafebabf', 'bfbafeca']}
+    for path in sorted(paths):
+        if path.is_file():
+            with path.open('rb') as stream:
+                native = stream.read(4) in macho
+            if native:
+                identity[str(path.absolute())] = digest(path.read_bytes())
+    return identity
+
+
 def native_capture_environment(profile, certificate, cache, audit, config, requests, settle):
     environment = {k: v for k, v in os.environ.items()
                    if not k.lower().endswith('_proxy') and not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_'))}
@@ -211,6 +230,18 @@ def capture_site_archive(common, route, output, archive, timeout, cache_policy):
 def run_case(site, args):
     output = args.output / site['id']
     output.mkdir(parents=True, exist_ok=False)
+    before = dict(vox=executable_identity(args.vox), brave=brave_identity(args.brave))
+    write_json(output / 'browser-identities.json', before)
+    try:
+        return capture_case(site, args, output)
+    finally:
+        after = dict(vox=executable_identity(args.vox), brave=brave_identity(args.brave))
+        write_json(output / 'browser-identities-after.json', after)
+        if before != after:
+            raise RuntimeError('Browser inputs changed during the comparison')
+
+
+def capture_case(site, args, output):
     archive = args.fixtures / site['id']
     common = oracle_command(site, args)
     if args.capture:

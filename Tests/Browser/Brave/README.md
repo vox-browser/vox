@@ -5,6 +5,12 @@ The registered CNN archive is pixel-exact against Brave with full uBO at
 cache warmups. The separate saved-live/frozen-reference gate remains open.
 See the [CNN report](../../../docs/CNN_BRAVE_PARITY.md) for scope and evidence.
 
+The full-site harness records both browser identities before and after every
+attempt, including failures. It pins Vox's executable, native libraries and
+adblock snapshot, and Brave's executable, native frameworks, GPU libraries and
+helper executables. Retargeting a framework's active `Current` version also
+invalidates the comparison, even when both version directories remain present.
+
 Five focused CNN fixtures cover the solid and repeated SVG header backgrounds,
 the rounded header with a captured mask, fractional SVG background pictures,
 and a ticker fade beside an unsupported offscreen SVG background. They are
