@@ -37,7 +37,7 @@ pub:
 	data          dom.JSValue = dom.JSValue{
 		kind: .null_
 	}
-	origin        MessageEventOrigin = EmptyMessageOrigin.empty
+	origin        MessageEventOrigin = MessageEventOrigin(EmptyMessageOrigin.empty)
 	last_event_id string
 	source        ?MessageEventSource
 	ports         []&MessagePort
@@ -48,7 +48,7 @@ pub struct MessageEvent {
 	dom.Event
 mut:
 	data_          dom.JSValue
-	origin_        MessageEventOrigin = EmptyMessageOrigin.empty
+	origin_        MessageEventOrigin = MessageEventOrigin(EmptyMessageOrigin.empty)
 	last_event_id_ string
 	source_        ?MessageEventSource
 	ports_         []&MessagePort
