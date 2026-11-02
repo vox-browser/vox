@@ -65,7 +65,7 @@ Vox correctly suppressed generic cosmetics, but the old comparison queried
 uBO's cosmetic engine without its tab policy. The oracle now obtains both
 generic/specific switches from the matching full-uBO top-level PageStore,
 passes them to the specific engine, and omits generic retrieval when disabled.
-It rejects absent, disabled, unrelated and ambiguous tabs. The source capture
+It rejects absent, disabled and unrelated tabs. The source capture
 passes all filtering checks with `generic_enabled:false`; it has 20 cosmetic
 rules, instead of the old query's invented 1,203.
 [The corrected acquisition](../Build/forum-news-expansion-20261102/wired-policy-fixed/capture.json)
@@ -73,18 +73,55 @@ and [23 passing Node checks](../Build/forum-news-expansion-20261102/oracle-polic
 validate the change. Hacker News remains an independent normal-policy control.
 This is a harness correction, not an engine rendering improvement.
 
+Restored profiles exposed another oracle ambiguity: multiple PageStores can
+have the same URL. The oracle now creates its own uniquely marked Chrome tab,
+binds that tab ID to the corresponding CDP target, and closes other tabs in
+the disposable profile. Cosmetic policy queries require that explicit tab ID.
+[Seventeen focused Node checks](../Build/forum-news-expansion-20261102/oracle-target-tests.guard.json)
+pass. An [Engadget complete-cache diagnostic](../Build/forum-news-expansion-20261102/engadget-complete-target/summary.json)
+finishes the entire capture/filtering workflow with matching tab identities;
+its source gap is 221 pixels and native gap remains 1,717. That alternate
+diagnostic archive does not replace the registered cold archive.
+
 ## Focused mask regression
 
 `techcrunch-mask-sizing` retains the publisher's original 12×10 vector menu
-shape. Nine cases cover contain sizing in integer/fractional/wide/tall boxes,
+shape. Ten cases cover contain sizing in integer/fractional/wide/tall boxes,
 natural and explicit dimensions, cover sizing, percentage positioning and an
-existing square-mask control. Two independent full-uBO Brave captures agree
-exactly; the production baseline differs at 1,158 pixels.
-[Reference receipts](../Build/forum-news-expansion-20261102/mask-reference/references.json)
-and [the failing native check](../Build/forum-news-expansion-20261102/mask-pixels-before.guard.json)
-are retained. The new V implementation resolves concrete non-repeating SVG
-mask tiles before collecting paths. Production pixel validation is pending a
-bundle containing that change; the old executable cannot validate it.
+existing square-mask control; a zero-sized image must retain a transparent
+mask group. Two independent full-uBO Brave captures agree exactly; the
+production baseline differs at 1,286 pixels.
+[Reference receipts](../Build/forum-news-expansion-20261102/mask-reference-complete/references.json)
+and [the failing native check](../Build/forum-news-expansion-20261102/mask-expanded-before.guard.json)
+are retained. Commit `7f31cf052` resolves concrete non-repeating SVG mask tiles
+before collecting paths. Six focused V tests execute successfully with both
+[default GC](../Build/forum-news-expansion-20261102/mask-final2-default-run.guard.json)
+and [GC disabled](../Build/forum-news-expansion-20261102/mask-final2-none-run.guard.json).
+Existing SVG-image, mask-origin, document-cache and gradient-mask controls also
+pass in [the focused checks](../Build/forum-news-expansion-20261102/focused-masks/).
+Production pixel validation is pending a bundle containing that change; the
+old executable cannot validate it.
+
+## Photo-mask isolation
+
+A synthetic [original-origin HTTP diagnostic](../Build/forum-news-expansion-20261102/http-image-probe/summary.json)
+uses TechCrunch's unchanged encoded WebP response, object-fit geometry,
+fractional placement, green backdrop, gradient mask and dark overlay. Both
+browsers load the same sealed response bytes with full uBO. Source and frozen
+Brave agree exactly; Vox differs at 7,634 pixels, with maximum channel error 2.
+The four separate controls have 24 plain-photo differences, 6,149 mask-only
+differences, 4 overlay-only differences and 1,457 combined differences.
+
+The corresponding local-file capture is a separate decoder diagnostic: local
+WebP files currently enter AppKit's loader, while HTTP response bytes use the
+resource decoder. Its larger error cannot establish HTTP mask behavior.
+Constant-alpha composition is independently exact in 144 image/mask GPU
+comparisons, alongside 56 existing scope/pixel cases and 24 opacity comparisons,
+under both optimized and AddressSanitizer/UndefinedBehaviorSanitizer builds.
+[The final native controls](../Build/forum-news-expansion-20261102/mask-composite-controls-final/result.json)
+pin their canonical source and native-library inputs. Earlier `before2` and
+`after` attempts used an incorrectly constructed empty mask and are invalid
+for diagnosing composition; no renderer change was retained from them.
 
 ## Run
 
