@@ -163,7 +163,9 @@ def publish(root, stage):
 
 def run_build(root, stage, receipt, environment):
     environment = {k: v for k, v in environment.items() if not k.startswith('GIT_')}
-    environment.update(VOX_BUILD_SUPERVISED='1', VOX_BUILD_OUTPUT_DIR=str(stage))
+    environment.update(VOX_BUILD_SUPERVISED='1', VOX_BUILD_OUTPUT_DIR=str(stage),
+                       VOX_BUILD_COMPILE_PROTOCOL='preprocessed-c-v1',
+                       VOX_BUILD_RECEIPT_DIR=str(receipt))
     guard = root / 'tools/run_memory_bounded.py'
     # sh reads a script file incrementally. Editing that file while the compiler
     # runs can move its unread tail and manufacture an EOF/quoting error. Read
@@ -206,6 +208,7 @@ def build_pending(root, runner=run_build, foreground=False):
             receipt.mkdir(parents=True)
             with tempfile.TemporaryDirectory(prefix='.production-output-', dir=root / 'Build') as temporary:
                 stage = Path(temporary)
+                write_json(receipt / 'inputs-before.json', before)
                 code = runner(root, stage, receipt, os.environ.copy())
                 record = dict(request=request, inputs=before, exit=code)
                 if code:
@@ -219,7 +222,21 @@ def build_pending(root, runner=run_build, foreground=False):
                         return code
                 after = repository_state(root)
                 record['verified_inputs'] = after
-                if not same_build_inputs(before, after):
+                frozen_path = receipt / 'frozen-compile.json'
+                frozen = None
+                if frozen_path.exists():
+                    from freeze_browser_compile import validate
+                    try:
+                        frozen = validate(receipt, before)
+                    except Exception as error:
+                        record.update(exit=1, frozen_input_error=str(error))
+                        write_json(receipt / 'result.json', record)
+                        print('Frozen production inputs rejected: ' + str(error), flush=True)
+                        return 1
+                    record['frozen_compilation'] = str(frozen_path)
+                    record['repository_after_build'] = after
+                    record['verified_inputs'] = frozen['source_inputs']
+                if frozen is None and not same_build_inputs(before, after):
                     record['superseded'] = True
                     write_json(receipt / 'result.json', record)
                     continue
@@ -234,10 +251,34 @@ def build_pending(root, runner=run_build, foreground=False):
             # the final request check and unlock cannot lose its wake-up.
             with lock(state / 'queue.lock'):
                 latest = json.loads((state / 'request.json').read_text())
-                if latest['id'] == request['id'] or same_build_inputs(repository_state(root), after):
+                if latest['id'] == request['id'] or same_build_inputs(repository_state(root), record['verified_inputs']):
                     fcntl.flock(build_lock, fcntl.LOCK_UN)
                     print('Published canonical production browser: ' + before['head'], flush=True)
                     return 0
+
+
+def request_worker_upgrade(root):
+    """Let the old worker finish; its next script entry yields without compiling."""
+    state = root / 'Build/production-build'
+    with (state / 'worker.log').open('ab') as log:
+        subprocess.Popen([sys.executable, str(root / 'tools/rebuild_browser.py'),
+                          '--worker-after-current'], cwd=root,
+                         env=production_environment(os.environ), stdin=subprocess.DEVNULL,
+                         stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
+                         close_fds=True)
+
+
+def worker_after_current(root):
+    state = root / 'Build/production-build'
+    # Multiple stale entries can request an upgrade while editors are active.
+    # One waiter owns the handoff. It neither interrupts the running compiler
+    # nor enqueues another production request.
+    with lock(state / 'upgrade.lock', nonblocking=True) as upgrade_lock:
+        if upgrade_lock is None:
+            return 0
+        with lock(state / 'build.lock'):
+            pass
+        return build_pending(root)
 
 
 def install_hook(root):
@@ -263,6 +304,8 @@ def main():
     modes.add_argument('--request', action='store_true')
     modes.add_argument('--worker', action='store_true')
     modes.add_argument('--build', action='store_true')
+    modes.add_argument('--upgrade-worker', action='store_true')
+    modes.add_argument('--worker-after-current', action='store_true')
     args = parser.parse_args()
     if args.install_hook:
         install_hook(ROOT)
@@ -270,6 +313,11 @@ def main():
     if args.request:
         enqueue(ROOT)
         return 0
+    if args.upgrade_worker:
+        request_worker_upgrade(ROOT)
+        return 0
+    if args.worker_after_current:
+        return worker_after_current(ROOT)
     if args.build:
         enqueue(ROOT, background=False)
     return build_pending(ROOT, foreground=args.build)

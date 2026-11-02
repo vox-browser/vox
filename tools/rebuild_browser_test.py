@@ -12,6 +12,82 @@ import rebuild_browser as build
 
 
 class ProductionBuildTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_verified_frozen_compile_can_publish_its_pinned_source_after_later_edits(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = self.app(root / 'Build/v', b'old')
+            build.write_json(root / 'Build/production-build/request.json', dict(id='one'))
+            before = dict(head='one', build_inputs_sha256='compiled-source')
+            after = dict(head='later', build_inputs_sha256='later-source')
+            def compile(repo, stage, receipt, environment):
+                self.assertEqual(json.loads((receipt / 'inputs-before.json').read_text()), before)
+                self.app(stage, b'frozen compiled engine')
+                build.write_json(receipt / 'frozen-compile.json', dict(protocol='fixture'))
+                return 0
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'repository_state', side_effect=[before, after]), \
+                    patch('freeze_browser_compile.validate', return_value=dict(source_inputs=before)) as validate:
+                self.assertEqual(build.build_pending(root, compile), 0)
+            validate.assert_called_once()
+            self.assertEqual(old.read_bytes(), b'frozen compiled engine')
+            receipt = json.loads((root / 'Build/production-build/latest.json').read_text())
+            self.assertEqual(receipt['verified_inputs'], before)
+            self.assertEqual(receipt['repository_after_build'], after)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_new_request_during_frozen_compilation_is_not_lost_after_publication(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.app(root / 'Build/v', b'old')
+            request = root / 'Build/production-build/request.json'
+            build.write_json(request, dict(id='one'))
+            one, two = dict(head='one', build_inputs_sha256='one'), dict(head='two', build_inputs_sha256='two')
+            calls = []
+            def compile(repo, stage, receipt, environment):
+                calls.append(stage)
+                self.app(stage, str(len(calls)).encode())
+                build.write_json(receipt / 'frozen-compile.json', {})
+                build.write_json(request, dict(id='two'))
+                return 0
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'repository_state', side_effect=[one, two, two, two, two]), \
+                    patch('freeze_browser_compile.validate', side_effect=lambda receipt, expected: dict(source_inputs=expected)):
+                self.assertEqual(build.build_pending(root, compile), 0)
+            self.assertEqual(len(calls), 2)
+
+    def test_invalid_frozen_inputs_keep_the_completed_bundle_and_failure_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = self.app(root / 'Build/v', b'old')
+            build.write_json(root / 'Build/production-build/request.json', dict(id='one'))
+            def compile(repo, stage, receipt, environment):
+                self.app(stage, b'changed inputs')
+                build.write_json(receipt / 'frozen-compile.json', {})
+                return 0
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'repository_state', return_value=dict(head='one')), \
+                    patch('freeze_browser_compile.validate', side_effect=RuntimeError('changed linker input')):
+                self.assertEqual(build.build_pending(root, compile), 1)
+            self.assertEqual(old.read_bytes(), b'old')
+            receipt = next((root / 'Build/production-build/receipts').glob('*/result.json'))
+            self.assertIn('changed linker input', json.loads(receipt.read_text())['frozen_input_error'])
+
+    def test_worker_handoff_does_not_enqueue_or_hold_the_build_lock_for_the_successor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state = root / 'Build/production-build'
+            def successor(repo):
+                with build.lock(state / 'build.lock', nonblocking=True) as available:
+                    self.assertIsNotNone(available)
+                return 17
+            with patch.object(build, 'build_pending', side_effect=successor), \
+                    patch.object(build, 'enqueue', side_effect=AssertionError('no new request')):
+                self.assertEqual(build.worker_after_current(root), 17)
+            with build.lock(state / 'upgrade.lock'), patch.object(build, 'build_pending') as compiler:
+                self.assertEqual(build.worker_after_current(root), 0)
+                compiler.assert_not_called()
+
     def test_test_only_changes_preserve_build_inputs_and_remain_in_repository_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

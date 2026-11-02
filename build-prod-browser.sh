@@ -30,6 +30,15 @@ case "$(uname -s)" in
     *) echo "Vox supports macOS and Linux" >&2; exit 1 ;;
 esac
 
+# A worker already running when the build protocol changes must finish its
+# current job, then hand off before starting another compiler. The successor
+# uses the same queued request and guard; no process is interrupted.
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != preprocessed-c-v1 ]; then
+    python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
+    exit 75
+fi
+: "${VOX_BUILD_RECEIPT_DIR:?production build receipt directory is required}"
+
 if [ "$#" -ne 0 ]; then
     echo "usage: build-prod-browser.sh" >&2
     exit 2
@@ -275,27 +284,11 @@ if [ -n "${LADYBIRD_V_PROFILE:-}" ]; then
     # that would rewrite the compatibility compiler's own C prototypes.
     extra_cflags="$extra_cflags -D_FORTIFY_SOURCE=0 -include stdio.h"
 fi
-echo "Building Vox with: $* -cflags $extra_cflags"
-# Root browser features are split across main.v and companion module files.
+# Finish all source-consuming helper work before sealing browser C inputs.
+(
 if [ "$gc_mode" = prealloc ]; then
-    # V resolves builtin from its compiler root rather than -path. The staged
-    # executable/library view selects our bounded allocator without editing V.
     cd "$prealloc_modules/compiler"
-else
-    cd "$repo_dir"
 fi
-if [ -n "$extra_ldflags" ]; then
-    "$v_compiler" "$@" \
-        -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
-        -o "$compile_dir/Vox" "$repo_dir"
-else
-    "$v_compiler" "$@" \
-        -cflags "$extra_cflags" \
-        -o "$compile_dir/Vox" "$repo_dir"
-fi
-mv -f "$compile_dir/Vox" "$binary_dir/Vox"
-python3 "$repo_dir/tools/localize_bundle_rpaths.py" "$binary_dir/Vox" "$build_dir"
-
 # Keep the filter worker's entry point independent of browser/UI initialization.
 # It uses the same engine, snapshot resource and private transport as self-exec.
 helper_tmp="$compile_dir/VoxAdblockWorker"
@@ -323,6 +316,36 @@ if command -v codesign >/dev/null 2>&1; then
     codesign --force --sign - --entitlements "$repo_dir/packaging/Vox.entitlements.plist" "$helper_tmp" >/dev/null
 fi
 mv -f "$helper_tmp" "$binary_dir/VoxAdblockWorker"
+
+)
+
+echo "Building Vox with: $* -cflags $extra_cflags"
+# Root browser features are split across main.v and companion module files.
+if [ "$gc_mode" = prealloc ]; then
+    # V resolves builtin from its compiler root rather than -path. The staged
+    # executable/library view selects our bounded allocator without editing V.
+    cd "$prealloc_modules/compiler"
+else
+    cd "$repo_dir"
+fi
+generated_dir="$VOX_BUILD_RECEIPT_DIR/generated"
+mkdir -p "$generated_dir"
+if [ -n "$extra_ldflags" ]; then
+    "$v_compiler" "$@" \
+        -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
+        -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
+else
+    "$v_compiler" "$@" \
+        -cflags "$extra_cflags" \
+        -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
+fi
+python3 "$repo_dir/tools/freeze_browser_compile.py" \
+    --root "$repo_dir" --stage "$build_dir" --receipt "$VOX_BUILD_RECEIPT_DIR" \
+    --source "$generated_dir/Vox.c" --flags "$generated_dir/Vox.flags" \
+    --output "$compile_dir/Vox"
+mv -f "$compile_dir/Vox" "$binary_dir/Vox"
+python3 "$repo_dir/tools/localize_bundle_rpaths.py" "$binary_dir/Vox" "$build_dir"
+
 
 if [ -n "${jpegxl_library:-}" ]; then
     jpegxl_resource_tmp=$(mktemp "$binary_dir/.jpegxl.XXXXXX")
