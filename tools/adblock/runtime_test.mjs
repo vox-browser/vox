@@ -19,13 +19,18 @@ function engine(custom, nativeClone = false, eager = false) {
     return { context, info, check: request => JSON.parse(context.voxAdblockCheck(request)) };
 }
 
-test('default matching stays parser-free and custom filters load the original parser', () => {
+test('default matching stays parser-free and custom filters load the original parser', async () => {
     const defaults = engine();
     assert.equal(typeof defaults.context.voxAdblockParser, 'undefined');
     assert.equal(defaults.check({url:'https://news.ycombinator.com/',source_url:'https://news.ycombinator.com/',request_type:'main_frame'}).blocked,false);
     for (const origin of ['https://news.ycombinator.com','http://127.0.0.1:54321']) {
         for (const [path,type] of [['/hn.js?Z6eHuL4AiZDrSCqdz7DG','script'],['/news.css?Z6eHuL4AiZDrSCqdz7DG','stylesheet'],['/triangle.svg','image']])
             defaults.check({url:origin+path,source_url:origin+'/',request_type:type});
+    }
+    const archive=JSON.parse(await fs.readFile(new URL('../../Tests/Browser/Brave/hn-home-instructions/manifest.json',import.meta.url)));
+    for(const [url,response] of Object.entries(archive.responses)) {
+        const type=url.includes('.css')?'stylesheet':url.includes('.js')?'script':url.endsWith('/')?'main_frame':'image';
+        defaults.context.voxAdblockCheckResponse({url,source_url:archive.url,request_type:type},response.headers);
     }
     assert.equal(typeof defaults.context.voxAdblockParser, 'undefined');
     defaults.context.voxAdblockInitialize('||metrics.example^$script\n##.advert');
