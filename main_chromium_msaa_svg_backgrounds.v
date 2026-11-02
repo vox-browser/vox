@@ -19,15 +19,15 @@ fn chromium_svg_background_msaa_rects(command layout.PaintCommand) []layout.Layo
 	return triggers.map(layout.LayoutRect{ x: it.left, y: it.top, width: it.right - it.left, height: it.bottom - it.top })
 }
 
-fn append_chromium_svg_background_msaa_triggers(command layout.PaintCommand, index int,
+fn append_chromium_svg_background_msaa_triggers(command &layout.PaintCommand, index int,
 	mut triggers []ChromiumMSAATrigger) {
 	if command.image_data == unsafe { nil } || command.opacity <= 0 { return }
 	// Rounded SVG backgrounds are image shaders on the parent pass. Their
 	// vector paths belong to the shader's image, not the parent's MSAA tile.
-	if chromium_svg_background_outer_clip(&command) != none { return }
+	if chromium_svg_background_outer_clip(command) != none { return }
 	// These paths rasterize into the picture shader's own image, rather than
 	// selecting multisampling for unrelated leaves in the parent render pass.
-	if chromium_svg_fractional_background(&command) != none { return }
+	if chromium_svg_fractional_background(command) != none { return }
 	image := command.image_data
 	data := image.background_layer_data or { return }
 	natural := svg_background_natural_metrics(image) or { return }
@@ -58,8 +58,8 @@ fn append_chromium_svg_background_msaa_triggers(command layout.PaintCommand, ind
 			replay.viewport_height) or { continue }
 		viewport_bounds := transformed_raster_bounds(replay.transform, f64(offset.x), f64(offset.y),
 			f64(replay.viewport_width), f64(replay.viewport_height))
-		for nested in commands {
-			bounds := chromium_nested_svg_msaa_trigger_rect(nested, replay.transform,
+		for nested_index in 0 .. commands.len {
+			bounds := chromium_nested_svg_msaa_trigger_rect(unsafe { &commands[nested_index] }, replay.transform,
 				offset) or { continue }
 			top := math.max(bounds.y, viewport_bounds.y)
 			bottom := math.min(bounds.y + bounds.height, viewport_bounds.y + viewport_bounds.height)
@@ -74,13 +74,12 @@ fn append_chromium_svg_background_msaa_triggers(command layout.PaintCommand, ind
 
 // Trigger bounds read only path geometry and its cumulative transform. A full
 // nested replay would also copy clip/mask payloads which this query never reads.
-fn chromium_nested_svg_msaa_trigger_rect(command layout.PaintCommand, outer [6]f64,
+fn chromium_nested_svg_msaa_trigger_rect(command &layout.PaintCommand, outer [6]f64,
 	origin painting.IntPoint) ?layout.LayoutRect {
 	ancestor := multiply_paint_transforms(outer,
 		[f64(1), 0, 0, 1, f64(origin.x), f64(origin.y)]!)
-	mut projected := command
-	projected.transform = multiply_paint_transforms(ancestor, command.transform)
-	return chromium_msaa_trigger_rect(projected)
+	return chromium_msaa_trigger_rect_with_transform(command,
+		multiply_paint_transforms(ancestor, command.transform))
 }
 
 // Only tiles which can appear in this frame need an SVG picture prepared.

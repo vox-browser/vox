@@ -51,11 +51,11 @@ fn chromium_msaa_triggers_for_viewport(commands []layout.PaintCommand, viewport 
 fn append_chromium_msaa_triggers(commands []layout.PaintCommand,
 	viewport ?ChromiumMSAAViewport, mut triggers []ChromiumMSAATrigger) {
 	for index in 0 .. commands.len {
-		append_chromium_msaa_trigger(commands[index], index, viewport, mut triggers)
+		append_chromium_msaa_trigger(unsafe { &commands[index] }, index, viewport, mut triggers)
 	}
 }
 
-fn append_chromium_msaa_trigger(command layout.PaintCommand, index int,
+fn append_chromium_msaa_trigger(command &layout.PaintCommand, index int,
 	viewport ?ChromiumMSAAViewport, mut triggers []ChromiumMSAATrigger) {
 	// Native replay discards empty clips before drawing. Culled geometry must
 	// not select multisampling for the other draws in its document tile.
@@ -131,22 +131,27 @@ $if test {
 	}
 }
 
-fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
+fn chromium_msaa_trigger_rect(command &layout.PaintCommand) ?layout.LayoutRect {
+	return chromium_msaa_trigger_rect_with_transform(command, command.transform)
+}
+
+fn chromium_msaa_trigger_rect_with_transform(command &layout.PaintCommand,
+	transform [6]f64) ?layout.LayoutRect {
 	match command.kind {
 		'paint_outer_box_shadow' {
 			// An unfiltered non-round contour is a path on the parent pass.
 			// Filtered shadows rasterize that path in their own blur surface.
-			if command.blur != 0 || !chromium_contoured_path_required(&command)
+			if command.blur != 0 || !chromium_contoured_path_required(command)
 				|| command.corner_radii == layout.BoxRadii{}
 				|| command.local_border_data.corner_shapes.all(it >= 10) { return none }
-			return transformed_raster_bounds(command.transform,command.x-1,command.y-1,
+			return transformed_raster_bounds(transform,command.x-1,command.y-1,
 				command.width+2,command.height+2)
 		}
 		'paint_uniform_border' {
 			// A superellipse's outer clip is a path on the parent pass.
-			if chromium_contoured_path_required(&command) {
+			if chromium_contoured_path_required(command) {
 				outset := math.max(command.stroke_width,0)/2+1
-				return transformed_raster_bounds(command.transform,command.x-outset,command.y-outset,
+				return transformed_raster_bounds(transform,command.x-outset,command.y-outset,
 					command.width+outset*2,command.height+outset*2)
 			}
 			// An elliptical ring clips its inner rrect through the path
@@ -157,32 +162,32 @@ fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 				return none
 			}
 			outset := math.max(command.stroke_width, 0) / 2 + 1
-			return transformed_raster_bounds(command.transform, command.x - outset,
+			return transformed_raster_bounds(transform, command.x - outset,
 				command.y - outset, command.width + outset * 2, command.height + outset * 2)
 		}
 		'paint_rounded_border_top', 'paint_rounded_border_right', 'paint_rounded_border_bottom', 'paint_rounded_border_left' {
 			// A single rounded side is filled through intersecting outer and
 			// inner clips (and corner miters), requiring a multisampled pass.
-			return transformed_raster_bounds(command.transform, command.x, command.y,
+			return transformed_raster_bounds(transform, command.x, command.y,
 				command.width, command.height)
 		}
 		'fill_rounded_rect' {
-			if !command.underlays_next && chromium_contoured_path_required(&command)
+			if !command.underlays_next && chromium_contoured_path_required(command)
 				&& command.corner_radii != layout.BoxRadii{} {
-				return transformed_raster_bounds(command.transform,command.x-1,command.y-1,
+				return transformed_raster_bounds(transform,command.x-1,command.y-1,
 					command.width+2,command.height+2)
 			}
 			return none
 		}
 		'fill_rect' {
-			if !command.underlays_next && command.radius>0 && chromium_contoured_path_required(&command) {
-				return transformed_raster_bounds(command.transform,command.x-1,command.y-1,
+			if !command.underlays_next && command.radius>0 && chromium_contoured_path_required(command) {
+				return transformed_raster_bounds(transform,command.x-1,command.y-1,
 					command.width+2,command.height+2)
 			}
 			if command.clip_outs.len < 8 {
 				return none
 			}
-			return transformed_raster_bounds(command.transform, command.x, command.y, command.width,
+			return transformed_raster_bounds(transform, command.x, command.y, command.width,
 				command.height)
 		}
 		'draw_svg_path' {
@@ -191,8 +196,7 @@ fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 			if command.force_dark_role == .border && !chromium_border_has_diagonal_path(command) {
 				return none
 			}
-			// Read the payload directly: calling an accessor on this by-value
-			// command makes current V move the command to the heap on every call.
+			// Read the retained payload without copying the command.
 			if command.svg_data == unsafe { nil } {
 				return none
 			}
@@ -248,7 +252,7 @@ fn chromium_msaa_trigger_rect(command layout.PaintCommand) ?layout.LayoutRect {
 				return none
 			}
 			outset := math.max(command.stroke_width, 0) / 2 + 1
-			matrix := multiply_paint_transforms(command.transform, svg_data.path_transform)
+			matrix := multiply_paint_transforms(transform, svg_data.path_transform)
 			return transformed_raster_bounds(matrix, min_x - outset, min_y - outset, max_x - min_x +
 				outset * 2, max_y - min_y + outset * 2)
 		}

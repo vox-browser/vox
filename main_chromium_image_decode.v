@@ -12,10 +12,11 @@ fn (app &BrowserApp) begin_chromium_image_decode_frame() {
 		if app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium { return }
 		// Collect all uses before drawing: an earlier async use must see a
 		// later sync use of the same resource, including another raster layer.
-		for command in app.paint_commands {
+		for index in 0 .. app.paint_commands.len {
+			command := unsafe { &app.paint_commands[index] }
 			if command.kind != 'draw_replaced_image' { continue }
 			image := command.image()
-			mode := chromium_paint_image_decoding_hint(app.document, &command)
+			mode := chromium_paint_image_decoding_hint(app.document, command)
 			if mode < 0 || image.image_url.len == 0 || image.image_url.len > 16384 { continue }
 			C.native_add_image_decoding_hint(image.image_url.str, i32(image.image_url.len), i32(mode))
 		}

@@ -231,6 +231,10 @@ pub fn (fragment PaintableFragment) index_in_node_for_point(position Point) int 
 		return 0
 	}
 	if run := fragment.glyph_run {
+		// Hit testing returns an offset, so grapheme decoding and boundary
+		// vectors must not accumulate in the document or persistent arena.
+		scratch := platform.begin_thread_scratch('fragment hit test')
+		defer { scratch.finish() }
 		mut tracker := FragmentGraphemeEdgeTracker{
 			target_width: relative
 		}

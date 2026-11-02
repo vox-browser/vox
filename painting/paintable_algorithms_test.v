@@ -204,6 +204,29 @@ fn test_fragment_hit_testing_keeps_combining_graphemes_together() {
 	assert fragment.index_in_node_for_point(Point{24, 0}) == 2
 }
 
+fn test_repeated_fragment_hit_testing_releases_grapheme_workspace() {
+	font := &platform.Font{point_size:16}
+	run := platform.GlyphRun.new(font, .ltr, [
+		platform.Glyph{advance:20,length_in_code_units:2},
+		platform.Glyph{advance:10,length_in_code_units:1},
+	])
+	fragment := PaintableFragment{
+		text_value: 'áb'
+		size: Size{30,10}
+		length_in_code_units: 3
+		glyph_run: run
+	}
+	// Warm process-wide Unicode metadata before accounting for temporaries.
+	assert fragment.index_in_node_for_point(Point{11,0}) == 2
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 500 {
+		assert fragment.index_in_node_for_point(Point{4,0}) == 0
+		assert fragment.index_in_node_for_point(Point{11,0}) == 2
+	}
+	$if prealloc { assert platform.thread_arena_usage().used == before }
+	assert run.glyphs().len == 2
+}
+
 fn test_paintable_tree_hit_testing_uses_reverse_stacking_order() {
 	tree := PaintableTree{
 		nodes: [
