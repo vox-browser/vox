@@ -3754,6 +3754,10 @@ pub fn serialize_parsing_error(error ParsingError) string {
 
 pub fn (mut reporter ErrorReporter) report(error ParsingError) {
 	key := parsing_error_key(error)
+	// Updating an existing key can rehash the map too. All backing storage
+	// belongs to the reporter, independently of the current parser/document.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if existing := reporter.errors[key] {
 		reporter.errors[key] = ParsingErrorMetadata{
 			...existing
@@ -3761,8 +3765,6 @@ pub fn (mut reporter ErrorReporter) report(error ParsingError) {
 		}
 		return
 	}
-	persistent := platform.enter_persistent()
-	defer { platform.leave_persistent(persistent) }
 	reporter.errors[key.clone()] = ParsingErrorMetadata{
 		message: serialize_parsing_error(error)
 	}
