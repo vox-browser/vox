@@ -2523,3 +2523,50 @@ during the final build; five unrelated shared JavaScript/BBC-tool files changed,
 so evidence is attached to the pinned executable and libraries. These checks
 cover frozen guest rendering with author scripts removed and establish no
 live-site, instruction-count or scrolling-performance acceptance.
+
+## Pikabu photo becomes exact through retained picture clips, 2 November 2026
+
+Commit `5e5477c41` reduces the retained full-page comparison from **79,930 to
+10,599 differing pixels**. The entire visible 578×339 photo rectangle is now
+pixel-exact, including its rounded corners. Every pixel outside that rectangle
+is unchanged from the matched control capture. The site still fails the
+zero-pixel gate because its header shadows and some controls remain different.
+
+The planner now retains the common visual-context ancestry of hit-test metadata
+and drawing chunks. Rounded clips below that common state are painted inside
+the picture and prevent direct-image sampling; clips retained by the compositor
+allow the sampler added in `202e09746`. This replaces the preceding-layer
+approximation when complete clip ancestry is available. Clip analysis also runs
+without an independently scrolling element, while preserving those documents'
+existing raster grouping, bounds and tile origins.
+
+The new regression differs only in paint order from the standalone wrapper
+control: a later positioned animated element paints before an image with a
+positive z-index. Its image retains an external compositor clip and improves
+from **69,331 pixels to zero**. Two Brave/full-uBO references agree. The shared
+clip and picture-local rounded wrapper controls both remain exact. Neither the
+implementation nor the eligibility rules select a site, URL or image size.
+
+All **54 focused layout checks** and **four eligibility checks** pass in default
+and no-GC modes. All **14 selected native pixel captures** pass. The same pinned
+production bundle preserves CNN, Guardian and Verge's unchanged archived
+viewports at zero pixels and passes fresh headless startup. Its recorded Pikabu
+stream matches full uBO on 52 decisions, with zero blocks or disagreements.
+All source inputs remain unchanged throughout the final production build.
+
+A rejected first implementation also enabled hit-test raster geometry in
+no-scroll documents. Its photo was exact, but it changed 459 unrelated pixels,
+introducing 325 errors and fixing 59; the final implementation separates clip
+classification from raster placement. A further fresh-process oracle capture,
+using the cookie-profile template without the retained complete-cache warmup,
+differs from the old reference at 66 navigation-control pixels. Those are all
+outside the photo. That unmatched-cache run is retained as diagnostic evidence;
+it neither refreshes the reference nor establishes full-page reference
+stability. The prior three saved-live/frozen plus-button pixels remain open too.
+
+The [picture-clip receipt](benchmark-results/pikabu-picture-clip-ancestry-2026-11-02.json)
+records the matched frames, region counts, executable/library and fixture
+hashes, commands, memory guards, rejected candidate and additional oracle run.
+Raw evidence is under `Build/pikabu-clip-state-20261102/`. These are frozen guest
+rendering checks with author scripts removed. They establish no live-site,
+instruction-count or scrolling-performance acceptance.
