@@ -157,6 +157,7 @@ fn distribute_lines_into_columns(mut state LayoutState, box &Node, mut box_state
 
 fn shift_line_box(mut state LayoutState, mut line LineBox, dx CSSPixels, dy CSSPixels) {
 	line.bottom_ = line.bottom_.plus(dy)
+	if baseline := line.font_box_baseline_ { line.font_box_baseline_ = baseline.plus(dy) }
 	for index in 0 .. line.fragments_.len {
 		line.fragments_[index].inline_offset_ = line.fragments_[index].inline_offset_.plus(dx)
 		line.fragments_[index].block_offset_ = line.fragments_[index].block_offset_.plus(dy)

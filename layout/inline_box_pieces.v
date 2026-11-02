@@ -179,7 +179,9 @@ fn chromium_baseline_inline_font_box(node &Node, line_box &LineBox) ?css.CSSPixe
 		ancestor = ancestor.parent() or { break }
 	}
 	metrics := layout_font_metrics_for_node(node)
-	baseline := line_box.bottom().minus(line_box.block_length()).plus(line_box.baseline())
+	baseline := line_box.font_box_baseline_ or {
+		line_box.bottom().minus(line_box.block_length()).plus(line_box.baseline())
+	}
 	return css.CSSPixelRect{
 		y: baseline.minus(CSSPixels.nearest_value_for(f64(metrics.ascent)))
 		height: CSSPixels.nearest_value_for(f64(metrics.ascent + metrics.descent))

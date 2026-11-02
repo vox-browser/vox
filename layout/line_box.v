@@ -483,6 +483,8 @@ pub mut:
 	block_length_                        CSSPixels
 	bottom_                              CSSPixels
 	baseline_                            CSSPixels
+	// Unlike bottom_, this paint baseline is not extended by float clearance.
+	font_box_baseline_                   ?CSSPixels
 	// Keep the original paint origin when text-box-trim removes the first
 	// line's leading. Its ink moves with the text before pixel snapping.
 	trimmed_block_start_                 CSSPixels

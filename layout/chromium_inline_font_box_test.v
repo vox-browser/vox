@@ -63,3 +63,21 @@ fn test_libweb_keeps_its_fragment_based_inline_box_height() {
 	}
 	assert found
 }
+
+fn inline_font_box_y_before_clearance(float_height int) CSSPixels {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0;font:20px/20px Arial}#float{float:left;width:20px;height:${float_height}px}#host{border:1px solid}</style><div id="row"><i id="float"></i><span id="host">A</span><br style="clear:both">B</div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	result := run_document_layout(document, 300, 140) or { panic('layout') }
+	row := font_box_node(result.root, 'row') or { panic('row') }
+	host := font_box_node(result.root, 'host') or { panic('host') }
+	used := result.used_values_for(row.as_node_with_style() or { panic('style') }) or { panic('used') }
+	for piece in compute_inline_box_pieces(row, used, result.state) {
+		if voidptr(piece.node) == voidptr(host) { return piece.border_box_rect.y }
+	}
+	panic('missing inline piece')
+}
+
+fn test_inline_font_box_does_not_move_when_a_following_break_clears_a_float() {
+	assert inline_font_box_y_before_clearance(80) == inline_font_box_y_before_clearance(0)
+}

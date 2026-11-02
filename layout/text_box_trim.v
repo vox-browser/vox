@@ -50,6 +50,7 @@ fn apply_text_box_trim(container &BlockContainer, mut used UsedValues) bool {
 	if start.raw_value() == 0 && end.raw_value() == 0 { return false }
 	for mut line in used.line_boxes {
 		line.bottom_ = line.bottom_.minus(start)
+		if baseline := line.font_box_baseline_ { line.font_box_baseline_ = baseline.minus(start) }
 		for mut fragment in line.fragments_ {
 			fragment.block_offset_ = fragment.block_offset_.minus(start)
 		}

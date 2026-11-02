@@ -198,6 +198,7 @@ fn (mut builder LineBuilder) append_block_level_box(box &Box, block_bottom CSSPi
 	line_box.block_length_ = CSSPixels.new(0)
 	line_box.bottom_ = block_bottom
 	line_box.baseline_ = CSSPixels.new(0)
+	line_box.font_box_baseline_ = none
 	line_box.has_block_level_box_ = true
 	line_box.block_level_box_bottom_margin_ = block_bottom_margin
 	line_box.has_break_ = true
@@ -1026,6 +1027,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	line_box.baseline_ = (first_unshifted_text_baseline or {
 		line_box_baseline.plus(block_offset)
 	}).plus(normal_subtree_shift)
+	line_box.font_box_baseline_ = builder.current_block_offset.plus(line_box.baseline_)
 	builder.should_advance_to_last_line_box_block_end = should_align_strut_to_line_box_baseline
 }
 
