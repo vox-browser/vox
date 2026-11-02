@@ -26,6 +26,45 @@ import time
 REPO = Path(__file__).resolve().parents[1]
 ENDPOINT = "changed Cocoa layer contents after updateLayer; not physical scanout"
 
+# Without V's -prod, $embed_file payloads can be read from these checkout
+# paths at runtime even when the executable itself stays unchanged.
+RUNTIME_ASSETS = (
+    'adblock/extended/procedural.js', 'url/public_suffix_list_reversed.dat',
+    'browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js',
+    'browserhistory/history.css', 'aria/aria_roles.json',
+    'dom/resources/pdfjs/viewer.html',
+    'optimizedsites/assets/wikipedia.ico', 'optimizedsites/assets/reddit.png',
+    'optimizedsites/assets/vlang.png', 'optimizedsites/assets/hacker-news.ico',
+    'layout/resources/chromium/broken-image-200.png',
+    'layout/resources/chromium/broken-image-100.png',
+    'css/ua_default.css', 'css/ua_quirks_mode.css',
+    'css/ua_mathml_default.css', 'css/ua_svg_default.css', 'html/media_controls.css',
+)
+
+
+def runtime_input_paths(binary, environment, checkout=REPO):
+    paths = [checkout / name for name in RUNTIME_ASSETS]
+    paths.append(binary.parent / 'VoxAdblockWorker')
+    selected = environment.get('VOX_ADBLOCK_ENGINE_ASSETS')
+    if selected:
+        directory = Path(selected).resolve()
+        for name in ['engine.js.gz', 'engine.snapshot.bin', 'engine.snapshot.json.gz']:
+            asset = directory / name
+            if not asset.is_file():
+                raise ValueError(f'Missing selected adblock runtime asset: {asset}')
+            paths.append(asset)
+    else:
+        paths.extend(checkout / 'adblock' / name for name in
+                     ['engine.js.gz', 'engine.snapshot.json.gz'])
+        bundled = binary.parent.parent / 'Resources/adblock.snapshot.bin'
+        paths.append(bundled if bundled.is_file() else checkout / 'adblock/engine.snapshot.bin')
+    return sorted({path.resolve() for path in paths if path.is_file()})
+
+
+def input_file_identity(path):
+    value = path.stat()
+    return [value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns, value.st_ctime_ns]
+
 
 def distribution(values):
     if not values or any(not math.isfinite(v) or v < 0 for v in values):
@@ -264,6 +303,8 @@ def main():
                VOX_PRECISE_REQUIRED_TITLE=args.require_title)
     pinned = [binary, *sorted(binary.parent.glob("*.dylib")),
               Path(__file__).resolve(), source, fault_header, probe, *libraries]
+    runtime_paths = runtime_input_paths(binary, env)
+    pinned.extend(runtime_paths)
     # A private replay certificate changes the accepted network responses.
     # Retain its identity with the code, rather than just a mutable pathname.
     if env.get("SSL_CERT_FILE"):
@@ -271,6 +312,7 @@ def main():
         if certificate.is_file():
             pinned.append(certificate)
     hashes = {str(path): sha256(path) for path in pinned}
+    file_identities = {str(path): input_file_identity(path) for path in pinned}
     script_flags = {"automatic": [], "enabled": ["--enable-javascript"],
                     "disabled": ["--disable-javascript"]}[args.script_policy]
     command = [str(binary), *script_flags, "--window-width", str(args.width),
@@ -278,6 +320,8 @@ def main():
     evidence = dict(command=command, compile_command=compile_command,
                     diagnostic_only=args.v_profile_reset or args.capture_faults,
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
+                    runtime_input_sha256={str(path): hashes[str(path)] for path in runtime_paths},
+                    input_file_identity=file_identities,
                     initial_profile=("private profile seeded only with allow_any_site=true; "
                                      "default bookmark bar; explicit direct networking"
                                      if args.allow_fixture_navigation else
@@ -308,8 +352,9 @@ def main():
                 raise RuntimeError(f"Browser timed out after {args.timeout} seconds")
         if evidence["browser_exit_code"]:
             raise RuntimeError(f"Browser exited {evidence['browser_exit_code']}")
-        if hashes != {str(path): sha256(path) for path in pinned}:
-            raise RuntimeError("Build or probe identity changed during measurement")
+        if (hashes != {str(path): sha256(path) for path in pinned}
+                or file_identities != {str(path): input_file_identity(path) for path in pinned}):
+            raise RuntimeError("Build, runtime asset or probe identity changed during measurement")
         browser_log = (output / "browser.log").read_text(errors="replace")
         evidence['native_images'] = verify_native_images(browser_log, binary)
         if any(path not in hashes for path in evidence['native_images'].values()):

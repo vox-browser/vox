@@ -64,7 +64,14 @@ class PreciseScrollTests(unittest.TestCase):
                     measure_precise_scroll.main()
                 launch.assert_not_called()
 
-    def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False, capture_faults=False):
+    def test_worker_change_invalidates_completed_measurement(self):
+        self.check_isolated_launch(False, mutate_worker=True)
+
+    def test_worker_change_and_restore_invalidates_completed_measurement(self):
+        self.check_isolated_launch(False, mutate_worker='restore')
+
+    def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False,
+                              capture_faults=False, mutate_worker=False):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             binary = root / "Vox"
@@ -84,6 +91,8 @@ class PreciseScrollTests(unittest.TestCase):
 
             renderer = binary.parent / 'libLadybirdVSkiaText.dylib'
             renderer.write_bytes(b'fixture renderer')
+            worker = binary.parent / 'VoxAdblockWorker'
+            worker.write_bytes(b'fixture worker')
 
             def launch(command, **kwargs):
                 env = kwargs["env"]
@@ -106,6 +115,10 @@ class PreciseScrollTests(unittest.TestCase):
                 kwargs["stdout"].write(log_for())
                 kwargs["stdout"].write('SCROLL_IMAGE name=libLadybirdVSkiaText.dylib path_hex='
                                        + os.fsencode(renderer).hex() + '\n')
+                if mutate_worker:
+                    worker.write_bytes(b'changed worker')
+                    if mutate_worker == 'restore':
+                        worker.write_bytes(b'fixture worker')
                 return mock.Mock(pid=123, wait=mock.Mock(return_value=0))
 
             arguments = ["probe", "--binary", str(binary), "--output", str(output),
@@ -135,8 +148,18 @@ class PreciseScrollTests(unittest.TestCase):
                                       side_effect=[(1, 2, 3), (4, 5, 6)]), \
                     mock.patch.object(measure_precise_scroll.time, "time", side_effect=[100, 200]), \
                     contextlib.redirect_stdout(io.StringIO()):
-                measure_precise_scroll.main()
+                if mutate_worker:
+                    with self.assertRaisesRegex(RuntimeError, 'identity changed'):
+                        measure_precise_scroll.main()
+                else:
+                    measure_precise_scroll.main()
             evidence = json.loads((output / "run.json").read_text())
+            self.assertEqual(evidence['runtime_input_sha256'][str(worker)],
+                             hashlib.sha256(b'fixture worker').hexdigest())
+            if mutate_worker:
+                self.assertFalse(evidence['valid'])
+                self.assertFalse((output / 'summary.json').exists())
+                return
             self.assertTrue(evidence["valid"])
             self.assertEqual(evidence["diagnostic_only"], v_profile_reset or capture_faults)
             header = Path(measure_precise_scroll.__file__).with_name("precise_scroll_faults.h")
@@ -157,6 +180,42 @@ class PreciseScrollTests(unittest.TestCase):
                              hashlib.sha256(certificate.read_bytes()).hexdigest())
             for name, content in saved.items():
                 self.assertEqual((user_profile / name).read_text(), content)
+
+    def test_runtime_input_selection_pins_the_selected_snapshot_and_checkout_assets(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            binary = root / 'Vox.app/Contents/MacOS/Vox'
+            binary.parent.mkdir(parents=True)
+            worker = binary.parent / 'VoxAdblockWorker'
+            worker.write_bytes(b'worker')
+            checkout = root / 'checkout'
+            adblock = checkout / 'adblock'
+            adblock.mkdir(parents=True)
+            for name in ['engine.js.gz', 'engine.snapshot.bin', 'engine.snapshot.json.gz']:
+                (adblock / name).write_bytes(name.encode())
+            stylesheet = checkout / 'css/ua_default.css'
+            stylesheet.parent.mkdir()
+            stylesheet.write_text('body{}')
+            resource = binary.parent.parent / 'Resources/adblock.snapshot.bin'
+            resource.parent.mkdir()
+            resource.write_bytes(b'bundled payload')
+            inputs = measure_precise_scroll.runtime_input_paths(binary, {}, checkout)
+            self.assertEqual(set(inputs), {worker, resource, stylesheet,
+                                           adblock / 'engine.js.gz', adblock / 'engine.snapshot.json.gz'})
+            resource.unlink()
+            inputs = measure_precise_scroll.runtime_input_paths(binary, {}, checkout)
+            self.assertIn(adblock / 'engine.snapshot.bin', inputs)
+            selected = root / 'selected'
+            selected.mkdir()
+            for name in ['engine.js.gz', 'engine.snapshot.bin', 'engine.snapshot.json.gz']:
+                (selected / name).write_bytes(b'selected')
+            inputs = measure_precise_scroll.runtime_input_paths(
+                binary, {'VOX_ADBLOCK_ENGINE_ASSETS': str(selected)}, checkout)
+            self.assertEqual(set(inputs), {worker, stylesheet, *selected.iterdir()})
+            (selected / 'engine.snapshot.bin').unlink()
+            with self.assertRaisesRegex(ValueError, 'Missing selected adblock runtime asset'):
+                measure_precise_scroll.runtime_input_paths(
+                    binary, {'VOX_ADBLOCK_ENGINE_ASSETS': str(selected)}, checkout)
 
     def test_native_images_reject_shared_paths_missing_records_and_malformed_paths(self):
         binary = Path('/tmp/selected bundle/Vox')
