@@ -81,24 +81,41 @@ def enqueue(root, background=True):
 
 def repository_state(root):
     digest = hashlib.sha256()
+    build_digest = hashlib.sha256()
     names = git(root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard').split(b'\0')
     for name in sorted(set(names) - {b''}):
         relative = os.fsdecode(name)
         if relative.endswith('.swp') or '.v3cc.' in relative:
             continue
         path = root / relative
-        digest.update(name + b'\0')
+        # Keep the full repository receipt, but publication depends on inputs
+        # consumed by the build. Site reports and agent instructions are not
+        # compiler, resource, packaging, or helper inputs.
+        production_input = not (relative.startswith('docs/') or relative in {
+            'AGENTS.md', 'OPTIMIZED_SITES.md'})
+        def update(data):
+            digest.update(data)
+            if production_input:
+                build_digest.update(data)
+        update(name + b'\0')
         if path.is_symlink():
-            digest.update(os.fsencode(os.readlink(path)))
+            update(os.fsencode(os.readlink(path)))
         elif path.is_file():
             with path.open('rb') as file:
                 for block in iter(lambda: file.read(1024 * 1024), b''):
-                    digest.update(block)
+                    update(block)
         else:
-            digest.update(b'missing')
+            update(b'missing')
     return dict(head=git(root, 'rev-parse', 'HEAD').decode().strip(),
                 repository_sha256=digest.hexdigest(),
+                build_inputs_sha256=build_digest.hexdigest(),
                 dirty=bool(git(root, 'status', '--porcelain')))
+
+
+def same_build_inputs(before, after):
+    if 'build_inputs_sha256' in before and 'build_inputs_sha256' in after:
+        return before['build_inputs_sha256'] == after['build_inputs_sha256']
+    return before == after
 
 
 def exchange_directories(source, target):
@@ -175,12 +192,13 @@ def build_pending(root, runner=run_build, foreground=False):
                     print('Production build failed; previous bundle retained. See ' + str(receipt), flush=True)
                     with lock(state / 'queue.lock'):
                         latest = json.loads((state / 'request.json').read_text())
-                        if latest['id'] != request['id'] or repository_state(root) != before:
+                        if latest['id'] != request['id'] or not same_build_inputs(repository_state(root), before):
                             continue
                         fcntl.flock(build_lock, fcntl.LOCK_UN)
                         return code
                 after = repository_state(root)
-                if before != after:
+                record['verified_inputs'] = after
+                if not same_build_inputs(before, after):
                     record['superseded'] = True
                     write_json(receipt / 'result.json', record)
                     continue
@@ -195,7 +213,7 @@ def build_pending(root, runner=run_build, foreground=False):
             # the final request check and unlock cannot lose its wake-up.
             with lock(state / 'queue.lock'):
                 latest = json.loads((state / 'request.json').read_text())
-                if latest['id'] == request['id'] or repository_state(root) == after:
+                if latest['id'] == request['id'] or same_build_inputs(repository_state(root), after):
                     fcntl.flock(build_lock, fcntl.LOCK_UN)
                     print('Published canonical production browser: ' + before['head'], flush=True)
                     return 0

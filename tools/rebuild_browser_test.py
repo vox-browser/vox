@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 from types import SimpleNamespace
 import tempfile
 import unittest
@@ -9,6 +10,53 @@ import rebuild_browser as build
 
 
 class ProductionBuildTests(unittest.TestCase):
+    def test_repository_receipt_retains_docs_changes_without_invalidating_build_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'docs').mkdir()
+            (root / 'main.v').write_text('module main')
+            (root / 'resource.bin').write_bytes(b'engine resource')
+            (root / 'docs/report.json').write_text('first report')
+            def git(repo, *args):
+                if args[0] == 'ls-files': return b'main.v\0docs/report.json\0resource.bin\0'
+                if args[0] == 'rev-parse': return b'head'
+                return b' M docs/report.json'
+            with patch.object(build, 'git', side_effect=git):
+                before = build.repository_state(root)
+                (root / 'docs/report.json').write_text('updated evidence')
+                after = build.repository_state(root)
+                self.assertNotEqual(before['repository_sha256'], after['repository_sha256'])
+                self.assertTrue(build.same_build_inputs(before, after))
+                (root / 'resource.bin').write_bytes(b'changed engine resource')
+                resource_change = build.repository_state(root)
+                self.assertFalse(build.same_build_inputs(after, resource_change))
+                (root / 'main.v').write_text('module main\nfn main() {}')
+                self.assertFalse(build.same_build_inputs(resource_change, build.repository_state(root)))
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_docs_commit_during_compile_publishes_once_with_both_repository_receipts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = self.app(root / 'Build/v', b'old')
+            request = root / 'Build/production-build/request.json'
+            build.write_json(request, dict(id='one'))
+            calls = []
+            def compile(repo, stage, receipt, environment):
+                calls.append(stage)
+                self.app(stage, b'compiled engine')
+                build.write_json(request, dict(id='docs-commit'))
+                return 0
+            before = dict(head='one', repository_sha256='before-docs', build_inputs_sha256='same')
+            after = dict(head='docs', repository_sha256='after-docs', build_inputs_sha256='same')
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'repository_state', side_effect=[before, after, after]):
+                self.assertEqual(build.build_pending(root, compile), 0)
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(old.read_bytes(), b'compiled engine')
+            receipt = json.loads((root / 'Build/production-build/latest.json').read_text())
+            self.assertEqual(receipt['inputs'], before)
+            self.assertEqual(receipt['verified_inputs'], after)
+
     def app(self, root, contents):
         executable = root / 'Vox.app/Contents/MacOS/Vox'
         executable.parent.mkdir(parents=True)
