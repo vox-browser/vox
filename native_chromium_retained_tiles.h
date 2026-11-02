@@ -254,6 +254,8 @@ class RetainedLayerTileCache {
     using Entries = std::list<Entry>;
     Entries entries_;
     std::unordered_multimap<uint64_t, Entries::iterator> index_;
+    struct Owner { size_t references, cost; };
+    std::unordered_map<SkPicture const*, Owner> owners_;
     size_t bytes_ = 0;
     static uint64_t hash(std::vector<uint8_t> const& key)
     {
@@ -262,7 +264,7 @@ class RetainedLayerTileCache {
         return value;
     }
 public:
-    void clear() { index_.clear(); entries_.clear(); bytes_ = 0; }
+    void clear() { index_.clear(); entries_.clear(); owners_.clear(); bytes_ = 0; }
     std::shared_ptr<RetainedLayerTilePixels const> find(std::vector<uint8_t> const& key)
     {
         auto candidates = index_.equal_range(hash(key));
@@ -276,16 +278,30 @@ public:
     void insert(std::vector<uint8_t> key, std::shared_ptr<RetainedLayerTilePixels const> pixels,
         sk_sp<SkPicture> owner, size_t resources)
     {
-        size_t cost = key.capacity() + pixels->pixels.size() + owner->approximateBytesUsed() + resources;
+        if (!owner || !pixels) return;
+        size_t cost = key.capacity() + pixels->pixels.size();
+        size_t owner_cost = owner->approximateBytesUsed() + resources;
         constexpr size_t limit = 64 * 1024 * 1024;
-        if (cost > limit / 2) return;
-        while (!entries_.empty() && (bytes_ + cost > limit || entries_.size() >= 2048)) {
+        if (cost > limit / 2 || owner_cost > limit / 2 - cost) return;
+        // Tile entries share one immutable picture and its image/typeface
+        // resources. Charge that retained ownership once, while retaining a
+        // strong reference for every entry that uses resource IDs in its key.
+        auto additional = [&] { return cost + (owners_.count(owner.get()) ? 0 : owner_cost); };
+        while (!entries_.empty() && (bytes_ + additional() > limit || entries_.size() >= 2048)) {
             auto last = std::prev(entries_.end());
             auto candidates = index_.equal_range(last->hash);
             for (auto it = candidates.first; it != candidates.second; ++it)
                 if (it->second == last) { index_.erase(it); break; }
+            auto resource = owners_.find(last->owner.get());
+            if (--resource->second.references == 0) {
+                bytes_ -= resource->second.cost;
+                owners_.erase(resource);
+            }
             bytes_ -= last->cost; entries_.pop_back();
         }
+        auto [resource, inserted] = owners_.try_emplace(owner.get(), Owner {0, owner_cost});
+        if (inserted) bytes_ += owner_cost;
+        ++resource->second.references;
         auto value = hash(key);
         bytes_ += cost; entries_.push_front({value, std::move(key), std::move(pixels), std::move(owner), cost});
         index_.emplace(value, entries_.begin());

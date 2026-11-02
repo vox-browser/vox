@@ -126,6 +126,24 @@ int main()
     cache.clear(); assert(!cache.find(ca.draws[0].key));
     assert(hit->pixels.copy_to(reinterpret_cast<uint8_t*>(decoded.data()), 16, 16, 4));
     assert(decoded[0] == 0x12345678);
+    // Twelve tiles sharing one 16 MiB picture/resource owner fit within the
+    // 64 MiB cache. Charging the same retained owner per tile evicts them.
+    auto shared_pixels = std::make_shared<RetainedLayerTilePixels>(std::vector<uint32_t>(16, 0x12345678), 4, 4);
+    for (uint8_t i = 0; i < 12; ++i)
+        cache.insert({i}, shared_pixels, owner_b, 16 * 1024 * 1024);
+    for (uint8_t i = 0; i < 12; ++i) assert(cache.find({i}));
+    // Independent owners still consume their full resources and evict old
+    // entries. The shared reference returned to a caller survives eviction.
+    auto retained_hit = cache.find({0});
+    for (uint8_t i = 12; i < 20; ++i) {
+        auto distinct = scene(first, SkColorSetRGB(i, 0, 0), false);
+        cache.insert({i}, shared_pixels, distinct, 16 * 1024 * 1024);
+    }
+    assert(!cache.find({0}) && cache.find({19}));
+    assert(retained_hit->pixels.copy_to(reinterpret_cast<uint8_t*>(decoded.data()), 16, 16, 4));
+    assert(decoded[0] == 0x12345678);
+    cache.clear();
+
     // Rendering failures must leave the supplied destination buffer untouched.
     std::vector<uint32_t> target(64, 0x99887766), before = target;
     first.tile_width = first.tile_height = 0;
