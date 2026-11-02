@@ -1375,7 +1375,6 @@ int vox_graphite_draw_shape_region_pixels(VoxGraphitePixelRegion const* region,
 }
 
 #include "native_graphite_shape_batch.h"
-#include "native_graphite_shape_parts_batch.h"
 
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,

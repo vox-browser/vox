@@ -317,16 +317,6 @@ auto graphite_rounded_parts_draw()
     return draw;
 }
 
-auto graphite_shape_parts_batch_draw()
-{
-    static auto draw = [] {
-        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
-        return library ? reinterpret_cast<decltype(&vox_graphite_draw_shape_parts_batch_pixels)>(
-            dlsym(library, "vox_graphite_draw_shape_parts_batch_pixels")) : nullptr;
-    }();
-    return draw;
-}
-
 auto graphite_shape_region_draw()
 {
     static auto draw = [] {
@@ -3570,8 +3560,6 @@ static bool draw_chromium_sparse_layer_rounded(CGContextRef destination, VoxGrap
 }
 
 
-#include "native_chromium_rounded_tile_batch.h"
-
 static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteShape const& shape,
     SkPaint const& paint, RasterRegion const& region, float scale,
     float page_x, float page_y, float scroll_y, float canvas_height)
@@ -3668,9 +3656,7 @@ static bool draw_chromium_sparse_rounded(CGContextRef destination, VoxGraphiteSh
     }
     // Every tile reads the immutable destination, including its shared border;
     // only texels owned by that tile are copied into the staged corner images.
-    bool batched = draw_sparse_rounded_tiles_batch(parts, backdrop, shape, grid,
-        first_x, first_y, fc, lc, fr, lr);
-    if (!batched) for (long row = fr; row <= lr; ++row) for (long column = fc; column <= lc; ++column) {
+    for (long row = fr; row <= lr; ++row) for (long column = fc; column <= lc; ++column) {
         long ox = first_x - column * (grid.width - 2), oy = first_y - row * (grid.height - 2);
         struct Input { int part, left, top, width, height; std::vector<uint32_t> pixels; };
         std::vector<Input> inputs;
