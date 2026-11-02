@@ -11,6 +11,9 @@ import time
 import processmetrics
 import url
 
+const disable_retained_viewport_paint_refresh = os.getenv('VOX_DISABLE_RETAINED_VIEWPORT_PAINT_REFRESH') != ''
+const viewport_paint_refresh_diagnostics = os.getenv('VOX_VIEWPORT_PAINT_REFRESH_DIAGNOSTICS') != ''
+
 enum SVGReferencedResourceKind {
 	mask
 	clip_path
@@ -764,13 +767,51 @@ fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width
 	// transport still has to observe the freshly applied computed values.
 	if build_paint_tree && previous_layout_handle != unsafe { nil }
 		&& mutable_document.layout_engine_handle() == previous_layout_handle && result.needs_repaint {
-		refresh_document_paint_tree(document, mut result, viewport_width, viewport_height)
+		previous_paint_storage := voidptr(result.paint_tree_storage)
+		// Use the same dirty-style handling as paint recording and hit testing.
+		// Rebuilding every box here discards their retained resource snapshots
+		// even for scroll invalidation or a locally refreshable animation.
+		if disable_retained_viewport_paint_refresh {
+			refresh_document_paint_tree(document, mut result, viewport_width, viewport_height)
+		} else {
+			refresh_document_paint_tree_if_needed(mut result)
+			invalidate_scrolled_viewport_relayout_scrollbars(mut result)
+		}
+		if viewport_paint_refresh_diagnostics {
+			eprintln('VOX_VIEWPORT_PAINT_REFRESH native=${previous_paint_storage != unsafe { nil }} reused=${previous_paint_storage == voidptr(result.paint_tree_storage)}')
+		}
 	}
 	return DocumentLayoutResult{
 		root: result.root
 		state: result.state
 		document: result.document
 		paint_tree: result.paint_tree
+	}
+}
+
+// Full snapshot reconstruction rerecords scrollbar endpoints at the current
+// offset. Retain that rounding at this boundary while leaving unrelated box
+// resources and phase commands intact. Ordinary scrolling without relayout
+// keeps its existing live-offset replay behavior.
+fn invalidate_scrolled_viewport_relayout_scrollbars(mut result DocumentLayoutResult) {
+	if !result.paint_phase_cache_valid || result.paint_phase_entry_valid.len != result.paint_order.len {
+		return
+	}
+	for index in 0 .. result.paint_order.len {
+		if !result.paint_phase_entry_valid[index] { continue }
+		box := result.paint_order[index].box
+		overlay := box.overlay or { continue }
+		current := box.current_scroll_offset(overlay)
+		bucket := index * compatibility_paint_phase_count + int(CompatibilityPaintPhase.overlay)
+		mut changed := false
+		for command in result.paint_phase_commands[bucket] {
+			if (command.scrollbar_axis == 'vertical' && command.scrollbar_recorded_scroll_offset != current.y)
+				|| (command.scrollbar_axis == 'horizontal' && command.scrollbar_recorded_scroll_offset != current.x) {
+				changed = true
+				break
+			}
+		}
+		if changed { viewport_invalidate_box_paint_cache(mut result, box) }
 	}
 }
 
