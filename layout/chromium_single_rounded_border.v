@@ -3,6 +3,20 @@ module layout
 import css
 import painting
 
+fn chromium_partial_round_label(border BoxEdges, radii BoxRadii, rect painting.IntRect) bool {
+	if border.top <= 0 || border.top != border.bottom { return false }
+	missing_left := border.left == 0 && border.right == border.top
+	missing_right := border.right == 0 && border.left == border.top
+	if !missing_left && !missing_right { return false }
+	upper := if missing_left { radii.top_right } else { radii.top_left }
+	lower := if missing_left { radii.bottom_right } else { radii.bottom_left }
+	square_upper := if missing_left { radii.top_left } else { radii.top_right }
+	square_lower := if missing_left { radii.bottom_left } else { radii.bottom_right }
+	return upper == lower && upper.x == upper.y && upper.x > border.top
+		&& upper.x * 2 <= rect.height && upper.x <= rect.width
+		&& square_upper == CornerRadius{} && square_lower == CornerRadius{}
+}
+
 // Missing sides prevent Blink's uniform-border fast path. Equal opaque solid
 // sides can still share the exact outer/inner rounded clips, without flattening
 // those curves into the portable border painter's polygonal arcs.
@@ -24,9 +38,13 @@ fn append_chromium_partial_rounded_border(mut commands []PaintCommand, border Bo
 		count++
 	}
 	if count < 2 || count == 4 { return false }
+	// The native player retains each side's clips for square-ended labels,
+	// including the semicircle where opposite corner radii touch.
+	round_label := chromium_partial_round_label(border, radii, rect)
 	for radius in [radii.top_left, radii.top_right, radii.bottom_right, radii.bottom_left] {
-		if radius.x * 2 >= rect.width || radius.y * 2 >= rect.height { return false }
+		if (radius.x * 2 >= rect.width || radius.y * 2 >= rect.height) && !round_label { return false }
 	}
+	color := side_colors[first]
 	commands << PaintCommand{
 		kind: 'paint_partial_rounded_border'
 		x: rect.x
@@ -35,7 +53,14 @@ fn append_chromium_partial_rounded_border(mut commands []PaintCommand, border Bo
 		height: rect.height
 		corner_radii: radii
 		points: widths
-		color: side_colors[first].serialize()
+		color: color.serialize()
+		// Blink's complex-border colors divide the byte channels by 255.
+		// SkColor's reciprocal multiply can differ by one float ULP and
+		// change the final byte where these side clips intersect.
+		srgb_color_data: if round_label {
+			&PaintSRGBColor{color.serialize(), [f64(color.r) / 255, f64(color.g) / 255,
+				f64(color.b) / 255, 1.0]!}
+		} else { unsafe { nil } }
 		opacity: opacity
 	}
 	return true

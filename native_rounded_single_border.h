@@ -63,6 +63,65 @@ inline void vox_draw_rounded_single_border(SkCanvas* canvas, SkRRect const& oute
     inner.setRectRadii(SkRect::MakeLTRB(bounds.left() + left, bounds.top() + top,
         bounds.right() - right, bounds.bottom() - bottom), radii);
     if (mode == 8) {
+        // A square-ended, three-sided rounded label still paints each side
+        // separately in Blink. Its soft missing-side clip and hard corner
+        // miter must keep their order: combining the sides changes outer-edge
+        // coverage even when every visible border has the same opaque color.
+        bool missing_left = left == 0 && top > 0 && top == right && top == bottom;
+        bool missing_right = right == 0 && top > 0 && top == left && top == bottom;
+        auto upper = outer.radii(missing_left ? SkRRect::kUpperRight_Corner : SkRRect::kUpperLeft_Corner);
+        auto lower = outer.radii(missing_left ? SkRRect::kLowerRight_Corner : SkRRect::kLowerLeft_Corner);
+        auto square_upper = outer.radii(missing_left ? SkRRect::kUpperLeft_Corner : SkRRect::kUpperRight_Corner);
+        auto square_lower = outer.radii(missing_left ? SkRRect::kLowerLeft_Corner : SkRRect::kLowerRight_Corner);
+        if ((missing_left || missing_right) && upper == lower && upper.x() == upper.y()
+            && upper.x() > top && upper.x() * 2 <= bounds.height()
+            && upper.x() <= bounds.width() && square_upper.isZero() && square_lower.isZero()) {
+            float l = bounds.left(), r = bounds.right(), t = bounds.top(), b = bounds.bottom();
+            float depth = top + (upper.x() - top) / 2;
+            // Blink extends the miter by 0.1 CSS pixels along its edge. This
+            // keeps the soft missing-side rectangle from clipping its neighbor.
+            constexpr float extension = .1f;
+            SkPathBuilder top_path, bottom_path, end_path;
+            if (missing_left) {
+                top_path.moveTo(l, t).lineTo(l, t + depth)
+                    .lineTo(r - depth + extension, t + depth).lineTo(r + extension, t);
+                bottom_path.moveTo(r + extension, b).lineTo(r - depth + extension, b - depth)
+                    .lineTo(l, b - depth).lineTo(l, b);
+                end_path.moveTo(r, t).lineTo(r - depth, t + depth)
+                    .lineTo(r - depth, b - depth).lineTo(r, b);
+            } else {
+                top_path.moveTo(l - extension, t).lineTo(l + depth - extension, t + depth)
+                    .lineTo(r, t + depth).lineTo(r, t);
+                bottom_path.moveTo(r, b).lineTo(r, b - depth)
+                    .lineTo(l + depth - extension, b - depth).lineTo(l - extension, b);
+                end_path.moveTo(l, b).lineTo(l + depth, b - depth)
+                    .lineTo(l + depth, t + depth).lineTo(l, t);
+            }
+            auto top_clip = SkRect::MakeLTRB(l - (missing_left ? extension : 0), t,
+                r + (missing_right ? extension : 0), t + depth);
+            auto bottom_clip = SkRect::MakeLTRB(top_clip.left(), b - depth, top_clip.right(), b);
+            auto top_miter = top_path.detach(), bottom_miter = bottom_path.detach();
+            canvas->save();
+            canvas->clipRRect(outer, SkClipOp::kIntersect, true);
+            canvas->clipRRect(inner, SkClipOp::kDifference, true);
+            for (int side : {0, 2, 1}) {
+                canvas->save();
+                if (side == 1) {
+                    canvas->clipPath(end_path.detach(), SkClipOp::kIntersect, false);
+                } else {
+                    auto clip = side == 0 ? top_clip : bottom_clip;
+                    auto const& miter = side == 0 ? top_miter : bottom_miter;
+                    bool soft_first = (side == 0) == missing_left;
+                    if (soft_first) canvas->clipRect(clip, SkClipOp::kIntersect, true);
+                    canvas->clipPath(miter, SkClipOp::kIntersect, false);
+                    if (!soft_first) canvas->clipRect(clip, SkClipOp::kIntersect, true);
+                }
+                canvas->drawRect(bounds, paint);
+                canvas->restore();
+            }
+            canvas->restore();
+            return;
+        }
         // All present sides share an opaque solid color. Their union is the
         // border area; one clipped fill avoids seams at adjoining corners.
         canvas->save();
