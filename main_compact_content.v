@@ -108,6 +108,10 @@ fn (mut binding CompactElementQueryBinding) element_state(element &dom.Element) 
 		return json2.Any({'bridgeKey': json2.Any(key)})
 	}
 	binding.materialized[key] = true
+	return binding.initial_element_state(element, key)
+}
+
+fn (binding &CompactElementQueryBinding) initial_element_state(element &dom.Element, key string) json2.Any {
 	parent_key := if parent := element.as_node().parent_element() {
 		binding.keys[voidptr(parent)] or { '' }
 	} else {
@@ -190,11 +194,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		return json2.encode(binding.node_state(node))
 	}
 	if action == 'snapshotStates' {
-		mut states := []json2.Any{}
-		for element in css.query_selector_all(binding.document.as_node(), '*') {
-			states << binding.element_state(element)
-		}
-		return json2.encode(states)
+		return binding.encode_element_states(css.query_selector_all(binding.document.as_node(), '*'))
 	}
 	// A script-created element can remain entirely in the compact realm until
 	// its first insertion. Once materialized, its live native owner also tracks
@@ -322,11 +322,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		// changes, while attribute-only class edits must also be visible here.
 		mut parent := unsafe { &dom.ParentNode(root) }
 		collection := parent.get_elements_by_class_name(selector)
-		mut result := []json2.Any{}
-		for element in collection.collect_matching_elements() {
-			result << binding.element_state(element)
-		}
-		return json2.encode(result)
+		return binding.encode_element_states(collection.collect_matching_elements())
 	}
 	css.install_document_selector_query_hook(binding.document)
 	// Use the DOM entry point for validation, preserving its SyntaxError before
@@ -352,14 +348,14 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		}
 	}
 	if action == 'querySelectorAll' {
-		mut result := []json2.Any{}
 		parent := unsafe { &dom.ParentNode(root) }
 		list := parent.query_selector_all(selector)!
+		mut elements := []&dom.Element{cap: list.nodes.len}
 		for node in list.nodes {
 			element := node.as_element() or { continue }
-			result << binding.element_state(element)
+			elements << element
 		}
-		return json2.encode(result)
+		return binding.encode_element_states(elements)
 	}
 	return error('Invalid selector action')
 }
