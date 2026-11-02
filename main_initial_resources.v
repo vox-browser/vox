@@ -4,6 +4,8 @@ import css
 import dom
 
 fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[string]PreloadedResource {
+	viewport_height := if app.viewport_height > 0 { app.viewport_height } else { initial_height - app.chrome_height() }
+	app.install_viewport_before_style_query(if app.viewport_width > 0 { app.viewport_width } else { initial_width }, viewport_height)
 	app.sync_layout_coordinate_scale()
 	mut cached := app.resource_cache.clone()
 	for resource_url, resource in app.navigation_preloaded_resources {
@@ -11,7 +13,6 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	}
 	// Script and procedural-filter style reads may perform the first layout
 	// during startup. Give them the same viewport as the eventual native frame.
-	viewport_height := if app.viewport_height > 0 { app.viewport_height } else { initial_height - app.chrome_height() }
 	app.document.set_viewport_rect(dom.Rect{
 		width: f64(if app.viewport_width > 0 { app.viewport_width } else { initial_width }) / app.page_zoom
 		height: f64(viewport_height) / app.page_zoom

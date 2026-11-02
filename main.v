@@ -3557,6 +3557,8 @@ fn focus_compact_browser_navigable(document &dom.Document) {
 }
 
 fn (mut app BrowserApp) relayout(window_width int, window_height int) {
+	app.install_viewport_before_style_query(if window_width > 0 { window_width } else { initial_width },
+		if window_height > app.chrome_height() { window_height - app.chrome_height() } else { 1 })
 	if app.initial_layout_pending && app.document != unsafe { nil }
 		&& !app.document.layout_is_up_to_date() && !app.initial_text_fonts_are_loading() {
 		// Loaded metrics can change font selection in the already computed
