@@ -3468,6 +3468,15 @@ fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_ty
 	if app.document == unsafe { nil } || app.page_model == unsafe { nil } {
 		return ChromePointerDispatchResult{}
 	}
+	// Input and timer listeners can have queued compact attribute mutations
+	// since the last draw. Hit testing must consume those effects first.
+	document_before := app.document
+	generation_before := app.navigation_generation
+	app.poll_javascript_tasks()
+	if voidptr(app.document) != voidptr(document_before)
+		|| app.navigation_generation != generation_before {
+		return ChromePointerDispatchResult{}
+	}
 	mut document := unsafe { &dom.Document(app.document) }
 	reason := chrome_pointer_layout_reason(event_type)
 	document.update_layout(reason)
