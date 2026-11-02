@@ -410,7 +410,9 @@
       "observed_peak_rss_bytes": 328187904,
       "elapsed_seconds": 4.996187207999999,
       "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
-    }
+    },
+    "javascript_warmup_broad": "Build/hn-3200-20261102/broad-jit-warmup/result.json",
+    "javascript_warmup_live": "Build/hn-3200-20261102/jit-warmup-live/result.json"
   },
   "file_font_manager": {
     "counts": {
@@ -451,5 +453,151 @@
     "evidence": "Build/hn-3200-20261102/file-font-manager-matched",
     "diagnostic": "Build/hn-3200-20261102/file-font-manager-path",
     "guard": "Build/hn-3200-file-font-manager-matched-guard.json"
+  },
+  "javascript_warmup": {
+    "counts": {
+      "candidate": [
+        3791935156,
+        3752852807,
+        3766921053,
+        3772443077,
+        3779597846,
+        3745523746,
+        3766252280
+      ],
+      "control": [
+        3901094579,
+        3910047900,
+        3900319813,
+        3890196791,
+        3909880087,
+        3891478026,
+        3894035545
+      ]
+    },
+    "maxima": {
+      "candidate": 3791935156,
+      "control": 3910047900
+    },
+    "medians": {
+      "candidate": 3766921053,
+      "control": 3900319813
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "candidate": false,
+      "control": false
+    },
+    "valid": true,
+    "commit": "7558c41c5",
+    "evidence": "Build/hn-3200-20261102/jit-warmup-final",
+    "input_pins": "Build/hn-3200-20261102/jit-warmup-final/inputs.json",
+    "qualification": "Explicit engine option on the older completed executable, with selected native library. Not default acceptance of the new startup setter.",
+    "median_reduction": 133398760,
+    "retained_invalid_attempt": {
+      "evidence": "Build/hn-3200-20261102/jit-warmup-matched",
+      "complete_pairs": 6,
+      "reason": "Pinned-input assertion failed; guard exit 1; not acceptance."
+    },
+    "signed_microdiagnostics": {
+      "inputs": "Build/hn-3200-20261102/jsc-signed-workloads-inputs.json",
+      "results": "Build/hn-3200-20261102/jsc-signed-workloads-results.json",
+      "qualification": "Two repetitions per case/configuration; some cold-loop regressions; no host-load record; no general JavaScript speed claim. Earlier unsigned trials had JIT disabled and are excluded."
+    }
+  },
+  "paint_resource_preparation": {
+    "commit": "ec593de8a",
+    "production_credit": 0,
+    "focused_checks": [
+      "Build/hn-3200-paint-resource-tests-build-guard.json",
+      "Build/hn-3200-paint-resource-tests-run-guard.json",
+      "Build/hn-3200-paint-resource-refresh-build-guard.json",
+      "Build/hn-3200-paint-resource-refresh-run-guard.json"
+    ],
+    "qualification": "Real V focused tests pass; generated-C O0 unsigned prototype shows one rather than two paints, but supplies no production performance credit."
+  },
+  "snapshot_compression": {
+    "commits": [
+      "1f71b0018",
+      "4713441fa"
+    ],
+    "counts": {
+      "control": [
+        266304707,
+        266125699
+      ],
+      "candidate": [
+        210064394,
+        209905238
+      ]
+    },
+    "medians": {
+      "control": 266215203.0,
+      "candidate": 209984816.0
+    },
+    "median_reduction": 56230387.0,
+    "evidence": "Build/hn-3200-20261102/large-snapshot-results",
+    "qualification": "Encoding-only component comparison. No full-browser instruction credit; current production executable lacks new consumer header.",
+    "checks": [
+      "Build/hn-3200-20261102/snapshot-deflate-asan/result.json",
+      "Build/hn-3200-20261102/snapshot-deflate-absent/result.json",
+      "Build/hn-3200-20261102/large-snapshot-results/verification.json"
+    ]
+  },
+  "snapshot_opacity": {
+    "commits": [
+      "2f57c8631"
+    ],
+    "counts": {
+      "control": [
+        213789400,
+        213226595
+      ],
+      "candidate": [
+        197509874,
+        197056368
+      ]
+    },
+    "medians": {
+      "control": 213507997.5,
+      "candidate": 197283121.0
+    },
+    "median_reduction": 16224876.5,
+    "evidence": "Build/hn-3200-20261102/large-block-opacity-v3",
+    "qualification": "Encoding-only component comparison. No full-browser instruction credit; current production executable lacks new consumer header.",
+    "checks": [
+      "Build/hn-3200-20261102/block-opacity-asan/result.json",
+      "Build/hn-3200-20261102/block-opacity-fallback/result.json"
+    ]
+  },
+  "retained_additional_experiments": {
+    "rgba_glyph": "Rejected: changed pixels; patch and failed captures retained at Build/hn-3200-20261102/rejected-rgba-glyph.json",
+    "native_windows": "Generated-C diagnostic prototypes only; no production change or performance credit.",
+    "font_registration": "Diagnostic control/candidate trials only; small inconsistent saving; no production change."
+  },
+  "production_validation_pending": {
+    "latest_receipt": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "0bb14e2f940d1ee83a4a57f48179ab40fb3ecf71aa8b7331f199676792ab6974",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "957400908dd63a5c454797fc199588b1d1496a8a51fc5b3dc8cada4159bc9778",
+        "dirty": true,
+        "head": "7669d7a29f8a18ddfead3c4da677099de31b2bb0",
+        "repository_sha256": "f511a18f0e10aac8d3dfd0b0d9695de52acee7b42ebafe5fe85d33bf084738be"
+      },
+      "request": {
+        "head": "7669d7a29f8a18ddfead3c4da677099de31b2bb0",
+        "id": "279041d4e3db4d418fa6b24eefe9a175"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "957400908dd63a5c454797fc199588b1d1496a8a51fc5b3dc8cada4159bc9778",
+        "dirty": true,
+        "head": "1995e261fda433ac497c8753fe9ac991f710afe4",
+        "repository_sha256": "5792bfc853713ad69ccecb6dbcdef9e36189823b84fd07d994657695ba894c93"
+      }
+    },
+    "reason": "Shared source changes repeatedly supersede completed compilations. Older bundle lacks prefetch/startup setter/PNG consumer. No duplicate production build queued.",
+    "guard_receipt": "Build/production-build/receipts/20261103-003723-c2c7eca2/result.json"
   }
 }

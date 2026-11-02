@@ -68,11 +68,11 @@ Raw commands, pins, every attempt, PNGs, counters and audits remain in
 Other experiments remain diagnostic: an empty CoreText collection crashed and
 was rejected; direct file-face loading saved instructions in a microbenchmark
 but has no retained implementation. Apple compression and PNG Sub/RLE variants
-were slower. A libdeflate microbenchmark is not integrated. JIT-option trials
-are separate configurations, have only two pairs, and do not change production
-settings. The first JIT attempt failed argument validation and the second
-rejected ambient proxies before launch; both are retained. No 3.2B acceptance,
-new rendering-reference tolerance or engine-policy change is claimed.
+were slower. The later libdeflate integration and JIT warm-up cohort are
+documented below; their earlier exploratory trials remain separate evidence.
+The first JIT attempt failed argument validation and the second
+rejected ambient proxies before launch; both are retained. Those exploratory
+runs supplied no 3.2B acceptance or justification for changing pixel tolerances.
 
 ## Aligned borders and small opaque SVG polygons
 
@@ -145,3 +145,96 @@ failed attempt. Evidence is under `file-font-manager-matched/`,
 `file-font-manager-path/`, `broad-file-font-manager/` and
 `file-font-manager-checks/`. The shared production build remains pending;
 these are native-library override results and do not meet the 3.2B criterion.
+
+## Earlier background requests
+
+Commit `ec593de8a` starts unresolved root background-image requests while
+preparing the existing display list. It uses the existing asynchronous loader,
+cache and pending-request deduplication. Resolved SVG snapshots, nested-document
+commands, empty bounds and non-HTTP URLs retain their existing paths. It does
+not wait for resources or extend the capture settle period.
+
+The focused preparation tests and existing background-refresh tests pass with
+current V, including cached/pending request ownership and SVG snapshot refresh.
+A generated-C diagnostic prototype reduces native document paints from two to
+one while retaining exact pixels/content. Its O0, initially unsigned executable
+does not establish production performance: no instruction reduction is credited
+to this change until a completed production build exercises the actual V code.
+Evidence includes `early-paint-{control,candidate}-{1,2}/` and the
+`hn-3200-paint-resource-{tests,refresh}-{build,run}` guard receipts in `Build/`.
+
+## JavaScript warm-up
+
+Commit `7558c41c5` sets the macOS JSC baseline warm-up threshold to 5,000 before
+the first VM, preserving any explicit caller value. Baseline, DFG and other JIT
+tiers remain enabled. The signed focused test creates a real JavaScript context,
+executes a loop and verifies caller-option preservation. Separate runtime-option
+diagnostics verify `useJIT=true`, `useBaselineJIT=true`, `useDFGJIT=true` and the
+selected threshold; original page scripts still execute without errors.
+
+Seven alternating matched pairs, with the completed `0bb14e2f…` executable and
+the selected font-manager library, compare explicit thresholds 500 and 5,000.
+Median instructions fall from **3,900,319,813** to **3,766,921,053**, a
+**133,398,760** difference. Candidate maximum is **3,791,935,156**. Every pair
+improves, and all fourteen captures pass exact pixels/content, ownership and
+exit checks. All 21 rendering regressions and a fresh live HTTPS load pass with
+the same option. The first seven-pair attempt ended after six pairs when a
+pinned input changed; it remains invalid and retained, without sample exclusion.
+
+This tuning prioritizes startup work. Signed arithmetic/call/JSON/RegExp/typed
+array diagnostics retain small cold-execution regressions: for example, the
+two-run arithmetic median rises about 3.5 million instructions (10.75%). These
+component trials have only two repetitions and no host-load record, so they
+cannot support a general JavaScript speed claim. An earlier unsigned diagnostic
+had JIT disabled by macOS and is explicitly excluded from tuning evidence.
+Neither disabling JIT tiers nor changing author-script policy is shipped.
+
+The matched explicit-option cohort is not default acceptance of the new V
+startup setter. Its production validation remains pending. Raw evidence is in
+`jit-warmup-final/`, `jit-warmup-matched/`, `jit-warmup-proof/`,
+`broad-jit-warmup/`, `jit-warmup-live/`, the signed workload JSON files and the
+`hn-3200-javascript-startup-{build,run}` guards.
+
+## Lossless PNG work
+
+Commits `1f71b0018` and `4713441fa` build pinned libdeflate 1.24 and expose a
+bounded level-one zlib service from the native renderer. The existing PNG
+encoder uses it when available and retains its original zlib fallback on any
+failure. RGBA scanlines, PNG color type, profile, density and Exif metadata are
+unchanged. The archive/source hashes and dependency build receipt are checked;
+the MIT license is included in the app, and libdeflate symbols remain private.
+
+ARC and non-ARC tests pass 270 exact pixel/profile/density/metadata comparisons,
+including zlib and Cocoa fallbacks. They also pass AddressSanitizer and
+UndefinedBehaviorSanitizer. A separate absent-library run passes. Four fresh
+encodings of the real 2048×1536 capture reduce the encoding-only median from
+**266,215,203** to **209,984,816**, a **56,230,387** difference. All four decoded
+scanline streams and non-IDAT chunks are identical; output shrinks from 464,118
+to 370,199 bytes. This component result is not full-browser credit.
+
+Commit `2f57c8631` checks opaque alpha in bounded sixteen-pixel blocks with
+unaligned-safe loads and a scalar tail. Every alpha position at widths 1–65,
+three heights, eight alignments and eight padded strides is tested, including
+overflow/invalid inputs and sanitizer runs. Any translucent pixel retains the
+ordinary encoder. The component scan falls from about 18.9M to 3.0M instructions.
+Four complete encodings with identical PNG bytes reduce the median by another
+**16,224,876.5** instructions. This also awaits full-browser validation.
+
+Evidence includes `snapshot-deflate-{asan,absent}/`, `large-snapshot-results/`,
+`block-opacity-{asan,fallback}/` and `large-block-opacity-v3/`. The initial opacity
+measurement failed dependency resolution before sampling; its log is retained.
+An intermediate successful component run pinned fewer dependency paths and is
+retained separately from the final run with upstream library identities.
+
+An RGBA glyph-scratch experiment changed reference pixels and was removed;
+`rejected-rgba-glyph.patch` and its failed captures remain. Redundant native
+window, Cocoa-host and font-registration prototypes supplied insufficient gains
+and have no retained production implementation. No pixel tolerance was changed.
+
+The shared publisher still has no completed production bundle newer than
+`0bb14e2f…`: source changes repeatedly supersede successful compilations, with
+additional retained shell-read failures before the separate build-script fix.
+The available older bundle supplies the explicit-option/native-library evidence
+above but cannot validate the new prefetch, startup setter or PNG consumer.
+No duplicate production build is queued by this session. The **3.2B target
+remains open**; component savings are not added to fabricate a production count.
