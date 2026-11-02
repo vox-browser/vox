@@ -3252,3 +3252,82 @@ fixed references, rendering/script limits and broad failures remain retained.
 The local [SVG evidence](benchmark-results/bbc-simple-svg-2026-11-02.json) links
 the source proofs, focused checks, failed preparations, standalone diagnostics
 and pending canonical runners under `Build/bbc-simple-svg-20261102/`.
+
+
+## Fixed-point box edges, pending full-browser comparison (2026-11-03)
+
+Commit `40ab612bd` resolves a box's padding, border and margin from one typed
+style snapshot. It keeps each result in CSSPixels instead of dispatching twelve
+individual properties and converting fixed point to double and back. Absolute
+lengths retain the document rounding policy; percentages keep the same rounded
+containing-block basis. Relative units and calculations retain their live font,
+viewport and query-container context. No result or context is cached. Commit
+`1ef435aee` adds an isolated same-binary control for the previous resolver.
+
+All **12 CSS cases pass in both policies in default, no-GC and preallocated
+modes: 72 case executions**. The four new cases cover fractional and saturated
+absolute values, auto and negative margins, percentage bases, live relative
+units/calculations, animation removal, style copies and both document rounding
+policies. A separate 15-case layout selection runs in all six configurations:
+84 executions pass and six fail. Every failure is the same existing trailing
+collapsed-margin root-height check, **40 instead of 60**, with both resolvers.
+This selection is not a whole-suite pass and does not reset broad cadence.
+The instruction-tool selection passes all **237 tests**.
+
+The first fixture preparation passed an optional pointer expression directly
+as an argument; the generated code addressed option storage and crashed.
+Explicit local parsed values correct the fixture. Both original crashes,
+compile/debug receipts and a premature missing-binary launch remain retained.
+The final focused runtime checks use separate 3 GiB guards after successful
+12 GiB guarded compilations. The compiler paths and feature inputs are hashed
+in the focused receipt.
+
+A separate C-O3/preallocated microbenchmark compares 400,000 complete edge
+resolutions per process across **seven alternating pairs**. Control median is
+**481,519,372 instructions**; candidate median is **316,443,301**, a **34.2823%**
+reduction. Every native/guard exit is zero, source hashes remain unchanged and
+all checksums equal 690,435,400. These process deltas cover the loop and checksum
+but exclude startup and style setup in both arms. The six scalar styles have
+no page, scripts, resources, paint or PNG; this is **not BBC instruction credit**.
+
+A C-O3/no-GC standalone frozen-HTML diagnostic separately exercises the width,
+SVG and edge paths. Its logged witness enables all three markers. Ten quiet
+fresh processes retain two trials per configuration: all three enabled, all
+three disabled, and each enabled alone. All eleven processes exit zero and
+retain 2,854 nodes, 902 lines, checksum 110,113,314 and the same paint-dump hash
+`0b6eb34d7450e29a30f2e8d29ca9a07ff183bb30501146649e04b14e65e1635a`.
+For all-enabled/all-disabled, first-layout medians are
+2,858,301,537 / 2,891,863,491.5 instructions, and second-layout medians are
+228,245,710 / 241,596,248.5. These layout-only process deltas have no author
+scripts or resource replay, use layout scale 2, and do not establish browser
+capture costs, PNG conformance or live-site gains.
+
+A fifth full-browser workflow diagnostic groups C API call entries by their
+captured function source. React scheduler callbacks dominate those entries;
+their totals still include native callbacks, layout, background instructions
+and instrumentation. Its native process exits zero, complete BBC content and
+original pixels pass independently, and runtime identities stay unchanged.
+Exclusive capture ownership fails again, so its driver/guard exit is 1 and
+it supplies no selected instruction interval. Truncated descriptions, unrooted
+function identities and one-time source inspection further limit attribution.
+
+The next production diagnostic checks all three paths after navigation and
+before encoded PNG, plus actual JSC execution, content, original pixels,
+ownership and normal exit. Its control disables all three. The prepared
+seven-triple unprofiled cohort retains the original launch-to-encoded-capture
+protocol, historical RGB policy, fixed bytes/references and adoption-aware
+memory guard. Startup, eleven smoke captures and eight SVG guards are prepared
+for the same pinned bundle. No app bundle or repository tool is copied.
+
+The latest completed production executable remains `0bb14e2f…` at this
+checkpoint. Shared builds have encountered an edited shell script's parse
+failure and subsequent source drift; current script syntax passes, and the
+existing worker continues. Its next matching completed bundle is required;
+the old bundle cannot validate these changes. The two earlier SVG readiness
+observers timed out and retain their actual failures. No duplicate production
+build is queued. **No new cohort, BBC catalog entry, instruction credit or
+broad-check reset is claimed; the 10% target remains open.** Local
+[edge-resolution evidence](benchmark-results/bbc-box-edges-2026-11-03.json)
+links raw controls, all failures, process counters, commands, host telemetry,
+source proofs and pending runners under `Build/bbc-box-edges-20261103/`.
+The bridge probe is retained under `Build/bbc-bridge-calls-20261103/`.
