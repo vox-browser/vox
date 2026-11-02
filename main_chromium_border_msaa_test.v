@@ -32,3 +32,18 @@ fn test_circular_and_square_uniform_borders_keep_analytic_tile_coverage() {
 		assert chromium_msaa_triggers([command]).len == 0
 	}
 }
+
+fn test_partial_rounded_border_clips_share_the_parent_tile_msaa_mode() {
+	command := layout.PaintCommand{
+		kind: 'paint_partial_rounded_border'
+		x: 701
+		y: 92
+		width: 298
+		height: 560
+		points: [0.0, 1.0, 1.0, 1.0]
+		corner_radii: layout.BoxRadii{layout.CornerRadius{}, layout.CornerRadius{10,10}, layout.CornerRadius{}, layout.CornerRadius{10,10}}
+	}
+	triggers := chromium_msaa_triggers([command])
+	assert triggers.len == 1
+	assert chromium_msaa_tiles_for_triggers(triggers, 0, 1, 256) == [0, 1, 2]
+}

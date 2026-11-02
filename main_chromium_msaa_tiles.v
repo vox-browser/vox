@@ -165,7 +165,7 @@ fn chromium_msaa_trigger_rect_with_transform(command &layout.PaintCommand,
 			return transformed_raster_bounds(transform, command.x - outset,
 				command.y - outset, command.width + outset * 2, command.height + outset * 2)
 		}
-		'paint_rounded_border_top', 'paint_rounded_border_right', 'paint_rounded_border_bottom', 'paint_rounded_border_left' {
+		'paint_rounded_border_top', 'paint_rounded_border_right', 'paint_rounded_border_bottom', 'paint_rounded_border_left', 'paint_partial_rounded_border' {
 			// A single rounded side is filled through intersecting outer and
 			// inner clips (and corner miters), requiring a multisampled pass.
 			return transformed_raster_bounds(transform, command.x, command.y,

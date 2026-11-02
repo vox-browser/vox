@@ -13,6 +13,11 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_partial_rounded_borders_keep_curves_in_analytic_and_msaa_tiles(self):
+        for name in ['chromium-partial-rounded-border', 'chromium-partial-rounded-border-msaa']:
+            with self.subTest(case=name):
+                self.compare_fixture(name, width=1024, height=768)
+
     def test_automatic_svg_width_uses_the_quantized_ratio_height(self):
         self.compare_fixture('svg-auto-ratio-rounding', width=1024, height=768)
 

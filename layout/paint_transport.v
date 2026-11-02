@@ -4945,6 +4945,10 @@ fn append_translated_border_commands(mut commands []PaintCommand, border BoxEdge
 		set_force_dark_role_for_range(mut commands, start, commands.len, .border)
 		return
 	}
+	if chromium && append_chromium_partial_rounded_border(mut commands, border, colors, styles, radii, rect, opacity) {
+		set_force_dark_role_for_range(mut commands, start, commands.len, .border)
+		return
+	}
 	for display_command in painting.paint_all_borders(rect, painting_radii_from_transport(radii), painting_borders_from_transport(border, colors, styles)) {
 		append_painting_display_command(mut commands, display_command, opacity)
 	}

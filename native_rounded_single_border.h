@@ -62,6 +62,16 @@ inline void vox_draw_rounded_single_border(SkCanvas* canvas, SkRRect const& oute
     SkRRect inner;
     inner.setRectRadii(SkRect::MakeLTRB(bounds.left() + left, bounds.top() + top,
         bounds.right() - right, bounds.bottom() - bottom), radii);
+    if (mode == 8) {
+        // All present sides share an opaque solid color. Their union is the
+        // border area; one clipped fill avoids seams at adjoining corners.
+        canvas->save();
+        canvas->clipRRect(outer, SkClipOp::kIntersect, true);
+        canvas->clipRRect(inner, SkClipOp::kDifference, true);
+        canvas->drawRect(bounds, paint);
+        canvas->restore();
+        return;
+    }
     canvas->save();
     if (background) {
         canvas->clipRRect(outer, SkClipOp::kIntersect, true);

@@ -124,7 +124,7 @@ fn chromium_shared_recording_leaf_supported(command &layout.PaintCommand) (bool,
 		'fill_ellipse', 'stroke_ellipse', 'draw_text', 'draw_replaced_image', 'draw_svg_image' {
 		}
 		'paint_rounded_border_top', 'paint_rounded_border_right', 'paint_rounded_border_bottom',
-		'paint_rounded_border_left' {
+		'paint_rounded_border_left', 'paint_partial_rounded_border' {
 			// The rounded-rectangle bridge records these four side widths in
 			// the same picture as the background and any SVG contents.
 			if command.points.len != 4 { return false, false }

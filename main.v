@@ -6182,7 +6182,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			if top > 0 { draw_srgb_rect(app.ctx, x, y, w, top, fill) }
 			if bottom > 0 { draw_srgb_rect(app.ctx, x, y + h - bottom, w, bottom, fill) }
 		}
-		'paint_rounded_border_top', 'paint_rounded_border_right', 'paint_rounded_border_bottom', 'paint_rounded_border_left' {
+		'paint_rounded_border_top', 'paint_rounded_border_right', 'paint_rounded_border_bottom', 'paint_rounded_border_left', 'paint_partial_rounded_border' {
 			$if macos {
 				if app.ctx.native_rendering && C.native_rounded_rect_underlay_supported() != 0 {
 					r := command.corner_radii

@@ -53,7 +53,8 @@ typedef struct {
     uint8_t red, green, blue, alpha;
     // fill: 0 stroke, 1 fill, 2..5 a single top/right/bottom/left border,
     // 6 a uniform elliptical ring (center rectangle, border_widths[0]),
-    // 7 a uniform ring sharing its outer clip layer with the background.
+    // 7 a uniform ring sharing its outer clip layer with the background,
+    // 8 equal opaque solid sides with some zero-width sides (outer rectangle).
     int fill, anti_alias;
     // Multisample the render pass, as Chromium does for a raster tile once any
     // draw in it needs MSAA.
@@ -70,7 +71,7 @@ typedef struct {
     uint8_t underlay_rgba[4];
     int has_float_color;
     float float_color[4];
-    // Used by modes 2..5, including geometrically present transparent sides.
+    // Used by modes 2..5 and 8, including present transparent sides in 2..5.
     float border_widths[4];
     int has_float_underlay_color;
     float underlay_float_color[4];

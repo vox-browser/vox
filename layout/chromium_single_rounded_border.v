@@ -3,6 +3,44 @@ module layout
 import css
 import painting
 
+// Missing sides prevent Blink's uniform-border fast path. Equal opaque solid
+// sides can still share the exact outer/inner rounded clips, without flattening
+// those curves into the portable border painter's polygonal arcs.
+fn append_chromium_partial_rounded_border(mut commands []PaintCommand, border BoxEdges,
+	colors BoxColors, styles BoxBorderStyles, radii BoxRadii, rect painting.IntRect,
+	opacity f64) bool {
+	if box_radii_are_zero(radii) { return false }
+	widths := [border.top, border.right, border.bottom, border.left]
+	side_styles := [styles.top, styles.right, styles.bottom, styles.left]
+	side_colors := [colors.top, colors.right, colors.bottom, colors.left]
+	mut first := -1
+	mut count := 0
+	for side, width in widths {
+		if width <= 0 { continue }
+		if side_styles[side] != .solid || side_colors[side].a != 255
+			|| width * 2 >= rect.width || width * 2 >= rect.height { return false }
+		if first >= 0 && side_colors[side] != side_colors[first] { return false }
+		first = side
+		count++
+	}
+	if count < 2 || count == 4 { return false }
+	for radius in [radii.top_left, radii.top_right, radii.bottom_right, radii.bottom_left] {
+		if radius.x * 2 >= rect.width || radius.y * 2 >= rect.height { return false }
+	}
+	commands << PaintCommand{
+		kind: 'paint_partial_rounded_border'
+		x: rect.x
+		y: rect.y
+		width: rect.width
+		height: rect.height
+		corner_radii: radii
+		points: widths
+		color: side_colors[first].serialize()
+		opacity: opacity
+	}
+	return true
+}
+
 // Blink fills a single solid rounded side through its outer and inner rrect
 // clips. A cubic path around the border has different GPU corner coverage.
 fn append_chromium_single_rounded_border(mut commands []PaintCommand, border BoxEdges,
@@ -52,6 +90,7 @@ pub fn rounded_single_border_mode(kind string) int {
 		'paint_rounded_border_right' { 3 }
 		'paint_rounded_border_bottom' { 4 }
 		'paint_rounded_border_left' { 5 }
+		'paint_partial_rounded_border' { 8 }
 		else { 0 }
 	}
 }
@@ -123,10 +162,10 @@ pub fn rounded_single_border_fallback(command PaintCommand) []PaintCommand {
 	}
 	color := css.parse_color_string(command.color) or { return []PaintCommand{} }
 	colors := BoxColors{
-		top:    if mode == 2 { color } else { css.Color{ a: 0 } }
-		right:  if mode == 3 { color } else { css.Color{ a: 0 } }
-		bottom: if mode == 4 { color } else { css.Color{ a: 0 } }
-		left:   if mode == 5 { color } else { css.Color{ a: 0 } }
+		top:    if mode == 2 || mode == 8 { color } else { css.Color{ a: 0 } }
+		right:  if mode == 3 || mode == 8 { color } else { css.Color{ a: 0 } }
+		bottom: if mode == 4 || mode == 8 { color } else { css.Color{ a: 0 } }
+		left:   if mode == 5 || mode == 8 { color } else { css.Color{ a: 0 } }
 	}
 	mut commands := []PaintCommand{}
 	append_translated_border_commands(mut commands, border, colors,
