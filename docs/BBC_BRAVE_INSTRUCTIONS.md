@@ -53,7 +53,7 @@ or live site acceptance. Earlier invalid captures, protocol corrections,
 failing cohorts and their outliers remain retained.
 
 The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 1,117 attempts and 45 cohorts, including failures and first launches;
+retains 1,118 attempts and 45 cohorts, including failures and first launches;
 931 complete cohort raw results were independently checked against the recorded
 vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
 PNGs, executable copies, PID registries, compiler output and guard receipts are
@@ -2378,3 +2378,14 @@ frozen tools, diagnostics, commands, counters, PNGs, host conditions and actual
 exits remain linked from the evidence. This remains the historical RGB frozen
 workload, with no current-default or live-site acceptance. The requested 10%
 advantage stays open and BBC has no catalog entry.
+
+A subsequent sampled launch also preserves original pixels, content and native
+exit 0; the sampler exits 0. Its stacks mostly cover idle waits, capture audit
+and teardown, so they supply no startup or text-layout CPU attribution. The
+prior O2 JavaScript-target diagnostic records 35 document `querySelectorAll`
+calls at 81,233,149 process instructions and six `querySelector` calls at
+387,413. These observations justify no new cache or instruction credit. No
+additional engine change follows. This retained attempt brings the total to
+1,118, with the 45-cohort/931-raw-record checks unchanged. See
+`post-empty-procedural-profile-assessment.json` and linked raw sample,
+commands, identities and guard receipts under the evidence root.
