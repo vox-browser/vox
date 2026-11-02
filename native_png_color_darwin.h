@@ -14,7 +14,7 @@
 // red, green, blue and white x/y chromaticities.
 typedef VoxImageColorProfile VoxPngColorProfile;
 
-static uint32_t native_png_read_u32(const uint8_t *bytes)
+static uint32_t native_png_color_read_u32(const uint8_t *bytes)
 {
     return ((uint32_t)bytes[0] << 24) | ((uint32_t)bytes[1] << 16)
         | ((uint32_t)bytes[2] << 8) | bytes[3];
@@ -32,7 +32,7 @@ static int native_png_color_profile(const uint8_t *bytes, size_t length, VoxPngC
     float chrm[8];
     size_t offset = 8;
     while (offset + 12 <= length) {
-        uint32_t chunk_length = native_png_read_u32(bytes + offset);
+        uint32_t chunk_length = native_png_color_read_u32(bytes + offset);
         const uint8_t *type = bytes + offset + 4;
         const uint8_t *data = bytes + offset + 8;
         if (chunk_length > length - offset - 12) break;
@@ -40,13 +40,13 @@ static int native_png_color_profile(const uint8_t *bytes, size_t length, VoxPngC
         if (!memcmp(type, "cICP", 4) || !memcmp(type, "iCCP", 4) || !memcmp(type, "sRGB", 4))
             return 0;
         if (!memcmp(type, "gAMA", 4) && chunk_length == 4) {
-            gamma = native_png_read_u32(data) / 100000.0f;
+            gamma = native_png_color_read_u32(data) / 100000.0f;
             has_gamma = 1;
         }
         if (!memcmp(type, "cHRM", 4) && chunk_length == 32) {
             // The chunk orders white, red, green and blue.
             for (int index = 0; index < 8; ++index)
-                chrm[index] = native_png_read_u32(data + 4 * index) / 100000.0f;
+                chrm[index] = native_png_color_read_u32(data + 4 * index) / 100000.0f;
             has_chrm = 1;
         }
         offset += 12 + chunk_length;

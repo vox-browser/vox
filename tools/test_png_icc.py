@@ -98,6 +98,11 @@ def main():
     skia = upstream / 'Build/release/vcpkg_installed' / triplet
     native = output / 'native_skia_image_color_profile_test'
     cache = output / 'native_graphite_raster_cache_test'
+    headers = output / 'native_png_headers_test'
+    headers_compile = ['clang', '-fobjc-arc', '-O1', '-g', '-fsanitize=address',
+                       '-fno-omit-frame-pointer', '-I' + str(REPO),
+                       '-framework', 'Cocoa', '-framework', 'ImageIO', '-lz',
+                       str(REPO / 'tools/native_png_headers_test.m'), '-o', str(headers)]
     native_compile = ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address',
                       '-fno-omit-frame-pointer', '-x', 'objective-c++',
                       '-I' + str(skia / 'include/skia'), '-I' + str(skia / 'include'),
@@ -110,6 +115,8 @@ def main():
         ('compile', compile_command, '12'),
         ('runtime', [sys.executable, str(Path(__file__).resolve()), '--execute', str(executable),
                      '--output-dir', str(output)], '3'),
+        ('headers-compile', headers_compile, '12'),
+        ('headers-runtime', [str(headers)], '3'),
         ('source-compile', native_compile, '12'),
         ('source-runtime', [str(native)], '3'),
         ('cache-compile', ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address',
