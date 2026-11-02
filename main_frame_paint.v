@@ -4,6 +4,41 @@ import dom
 import layout
 import time
 import platform
+import os
+
+const disable_javascript_paint_only_sync = os.getenv('VOX_DISABLE_JAVASCRIPT_PAINT_SYNC') != ''
+const javascript_paint_sync_diagnostics = os.getenv('VOX_JAVASCRIPT_PAINT_SYNC_DIAGNOSTICS') != ''
+
+// A scrolled display list can be stale while its layout and committed paint
+// geometry remain current. Keep the cosmetic-filter pass, then let Document
+// update only what those filters actually invalidate before adopting paint.
+fn (mut app BrowserApp) synchronize_javascript_task_paint(replayed_effects bool) {
+	if app.document == unsafe { nil } { return }
+	stale_paint := app.javascript_tasks_have_unadopted_paint()
+	if replayed_effects || app.document.needs_style_update_after_layout()
+		|| !app.document.layout_is_up_to_date()
+		|| (stale_paint && (disable_javascript_paint_only_sync || app.initial_layout_pending
+			|| app.paint_tree_storage == unsafe { nil })) {
+		if javascript_paint_sync_diagnostics {
+			eprintln('VOX_JAVASCRIPT_PAINT_SYNC action=relayout')
+		}
+		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
+		return
+	}
+	if !stale_paint { return }
+	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
+	defer { heap_scope.finish() }
+	refresh_browser_adblock(app.document, app.js_runtime, mut app.js_messages)
+	if app.js_runtime != unsafe { nil } { app.js_runtime.take_document_replay_effects() }
+	mut document := unsafe { &dom.Document(app.document) }
+	document.update_layout(.html_event_loop_rendering_update)
+	app.adopt_current_document_geometry()
+	app.paint_commands_pending = true
+	if app.frame_preparation_depth == 0 { app.record_document_paint_commands() }
+	if javascript_paint_sync_diagnostics {
+		eprintln('VOX_JAVASCRIPT_PAINT_SYNC action=paint')
+	}
+}
 
 // Native frame preparation can install a document, run callbacks, relayout and
 // sample animations before presenting any pixels. Keep layout synchronous, but

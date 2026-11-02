@@ -211,3 +211,83 @@ fn test_changed_line_box_diagnostic_setting_repaints_and_equal_replay_stays_clea
 	assert runtime.evaluate_host('taskPaintFilterRuns')! == refreshes
 	assert layout.display_list_commands(paint).data == app.paint_commands.data
 }
+
+fn test_scroll_snapshot_with_read_only_task_keeps_committed_paint_geometry() {
+	$if !darwin { return }
+	for defer_paint in [false, true] {
+		mut app, mut runtime, mut document := javascript_task_paint_fixture('<!doctype html><div id="target" style="height:600px;background:rgb(71 72 73)"></div>')
+		defer { runtime.close(); document.finalize() }
+		storage := app.paint_tree_storage
+		paint := app.paint_display_list
+		app.set_scroll_y(25, 232)
+		assert document.layout_is_up_to_date()
+		assert !document.needs_style_update_after_layout()
+		assert document.cached_display_list() == none
+		if defer_paint { app.begin_frame_preparation() }
+		runtime.mark_document_state_dirty()
+		app.poll_javascript_tasks()
+		assert runtime.evaluate_host('taskPaintFilterRuns')! == '1'
+		assert voidptr(app.paint_tree_storage) == voidptr(storage)
+		if defer_paint {
+			assert voidptr(app.paint_display_list) == voidptr(paint)
+			assert app.paint_commands_pending
+			app.finish_frame_preparation()
+		}
+		assert voidptr(app.paint_tree_storage) == voidptr(storage)
+		assert voidptr(app.paint_display_list) != voidptr(paint)
+		assert document.viewport_rect().y == 25
+		assert !app.javascript_tasks_have_unadopted_paint()
+		assert app.paint_commands.any(it.color == 'rgb(71 72 73)')
+	}
+}
+
+fn test_scroll_snapshot_with_read_only_input_keeps_committed_paint_geometry() {
+	$if !darwin { return }
+	mut app, mut runtime, mut document := javascript_task_paint_fixture('<!doctype html><div id="target" style="height:600px;background:rgb(71 72 73)" onclick="console.log(\'read-only scrolled input\')"></div>')
+	defer { runtime.close(); document.finalize() }
+	storage := app.paint_tree_storage
+	mut target := document.get_element_by_id('target')?
+	app.set_scroll_y(25, 232)
+	assert document.layout_is_up_to_date()
+	assert !document.needs_style_update_after_layout()
+	assert !app.dispatch_javascript_event('click', target)
+	assert voidptr(app.paint_tree_storage) == voidptr(storage)
+	assert document.viewport_rect().y == 25
+	assert !app.javascript_tasks_have_unadopted_paint()
+	assert runtime.evaluate_host('taskPaintFilterRuns')! == '1'
+	assert app.js_messages == ['read-only scrolled input']
+}
+
+fn test_scroll_snapshot_filter_mutation_still_updates_geometry_once() {
+	$if !darwin { return }
+	mut app, mut runtime, mut document := javascript_task_paint_fixture('<!doctype html><div id="target" style="width:30px;height:600px;background:green"></div>')
+	defer { runtime.close(); document.finalize() }
+	runtime.evaluate_host('globalThis.__voxAdblockApplyProcedural=()=>{taskPaintFilterRuns++;return "#target{width:80px!important;background:rgb(81 82 83)!important}"}')!
+	app.set_scroll_y(25, 232)
+	runtime.mark_document_state_dirty()
+	app.poll_javascript_tasks()
+	target := document.get_element_by_id('target')?
+	assert app.root_box.bounding_rect_for(target)?.width == 80 * document.layout_coordinate_scale()
+	assert app.paint_commands.any(it.color == 'rgb(81 82 83)')
+	assert document.viewport_rect().y == 25
+	assert document.layout_is_up_to_date()
+	assert runtime.evaluate_host('taskPaintFilterRuns')! == '1'
+}
+
+fn test_task_with_current_geometry_still_finishes_pending_initial_layout() {
+	$if !darwin { return }
+	mut app, mut runtime, mut document := javascript_task_paint_fixture('<!doctype html><div id="target" style="height:600px;background:green"></div>')
+	defer { runtime.close(); document.finalize() }
+	// A synchronous script query can compute geometry while the shell still
+	// owes its first layout, including viewport/focus/navigation setup.
+	app.initial_layout_pending = true
+	app.set_scroll_y(25, 232)
+	assert document.layout_is_up_to_date()
+	runtime.mark_document_state_dirty()
+	app.poll_javascript_tasks()
+	assert !app.initial_layout_pending
+	assert !app.paint_commands_pending
+	assert !app.javascript_tasks_have_unadopted_paint()
+	assert document.viewport_rect().y == 25
+	assert runtime.evaluate_host('taskPaintFilterRuns')! == '1'
+}

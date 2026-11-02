@@ -3240,10 +3240,7 @@ fn (mut app BrowserApp) poll_javascript_tasks() {
 	navigation := apply_javascript_runtime_state(app.document, state, runtime, mut app.js_messages)
 	runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	replayed_effects := runtime.take_document_replay_effects()
-	if replayed_effects || app.document.needs_style_update_after_layout()
-		|| !app.document.layout_is_up_to_date() || app.javascript_tasks_have_unadopted_paint() {
-		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
-	}
+	app.synchronize_javascript_task_paint(replayed_effects)
 	app.update_window_title()
 	if destination := navigation {
 		if destination != '' { app.navigate(resolve_document_reference(destination, app.document.url.serialize()), true) }
@@ -3350,10 +3347,7 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	// Keep effects flushed by synchronous queries and already-recorded native
 	// paint, just as the asynchronous callback path does.
 	replayed_effects := app.js_runtime.take_document_replay_effects()
-	if replayed_effects || app.document.needs_style_update_after_layout()
-		|| !app.document.layout_is_up_to_date() || app.javascript_tasks_have_unadopted_paint() {
-		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
-	}
+	app.synchronize_javascript_task_paint(replayed_effects)
 	if destination != '' {
 		app.navigate(resolve_document_reference(destination, app.address), true)
 		// A script navigation also consumes the pending link default action
