@@ -830,6 +830,10 @@ fn paintable_box_border_radii_data(computed &css.ComputedValues, width CSSPixels
 	if !computed.has_noninitial_border_radii() {
 		return BoxRadii{}
 	}
+	context := css.LengthResolutionContext.for_computed_properties(computed)
+	if context.use_chromium_geometry {
+		return chromium_paintable_box_border_radii(computed, context, width, height)
+	}
 
 	mut top_left := resolved_paintable_box_corner_radius(computed, computed.border_top_left_radius(), width, height)
 	mut top_right := resolved_paintable_box_corner_radius(computed, computed.border_top_right_radius(), width, height)
