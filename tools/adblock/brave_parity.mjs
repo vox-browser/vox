@@ -13,6 +13,7 @@ import { capturePixelReference, referenceLaunchArguments, waitForPixelDocument }
 import { navigationObservation } from './navigation.mjs';
 import { hasHeaderFilter, requestIdentity, summarizeRequestParity } from './request_stream.mjs';
 import { collectVisibility, validateVisibilityProbe } from './visibility_probe.mjs';
+import { collectOracleCosmetics } from './oracle_cosmetics.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const options = {
@@ -344,21 +345,13 @@ try {
     if (!replayInput) {
         const tokens = await page.evaluate(`Array.from(new Set(Array.from(document.querySelectorAll('*')).flatMap(e=>[...(e.id?['#'+e.id]:[]),...Array.from(e.classList||[],c=>'.'+c)])))`);
         const cosmetic = await background.evaluate(`(async()=>{
+            const u=(await import('./js/background.js')).default;
             const c=(await import('./js/cosmetic-filtering.js')).default;
             const s=(await import('./js/scriptlet-filtering.js')).default;
             const {domainFromHostname}=await import('./js/uri-utils.js');
             const hostname=${JSON.stringify(new URL(documentURL).hostname)};
             const request={hostname,domain:domainFromHostname(hostname),url:${JSON.stringify(documentURL)}};
-            c.removeFromSelectorCache(hostname,'cosmetic');
-            const specific=c.retrieveSpecificSelectors(request,{dontInject:true});
-            const hashToken=token=>{
-                const type=token.charCodeAt(0),text=token.slice(1),len=text.length,step=(len+7)>>>3;
-                let hash=((type<<5)+type)^len;
-                for(let i=0;i<len;i+=step) hash=((hash<<5)+hash)^text.charCodeAt(i);
-                return hash&0xFFFFFF;
-            };
-            const generic=c.retrieveGenericSelectors({tabId:${JSON.stringify(logs[0]?.tabId)},frameId:0,hashes:[...new Set(${JSON.stringify(tokens)}.filter(t=>t.length>1).map(hashToken))],exceptions:specific.exceptionFilters});
-            return {css:(specific.injectedCSS||'')+(generic?.injectedCSS?'\\n'+generic.injectedCSS:''),procedural:specific.proceduralFilters||[],filters:s.retrieve(request)?.filters||[]};
+            return (${collectOracleCosmetics.toString()})(u.pageStores,c,s,request,${JSON.stringify(tokens)});
         })()`);
         const actualCosmetic = JSON.parse(execFileSync(options.checker, ['--document-filters', documentURL, ...tokens], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }));
         // Use Chromium's CSS parser to canonicalize declaration syntax, then split
