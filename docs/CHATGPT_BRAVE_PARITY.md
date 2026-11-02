@@ -1,18 +1,19 @@
 # ChatGPT rendering and startup against Brave
 
-The macOS production browser starts the archived logged-out ChatGPT
-application and matches the unchanged Brave reference **pixel for pixel at
-1024×768, scale 1**. The approved refreshed frontend also matches that reference
-exactly. Both Send and Enter receive the real reply “Vox ready.” in native Vox
-without native or module-script errors. Pixel equality of the live conversation
-remains open; the original document's expired token is retained separately.
+The pinned macOS production browser matches the archived logged-out ChatGPT
+homepage and rich conversation reply **pixel for pixel at 1024×768, scale 1**:
+zero differing pixels out of 786,432 for each capture. Native Enter and a Send
+click five seconds after typing both produce the rich reply “Vox ready.” with
+empty error collections. These conversation checks replay a saved backend
+response, normalize request UUIDs, and execute the unchanged archived frontend
+and its real module worker; they establish frozen-response rendering parity.
 
-The latest unchanged-original-archive capture has **zero differing pixels out
-of 786,432**, maximum channel error 0 and MAE 0. Startup and native typing
-are validated; keyboard dispatch alone does not establish submission. The
-recorded 60-second idle check peaks at 2,054,422,528 bytes,
-within the 12 GiB guard. This result is specific to the pinned production build
-and archived page described below.
+Live conversation acceptance remains open. The latest live submission receives
+ChatGPT's “Unusual activity has been detected from your device” response. No
+further live conversation submissions were sent after that rejection. The
+approved fresh-session download has already been used; subsequent checks reuse
+the saved homepage. Build identities, earlier failures, replay boundaries and
+focused validation are recorded below.
 
 ## Captured workload
 
@@ -1429,5 +1430,93 @@ browser consequently attempts to spawn the injected library as its worker.
 `d3cb3ed99` selects the kernel-backed executable path already used for tabs and
 the filter worker. `worker-executable-checks/` passes in default, no-GC and
 preallocated modes with an injected library confirmed as image zero. The
-replacement production build and full browser conversation validation are
-pending; the first candidate's fallback capture earns no rich-reply parity.
+replacement production build and full browser conversation validation follow
+below; the first candidate's fallback capture earns no rich-reply parity.
+
+## Rich conversation pixel validation, 2026-11-02
+
+The replacement production bundle is pinned in
+`Build/chatgpt-fresh-session-20261101/rich-worker-executable-production/`.
+Its executable SHA256 is
+`0ac2623ae134fdfb608d2d92e4c0a74c331bf8a7257a7d3ea84a6bf386bb9f3b`,
+and its native Skia text library is
+`44b2b4f0531513c817b69f2159d78cb1dbd30916bbd72cf46428a5a6f8bba572`.
+The production build finishes with exit 0, unchanged source inputs, and a
+9,745,465,344-byte sampled process-tree RSS peak under the default 12 GiB
+guard. Checks launch fresh processes from this saved bundle and verify its
+identity throughout. Independent work has since replaced the shared bundle;
+these results apply to the pinned executable.
+
+All nine selected rendering/startup groups pass with stable identities in
+`rich-worker-rendering-validation/results.json`: node positioning, the existing
+screenshot smoke set, live SVG mutation guards, compact modules, decorated
+text composition, focused controls, headless startup, and the original archived
+ChatGPT homepage capture and assessment. Existing references and tolerances
+are unchanged.
+
+`vox-rich-worker-executable-live-enter/` records the live service rejection.
+Native typing and Enter submit the prompt, but the page displays the unusual
+activity message and no assistant reply. The browser exits normally with
+empty native and JavaScript error collections. The service's reason for this
+rejection is unknown; this attempt fails live acceptance.
+
+The subsequent `conversation-replay-tools/` fixture intercepts only conversation
+prepare/update requests and directs them to a loopback HTTP server; none of
+those requests reaches the live service. It serves the responses previously
+captured in `vox-rich-worker-wire-70/`. The prepare response SHA256 is
+`f049e8530fc1468ca4fd143cf71b350776ca24d150ffcc5578673cb5df8ef67d`,
+and the rich NDJSON reply is
+`f1b3e1e841458bd5a62ad68e82c4f40e64a7597d199c0d463c09b12e5985ac59`.
+Only request UUID identities are normalized in the saved reply. Frontend HTML,
+styles, scripts and both worker assets remain unchanged. Final-response replay
+does not preserve the original streaming cadence or establish live backend
+compatibility or performance.
+
+The Enter and settled Send checks retain the existing native route for startup
+and session requests: the first homepage response and static assets are served
+from the archive, while later ChatGPT connections can use the SOCKS tunnel.
+They are not fully offline trials. The separate strict archive checks below
+reject every unknown external request instead of forwarding it.
+
+| Fresh-process capture | Pixel differences | Sampled peak RSS | Browser exit |
+| --- | ---: | ---: | ---: |
+| `vox-rich-worker-executable-replayed-home/` | 0 / 786,432 | 1,871,216,640 bytes | 0 |
+| `vox-rich-worker-executable-replayed-enter/` | 0 / 786,432 | 2,933,161,984 bytes | 0 |
+| `vox-rich-worker-executable-replayed-settled-click/` | 0 / 786,432 | 3,149,643,776 bytes | 0 |
+
+Each capture has empty native and JavaScript error collections and a stable
+executable identity. The homepage reference remains
+`Build/chatgpt-shadow-modules-20261031/frontend-caret-font-acceptance/brave.png`,
+SHA256 `59c9c9d12efe7410712f6edf1d4f82db9d79d3d219afd2914796aec2b1366095`.
+The conversation reference remains
+`brave-conversation-live-cached-workers/after.png`, SHA256
+`7acf0a8c964824340077c5a1f435a491a8f5da61cb813acc237b12bc4a849572`.
+Both 110-second conversation captures have identical PNG SHA256
+`192b4d28c56970c9f39c56a3041180a807993c1656c6474d067da9a97476a7ca`,
+maximum channel error 0 and RGB MAE 0. The worker-generated assistant paragraph
+now occupies the same geometry as Brave; the fallback's twelve-pixel offset
+is absent.
+
+The one-second Send checks in `vox-rich-worker-executable-offline-click/` and
+`vox-rich-worker-executable-offline-session-click/` do not complete a
+conversation. Their browsers exit 0 with stable identities and empty error
+collections, but both drivers exit 2 after the content audit fails. The first
+attempt lacks a Sentinel session-preparation POST response. The second serves
+the original saved prepare/finalize responses for those two POST paths, while
+continuing to reject every unknown external request. It still displays “Chat
+stopped unexpectedly” without issuing a conversation update request. These
+are failed offline fixture checks, with no one-second Send acceptance or new
+homepage download. Their logs, screenshots and default memory-guard receipts
+remain retained.
+
+`rich-reply-validation-assessment.json` indexes the build, rendering checks,
+successful pixel captures and retained failures. Its frozen-response pixel
+result passes; its live acceptance result remains false. Private replay
+artifacts retain session material locally under ignored `Build/` paths.
+
+The first candidate's failed 110-second memory-guard attempt remains retained
+and unexplained. Successful later checks do not establish a memory optimization
+or erase that failure. These results cover the saved logged-out homepage and
+single rich reply. Voice, login, other conversation content, module-worker
+prototype inheritance, and active/nested MessagePort transfer remain outside
+this acceptance result.
