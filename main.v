@@ -3071,7 +3071,11 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		return none
 	}
 	worker_settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
-	mut worker_host := browserjs.WorkerHost.create(worker_settings, os.executable()) or {
+	worker_executable := browser_script_worker_executable() or {
+		messages << 'JavaScript Worker executable: ${err.msg()}'
+		return none
+	}
+	mut worker_host := browserjs.WorkerHost.create(worker_settings, worker_executable) or {
 		messages << 'JavaScript Worker bindings: ${err.msg()}'
 		return none
 	}
