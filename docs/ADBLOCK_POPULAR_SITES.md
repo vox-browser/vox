@@ -3419,3 +3419,42 @@ change was required. The [image-gap artifacts](../Build/slashdot-header-image-ga
 retain source checks, oracle agreement and the failing production baseline.
 The registered suite now has **96 tests/102 captures**; production validation
 of the image-gap change remains pending.
+
+
+The `d57a8b05…` production candidate exposes two further failures. The new
+positioned-header/image fixture still differs at seven pixels because its
+second card has a separate raster owner; the earlier synthetic selection used
+one owner for both cards. Its other five focused methods/six captures remain
+exact. Full Slashdot fails the first native warmup with exit **139**, before
+producing an acceptance PNG: `ladybird_v_skia_record_rect` dereferences a missing
+root recording while an isolated decoration input owns the canvas. The
+[image-gap production receipts](../Build/slashdot-image-gap-validation-20261102/)
+retain that crash and the failing fixture; this candidate earns no full-page
+acceptance. Its diagnostic layer trace shows the interleaved foreign card.
+
+Commit `b0ee47280` makes rectangle/caret and image recording use the actual
+isolated input's height, scale and bounds, and directs unsupported images to
+that input's fallback. The explicit height/scale storage was incorporated into
+concurrent shared commit `20bd38904`; the completed owner fix and focused tests
+are in `b0ee47280`. Four pixel comparisons pass at backing scales one and two,
+both without a root picture and with an unrelated root open. Each verifies an
+actual opaque image pixel as well as independent whole-picture equality.
+An initial serialization attempt dropped its test images and is not credited;
+the final test uses the native pixel transport. The unchanged partial-card
+reference also passes cold/repeated replay and non-deferred failure preservation.
+[Native-owner receipts](../Build/slashdot-isolated-primitives-20261102/) and the
+`Build/slashdot-isolated-primitives-final-{compile,run}.json` guards retain the
+actual completed checks.
+
+Commit `16ee8bfd6` replaces broad nonconsecutive decoration replay with a
+conservative disjoint-header plan. It moves just the matching opaque header
+background beside its own parent background/border, and omits that header's
+later duplicate. Crossed images, text and foreign raster layers keep their
+ordinary replay. Conservative transformed ink bounds and an antialiasing
+fringe must prove disjointness; effects, unknown bounds, overlapping ink and
+oversized strokes keep original order. Existing parent/compositor recordings
+can retain the three draws directly. Four focused cases pass in both GC modes,
+and the final browser code passes the V compile check. The
+[disjoint-header checks](../Build/slashdot-disjoint-headers-20261102/) retain
+these results. The unchanged 96-test/102-capture suite and original Slashdot
+reference still require the combined production build.
