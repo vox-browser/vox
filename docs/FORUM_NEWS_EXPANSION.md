@@ -113,6 +113,17 @@ The layout test checks 32 policy/origin/gradient combinations and passes with
 both [default GC](../Build/forum-news-expansion-20261102/gradient-origin-default-run.guard.json)
 and [GC disabled](../Build/forum-news-expansion-20261102/gradient-origin-none-run.guard.json).
 The browser regression remains pending a production bundle containing the fix.
+The four pre-existing generated-mask tests also execute successfully in
+[the current focused control](../Build/forum-news-expansion-20261102/gradient-existing-run.guard.json).
+
+At the November 3, 00:20 Moscow checkpoint, the latest completed production
+bundle is still `0bb14e2f…`. The shared build
+[`20261103-001433-54a1d4f1`](../Build/production-build/receipts/20261103-001433-54a1d4f1/result.json)
+exited 2 with `unexpected EOF while looking for matching '"'` while the build
+script was being edited by another session. The current canonical script passes
+`sh -n`. Its worker has already started `20261103-001955-0fffe2c3`; no duplicate
+build was requested. Neither an older bundle nor the earlier superseded stage
+validates the two new mask fixes. The five additions remain strict failures.
 
 ## Photo-mask isolation
 
