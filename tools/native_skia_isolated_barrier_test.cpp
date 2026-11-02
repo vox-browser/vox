@@ -20,6 +20,7 @@ static void pending_parent(CGContextRef parent, bool blocked = false)
     s_msaa_grid_columns = 2;
     s_msaa_grid_width = s_msaa_grid_height = 34;
     s_raster_layer_width = s_raster_layer_height = 64;
+    s_shared_viewport_width = s_shared_viewport_height = 64;
     auto group = std::make_unique<SharedRootRecording>();
     group->destination = parent;
     group->canvas_width = group->canvas_height = 64;
@@ -108,6 +109,30 @@ int main()
     assert(!s_deferred_layer_frame_failed);
     assert(pixels[8 * 256 + 10 * 4 + 2] == 255);
     assert(pixels[5 * 256 + 5 * 4] == 255);
+    assert(ladybird_v_skia_finish_deferred_layer_frame());
+
+    // A viewport-sized solid background keeps the ordinary cheap fill,
+    // after publishing any preceding picture; it creates no scroll tile key.
+    CGContextClearRect(parent, CGRectMake(0, 0, 64, 64));
+    pending_parent(parent);
+    ladybird_v_skia_record_rect(parent, 0, 0, 64, 64, 0, 0, 255, 255);
+    assert(!s_shared_root_recording && !s_deferred_layer_frame_failed);
+    assert(!ladybird_v_skia_defer_recorded_rect(parent, 0, 0, 64, 64));
+    assert(pixels[8 * 256 + 8 * 4] == 255);
+    CGContextSetRGBFillColor(parent, 0, 0, 1, 1);
+    CGContextFillRect(parent, CGRectMake(0, 0, 64, 64));
+    assert(pixels[8 * 256 + 8 * 4 + 2] == 255);
+    assert(ladybird_v_skia_finish_deferred_layer_frame());
+
+    // A smaller solid fill stays in the owning picture.
+    CGContextClearRect(parent, CGRectMake(0, 0, 64, 64));
+    pending_parent(parent);
+    ladybird_v_skia_record_rect(parent, 0, 32, 32, 32, 0, 0, 255, 255);
+    assert(ladybird_v_skia_defer_recorded_rect(parent, 0, 32, 32, 32));
+    assert(s_shared_root_recording && s_shared_root_recording->deferred_leaves == 2);
+    assert(pixels[8 * 256 + 8 * 4 + 3] == 0);
+    finish_shared_recording();
+    assert(pixels[8 * 256 + 8 * 4 + 2] == 255);
     assert(ladybird_v_skia_finish_deferred_layer_frame());
 
     // A same-canvas isolated recorder also replaces pixels outside the

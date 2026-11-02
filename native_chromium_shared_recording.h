@@ -731,6 +731,20 @@ extern "C" void ladybird_v_skia_finish_shared_recording()
 extern "C" void ladybird_v_skia_record_rect(CGContextRef destination, float x,
     float y, float width, float height, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
 {
+    // A viewport-sized uniform opaque fill is cheaper in Quartz than as
+    // a GPU picture. Finish the preceding group and keep it in the prefix;
+    // its viewport-relative rectangle must not churn document tile keys.
+    if (destination && s_raster_layer_is_root && s_speculative_layer_enabled
+        && complete_speculative_picture_enabled() && alpha == 255
+        && !s_isolated_input_recordings.count(destination)) {
+        if (s_shared_viewport_width > 0 && s_shared_viewport_height > 0
+            && width >= s_shared_viewport_width && height >= s_shared_viewport_height) {
+            finish_shared_recording();
+            if (std::getenv("VOX_SPECULATIVE_PICTURE_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_SPECULATIVE_OPAQUE_PREFIX t_us=%.3f\n", speculative_picture_time());
+            return;
+        }
+    }
     auto* canvas = shared_recording_canvas(destination);
     if (!canvas) return;
     auto input = s_isolated_input_recordings.find(destination);
