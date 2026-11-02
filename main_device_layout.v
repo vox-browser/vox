@@ -50,16 +50,6 @@ fn browser_layout_coordinate_scale(document &dom.Document) f64 {
 
 fn (mut app BrowserApp) sync_layout_coordinate_scale() {
 	if app.document == unsafe { nil } || app.layout_tree_only { return }
-	before_styles := if viewport_style_setup_diagnostics {
-		app.document.style_invalidation_counters().element_style_recomputations
-	} else { u64(0) }
 	app.document.set_display_device_pixel_ratio(html.display_device_pixel_ratio())
 	app.document.set_layout_coordinate_scale(browser_layout_coordinate_scale(app.document))
-	if viewport_style_setup_diagnostics {
-		after_styles := app.document.style_invalidation_counters().element_style_recomputations
-		if after_styles > before_styles {
-			viewport := app.document.viewport_rect()
-			eprintln('Vox viewport style query: recomputed ${after_styles - before_styles} elements at ${viewport.width},${viewport.height}; document=${app.document.url.serialize()}')
-		}
-	}
 }

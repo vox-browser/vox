@@ -17,11 +17,10 @@ fn (mut app BrowserApp) prepare_initial_document_layout(width int, height int) {
 		return
 	}
 	app.defer_initial_rendering_opportunity(true)
-	viewport_width := if width > 0 { width } else { initial_width }
-	viewport_height := if height > app.chrome_height() { height - app.chrome_height() } else { 1 }
-	app.install_viewport_before_style_query(viewport_width, viewport_height)
 	app.sync_layout_coordinate_scale()
 	app.sync_window_activity()
+	viewport_width := if width > 0 { width } else { initial_width }
+	viewport_height := if height > app.chrome_height() { height - app.chrome_height() } else { 1 }
 	app.document.set_viewport_rect(dom.Rect{
 		width: f64(viewport_width) / app.page_zoom
 		height: f64(viewport_height) / app.page_zoom
