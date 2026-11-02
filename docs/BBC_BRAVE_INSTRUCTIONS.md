@@ -3346,3 +3346,89 @@ receipts and the actual observer exit are linked from `shared-build-blocker.json
 and the local edge evidence. No full-browser eligibility run or cohort starts
 from the stale bundle. This is an unresolved production-publication blocker,
 not a completed BBC optimization target.
+
+
+## Verified frozen compiler inputs and cohort 56 (2026-11-03)
+
+Commits `15fee1a2c` and `bf98ee40b` fix the shared production-publication blocker.
+The macOS build finishes native/helper work, generates browser C and preprocesses
+all translation units while the complete repository input digest remains equal
+to the initial receipt. Generated link objects are sealed separately. Long C
+optimization then consumes those verified preprocessed files, with original
+language modes, C-O3 flags, runtime checks and the existing memory limit. Live
+link libraries, framework stubs, resources, packaging code and entitlements are
+rechecked before publication. Changed or incomplete input receipts reject the
+build; a queued newer request survives rejection or publication. The old worker
+hands off cooperatively after its current job. No running compiler is killed,
+repository tool/source tree is copied, or source check bypassed. Later unrelated
+checkout edits no longer change already sealed compiler inputs.
+
+All **28 focused workflow cases pass**, including real Objective-C/C linking,
+source/header/object edits after sealing, source drift before/during sealing,
+changed libraries, library shadowing, packaging/resource changes, incomplete
+receipts and worker/queue ownership. The broader tooling selection runs 310
+cases: 300 pass; ten unchanged Linux compiler-selection fixtures fail because
+they omit the existing supervisor flag and their fake Python returns before
+compiler selection. Linux implementation and fixture files are unchanged. The
+initial temporary-path alias and missing fixture-head failures remain retained.
+The local [build evidence](benchmark-results/bbc-frozen-build-2026-11-03.json)
+links the guards and production input audit.
+
+The first successful frozen-input production build is
+`Build/production-build/receipts/20261103-011139-5e6ed988`:
+executable SHA256 **`1bcbbb5cca048906caf2151070018fb7ec0618b5af140b465700ba31a9cd1d75`**.
+Compiler/outer guard and fresh headless smoke exit zero. Source digests match
+through preprocessing; the later repository state is recorded separately.
+An independent post-publication audit verifies all **130 retained compiler
+inputs and 53 live inputs**, mapping staging assets to their published paths.
+The build guard peaks at 6,839,779,328 bytes. This workflow change earns no BBC
+instruction credit and does not change the measurement scope.
+
+Separate candidate/control diagnostics on that bundle both pass complete BBC
+content, original pixels, capture ownership and normal native/driver exits.
+Actual JavaScriptCore execution records one context and 1,961 / 1,900 evaluations.
+The candidate positively executes the definite-width, simple-SVG and bulk-edge
+paths after navigation and before encoded capture; the same-binary control
+disables them and reports none of their markers. Diagnostic probes are absent
+from every unprofiled cohort attempt. Both arms include the shared JavaScript
+startup policy and native snapshot changes; no isolated credit is assigned to
+those changes here.
+
+Cohort **56** retains all **21 attempts in seven alternating triples**, bringing
+the history to **56 cohorts / 1,355 cohort attempts**. All seven Vox captures,
+six control captures and six Brave captures match their original references
+exactly. All twenty completed captures have full content and native exit zero.
+Control pair 2 fails initial private-helper coalition ownership before capture,
+with no selected count and cleanup status 15. Brave pair 5 exits normally and
+passes content/ownership but differs by **64,177 pixels** in one photo region.
+These failures remain in the cohort; there are no retries or exclusions.
+All 1,639 pinned files rehash unchanged at the independent audit, and every
+launched root is adopted by the memory guard without errors.
+
+The complete seven Vox counts have median **29,966,443,591**. Seven recorded
+Brave lower counts, including the failed pixel attempt, have median
+**14,983,833,874**. The six available controls have median **30,528,521,255**.
+For the six matched control/candidate pairs only, medians are
+30,528,521,255 / 29,813,081,522.5: an observed reduction of **715,439,732.5**,
+with four improving and two regressing pairs. This partial diagnostic does not
+establish accepted optimization credit. The numerical 10% gate also fails:
+`304964539640 > 133396656228`, highest-Vox/lowest-Brave ratio **2.0575334753**.
+Benchmark, guard and controller exit 1. The guard peaks at 1,480,261,632 bytes
+over 103.324202667 seconds; host conditions and exact raw counts remain retained.
+
+The partial observed reduction exceeds the 5,000,000-instruction verification
+cadence, so the broad layout selection is rerun. **479 cases execute in each
+GC mode: 476 pass and three baseline checks fail in each**. They are the prior
+text-control 13.5-versus-13 and toggle 16-versus-15 checks, plus the trailing
+collapsed-margin root-height 40-versus-60 check already reproduced with both
+edge resolvers. Owned source inputs remain unchanged and every selected case
+is entered. This is not a full pass or cadence reset. On the pinned measured
+bundle, startup, all eleven screenshot smoke cases and all eight SVG guards
+pass, with unchanged executable/native-library identities before/after.
+
+The build blocker is resolved. **The BBC 10% target is still unmet, and BBC is
+not added to the catalog.** The original capture scope, frozen responses,
+author-script/rendering limitations, historical RGB policy and original pixel
+references remain unchanged. Cohort 56, independent audits, native/broad
+checks and all failure receipts are linked from the local
+[edge evidence](benchmark-results/bbc-box-edges-2026-11-03.json).
