@@ -6,11 +6,6 @@
 #include "include/core/SkStream.h"
 #include "include/core/SkTypeface.h"
 #include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#if defined(__APPLE__)
-#include <dlfcn.h>
-#endif
 #include <cstring>
 #include <list>
 #include <utility>
@@ -52,33 +47,10 @@ public:
     sk_sp<SkTypeface> decode(void const* data, size_t size)
     {
         if (!data || !size || size > 64 * 1024 * 1024) return nullptr;
-        auto* enabled = std::getenv("VOX_ENABLE_DIRECT_PICTURE_TYPEFACE_LOOKUP");
-        bool direct = enabled && !std::strcmp(enabled, "1")
-            && !std::getenv("VOX_DISABLE_DIRECT_PICTURE_TYPEFACE_LOOKUP");
-        if (direct) {
-            // Embedded fonts usually revisit the first few owned entries.
-            // libc's full byte comparison can establish that exact hit without
-            // a serial byte-at-a-time hash over the same font beforehand.
-            for (auto it = entries.begin(); it != entries.end(); ++it) {
-                if (it->encoded->size() != size || std::memcmp(it->encoded->data(), data, size)) continue;
-                auto face = it->face;
-                entries.splice(entries.begin(), entries, it);
-                if (std::getenv("VOX_PICTURE_TYPEFACE_DIAGNOSTICS")) {
-                    double time = -1;
-#if defined(__APPLE__)
-                    using Clock = double (*)();
-                    static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
-                    if (clock) time = clock();
-#endif
-                    std::fprintf(stderr, "VOX_PICTURE_TYPEFACE_HIT bytes=%zu t_us=%.3f\n", size, time);
-                }
-                return face;
-            }
-        }
         uint64_t hash = 14695981039346656037ull;
         auto* input = static_cast<uint8_t const*>(data);
         for (size_t i = 0; i < size; ++i) hash = (hash ^ input[i]) * 1099511628211ull;
-        for (auto it = entries.begin(); !direct && it != entries.end(); ++it) {
+        for (auto it = entries.begin(); it != entries.end(); ++it) {
             if (it->hash != hash || it->encoded->size() != size
                 || std::memcmp(it->encoded->data(), data, size)) continue;
             auto face = it->face;
