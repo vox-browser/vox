@@ -3054,3 +3054,29 @@ The [border-run receipt](benchmark-results/slashdot-border-color-runs-2026-11-02
 records source and oracle hashes, the typed path output, original failing
 checks, the explicit-alpha fixture correction, guards and raw evidence under
 `Build/slashdot-validation-20261102/`. Stack Overflow and Pikabu remain deferred.
+
+
+## Slashdot fixes verified in the canonical browser, 2 November 2026
+
+The published `192ff348…` production browser passes all four extracted
+regressions at **zero differing pixels**: pending generated icon fonts, empty
+generated-content end edges, unchecked radio geometry, and transparent border
+color runs. All **84 rendering tests and 89 captures** pass. Archived CNN,
+Guardian, Verge and Lobsters viewports remain pixel-exact. Fresh processes use
+the canonical bundle directly, with unchanged identities throughout.
+
+The same frozen Slashdot fixture improves from 9,190 to **8,435 pixels**, while
+the live-to-frozen comparison stays exact. Request/filter checks agree with
+full uBO. The wrapper exits 1 because the full-page pixel gate still fails;
+the individual focused and broad checks pass. Other changes are present in the
+shared build, so the aggregate page delta is not assigned solely to one fix.
+
+The real byline still shifts left after an ordinary empty inline descendant
+and skipped whitespace, a different path from the passing generated-content
+case. That additional regression is being handled separately. Slashdot remains
+unfinished, and the earlier fieldset failure receives no new pass credit.
+
+The [canonical-browser receipt](benchmark-results/slashdot-canonical-pixels-2026-11-02.json)
+records the publication receipt, all captures, full-page failure, full-uBO
+checks and preservation results under `Build/slashdot-canonical-20261102/`.
+Stack Overflow and Pikabu remain deferred.
