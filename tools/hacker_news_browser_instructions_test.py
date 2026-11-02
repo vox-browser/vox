@@ -398,6 +398,31 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
     def test_fetch_worker_started_after_exact_scan_requires_a_new_exact_scan(self):
         self.check_ownership_race()
 
+    def test_shared_bundle_excludes_only_preexisting_tasks_outside_measured_coalition(self):
+        import time
+        @dataclass
+        class Reading:
+            tasks_started: int = 1
+            tasks_exited: int = 0
+        app = Path('/private/fixture/Vox.app')
+        binary = str(app / 'Contents/MacOS/Vox')
+        old = dict(pid=99, command=binary + ' user-page')
+        rows = [dict(pid=1, command=binary + ' unique-capture'), old]
+        api = Mock()
+        api.read.return_value = Reading()
+        for members, succeeds in (([dict(pid=1)], True),
+                                  ([dict(pid=1), dict(pid=99)], False)):
+            scan = dict(members=members, after_snapshot=dict(tasks_started=1, tasks_exited=0))
+            with patch('hacker_news_browser_instructions.exact_coalition_membership', return_value=scan), \
+                 patch('hacker_news_browser_instructions.processes', return_value=rows):
+                if succeeds:
+                    result = membership(api, 10, app, 1, time.monotonic() + 10, [], existing_processes=[old])
+                    self.assertEqual(result['preexisting_app_pids'], [99])
+                    self.assertEqual(result['private_app_pids'], [1])
+                else:
+                    with self.assertRaisesRegex(RuntimeError, 'preexisting browser task'):
+                        membership(api, 10, app, 1, time.monotonic() + 10, [], existing_processes=[old])
+
     def test_worker_exit_during_ownership_queries_requires_a_new_exact_scan(self):
         self.check_ownership_race(exited=True)
 

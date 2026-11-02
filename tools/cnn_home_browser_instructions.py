@@ -105,12 +105,12 @@ def validate_document(audit, expected):
                 body_text_sha256=hashlib.sha256(body[0]['text'].encode()).hexdigest())
 
 
-def audit_expression():
+def audit_expression(selectors=SELECTORS):
     return '''({url:location.href,title:document.title,ready:document.readyState,
       viewport_width:innerWidth,viewport_height:innerHeight,fonts_status:document.fonts.status,
       font_faces:[...document.fonts].map(f=>({family:f.family,weight:['400','normal'].includes(f.weight)?'auto':f.weight,
         status:f.status,parsed_font_present:f.status==='loaded',source_path:'browser-font-face'})),
-      selections:''' + json.dumps(SELECTORS) + '''.map(s=>{const nodes=[...document.querySelectorAll(s.selector)];
+      selections:''' + json.dumps(selectors) + '''.map(s=>{const nodes=[...document.querySelectorAll(s.selector)];
         return {name:s.name,count:nodes.length,elements:nodes.slice(0,s.limit).map(e=>{
           const r=e.getBoundingClientRect();return {text:e.textContent,
             attributes:Object.fromEntries(s.attributes.map(a=>[a,e.getAttribute(a)||''])),
@@ -137,7 +137,8 @@ def full_ubo_ready(connection, port, deadline):
                   userFilters:(await u.loadUserFilters()).content};})()""")
         selected = [row['name'] for row in json.loads((REPO / 'adblock/lists/manifest.json').read_text())['lists']]
         browser.require(set(settings['selected']) == set(selected) and not settings['autoUpdate']
-                        and not settings['userFilters'].strip(), 'Full-uBO prepared settings changed')
+                        and not settings['userFilters'].strip(),
+                        'Full-uBO prepared settings changed: ' + repr(settings))
         return settings
     finally:
         background.sock.close()
@@ -164,9 +165,9 @@ def summarize(pairs, diagnostic=False, target_vox_fraction=.9):
     return result
 
 
-def parse_args(argv=None):
+def parse_args(argv=None, default_archive=None):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--archive', type=Path, default=REPO / 'Tests/Browser/Brave/sites/cnn')
+    p.add_argument('--archive', type=Path, default=default_archive or REPO / 'Tests/Browser/Brave/sites/cnn')
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--memory-guard-registry', type=Path, required=True)
     p.add_argument('--vox-app', type=Path, default=REPO / 'Build/v/Vox.app')
@@ -283,9 +284,9 @@ def control_environment(args):
     return {}
 
 
-def audit_native_filters(args, folder):
+def audit_native_filters(args, folder, url=URL):
     report = folder / 'filter.json'
-    command = ['node', str(REPO / 'tools/adblock/brave_parity.mjs'), '--url', URL,
+    command = ['node', str(REPO / 'tools/adblock/brave_parity.mjs'), '--url', url,
         '--brave', str(args.brave_app / 'Contents/MacOS/Brave Browser'),
         '--extension', str(args.extension), '--profile-template', str(args.brave_profile_template),
         '--checker', str(args.checker), '--vox-log', str(folder / 'requests.jsonl'),
@@ -294,29 +295,33 @@ def audit_native_filters(args, folder):
         completed = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=args.timeout,
                                    env=browser.clean_environment())
     browser.write_json(folder / 'filter-command.json', dict(command=command, exit=completed.returncode))
-    browser.require(completed.returncode == 0, 'CNN full-uBO traffic audit failed')
+    browser.require(completed.returncode == 0, 'Full-uBO traffic audit failed')
     result = json.loads(report.read_text())
     check_filters(result, document=False)
     return dict(passed=True, sha256=browser.sha(report), counts=result['counts'])
 
 
-def main():
-    args = parse_args()
-    expected = fixture_expectations(args.archive)
+def main(argv=None, workload=None):
+    # Site adapters share the counter, filtering, identity and acceptance gates.
+    import sys
+    workload = workload or sys.modules[__name__]
+    url, scope = workload.URL, workload.SCOPE
+    args = parse_args(argv, REPO / 'Tests/Browser/Brave/sites' / getattr(workload, 'SITE', 'cnn'))
+    expected = workload.fixture_expectations(args.archive)
     args.output.mkdir(parents=True, exist_ok=False)
     args.scale, args.instruction_scope = 1, 'launch'
     args.brave_emulated_viewport = True
     args.brave_initial_page = True
     args.audit_config = args.output / 'audit-config.json'
-    browser.write_json(args.audit_config, dict(selectors=SELECTORS))
-    args.content_validator = lambda audit: validate_document(audit, expected)
-    args.audit_expression = audit_expression()
+    browser.write_json(args.audit_config, dict(selectors=workload.SELECTORS))
+    args.content_validator = lambda audit: workload.validate_document(audit, expected)
+    args.audit_expression = workload.audit_expression()
     args.brave_setup = full_ubo_ready
     preferences = json.loads((args.brave_profile_template / 'Default/Preferences').read_text())
     browser.require(preferences['profile']['default_content_setting_values']['braveShields'] == 2,
                     'Prepared Brave profile must disable Shields to match full-uBO filtering')
     args.vox_arguments = ['--js-engine', 'javascriptcore', '--screenshot-viewport-height', '768']
-    args.readiness_expression = f'''location.href==={json.dumps(URL)} && document.readyState==='complete'
+    args.readiness_expression = f'''location.href==={json.dumps(url)} && document.readyState==='complete'
       && document.fonts.status==='loaded' && innerWidth===1024 && innerHeight===768 && devicePixelRatio===1
       && [...document.images].every(i=>{{const r=i.getBoundingClientRect();return r.width<=0||r.height<=0
         ||r.x>=1024||r.y>=768||r.right<=0||r.bottom<=0||(i.complete&&i.naturalWidth>0)}})'''
@@ -345,8 +350,9 @@ def main():
         'probe_frozen_github_chrome.py', 'run_memory_bounded.py'))
     paths.update(p for p in (REPO / 'tools/adblock').glob('*.mjs'))
     paths.add(REPO / 'adblock/lists/manifest.json')
+    paths.add(Path(workload.__file__).resolve())
     pinned = browser.fingerprint(paths)
-    browser.write_json(args.output / 'inputs.json', dict(files=pinned, fixture=expected, scope=SCOPE,
+    browser.write_json(args.output / 'inputs.json', dict(files=pinned, fixture=expected, scope=scope,
         source_vox_identity=executable_identity(args.vox_app / 'Contents/MacOS/Vox'),
         source_control_identity=(executable_identity(args.control_vox_app / 'Contents/MacOS/Vox')
                                  if args.control_vox_app else None),
@@ -362,7 +368,7 @@ def main():
         public = subprocess.check_output(['openssl', 'x509', '-in', replay.ready['ca'], '-pubkey', '-noout'])
         der = subprocess.check_output(['openssl', 'pkey', '-pubin', '-outform', 'der'], input=public)
         spki = base64.b64encode(hashlib.sha256(der).digest()).decode()
-        args.url = URL
+        args.url = url
         args.brave_proxy_argument = '--proxy-server=' + replay.ready['proxy'].replace('socks5h:', 'socks5:')
         args.brave_arguments = ['--ignore-certificate-errors-spki-list=' + spki,
                                '--load-extension=' + str(args.extension), '--headless=new']
@@ -378,10 +384,10 @@ def main():
                 if engine == 'control':
                     args.vox_environment.update(control_environment(args))
                 row = browser.run_browser('vox' if engine == 'control' else engine, apps[engine], folder, args)
-                row['scope'] = SCOPE
+                row['scope'] = scope
                 if engine in ('vox', 'control') and row['exit'] == 0:
                     try:
-                        row['filter_gate'] = audit_native_filters(args, folder)
+                        row['filter_gate'] = audit_native_filters(args, folder, url)
                     except Exception as error:
                         row.update(exit=1, error=str(error))
                 browser.write_json(folder / 'result.json', row)

@@ -313,15 +313,18 @@ def configure_brave_viewport(browser, client, target, args):
 
 def launch(app, arguments, folder, environment):
     """LaunchServices gives this fresh app its own resource coalition."""
-    require(not any(row['command'].startswith(str(app) + '/Contents/') for row in processes()),
-            'Private measured app already has a live process')
+    # Shared installed bundles may already host the user's windows. -n and the
+    # unique profile/capture argument identify our fresh root; membership() then
+    # verifies its exclusive coalition without touching those existing tasks.
+    existing = [row for row in processes()
+                if row['command'].startswith(str(app) + '/Contents/')]
     command = ['/usr/bin/open', '-n', '-g', '-a', str(app),
                '--stdout', str(folder / 'stdout.log'), '--stderr', str(folder / 'browser.log')]
     for key, value in sorted(environment.items()):
         command += ['--env', key + '=' + value]
     command += ['--args', *arguments]
     opened = subprocess.run(command, env=clean_environment(), capture_output=True, text=True)
-    write_json(folder / 'launch.json', dict(command=command, exit=opened.returncode,
+    write_json(folder / 'launch.json', dict(command=command, existing_processes=existing, exit=opened.returncode,
                                            stdout=opened.stdout, stderr=opened.stderr))
     require(opened.returncode == 0, 'LaunchServices launch failed')
     return command
@@ -421,12 +424,17 @@ def exact_coalition_membership(api, process_api, cid, app, pid, deadline, attemp
         time.sleep(.01)
 
 
-def membership(api, cid, app, pid, deadline, attempts, browser=None):
+def membership(api, cid, app, pid, deadline, attempts, browser=None, existing_processes=()):
     limit = min(deadline, time.monotonic() + 20)
     while True:
         scan = exact_coalition_membership(api, MacCounters(), cid, app, pid, limit, attempts)
-        owned = {row['pid'] for row in processes()
-                 if row['command'].startswith(str(app) + '/Contents/')}
+        existing = {(row['pid'], row['command']) for row in existing_processes}
+        app_processes = [row for row in processes()
+                         if row['command'].startswith(str(app) + '/Contents/')]
+        excluded = {row['pid'] for row in app_processes
+                    if (row['pid'], row['command']) in existing}
+        owned = {row['pid'] for row in app_processes} - excluded
+        scan['preexisting_app_pids'] = sorted(excluded)
         scan['private_app_pids'] = sorted(owned)
         infos = browser.call('SystemInfo.getProcessInfo')['processInfo'] if browser else []
         if browser:
@@ -442,6 +450,7 @@ def membership(api, cid, app, pid, deadline, attempts, browser=None):
             require(time.monotonic() < limit, 'No stable exclusive coalition ownership check')
             continue
         members = {row['pid'] for row in scan['members']}
+        require(not (excluded & members), 'Measured coalition contains a preexisting browser task')
         require(owned <= members, 'A private browser helper is outside its resource coalition')
         require({int(row['id']) for row in infos} <= members,
                 'A Brave browser task is outside its exclusive resource coalition')
@@ -532,10 +541,10 @@ def run_browser(engine, app, folder, args):
             port, browser_path = endpoint
             browser = CDP(f'ws://127.0.0.1:{port}{browser_path}')
             result['version'] = browser.call('Browser.getVersion')
-            setup = getattr(args, 'brave_setup', None)
-            if setup:
-                result['brave_setup'] = setup(browser, port, deadline)
         result['root'] = root
+        existing = json.loads((folder / 'launch.json').read_text()).get('existing_processes', [])
+        require(root['pid'] not in {row['pid'] for row in existing},
+                'Launch reused a preexisting browser process')
         root_start = MacCounters().read(root['pid']).start
         result['root_start_ticks'] = root_start
         registry = getattr(args, 'memory_guard_registry', None)
@@ -546,11 +555,13 @@ def run_browser(engine, app, folder, args):
         require(cid != api.resource_coalition(os.getpid()), 'Browser inherited observer coalition')
         result['resource_coalition'] = cid
         result['membership_before'] = membership(api, cid, app, root['pid'], deadline,
-                                                 result['membership_attempts'], browser)
+                                                 result['membership_attempts'], browser, existing)
         if registry:
             publish_adopted_processes(registry,
                 [row['pid'] for row in result['membership_before']['members']
                  if row['executable'].startswith(str(app) + '/Contents/')])
+        if engine == 'brave' and getattr(args, 'brave_setup', None):
+            result['brave_setup'] = args.brave_setup(browser, port, deadline)
         if engine == 'vox':
             audit_capture_ownership = getattr(args, 'audit_vox_capture_ownership', False)
             capture_scans = [result['membership_before']]
@@ -560,7 +571,7 @@ def run_browser(engine, app, folder, args):
                 try:
                     scan = membership(api, cid, app, root['pid'],
                                       min(deadline, time.monotonic() + .15),
-                                      result['membership_attempts'])
+                                      result['membership_attempts'], existing_processes=existing)
                     capture_scans.append(scan)
                     if registry:
                         publish_adopted_processes(registry,
@@ -640,7 +651,7 @@ def run_browser(engine, app, folder, args):
                 returnByValue=True))['result']['value']
             write_json(folder / 'audit.json', audit)
             result['membership_after'] = membership(api, cid, app, root['pid'], deadline,
-                                                    result['membership_attempts'], browser)
+                                                    result['membership_attempts'], browser, existing)
             if registry:
                 publish_adopted_processes(registry,
                     [row['pid'] for row in result['membership_after']['members']
