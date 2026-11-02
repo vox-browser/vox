@@ -109,4 +109,23 @@ fn test_positioned_partial_border_headers_keep_intervening_draw_order() {
 	mut missing := commands.clone()
 	missing[6].x += 1
 	assert chromium_rounded_background_pair_end(missing, layers, 0) == 0
+	// A solid SVG leaf between block backgrounds and positioned headers is
+	// retained by the same native picture, without admitting resource/effect
+	// paths which need their own replay scopes.
+	mut svg_document := html.parse_document('<!doctype html><svg width="20" height="20"><path fill="#004d4d" d="M0 0L20 3L8 20Z"/></svg>')
+	defer { svg_document.finalize() }
+	svg_document.set_font_rendering_policy(.chromium)
+	svg_root := layout.layout_document_typed_in_viewport(svg_document, 1024, 768)
+	paths := svg_root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	mut with_path := commands.clone()
+	with_path[2] = paths[0]
+	assert chromium_rounded_background_pair_end(with_path, layers, 0) == commands.len
+	for replacement in [layout.PaintCommand{...paths[0], svg_data: unsafe { nil }},
+		layout.PaintCommand{...paths[0], opacity: 0.5},
+		layout.PaintCommand{...paths[0], group_opacity: 0.5},
+		layout.PaintCommand{...paths[0], recording_clip: layout.LayoutRect{0,0,10,10}}] {
+		with_path[2] = replacement
+		assert chromium_rounded_background_pair_end(with_path, layers, 0) == 0
+	}
 }

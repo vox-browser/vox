@@ -106,11 +106,12 @@ fn chromium_partial_decoration_run_end(commands []layout.PaintCommand, layers []
 		}
 		if command.kind !in ['fill_rect', 'fill_rounded_rect', 'paint_partial_rounded_border',
 			'paint_uniform_border', 'stroke_rounded_rect', 'fill_ellipse', 'stroke_ellipse',
-			'draw_text', 'draw_text_shadow', 'paint_inner_box_shadow'] {
+			'draw_text', 'draw_text_shadow', 'paint_inner_box_shadow', 'draw_svg_path'] {
 			if partial_decoration_trace { eprintln('VOX_PARTIAL_DECORATION_TRACE reject kind at=${scan} kind=${command.kind}') }
 			return index
 		}
 		if command.kind == 'paint_inner_box_shadow' && command.box_shadow_data == unsafe { nil } { return index }
+		if command.kind == 'draw_svg_path' && !chromium_svg_compositor_path_supported(command) { return index }
 		if command.kind in ['draw_text', 'draw_text_shadow'] && command.glyph_run == none { return index }
 		if command.kind != 'fill_rounded_rect' { continue }
 		if scan + 1 < commands.len && layers[scan + 1] == owner
