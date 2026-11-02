@@ -578,3 +578,30 @@ class PreciseScrollTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExplicitNativeCandidateIdentityTests(unittest.TestCase):
+    def test_declared_candidate_keeps_other_libraries_in_bundle(self):
+        binary = Path('/bundle/Vox')
+        candidate = Path('/candidate/libLadybirdVSkiaText.dylib')
+        log = '\n'.join('SCROLL_IMAGE name=' + name + ' path_hex=' + os.fsencode(path).hex()
+                        for name, path in [('libLadybirdVSkiaText.dylib', candidate),
+                                           ('libVoxGraphite.dylib', binary.parent / 'libVoxGraphite.dylib')])
+        images = measure_precise_scroll.verify_native_images(log, binary, candidate)
+        self.assertEqual(images['libLadybirdVSkiaText.dylib'], str(candidate))
+        with self.assertRaises(ValueError):
+            measure_precise_scroll.verify_native_images(log, binary)
+
+    def test_declared_candidate_rejects_the_original_bridge(self):
+        binary = Path('/bundle/Vox')
+        path = binary.parent / 'libLadybirdVSkiaText.dylib'
+        log = 'SCROLL_IMAGE name=libLadybirdVSkiaText.dylib path_hex=' + os.fsencode(path).hex()
+        with self.assertRaises(ValueError):
+            measure_precise_scroll.verify_native_images(log, binary, Path('/candidate/libLadybirdVSkiaText.dylib'))
+
+    def test_candidate_does_not_authorize_an_external_gpu_backend(self):
+        path = Path('/candidate/libVoxGraphite.dylib')
+        log = 'SCROLL_IMAGE name=libVoxGraphite.dylib path_hex=' + os.fsencode(path).hex()
+        with self.assertRaises(ValueError):
+            measure_precise_scroll.verify_native_images(log, Path('/bundle/Vox'),
+                                                       Path('/candidate/libLadybirdVSkiaText.dylib'))

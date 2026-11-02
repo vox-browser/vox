@@ -103,7 +103,7 @@ def records(log, prefix):
     return result
 
 
-def verify_native_images(log, binary):
+def verify_native_images(log, binary, native_bridge=None):
     images = {}
     for line in log.splitlines():
         if not line.startswith('SCROLL_IMAGE '):
@@ -113,7 +113,8 @@ def verify_native_images(log, binary):
             raise ValueError('Invalid native image identity record')
         name, encoded = match.groups()
         path = Path(os.fsdecode(bytes.fromhex(encoded))).resolve()
-        expected = (binary.parent / name).resolve()
+        expected = ((Path(native_bridge) if native_bridge and name == 'libLadybirdVSkiaText.dylib'
+                     else binary.parent / name)).resolve()
         if name not in {'libLadybirdVSkiaText.dylib', 'libVoxGraphite.dylib',
                         'libVoxGraphiteDawn.dylib'} or path != expected:
             raise ValueError(f'Native image outside selected bundle: {path}; expected {expected}')
@@ -226,6 +227,8 @@ def main():
     parser.add_argument("--network-policy", required=True,
                         help="Describe live access or supplied network-blocking interposer; recorded verbatim")
     parser.add_argument("--insert-library", action="append", type=Path, default=[])
+    parser.add_argument("--native-renderer-bridge", type=Path,
+                        help="Explicit unpublished native candidate; require this exact loaded bridge instead of the bundle bridge")
     parser.add_argument("--env", action="append", default=[])
     parser.add_argument("--width", type=int, default=1024)
     parser.add_argument("--height", type=int, default=764, help="Document viewport height, without chrome")
@@ -300,6 +303,12 @@ def main():
                 "LADYBIRD_SCREENSHOT_DELAY_SECONDS"}:
             env.pop(name)
     libraries = [path.resolve() for path in args.insert_library]
+    native_bridge = args.native_renderer_bridge.resolve() if args.native_renderer_bridge else None
+    if native_bridge:
+        if native_bridge.name != "libLadybirdVSkiaText.dylib" or not native_bridge.is_file():
+            parser.error("--native-renderer-bridge must name an existing libLadybirdVSkiaText.dylib")
+        if native_bridge not in libraries:
+            libraries.insert(0, native_bridge)
     # The signed bundle resolves its embedded bridges through @executable_path.
     # A global loader search override also changes transitive dependency lookup
     # and helper startup; exercise the bundle's ordinary loader configuration.
@@ -339,6 +348,8 @@ def main():
                                      "default bookmark bar; explicit direct networking"
                                      if args.allow_fixture_navigation else
                                      "empty private profile; default bookmark bar; no saved proxy override"),
+                    native_configuration="explicit unpublished native candidate" if native_bridge else "installed bundle",
+                    native_renderer_bridge=str(native_bridge) if native_bridge else None,
                     chrome_height=args.chrome_height,
                     script_policy=args.script_policy,
                     viewport=[args.width, args.height], network_policy=args.network_policy,
@@ -369,7 +380,7 @@ def main():
                 or file_identities != {str(path): input_file_identity(path) for path in pinned}):
             raise RuntimeError("Build, runtime asset or probe identity changed during measurement")
         browser_log = (output / "browser.log").read_text(errors="replace")
-        evidence['native_images'] = verify_native_images(browser_log, binary)
+        evidence['native_images'] = verify_native_images(browser_log, binary, native_bridge)
         if any(path not in hashes for path in evidence['native_images'].values()):
             raise RuntimeError('Loaded native image was not pinned before launch')
         summary = summarize(browser_log,
