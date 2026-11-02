@@ -1,7 +1,31 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Latest cohort 46 remeasures the same pinned browsers
+`OPTIMIZED_SITES.md`.** Latest cohort 48 completes seven alternating matched
+triples with all 21 original pixel/content/native-exit checks and endpoint
+ownership checks passing. Vox median is **31,871,477,469**, its same-binary
+font-synchronization control **32,079,725,335**, and Brave lower median
+**15,388,048,710** instructions. The strict integer gate fails
+`326524191890 > 137741039613`, conservative ratio **2.1335091816256653**.
+
+Keeping unchanged font registrations after selector-only CSSOM edits gives a
+median point difference of **208,247,866 (0.6491572599993445%)** against control.
+Four pairs improve and three regress; the conservative control ratio
+**1.078985433408601** fails. This does not establish a robust speedup or the
+requested advantage. No input, reference, tolerance or capture boundary changed.
+All attempts remain in the [new evidence supplement](benchmark-results/bbc-selector-font-sync-2026-11-02.json).
+
+Cohort 47 retains fourteen valid Vox/control captures and seven Brave attempts
+rejected before launch because the reused installed app already had a live
+process. Its Vox/control medians are 31,405,018,137 / 31,511,932,008; five pairs
+improve and two regress. It has no Brave counters or comparable Brave gate.
+Cohort 48 uses a newer completed production build and an unused signed Brave
+path; changes between those builds receive no isolated optimization credit.
+The repository's subsequently updated no-copy rule requires canonical app/tool
+references for future runs. This retained private-copy cohort authorizes no
+additional app or tool copies.
+
+Prior cohort 46 remeasures the same pinned browsers
 with a stronger capture-time Vox ownership check. Vox median is
 **32,561,838,795**, its same-binary comment-preserving control
 **32,744,163,610**, and Brave lower median **16,174,399,220** instructions.
@@ -63,10 +87,15 @@ failing cohorts and their outliers remain retained.
 
 The machine-readable [base evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
 and [protocol supplement](benchmark-results/bbc-protocol-audit-2026-11-02.json)
-retain 1,140 attempts across 46 cohorts, including failures and first launches.
-All 952 complete cohort raw records have been independently checked against
-vectors, medians and integer gates. They also retain ownership audits, commands
-and artifact hashes. Raw archives, logs, PNGs, executable copies, PID registries,
+retain the earlier 1,140 attempts across 46 cohorts. The
+[font-synchronization supplement](benchmark-results/bbc-selector-font-sync-2026-11-02.json)
+indexes **1,192 retained attempts across 48 cohorts**, including failures and
+first launches. It rechecks 42 new raw trial records; the prior audit checked
+952 earlier cohort records. Cohort 47's seven missing Brave counter intervals
+remain explicit. Private historical bundle/tool copies were removed from the
+shared workspace, so their earlier input-hash receipts do not imply every
+physical input is still present. Commands, ownership audits and artifact hashes
+remain recorded. Raw archives, logs, PNGs, executable copies, PID registries,
 compiler output and guard receipts remain under
 `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
 
@@ -2479,3 +2508,65 @@ caches, excluded GPU execution/outside services, sampled memory limits and lack
 of retrospective individual exited-task identities remain disclosed. The
 protocol correction establishes no current-default or live-site acceptance.
 BBC still fails the requested 10% advantage and has no catalog entry.
+
+
+## Selector-only font registration retention (cohorts 47–48)
+
+Commit `884d6def7` avoids a full font registration/order rescan after inserting
+or deleting an inline stylesheet rule whose tree contains only style rules,
+`@media` and `@supports`. Font/global rules, imports, constructed sheets and
+other owners retain the full path. Existing media-condition transitions still
+synchronize fonts before invalidation returns. `4ea5517da` isolates the matched
+control through `VOX_RETAIN_SELECTOR_RULE_FONT_SYNC=1`.
+
+All 54 focused cases pass with the candidate enabled and forced off in default,
+no-GC and preallocated modes: 324 case executions and nine zero-exit jobs.
+All 218 instruction-tool tests pass. The first shared completed build,
+executable `50c6deda76b7ebab467936e992de3a4872af557faf3c0256e69f6114debcc68b`,
+passes eleven smoke and eight SVG mutation comparisons without changed bounds.
+Its generated C is `73f2e5d2841978ebb1a6a65066c29621444c43edc32914db36d5f2512867805b`.
+The build and startup guard exit zero, with 9,716,989,952 peak sampled bytes over
+271.54104075000004 seconds. A manual build request coalesces with that existing
+post-commit build and returns busy; no separate production build runs.
+
+Cohort 48 reuses the next completed production executable,
+`e9b1cdeb2197ef69aacf701bb0e12149aecfabed3f2c68cb675d34631c3f681e`.
+Separate candidate/control BBC diagnostics match original pixels and full
+content, pass ownership and native exits, and execute one JavaScriptCore context
+with 1,896 / 1,905 evaluations. The fast-path witness appears only when enabled.
+Earlier diagnostics on the first build record 1,932 / 1,930 evaluations. These
+instrumented diagnostics receive no instruction credit.
+
+The independent cohort-48 audit rehashes all **1,638** pinned files, recomputes
+all 21 semantic audits, repeats all 21 unchanged PNG comparisons, verifies
+14 Vox endpoint ownership proofs and seven Brave endpoint ownership brackets,
+and checks every browser root's memory-guard adoption. Browser version reports
+Chrome/156.0.8078.48 and V8 15.6.75.19. All native exits are zero; driver, guard
+and controller exit 1 for the failed performance gate. The guard adopts 69
+process identities, reports no adoption error and peaks at 1,502,691,328 bytes
+over 115.252708625 seconds under the unchanged 12 GiB budget. Per-trial host
+loads and timestamps remain in the raw records. Historical WebP/RGB policy,
+OS caches, original scripts, fallback-font limitations and all endpoints are
+unchanged.
+
+The positive median point difference triggers broad verification. Both modes
+enter all 456 selected layout cases: 455 pass in each; the existing text-control
+baseline remains 13.5 versus expected 13. All compilers and supervisors complete,
+owned feature sources stay unchanged, and no whole-suite pass or cadence reset
+is claimed. Earlier main-suite baseline failures remain unresolved.
+
+Preparations that failed before browser launch are retained separately: an
+obsolete private Brave path, a capture-script permission error, missing copied
+tools/bundles, an initial metadata/signature check, and input-verification setup
+errors. They are not successful trials. The six early native sampling captures
+also remain diagnostic only: three have empty call graphs, one never enters its
+hook, and the first successful attach largely misses initial work. The final
+sample includes the pre-navigation hold and actual load stacks; it guides the
+font-rescan investigation without supplying instruction credit.
+
+Temporary deletion protection kept cohort 48's inputs present. Vox and tool
+flags clear after the run. macOS refuses to clear the owner immutable flag from
+the private copied Brave bundle after launch; this copy still needs administrator
+cleanup. The installed comparison browser is unchanged. The exact path, failed
+cleanup receipts and remaining flags are recorded in the supplement. Future
+measurements must use canonical bundles/tools under the updated repository rule.
