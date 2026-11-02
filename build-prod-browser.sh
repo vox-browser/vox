@@ -111,7 +111,9 @@ if [ "$gc_mode" = boehm ] || [ "$gc_mode" = boehm_full ]; then
     # the large configuration used by current V and its macOS GC archives.
     extra_cflags="-DLARGE_CONFIG=1"
 fi
-extra_ldflags=""
+# Mach-O keeps referenced entry points and initializers. Drop unreachable native
+# backends and their unreferenced dylibs from the production executable.
+extra_ldflags="-Wl,-dead_strip,-dead_strip_dylibs"
 upstream_dir=${LADYBIRD_SOURCE_DIR:-"$repo_dir/../3rd/ladybird"}
 vcpkg_triplet=${LADYBIRD_VCPKG_TRIPLET:-$default_vcpkg_triplet}
 skia_root="$upstream_dir/Build/release/vcpkg_installed/$vcpkg_triplet"
