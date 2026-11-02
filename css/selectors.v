@@ -4349,6 +4349,9 @@ fn selector_string_contains(haystack string, needle string, case_sensitivity Sel
 			to_ascii_lowercase(haystack).contains(to_ascii_lowercase(needle))
 		} else { haystack.contains(needle) }
 	}
+	if !retain_selector_substring_scan {
+		return selector_short_substring_contains(haystack, needle, case_sensitivity)
+	}
 	// Short attribute patterns dominate filtering selectors. Avoid rebuilding
 	// KMP prefixes or allocating lowercase copies on every candidate element.
 	// Each bounded substring is borrowed only for the comparison; it never escapes.

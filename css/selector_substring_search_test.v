@@ -58,3 +58,33 @@ fn test_attribute_substring_flags_fold_only_ascii_on_fast_and_general_paths() {
 	assert !selector_string_contains(element.get_attribute_value('data-value'), 'a'.repeat(64) +
 		'é', .case_insensitive)
 }
+
+fn test_selector_substring_boundary_filter_preserves_every_byte_value() {
+	for value in 0 .. 256 {
+		byte := u8(value)
+		single := [byte].bytestr()
+		text := [u8(0), byte, u8(255)].bytestr()
+		for needle in [single, [byte, u8(255)].bytestr(), [u8(0), byte].bytestr(), text] {
+			assert selector_string_contains(text, needle, .case_sensitive) == text.contains(needle)
+			assert selector_string_contains(text, needle, .case_insensitive) == to_ascii_lowercase(text).contains(to_ascii_lowercase(needle))
+		}
+	}
+}
+
+fn test_selector_substring_boundary_filter_stays_within_borrowed_slices() {
+	for length in 1 .. 34 {
+		needle := 'a'.repeat(length - 1) + 'Z'
+		backing := needle + needle
+		for end in 0 .. backing.len + 1 {
+			value := backing[..end]
+			assert selector_string_contains(value, needle, .case_sensitive) == value.contains(needle)
+			assert selector_string_contains(value, needle.to_lower(), .case_insensitive) == to_ascii_lowercase(value).contains(needle.to_lower())
+		}
+	}
+	for pattern in ['ABC', 'ABA', '@[', '`{', 'É', 'é', 'K', '\x00Z'] {
+		for text in ['ABxABC', 'abxAbC', 'AAAAABABA', '@[', '`{', 'éÉK', 'before\x00Zafter'] {
+			assert selector_string_contains(text, pattern, .case_sensitive) == text.contains(pattern)
+			assert selector_string_contains(text, pattern, .case_insensitive) == to_ascii_lowercase(text).contains(to_ascii_lowercase(pattern))
+		}
+	}
+}
