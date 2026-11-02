@@ -20,10 +20,13 @@ pub fn (mut runtime Runtime) install_performance_binding() ! {
 	operation := runtime.make_value_host_function(fn [owner, mut binding, performance] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		settings := runtime.scripting_settings_ or { return error('Performance requires settings') }
-		document := settings.responsible_document() or { return error('Performance requires a document') }
-		mut storage := document.native_storage()
+		persistent := platform.enter_persistent_if(settings.responsible_document() == none)
+		defer { platform.leave_persistent(persistent) }
 		mut allocation_scope := platform.RetainedArenaScope{}
-		if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+		if document := settings.responsible_document() {
+			mut storage := document.native_storage()
+			if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+		}
 		defer { allocation_scope.finish() }
 		return runtime.performance_operation(mut binding, performance, args) or {
 			if err is JavaScriptValueException { return err }

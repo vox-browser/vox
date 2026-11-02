@@ -96,6 +96,7 @@ fn (mut agent WorkerAgentRuntime) install(transport ?&fetch.FetchHost) ! {
 	runtime.install_text_decoder_binding()!
 	runtime.install_microtask_binding()!
 	runtime.install_message_channel_binding()!
+	runtime.install_performance_binding()!
 	mut timers := TimerHost.create_for_settings(settings)!
 	timers.install(mut runtime)!
 	mut streams := TransformStreamHost.create_for_settings(settings)!

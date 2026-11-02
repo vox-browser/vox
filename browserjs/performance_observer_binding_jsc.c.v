@@ -25,18 +25,18 @@ pub fn (mut runtime Runtime) install_performance_observer_binding() ! {
 	owner := voidptr(&runtime)
 	if owner in performance_observer_bindings_ { return }
 	settings := runtime.scripting_settings_ or { return error('PerformanceObserver requires an owning environment') }
-	target := settings.global_object()
-	if target.data.kind != .window { return error('PerformanceObserver requires an owning Window') }
-	mut window := unsafe { &html.WindowModel(target) }
-	mut binding := &PerformanceObserverBinding{ scope: window.window_or_worker_global_scope() }
+	mut binding := &PerformanceObserverBinding{ scope: settings.window_or_worker_global_scope()! }
 	runtime.install_dom_exception_binding()!
 	operation := runtime.make_value_host_function(fn [owner, mut binding] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		settings := runtime.scripting_settings_ or { return error('PerformanceObserver requires settings') }
-		document := settings.responsible_document() or { return error('PerformanceObserver requires a document') }
-		mut storage := document.native_storage()
+		persistent := platform.enter_persistent_if(settings.responsible_document() == none)
+		defer { platform.leave_persistent(persistent) }
 		mut allocation_scope := platform.RetainedArenaScope{}
-		if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+		if document := settings.responsible_document() {
+			mut storage := document.native_storage()
+			if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+		}
 		defer { allocation_scope.finish() }
 		return runtime.performance_observer_operation(mut binding, args) or {
 			if err is JavaScriptValueException { return err }
