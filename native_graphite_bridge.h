@@ -146,6 +146,10 @@ typedef struct VoxGraphitePixelRegion {
     int x, y, width, height, pitch;
     uint8_t *pixels;
 } VoxGraphitePixelRegion;
+// Independent RGBA image tiles with immutable sources and disjoint CPU views.
+// Each retains its original target size; outputs publish only after all succeed.
+int vox_graphite_draw_image_regions_pixels(const VoxGraphitePixelRegion *regions,
+    const VoxGraphiteImage *images, int count, int width, int height, int has_background);
 typedef struct VoxGraphitePictureRegion {
     VoxGraphitePixelRegion output;
     const void *bytes;
