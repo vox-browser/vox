@@ -2775,6 +2775,13 @@ void native_set_chromium_raster_layer(double origin_x, double origin_y, int root
 #endif
 }
 
+void native_set_chromium_direct_image_layer(int enabled) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    extern void ladybird_v_skia_set_direct_image_layer(int);
+    ladybird_v_skia_set_direct_image_layer(enabled);
+#endif
+}
+
 void native_set_chromium_raster_layer_size(double width, double height) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     extern void ladybird_v_skia_set_raster_layer_size(double, double);

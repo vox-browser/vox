@@ -12,6 +12,12 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
+    def test_pikabu_direct_image_retains_uniform_raster_scale_and_fractional_visible_quads(self):
+        self.compare_fixture('pikabu-direct-composited-image', width=1024, height=768)
+
+    def test_picture_local_rounded_clip_keeps_ordinary_image_sampling(self):
+        self.compare_fixture('pikabu-picture-local-image-clip', width=1024, height=768)
+
     def test_pikabu_svg_banner_samples_its_image_pattern_at_the_final_viewport(self):
         self.compare_fixture('pikabu-svg-image-pattern')
 

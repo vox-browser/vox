@@ -50,6 +50,9 @@ fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int, command_inde
 			|| app.document.font_rendering_policy() != .chromium {
 			return false
 		}
+		if chromium_direct_image_layer_supported(app.paint_commands, app.chromium_raster_plan, index) {
+			return false
+		}
 		recorded := chromium_text_scroll_layer_supported(app.paint_commands, app.chromium_raster_plan, index)
 			|| chromium_svg_compositor_layer_supported_for_viewport(app.paint_commands,
 				app.chromium_raster_plan, index,

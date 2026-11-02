@@ -591,6 +591,32 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
     }
 }
 
+#include "native_direct_image_draw.h"
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_direct_image_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int has_background, VoxGraphiteImage const* image)
+{
+    if (!pixels || !image_draw_is_valid(image) || pitch < int64_t(width) * 4) return 0;
+    auto plan = vox_direct_image_raster_plan(*image, width, height);
+    if (!plan) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context(); if (!gpu) return 0;
+    FullDrawRecorder recorder(gpu); if (!recorder.get()) return 0;
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::RenderTarget(recorder.get(), info); if (!surface) return 0;
+    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    else surface->getCanvas()->clear(SK_ColorTRANSPARENT);
+    PreparedImageDraw prepared;
+    prepared.upload_width = image->width; prepared.upload_height = image->height;
+    prepared.whole_source = true;
+    if (!prepare_image_texture(recorder.get(), image, prepared)
+        || !draw_direct_image(surface->getCanvas(), recorder.get(), *image, prepared, *plan, width, height)) return 0;
+    int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
+    if (result) image_upload_cache.finish(std::move(prepared.upload), prepared.texture);
+    return result;
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     int pitch, int has_background, VoxGraphiteImage const* image)

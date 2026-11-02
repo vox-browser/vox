@@ -257,6 +257,16 @@ auto graphite_image_draw()
     return draw;
 }
 
+auto graphite_direct_image_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_direct_image_pixels)>(
+            dlsym(library, "vox_graphite_draw_direct_image_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 auto graphite_image_resize()
 {
     static auto resize = [] {
@@ -2902,6 +2912,7 @@ static double s_root_raster_scroll_y = 0;
 static double s_raster_origin_x = 0, s_raster_origin_y = 0;
 static double s_raster_layer_width = 0, s_raster_layer_height = 0;
 static bool s_raster_layer_is_root = true;
+static bool s_direct_image_layer = false;
 
 #include "native_chromium_shared_recording.h"
 
@@ -2916,7 +2927,13 @@ extern "C" void ladybird_v_skia_set_raster_layer(double x, double y, int root)
     s_raster_origin_x = x;
     s_raster_origin_y = y;
     s_raster_layer_is_root = root != 0;
+    s_direct_image_layer = false;
     s_raster_layer_width = s_raster_layer_height = 0;
+}
+
+extern "C" void ladybird_v_skia_set_direct_image_layer(int enabled)
+{
+    s_direct_image_layer = enabled != 0;
 }
 
 extern "C" void ladybird_v_skia_set_raster_layer_size(double width, double height)
@@ -5080,6 +5097,30 @@ static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
 {
     auto draw = graphite_image_draw();
     auto draw_region = graphite_image_region_draw();
+    if (s_direct_image_layer && scale == 1) {
+        auto direct = graphite_direct_image_draw();
+        int width = s_shared_viewport_width, height = s_shared_viewport_height;
+        int x = std::lround(region.left - page_x), y = std::lround(region.top - page_y);
+        if (direct && width > 0 && height > 0 && x >= 0 && y >= 0
+            && width <= 16384 && height <= 16384 && size_t(width) * height <= 8 * 1024 * 1024
+            && raster_width <= width - x && y < height) {
+            std::vector<uint32_t> frame(size_t(width) * height);
+            int rows = std::min(raster_height, height - y);
+            for (int row = 0; row < rows; ++row)
+                std::copy_n(pixels.data() + size_t(row) * raster_width, raster_width,
+                    frame.data() + size_t(row + y) * width + x);
+            auto image = descriptor;
+            image.matrix[2] += x; image.matrix[5] += y;
+            if (direct(reinterpret_cast<uint8_t*>(frame.data()), width, height, width * 4,
+                    has_background, &image)) {
+                for (int row = 0; row < rows; ++row)
+                    std::copy_n(frame.data() + size_t(row + y) * width + x, raster_width,
+                        pixels.data() + size_t(row) * raster_width);
+                return true;
+            }
+        }
+    }
+
     // Image interpolation depends on the complete raster extent. Independent
     // layers need their own tile coordinates too, rather than a tight leaf
     // surface that changes the texels beside a rounded clip or border.
