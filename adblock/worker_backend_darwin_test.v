@@ -28,7 +28,7 @@ fn worker_test_build_helpers_if_needed() ! {
 		helper := os.join_path(directory, 'worker')
 		command := ['/usr/bin/env', 'VTMP=' + os.join_path(directory, 'tmp'),
 			'TMPDIR=' + os.join_path(directory, 'tmp'), 'VCACHE=' + os.join_path(directory, 'cache'),
-			compiler, '-bug-report-url', 'http://127.0.0.1:9', '-enable-globals',
+			compiler, '-memory-limit', '10G', '-bug-report-url', 'http://127.0.0.1:9', '-enable-globals',
 			'-exclude', '@vlib/time/zoneinfo.native.v', '-gc', gc, '-path', root + '|@vlib',
 			'-o', helper, os.join_path(root, 'tools/adblock-worker-mini/main.v')]
 		result := os.execute(command.map(os.quoted_path(it)).join(' '))
@@ -270,7 +270,7 @@ fn test_worker_restores_full_bundled_request_header_cosmetic_and_scriptlet_rules
 fn test_worker_self_path_and_bundle_lookup_ignore_injected_dyld_image_order() {
 	expected := os.real_path(os.args[0])
 	assert os.real_path(current_executable_path()!) == expected
-	assert bundled_snapshot_path() == os.join_path(os.dir(expected), '..', 'Resources', 'adblock.snapshot.bin')
+	assert snapshot_resource_path(current_executable_path()!, 'engine.snapshot.bin') == os.join_path(os.dir(expected), '..', 'Resources', 'adblock.snapshot.bin')
 }
 
 fn test_bundled_worker_runs_the_complete_engine_in_the_selected_child() {
@@ -281,6 +281,11 @@ fn test_bundled_worker_runs_the_complete_engine_in_the_selected_child() {
 	helper := os.join_path(directory, 'VoxAdblockWorker')
 	os.cp(os.getenv('VOX_ADBLOCK_WORKER_HELPER'), helper)!
 	os.chmod(helper, 0o755)!
+	resources := os.join_path(root, 'Vox.app', 'Contents', 'Resources')
+	os.mkdir_all(resources)!
+	for name in ['engine.snapshot.bin', 'engine.snapshot.json.gz', 'engine.js.gz'] {
+		os.cp(os.join_path(os.dir(@FILE), name), os.join_path(resources, snapshot_resource_name(name)))!
+	}
 	defer {
 		_ = release_unused_engine()
 		configure_default_worker_with_deadline(os.getenv('VOX_ADBLOCK_WORKER_HELPER'), 15000) or {
@@ -302,4 +307,10 @@ fn test_bundled_worker_runs_the_complete_engine_in_the_selected_child() {
 	}).blocked
 	assert release_unused_engine()
 	assert default_worker_pid() == 0
+	// A fresh helper must read its packaged codec instead of silently opening
+	// the still-valid source checkout version.
+	os.write_file(os.join_path(resources, 'adblock.engine.js.gz'), 'invalid gzip')!
+	mut failure := ''
+	_ = evaluate_engine('42') or { failure = err.msg(); '' }
+	assert failure.contains('Cannot decompress bundled adblock engine')
 }

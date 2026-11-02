@@ -89,12 +89,20 @@ compile_dir=$(mktemp -d "$compiler_output_root/compiler-output.XXXXXX")
 echo "Compiler outputs: $compile_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
 cp "$repo_dir/packaging/Vox.icns" "$resources_dir/Vox.icns"
-if ! cmp -s "$repo_dir/adblock/engine.snapshot.bin" "$resources_dir/adblock.snapshot.bin"; then
-    snapshot_resource_tmp=$(mktemp "$resources_dir/.adblock-snapshot.XXXXXX")
-    cp "$repo_dir/adblock/engine.snapshot.bin" "$snapshot_resource_tmp"
-    chmod 644 "$snapshot_resource_tmp"
-    mv -f "$snapshot_resource_tmp" "$resources_dir/adblock.snapshot.bin"
-fi
+# Keep the codec and metadata beside the binary snapshot. Non--prod V embeds
+# otherwise reopen checkout files, which may change after this bundle is built.
+for adblock_asset in engine.snapshot.bin engine.snapshot.json.gz engine.js.gz; do
+    adblock_resource="adblock.$adblock_asset"
+    if [ "$adblock_asset" = engine.snapshot.bin ]; then
+        adblock_resource=adblock.snapshot.bin
+    fi
+    if ! cmp -s "$repo_dir/adblock/$adblock_asset" "$resources_dir/$adblock_resource"; then
+        adblock_resource_tmp=$(mktemp "$resources_dir/.adblock-resource.XXXXXX")
+        cp "$repo_dir/adblock/$adblock_asset" "$adblock_resource_tmp"
+        chmod 644 "$adblock_resource_tmp"
+        mv -f "$adblock_resource_tmp" "$resources_dir/$adblock_resource"
+    fi
+done
 
 extra_cflags=""
 if [ "$gc_mode" = boehm ] || [ "$gc_mode" = boehm_full ]; then
