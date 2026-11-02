@@ -8,6 +8,7 @@ Provisional entries retain unresolved acceptance checks.
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox scroll FPS | Brave scroll FPS† | Evidence |
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Lobsters homepage | 2026-11-02 | 7 | Median | 8,082,180,934 | 27,446,683,211 | **70.55%** | — | — | [Comparison](docs/LOBSTERS_BRAVE_INSTRUCTIONS.md) |
 | Old Reddit /r/programming/ | 2026-11-01 | 7 | Median | 4,954,400,539 | 9,248,675,091 | **46.43%** | 39.2–53.0 | 59.56–59.78 | [Comparison](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
 | Hacker News homepage | 2026-11-01 | 7 | Median | 4,877,590,820 | 8,554,149,229 | **42.98%** | 59.7–59.8 | 59.78–59.79 | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [scrolling](docs/HACKER_NEWS_SCROLLING.md) |
 | CNN homepage (provisional) | 2026-11-01 | 7 | Median | 21,805,542,771 | 32,665,051,523 | **33.25%** | — | — | [Comparison](docs/CNN_INSTRUCTIONS.md), [receipts](docs/benchmark-results/cnn-home-thirty-percent-2026-11-01.json) |
@@ -37,11 +38,17 @@ captures use a 1024×768 CSS-pixel viewport. Hacker News uses native capture sca
 the other workloads use scale 1. Old Reddit, Wikipedia and vlang.io use process-tree counters:
 Vox includes capture and teardown, while Brave ends before shutdown. Both sums
 are observed lower bounds because short-lived unsampled children can be missed.
-Hacker News and CNN use exclusive resource-coalition counters through PNG availability,
+Hacker News, CNN and Lobsters use exclusive resource-coalition counters through PNG availability,
 including exited helpers and explicitly allowed coalition-owned system services;
 Vox ends before the PNG file write and Brave includes CDP screenshot delivery.
 GPU execution and services outside the recorded ownership scope are excluded.
 The reports retain exact endpoints, identities and counter limits.
+
+Lobsters uses its dated frozen guest DOM with author scripts removed, normal
+scripting and filtering scriptlets retained, full-uBO filtering, and private
+copies of complete encoded-resource caches. All 14 captures match the original
+live Brave reference exactly. Its conservative highest-Vox/lowest-Brave lead is
+69.28%; the existing completed production build already passes the 10% target.
 
 ## Latest live scrolling
 
