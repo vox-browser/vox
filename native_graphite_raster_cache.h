@@ -436,10 +436,12 @@ private:
         // obey the unchanged byte/entry budgets after lossless compression.
         constexpr size_t shape_limit = 2 * 1024 * 1024;
         bool is_image = !parameters.is_shape && !parameters.is_shadow && !parameters.is_path;
-        // Flat SVG surfaces can shrink greatly in the row codec. Bound their
+        // Flat SVG surfaces and transparent shadows can shrink greatly in the row codec. Bound their
         // temporary raw pair separately, then enforce the retained budget on
         // the actual compressed result before admitting it.
-        size_t limit = parameters.is_path ? std::min(byte_limit, max_entry_bytes) * 2
+        static bool const large_shadows = std::getenv("VOX_ENABLE_LARGE_SHADOW_CACHE");
+        bool large_transparent_shadow = large_shadows && parameters.is_shadow && !has_background;
+        size_t limit = (parameters.is_path || large_transparent_shadow) ? std::min(byte_limit, max_entry_bytes) * 2
             : std::min(byte_limit, parameters.is_shape ? shape_limit
                 : is_image ? max_image_entry_bytes : max_entry_bytes);
         Rows backdrop {pixels, size_t(width) * 4, size_t(pitch), size_t(height)};

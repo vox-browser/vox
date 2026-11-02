@@ -2,8 +2,48 @@
 #include <cassert>
 #include <iostream>
 
+static void large_transparent_shadows()
+{
+    constexpr int width = 2048, height = 1086, pitch = width * 4 + 13;
+    bool enabled = std::getenv("VOX_ENABLE_LARGE_SHADOW_CACHE");
+    VoxGraphiteRasterCache cache(8 * 1024 * 1024, 128, true);
+    VoxGraphiteShadow shadow {};
+    shadow.matrix[0] = shadow.matrix[4] = shadow.matrix[8] = 1;
+    shadow.blur = 40;
+    shadow.alpha = 128;
+    std::vector<uint8_t> pixels(size_t(pitch) * height, 31);
+    assert(!cache.prepare(shadow, width, height, pitch, false, pixels.data()).pending);
+    auto request = cache.prepare(shadow, width, height, pitch, false, pixels.data());
+    assert(bool(request.pending) == enabled && !request.hit);
+    if (!enabled) return;
+    for (int row = 0; row < height; ++row)
+        std::fill_n(pixels.data() + size_t(row) * pitch, width * 4, 83);
+    cache.finish(std::move(request), pixels.data(), pitch);
+    std::fill(pixels.begin(), pixels.end(), 31);
+    assert(cache.prepare(shadow, width, height, pitch, false, pixels.data()).hit);
+    for (int row = 0; row < height; ++row) {
+        for (int x = 0; x < width * 4; ++x) assert(pixels[row * pitch + x] == 83);
+        for (int x = width * 4; x < pitch; ++x) assert(pixels[row * pitch + x] == 31);
+    }
+    // A changed backdrop cannot use a transparent result or this larger limit.
+    assert(!cache.prepare(shadow, width, height, pitch, true, pixels.data()).pending);
+    // Incompressible results still obey the unchanged retained byte budget.
+    auto changed = shadow;
+    changed.blur++;
+    assert(!cache.prepare(changed, width, height, pitch, false, pixels.data()).pending);
+    request = cache.prepare(changed, width, height, pitch, false, pixels.data());
+    assert(request.pending && !request.hit);
+    for (size_t i = 0; i < pixels.size(); ++i) pixels[i] = (i * 17 + i / 11) % 251;
+    cache.finish(std::move(request), pixels.data(), pitch);
+    assert(!cache.prepare(changed, width, height, pitch, false, pixels.data()).hit);
+    assert(cache.prepare(shadow, width, height, pitch, false, pixels.data()).hit);
+    shadow.matrix[5] += .00001f;
+    assert(!cache.prepare(shadow, width, height, pitch, false, pixels.data()).hit);
+}
+
 int main()
 {
+    large_transparent_shadows();
     VoxGraphiteShadow shadow {};
     shadow.matrix[0] = shadow.matrix[4] = shadow.matrix[8] = 1;
     shadow.shadow[2] = shadow.content[2] = 2;
