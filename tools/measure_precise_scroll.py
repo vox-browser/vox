@@ -54,10 +54,23 @@ def runtime_input_paths(binary, environment, checkout=REPO):
                 raise ValueError(f'Missing selected adblock runtime asset: {asset}')
             paths.append(asset)
     else:
-        paths.extend(checkout / 'adblock' / name for name in
-                     ['engine.js.gz', 'engine.snapshot.json.gz'])
-        bundled = binary.parent.parent / 'Resources/adblock.snapshot.bin'
-        paths.append(bundled if bundled.is_file() else checkout / 'adblock/engine.snapshot.bin')
+        resources = binary.parent.parent / 'Resources'
+        codec = resources / 'adblock.engine.js.gz'
+        metadata = resources / 'adblock.engine.snapshot.json.gz'
+        bundled = resources / 'adblock.snapshot.bin'
+        if codec.is_file() or metadata.is_file():
+            # New bundles select a complete packaged set. Never substitute a
+            # checkout member when the selected package is incomplete.
+            for asset in [codec, metadata, bundled]:
+                if not asset.is_file():
+                    raise ValueError(f'Missing packaged adblock runtime asset: {asset}')
+                paths.append(asset)
+        else:
+            # Older bundles package only the snapshot; standalone executables
+            # read all three fallback assets from their embedded source paths.
+            paths.extend(checkout / 'adblock' / name for name in
+                         ['engine.js.gz', 'engine.snapshot.json.gz'])
+            paths.append(bundled if bundled.is_file() else checkout / 'adblock/engine.snapshot.bin')
     return sorted({path.resolve() for path in paths if path.is_file()})
 
 
