@@ -12,7 +12,7 @@ struct CompactCharacterDataQuery {
 
 fn (mut binding CompactElementQueryBinding) character_data_query(root &dom.Node, source string) !string {
 	mut data := root.as_character_data() or { return error('TypeError: Illegal CharacterData receiver') }
-	query := json2.decode[CompactCharacterDataQuery](source)!
+	query := compact_decode_query[CompactCharacterDataQuery](source)!
 	if query.op == 'substringData' {
 		return json2.encode({
 			'value': json2.Any(data.substring_data(query.offset, query.count)!)

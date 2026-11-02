@@ -17,7 +17,7 @@ struct CompactInputValueQuery {
 // selection and placeholder. Detached script-created inputs need that same owner
 // before insertion, rather than a separate value cached on their JS facade.
 fn (mut binding CompactElementQueryBinding) input_value_query(key string, source string) !string {
-	query := json2.decode[CompactInputValueQuery](source)!
+	query := compact_decode_query[CompactInputValueQuery](source)!
 	mut storage := binding.document.native_storage()
 	mut allocation_scope := platform.RetainedArenaScope{}
 	if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }

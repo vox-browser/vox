@@ -14,7 +14,7 @@ struct CompactElementScrollQuery {
 // scrolling, which owns clamping, scroll snapping, events and paint invalidation.
 fn compact_element_set_scroll(root &dom.Node, source string, runtime &browserjs.Runtime) !string {
 	mut element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
-	query := json2.decode[CompactElementScrollQuery](source)!
+	query := compact_decode_query[CompactElementScrollQuery](source)!
 	mut storage := element.document().native_storage()
 	mut allocation_scope := platform.RetainedArenaScope{}
 	if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }

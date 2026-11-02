@@ -18,7 +18,7 @@ struct CompactInlineStyleQuery {
 // In particular, a cssText replacement must not leave a second property cache.
 fn compact_inline_style_query(root &dom.Node, source string, runtime &browserjs.Runtime) !string {
 	element := root.as_element() or { return error('TypeError: Invalid inline style owner') }
-	query := json2.decode[CompactInlineStyleQuery](source)!
+	query := compact_decode_query[CompactInlineStyleQuery](source)!
 	previous_style := element.get_attribute_value('style')
 	had_style := element.has_attribute('style')
 	mut storage := element.document().native_storage()

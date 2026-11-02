@@ -15,7 +15,7 @@ struct CompactFormControlsQuery {
 }
 
 fn (mut binding CompactElementQueryBinding) form_controls_query(key string, source string) !string {
-	query := json2.decode[CompactFormControlsQuery](source)!
+	query := compact_decode_query[CompactFormControlsQuery](source)!
 	mut storage := binding.document.native_storage()
 	mut scope := if storage != unsafe { nil } {
 		storage.enter_nested()

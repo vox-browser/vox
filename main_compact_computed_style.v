@@ -23,7 +23,7 @@ fn compact_computed_style_query(root &dom.Node, source string) !string {
 	}
 	window_pointer := document.get_window() or { return error('getComputedStyle requires its owning Window') }
 	window := unsafe { &html.WindowModel(window_pointer) }
-	query := json2.decode[CompactComputedStyleQuery](source)!
+	query := compact_decode_query[CompactComputedStyleQuery](source)!
 	declaration := window.get_computed_style(element, query.pseudo)
 	match query.op {
 		'access' { return 'true' }

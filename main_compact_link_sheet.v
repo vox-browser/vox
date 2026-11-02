@@ -67,7 +67,7 @@ fn (mut binding CompactElementQueryBinding) link_sheet_query(key string) !string
 }
 
 fn (mut binding CompactElementQueryBinding) css_sheet_query(source string) !string {
-	request := json2.decode[CompactSheetRequest](source)!
+	request := compact_decode_query[CompactSheetRequest](source)!
 	mut storage := binding.document.native_storage()
 	mut allocations := platform.RetainedArenaScope{}
 	if storage != unsafe { nil } { allocations = storage.enter_nested() }
