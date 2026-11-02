@@ -12,7 +12,7 @@ int main(int argc, const char *argv[])
         NSArray<NSColorSpace *> *spaces = @[[NSColorSpace sRGBColorSpace],
             [NSColorSpace displayP3ColorSpace], [NSColorSpace genericRGBColorSpace]];
         NSSize sizes[] = { {19, 13}, {9.5, 6.5}, {13.25, 4.125} };
-        unsigned cases = 0;
+        unsigned cases = 0, optimized_cases = 0;
         for (NSColorSpace *space in spaces) for (unsigned alpha = 0; alpha < 5; ++alpha)
             for (unsigned scale = 0; scale < 3; ++scale) {
                 @autoreleasepool {
@@ -46,11 +46,25 @@ int main(int argc, const char *argv[])
                     NSData *reference = [converted representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
                     NSData *actual = native_encode_snapshot_png(converted);
                     assert(reference && actual);
+                    NSMutableDictionary *density = [NSMutableDictionary dictionary];
+                    if (converted.size.width != converted.pixelsWide || converted.size.height != converted.pixelsHigh) {
+                        density[(__bridge NSString *)kCGImagePropertyDPIWidth] = @(72.0 * converted.pixelsWide / converted.size.width);
+                        density[(__bridge NSString *)kCGImagePropertyDPIHeight] = @(72.0 * converted.pixelsHigh / converted.size.height);
+                    }
+                    NSData *fast = native_encode_opaque_snapshot_png(converted, converted.CGImage, density);
+                    if (fast) { assert([fast isEqualToData:actual]); ++optimized_cases; }
+                    assert(setenv("VOX_DISABLE_OPAQUE_SNAPSHOT_PNG", "1", 1) == 0);
+                    assert(native_encode_opaque_snapshot_png(converted, converted.CGImage, density) == nil);
+                    NSData *fallback = native_encode_snapshot_png(converted);
+                    assert(unsetenv("VOX_DISABLE_OPAQUE_SNAPSHOT_PNG") == 0);
+                    assert(fallback);
                     NSString *stem = [NSString stringWithFormat:@"case-%u", cases];
                     assert([reference writeToFile:[output stringByAppendingPathComponent:
                         [stem stringByAppendingString:@"-reference.png"]] atomically:YES]);
                     assert([actual writeToFile:[output stringByAppendingPathComponent:
                         [stem stringByAppendingString:@"-actual.png"]] atomically:YES]);
+                    assert([fallback writeToFile:[output stringByAppendingPathComponent:
+                        [stem stringByAppendingString:@"-fallback.png"]] atomically:YES]);
                     printf("{\"case\":%u,\"alpha\":%u,\"scale\":%u,\"width\":19,\"height\":13}\n",
                         cases, alpha, scale);
                     ++cases;
@@ -60,6 +74,7 @@ int main(int argc, const char *argv[])
                 }
             }
         assert(cases == 45);
+        assert(optimized_cases > 0 && optimized_cases < cases);
         printf("PASS 45 snapshot PNG pixel/profile/density cases\n");
     }
 }

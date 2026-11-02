@@ -73,7 +73,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     assert not (output / 'result.json').exists(), output
     compiler = Path(shutil.which('clang')).resolve()
-    files = (source / 'native_snapshot_png_darwin.h', source / 'tools/native_snapshot_png_test.m',
+    files = (source / 'native_snapshot_png_darwin.h', source / 'native_snapshot_png_opaque_darwin.h', source / 'tools/native_snapshot_png_test.m',
              Path(__file__).resolve(), compiler)
     pins = {str(path): digest(path) for path in files}
     result = dict(passed=False, pins=pins, jobs={})
@@ -84,7 +84,7 @@ def main():
             artifacts = directory / 'artifacts'
             artifacts.mkdir()
             command = [str(compiler), flag, '-O2', '-Wall', '-Wextra', '-Werror',
-                       '-framework', 'Cocoa', '-framework', 'ImageIO', '-I', str(source),
+                       '-framework', 'Cocoa', '-framework', 'ImageIO', '-lz', '-I', str(source),
                        str(source / 'tools/native_snapshot_png_test.m'), '-o', str(directory / 'tests')]
             row = dict(command=command, passed=False)
             result['jobs'][name] = row
@@ -101,9 +101,12 @@ def main():
             row['cases'] = [dict(case=case['case'], **compare(
                 artifacts / ('case-%d-reference.png' % case['case']),
                 artifacts / ('case-%d-actual.png' % case['case']))) for case in records]
+            row['fallback_cases'] = [dict(case=case['case'], **compare(
+                artifacts / ('case-%d-reference.png' % case['case']),
+                artifacts / ('case-%d-fallback.png' % case['case']))) for case in records]
             row['passed'] = (row['test_exit_code'] == 0 and len(records) == 45 and
                 {case['case'] for case in records} == set(range(45)) and
-                all(case['passed'] for case in row['cases']) and
+                all(case['passed'] for case in row['cases'] + row['fallback_cases']) and
                 'PASS 45 snapshot PNG pixel/profile/density cases' in (directory / 'test.log').read_text())
         result['changed_inputs'] = [str(path) for path, sha in pins.items() if digest(Path(path)) != sha]
         result['passed'] = len(result['jobs']) == 2 and all(row['passed'] for row in result['jobs'].values()) and not result['changed_inputs']

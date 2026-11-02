@@ -3,6 +3,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <ImageIO/ImageIO.h>
+#include "native_snapshot_png_opaque_darwin.h"
 
 // Encode synchronously through the same capture checkpoint. Unfiltered rows
 // avoid PNG's per-row filter search without changing pixels or color profiles.
@@ -10,11 +11,6 @@ static NSData *native_encode_snapshot_png(NSBitmapImageRep *bitmap)
 {
     CGImageRef image = bitmap.CGImage;
     if (image == NULL) return nil;
-
-    NSMutableData *data = [NSMutableData data];
-    CGImageDestinationRef destination = CGImageDestinationCreateWithData(
-        (__bridge CFMutableDataRef)data, CFSTR("public.png"), 1, NULL);
-    if (destination == NULL) return nil;
 
     NSMutableDictionary *properties = [NSMutableDictionary dictionaryWithDictionary:@{
         (__bridge NSString *)kCGImagePropertyPNGDictionary: @{
@@ -32,6 +28,14 @@ static NSData *native_encode_snapshot_png(NSBitmapImageRep *bitmap)
         properties[(__bridge NSString *)kCGImagePropertyDPIHeight] =
             @(72.0 * bitmap.pixelsHigh / size.height);
     }
+    NSData *opaque = native_encode_opaque_snapshot_png(bitmap, image, properties);
+    if (opaque) return opaque;
+
+    NSMutableData *data = [NSMutableData data];
+    CGImageDestinationRef destination = CGImageDestinationCreateWithData(
+        (__bridge CFMutableDataRef)data, CFSTR("public.png"), 1, NULL);
+    if (destination == NULL) return nil;
+
     CGImageDestinationAddImage(destination, image, (__bridge CFDictionaryRef)properties);
     BOOL success = CGImageDestinationFinalize(destination);
     CFRelease(destination);
