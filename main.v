@@ -7998,6 +7998,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 }
 
 fn main() {
+	configure_browser_javascript_startup()
 	install_browser_script_resource_cache()
 	loader.install_fetch_user_agent_provider()
 	// Dispatch the signed self-helper before browser heap/font/GUI setup.
