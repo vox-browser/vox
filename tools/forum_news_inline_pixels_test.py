@@ -13,6 +13,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_decorated_text_and_rounded_icon_backings_retain_coverage(self):
+        self.compare_fixture('chromium-decorated-text-coverage', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_percentage_border_radii_keep_float_precision_for_backgrounds(self):
         self.compare_fixture('chromium-percentage-border-radius', width=1024, height=768)
 
