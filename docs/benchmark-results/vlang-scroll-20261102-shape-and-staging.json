@@ -1,0 +1,295 @@
+{
+  "large_shape": {
+    "outcome": "Rejected: candidate slower in both alternating pairs. Removed in 707e2b6a4. No FPS gain accepted. Smooth live 60 FPS remains open.",
+    "bundle_identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c8993aa08e74513dacc5fda3f384b9cd6eb2835eddc8f98cf315b4c39bd9c324",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "668a80986a5ecdf356efa6d777b6c48d6db1c1aa7bb05474fcee27c9a285d6f2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "74ab05232bd6ffa6f5f7e2cfdbb97d09c3a2e2140ffcd8445843d77d5e34c56e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "dcad70250f0cc182470282af2a8e48e346278f5bd5bffc6a88e613259ba427bd",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "a8af21441309c4a3356366709a7392c704a5de3cd843cea85b713eda9d5e3e51",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "33990ad65f867b40c42e3c41e951c548670f1264b334c7cd1870a6f4fbed8398",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "6db83981936ad3f6629073cc086aabd46e1bcc8a4ffee780140fac6e0d8f6b4e",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+    },
+    "rows": [
+      {
+        "mean_scroll_fps": 10.571373912842777,
+        "input_delivery_hz": 54.588387705110556,
+        "scroll_interval_us": {
+          "n": 116,
+          "mean": 93004.40265517241,
+          "median": 92880.06249999953,
+          "p95": 107468.4160000002,
+          "max": 117580.875
+        },
+        "fraction_over_budget": 1.0,
+        "completed_inputs": 600,
+        "completed_publications": 120,
+        "first_counted_scroll_delay_us": 267895.583,
+        "last_scroll_publication_gap_us": 23850.375,
+        "name": "shape-control-1"
+      },
+      {
+        "mean_scroll_fps": 10.32528748314853,
+        "input_delivery_hz": 54.73316108323867,
+        "scroll_interval_us": {
+          "n": 113,
+          "mean": 95100.09992920354,
+          "median": 94045.87499999907,
+          "p95": 113527.91700000037,
+          "max": 124431.25
+        },
+        "fraction_over_budget": 1.0,
+        "completed_inputs": 600,
+        "completed_publications": 118,
+        "first_counted_scroll_delay_us": 222265.75,
+        "last_scroll_publication_gap_us": 80449.91699999943,
+        "name": "shape-candidate-1"
+      },
+      {
+        "mean_scroll_fps": 9.716844611005792,
+        "input_delivery_hz": 53.39807267883,
+        "scroll_interval_us": {
+          "n": 109,
+          "mean": 101609.03593577982,
+          "median": 100481.9580000001,
+          "p95": 117449.5419999999,
+          "max": 126099.75
+        },
+        "fraction_over_budget": 1.0,
+        "completed_inputs": 600,
+        "completed_publications": 113,
+        "first_counted_scroll_delay_us": 264931.167,
+        "last_scroll_publication_gap_us": 401.83300000056624,
+        "name": "shape-control-2"
+      },
+      {
+        "mean_scroll_fps": 8.138891121092819,
+        "input_delivery_hz": 52.99125849494129,
+        "scroll_interval_us": {
+          "n": 92,
+          "mean": 119665.36141304349,
+          "median": 117108.47850000055,
+          "p95": 152470.125,
+          "max": 159465.95800000057
+        },
+        "fraction_over_budget": 1.0,
+        "completed_inputs": 600,
+        "completed_publications": 96,
+        "first_counted_scroll_delay_us": 267311.91599999997,
+        "last_scroll_publication_gap_us": 123216.5,
+        "name": "shape-candidate-2"
+      }
+    ],
+    "diagnostic": {
+      "input": {
+        "calls": 1373,
+        "hits": 205,
+        "full_pixels": 191209472,
+        "view_pixels": 133392656
+      },
+      "tail": {
+        "calls": 41,
+        "hits": 0,
+        "full_pixels": 5709824,
+        "view_pixels": 3508040
+      }
+    },
+    "tests_deferred_by_user": true,
+    "correctness_before_user_steering": "Native suite evidence is recorded separately in Build/vlang-large-shape-regions-20261102-2140/checkpoint.json. No additional tests were run after deferral."
+  },
+  "staged_grid": {
+    "candidate_commit": "7ba24c2ce3a5e7038b129f9331b2cc8129852bbb",
+    "initial_compact_commit": "b07a30c89ce86bcfd170bfdf0971ac170d4cafe7",
+    "outcome": "Pending: available installed bundle does not contain staged raster grid. No candidate browser launched and no FPS credit accepted. Repeated shared production builds were superseded by changed inputs.",
+    "user_instruction": "Only run tests once FPS goal is reached. Correctness/regression tests deferred; no additional test execution.",
+    "files": {
+      "native_chromium_raster_grid.h": "bf8d530bbee6d8e2ee3e059655cdf9647041f4b7acbc940f686fcd1c570e4b58",
+      "native_chromium_staged_raster_grid.h": "2756b59f72c1156636f7f51be3f32721bdeb01f7344ef22ea23a058e30f034f2",
+      "tools/native_chromium_staged_raster_grid_test.cpp": "5d96cb3a84fda39b3098a638ec16919de8124efd93b8d8a6c0c6e5a6bba58d01"
+    },
+    "latest_completed_bundle": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "c8993aa08e74513dacc5fda3f384b9cd6eb2835eddc8f98cf315b4c39bd9c324",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "ddc66941fc699f8b1db2954e9ef365eef5db0e54fb2f69c613b5f7898f69ed48",
+        "dirty": true,
+        "head": "4f87e708424edf0ed929d130fdc4ef0002fa23b5",
+        "repository_sha256": "b91963d5c2b9666199a0ad3cb66c6860d71383cfef5ce013cc4b932e84183d77"
+      },
+      "request": {
+        "head": "11ae14fdf4380bdd92505e18801b2db0bf6d33d4",
+        "id": "5d3fc4733f72419685fc677c26408690"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "ddc66941fc699f8b1db2954e9ef365eef5db0e54fb2f69c613b5f7898f69ed48",
+        "dirty": true,
+        "head": "016cf333e906c7ad7e5be94ae2fe2b74e9da7ec8",
+        "repository_sha256": "52dddc2f40f03d1261594110545017b338faaf01946c36247089cfbcacb96335"
+      }
+    },
+    "receipts": {
+      "20261102-220234-2c6c40d4": {
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "e0167395b083691484edb34994b2f3633397ddf7a8928b9601341e83c8104469",
+          "dirty": true,
+          "head": "016cf333e906c7ad7e5be94ae2fe2b74e9da7ec8",
+          "repository_sha256": "7517536151c1991023ad0b7dae71a9b63c7bd43c728bfe1828ad747453d7fac6"
+        },
+        "request": {
+          "head": "016cf333e906c7ad7e5be94ae2fe2b74e9da7ec8",
+          "id": "53e5e75d7cdd4599875d9ef6614bb532"
+        },
+        "superseded": true,
+        "verified_inputs": {
+          "build_inputs_sha256": "a8a40456bf51876e9839b8d95a849dfa11b0b49e646c7e1279d490dbc5eda1db",
+          "dirty": true,
+          "head": "ac23720ee4bf232b321977b5158859b6fd8341f7",
+          "repository_sha256": "015529495247f63b83991ef9c354da64ebae153ebe3fd2f3e9ba09127ffc761f"
+        }
+      },
+      "20261102-220656-c776cd84": {
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "a8a40456bf51876e9839b8d95a849dfa11b0b49e646c7e1279d490dbc5eda1db",
+          "dirty": true,
+          "head": "ac23720ee4bf232b321977b5158859b6fd8341f7",
+          "repository_sha256": "015529495247f63b83991ef9c354da64ebae153ebe3fd2f3e9ba09127ffc761f"
+        },
+        "request": {
+          "head": "ac23720ee4bf232b321977b5158859b6fd8341f7",
+          "id": "a94a9fa2206548918f2caaf8fc6435d4"
+        },
+        "superseded": true,
+        "verified_inputs": {
+          "build_inputs_sha256": "517655bb08e11b77549aab742d76c9bbcc198de0e0a65f01e199037ea7f84800",
+          "dirty": true,
+          "head": "c2b6f290ef958457ee542eaee1017706322c2a2c",
+          "repository_sha256": "0a93060d2cba679f52d2e0a4292c97cb07af249a063882e0430508c275ad5ce4"
+        }
+      },
+      "20261102-221105-be605122": {
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "517655bb08e11b77549aab742d76c9bbcc198de0e0a65f01e199037ea7f84800",
+          "dirty": true,
+          "head": "c2b6f290ef958457ee542eaee1017706322c2a2c",
+          "repository_sha256": "0a93060d2cba679f52d2e0a4292c97cb07af249a063882e0430508c275ad5ce4"
+        },
+        "request": {
+          "head": "c2b6f290ef958457ee542eaee1017706322c2a2c",
+          "id": "0c5fb1ea1db6464c8e591c3c35828ef2"
+        },
+        "superseded": true,
+        "verified_inputs": {
+          "build_inputs_sha256": "167b69e364d292829bb7573fef6f9aab6137433265f389f1e7af3f5246196a8c",
+          "dirty": true,
+          "head": "b07a30c89ce86bcfd170bfdf0971ac170d4cafe7",
+          "repository_sha256": "173e35de8ce48115e0f5a2ddad5719f868b713cb1df3135244345a9ac652f329"
+        }
+      },
+      "20261102-221531-4aa5ca29": {
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "167b69e364d292829bb7573fef6f9aab6137433265f389f1e7af3f5246196a8c",
+          "dirty": true,
+          "head": "b07a30c89ce86bcfd170bfdf0971ac170d4cafe7",
+          "repository_sha256": "173e35de8ce48115e0f5a2ddad5719f868b713cb1df3135244345a9ac652f329"
+        },
+        "request": {
+          "head": "b07a30c89ce86bcfd170bfdf0971ac170d4cafe7",
+          "id": "8afda07ffcb14b3eb9f98aa9d6a27b84"
+        },
+        "superseded": true,
+        "verified_inputs": {
+          "build_inputs_sha256": "b0c7a8bc8bf571eb3cfb36f3972469adbdeae3b1071356bd1d993101dfb7bba1",
+          "dirty": true,
+          "head": "b07a30c89ce86bcfd170bfdf0971ac170d4cafe7",
+          "repository_sha256": "6315a61b765036914cf369fcfb65583d0659be8e155c79f1a752a3cbea1834ac"
+        }
+      },
+      "20261102-222010-59809812": {
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "b0c7a8bc8bf571eb3cfb36f3972469adbdeae3b1071356bd1d993101dfb7bba1",
+          "dirty": true,
+          "head": "b07a30c89ce86bcfd170bfdf0971ac170d4cafe7",
+          "repository_sha256": "6315a61b765036914cf369fcfb65583d0659be8e155c79f1a752a3cbea1834ac"
+        },
+        "request": {
+          "head": "b07a30c89ce86bcfd170bfdf0971ac170d4cafe7",
+          "id": "8afda07ffcb14b3eb9f98aa9d6a27b84"
+        },
+        "superseded": true,
+        "verified_inputs": {
+          "build_inputs_sha256": "73965fac60a9daa7d1f02e3dfe4c3568d33d4ece19afb9283e93093b8acc080a",
+          "dirty": true,
+          "head": "7ba24c2ce3a5e7038b129f9331b2cc8129852bbb",
+          "repository_sha256": "41369338aaeae62ffdac229c683bbbf66d8866325bdf15c4e14edd7a8ea235a3"
+        }
+      },
+      "20261102-222451-2a73b27e": {
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "73965fac60a9daa7d1f02e3dfe4c3568d33d4ece19afb9283e93093b8acc080a",
+          "dirty": true,
+          "head": "7ba24c2ce3a5e7038b129f9331b2cc8129852bbb",
+          "repository_sha256": "41369338aaeae62ffdac229c683bbbf66d8866325bdf15c4e14edd7a8ea235a3"
+        },
+        "request": {
+          "head": "7ba24c2ce3a5e7038b129f9331b2cc8129852bbb",
+          "id": "0ab862ca4f8a4bb99e668668159fc957"
+        },
+        "superseded": true,
+        "verified_inputs": {
+          "build_inputs_sha256": "40532875995599bded3d56433a1d7b177a827a05299b4ff29dc13edf253dc416",
+          "dirty": true,
+          "head": "4d7edc80045420a4e8a52d7bd6d217f677528adb",
+          "repository_sha256": "83f7e03ab3ad285878be3231d2cec20d916aa66f7bb22c4ef0e0b003ff98fa42"
+        }
+      },
+      "20261102-222913-8865a240": {
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "40532875995599bded3d56433a1d7b177a827a05299b4ff29dc13edf253dc416",
+          "dirty": true,
+          "head": "4d7edc80045420a4e8a52d7bd6d217f677528adb",
+          "repository_sha256": "83f7e03ab3ad285878be3231d2cec20d916aa66f7bb22c4ef0e0b003ff98fa42"
+        },
+        "request": {
+          "head": "4d7edc80045420a4e8a52d7bd6d217f677528adb",
+          "id": "dbdde542f75646569ff9828d95771b4f"
+        },
+        "superseded": true,
+        "verified_inputs": {
+          "build_inputs_sha256": "957400908dd63a5c454797fc199588b1d1496a8a51fc5b3dc8cada4159bc9778",
+          "dirty": true,
+          "head": "7669d7a29f8a18ddfead3c4da677099de31b2bb0",
+          "repository_sha256": "f511a18f0e10aac8d3dfd0b0d9695de52acee7b42ebafe5fe85d33bf084738be"
+        }
+      }
+    },
+    "unix": 1793648065.740843
+  },
+  "goal": "Smooth live 60 FPS remains open. Tests deferred by explicit user instruction."
+}
