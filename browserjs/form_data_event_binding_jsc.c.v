@@ -41,7 +41,7 @@ fn (mut runtime Runtime) install_form_data_event_binding() ! {
 			form_data: host.html_form_data(data)
 		})!
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	getter := runtime.make_native_value_host_function('get formData', 0, fn [owner] (receiver voidptr, _ []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
@@ -66,6 +66,6 @@ fn (mut runtime Runtime) install_form_data_event_binding() ! {
 })')!
 	defer { runtime.release_javascript_value(factory) }
 	binding.form_data_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), [binding.event_constructor,
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [binding.event_constructor,
 		C.JSContextGetGlobalObject(runtime.context), construct, getter])!)!
 }

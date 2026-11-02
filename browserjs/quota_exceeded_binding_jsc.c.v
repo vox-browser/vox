@@ -53,7 +53,7 @@ pub fn (mut runtime Runtime) install_quota_exceeded_error_binding() ! {
 	bootstrap := runtime.evaluate_host_value(quota_exceeded_error_native_bootstrap)!
 	defer { runtime.release_javascript_value(bootstrap) }
 	binding.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(bootstrap,
-		C.JSValueMakeUndefined(runtime.context), [construct, get])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [construct, get])!)!
 	runtime.add_close_handler(fn [owner] () { quota_exceeded_error_bindings_.delete(owner) })
 }
 

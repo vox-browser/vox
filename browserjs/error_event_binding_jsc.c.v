@@ -13,7 +13,7 @@ fn (mut runtime Runtime) install_error_event_binding() ! {
 		mut runtime := unsafe { &Runtime(owner) }
 		if args.len < 1 { return runtime.event_binding_type_error('ErrorEvent requires one argument') }
 		type_ := runtime.binding_dom_utf16(args[0])!.str()
-		dictionary := if args.len > 1 { args[1] } else { C.JSValueMakeUndefined(runtime.context) }
+		dictionary := if args.len > 1 { args[1] } else { C.vox_jsc_JSValueMakeUndefined(runtime.context) }
 		mut init := dom.ErrorEventInit{}
 		init.bubbles = runtime.event_binding_bool_property(dictionary, 'bubbles', false)!
 		init.cancelable = runtime.event_binding_bool_property(dictionary, 'cancelable', false)!
@@ -33,7 +33,7 @@ fn (mut runtime Runtime) install_error_event_binding() ! {
 		}
 		event := dom.ErrorEvent.construct_impl(type_, init)!
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	mut functions := [construct]
 	for name in ['message', 'filename', 'lineno', 'colno', 'error'] {
@@ -45,8 +45,8 @@ fn (mut runtime Runtime) install_error_event_binding() ! {
 			return match name {
 				'message' { runtime.binding_utf16_string(libjs.utf16_string_from_utf8_without_validation(value.message()))! }
 				'filename' { runtime.binding_utf16_string(libjs.utf16_string_from_utf8_without_validation(value.filename()))! }
-				'lineno' { C.JSValueMakeNumber(runtime.context, value.lineno()) }
-				'colno' { C.JSValueMakeNumber(runtime.context, value.colno()) }
+				'lineno' { C.vox_jsc_JSValueMakeNumber(runtime.context, value.lineno()) }
+				'colno' { C.vox_jsc_JSValueMakeNumber(runtime.context, value.colno()) }
 				'error' { runtime.event_callback_argument(value.error())! }
 				else { return runtime.event_binding_type_error('Unknown ErrorEvent attribute') }
 			}
@@ -66,5 +66,5 @@ fn (mut runtime Runtime) install_error_event_binding() ! {
 	mut arguments := [binding.event_constructor, C.JSContextGetGlobalObject(runtime.context)]
 	arguments << functions
 	binding.error_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), arguments)!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), arguments)!)!
 }

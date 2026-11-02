@@ -72,7 +72,7 @@ pub fn (mut host WorkerGlobalHost) install(mut runtime Runtime) ! {
 	factory := runtime.evaluate_host_value(worker_global_bootstrap)!
 	defer { runtime.release_javascript_value(factory) }
 	runtime.call_javascript_function(factory, global, [operation, global,
-		C.JSValueMakeBoolean(runtime.context, runtime.worker_module_global)])!
+		C.vox_jsc_JSValueMakeBoolean(runtime.context, runtime.worker_module_global)])!
 	worker_global_bindings_[owner] = &host
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &WorkerGlobalHost(handle) }

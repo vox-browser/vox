@@ -117,7 +117,7 @@ pub fn (mut runtime Runtime) install_dom_exception_binding() ! {
 	})
 	bootstrap := runtime.evaluate_host_value('(function(__ladybirdDOMExceptionConstruct,__ladybirdDOMExceptionGet){' + dom_exception_bootstrap() + '})')!
 	defer { runtime.release_javascript_value(bootstrap) }
-	runtime.call_javascript_function(bootstrap, C.JSValueMakeUndefined(runtime.context), [construct, get])!
+	runtime.call_javascript_function(bootstrap, C.vox_jsc_JSValueMakeUndefined(runtime.context), [construct, get])!
 	binding.factory =
 		runtime.evaluate_host_value('(function(){const create=Object.create,prototype=DOMException.prototype;return function(){return create(prototype)}})()')!
 }

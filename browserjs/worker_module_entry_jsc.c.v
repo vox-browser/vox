@@ -60,7 +60,7 @@ fn (mut host ModuleHost) begin_worker_module_entry(script &html.JavaScriptModule
 			mut result := unsafe { &WorkerModuleEntryResult(result_handle) }
 			result.done = true
 			runtime := unsafe { &Runtime(owner) }
-			return C.JSValueMakeUndefined(runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		}
 		rejected := fn [result_handle, owner] (_ voidptr, args []voidptr) !voidptr {
 			mut result := unsafe { &WorkerModuleEntryResult(result_handle) }
@@ -68,7 +68,7 @@ fn (mut host ModuleHost) begin_worker_module_entry(script &html.JavaScriptModule
 			result.exception = runtime.retain_javascript_value(if args.len > 0 {
 				args[0]
 			} else {
-				C.JSValueMakeUndefined(runtime.context)
+				C.vox_jsc_JSValueMakeUndefined(runtime.context)
 			})!
 			result.done = true
 			if result.evaluated && !result.reported {
@@ -77,7 +77,7 @@ fn (mut host ModuleHost) begin_worker_module_entry(script &html.JavaScriptModule
 				settings := runtime.scripting_settings_ or { return error('Missing worker module settings') }
 				settings.report_an_exception(dom.js_webidl_value(value), false)
 			}
-			return C.JSValueMakeUndefined(runtime.context)
+			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 		}
 		runtime.own_closure(voidptr(fulfilled))
 		runtime.own_closure(voidptr(rejected))

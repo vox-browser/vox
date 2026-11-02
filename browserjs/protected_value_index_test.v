@@ -1,5 +1,7 @@
 module browserjs
 
+fn C.JSGarbageCollect(context voidptr)
+
 fn test_indexed_protections_keep_duplicate_roots_and_moved_positions() {
 	mut runtime := Runtime.create()
 	defer { runtime.close() }
@@ -22,7 +24,7 @@ fn test_indexed_protections_keep_duplicate_roots_and_moved_positions() {
 	C.JSGarbageCollect(runtime.context)
 	reader := runtime.evaluate_host_value('(value => value.answer)')!
 	assert js_string_to_v(runtime.context, runtime.call_javascript_function(reader,
-		C.JSValueMakeUndefined(runtime.context), [b])!)! == '42'
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [b])!)! == '42'
 	runtime.release_javascript_value(reader)
 	runtime.release_javascript_value(b)
 	assert runtime.protected_values_.len == baseline

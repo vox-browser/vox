@@ -133,11 +133,11 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	bootstrap := runtime.evaluate_host_value(event_target_bootstrap())!
 	defer { runtime.release_javascript_value(bootstrap) }
 	values := runtime.retain_javascript_value(runtime.call_javascript_function(bootstrap,
-		C.JSValueMakeUndefined(runtime.context), [native])!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), [native])!)!
 	defer { runtime.release_javascript_value(values) }
 	mut exception := unsafe { nil }
-	binding.factory = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, values, 0, &exception))!
-	binding.define_trusted = runtime.retain_javascript_value(C.JSObjectGetPropertyAtIndex(runtime.context, values, 1, &exception))!
+	binding.factory = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 0, &exception))!
+	binding.define_trusted = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 1, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	binding.event_constructor = runtime.evaluate_host_value('Event')!
 	runtime.install_error_event_binding()!

@@ -36,7 +36,7 @@ fn (mut runtime Runtime) install_input_event_binding() ! {
 		if !C.JSValueIsUndefined(runtime.context, input_type) { init.input_type = runtime.binding_dom_utf16(input_type)!.str() }
 		init.is_composing = runtime.event_binding_bool_property(dictionary, 'isComposing', false)!
 		ranges := runtime.ui_event_dictionary_member(dictionary, 'targetRanges')!
-		runtime.call_javascript_function(validate_ranges, C.JSValueMakeUndefined(runtime.context), [ranges])!
+		runtime.call_javascript_function(validate_ranges, C.vox_jsc_JSValueMakeUndefined(runtime.context), [ranges])!
 		mut event := dom.InputEvent.construct_impl(type_, init)!
 		if settings := runtime.scripting_settings_ {
 			event.set_time_stamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
@@ -45,7 +45,7 @@ fn (mut runtime Runtime) install_input_event_binding() ! {
 			}))
 		}
 		runtime.bind_event(receiver, unsafe { &dom.Event(event) })!
-		return C.JSValueMakeUndefined(runtime.context)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
 	mut functions := [construct]
 	for name in ['data', 'dataTransfer', 'inputType', 'isComposing'] {
@@ -57,14 +57,14 @@ fn (mut runtime Runtime) install_input_event_binding() ! {
 			match name {
 				'data' {
 					if data := input.data() { return runtime.binding_utf16_string(libjs.utf16_string_from_utf8_without_validation(data))! }
-					return C.JSValueMakeNull(runtime.context)
+					return C.vox_jsc_JSValueMakeNull(runtime.context)
 				}
 				'dataTransfer' {
-					if input.data_transfer() == unsafe { nil } { return C.JSValueMakeNull(runtime.context) }
+					if input.data_transfer() == unsafe { nil } { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 					return runtime.javascript_data_transfer(unsafe { &html.DataTransfer(input.data_transfer()) })!
 				}
 				'inputType' { return runtime.binding_utf16_string(libjs.utf16_string_from_utf8_without_validation(input.input_type()))! }
-				'isComposing' { return C.JSValueMakeBoolean(runtime.context, input.is_composing()) }
+				'isComposing' { return C.vox_jsc_JSValueMakeBoolean(runtime.context, input.is_composing()) }
 				else { return runtime.event_binding_type_error('Unknown InputEvent attribute') }
 			}
 		})!
@@ -81,7 +81,7 @@ fn (mut runtime Runtime) install_input_event_binding() ! {
 				webidl.DOMException.create('NotSupportedError', 'Native StaticRange projection is not yet bound')))!)
 		}
 		mut exception := unsafe { nil }
-		array := C.JSObjectMakeArray(runtime.context, 0, unsafe { nil }, &exception)
+		array := C.vox_jsc_JSObjectMakeArray(runtime.context, 0, unsafe { nil }, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		return array
 	})!
@@ -100,5 +100,5 @@ fn (mut runtime Runtime) install_input_event_binding() ! {
 	mut arguments := [binding.ui_event_constructor, C.JSContextGetGlobalObject(runtime.context)]
 	arguments << functions
 	binding.input_event_prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
-		C.JSValueMakeUndefined(runtime.context), arguments)!)!
+		C.vox_jsc_JSValueMakeUndefined(runtime.context), arguments)!)!
 }

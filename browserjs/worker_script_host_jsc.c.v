@@ -102,7 +102,7 @@ pub fn (mut host WorkerScriptHost) install(mut runtime Runtime) ! {
 	installer := runtime.evaluate_host_value('(function(method,moduleGlobal){const property={value:method,writable:true,enumerable:true,configurable:true};Object.defineProperty(WorkerGlobalScope.prototype,"importScripts",property);if(moduleGlobal)Object.defineProperty(globalThis,"importScripts",property)})')!
 	defer { runtime.release_javascript_value(installer) }
 	runtime.call_javascript_function(installer, global, [operation,
-		C.JSValueMakeBoolean(runtime.context, runtime.worker_module_global)])!
+		C.vox_jsc_JSValueMakeBoolean(runtime.context, runtime.worker_module_global)])!
 	worker_script_bindings_[owner] = &host
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &WorkerScriptHost(handle) }

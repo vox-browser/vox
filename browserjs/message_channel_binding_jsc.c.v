@@ -114,11 +114,11 @@ fn (mut runtime Runtime) message_channel_operation(mut binding MessageChannelBin
 			if length > 0 {
 				mut transfers := []voidptr{cap: length}
 				for index in 0 .. length {
-					transfers << binding.clone.engine('list_item', [args[3], C.JSValueMakeNumber(runtime.context, f64(index))])!
+					transfers << binding.clone.engine('list_item', [args[3], C.vox_jsc_JSValueMakeNumber(runtime.context, f64(index))])!
 				}
 				record := binding.transfer.serialize(args[2], transfers)!
 				port.post_message_without_transfer(runtime.worker_message_graph(record)!)!
-				return C.JSValueMakeUndefined(runtime.context)
+				return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 			}
 			mut projection := NativeCloneProjection{ bridge: binding.clone }
 			defer { projection.release_roots() }
