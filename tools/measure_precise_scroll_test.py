@@ -579,6 +579,20 @@ class PreciseScrollTests(unittest.TestCase):
 
 
 
+class RecordedNativeFaultTests(unittest.TestCase):
+    def test_rejects_fault_before_during_or_after_completed_input(self):
+        good = log_for()
+        fault = 'SCROLL_FAULT_FIRST signal=000000000000000b address=0000000000000010\n'
+        for log in [fault + good, good.replace('SCROLL_PUBLISH 1 ', fault + 'SCROLL_PUBLISH 1 '),
+                    good + fault]:
+            with self.subTest(log=log[-120:]), self.assertRaisesRegex(ValueError, 'Native fault recorded'):
+                summarize(log, 12)
+
+    def test_installed_fault_recorder_alone_is_not_a_fault(self):
+        log = 'SCROLL_FAULT_RECORDER installed\nSCROLL_FAULT_IMAGE header=100000000\n' + log_for()
+        self.assertEqual(summarize(log, 12)['completed_inputs'], 12)
+
+
 class ExplicitNativeCandidateIdentityTests(unittest.TestCase):
     def test_declared_candidate_keeps_other_libraries_in_bundle(self):
         binary = Path('/bundle/Vox')

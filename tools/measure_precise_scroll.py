@@ -132,6 +132,10 @@ def intervals(rows):
 
 
 def summarize(log, expected_inputs, target_hz=60, required_title="", expected_viewport=None):
+    # A fault on another thread can race the probe's successful _exit(0)
+    # after SCROLL_DONE. A completed input log and zero exit do not erase it.
+    if re.search(r"^SCROLL_FAULT_FIRST(?:\s|$)", log, re.MULTILINE):
+        raise ValueError("Native fault recorded; measurement is invalid regardless of process exit")
     if "SCROLL_ERROR" in log:
         raise ValueError("Native probe reported an error")
     starts = [line for line in log.splitlines() if line.startswith("SCROLL_START ")]
@@ -380,6 +384,8 @@ def main():
                 or file_identities != {str(path): input_file_identity(path) for path in pinned}):
             raise RuntimeError("Build, runtime asset or probe identity changed during measurement")
         browser_log = (output / "browser.log").read_text(errors="replace")
+        evidence['native_fault_recorded'] = bool(re.search(
+            r'^SCROLL_FAULT_FIRST(?:\s|$)', browser_log, re.MULTILINE))
         evidence['native_images'] = verify_native_images(browser_log, binary, native_bridge)
         if any(path not in hashes for path in evidence['native_images'].values()):
             raise RuntimeError('Loaded native image was not pinned before launch')
