@@ -28,7 +28,8 @@ fn (mut app BrowserApp) scroll_element_at_viewport_point(point page.PixelPoint,
 }
 
 fn (app &BrowserApp) wheel_input_can_reuse_hit(target page.InputTarget) bool {
-	if disable_wheel_hit_reuse || app.js_runtime != unsafe { nil } { return false }
+	if disable_wheel_hit_reuse { return false }
+	if app.js_runtime != unsafe { nil } && app.js_runtime.has_pending_document_state() { return false }
 	node := target.node or { return false }
 	// Includes shadow hosts, Document and Window listeners. With no callback
 	// and no compact-runtime task to apply, dispatch cannot alter the hit tree.
@@ -88,6 +89,9 @@ fn (mut app BrowserApp) handle_wheel_input(client page.PixelPoint,
 	target := wheel_input_target(hit) or { return .dropped }
 	reuse_hit := app.wheel_input_can_reuse_hit(target)
 	hit_document := voidptr(document)
+	hit_runtime := voidptr(app.js_runtime)
+	hit_revision := document.paint_content_revision()
+	hit_viewport := document.viewport_rect()
 	mut handler := app.page_model.event_handler
 	handler.set_document_state(document.is_fully_active(), document.layout_node() != none)
 	result := handler.handle_mousewheel_with_parameters(target,
@@ -95,6 +99,8 @@ fn (mut app BrowserApp) handle_wheel_input(client page.PixelPoint,
 		modifiers, delta_x / app.page_zoom, delta_y / app.page_zoom, .precise, .changed, async_default_action)
 	// Callback wrappers mark the compact document dirty; apply those operations
 	// even when the callback cancels the wheel's default action.
+	pending_script_task := app.js_runtime != unsafe { nil }
+		&& app.js_runtime.has_pending_document_state()
 	app.poll_javascript_tasks()
 	if result != .accepted || async_default_action {
 		return result
@@ -121,7 +127,11 @@ fn (mut app BrowserApp) handle_wheel_input(client page.PixelPoint,
 		delta_y
 	}
 	// Reject a replaced layout node even on the callback-free path.
-	reuse_for_default := reuse_hit && voidptr(app.document) == hit_document
+	reuse_for_default := reuse_hit && !pending_script_task
+		&& voidptr(app.js_runtime) == hit_runtime && voidptr(app.document) == hit_document
+		&& (app.js_runtime == unsafe { nil } || !app.js_runtime.has_pending_document_state())
+		&& document.paint_content_revision() == hit_revision
+		&& document.viewport_rect() == hit_viewport
 		&& wheel_input_target_layout_is_current(target)
 	if wheel_hit_reuse_diagnostics {
 		eprintln('VOX_WHEEL_HIT_REUSE reused=${reuse_for_default}')

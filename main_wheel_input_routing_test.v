@@ -334,3 +334,53 @@ routeVideo.addEventListener("wheel",function(e){routeLifecycleOrder.push("after"
 	assert app.js_messages == []
 	wheel_routing_test_balance(runtime, document, 1)
 }
+
+fn test_quiet_script_runtime_reuses_wheel_hit_but_document_and_window_listeners_do_not() {
+	$if !darwin { return }
+	mut owner, mut document := wheel_routing_test_document('https://wheel-input-quiet.example.test/')!
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close(); document.finalize() }
+	wheel_routing_test_initialize(mut runtime, document)!
+	mut app := wheel_routing_test_app(owner, document, runtime)
+	app.poll_javascript_tasks()
+	assert !runtime.has_pending_document_state()
+	hit := app.hit_test_at_viewport_point(25.25, 20.125)?
+	target := wheel_input_target(hit)?
+	assert app.wheel_input_can_reuse_hit(target)
+	scroller := document.get_element_by_id('wheel-scroller')?
+	assert app.handle_wheel_at_viewport_point(page.PixelPoint{25.25, 20.125}, page.PixelPoint{},
+		0, 0, 0, 0, 3.75, false) == .handled
+	assert scroller.el_scroll_offset().y() == 3.75 && app.scroll_y == 0
+	for scope in ['document', 'window'] {
+		runtime.evaluate_host('globalThis.routeQuietCancel=e=>e.preventDefault();${scope}.addEventListener("wheel",routeQuietCancel,{passive:false});0')!
+		app.poll_javascript_tasks()
+		assert !runtime.has_pending_document_state()
+		assert !app.wheel_input_can_reuse_hit(target)
+		assert app.handle_wheel_at_viewport_point(page.PixelPoint{25.25, 20.125}, page.PixelPoint{},
+			0, 0, 0, 0, 3.75, false) == .cancelled
+		assert scroller.el_scroll_offset().y() == 3.75 && app.scroll_y == 0
+		runtime.evaluate_host('${scope}.removeEventListener("wheel",routeQuietCancel);0')!
+		app.poll_javascript_tasks()
+		assert app.wheel_input_can_reuse_hit(target)
+	}
+}
+
+fn test_pending_script_mutation_rejects_wheel_hit_reuse_and_updates_default_scroll_target() {
+	$if !darwin { return }
+	mut owner, mut document := wheel_routing_test_document('https://wheel-input-pending.example.test/')!
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close(); document.finalize() }
+	wheel_routing_test_initialize(mut runtime, document)!
+	mut app := wheel_routing_test_app(owner, document, runtime)
+	app.poll_javascript_tasks()
+	hit := app.hit_test_at_viewport_point(25.25, 20.125)?
+	target := wheel_input_target(hit)?
+	runtime.evaluate_host('routeScroller.style.overflow="visible";0')!
+	runtime.mark_document_state_dirty()
+	assert !app.wheel_input_can_reuse_hit(target)
+	assert app.handle_wheel_at_viewport_point(page.PixelPoint{25.25, 20.125}, page.PixelPoint{},
+		0, 0, 0, 0, 3.75, false) == .handled
+	assert document.get_element_by_id('wheel-scroller')?.el_scroll_offset().y() == 0
+	assert app.scroll_y == 3.75
+	assert !runtime.has_pending_document_state()
+}
