@@ -1,19 +1,28 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open. BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Latest cohort 45 measures Vox **32,872,445,783**,
-its same-binary comment-preserving control **33,698,209,308**, and Brave lower
-median **16,080,434,504** instructions. Omitting empty generated procedural CSS
-removes a proven unnecessary stylesheet replacement. Median point reduction
-against control is **825,763,525 instructions (2.4504670780947535%)**; four
-pairs improve and three regress. Conservative candidate/control ratio
-1.0370097880414366 fails, so a robust speedup is not established. All 21
-captures pass original pixels, content, identities and native exit. Every
-outlier and host-contention record remains retained.
+`OPTIMIZED_SITES.md`.** Latest cohort 46 remeasures the same pinned browsers
+with a stronger capture-time Vox ownership check. Vox median is
+**32,561,838,795**, its same-binary comment-preserving control
+**32,744,163,610**, and Brave lower median **16,174,399,220** instructions.
+All 14 Vox/control captures pass original pixels, content, native exit and
+endpoint ownership. Brave pairs 1 and 4 each change 64,177 photo pixels and
+invalidate acceptance. Every attempt is retained. This protocol correction
+changes no counter boundary and receives no engine optimization credit.
 
-The Brave gate fails `340057296670 > 143659414512`, ratio
-2.1303968698649767. The fix is retained for avoiding the no-effect stylesheet
-replacement; it does not establish the requested advantage.
+The Brave integer gate fails `328013511490 > 143989597287`, conservative ratio
+2.050232557790847. The separate matched-control median difference is
+182,324,815 (0.5568162227980067%); five pairs improve and two regress, while
+conservative control ratio 1.0199245717551637 fails.
+
+Prior cohort 45 measured Vox **32,872,445,783**, control **33,698,209,308**, and
+Brave lower median **16,080,434,504**. Omitting empty generated procedural CSS
+removes a proven unnecessary stylesheet replacement; the median point
+difference was 825,763,525 (2.4504670780947535%), with four pairs improving
+and three regressing. All 21 original pixel/content/native-exit checks pass,
+but its early Vox ownership scans do not attest the later capture-time task
+set. Those raw results remain retained with that qualification. Its Brave gate
+also fails `340057296670 > 143659414512`, ratio 2.1303968698649767.
 
 Prior cohort 44's pseudo-element candidate batching regressed: Vox
 **33,363,170,629** versus control **33,008,032,632**, with Brave lower median
@@ -43,7 +52,7 @@ Brave cohort also fails the diagnostic integer gate:
 10% advantage over Brave. The prior baseline-JIT experiments remain rejected;
 production JIT thresholds remain unchanged.
 
-Cohorts 37–45 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
+Cohorts 37–46 explicitly use `VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY=1` in
 both Vox arms to reproduce the historical frozen RGB workload. Production's
 completed-response YUV policy changes photo pixels; an unchanged-binary
 isolation confirms that the historical switch restores the original reference.
@@ -52,12 +61,14 @@ These are historical-renderer frozen-page results, rather than current-default
 or live site acceptance. Earlier invalid captures, protocol corrections,
 failing cohorts and their outliers remain retained.
 
-The machine-readable [evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
-retains 1,118 attempts and 45 cohorts, including failures and first launches;
-931 complete cohort raw results were independently checked against the recorded
-vectors, medians and integer gates. It also retains ownership audits, commands and artifact hashes. Raw archives, logs,
-PNGs, executable copies, PID registries, compiler output and guard receipts are
-under `Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
+The machine-readable [base evidence](benchmark-results/bbc-brave-instructions-2026-11-01.json)
+and [protocol supplement](benchmark-results/bbc-protocol-audit-2026-11-02.json)
+retain 1,140 attempts across 46 cohorts, including failures and first launches.
+All 952 complete cohort raw records have been independently checked against
+vectors, medians and integer gates. They also retain ownership audits, commands
+and artifact hashes. Raw archives, logs, PNGs, executable copies, PID registries,
+compiler output and guard receipts remain under
+`Build/bbc-home-instructions-20261101-054807/` in the canonical checkout.
 
 ## Workload and endpoints
 
@@ -98,7 +109,9 @@ engine optimization credit. Neither reference pixels nor tolerances changed.
 
 All statistics below include every trial in the respective seven-pair cohort.
 Brave figures are medians of lower bounds; Vox bounds are equal at its native
-capture marker. An invalid cohort is retained for diagnosis, not acceptance.
+capture marker. An invalid cohort is retained for diagnosis, not acceptance. Cohorts
+before 46 use their recorded earlier checks; their capture-time Vox ownership
+was not verified and cannot satisfy the new ownership gate.
 
 | Cohort | Vox median | Brave median | Maximum Vox upper / minimum Brave lower | Result |
 | --- | ---: | ---: | ---: | --- |
@@ -147,6 +160,7 @@ capture marker. An invalid cohort is retained for diagnosis, not acceptance.
 | Small callback argument lists | 34,199,020,506 | 16,131,151,077 | 2.6256667037523163 | All captures valid; median regresses 1.6925% against control; implementation removed |
 | Batched pseudo-element candidates | 33,363,170,629 | 16,086,526,413 | 2.1165767005241722 | Brave pair 2 photo differs; median regresses 1.0759% against control; implementation removed |
 | Omit empty procedural CSS payload | 32,872,445,783 | 16,080,434,504 | 2.1303968698649767 | All captures valid; median point falls 2.4505% against control; four improve/three regress; both conservative gates fail |
+| Capture-time coalition ownership audit | 32,561,838,795 | 16,174,399,220 | 2.050232557790847 | Protocol correction only; all endpoint ownership proofs pass; Brave pairs 1/4 photo mismatches and integer gate fail |
 
 The grid block-height cohort alternates an older control, candidate and Brave;
 control/candidate medians are 101,567,929,247 and 90,700,737,334 (10.70% observed
@@ -259,7 +273,7 @@ executed. The grid diagnostics separately prove the optimized paths execute.
 The selected backend has no observed LibJS fallback. These instrumented runs
 receive no hardware-counter performance credit.
 
-The newest measured executable is SHA256
+An earlier measured executable is SHA256
 `2226008c70cb493c9decd4092b9dd0e695854300ba39c488c703ce91520f45d6`.
 The preceding font-display candidate is
 `5aae83a4408e023380d51e4430003b519ec427bcd96b3701b634930eeda62952`.
@@ -2343,7 +2357,8 @@ content and native exit, with JSC 1,925/1,915 evaluations and the omission
 trace only when enabled.
 
 All seven alternating triples in `empty-procedural-style-cohort` pass original
-per-engine pixels, full content, ownership, identities and native exit. Vox
+per-engine pixels, full content, file identities and native exit. Capture-time
+Vox ownership was not verified by that earlier protocol. Vox
 median is 32,872,445,783, control 33,698,209,308, and Brave lower median
 16,080,434,504. The median point reduction against control is 825,763,525
 instructions (2.4504670780947535%); four pairs improve and three regress.
@@ -2389,3 +2404,78 @@ additional engine change follows. This retained attempt brings the total to
 1,118, with the 45-cohort/931-raw-record checks unchanged. See
 `post-empty-procedural-profile-assessment.json` and linked raw sample,
 commands, identities and guard receipts under the evidence root.
+
+## Measurement protocol audit and correction (cohort 46)
+
+The November 2 audit checks the eight requirements in
+[the catalog procedure](../OPTIMIZED_SITES.md#how-to-benchmark-against-brave).
+For cohort 45 it independently rehashes all 1,646 pinned files, recomputes the
+launch boundaries and integer gate, and reruns all 21 comparisons against the
+original per-engine pixel references. Those checks pass; no startup subtraction
+or PNG-boundary correction is needed. The native capture function is recovered
+from source matching the measured build snapshot: encoding precedes the
+coalition marker, and PNG file writing plus the content audit follow it. Its
+body is unchanged in current source.
+
+The audit does find an ownership gap. Vox's recorded live scan occurred early,
+with fewer tasks than the later native PNG marker. Aggregate coalition counts
+include the later helpers and exited work, but the old live scan does not
+attest the live task set at capture. Older cohorts retain their exact raw
+results and original validation; their endpoint ownership remains unverified.
+They cannot satisfy the new ownership gate.
+
+Tooling `46b21a390` samples live ownership while awaiting Vox's native exit and
+requires a stable owned task set with the same coalition, task-start and
+task-exit totals as the PNG marker. Monotonic totals then exclude task churn
+between that scan and the endpoint. New helper PIDs enter the same private
+memory-guard registry. Partial scans interrupted by native exit remain logged;
+acceptance still requires a complete matching scan. All 217 instruction-tool
+tests pass, including rejection of an early scan, unowned tasks, identity or
+task-count churn, missing proof, and unknown exit status. The counter backend,
+launch scope, PNG endpoint and integer gate are unchanged. This is a protocol
+correction with no engine optimization credit.
+
+To isolate that correction, cohort 46 reuses cohort 45's exact completed Vox
+and Brave copies, original fixture and fixed references. No production build
+is queued. A separate diagnostic passes original pixels, full content and
+native exit 0, with JSC 2,031 evaluations and capture-time ownership verified.
+The seven alternating triples retain every attempt. All 14 Vox/control
+captures pass their original reference, full content, native exit and the new
+ownership check. Brave's seven post-capture ownership checks, full-content
+audits and native exits pass. Brave pairs 1 and 4 each differ at 64,177 photo
+pixels, maximum channel error 15, so acceptance fails without retries,
+exclusions, reference changes or relaxed tolerances.
+
+Vox median is 32,561,838,795 instructions, its comment-preserving control
+32,744,163,610, and Brave lower median 16,174,399,220. The separate matched-control
+point difference is 182,324,815 (0.5568162227980067%); five pairs improve and two
+regress, with conservative ratio 1.0199245717551637. No speedup is attributed to
+the protocol change. The Brave integer gate also fails:
+`328013511490 > 143989597287`, using maximum Vox 32,801,351,149 and minimum
+Brave lower 15,998,844,143; conservative ratio 2.050232557790847.
+
+Driver, guard and controller exit 1. The default 12 GiB guard adopts 70
+identities, including every browser root, with no adoption error; sampled peak
+RSS is 1,763,770,368 bytes over 110.468905166 seconds. Every raw command, browser
+exit, host CPU/load/timestamp record and failure is retained. A second
+independent check rehashes all 1,646 inputs, recomputes all 21 content audits and
+verifies the 14 Vox and seven Brave ownership proofs. Both Brave endpoint brackets
+also match the final owned task totals in every trial. The base 45 cohorts are
+also rechecked against their raw vectors, medians and integer gates: the combined
+evidence now retains 1,140 attempts across 46 cohorts and verifies 952 complete
+cohort raw records.
+
+The [protocol supplement](benchmark-results/bbc-protocol-audit-2026-11-02.json)
+contains the new exact counts, endpoint proofs, input hashes, raw-artifact hashes,
+commands, guard and diagnostic receipts, and the unchanged base-report hash.
+Raw evidence remains under `Build/bbc-home-instructions-20261101-054807/`.
+Completed test executables and generated C are losslessly compressed only after
+the cohort; logical hashes, original modes and round-trip checks remain in the
+storage receipt. No active benchmark inputs, logs, PNGs or fixture bytes change.
+
+This remains the explicitly declared historical RGB frozen workload. The
+77.8428% cross-browser pixel difference, BBC scripting limitations, retained OS
+caches, excluded GPU execution/outside services, sampled memory limits and lack
+of retrospective individual exited-task identities remain disclosed. The
+protocol correction establishes no current-default or live-site acceptance.
+BBC still fails the requested 10% advantage and has no catalog entry.
