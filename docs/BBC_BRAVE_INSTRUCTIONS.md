@@ -3465,3 +3465,69 @@ under `Build/bbc-longhand-capacity-20261103/`. No matched cohort, instruction
 credit, catalog entry or broad-check reset is claimed. History remains
 56 cohorts / 1,355 cohort attempts. A later completed production bundle is
 still required to validate the source restoration in the installed browser.
+
+
+## Retained grid/flex trees: cohort 57 (2026-11-03)
+
+The 10% target remains **unmet**. Seven alternating control/Vox/Brave triples
+retain all **21 attempts**. Vox's launch-through-encoded-PNG median is
+**30,237,763,354** instructions; the same executable with retained block
+grid/flex trees disabled has median **30,838,133,429**. The observed difference
+is **600,370,075 (1.9468%)**, with five paired improvements and two regressions.
+This is a diagnostic median, not accepted optimization credit. Brave has only
+six usable selected intervals, with diagnostic median **15,072,361,335.5**.
+Its seventh attempt fails the private-helper coalition ownership audit after
+capturing an exact PNG and complete content; no selected count or normal
+kernel-exit receipt is recovered, and cleanup exits zero. It is retained
+without retry or exclusion. History now contains **57 cohorts / 1,376 attempts**.
+
+Even the available-count diagnostic gate fails:
+`10 × 30,640,643,820 = 306,406,438,200 > 9 × 14,870,623,965 = 133,835,615,685`.
+The highest-Vox/lowest-Brave ratio is **2.0604813821**. BBC remains absent from
+`OPTIMIZED_SITES.md`. Exact raw selected intervals, failure records, host loads,
+commands, identities and checks are retained in the
+[tracked cohort ledger](performance/bbc-formatting-trees-20261103.json); full
+counters, coalition scans, PNGs and reports are in
+`Build/bbc-formatting-trees-20261103/formatting-matched-cohort/`.
+
+Engine commit `b9f657f12` preserves unchanged text-only block grid/flex typed
+subtrees across unrelated DOM tree mutations, including their text and
+measurement caches. Geometry still reruns in a fresh layout state. It keeps
+style/revision/DOM-order/parent/item-role guards, and excludes subgrids,
+replaced content, SVG, generated content and controls. Anonymous text items,
+repeated sibling mutations, role changes, sizing and paint-lifetime behavior
+are covered by focused tests. All **31 cases × two policies × three memory
+modes = 186 executions** pass. Tool commit `f8893f8cc` supplies the isolated
+same-binary control; all **238 instruction-tool tests** pass.
+
+The reused production build is
+`20261103-015930-28e58436`, executable SHA-256
+`f9fffcce6951aa3702654b97e75918d584c9054bec504f6b43d00b0fb665efbc`.
+Separate candidate/control diagnostics both pass original pixels, full
+readiness/content, ownership and native exit checks. JavaScriptCore records
+one context and 1,957 / 2,056 evaluations. The candidate records the new path
+after navigation and before PNG encoding; the control does not. The rejected
+longhand-capacity marker is absent from this build. No diagnostic logging or
+JSC probe is enabled in the unprofiled cohort. All **1,639 pinned files** are
+independently rehashed unchanged. The memory guard adopts every trial root,
+reports no adoption error, and peaks at **1,565,278,208 bytes**.
+
+All **21 document PNGs** match the unchanged per-engine references and all
+21 complete content audits pass. The failed Brave trial remains invalid
+because of ownership. Twenty completed trials have normal native exit zero.
+The unchanged cross-browser difference is **2,448,723 / 3,145,728 pixels**;
+reference stability does not establish rendering parity. Scope, original
+script policy, HTTPS replay bytes, private caches, viewport, scale and two
+seconds settling remain unchanged. Host load is retained for every arm.
+
+The pinned production browser also passes headless startup, all 11 native
+smoke screenshots and eight SVG screenshots. The required broader batch
+executes **483 cases in each of default and no-GC modes**: **480 pass and three
+preexisting cases fail** in each mode (the two Chromium control-baseline
+cases and the trailing collapsed-margin case retained from cohort 56).
+Owned source hashes remain unchanged. This is not a full broad pass and does
+not reset the verification cadence. The standalone script-free BBC mutation
+probe has no eligible tree hit and earns no credit; its five geometry/paint
+dumps remain identical. A separate native sampling attempt exits zero but
+produces no call stacks, so it is inconclusive. These results establish
+neither the requested live-site target nor scrolling performance.

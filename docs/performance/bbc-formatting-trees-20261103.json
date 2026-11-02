@@ -1,0 +1,1694 @@
+{
+  "date": "2026-11-03",
+  "cohort": 57,
+  "history_cohorts": 57,
+  "history_attempts": 1376,
+  "target_met": false,
+  "cohort_valid": false,
+  "accepted": false,
+  "instruction_credit": false,
+  "broad_cadence_reset": false,
+  "scope": "Exclusive resource-coalition creation through encoded document PNG availability; fresh process, empty private profile/cache, sealed HTTPS responses via one local SOCKS/TLS replay without forwarding, original author JavaScript enabled. Vox ends before PNG file write; Brave includes CDP PNG delivery and target/window setup. Readiness polling and two seconds of settlement are included; semantic audits and teardown follow the endpoint. Exited helpers and explicitly allowed coalition-owned services are included. GPU execution, observer/replay and outside services are excluded. The fixture records any shared JavaScript wall-clock override; monotonic timers remain real. OS filesystem/shader caches are retained. Per-engine references test stability; cross-browser pixel differences are reported separately.",
+  "fixture": {
+    "benchmark_clock": {
+      "epoch_ms": 1793503154007,
+      "original_document_sha256": "f70fea0eaef611591f788542cfe93124c2e2768784d215c44204fd8c832968fa",
+      "performance_credit": 0,
+      "reference_result_sha256": "6c82dc1378734227c80c2dca953f1ea86587cffe2a18212fbb3d73f692a570ef",
+      "script_sha256": "eacd9bc30979355f0e8533b6671848c9332eb55ed02d032e2872ff1cf75dfaf8",
+      "source": "Midpoint of the original unchanged Vox pixel-reference capture",
+      "source_manifest_sha256": "b9ac7cd117b4f54cd1f434fce6f3b14e3a4b6f6b7f1f62ecbe414fa5ec29acf8"
+    },
+    "document_bytes": 642096,
+    "document_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+    "headlines": [
+      "'We came back from hell', say Ukrainians after years in Russia-occupied front-line city",
+      "Emotional reunions with loved ones for Oleshky evacuees",
+      "Shops looted as German cost of living protests turn violent",
+      "Judge dismisses Trump's lawsuit against Wall Street Journal over Epstein birthday book",
+      "Why did this Korean content creator throw a divorce ceremony?",
+      "I've been stuck on a tiny Pacific island for years and can't get a transit visa to fly home",
+      "Crypto firm Binance covers 90% of losses after $6.3bn hack",
+      "Why Germans won't buy a round of beer",
+      "Scientists think our recent ancestors may have run hotter \u2013 but why?",
+      "How the downfall of Serbia's Vu\u010di\u010b mirrored that of Hungary's Orb\u00e1n",
+      "King to address slavery during Commonwealth speech in Antigua on final leg of Caribbean tour",
+      "Thousands demonstrate in Paris as protests spread across Europe",
+      "Judge orders Trump administration to stop threatening US election officials ",
+      "India's opposition set to hold mega rally seeking election chief's resignation",
+      "More than 5,000 die from Ebola in DR Congo's deadliest outbreak",
+      "Why Mary Shelley's chilling horror story Frankenstein is so misunderstood",
+      "Decades before Salem, Connecticut was hunting for witches",
+      "How Sleepy Hollow brought its own legend to life",
+      "What's at stake for Trump in the US midterms?",
+      "The extraordinary journey to Everest Base Camp by handcycle",
+      "The refinery at the centre of Africa's industrial ambitions",
+      "Inside the only all-female Indian kitchen in the world",
+      "The high-tech mission to preserve a 17th-century shipwreck",
+      "The hunt for New York's most authentic pretzel",
+      "Bangkok blood donors get a Halloween fright",
+      "Watch: Blood donors get a Halloween fright in Thailand",
+      "12 of the best TV shows to watch this November",
+      "12 of the best films to watch in November",
+      "Why are so many Thai restaurants hidden in London pubs?",
+      "A painting went missing 20 years ago. Police tracked it down with the help of AI",
+      "Alaska Senate candidate denies knowing about alleged plot to put two Dan Sullivans on ballot",
+      "The fight to save Canadian town threatened by Trump's tariffs",
+      "Three dead after two helicopters collide midair near Oregon airport",
+      "'The necktie is dead': How US midterm candidates are dressing for votes",
+      "Ukrainian evacuees reunite with family after years trapped in Russia-occupied city",
+      "Ethiopian PM puts ministers through military training",
+      "Irish police assaulted in Dublin and threatened with 'imitation' gun",
+      "Starmer tells Dublin event Europe can no longer rely on US to 'bankroll' its defence",
+      "Crypto giant Binance hit by $6.3bn hack suspected to be largest in history",
+      "How video game remakes tap the power of nostalgia",
+      "Who should pay on the first date?",
+      "'I live with a ghost' - inside the haunted homes attracting bargain hunters",
+      "These firms you've never heard of are feeding fears the AI bubble could burst",
+      "Why North Korea's 'elite' hackers are the prime suspect in major Binance hack",
+      "Crypto giant Binance attempting to recover $6.3bn stolen in hack linked to North Korea",
+      "Google value plunges by $500bn as its own AI search hits ad sales",
+      "Are Manchester United really at risk of a relegation scrap?",
+      "Hamilton takes first pole for Ferrari at Mexico City Grand Prix",
+      "Are De Zerbi's Spurs finding elusive consistency?",
+      "Moreira stars as AC Milan beat Inter in thrilling derby",
+      "How to exercise more without trying",
+      "Birdwatching rewires the brain and slows cognitive decline",
+      "The simple fitness test that predicts your risk of death",
+      "What to eat for younger-looking skin",
+      "Who are the real winners of Celebrity Traitors?",
+      "'It's been killing me!' Celebrity Traitors winners relieved the secret is out",
+      "Filmmaker performs live soundtrack to new movie",
+      "Celebrity Traitors comes to a climax in nail-biting final",
+      "The new trail leading to Ireland's mythical 'Gate to Hell'",
+      "When is premium economy worth the extra cost?",
+      "The eerie landscapes of England's witch country",
+      "The Norwegian island that wanted to abolish time",
+      "The AI system designed to spot driving hazards before you do",
+      "Why the real Christopher Robin resented Winnie-the-Pooh",
+      "The Renaissance woman who was the first female painter of erotic nudes",
+      "'Bold and inventive' Canadian poet Anne Carson wins Nobel Literature Prize",
+      "How the goddess Aphrodite became a controversial symbol of love and sex",
+      "Giant eagles once ruled the skies. They snatched human children, and shaped our evolution",
+      "'It's offensively cheap': How solar power is quietly becoming bigger than nuclear",
+      "The immortal jellyfish can beat ageing. It could inspire treatments for diseases of old age",
+      "'What the hell did this?': The orca brothers preying on great white sharks",
+      "Life in a remote station at the edge of the world",
+      "The centuries-old mystery beneath Sri Lanka's coast",
+      "The enduring mystery of the Loch Ness Monster",
+      "The Italian gelato maker using AI to invent new flavours",
+      "The world's top 'cities to watch' in 2026",
+      "How Italy's guiltiest food ritual went public",
+      "The return of New Orleans' 'deadly\u2019 cocktail ",
+      "Why travellers are obsessed with foreign supermarkets",
+      "The best of the BBC, delivered to you",
+      "Football Extra newsletter",
+      "US Politics Unspun",
+      "Sign up to World of Business",
+      "Get The Essential List",
+      "Stream the best of British TV",
+      "Watch Documentaries",
+      "Download the BBC app",
+      "Register for a BBC account"
+    ],
+    "image_sources": [
+      "https://ichef.bbci.co.uk/images/ic/1024xn/p0m8hkfn.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/1920x1080/p0h74xp9.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/1920x1080/p0pj5n53.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0hhnc0t.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0lwzcxx.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0lz125l.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0m6ztjd.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0mc0y3s.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0n5q1dv.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0n5q1dv.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0p3v82b.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0p63jsv.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0p7k696.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pcwtzq.png.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pf1wk7.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pfq273.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pfr151.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pgvdbk.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pgyqbv.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0ph2plc.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0ph3xby.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0phk7wy.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0phndk1.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0phnvsj.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pj3vqn.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pj5lmf.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pj78vq.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pjndz7.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pjpv4d.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pjtwp0.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pjw0ww.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pjwwbk.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pjx85z.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pk06gn.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pk1wqn.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pk9sp0.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pk9xbr.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pkbp09.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pkf7f9.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pkfs0c.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pkg9cs.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pkgq4g.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pkhnpn.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pkj543.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/480x270/p0pkjhbw.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/raw/p0jq6tfl.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/raw/p0k21mq7.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/raw/p0kkgb4b.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/raw/p0lr3t4c.png.webp",
+      "https://ichef.bbci.co.uk/images/ic/raw/p0mvkbbd.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/raw/p0nkn8ny.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/raw/p0nw7m52.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/raw/p0nw860t.jpg.webp",
+      "https://ichef.bbci.co.uk/images/ic/raw/p0pkbr8k.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/053a/live/d1a9e840-d54c-11f1-bcb7-8f812b44c2e5.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/1177/live/15f26510-d4f1-11f1-9df7-95635b0b4a0d.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/16f5/live/d2c08770-d493-11f1-93e1-3b657b665bcf.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/1a11/live/9a9071c0-d57a-11f1-be5a-4bb1a466c469.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/1d3a/live/6230e120-d570-11f1-93e1-3b657b665bcf.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/41b8/live/9f93a310-d532-11f1-b441-2b33b063138f.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/4570/live/1ef80da0-d46e-11f1-93e1-3b657b665bcf.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/6f47/live/8e8b6090-d568-11f1-910b-9bd7c745c627.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/7152/live/9f9230c0-d564-11f1-b3d5-e70aafec92c6.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/b724/live/db1d9120-d456-11f1-906a-add2117fe3e6.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/bfb4/live/7add81a0-d3be-11f1-b441-2b33b063138f.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/c471/live/62195190-d55c-11f1-b937-61b94454a4cf.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/d1d6/live/e39b2030-d58f-11f1-b151-73ae9f7607e8.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/d59b/live/cc47c0f0-d53a-11f1-a701-fddedf244c16.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/dc6e/live/d3851b40-d528-11f1-93e1-3b657b665bcf.jpg.webp",
+      "https://ichef.bbci.co.uk/news/480/cpsprodpb/f2d7/live/d14e6dc0-d47b-11f1-93e1-3b657b665bcf.png.webp"
+    ],
+    "local_font_fallback_sources": {
+      "bbcreithsans-fallback": [
+        "Arial",
+        "Arial Bold"
+      ],
+      "bbcreithserif-fallback": [
+        "Times New Roman",
+        "Times New Roman Bold"
+      ]
+    },
+    "manifest_sha256": "9cda96a31bbd4681bc9519279bedfe3a31d7c395da487e94ed7173d3928dda38",
+    "placeholder_sources": [
+      "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/grey-placeholder.png"
+    ],
+    "responses": 595,
+    "source_image_count": 140,
+    "title": "BBC Home | Breaking News, World News, US News, Sports, Business, Innovation, Climate, Culture, Travel, Video & Audio",
+    "url": "https://www.bbc.com/",
+    "workload": "Archived BBC homepage, original author scripts retained and enabled; fixed JavaScript Date clock in both engines; real monotonic timers unchanged"
+  },
+  "javascript_backends": {
+    "brave": "v8",
+    "vox": "javascriptcore"
+  },
+  "viewport": [
+    1024,
+    768
+  ],
+  "scale": 2,
+  "settle_seconds": 2,
+  "system": "ProductName:\t\tmacOS\nProductVersion:\t\t27.2\nBuildVersion:\t\t26B123\n",
+  "control_environment": {
+    "VOX_DISABLE_RETAINED_FORMATTING_TREES": "1"
+  },
+  "engine_commit": "b9f657f12",
+  "tool_commit": "f8893f8cc",
+  "input_manifest_sha256": "2e042fa8c11ab23b57978ddba9186cf7afe30d329e739891c9ba6a3491f6855d",
+  "pinned_runtime_files": {
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": {
+      "bytes": 456848,
+      "sha256": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": {
+      "bytes": 234576,
+      "sha256": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": {
+      "bytes": 87760,
+      "sha256": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": {
+      "bytes": 51744,
+      "sha256": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": {
+      "bytes": 52128,
+      "sha256": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": {
+      "bytes": 52160,
+      "sha256": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": {
+      "bytes": 52160,
+      "sha256": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": {
+      "bytes": 88144,
+      "sha256": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": {
+      "bytes": 88176,
+      "sha256": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": {
+      "bytes": 88176,
+      "sha256": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": {
+      "bytes": 84304,
+      "sha256": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": {
+      "bytes": 4745328,
+      "sha256": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": {
+      "bytes": 5157680,
+      "sha256": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": {
+      "bytes": 10002544,
+      "sha256": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/IwaKeyDistribution/manifest.json": {
+      "bytes": 114,
+      "sha256": "2de00b641c03834a89f9c9c06327cb72a948dc59a18a5c2d28ddd617eb64ff9d"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/MEIPreload/manifest.json": {
+      "bytes": 238,
+      "sha256": "44844cf3dde6e80087ae0e6bf0d9326d7ef7d23326d24ac83af0850be26923d2"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/PrivacySandboxAttestationsPreloaded/manifest.json": {
+      "bytes": 122,
+      "sha256": "51c311a4ba03140bcd1c827f8d93dba50cadda736925903b26e95609275dbffd"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": {
+      "bytes": 87632,
+      "sha256": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": {
+      "bytes": 16249904,
+      "sha256": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145"
+    },
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": {
+      "bytes": 514880,
+      "sha256": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451"
+    },
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": {
+      "bytes": 72544,
+      "sha256": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5"
+    },
+    "/System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService": {
+      "bytes": 389760,
+      "sha256": "b3cd7c6c6c5091f71e57cdc674b0915bc89b1321593c37507b541d58561d02c3"
+    },
+    "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService": {
+      "bytes": 220272,
+      "sha256": "5827a890d1fe8dcd7e6fd26e5157f1268fdf9e58c08c48c4616bd0a719fc7031"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+      "bytes": 150024,
+      "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+      "bytes": 69928,
+      "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+      "bytes": 102592,
+      "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+      "bytes": 5150944,
+      "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+      "bytes": 882592,
+      "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+      "bytes": 181544,
+      "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+      "bytes": 335064,
+      "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+      "bytes": 768872,
+      "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+      "bytes": 33371048,
+      "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+      "bytes": 2158624,
+      "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+      "bytes": 218040,
+      "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+      "bytes": 202328,
+      "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+      "bytes": 369272,
+      "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+      "bytes": 64496,
+      "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+      "bytes": 245016,
+      "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+      "bytes": 5744128,
+      "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+      "bytes": 981792,
+      "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+      "bytes": 106528,
+      "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+      "bytes": 798160,
+      "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91"
+    },
+    "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/clock-archive/manifest.json": {
+      "bytes": 1317878,
+      "sha256": "9cda96a31bbd4681bc9519279bedfe3a31d7c395da487e94ed7173d3928dda38"
+    },
+    "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-brave/document.png": {
+      "bytes": 1110192,
+      "sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3"
+    },
+    "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-vox/document.png": {
+      "bytes": 2337874,
+      "sha256": "0be0c59ee70bf89a77fc1c0243cea0211099025e8efe8548fd707bb8336e2d01"
+    },
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+      "bytes": 23312352,
+      "sha256": "f9fffcce6951aa3702654b97e75918d584c9054bec504f6b43d00b0fb665efbc"
+    },
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+      "bytes": 610368,
+      "sha256": "d310ac97b142870f9f3b61991a06f65127fcc4ae2f5e2e305093847869226b06"
+    },
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+      "bytes": 612064,
+      "sha256": "534525bbb22819326820fb607fb49ebd388acb119b39c8d5f6bf3d99dbd4b198"
+    },
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+      "bytes": 4398624,
+      "sha256": "3d47dd4422000032b360bdbddc4ae8e83d23ba5188f7a2680a4561e787a5a372"
+    },
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+      "bytes": 13020592,
+      "sha256": "dcad70250f0cc182470282af2a8e48e346278f5bd5bffc6a88e613259ba427bd"
+    },
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+      "bytes": 2192096,
+      "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+    },
+    "/Users/alex/code/vox2/tools/bbc_browser_instructions.py": {
+      "bytes": 44606,
+      "sha256": "c6680a0f8fe6a971513b52d5fea7fa53add2a4f33c1980f8a321abff67e7f53b"
+    },
+    "/Users/alex/code/vox2/tools/capture_brave_reference.py": {
+      "bytes": 16851,
+      "sha256": "c5e3df6aee6b50b28ca7d48642e396b1155d20c9b3b1eaefda6fce428bdc6e30"
+    },
+    "/Users/alex/code/vox2/tools/check_pixel_equality.py": {
+      "bytes": 2012,
+      "sha256": "45bfa1838328c1b7d165364fce76afc09af4850dfcd22afed62db14b43891b6b"
+    },
+    "/Users/alex/code/vox2/tools/coalition_instruction_counts.py": {
+      "bytes": 6468,
+      "sha256": "6dfe26ca64384a8e0bd4606c6e1e5170d57bb9fc04246c5ecd20c715421c9bc0"
+    },
+    "/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py": {
+      "bytes": 48993,
+      "sha256": "6c199cf27fbdcf70e94178aae3b0b121d3a197df8c6b97d5d68d7fff176523bf"
+    },
+    "/Users/alex/code/vox2/tools/measure_browser_instructions.py": {
+      "bytes": 43318,
+      "sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e"
+    },
+    "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": {
+      "bytes": 48663,
+      "sha256": "087c623f738b0a192373c48bdf0ca05a54aaf005f4aef102f2d6ab21a9e4895d"
+    },
+    "/Users/alex/code/vox2/tools/page_archive.py": {
+      "bytes": 16133,
+      "sha256": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c"
+    },
+    "/Users/alex/code/vox2/tools/pikabu_browser_instructions.py": {
+      "bytes": 28165,
+      "sha256": "f33238a06cb0ad38d6c4391248286dd451c034584c7c19a79d6aca71038cc8fe"
+    },
+    "/Users/alex/code/vox2/tools/process_instruction_counts.py": {
+      "bytes": 10735,
+      "sha256": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+    },
+    "/Users/alex/code/vox2/tools/run_memory_bounded.py": {
+      "bytes": 8493,
+      "sha256": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+    },
+    "/Users/alex/code/vox2/tools/stackoverflow_browser_instructions.py": {
+      "bytes": 26748,
+      "sha256": "65b2199167b6e9b7a5bfcfc4596c684e1ea374ce94b2d5ed4211cc676aa7002e"
+    },
+    "/opt/homebrew/Cellar/angle/1.0.16/lib/libEGL.dylib": {
+      "bytes": 111312,
+      "sha256": "aea6167b43c3e7597c857ea8cdbbaa913d80a89eb140dabb8e6360af01d5ddef"
+    },
+    "/opt/homebrew/Cellar/angle/1.0.16/lib/libGLESv2.dylib": {
+      "bytes": 9454608,
+      "sha256": "6ae0bf6748fdf0484766bc0116599f9a9ac5bc907a5b5479f808d35568e357d6"
+    },
+    "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+      "bytes": 150128,
+      "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927"
+    },
+    "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+      "bytes": 70128,
+      "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962"
+    },
+    "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+      "bytes": 661248,
+      "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7"
+    },
+    "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+      "bytes": 212080,
+      "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58"
+    },
+    "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+      "bytes": 1362736,
+      "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959"
+    },
+    "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+      "bytes": 125264,
+      "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+    },
+    "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+      "bytes": 1427648,
+      "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1"
+    },
+    "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+      "bytes": 33833472,
+      "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618"
+    },
+    "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+      "bytes": 1885104,
+      "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7"
+    },
+    "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+      "bytes": 191344,
+      "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2"
+    },
+    "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": {
+      "bytes": 4813232,
+      "sha256": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d"
+    },
+    "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+      "bytes": 574096,
+      "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd"
+    }
+  },
+  "unchanged_pinned_files": 1639,
+  "changed_inputs": [],
+  "attempts": [
+    {
+      "pair": 1,
+      "arm": "control",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 28902584466,
+        "upper": 28902584466
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 17000,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.44873046875,
+          16.75732421875,
+          17.142578125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.41259765625,
+          16.61181640625,
+          17.0888671875
+        ]
+      },
+      "raw_sha256": "183b2c1fa1eb9fecf8d7429eb43f37f0c928a8835400e5c83e98cca43422577a",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 1,
+      "arm": "vox",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 30237763354,
+        "upper": 30237763354
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-vox/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 17384,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.41259765625,
+          16.61181640625,
+          17.0888671875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.29931640625,
+          16.4521484375,
+          17.029296875
+        ]
+      },
+      "raw_sha256": "472373af50fd311782f364bcb9a9d2072dd80871cd2c4196176582100cb9c273",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 1,
+      "arm": "brave",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 14939236806,
+        "upper": 14977601792
+      },
+      "error": null,
+      "root": {
+        "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:55411 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-brave/profile --ignore-certificate-errors-spki-list=QR/XJwStaOfJsdSjLTZeAG9d5a8xYAjg6EdaHWkypU4=",
+        "parent": 1,
+        "pid": 17771,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.29931640625,
+          16.4521484375,
+          17.029296875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.99560546875,
+          16.4609375,
+          17.02880859375
+        ]
+      },
+      "raw_sha256": "c8138b5cea3c8973bfe866ef28d649342a39730ab4b048a51141d9bf564302ff",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-brave/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 2,
+      "arm": "control",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 30581116182,
+        "upper": 30581116182
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-2-control/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 18418,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.45458984375,
+          16.099609375,
+          16.8935546875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.818359375,
+          16.0478515625,
+          16.87060546875
+        ]
+      },
+      "raw_sha256": "fde7fea2e44384daed1d2971e286010f96b330d34e467de9c81ce019797156ba",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 2,
+      "arm": "vox",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 29240486125,
+        "upper": 29240486125
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-2-vox/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 18180,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.75537109375,
+          16.287109375,
+          16.9638671875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.45458984375,
+          16.099609375,
+          16.8935546875
+        ]
+      },
+      "raw_sha256": "73b6e0347bda0fd791909a1c056e0c4fd68ffd7d0a248e16f1675ffffdb1e247",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 2,
+      "arm": "brave",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 15235394046,
+        "upper": 15253523172
+      },
+      "error": null,
+      "root": {
+        "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:55411 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-2-brave/profile --ignore-certificate-errors-spki-list=QR/XJwStaOfJsdSjLTZeAG9d5a8xYAjg6EdaHWkypU4=",
+        "parent": 1,
+        "pid": 18038,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.99560546875,
+          16.4609375,
+          17.02880859375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.75537109375,
+          16.287109375,
+          16.9638671875
+        ]
+      },
+      "raw_sha256": "2cd6c74370191122fe2835dcaf7c57ad31f0c04aaad8473868aa7feabc2a347f",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-brave/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 3,
+      "arm": "control",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 31425324067,
+        "upper": 31425324067
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-3-control/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 18936,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.59228515625,
+          15.880859375,
+          16.806640625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.30419921875,
+          15.7001953125,
+          16.7373046875
+        ]
+      },
+      "raw_sha256": "6f8f5b929ac7389bbba3ec9d60973eaf6ad7662b23165e15f547850dec127f5f",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 3,
+      "arm": "vox",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 30357716259,
+        "upper": 30357716259
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-3-vox/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 19243,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.30419921875,
+          15.7001953125,
+          16.7373046875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          7.95947265625,
+          15.505859375,
+          16.66259765625
+        ]
+      },
+      "raw_sha256": "c338551fe6209dde93bf327e08e2bc03b17bbde67b70a84b92199e46fc922c88",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 3,
+      "arm": "brave",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 15099897555,
+        "upper": 15138041056
+      },
+      "error": null,
+      "root": {
+        "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:55411 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-3-brave/profile --ignore-certificate-errors-spki-list=QR/XJwStaOfJsdSjLTZeAG9d5a8xYAjg6EdaHWkypU4=",
+        "parent": 1,
+        "pid": 19512,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          7.95947265625,
+          15.505859375,
+          16.66259765625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          8.04248046875,
+          15.3974609375,
+          16.61767578125
+        ]
+      },
+      "raw_sha256": "e81e329691923d30d283641be722b8f94b38150378622ca47be47478206062ec",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-brave/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 4,
+      "arm": "control",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 30838133429,
+        "upper": 30838133429
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-4-control/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 20296,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          7.72802734375,
+          15.08740234375,
+          16.4931640625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          7.82958984375,
+          14.986328125,
+          16.44921875
+        ]
+      },
+      "raw_sha256": "e7cc03baf1e8900bcc33d8166a222b39f0591f5a48f02bac256815c23b1d5238",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 4,
+      "arm": "vox",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 30640643820,
+        "upper": 30640643820
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-4-vox/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 19874,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          7.87890625,
+          15.2412109375,
+          16.55517578125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          7.72802734375,
+          15.08740234375,
+          16.4931640625
+        ]
+      },
+      "raw_sha256": "03f1b23b7689874c336a5d8298c917dcc9fe9f6142a6580af1f884c0a42abd26",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 4,
+      "arm": "brave",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 15122173401,
+        "upper": 15155935842
+      },
+      "error": null,
+      "root": {
+        "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:55411 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-4-brave/profile --ignore-certificate-errors-spki-list=QR/XJwStaOfJsdSjLTZeAG9d5a8xYAjg6EdaHWkypU4=",
+        "parent": 1,
+        "pid": 19671,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          8.04248046875,
+          15.3974609375,
+          16.61767578125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          7.87890625,
+          15.2412109375,
+          16.55517578125
+        ]
+      },
+      "raw_sha256": "3763df7170f6c10a368d61954605c9c662ff414706c2dce6ef89d57e09d7cac7",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-brave/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 5,
+      "arm": "control",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 31392026503,
+        "upper": 31392026503
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-5-control/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 20663,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          7.82958984375,
+          14.986328125,
+          16.44921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          13.2939453125,
+          15.88427734375,
+          16.74853515625
+        ]
+      },
+      "raw_sha256": "f2f6362dc165b72331f432423c6544469dc7603dbedf95f4d32d6473d90b4829",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 5,
+      "arm": "vox",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 29954862720,
+        "upper": 29954862720
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-5-vox/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 21148,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          13.2939453125,
+          15.88427734375,
+          16.74853515625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          13.10986328125,
+          15.802734375,
+          16.71484375
+        ]
+      },
+      "raw_sha256": "d7226f9790dbaae02803dcb06905943d9d6b64d4c9bf13092ea9e2c9e2f6f988",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 5,
+      "arm": "brave",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 15044825116,
+        "upper": 15060712052
+      },
+      "error": null,
+      "root": {
+        "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:55411 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-5-brave/profile --ignore-certificate-errors-spki-list=QR/XJwStaOfJsdSjLTZeAG9d5a8xYAjg6EdaHWkypU4=",
+        "parent": 1,
+        "pid": 21407,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          13.10986328125,
+          15.802734375,
+          16.71484375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          13.38037109375,
+          15.77490234375,
+          16.6943359375
+        ]
+      },
+      "raw_sha256": "b9cf01e56f22da25edc764131e7df52929b91a434a43cd27e47ec04b3d0b0b51",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-brave/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 6,
+      "arm": "control",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 29957193451,
+        "upper": 29957193451
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-6-control/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 23177,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          14.37744140625,
+          15.8818359375,
+          16.71630859375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          15.14794921875,
+          16.0166015625,
+          16.7587890625
+        ]
+      },
+      "raw_sha256": "68ff9099f89a0306285cfe95ad807b0cf22afdc4c665b37d982b1cd80976f9ea",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 6,
+      "arm": "vox",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 30207755297,
+        "upper": 30207755297
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-6-vox/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 22064,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          13.75,
+          15.8115234375,
+          16.70166015625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          14.41064453125,
+          15.9140625,
+          16.732421875
+        ]
+      },
+      "raw_sha256": "48493d1fd4b3ad56179db67766fc3e21be3da0873969a854eb9c8fc6861988b7",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 6,
+      "arm": "brave",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 14870623965,
+        "upper": 14871562033
+      },
+      "error": null,
+      "root": {
+        "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:55411 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-6-brave/profile --ignore-certificate-errors-spki-list=QR/XJwStaOfJsdSjLTZeAG9d5a8xYAjg6EdaHWkypU4=",
+        "parent": 1,
+        "pid": 21592,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          13.38037109375,
+          15.77490234375,
+          16.6943359375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          13.75,
+          15.8115234375,
+          16.70166015625
+        ]
+      },
+      "raw_sha256": "a91353865b8f1ad28e9f7594f02e6c0e95a6ecf8abf192b90d55ecc4188c6df2",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-brave/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 7,
+      "arm": "control",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 30930359147,
+        "upper": 30930359147
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-7-control/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 24222,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          15.14794921875,
+          16.0166015625,
+          16.7587890625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          16.6494140625,
+          16.3115234375,
+          16.8544921875
+        ]
+      },
+      "raw_sha256": "874c9460b97948ee2798bd8e59802391965f85efd579c22534b0bc274ca9d431",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 7,
+      "arm": "vox",
+      "driver_exit": 0,
+      "native_exit": 0,
+      "cleanup_exit": null,
+      "interval": {
+        "lower": 30328927150,
+        "upper": 30328927150
+      },
+      "error": null,
+      "root": {
+        "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-7-vox/document.png https://www.bbc.com/",
+        "parent": 1,
+        "pid": 25233,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          16.6494140625,
+          16.3115234375,
+          16.8544921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          16.46240234375,
+          16.2841796875,
+          16.837890625
+        ]
+      },
+      "raw_sha256": "03fff5f537fdb2b3401598fd605c3ec9379b6eeb70d523bb9a0965260f10f999",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-control/independent-diff-v2.log"
+      },
+      "ownership": true,
+      "instrumentation_absent": true,
+      "complete": true
+    },
+    {
+      "pair": 7,
+      "arm": "brave",
+      "driver_exit": 1,
+      "native_exit": null,
+      "cleanup_exit": 0,
+      "interval": null,
+      "error": "A private browser helper is outside its resource coalition",
+      "root": {
+        "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:55411 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-7-brave/profile --ignore-certificate-errors-spki-list=QR/XJwStaOfJsdSjLTZeAG9d5a8xYAjg6EdaHWkypU4=",
+        "parent": 1,
+        "pid": 26268,
+        "uid": 501
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          16.46240234375,
+          16.2841796875,
+          16.837890625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          16.10498046875,
+          16.212890625,
+          16.80908203125
+        ]
+      },
+      "raw_sha256": "df92609da0c9b3f36493921215715e6df643a5488f076519dcae6f8a545a06d2",
+      "memory_guard_adopted": true,
+      "content_verified": true,
+      "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+      "pixel_check": {
+        "different_pixels": 0,
+        "receipt": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort/pair-1-brave/independent-diff-v2.log"
+      },
+      "ownership": false,
+      "instrumentation_absent": true,
+      "complete": false
+    }
+  ],
+  "counts": {
+    "control": [
+      28902584466,
+      30581116182,
+      31425324067,
+      30838133429,
+      31392026503,
+      29957193451,
+      30930359147
+    ],
+    "vox": [
+      30237763354,
+      29240486125,
+      30357716259,
+      30640643820,
+      29954862720,
+      30207755297,
+      30328927150
+    ],
+    "brave": [
+      14939236806,
+      15235394046,
+      15099897555,
+      15122173401,
+      15044825116,
+      14870623965
+    ]
+  },
+  "medians": {
+    "control": 30838133429,
+    "vox": 30237763354,
+    "brave": 15072361335.5
+  },
+  "matched": {
+    "pairs": 7,
+    "candidate_median": 30237763354,
+    "control_median": 30838133429,
+    "median_reduction": 600370075,
+    "paired_reductions": [
+      -1335178888,
+      1340630057,
+      1067607808,
+      197489609,
+      1437163783,
+      -250561846,
+      601431997
+    ],
+    "wins": 5,
+    "losses": 2
+  },
+  "numeric_gate_diagnostic": {
+    "left": 306406438200,
+    "right": 133835615685,
+    "passes": false,
+    "ratio": 2.060481382093774
+  },
+  "guard": {
+    "child_exit_code": 1,
+    "adoption_error": null,
+    "observed_peak_rss_bytes": 1565278208,
+    "elapsed_seconds": 136.627591792,
+    "limit_bytes": 12884901888
+  },
+  "diagnostic_validation": [
+    {
+      "label": "candidate",
+      "driver_guard_exit": 0,
+      "diagnostic_only": true,
+      "no_instruction_credit": true,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "ownership": true,
+      "fast_path": true,
+      "jsc": [
+        "JSC_PROBE pid=15478 contexts=1 groups=1 evaluations=1957"
+      ],
+      "path_before_capture": true
+    },
+    {
+      "label": "control",
+      "driver_guard_exit": 0,
+      "diagnostic_only": true,
+      "no_instruction_credit": true,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "ownership": true,
+      "fast_path": false,
+      "jsc": [
+        "JSC_PROBE pid=15818 contexts=1 groups=1 evaluations=2056"
+      ],
+      "path_before_capture": true
+    }
+  ],
+  "focused_test_cases": 31,
+  "focused_executions": 186,
+  "focused_gc_modes": [
+    "default",
+    "none",
+    "prealloc"
+  ],
+  "focused_control_candidate_exits": [
+    {
+      "name": "layout-default-compile",
+      "exit": 0
+    },
+    {
+      "name": "layout-default-candidate",
+      "exit": 0
+    },
+    {
+      "name": "layout-default-control",
+      "exit": 0
+    },
+    {
+      "name": "layout-none-compile",
+      "exit": 0
+    },
+    {
+      "name": "layout-none-candidate",
+      "exit": 0
+    },
+    {
+      "name": "layout-none-control",
+      "exit": 0
+    },
+    {
+      "name": "layout-prealloc-compile",
+      "exit": 0
+    },
+    {
+      "name": "layout-prealloc-candidate",
+      "exit": 0
+    },
+    {
+      "name": "layout-prealloc-control",
+      "exit": 0
+    }
+  ],
+  "native_validation": [
+    {
+      "name": "headless",
+      "exit": 0
+    },
+    {
+      "name": "smoke",
+      "exit": 0
+    },
+    {
+      "name": "svg",
+      "exit": 0
+    }
+  ],
+  "broad": {
+    "cases_per_mode": 483,
+    "passes_per_mode": 480,
+    "gc_modes": [
+      "default",
+      "none"
+    ],
+    "all_cases_entered": true,
+    "owned_inputs_unchanged": true,
+    "failures": [
+      "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+      "test_chromium_toggle_controls_align_their_border_box_with_the_baseline",
+      "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin"
+    ],
+    "all_failures_preexisting": true
+  },
+  "limitations": [
+    "Brave7 private-helper ownership failure after PNG and content audit; no selected instruction interval or normal kernel-exit receipt; cleanup exit0. All21 attempts retained; no retry or exclusion.",
+    "All21 PNGs match original per-engine references, all21 content inventories pass. Per-engine stability does not mean cross-browser equality: 2448723/3145728 pixels differ.",
+    "Brave median uses six available selected intervals and is diagnostic only. Five Vox/control pairs improve and two regress; host load varies. No accepted saving.",
+    "v-profile and JSC execution/path probes are separate diagnostics. Native sample exit0 produced no call stacks and is inconclusive.",
+    "Frozen original HTTPS page with author scripts; JSC module-CORS/DOM limitations remain. Live-site optimization and scrolling not established."
+  ],
+  "evidence_root": "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103",
+  "raw_command": [
+    "python3",
+    "tools/run_memory_bounded.py",
+    "--lock",
+    "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort.lock",
+    "--report",
+    "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort.guard.json",
+    "--adopt-pids-from",
+    "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort-pids.json",
+    "--timeout",
+    "900",
+    "--",
+    "python3",
+    "tools/bbc_browser_instructions.py",
+    "--archive",
+    "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/clock-archive",
+    "--output",
+    "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort",
+    "--memory-guard-registry",
+    "/Users/alex/code/vox2/Build/bbc-formatting-trees-20261103/formatting-matched-cohort-pids.json",
+    "--vox-app",
+    "/Users/alex/code/vox2/Build/v/Vox.app",
+    "--control-vox-app",
+    "/Users/alex/code/vox2/Build/v/Vox.app",
+    "--brave-app",
+    "/Applications/Brave Browser.app",
+    "--expected-vox",
+    "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-vox/document.png",
+    "--expected-brave",
+    "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-brave/document.png",
+    "--repeat",
+    "7",
+    "--diff-tool",
+    "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+    "--retain-incremental-webp-paint-policy",
+    "--control-disable-retained-formatting-trees"
+  ]
+}
