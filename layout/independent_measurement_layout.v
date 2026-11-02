@@ -14,8 +14,6 @@ struct MeasurementContextBasis {
 	height            CSSPixels
 	definite_width    bool
 	definite_height   bool
-	width_constraint  SizeConstraint
-	height_constraint SizeConstraint
 }
 
 fn measurement_context_bases(state &LayoutState, used &UsedValues) []MeasurementContextBasis {
@@ -29,8 +27,6 @@ fn measurement_context_bases(state &LayoutState, used &UsedValues) []Measurement
 			height:            values.content_height()
 			definite_width:    values.has_definite_width()
 			definite_height:   values.has_definite_height()
-			width_constraint:  values.width_constraint
-			height_constraint: values.height_constraint
 		}
 		// populate_node_from() deliberately severs copied geometry pointers.
 		// Follow the layout node's logical chain in either kind of state.
@@ -38,7 +34,32 @@ fn measurement_context_bases(state &LayoutState, used &UsedValues) []Measurement
 		styled := unsafe { &Node(parent) }.as_node_with_style() or { break }
 		ancestor = state.try_get(styled)
 	}
+	// A probe marker belongs to the box being measured. Closed child contexts
+	// consume their own constraints and supplied available space, not a sizing
+	// constraint on an ancestor whose resolved dimensions are unchanged.
 	return result
+}
+
+// Probes only read the saved chain. Do not allocate a replacement vector for
+// every lookup; those short-lived allocations can outweigh a small text layout.
+fn measurement_context_bases_are_current(bases []MeasurementContextBasis,
+	state &LayoutState, used &UsedValues) bool {
+	mut ancestor := used.containing_block_used_values()
+	mut index := 0
+	for ancestor != none {
+		values := ancestor or { break }
+		if index >= bases.len { return false }
+		basis := unsafe { &bases[index] }
+		if basis.node_id != u64(voidptr(values.node_))
+			|| basis.width != values.content_width() || basis.height != values.content_height()
+			|| basis.definite_width != values.has_definite_width()
+			|| basis.definite_height != values.has_definite_height() { return false }
+		index++
+		parent := unsafe { &Node(values.node_) }.containing_block() or { break }
+		styled := unsafe { &Node(parent) }.as_node_with_style() or { break }
+		ancestor = state.try_get(styled)
+	}
+	return index == bases.len
 }
 
 fn independent_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
@@ -73,7 +94,7 @@ fn completed_context_for_measurement(state &LayoutState, box &Node,
 		|| cached.definite_height != used.has_definite_height()
 		|| cached.width_constraint != used.width_constraint
 		|| cached.height_constraint != used.height_constraint
-		|| cached.input_bases != measurement_context_bases(state, used)
+		|| !measurement_context_bases_are_current(cached.input_bases, state, used)
 		|| cached.font_policy != box.document().font_rendering_policy()
 		|| cached.style_environment != box.document().style_environment_version()
 		|| !independent_measurement_inputs_are_current(cached.inputs) {
@@ -109,7 +130,7 @@ fn run_measurement_independent_formatting_context(mut state LayoutState, box &No
 	}
 	if independent_measurement_diagnostics && !independent_measurement_reuse_reported {
 		independent_measurement_reuse_reported = true
-		eprintln('Vox independent measurement: reused completed context from current pass')
+		eprintln('Vox independent measurement: reused completed context with matching bases')
 	}
 	return cached.result
 }

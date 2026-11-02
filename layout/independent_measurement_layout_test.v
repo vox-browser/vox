@@ -251,3 +251,43 @@ fn test_independent_measurement_rechecks_selected_and_unrelated_font_completion(
 		assert independent_probe_compare(mut source, root, 180, .normal, space) == !disable_independent_measurement_reuse
 	}
 }
+
+fn test_independent_measurement_distinguishes_own_constraints_from_ancestor_probe_markers() {
+	mut document := html.parse_document('<!doctype html><div style="width:300px"><section id="probe" style="display:grid;grid-template-columns:1fr;font:16px/20px SerenitySans"><p>Text wrapping inside a closed independent child.</p></section></div>')
+	defer { document.finalize() }
+	layout := run_document_layout(document, 500, 400) or { panic('missing layout') }
+	root := independent_probe_find(layout.root)
+	mut source := layout.state
+	source.enable_measurement_chunk_pool()
+	defer { source.release_measurement_chunk_pool() }
+	independent_probe_complete(mut source, root, 180)
+	parent := root.containing_block()?
+	mut parent_values := source.get_mutable(unsafe { &NodeWithStyle(parent) })
+	assert !parent_values.has_definite_height()
+	for constraint in [SizeConstraint.min_content, .max_content] {
+		parent_values.height_constraint = constraint
+		assert independent_probe_compare(mut source, root, 180, .normal,
+			AvailableSize.make_indefinite()) == !disable_independent_measurement_reuse
+	}
+	// A marker on an otherwise definite axis changes its effective
+	// definiteness. That remains a real dependency and must reject replay.
+	parent_values.width_constraint = .min_content
+	assert !independent_probe_compare(mut source, root, 180, .normal,
+		AvailableSize.make_indefinite())
+	parent_values.width_constraint = .none
+	styled := root.as_node_with_style()?
+	mut probe := source.new_measurement_for_subtree(styled)
+	defer { probe.release_measurement() }
+	populate_intrinsic_containing_block_chain(mut probe, mut source, root)
+	mut used := probe.get_mutable(styled)
+	used.set_content_width(CSSPixels.new(180))
+	used.set_has_definite_width(true)
+	used.set_indefinite_content_height()
+	space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(180)),
+		AvailableSize.make_indefinite())
+	used.width_constraint = .min_content
+	assert completed_context_for_measurement(probe, root, used, .normal, space) == none
+	used.width_constraint = .none
+	used.height_constraint = .max_content
+	assert completed_context_for_measurement(probe, root, used, .normal, space) == none
+}
