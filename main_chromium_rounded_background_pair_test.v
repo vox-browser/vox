@@ -51,6 +51,9 @@ fn test_partial_border_background_and_child_header_keep_one_resolve() {
 		if command.kind != 'fill_rounded_rect' || command.color != 'rgb(230 230 230)' { continue }
 		assert chromium_rounded_background_pair_end(commands, layers, i) == i + 3
 		groups++
+		mut independent := layers.clone()
+		for k in i .. i + 3 { independent[k] = 1 }
+		assert chromium_rounded_background_pair_end(commands, independent, i) == i + 3
 		mut separate := layers.clone()
 		separate[i + 2] = 1
 		assert chromium_rounded_background_pair_end(commands, separate, i) == i

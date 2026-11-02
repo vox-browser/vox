@@ -255,7 +255,8 @@ extern "C" int ladybird_v_skia_begin_inset_decorations(CGContextRef destination,
     float x, float y, float width, float height, float canvas_width,
     float canvas_height, float page_y, float scroll_y)
 {
-    if (!s_chromium_painting || !s_raster_layer_is_root || !destination || s_shared_root_enabled
+    if (!s_chromium_painting || !destination
+        || (s_raster_layer_is_root ? s_shared_root_enabled : s_shared_layer_enabled)
         || !shared_picture_draw() || s_inset_decoration_recording
         || s_isolated_input_recordings.count(destination)) return 0;
     for (float value : {x, y, width, height, canvas_width, canvas_height, page_y, scroll_y})
@@ -424,6 +425,18 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
             return rasterize(tile, offset_x, offset_y, multisampled,
                 0, 0, s_msaa_grid_width, s_msaa_grid_height);
         });
+    if (!rendered && !s_raster_layer_is_root) {
+        rendered = regional
+            ? draw_chromium_clipped_layer_raster_grid<true>(pixels, group->width, group->height,
+                group->region, 0, group->page_y, group->scroll_y, group->scale,
+                input->bounds, rasterize)
+            : draw_chromium_clipped_layer_raster_grid(pixels, group->width, group->height,
+                group->region, 0, group->page_y, group->scroll_y, group->scale,
+                input->bounds, [&](auto& tile, long dx, long dy, bool msaa) {
+                    return rasterize(tile, dx, dy, msaa,
+                        0, 0, s_msaa_grid_width, s_msaa_grid_height);
+                });
+    }
     if (!rendered) {
         float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
         if (!draw(reinterpret_cast<uint8_t*>(pixels.data()), group->width, group->height,

@@ -16,9 +16,11 @@ fn chromium_partial_decoration_end(commands []layout.PaintCommand, layers []int,
 		|| header.kind != 'fill_rounded_rect' || border.points.len != 4
 		|| !background.shares_paint_box_with(border) { return index }
 	matrix := normalized_paint_transform(background.transform)
+	owner := layers[index]
+	if owner < 0 { return index }
 	for i in index .. index + 3 {
 		command := unsafe { &commands[i] }
-		if layers[i] != 0 || command.opacity != 1 || command.outer_shadow || command.blur != 0
+		if layers[i] != owner || command.opacity != 1 || command.outer_shadow || command.blur != 0
 			|| command.underlays_next || command.clip_outs.len > 0
 			|| normalized_paint_transform(command.transform) != matrix
 			|| !chromium_shared_recording_clips_supported(command) { return index }

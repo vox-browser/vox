@@ -28,10 +28,6 @@ int main(int argc, char** argv)
     CGColorSpaceRelease(space);
     assert(context && shared_picture_draw() && graphite_shape_draw());
     ladybird_v_skia_set_chromium_painting(1);
-    ladybird_v_skia_set_raster_layer(0, 0, 1);
-    ladybird_v_skia_set_raster_layer_size(width, 2200);
-    int tiles[] {0, 1, 2};
-    ladybird_v_skia_set_msaa_grid(tiles, 3, 1024, 256, 1);
     auto draw = [&](float x, float y, float w, float h, float tr_x, float tr_y,
                    float bl_x, float bl_y, uint8_t gray, int mode) {
         assert(ladybird_v_skia_draw_rounded_rect(context, x, y, w, h,
@@ -42,6 +38,11 @@ int main(int argc, char** argv)
     for (int repeat = 0; repeat < 2; ++repeat) {
         std::fill(actual.begin(), actual.end(), 255);
         for (int card = 0; card < 2; ++card) {
+            ladybird_v_skia_set_raster_layer(card ? 701 : 0, card ? 672 : 0, !card);
+            ladybird_v_skia_set_raster_layer_size(card ? 298 : width, card ? 561 : 2200);
+            int tiles[] {0, 1, 2};
+            ladybird_v_skia_set_msaa_grid(tiles, card ? 2 : 3,
+                card ? 320 : 1024, card ? 416 : 256, 1);
             assert(ladybird_v_skia_begin_deferred_inset_decorations(context,
                 2, 2, width - 4, height - 4, width, height, 0, 0));
             float y = card ? 672 : 92, h = card ? 561 : 560;
