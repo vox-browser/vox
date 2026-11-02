@@ -287,6 +287,10 @@ pub fn prepare_initial_document_fonts(document &dom.Document) {
 	install_document_layout_hook(document)
 	mut owner := unsafe { &dom.Document(document) }
 	owner.update_style()
+	request_fonts_for_computed_text(document)
+}
+
+fn request_fonts_for_computed_text(document &dom.Document) {
 	// Start only faces selected by rendered text, without building throwaway
 	// fallback geometry. Metric-only font queries intentionally do not fetch.
 	computer := css.css_style_computer_for(document).font_computer()
