@@ -176,45 +176,56 @@ class PreciseScrollTests(unittest.TestCase):
             root = Path(temporary)
             header = Path(measure_precise_scroll.__file__).with_name("precise_scroll_faults.h")
             source, binary = root / "fixture.c", root / "fixture"
-            source.write_text('#include "' + str(header) + '"\n' + r'''
+            source.write_text('#include <CoreFoundation/CoreFoundation.h>\n#include "' + str(header) + '"\n' + r'''
                 static void original(int sig) {(void)sig; _exit(73);}
                 static void fail(void *unused) {
-                    (void)unused;
+                    if (unused) {
+                        // libdispatch workers can inherit a blocked SIGBUS.
+                        sigset_t signals;
+                        sigemptyset(&signals); sigaddset(&signals, SIGBUS);
+                        sigprocmask(SIG_UNBLOCK, &signals, NULL);
+                        raise(SIGBUS); _exit(2);
+                    }
                     volatile int value = *(volatile int *)0x5100000001eULL;
                     (void)value;
                     _exit(2);
                 }
-                int main(void) {
+                int main(int argc, char **argv) {
+                    (void)argv;
                     signal(SIGSEGV, original);
+                    signal(SIGBUS, original);
                     scroll_fault_schedule();
                     dispatch_after_f(dispatch_time(DISPATCH_TIME_NOW, 200000000),
-                        dispatch_get_main_queue(), NULL, fail);
-                    dispatch_main();
+                        dispatch_get_main_queue(), argc > 1 ? (void *)1 : NULL, fail);
+                    CFRunLoopRun();
+                    return 0;
                 }
             ''')
             subprocess.run(["clang", "-O2", "-Wall", "-Wextra", "-Werror", str(source),
-                            "-o", str(binary)], check=True)
-            for enabled in ["", "0", "1"]:
+                            "-framework", "CoreFoundation", "-o", str(binary)], check=True)
+            for enabled, bus in [("", False), ("0", False), ("1", False), ("", True), ("1", True)]:
                 env = dict(os.environ, VOX_PRECISE_CAPTURE_FAULTS=enabled)
-                result = subprocess.run([str(binary)], env=env, capture_output=True, text=True,
+                result = subprocess.run([str(binary), *(["bus"] if bus else [])], env=env, capture_output=True, text=True,
                                         timeout=10)
                 if enabled != "1":
-                    self.assertEqual(result.returncode, 73)
+                    self.assertEqual(result.returncode, 73, (enabled, bus, result.stderr))
                     self.assertNotIn("SCROLL_FAULT_", result.stderr)
                     continue
-                self.assertEqual(result.returncode, 139)
+                self.assertEqual(result.returncode, 138 if bus else 139)
                 fault = re.search(r"SCROLL_FAULT_FIRST signal=([0-9a-f]+) address=([0-9a-f]+) pc=([0-9a-f]+)", result.stderr)
                 self.assertIsNotNone(fault)
-                self.assertEqual(int(fault[1], 16), 11)
-                self.assertEqual(int(fault[2], 16), 0x5100000001e)
+                self.assertEqual(int(fault[1], 16), 10 if bus else 11)
+                if not bus:
+                    self.assertEqual(int(fault[2], 16), 0x5100000001e)
                 self.assertGreater(int(fault[3], 16), 0)
                 self.assertIn("SCROLL_FAULT_REGISTER", result.stderr)
                 self.assertIn("SCROLL_FAULT_FRAME", result.stderr)
                 images = re.findall(r"SCROLL_FAULT_IMAGE header=\w+ slide=\w+ text_start=(\w+) text_end=(\w+) path_hex=(\w+)", result.stderr)
                 self.assertEqual([Path(os.fsdecode(bytes.fromhex(path))).resolve()
                                   for _, _, path in images], [binary.resolve()])
-                self.assertLessEqual(int(images[0][0], 16), int(fault[3], 16))
-                self.assertGreater(int(images[0][1], 16), int(fault[3], 16))
+                if not bus:
+                    self.assertLessEqual(int(images[0][0], 16), int(fault[3], 16))
+                    self.assertGreater(int(images[0][1], 16), int(fault[3], 16))
                 memories = re.findall(r"SCROLL_FAULT_MEMORY address=(\w+) bytes=(\w+)", result.stderr)
                 self.assertGreater(len(memories), 0)
                 self.assertLessEqual(len(memories), 128)
