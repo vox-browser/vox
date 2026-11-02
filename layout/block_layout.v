@@ -49,7 +49,7 @@ fn resolve_used_border_width(computed &css.ComputedValues, width_property css.Pr
 
 // Resolve the used margin/border/padding edges from `computed` into `used_values`. `containing_block_width`
 // is the percentage basis. `auto` margins resolve to 0 here (compute_block_used_width may reassign them).
-fn resolve_box_model_edges(computed &css.ComputedValues, mut used_values UsedValues, containing_block_width f64) {
+fn resolve_box_model_edges_by_property(computed &css.ComputedValues, mut used_values UsedValues, containing_block_width f64) {
 	used_values.padding_left = css_px(computed.length_percentage_to_px(.padding_left, containing_block_width) or { 0.0 })
 	used_values.padding_right = css_px(computed.length_percentage_to_px(.padding_right, containing_block_width) or { 0.0 })
 	used_values.padding_top = css_px(computed.length_percentage_to_px(.padding_top, containing_block_width) or { 0.0 })
