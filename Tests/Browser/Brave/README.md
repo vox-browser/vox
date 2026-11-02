@@ -309,6 +309,14 @@ bundle differs at 12,341 pixels. The matching layout tests pass in both GC modes
 see the [Slashdot receipt](../../../docs/benchmark-results/slashdot-brave-pixels-2026-11-02.json)
 for the production pixel-validation status.
 
+`chromium-unchecked-radio` covers automatic and authored control sizes,
+fractional placement, and a nonsquare control with a half-pixel center. Its two
+full-uBO Brave references agree at 1024×768 and scale 1. The pixel test waits
+five seconds for native publication; the settled older bundle differs at 556
+pixels. Four focused layout/paint cases pass with default GC and `-gc none`,
+including native replay coordinates and preserved fallback states. Browser
+validation of the new ring remains pending the shared production build.
+
 `stackoverflow-independent-hyphen-shaping` checks inserted system-font hyphens
 at integer and fractional line origins, narrow line fitting, explicit hyphen
 controls, and Arial. Its 800×600, scale 1 reference comes from two agreeing

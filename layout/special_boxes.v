@@ -163,9 +163,10 @@ pub fn RadioButton.new(document &dom.Document, element &dom.Element, computed_va
 		ReplacedBox: replaced_box_base(document, element, computed_values)
 	}
 	box.has_auto_content_box_size_ = true
+	size := if document.font_rendering_policy() == .chromium { 13 } else { 12 }
 	box.auto_content_box_size_ = css.SizeWithAspectRatio{
-		width: CSSPixels.new(12)
-		height: CSSPixels.new(12)
+		width: CSSPixels.new(size)
+		height: CSSPixels.new(size)
 	}
 	return box
 }

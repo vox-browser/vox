@@ -2495,6 +2495,19 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				&& box.form_control_color_scheme != .dark {
 				append_chromium_unchecked_checkbox(mut commands, chromium_snapped_control_rect(box.x,
 					box.y, box.width, box.height), scale, opacity)
+			} else if box.snaps_background_rect && box.media().form_control_kind == 'radio'
+				&& !form_control_state.checked && form_control_state.enabled
+				&& !form_control_state.activated && box.form_control_color_scheme != .dark
+				&& math.min(box.width, box.height) > 2 * scale {
+				rect := chromium_snapped_control_rect(box.x, box.y, box.width, box.height)
+				width := int(math.floor(box.x + box.width + 0.5)) - int(math.floor(box.x + 0.5))
+				height := int(math.floor(box.y + box.height + 0.5)) - int(math.floor(box.y + 0.5))
+				// NativeTheme centers its square in a RectF. Keep an odd spare
+				// device pixel as a half-pixel offset instead of truncating it.
+				center_offset := painting.Point{f64((width - rect.width) % 2) / 2,
+					f64((height - rect.height) % 2) / 2}
+				append_chromium_unchecked_toggle(mut commands, rect, scale, opacity,
+					f64(math.max(rect.width, rect.height)) / scale / 2, center_offset)
 			} else if box.snaps_background_rect && box.media().form_control_kind == 'checkbox'
 				&& form_control_state.checked && !form_control_state.indeterminate
 				&& form_control_state.enabled && !form_control_state.activated
@@ -4525,14 +4538,22 @@ fn chromium_snapped_control_rect(x f64, y f64, width f64, height f64) painting.I
 // one pass, as Brave's GPU rasterization draws them into one raster tile: a
 // multisampled tile resolves their shared edge pixels together.
 fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting.IntRect, scale f64, opacity f64) {
-	theme := &PaintCheckboxThemeData{rect: rect, scale: scale}
+	append_chromium_unchecked_toggle(mut commands, rect, scale, opacity, 2, painting.Point{})
+}
+
+// Unchecked light-theme radios share the checkbox fill and border, with a
+// circular rrect radius retained in CSS coordinates for native replay.
+fn append_chromium_unchecked_toggle(mut commands []PaintCommand, rect painting.IntRect,
+	scale f64, opacity f64, radius f64, center_offset painting.Point) {
+	theme := &PaintCheckboxThemeData{rect: rect, scale: scale, radius: radius,
+		center_offset: center_offset}
 	commands << PaintCommand{
 		kind:                'fill_rect'
-		x:                   f64(rect.x) + 0.2 * scale
-		y:                   f64(rect.y) + 0.2 * scale
+		x:                   f64(rect.x) + center_offset.x + 0.2 * scale
+		y:                   f64(rect.y) + center_offset.y + 0.2 * scale
 		width:               f64(rect.width) - 0.4 * scale
 		height:              f64(rect.height) - 0.4 * scale
-		radius:              2 * scale
+		radius:              radius * scale
 		underlays_next:      true
 		checkbox_theme_data: theme
 		color:               'rgb(255 255 255)'
@@ -4542,11 +4563,11 @@ fn append_chromium_unchecked_checkbox(mut commands []PaintCommand, rect painting
 	}
 	commands << PaintCommand{
 		kind:                'stroke_rounded_rect'
-		x:                   f64(rect.x) + 0.5 * scale
-		y:                   f64(rect.y) + 0.5 * scale
+		x:                   f64(rect.x) + center_offset.x + 0.5 * scale
+		y:                   f64(rect.y) + center_offset.y + 0.5 * scale
 		width:               f64(rect.width) - scale
 		height:              f64(rect.height) - scale
-		radius:              2 * scale
+		radius:              radius * scale
 		stroke_width:        scale
 		checkbox_theme_data: theme
 		color:               'rgb(118 118 118)'
