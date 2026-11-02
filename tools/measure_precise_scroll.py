@@ -169,6 +169,8 @@ def main():
                         help="Seed only allow_any_site in the private profile for file/loopback fixtures")
     parser.add_argument("--v-profile-reset", action="store_true",
                         help="Diagnostic only: reset v -profile counters immediately before native input")
+    parser.add_argument("--capture-faults", action="store_true",
+                        help="Diagnostic only: record first-fault registers and bounded readable memory")
     parser.add_argument("--network-policy", required=True,
                         help="Describe live access or supplied network-blocking interposer; recorded verbatim")
     parser.add_argument("--insert-library", action="append", type=Path, default=[])
@@ -205,14 +207,15 @@ def main():
     output.mkdir(parents=True, exist_ok=False)
     probe = output / "precise-scroll.dylib"
     source = REPO / "tools/measure_precise_scroll_darwin.m"
-    source_digest = sha256(source)
+    fault_header = source.with_name("precise_scroll_faults.h")
+    compile_inputs = {path: sha256(path) for path in [source, fault_header]}
     compile_command = ["clang", "-O2", "-Wall", "-Wextra", "-Werror",
                        "-dynamiclib", "-fobjc-arc", str(source),
                        "-framework", "Cocoa", "-framework", "QuartzCore",
                        "-Wl,-undefined,dynamic_lookup", "-o", str(probe)]
     with (output / "compile.log").open("w") as log:
         subprocess.run(compile_command, stdout=log, stderr=subprocess.STDOUT, check=True)
-    if sha256(source) != source_digest:
+    if compile_inputs != {path: sha256(path) for path in compile_inputs}:
         raise RuntimeError("Native probe source changed during compilation")
     cache = output / "cache"
     if args.cache_template:
@@ -256,10 +259,11 @@ def main():
                VOX_PRECISE_HZ=str(args.input_hz), VOX_PRECISE_DELTA=str(args.delta),
                VOX_PRECISE_SETTLE=str(args.settle_seconds),
                VOX_PRECISE_RESET_V_PROFILE="1" if args.v_profile_reset else "",
+               VOX_PRECISE_CAPTURE_FAULTS="1" if args.capture_faults else "",
                VOX_PRECISE_FAILURE_CAPTURE=str(output / "navigation-error.png"),
                VOX_PRECISE_REQUIRED_TITLE=args.require_title)
     pinned = [binary, *sorted(binary.parent.glob("*.dylib")),
-              Path(__file__).resolve(), source, probe, *libraries]
+              Path(__file__).resolve(), source, fault_header, probe, *libraries]
     # A private replay certificate changes the accepted network responses.
     # Retain its identity with the code, rather than just a mutable pathname.
     if env.get("SSL_CERT_FILE"):
@@ -272,7 +276,7 @@ def main():
     command = [str(binary), *script_flags, "--window-width", str(args.width),
                "--window-height", str(args.height + args.chrome_height), args.url]
     evidence = dict(command=command, compile_command=compile_command,
-                    diagnostic_only=args.v_profile_reset,
+                    diagnostic_only=args.v_profile_reset or args.capture_faults,
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
                     initial_profile=("private profile seeded only with allow_any_site=true; "
                                      "default bookmark bar; explicit direct networking"

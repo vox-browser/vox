@@ -9,6 +9,7 @@
 #include <string.h>
 #include <dlfcn.h>
 #include <mach-o/dyld.h>
+#include "precise_scroll_faults.h"
 
 static void record_native_image(const struct mach_header *header, intptr_t slide) {
     (void)slide;
@@ -265,6 +266,7 @@ static void begin(void) {
 
 __attribute__((constructor)) static void boot(void) {
     if (!ladybird_v_skia_set_root_raster_scroll_y) return;
+    scroll_fault_schedule();
     _dyld_register_func_for_add_image(record_native_image);
     const char *names[] = {"VOX_PRECISE_INPUTS", "VOX_PRECISE_REVERSE",
         "VOX_PRECISE_HZ", "VOX_PRECISE_DELTA", "VOX_PRECISE_SETTLE"};

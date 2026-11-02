@@ -3,6 +3,7 @@ import hashlib
 import io
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -45,6 +46,9 @@ class PreciseScrollTests(unittest.TestCase):
     def test_profile_reset_is_explicitly_marked_as_diagnostic(self):
         self.check_isolated_launch(False, v_profile_reset=True)
 
+    def test_fault_capture_is_explicitly_marked_as_diagnostic(self):
+        self.check_isolated_launch(False, capture_faults=True)
+
     def test_fixture_profile_cannot_silently_disable_replay_proxy(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "measurement"
@@ -60,7 +64,7 @@ class PreciseScrollTests(unittest.TestCase):
                     measure_precise_scroll.main()
                 launch.assert_not_called()
 
-    def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False):
+    def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False, capture_faults=False):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             binary = root / "Vox"
@@ -98,6 +102,7 @@ class PreciseScrollTests(unittest.TestCase):
                 self.assertNotIn("DYLD_LIBRARY_PATH", env)
                 self.assertEqual(env["VOX_PRECISE_REQUIRED_TITLE"], "fixture")
                 self.assertEqual(env["VOX_PRECISE_RESET_V_PROFILE"], "1" if v_profile_reset else "")
+                self.assertEqual(env["VOX_PRECISE_CAPTURE_FAULTS"], "1" if capture_faults else "")
                 kwargs["stdout"].write(log_for())
                 kwargs["stdout"].write('SCROLL_IMAGE name=libLadybirdVSkiaText.dylib path_hex='
                                        + os.fsencode(renderer).hex() + '\n')
@@ -112,12 +117,15 @@ class PreciseScrollTests(unittest.TestCase):
                 arguments.append("--allow-fixture-navigation")
             if v_profile_reset:
                 arguments.append("--v-profile-reset")
+            if capture_faults:
+                arguments.append("--capture-faults")
             with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
                     mock.patch.object(measure_precise_scroll.sys, "argv", arguments), \
                     mock.patch.dict(measure_precise_scroll.os.environ,
                                     VOX_PROFILE_DIR=str(user_profile), VOX_PROFILE_FRAMES="600",
                                     DYLD_LIBRARY_PATH="/unrelated/native/libraries",
                                     VOX_PRECISE_RESET_V_PROFILE="ambient-must-not-enable-profiling",
+                                    VOX_PRECISE_CAPTURE_FAULTS="1",
                                     SSL_CERT_FILE=str(certificate),
                                     VOX_PROXY="" if allow_fixture_navigation else "http://127.0.0.1:9"), \
                     mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \
@@ -130,7 +138,10 @@ class PreciseScrollTests(unittest.TestCase):
                 measure_precise_scroll.main()
             evidence = json.loads((output / "run.json").read_text())
             self.assertTrue(evidence["valid"])
-            self.assertEqual(evidence["diagnostic_only"], v_profile_reset)
+            self.assertEqual(evidence["diagnostic_only"], v_profile_reset or capture_faults)
+            header = Path(measure_precise_scroll.__file__).with_name("precise_scroll_faults.h")
+            self.assertEqual(evidence["source_and_binary_sha256"][str(header)],
+                             hashlib.sha256(header.read_bytes()).hexdigest())
             self.assertEqual("seeded only" in evidence["initial_profile"], allow_fixture_navigation)
             self.assertEqual(evidence["script_policy"], "automatic")
             self.assertEqual(evidence["host"], {"cpu_count": 18,
@@ -158,6 +169,57 @@ class PreciseScrollTests(unittest.TestCase):
                     f'SCROLL_IMAGE name=../{name} path_hex={os.fsencode(selected).hex()}\n']:
             with self.subTest(log=bad), self.assertRaises(ValueError):
                 measure_precise_scroll.verify_native_images(bad, binary)
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS native fault capture")
+    def test_native_fault_capture_preserves_first_registers_and_disabled_handler(self):
+        with tempfile.TemporaryDirectory(prefix="fault fixture ü ") as temporary:
+            root = Path(temporary)
+            header = Path(measure_precise_scroll.__file__).with_name("precise_scroll_faults.h")
+            source, binary = root / "fixture.c", root / "fixture"
+            source.write_text('#include "' + str(header) + '"\n' + r'''
+                static void original(int sig) {(void)sig; _exit(73);}
+                static void fail(void *unused) {
+                    (void)unused;
+                    volatile int value = *(volatile int *)0x5100000001eULL;
+                    (void)value;
+                    _exit(2);
+                }
+                int main(void) {
+                    signal(SIGSEGV, original);
+                    scroll_fault_schedule();
+                    dispatch_after_f(dispatch_time(DISPATCH_TIME_NOW, 200000000),
+                        dispatch_get_main_queue(), NULL, fail);
+                    dispatch_main();
+                }
+            ''')
+            subprocess.run(["clang", "-O2", "-Wall", "-Wextra", "-Werror", str(source),
+                            "-o", str(binary)], check=True)
+            for enabled in ["", "0", "1"]:
+                env = dict(os.environ, VOX_PRECISE_CAPTURE_FAULTS=enabled)
+                result = subprocess.run([str(binary)], env=env, capture_output=True, text=True,
+                                        timeout=10)
+                if enabled != "1":
+                    self.assertEqual(result.returncode, 73)
+                    self.assertNotIn("SCROLL_FAULT_", result.stderr)
+                    continue
+                self.assertEqual(result.returncode, 139)
+                fault = re.search(r"SCROLL_FAULT_FIRST signal=([0-9a-f]+) address=([0-9a-f]+) pc=([0-9a-f]+)", result.stderr)
+                self.assertIsNotNone(fault)
+                self.assertEqual(int(fault[1], 16), 11)
+                self.assertEqual(int(fault[2], 16), 0x5100000001e)
+                self.assertGreater(int(fault[3], 16), 0)
+                self.assertIn("SCROLL_FAULT_REGISTER", result.stderr)
+                self.assertIn("SCROLL_FAULT_FRAME", result.stderr)
+                images = re.findall(r"SCROLL_FAULT_IMAGE header=\w+ slide=\w+ text_start=(\w+) text_end=(\w+) path_hex=(\w+)", result.stderr)
+                self.assertEqual([Path(os.fsdecode(bytes.fromhex(path))).resolve()
+                                  for _, _, path in images], [binary.resolve()])
+                self.assertLessEqual(int(images[0][0], 16), int(fault[3], 16))
+                self.assertGreater(int(images[0][1], 16), int(fault[3], 16))
+                memories = re.findall(r"SCROLL_FAULT_MEMORY address=(\w+) bytes=(\w+)", result.stderr)
+                self.assertGreater(len(memories), 0)
+                self.assertLessEqual(len(memories), 128)
+                self.assertEqual(len(set(address for address, _ in memories)), len(memories))
+                self.assertTrue(all(int(size, 16) <= 512 for _, size in memories))
 
     @unittest.skipUnless(sys.platform == "darwin", "macOS native image identities")
     def test_native_observer_records_the_library_actually_loaded(self):
