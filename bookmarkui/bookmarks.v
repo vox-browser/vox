@@ -45,6 +45,7 @@ fn bookmark_button(index int, item Item, frame ui2.Rect) ui2.Element {
 		}, item.icon, frame,
 			ui2.BoxStyle{ bg: 0xe6e6e6, radius: 8, transparent: true }, ui2.TextStyle{ size: 12, align: .left })
 		native_style:        true
+		button_image_size:   16
 		key:                 'bookmark-${index}'
 		tooltip:             '${item.title}\n${item.url}'
 		accessibility_label: item.title

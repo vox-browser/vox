@@ -16,6 +16,7 @@ pub:
 struct SavedBookmarks {
 pub:
 	optimized_defaults_added bool
+	hacker_news_default_added bool
 	visible bool
 	items   []Bookmark
 	version u64
@@ -26,6 +27,7 @@ pub:
 pub struct Store {
 pub mut:
 	optimized_defaults_added bool
+	hacker_news_default_added bool
 	visible bool
 	items   []Bookmark
 	version u64
@@ -52,6 +54,7 @@ pub fn open(path string) !&Store {
 		store.profile_hash = processlock.fingerprint(contents)
 		saved := json2.decode[SavedBookmarks](contents)!
 		store.optimized_defaults_added = saved.optimized_defaults_added
+		store.hacker_news_default_added = saved.hacker_news_default_added
 		store.visible = saved.visible
 		store.version = saved.version
 		for item in saved.items {
@@ -69,7 +72,7 @@ pub fn (mut store Store) seed_optimized_sites() ! {
 	defer { guard.release() }
 	store.reload()!
 	if store.optimized_defaults_added {
-		store.update_optimized_destinations()!
+		store.update_optimized_defaults()!
 		return
 	}
 	persistent := platform.enter_persistent()
@@ -85,8 +88,10 @@ pub fn (mut store Store) seed_optimized_sites() ! {
 		if !items.any(it.url == item.url) { items << item }
 	}
 	store.optimized_defaults_added = true
+	store.hacker_news_default_added = true
 	store.persist(true, items) or {
 		store.optimized_defaults_added = false
+		store.hacker_news_default_added = false
 		return err
 	}
 }
@@ -101,8 +106,8 @@ fn optimized_default_destination(item Bookmark) string {
 	return item.url
 }
 
-fn (mut store Store) update_optimized_destinations() ! {
-	if !store.items.any(optimized_default_destination(it) != it.url) { return }
+fn (mut store Store) update_optimized_defaults() ! {
+	if store.hacker_news_default_added && !store.items.any(optimized_default_destination(it) != it.url) { return }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	mut items := []Bookmark{cap: store.items.len}
@@ -111,7 +116,23 @@ fn (mut store Store) update_optimized_destinations() ! {
 		if destination != item.url && store.items.any(it.url == destination) { continue }
 		items << Bookmark{...item, url: destination}
 	}
-	store.persist(store.visible, items)!
+	if !store.hacker_news_default_added {
+		for site in optimizedsites.sites {
+			if site.host != 'news.ycombinator.com' || items.any(it.url == site.address) { continue }
+			// Keep the defaults together without reordering existing user bookmarks.
+			mut position := 0
+			for index, item in items {
+				if optimizedsites.sites.any(it.address == item.url) { position = index + 1 }
+			}
+			items.insert(position, Bookmark{url: site.address, title: site.title})
+		}
+	}
+	previous := store.hacker_news_default_added
+	store.hacker_news_default_added = true
+	store.persist(store.visible, items) or {
+		store.hacker_news_default_added = previous
+		return err
+	}
 }
 
 pub fn eligible_url(address string) bool {
@@ -174,7 +195,7 @@ fn (mut store Store) write_profile(visible bool, items []Bookmark) ! {
 		os.mkdir_all(os.dir(store.path))!
 		temporary := '${store.path}.tmp-${os.getpid()}'
 		mut file := os.open_file(temporary, 'w', 0o600)!
-		encoded := json2.encode(SavedBookmarks{ visible: visible, items: items, version: store.version + 1, optimized_defaults_added: store.optimized_defaults_added },
+		encoded := json2.encode(SavedBookmarks{ visible: visible, items: items, version: store.version + 1, optimized_defaults_added: store.optimized_defaults_added, hacker_news_default_added: store.hacker_news_default_added },
 			escape_unicode: true
 		)
 		file.write_string(encoded) or {
@@ -209,5 +230,6 @@ pub fn (mut store Store) reload() ! {
 	store.visible = fresh.visible
 	store.version = fresh.version
 	store.optimized_defaults_added = fresh.optimized_defaults_added
+	store.hacker_news_default_added = fresh.hacker_news_default_added
 	store.profile_hash = fresh.profile_hash
 }
