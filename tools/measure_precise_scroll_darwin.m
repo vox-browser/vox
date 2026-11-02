@@ -6,6 +6,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
+#include <dlfcn.h>
+#include <mach-o/dyld.h>
+
+static void record_native_image(const struct mach_header *header, intptr_t slide) {
+    (void)slide;
+    Dl_info info;
+    if (!dladdr(header, &info) || !info.dli_fname) return;
+    const char *name = strrchr(info.dli_fname, '/');
+    name = name ? name + 1 : info.dli_fname;
+    if (strcmp(name, "libLadybirdVSkiaText.dylib") &&
+        strcmp(name, "libVoxGraphite.dylib") && strcmp(name, "libVoxGraphiteDawn.dylib")) return;
+    // Hex preserves spaces and non-ASCII path bytes without using Foundation
+    // or recursively loading code from inside dyld's image callback.
+    flockfile(stderr);
+    fprintf(stderr, "SCROLL_IMAGE name=%s path_hex=", name);
+    for (const unsigned char *p = (const unsigned char *)info.dli_fname; *p; ++p)
+        fprintf(stderr, "%02x", *p);
+    fputc('\n', stderr);
+    funlockfile(stderr);
+}
 
 @interface VoxPositionedWheel : NSProxy
 @property(strong) NSEvent *backing;
@@ -238,6 +259,7 @@ static void begin(void) {
 
 __attribute__((constructor)) static void boot(void) {
     if (!ladybird_v_skia_set_root_raster_scroll_y) return;
+    _dyld_register_func_for_add_image(record_native_image);
     const char *names[] = {"VOX_PRECISE_INPUTS", "VOX_PRECISE_REVERSE",
         "VOX_PRECISE_HZ", "VOX_PRECISE_DELTA", "VOX_PRECISE_SETTLE"};
     double values[5];

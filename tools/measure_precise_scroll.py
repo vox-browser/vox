@@ -51,6 +51,26 @@ def records(log, prefix):
     return result
 
 
+def verify_native_images(log, binary):
+    images = {}
+    for line in log.splitlines():
+        if not line.startswith('SCROLL_IMAGE '):
+            continue
+        match = re.fullmatch(r'SCROLL_IMAGE name=(\S+) path_hex=([0-9a-f]+)', line)
+        if not match:
+            raise ValueError('Invalid native image identity record')
+        name, encoded = match.groups()
+        path = Path(os.fsdecode(bytes.fromhex(encoded))).resolve()
+        expected = (binary.parent / name).resolve()
+        if name not in {'libLadybirdVSkiaText.dylib', 'libVoxGraphite.dylib',
+                        'libVoxGraphiteDawn.dylib'} or path != expected:
+            raise ValueError(f'Native image outside selected bundle: {path}; expected {expected}')
+        images[name] = str(path)
+    if 'libLadybirdVSkiaText.dylib' not in images:
+        raise ValueError('Missing native renderer image identity')
+    return images
+
+
 def intervals(rows):
     values = [b["t_us"] - a["t_us"] for a, b in zip(rows, rows[1:])]
     if not values or min(values) <= 0:
@@ -286,7 +306,11 @@ def main():
             raise RuntimeError(f"Browser exited {evidence['browser_exit_code']}")
         if hashes != {str(path): sha256(path) for path in pinned}:
             raise RuntimeError("Build or probe identity changed during measurement")
-        summary = summarize((output / "browser.log").read_text(errors="replace"),
+        browser_log = (output / "browser.log").read_text(errors="replace")
+        evidence['native_images'] = verify_native_images(browser_log, binary)
+        if any(path not in hashes for path in evidence['native_images'].values()):
+            raise RuntimeError('Loaded native image was not pinned before launch')
+        summary = summarize(browser_log,
                             args.inputs, args.target_hz, args.require_title, (args.width, args.height))
         (output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
         evidence["valid"] = True

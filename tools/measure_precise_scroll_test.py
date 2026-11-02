@@ -78,6 +78,9 @@ class PreciseScrollTests(unittest.TestCase):
             def compile_probe(command, **kwargs):
                 Path(command[-1]).write_bytes(b"fixture probe")
 
+            renderer = binary.parent / 'libLadybirdVSkiaText.dylib'
+            renderer.write_bytes(b'fixture renderer')
+
             def launch(command, **kwargs):
                 env = kwargs["env"]
                 self.assertEqual(Path(env["VOX_PROFILE_DIR"]), output / "profile")
@@ -96,6 +99,8 @@ class PreciseScrollTests(unittest.TestCase):
                 self.assertEqual(env["VOX_PRECISE_REQUIRED_TITLE"], "fixture")
                 self.assertEqual(env["VOX_PRECISE_RESET_V_PROFILE"], "1" if v_profile_reset else "")
                 kwargs["stdout"].write(log_for())
+                kwargs["stdout"].write('SCROLL_IMAGE name=libLadybirdVSkiaText.dylib path_hex='
+                                       + os.fsencode(renderer).hex() + '\n')
                 return mock.Mock(pid=123, wait=mock.Mock(return_value=0))
 
             arguments = ["probe", "--binary", str(binary), "--output", str(output),
@@ -141,6 +146,43 @@ class PreciseScrollTests(unittest.TestCase):
                              hashlib.sha256(certificate.read_bytes()).hexdigest())
             for name, content in saved.items():
                 self.assertEqual((user_profile / name).read_text(), content)
+
+    def test_native_images_reject_shared_paths_missing_records_and_malformed_paths(self):
+        binary = Path('/tmp/selected bundle/Vox')
+        name = 'libLadybirdVSkiaText.dylib'
+        selected = binary.parent / name
+        good = f'SCROLL_IMAGE name={name} path_hex={os.fsencode(selected).hex()}\n'
+        self.assertEqual(measure_precise_scroll.verify_native_images(good, binary), {name: str(selected.resolve())})
+        for bad in ['', good.replace(os.fsencode(selected).hex(), os.fsencode('/tmp/Build/v/' + name).hex()),
+                    f'SCROLL_IMAGE name={name} path_hex=invalid\n',
+                    f'SCROLL_IMAGE name=../{name} path_hex={os.fsencode(selected).hex()}\n']:
+            with self.subTest(log=bad), self.assertRaises(ValueError):
+                measure_precise_scroll.verify_native_images(bad, binary)
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS native image identities")
+    def test_native_observer_records_the_library_actually_loaded(self):
+        with tempfile.TemporaryDirectory(prefix='native image ü ') as temporary:
+            root = Path(temporary)
+            library = root / 'libLadybirdVSkiaText.dylib'
+            stub = root / 'library.c'
+            stub.write_text('int fixture_value(void) { return 17; }\n')
+            subprocess.run(['clang', '-dynamiclib', str(stub), '-o', str(library)], check=True)
+            observer = Path(measure_precise_scroll.__file__).with_name('measure_precise_scroll_darwin.m')
+            source = root / 'image.m'
+            source.write_text('#include "' + str(observer) + '"\n' + r'''
+                int main(int argc, char **argv) {
+                    (void)argc;
+                    _dyld_register_func_for_add_image(record_native_image);
+                    return dlopen(argv[1], RTLD_NOW) ? 0 : 1;
+                }
+            ''')
+            binary = root / 'image'
+            subprocess.run(['clang', '-O2', '-fobjc-arc', str(source), '-framework', 'Cocoa',
+                            '-framework', 'QuartzCore', '-Wl,-undefined,dynamic_lookup',
+                            '-o', str(binary)], check=True)
+            result = subprocess.run([str(binary), str(library)], check=True, capture_output=True, text=True)
+            self.assertEqual(measure_precise_scroll.verify_native_images(result.stderr, binary),
+                             {library.name: str(library.resolve())})
 
     @unittest.skipUnless(sys.platform == "darwin", "macOS injected observer")
     def test_native_profile_reset_calls_real_symbol_and_rejects_missing_profiler(self):
