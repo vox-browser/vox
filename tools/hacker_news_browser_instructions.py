@@ -484,6 +484,10 @@ def membership(api, cid, app, pid, deadline, attempts, browser=None, existing_pr
         owned = {row['pid'] for row in app_processes} - excluded
         scan['preexisting_app_pids'] = sorted(excluded)
         scan['private_app_pids'] = sorted(owned)
+        # Preserve argv and ancestry even when the ownership assertion below
+        # fails. PIDs alone cannot distinguish an escaped helper from another
+        # session launching this shared bundle during the trial.
+        scan['observed_app_processes'] = app_processes
         infos = browser.call('SystemInfo.getProcessInfo')['processInfo'] if browser else []
         if browser:
             scan['cdp_processes'] = infos

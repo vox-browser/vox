@@ -532,6 +532,9 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'outside its .*coalition'):
                     membership(api, 10, app, 1, time.monotonic() + 10, [], browser)
             self.assertTrue(scan['ownership_stable'])
+            self.assertEqual(scan['observed_app_processes'], rows)
+            if not cdp:
+                self.assertIn('--fetch-worker', scan['observed_app_processes'][1]['command'])
 
     def test_membership_churn_obeys_the_original_watchdog(self):
         import time
