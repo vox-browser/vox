@@ -199,7 +199,11 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 			// joining arbitrarily distant chunks with a common property state.
 			extra_area := merged_bounds.width * merged_bounds.height - home.width * home.height -
 				chunk.bounds.width * chunk.bounds.height
-			if states[index] == chunk.state && extra_area <= 10000 * device_scale * device_scale {
+			// A promoted sticky container already owns its complete raster
+			// extent. Sparse descendants within that same property state must
+			// not acquire independent transparent pictures just for empty ink.
+			shared_sticky := chunk.state.sticky_frame > 0 && !chunk.state.legacy_effect
+			if states[index] == chunk.state && (shared_sticky || extra_area <= 10000 * device_scale * device_scale) {
 				merged = index
 				break
 			}
@@ -359,6 +363,11 @@ fn chromium_animated_transform_has_no_ancestor_clip(box &BlockBox,
 
 fn chromium_raster_chunk_bounds_with_root_scroll(box &BlockBox, command &PaintCommand,
 	root_scroll_y f64) LayoutRect {
+	return chromium_raster_chunk_bounds_in_space(box, command, root_scroll_y, box.paint_transform)
+}
+
+fn chromium_raster_chunk_bounds_in_space(box &BlockBox, command &PaintCommand,
+	root_scroll_y f64, transform [6]f64) LayoutRect {
 	if command.has_clip && (command.clip_width <= 0 || command.clip_height <= 0) {
 		return LayoutRect{}
 	}
@@ -403,7 +412,7 @@ fn chromium_raster_chunk_bounds_with_root_scroll(box &BlockBox, command &PaintCo
 			height: command.height + 2 * outset
 		})
 	}
-	mut mapped := compatibility_affine_map_rect(box.paint_transform, rect)
+	mut mapped := compatibility_affine_map_rect(transform, rect)
 	if command.has_clip {
 		// Flattened clips include the live root scroll, while retained box
 		// geometry remains in document space. Restore that translation before
@@ -470,7 +479,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			// Tightening its raster extent to a painted descendant changes tile
 			// origins and GPU edge coverage.
 			scratch.compositor_bounds[u64(box.own_effects_visual_context_idx)] =
-				compatibility_affine_map_rect(box.paint_transform, box.border_box())
+				compatibility_affine_map_rect(chromium_sticky_raster_transform(box, result), box.border_box())
 			scratch.compositor_fixed_raster_owners[u64(box.own_effects_visual_context_idx)] =
 				chromium_fixed_raster_owner(box)
 			if box.layout_handle != unsafe { nil } {
@@ -488,7 +497,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			&& chromium_sticky_needs_compositing(box, result.boxes_by_layout_cache) {
 			scratch.composited_stickies[box.sticky_scroll_frame_index] = true
 			scratch.sticky_bounds[box.sticky_scroll_frame_index] =
-				compatibility_affine_map_rect(box.paint_transform, box.border_box())
+				compatibility_affine_map_rect(chromium_sticky_raster_transform(box, result), box.border_box())
 		}
 		if box.fixed_to_viewport && box.layout_handle != unsafe { nil } {
 			node := unsafe { &Node(box.layout_handle) }
@@ -689,8 +698,22 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			if state.sticky_frame > 0 && !state.legacy_effect && !command.has_clip {
 				unbounded_sticky_overlap = true
 			}
-			bounds = chromium_layer_bounds_union(bounds,
-				chromium_raster_chunk_bounds_with_root_scroll(box, command, root_scroll_y))
+			if state.sticky_frame > 0 {
+				// Replay includes the current sticky translation; the retained
+				// box transform contains only author transforms. Use replay's
+				// property space for both ink and its flattened viewport clip.
+				mut transform := normalized_affine(command.transform)
+				viewport := document.viewport_rect()
+				if !command.fixed_to_viewport {
+					transform[4] += viewport.x
+					transform[5] += viewport.y
+				}
+				bounds = chromium_layer_bounds_union(bounds,
+					chromium_raster_chunk_bounds_in_space(box, command, viewport.y, transform))
+			} else {
+				bounds = chromium_layer_bounds_union(bounds,
+					chromium_raster_chunk_bounds_with_root_scroll(box, command, root_scroll_y))
+			}
 			// A fixed container establishes its compositor layer even when only
 			// a small descendant paints. Keep the container's empty space in the
 			// raster extent; tightening it to that descendant changes GPU coverage.
