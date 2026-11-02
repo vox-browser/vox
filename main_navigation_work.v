@@ -118,10 +118,17 @@ fn (mut app BrowserApp) defer_page_input(event &gg.Event) {
 	}
 }
 
+fn (app &BrowserApp) should_defer_page_input() bool {
+	return app.navigation_work_depth > 0
+		|| (app.deferred_page_input.len > 0 && !app.replaying_deferred_page_input)
+}
+
 fn (mut app BrowserApp) poll_deferred_page_input() {
-	if app.navigation_work_depth > 0 { return }
+	if app.navigation_work_depth > 0 || app.replaying_deferred_page_input { return }
 	pending := app.deferred_page_input
 	app.deferred_page_input = []DeferredPageInput{}
+	app.replaying_deferred_page_input = true
+	defer { app.replaying_deferred_page_input = false }
 	for input in pending {
 		// Coordinates from an old page must never activate its replacement.
 		if input.document != voidptr(app.document) || input.generation != app.navigation_generation {

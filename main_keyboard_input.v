@@ -18,7 +18,7 @@ fn (app &BrowserApp) prepare_page_editing_target() ?&dom.InputEventsTarget {
 }
 
 fn (mut app BrowserApp) handle_page_character(code u32) {
-	if app.navigation_work_depth > 0 || app.document == unsafe { nil }
+	if app.should_defer_page_input() || app.document == unsafe { nil }
 		|| !app.document.is_fully_active() {
 		return
 	}

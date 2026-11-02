@@ -464,6 +464,7 @@ mut:
 	navigation_work_yielded             bool
 	deferred_navigation_input           ?DeferredNavigationInput
 	deferred_page_input                 []DeferredPageInput
+	replaying_deferred_page_input       bool
 	background_image_ids                map[string]int
 	// Image ids by URL for the current document and adblock setting; every
 	// frame's lookups use it without building the full cache key.
@@ -7717,7 +7718,7 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 	$if !vox_ui2 ? {
 		if app.handle_portable_bookmark_event(event) { return }
 	}
-	if app.navigation_work_depth > 0 {
+	if app.should_defer_page_input() {
 		if event.typ == .key_down {
 			zoom_action := browser_zoom_shortcut(event.key_code, unsafe { gg.Modifier(event.modifiers) })
 			if zoom_action != '' {
@@ -7958,7 +7959,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		}
 		return
 	}
-	if app.navigation_work_depth > 0 { return }
+	if app.should_defer_page_input() { return }
 	if app.handle_page_editing_key(key, modifier) { return }
 	if key == .left && modifier == .super {
 		app.activate_browser_chrome('back')
