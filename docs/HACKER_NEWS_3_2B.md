@@ -123,3 +123,25 @@ manager microbenchmarks supply no full-browser optimization credit. Raw evidence
 is under `uniform-border-matched/`, `solid-polygons-final-matched/`,
 `solid-polygons-v3-path/`, `broad-solid-polygons/`,
 `solid-polygons-final-checks/`, `root-forced-matched/` and `dawn-shapes-matched/`.
+
+## Font stream manager
+
+Commit `36b77a15b` keeps Skia's CoreText stream loading and original font bytes,
+but supplies a private one-family collection instead of enumerating every
+installed family. System-family matching and layout-test font loading retain
+the full manager. Diagnostics verify one family on the actual workload. Seven
+alternating pairs have control median **3,919,511,678**, candidate median
+**3,888,059,902** and candidate maximum **3,910,564,468**; every pair improves.
+The median difference is **31,451,776** instructions. All fourteen exact
+pixel/content, ownership and exit checks pass with the selected
+`file-font-manager-v1` library and the same `0bb14e2f…` executable.
+
+Twenty stream/glyph/metrics/raster comparisons cover five system font files,
+TTC index failure behavior, complete BMP glyph mappings, fractional font sizes,
+invalid data and backend/opt-out fallback. The checks also pass sanitizers.
+All 21 screenshots and separate signing, real startup, helper and live HTTPS
+checks pass. A first test compile lacking the metrics header is retained as a
+failed attempt. Evidence is under `file-font-manager-matched/`,
+`file-font-manager-path/`, `broad-file-font-manager/` and
+`file-font-manager-checks/`. The shared production build remains pending;
+these are native-library override results and do not meet the 3.2B criterion.

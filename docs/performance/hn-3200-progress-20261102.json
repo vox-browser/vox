@@ -367,6 +367,89 @@
       "observed_peak_rss_bytes": 355336192,
       "elapsed_seconds": 5.266230917000001,
       "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font_sanitizers": {
+      "command": [
+        "python3",
+        "-c",
+        "import json,subprocess;from pathlib import Path;c=json.loads(Path(\"Build/hn-3200-20261102/file-font-manager-test-command.json\").read_text());c[c.index(\"-O2\"):(c.index(\"-O2\")+1)]=[\"-O1\",\"-g\",\"-fsanitize=address,undefined\",\"-fno-omit-frame-pointer\"];c[-1]+=\"-asan\";subprocess.run(c,check=True);subprocess.run([c[-1]],check=True)"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1114636288,
+      "elapsed_seconds": 15.911937417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font_broad": {
+      "command": [
+        "python3",
+        "Build/hn-continue-20261102/broad/run.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 294010880,
+      "elapsed_seconds": 104.07745725000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "font_live": {
+      "command": [
+        "python3",
+        "Build/hn-3200-20261102/file-font-manager-checks.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 328187904,
+      "elapsed_seconds": 4.996187207999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
     }
+  },
+  "file_font_manager": {
+    "counts": {
+      "candidate": [
+        3889774215,
+        3910564468,
+        3855254362,
+        3854153623,
+        3861896830,
+        3895303983,
+        3888059902
+      ],
+      "control": [
+        3985374875,
+        3917762209,
+        3908264536,
+        3882021773,
+        3938960484,
+        3919511678,
+        3929139621
+      ]
+    },
+    "maxima": {
+      "candidate": 3910564468,
+      "control": 3985374875
+    },
+    "medians": {
+      "candidate": 3888059902,
+      "control": 3919511678
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "target_met": {
+      "candidate": false,
+      "control": false
+    },
+    "valid": true,
+    "commit": "36b77a15b",
+    "evidence": "Build/hn-3200-20261102/file-font-manager-matched",
+    "diagnostic": "Build/hn-3200-20261102/file-font-manager-path",
+    "guard": "Build/hn-3200-file-font-manager-matched-guard.json"
   }
 }
