@@ -23,6 +23,8 @@ static JSValueRef vox_adblock_snapshot_error(JSContextRef context,
     return JSValueMakeUndefined(context);
 }
 
+#include "snapshot_packed.h"
+
 // Same signed 32-bit djb2/xor hash as uBO's i32Checksum. The original
 // JS fallback remains in the bundle; this host callback validates every word.
 static JSValueRef vox_adblock_trie_checksum(JSContextRef context,
@@ -151,6 +153,25 @@ static int vox_adblock_install_snapshot(JSGlobalContextRef context,
     JSStringRelease(checksum_key);
     JSValueUnprotect(context, checksum);
     if (exception) { vox_adblock_release_snapshot(bytes, owner); return 5; }
+
+    JSStringRef packed_key = JSStringCreateWithUTF8CString("voxAdblockReadPackedValue");
+    JSObjectRef packed = JSObjectMakeFunctionWithCallback(context, packed_key,
+        vox_adblock_read_packed_value);
+    JSValueProtect(context, packed);
+    JSObjectSetProperty(context, JSContextGetGlobalObject(context), packed_key, packed,
+        kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontEnum |
+        kJSPropertyAttributeDontDelete, &exception);
+    JSStringRelease(packed_key);
+    JSValueUnprotect(context, packed);
+    if (exception) { vox_adblock_release_snapshot(bytes, owner); return 5; }
+    if (getenv("VOX_DISABLE_LAZY_FILTER_TABLES")) {
+        JSStringRef eager_key = JSStringCreateWithUTF8CString("voxAdblockEagerSnapshotTables");
+        JSObjectSetProperty(context, JSContextGetGlobalObject(context), eager_key,
+            JSValueMakeBoolean(context, true), kJSPropertyAttributeReadOnly |
+            kJSPropertyAttributeDontEnum | kJSPropertyAttributeDontDelete, &exception);
+        JSStringRelease(eager_key);
+        if (exception) { vox_adblock_release_snapshot(bytes, owner); return 5; }
+    }
 
     JSStringRef clone_key = JSStringCreateWithUTF8CString("voxAdblockCloneSnapshotView");
     JSObjectRef clone = JSObjectMakeFunctionWithCallback(context, clone_key,

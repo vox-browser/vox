@@ -16,7 +16,8 @@ const lists = await Promise.all(manifest.lists.map(async list => {
     if (crypto.createHash('sha256').update(raw).digest('hex') !== list.sha256) throw new Error(`Filter snapshot hash mismatch: ${list.name}`);
     return { name: list.name, raw };
 }));
-await fs.writeFile(path.join(here, 'generated-defaults.js'), `export default ${JSON.stringify({lists})};\n`);
+const publicSuffixText = await fs.readFile(path.join(root, 'adblock/lists/public_suffix_list.dat'), 'utf8');
+await fs.writeFile(path.join(here, 'generated-defaults.js'), `export default {lists:${JSON.stringify(lists)},publicSuffixText(){return ${JSON.stringify(publicSuffixText)}}};\n`);
 const options = {
     entryPoints: [path.join(here, 'runtime.js')], outfile: path.join(root, 'adblock/engine.js'),
     bundle: true, platform: 'browser', format: 'iife', target: 'safari16.4',
@@ -71,7 +72,7 @@ try {
     console.error('Cannot compile default filter snapshot: ' + error.message);
     process.exit(1);
 }
-const snapshot = encodeSnapshot(serializer.deserialize(selfie));
+const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, publicSuffixText });
 await fs.writeFile(path.join(here, 'generated-defaults.js'), snapshot.source);
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.bin'), encodeNativeSnapshot(snapshot.binary));
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.json.gz'), gzipSync(snapshot.metadata, {level: 9, mtime: 0}));

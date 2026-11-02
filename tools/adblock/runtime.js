@@ -10,7 +10,6 @@ import snfe from '../../adblock/vendor/ublock/js/static-net-filtering.js';
 import { initializeCosmetics, documentFilters, redirectEngine, cosmeticSnapshot, restoreCosmetics } from './cosmetics.js';
 import defaultData from './generated-defaults.js';
 import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
-import publicSuffixData from '../../adblock/lists/public_suffix_list.dat';
 import { checkResponseHeaders } from './response_headers.js';
 
 const environment = ['ublock', 'chromium', 'user_stylesheet'];
@@ -51,7 +50,7 @@ globalThis.voxAdblockInitialize = customFilters => {
         activeListCount = snapshot.list_count;
         return JSON.stringify({ filter_count: snfe.getFilterCount(), list_count: activeListCount });
     }
-    publicSuffixList.parse(publicSuffixData, punycode.toASCII);
+    publicSuffixList.parse(defaultData.publicSuffixText(), punycode.toASCII);
     const lists = customFilters === undefined ? defaultData.lists : [{ name: 'user-filters', raw: customFilters }];
     const prepared = lists.map(list => ({ ...list, raw: sfp.utils.preparser.prune(list.raw, environment) }));
     snfe.reset();

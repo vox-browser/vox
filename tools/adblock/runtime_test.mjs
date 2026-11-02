@@ -7,8 +7,9 @@ const code = gunzipSync(await fs.readFile(new URL('../../adblock/engine.js.gz', 
 const nativeSnapshot = await fs.readFile(new URL('../../adblock/engine.snapshot.bin', import.meta.url));
 const bytes = nativeSnapshot.subarray(16);
 const metadata = gunzipSync(await fs.readFile(new URL('../../adblock/engine.snapshot.json.gz', import.meta.url))).toString();
-function engine(custom, nativeClone = false) {
-    const context = vm.createContext({ sourceBytes: Uint8Array.from(bytes), metadata });
+function engine(custom, nativeClone = false, eager = false) {
+    const context = vm.createContext({ sourceBytes: Uint8Array.from(bytes), metadata,
+        voxAdblockEagerSnapshotTables:eager });
     vm.runInContext('globalThis.voxAdblockReadSnapshotMetadata=()=>JSON.parse(metadata);',context);
     vm.runInContext('globalThis.voxAdblockSnapshotBytes=new Uint8Array(sourceBytes);delete globalThis.sourceBytes;', context);
     if (nativeClone) vm.runInContext('globalThis.cloneCalls=0;globalThis.voxAdblockCloneSnapshotView=view=>{cloneCalls++;return new view.constructor(view);};', context);
@@ -17,6 +18,20 @@ function engine(custom, nativeClone = false) {
     const info = JSON.parse(context.voxAdblockInitialize(custom));
     return { context, info, check: request => JSON.parse(context.voxAdblockCheck(request)) };
 }
+
+test('lazy tables preserve complete eager cosmetic, scriptlet and request decisions across the site corpus', async () => {
+    const lazy = engine(), eager = engine(undefined, false, true);
+    const fixture = JSON.parse(await fs.readFile(new URL('./fixtures/popular-sites.json', import.meta.url)));
+    const sites = [...fixture.sites.map(site => site.url), 'https://news.ycombinator.com/',
+        'https://www.theverge.com/', 'https://pikabu.ru/', 'https://www.youtube.com/watch?v=test'];
+    for (const url of sites) {
+        for (const tokens of [[], ['.ad-banner','#advertisement','.ads','.sponsor'], ['.title','.content','#hnmain']]) {
+            assert.deepEqual(JSON.parse(JSON.stringify(lazy.context.voxDocumentFilters(url,tokens))),
+                JSON.parse(JSON.stringify(eager.context.voxDocumentFilters(url,tokens))), url);
+        }
+    }
+    for (const request of fixture.requests) assert.deepEqual(lazy.check(request),eager.check(request));
+});
 
 test('native snapshot clones preserve full request decisions and repeated default restoration', async () => {
     const fallback = engine();

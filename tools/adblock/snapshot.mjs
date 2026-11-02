@@ -1,9 +1,14 @@
+import { packedArray, packedMap, readPackedValue, encodePackedTable } from './lazy_snapshot.mjs';
+
 // Preserve uBO's engine selfies, loading large typed arrays as native bytes and
 // parsing metadata with JSON.parse rather than interpreting giant JS literals.
-export function encodeSnapshot(snapshot) {
+export function encodeSnapshot(snapshot, { lazyCosmetics = false, publicSuffixText } = {}) {
     const chunks = [], views = [], fixups = [];
     let byteLength = 0;
     const active = new Set();
+    let hasPackedTables = false;
+    const primitive = value => value === null || ['string', 'boolean'].includes(typeof value)
+        || typeof value === 'number' && Number.isFinite(value) && !Object.is(value, -0);
     function encode(value, path) {
         if (value === undefined) { fixups.push(`${path}=void 0;`); return null; }
         if (typeof value === 'number' && (!Number.isFinite(value) || Object.is(value, -0))) {
@@ -14,7 +19,24 @@ export function encodeSnapshot(snapshot) {
         if (active.has(value)) throw new TypeError(`Cyclic filter snapshot at ${path}`);
         active.add(value);
         let result;
-        if (ArrayBuffer.isView(value)) {
+        // uBO assigns these immutable lookup tables directly during restoration.
+        // Queries need a handful of entries; mutation/iteration materializes all
+        // original entries. Other snapshot records keep the existing codec.
+        const packedArrayTable = lazyCosmetics && path.startsWith('snapshot["cosmetics"]')
+            && /\["(strSlots|linkedLists)"\]$/.test(path) && Array.isArray(value)
+            && value.length > 1024 && value.every(primitive);
+        const packedMapTable = lazyCosmetics && path.startsWith('snapshot["cosmetics"]')
+            && value instanceof Map && value.size > 1024 && [...value.values()].every(primitive);
+        const stringKeys = packedMapTable && [...value.keys()].every(key => typeof key === 'string');
+        const numberKeys = packedMapTable && [...value.keys()].every(key => Number.isSafeInteger(key) && key >= 0);
+        if (packedArrayTable || stringKeys || numberKeys) {
+            const table = encodePackedTable(value, packedArrayTable ? 1 : stringKeys ? 2 : 3);
+            const offset = byteLength;
+            chunks.push(table); byteLength += table.length;
+            fixups.push(`${path}=${packedArrayTable ? 'packedArray' : 'packedMap'}(clone(Uint8Array,${offset},${table.length}),read,globalThis.voxAdblockEagerSnapshotTables===true);`);
+            result = null;
+            hasPackedTables = true;
+        } else if (ArrayBuffer.isView(value)) {
             const name = value.constructor.name;
             if (!['Uint8Array', 'Uint32Array', 'Int32Array'].includes(name)) throw new TypeError(`Unsupported snapshot view: ${name}`);
             const padding = (4 - byteLength % 4) % 4;
@@ -52,7 +74,14 @@ export function encodeSnapshot(snapshot) {
     // code unit, including supplementary characters and lone surrogates.
     const metadata = JSON.stringify(encode(snapshot, 'snapshot')).replace(/[\u007F-\uFFFF]/g, character =>
         `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
-    const source = `export default {restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');const clone=(Type,offset,length)=>{const view=new Type(bytes.buffer,bytes.byteOffset+offset,length);return typeof globalThis.voxAdblockCloneSnapshotView==='function'?globalThis.voxAdblockCloneSnapshotView(view):new Type(view);};let snapshot=globalThis.voxAdblockReadSnapshotMetadata();${fixups.join('')}return snapshot;}};\n`;
+    let suffixReader = '';
+    if (publicSuffixText !== undefined) {
+        const table = encodePackedTable([publicSuffixText], 1), offset = byteLength;
+        chunks.push(table); byteLength += table.length;
+        suffixReader = `publicSuffixText(){const bytes=globalThis.voxAdblockSnapshotBytes;return (globalThis.voxAdblockReadPackedValue||(${readPackedValue}))(new Uint8Array(bytes.buffer,bytes.byteOffset+${offset},${table.length}),0);},`;
+    }
+    const readers = hasPackedTables ? `const packedArray=${packedArray},packedMap=${packedMap},read=globalThis.voxAdblockReadPackedValue||(${readPackedValue});` : '';
+    const source = `export default {${suffixReader}restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');const clone=(Type,offset,length)=>{const view=new Type(bytes.buffer,bytes.byteOffset+offset,length);return typeof globalThis.voxAdblockCloneSnapshotView==='function'?globalThis.voxAdblockCloneSnapshotView(view):new Type(view);};${readers}let snapshot=globalThis.voxAdblockReadSnapshotMetadata();${fixups.join('')}return snapshot;}};\n`;
     return { source, metadata, binary: Buffer.concat(chunks), layout: { byte_length: byteLength, views } };
 }
 
