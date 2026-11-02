@@ -290,6 +290,16 @@ with `python3 -m unittest discover -s tools -p forum_news_inline_pixels_test.py`
 The test uses the current production bundle in a fresh process without an
 automatic rebuild and retains its identities, memory-guard reports and diffs.
 
+`pending-generated-icon-font` covers a webfont used only by generated private-use
+glyphs, including `::before`, `::after`, and several font sizes. Its 1024×768,
+scale 1 reference agrees across two full-uBO Brave captures. The earlier Vox
+build differed at 2,369 pixels; starting the pending author face before selecting
+a system fallback makes the fixture exact. Focused layout tests also check the
+font-display block/swap periods and an unmatched unicode range. The fixture uses
+Slashdot's archived `sdicon.woff` (SHA-256
+`625cd71745541c37495055244a8c139e6f3c784b0f5262503ee0f304ee52944e`),
+whose embedded notice credits the original authors at fontello.com (2015).
+
 `stackoverflow-independent-hyphen-shaping` checks inserted system-font hyphens
 at integer and fractional line origins, narrow line fitting, explicit hyphen
 controls, and Arial. Its 800×600, scale 1 reference comes from two agreeing

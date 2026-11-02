@@ -299,15 +299,15 @@ fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &pla
 			break
 		}
 	}
-	if selected_index == iterator.font_cascade_fonts.len {
-		if fallback := iterator.system_fallback_font(code_point) {
-			return fallback
-		}
-	}
 	// An empty pending list cannot load a face or make this fallback invisible.
 	// Keep the full generation check for cascades with pending author faces.
 	if iterator.font_cascade_list == unsafe { nil }
 		|| iterator.font_cascade_list.pending_faces.len == 0 {
+		if selected_index == iterator.font_cascade_fonts.len {
+			if fallback := iterator.system_fallback_font(code_point) {
+				return fallback
+			}
+		}
 		return iterator.synthetic_caps_font_for(selected, code_point)
 	}
 	font_computer := css.css_style_computer_for(iterator.text_node.Node.document()).font_computer()
@@ -327,6 +327,13 @@ fn (mut iterator TextNodeChunkIterator) font_for_code_point(code_point u32) &pla
 		retained.finish()
 		iterator.install_font_cascade(updated)
 		return iterator.font_for_code_point(code_point)
+	}
+	// Missing glyphs still select pending author faces before system fallback.
+	// This also applies their font-display period to the eventual fallback ink.
+	if selected_index == iterator.font_cascade_fonts.len {
+		if fallback := iterator.system_fallback_font(code_point) {
+			selected = fallback
+		}
 	}
 	if !fallback_is_invisible {
 		return iterator.synthetic_caps_font_for(selected, code_point)
