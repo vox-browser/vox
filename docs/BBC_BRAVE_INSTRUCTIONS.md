@@ -3432,3 +3432,36 @@ author-script/rendering limitations, historical RGB policy and original pixel
 references remain unchanged. Cohort 56, independent audits, native/broad
 checks and all failure receipts are linked from the local
 [edge evidence](benchmark-results/bbc-box-edges-2026-11-03.json).
+
+
+## Rejected longhand-cache capacity experiment (2026-11-03)
+
+A temporary experiment raises the per-style-batch reuse-cache limit from 256
+to 512, retaining the existing eligibility and typed-input mutation checks.
+A separate diagnostic marks only an actual restore of an entry admitted beyond
+256. Two new cases verify the bound, late-entry results against the ordinary
+computation and the outer batch lifetime. All 33 combined cases pass enabled
+and disabled in default, no-GC and preallocated modes: **198 executions**.
+A separate logger check positively reports an extended-entry restore with the
+larger limit and none with the 256-entry control.
+
+The frozen HTML standalone witness does not execute that path. Its four quiet
+candidate/control trials retain the same geometry and identical paint dump,
+without instruction credit. More decisively, both fresh full BBC diagnostics
+pass content, original pixels, ownership and native/driver exit zero, with
+actual JavaScriptCore execution (one context, 1,975 / 2,008 evaluations).
+Neither capture restores an entry admitted beyond 256. Their executable
+contains the new diagnostic, and the independently exercised logger works;
+there is no evidence that this proposed fast path benefits BBC. The eligibility
+controller correctly exits 1 rather than attributing noise to the unused path.
+
+The experiment is removed before committing engine changes. The original
+`css/computed_longhand_reuse.v` is byte-identical to HEAD, both temporary files
+are removed, and **31 original cases pass in all three GC modes: 93 executions**.
+The patch, source hashes, actual diagnostics, logger controls, counters and all
+runtime/compile receipts remain linked from the local
+[capacity evidence](benchmark-results/bbc-longhand-capacity-2026-11-03.json)
+under `Build/bbc-longhand-capacity-20261103/`. No matched cohort, instruction
+credit, catalog entry or broad-check reset is claimed. History remains
+56 cohorts / 1,355 cohort attempts. A later completed production bundle is
+still required to validate the source restoration in the installed browser.
