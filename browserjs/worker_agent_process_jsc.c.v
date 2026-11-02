@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module browserjs
 
+import browsersettings
 import fetch
 import platform
 import time
@@ -112,6 +113,9 @@ pub fn run_worker_process_role(arguments []string) ?int {
 	if arguments.len < 2 || arguments[1] != '--vox-script-worker-v1' { return none }
 	if arguments.len != 2 { return 2 }
 	_ = platform.initialize_browser_heap_policy()
+	// The private role runs before main's window setup, including its settings
+	// initialization. Native worker fetches need the same saved proxy policy.
+	browsersettings.initialize(browsersettings.default_path()) or { return 1 }
 	mut channel := WorkerProcess.begin_child() or { return 1 }
 	defer { channel.close() }
 	mut child := WorkerChildSession.create(none)
