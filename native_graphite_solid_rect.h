@@ -96,4 +96,30 @@ inline bool vox_draw_solid_stroke(uint8_t* pixels, int width, int height, int pi
         && draw(inner[2], inner[1], outer[2], inner[3]);
 }
 
+// A uniform CSS ring without rounded corners is the same four opaque strips
+// as an aligned stroke. Restrict local geometry and translation to a bounded
+// half-pixel grid so inset/outset-before-transform and transformed stroke edges
+// remain exactly equal in floating-point arithmetic.
+inline bool vox_draw_solid_uniform_border(uint8_t* pixels, int width, int height,
+    int pitch, bool has_background, VoxGraphiteShape const& shape)
+{
+    if ((shape.fill != 0 && shape.fill != 6) || shape.has_underlay || shape.clip_out_count || shape.alpha != 255)
+        return false;
+    auto exact_half = [](float value) {
+        return std::isfinite(value) && std::abs(value) <= 1048576.f
+            && value * 2 == std::floor(value * 2);
+    };
+    for (int i = 0; i < 4; ++i) if (!exact_half(shape.rect[i])) return false;
+    float border_width = shape.fill == 6 ? shape.border_widths[0] : shape.thickness;
+    if (!exact_half(shape.matrix[2]) || !exact_half(shape.matrix[5])
+        || !exact_half(border_width)) return false;
+    if (shape.has_float_color && (shape.float_color[0] != shape.red / 255.f
+        || shape.float_color[1] != shape.green / 255.f
+        || shape.float_color[2] != shape.blue / 255.f || shape.float_color[3] != 1.f)) return false;
+    auto stroke = shape;
+    stroke.fill = 0;
+    stroke.thickness = border_width;
+    return vox_draw_solid_stroke(pixels, width, height, pitch, has_background, stroke);
+}
+
 #endif

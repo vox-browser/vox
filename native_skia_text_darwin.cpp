@@ -3957,7 +3957,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         }
     }
 #endif
-    if (!s_plain_rect_prefetch && s_chromium_painting && fill < 2 && opaque_backdrop && !has_underlay && s_rect_clip_outs.empty()) {
+    if (!s_plain_rect_prefetch && s_chromium_painting && fill < 2 && opaque_backdrop && !has_underlay && s_rect_clip_outs.empty()
+        && size_t(raster_width) * raster_height > 16384) {
         VoxGraphiteShape sparse {
             .matrix = {}, .rect = {x, y, rect_width, rect_height,
                 top_left_x, top_left_y, top_right_x, top_right_y,
@@ -4135,6 +4136,14 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                 descriptor.has_float_underlay_color = 1;
                 std::copy_n(s_underlay_float_color, 4, descriptor.underlay_float_color);
             }
+        }
+        if (!s_plain_rect_prefetch && !std::getenv("VOX_DISABLE_SOLID_UNIFORM_BORDER")
+            && vox_draw_solid_uniform_border(reinterpret_cast<uint8_t*>(pixels.data()),
+                raster_width, raster_height, raster_width * 4, has_background, descriptor)) {
+            if (std::getenv("VOX_SOLID_UNIFORM_BORDER_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_SOLID_UNIFORM_BORDER width=%d height=%d\n", raster_width, raster_height);
+            return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
+                region.left, canvas_height - region.bottom, region.width(), region.height(), has_background);
         }
         auto draw = graphite_shape_draw();
         bool drawn = draw != nullptr;
@@ -4714,8 +4723,8 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
     float width, float height, float page_x, float page_y, float scroll_y,
     float canvas_width, float canvas_height, int opaque_backdrop, float const* rounded_clip)
 {
-    auto draw = graphite_svg_image_draw();
-    if (!s_chromium_painting || !destination || !draw || !paths || !outer
+    decltype(&vox_graphite_draw_svg_image_pixels) draw = nullptr;
+    if (!s_chromium_painting || !destination || !paths || !outer
         || count <= 0 || count > 65536 || width <= 0 || height <= 0) return 0;
     auto matrix = SkMatrix::MakeAll(outer[0], outer[2], page_x + outer[4],
         outer[1], outer[3], page_y - scroll_y + outer[5], 0, 0, 1);
@@ -4811,6 +4820,8 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         all_draws_clipped = false;
         int flags = (has_background ? VOX_GRAPHITE_SVG_BACKDROP : 0)
             | (force_msaa ? VOX_GRAPHITE_SVG_FORCE_MSAA : 0);
+        if (!draw) draw = graphite_svg_image_draw();
+        if (!draw) return false;
         return draw(reinterpret_cast<uint8_t*>(target.data()), target_width,
             target_height, target_width * 4, flags, paths, count,
             parent_values, viewport, rounded_clip) != 0;
@@ -4823,8 +4834,8 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
         + (s_raster_layer_is_root ? s_root_raster_scroll_y : -s_raster_origin_y)) * scale);
     bool drawn = false;
     bool const compact_svg_regions = !std::getenv("VOX_DISABLE_SVG_IMAGE_REGIONS");
-    auto draw_region = graphite_svg_image_region_draw();
-    auto draw_picture_region = picture_regions_backdrop_draw();
+    auto draw_region = gpu_clips ? nullptr : graphite_svg_image_region_draw();
+    auto draw_picture_region = gpu_clips ? picture_regions_backdrop_draw() : nullptr;
     if (compact_svg_regions && has_background && (gpu_clips ? draw_picture_region != nullptr : draw_region != nullptr))
         drawn = draw_chromium_root_raster_grid<true>(pixels, raster_width, raster_height,
             region, page_x, page_y, scroll_y, scale,
