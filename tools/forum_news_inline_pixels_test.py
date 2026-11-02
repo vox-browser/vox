@@ -12,6 +12,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
+    def test_chromium_transformed_solid_rectangles_use_skia_edge_coverage(self):
+        self.compare_fixture('chromium-transformed-solid-fill', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_chromium_baseline_inlines_use_their_own_font_boxes(self):
         self.compare_fixture('chromium-inline-font-box', width=1024, height=768,
                              settle_seconds=5)

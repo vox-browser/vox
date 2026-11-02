@@ -357,6 +357,13 @@ use their own ascent/descent for the paint box and positioned containing block.
 LibWeb, other writing modes and non-baseline alignment keep their existing
 geometry. Native validation is tracked in the Slashdot receipt.
 
+`chromium-transformed-solid-fill` covers opaque rotated squares, chevrons and
+a fractional rectangle at two angles. Two full-uBO Brave references agree at
+1024×768, scale 1. The preceding production browser differs at 276 pixels.
+Chromium solid fills with non-axis-aligned transforms use Skia edge coverage,
+as rounded rectangles already do. Native validation is tracked in the Slashdot
+receipt.
+
 `stackoverflow-independent-hyphen-shaping` checks inserted system-font hyphens
 at integer and fractional line origins, narrow line fitting, explicit hyphen
 controls, and Arial. Its 800×600, scale 1 reference comes from two agreeing
