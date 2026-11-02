@@ -1670,7 +1670,13 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 		}
 		if effective_item is css.LinearGradientStyleValue || effective_item is css.RadialGradientStyleValue {
 			colors := color_resolution_context_for_typed_node(node, node.computed_values().color())
-			if operation := css_gradient_mask_operation(effective_item, border_rect,
+			// Generated mask images use the same snapped paint origin as CSS
+			// SVG images. Keep layout and the gradient's intrinsic size fractional.
+			gradient_rect := if element.document().font_rendering_policy() == .chromium {
+				painting.Rect{math.floor(border_rect.x + .5), math.floor(border_rect.y + .5),
+					border_rect.width, border_rect.height}
+			} else { border_rect }
+			if operation := css_gradient_mask_operation(effective_item, gradient_rect,
 				computed.length_resolution_context(), colors) {
 				operations << operation
 			}

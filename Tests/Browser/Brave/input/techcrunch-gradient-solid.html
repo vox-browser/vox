@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8">
+<title>Fractional CSS gradient masks</title>
+<style>
+html,body{margin:0;background:white}
+.card{position:absolute;top:229px;width:120px;height:484px;background:#0a8935}
+.ink{width:120px;height:484px;background:#fb4834;mask-image:linear-gradient(180deg,#000 70%,transparent)}
+#a{left:4px}#b{left:128px;top:229.09375px}#c{left:252px;top:229.5px}#d{left:376px;top:229.75px}
+#e{left:500px}#f{left:624px;top:229.09375px}#g{left:748px;top:229.5px}#h{left:872px;top:229.75px}
+#e .ink,#f .ink,#g .ink,#h .ink{mask-image:linear-gradient(180deg,#000,transparent)}
+p{position:absolute;top:1500px}
+</style>
+<div class="card" id="a"><div class="ink"></div></div>
+<div class="card" id="b"><div class="ink"></div></div>
+<div class="card" id="c"><div class="ink"></div></div>
+<div class="card" id="d"><div class="ink"></div></div>
+<div class="card" id="e"><div class="ink"></div></div>
+<div class="card" id="f"><div class="ink"></div></div>
+<div class="card" id="g"><div class="ink"></div></div>
+<div class="card" id="h"><div class="ink"></div></div>
+<p>Eight independent solid-color controls exercise generated alpha masks at integer and fractional vertical origins. The first four keep the publisher's opaque seventy-percent stop; the last four use a full-height alpha ramp. Original colors and dimensions match the image-mask diagnostic, with a solid foreground to remove decoding and image sampling from the comparison. Eight independent solid-color controls exercise generated alpha masks at integer and fractional vertical origins. The first four keep the publisher's opaque seventy-percent stop; the last four use a full-height alpha ramp. Original colors and dimensions match the image-mask diagnostic, with a solid foreground to remove decoding and image sampling from the comparison. Eight independent solid-color controls exercise generated alpha masks at integer and fractional vertical origins. Eight independent solid-color controls exercise generated alpha masks at integer and fractional vertical origins. The first four keep the publisher's opaque seventy-percent stop; the last four use a full-height alpha ramp. Original colors and dimensions match the image-mask diagnostic, with a solid foreground to remove decoding and image sampling from the comparison. Eight independent solid-color controls exercise generated alpha masks at integer and fractional vertical origins. The first four keep the publisher's opaque seventy-percent stop; the last four use a full-height alpha ramp. Original colors and dimensions match the image-mask diagnostic, with a solid foreground to remove decoding and image sampling from the comparison. Eight independent solid-color controls exercise generated alpha masks at integer and fractional vertical origins.</p>

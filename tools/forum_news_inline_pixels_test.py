@@ -13,6 +13,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_generated_gradient_masks_snap_their_fractional_image_origin(self):
+        self.compare_fixture('techcrunch-gradient-solid', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_non_square_svg_masks_keep_concrete_tile_size_and_position(self):
         self.compare_fixture('techcrunch-mask-sizing', width=1024, height=768,
                              settle_seconds=5)
