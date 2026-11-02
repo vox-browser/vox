@@ -39,6 +39,7 @@ fn test_libweb_plain_background_keeps_unsnapped_absolute_coordinates() {
 	assert command.x == 73 && command.y == 40.890625
 	assert command.width == 6 && command.height == 6
 	assert command.local_border_data == unsafe { nil }
+	assert !command.antialiased_rect
 }
 
 fn test_translation_only_plain_backgrounds_snap_before_the_css_translation() {
@@ -54,6 +55,7 @@ fn test_translation_only_plain_backgrounds_snap_before_the_css_translation() {
 	command := plain_background_command('left:737.921875px;top:102px;width:1px;height:30px;transform:translate(.25px,-50%)', true)
 	assert command.x == 738 && command.y == 102
 	assert command.transform == [f64(1), 0, 0, 1, .25, -15]!
+	assert command.antialiased_rect
 }
 
 fn test_translation_only_background_dimensions_snap_both_absolute_edges() {

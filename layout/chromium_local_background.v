@@ -18,7 +18,12 @@ fn chromium_local_background(mut command PaintCommand, box &BlockBox, color_back
 	own := normalized_affine(box.own_paint_transform)
 	// Translation-only solid backgrounds keep the snapped absolute layout box.
 	// Localizing them would restore the discarded fractional paint offset.
-	if plain && own[0] == 1 && own[1] == 0 && own[2] == 0 && own[3] == 1 { return }
+	if plain && own[0] == 1 && own[1] == 0 && own[2] == 0 && own[3] == 1 {
+		// The retained translation can still leave fractional device edges.
+		// Keep their coverage and color blend in the document's Skia raster.
+		command.antialiased_rect = true
+		return
+	}
 	command.local_border_data = &PaintLocalBorderData{
 		origin_x:                x
 		origin_y:                y
