@@ -3,7 +3,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import {collectOracleCosmetics} from './oracle_cosmetics.mjs';
 
-const request={url:'https://www.wired.com/',hostname:'www.wired.com',domain:'wired.com'};
+const request={url:'https://www.wired.com/',hostname:'www.wired.com',domain:'wired.com',tabId:47};
 function fixture({generic=true,specific=true,url=request.url,enabled=true}={}) {
     const calls=[];
     const store={rawURL:url,tabId:47,getNetFilteringSwitch:()=>enabled,
@@ -68,13 +68,15 @@ test('normal tabs retain both filter sets and combined exceptions retain only sc
     assert.deepEqual(Array.from(disabled.filters),['publisher-scriptlet']);
 });
 
-test('missing, disabled, unrelated and ambiguous tabs cannot supply an oracle policy',()=>{
+test('missing, disabled and unrelated captured tabs cannot supply an oracle policy',()=>{
     for(const f of [fixture({url:'https://other.example/'}),fixture({enabled:false})]) {
-        assert.throws(()=>collect(f),/one enabled full-uBO tab/);
+        assert.throws(()=>collect(f),/captured full-uBO tab/);
         assert.equal(f.calls.length,0);
     }
     const missing=fixture();missing.stores.clear();
-    assert.throws(()=>collect(missing),/one enabled full-uBO tab/);
+    assert.throws(()=>collect(missing),/captured full-uBO tab/);
     const ambiguous=fixture();ambiguous.stores.set(48,{...ambiguous.store,tabId:48});
-    assert.throws(()=>collect(ambiguous),/one enabled full-uBO tab/);
+    assert.equal(collect(ambiguous).policy.tab_id,47);
+    ambiguous.stores.delete(47);
+    assert.throws(()=>collect(ambiguous),/captured full-uBO tab/);
 });

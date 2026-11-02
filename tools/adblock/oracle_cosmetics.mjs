@@ -3,11 +3,11 @@
 // $shide exceptions and invents filters that the extension never injects.
 // Self-contained so the same function runs in the extension's CDP context.
 export function collectOracleCosmetics(pageStores, cosmeticEngine, scriptletEngine, request, tokens) {
-    const stores = [...pageStores.values()].filter(store => store.rawURL === request.url);
-    if (stores.length !== 1 || stores[0].getNetFilteringSwitch() !== true) {
-        throw new Error('Cosmetic oracle requires one enabled full-uBO tab for the document');
+    const store = Number.isSafeInteger(request.tabId) && request.tabId>0
+        ? pageStores.get(request.tabId) : undefined;
+    if (!store || store.rawURL !== request.url || store.getNetFilteringSwitch() !== true) {
+        throw new Error('Cosmetic oracle requires the captured full-uBO tab for the document');
     }
-    const store = stores[0];
     const noGenericCosmeticFiltering = store.shouldApplyGenericCosmeticFilters(0) === false;
     const noSpecificCosmeticFiltering = store.shouldApplySpecificCosmeticFilters(0) === false;
     const details = {...request, tabId:store.tabId, frameId:0};

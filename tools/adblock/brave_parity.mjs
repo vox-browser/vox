@@ -14,6 +14,7 @@ import { navigationObservation } from './navigation.mjs';
 import { hasHeaderFilter, requestIdentity, summarizeRequestParity } from './request_stream.mjs';
 import { collectVisibility, validateVisibilityProbe } from './visibility_probe.mjs';
 import { collectOracleCosmetics } from './oracle_cosmetics.mjs';
+import { createOracleTarget } from './oracle_target.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const options = {
@@ -176,7 +177,6 @@ try {
     const bgTarget = targets.find(t => t.type === 'background_page' && t.url.endsWith('/background.html'));
     if (!bgTarget) throw new Error('Full uBlock Origin background page did not load');
     background = await new CDP().connect(bgTarget.webSocketDebuggerUrl);
-    page = await new CDP().connect(targets.find(t => t.type === 'page').webSocketDebuggerUrl);
     // The CDP target appears before the extension bootstrap has installed vAPI.
     // Importing its modules too early would execute them out of bootstrap order.
     for (let attempt = 0; attempt < 300; attempt++) {
@@ -206,6 +206,9 @@ try {
         await u.loadFilterLists();
         return u.selectedFilterLists;
     })()`);
+    const oracleTarget=await createOracleTarget(background,async()=>
+        (await fetch(`http://127.0.0.1:${port}/json/list`)).json());
+    page = await new CDP().connect(oracleTarget.target.webSocketDebuggerUrl);
     await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
     // Observe the return value of the full extension's existing header filter.
     // The normal logger omits the response headers and phase, while cancelled
@@ -350,7 +353,7 @@ try {
             const s=(await import('./js/scriptlet-filtering.js')).default;
             const {domainFromHostname}=await import('./js/uri-utils.js');
             const hostname=${JSON.stringify(new URL(documentURL).hostname)};
-            const request={hostname,domain:domainFromHostname(hostname),url:${JSON.stringify(documentURL)}};
+            const request={hostname,domain:domainFromHostname(hostname),url:${JSON.stringify(documentURL)},tabId:${oracleTarget.tab_id}};
             return (${collectOracleCosmetics.toString()})(u.pageStores,c,s,request,${JSON.stringify(tokens)});
         })()`);
         const actualCosmetic = JSON.parse(execFileSync(options.checker, ['--document-filters', documentURL, ...tokens], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }));
@@ -391,6 +394,8 @@ try {
     }
     const capture = {
         captured_at: new Date().toISOString(), url: options.url,
+        oracle_target:{tab_id:oracleTarget.tab_id,target_id:oracleTarget.target.id,
+            initial_url:oracleTarget.initial_url,removed_tab_ids:oracleTarget.removed_tab_ids},
         navigation,
         ...(pixelReference ? {pixel_reference:pixelReference} : {}),
         document_fixture: documentFixture,
