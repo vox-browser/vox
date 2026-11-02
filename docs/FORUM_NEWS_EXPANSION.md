@@ -366,9 +366,22 @@ The intermediate production browser has the native side-order change but lacks
 the V color-retention change: its new fixture still fails at two one-byte pixels,
 while the existing partial-border and fractional-background controls pass.
 [The retained intermediate browser check](../Build/engadget-next-20261103/browser-focused.log)
-keeps that failure. Full production validation of the combined fix is pending.
-Engadget remains incomplete while its full-page native and source-fidelity gaps
-remain nonzero. No site archive, reference tolerance or acceptance gate changed.
+keeps that failure.
+
+The next published production executable, SHA-256
+`eb372f4d5ddf52e30963791fcccb16b88e15cc069fc6abbefed8946782e5dc6c`,
+contains the combined fix. All three focused browser tests/four captures pass at
+zero pixels, including the new category-label fixture and the unchanged partial
+border/fractional-background controls. Its fresh full-page Engadget comparison
+has **1,510 native differences and the same 90,850 source-fidelity differences**;
+Hacker News is strict-zero. The complete executable/native/runtime identity
+remains unchanged across both the focused checks and site comparisons.
+[The production validation receipt](../Build/engadget-next-20261103/published-validation/summary.json)
+retains the successful focused exit and failing whole-site exit separately.
+This establishes the reduced label fix, not full Engadget parity or a complete
+101-test-suite pass. Engadget remains incomplete while its full-page native and
+source-fidelity gaps remain nonzero. No site archive, reference tolerance or
+acceptance gate changed.
 
 ## Run
 
