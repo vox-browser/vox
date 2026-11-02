@@ -19,6 +19,20 @@ function engine(custom, nativeClone = false, eager = false) {
     return { context, info, check: request => JSON.parse(context.voxAdblockCheck(request)) };
 }
 
+test('default matching stays parser-free and custom filters load the original parser', () => {
+    const defaults = engine();
+    assert.equal(typeof defaults.context.voxAdblockParser, 'undefined');
+    assert.equal(defaults.check({url:'https://news.ycombinator.com/',source_url:'https://news.ycombinator.com/',request_type:'main_frame'}).blocked,false);
+    for (const origin of ['https://news.ycombinator.com','http://127.0.0.1:54321']) {
+        for (const [path,type] of [['/hn.js?Z6eHuL4AiZDrSCqdz7DG','script'],['/news.css?Z6eHuL4AiZDrSCqdz7DG','stylesheet'],['/triangle.svg','image']])
+            defaults.check({url:origin+path,source_url:origin+'/',request_type:type});
+    }
+    assert.equal(typeof defaults.context.voxAdblockParser, 'undefined');
+    defaults.context.voxAdblockInitialize('||metrics.example^$script\n##.advert');
+    assert.equal(typeof defaults.context.voxAdblockParser.AstFilterParser, 'function');
+    assert.equal(defaults.check({url:'https://metrics.example/ad.js',source_url:'https://news.ycombinator.com/',request_type:'script'}).blocked,true);
+});
+
 test('lazy tables preserve complete eager cosmetic, scriptlet and request decisions across the site corpus', async () => {
     const lazy = engine(), eager = engine(undefined, false, true);
     const fixture = JSON.parse(await fs.readFile(new URL('./fixtures/popular-sites.json', import.meta.url)));

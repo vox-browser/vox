@@ -13,6 +13,10 @@ import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
 import { checkResponseHeaders } from './response_headers.js';
 
 const environment = ['ublock', 'chromium', 'user_stylesheet'];
+globalThis.voxAdblockLoadParser = () => {
+    if (!globalThis.voxAdblockParser) (0, eval)(defaultData.parserSource());
+    return globalThis.voxAdblockParser;
+};
 const fctx = new FilteringContext();
 let activeListCount = 0;
 function compileNetwork(raw, name) {

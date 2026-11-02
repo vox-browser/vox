@@ -2,7 +2,7 @@ import { packedArray, packedMap, readPackedValue, encodePackedTable } from './la
 
 // Preserve uBO's engine selfies, loading large typed arrays as native bytes and
 // parsing metadata with JSON.parse rather than interpreting giant JS literals.
-export function encodeSnapshot(snapshot, { lazyCosmetics = false, publicSuffixText } = {}) {
+export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuckets = false, publicSuffixText, parserSource } = {}) {
     const chunks = [], views = [], fixups = [];
     let byteLength = 0;
     const active = new Set();
@@ -25,8 +25,10 @@ export function encodeSnapshot(snapshot, { lazyCosmetics = false, publicSuffixTe
         const packedArrayTable = lazyCosmetics && path.startsWith('snapshot["cosmetics"]')
             && /\["(strSlots|linkedLists)"\]$/.test(path) && Array.isArray(value)
             && value.length > 1024 && value.every(primitive);
-        const packedMapTable = lazyCosmetics && path.startsWith('snapshot["cosmetics"]')
-            && value instanceof Map && value.size > 1024 && [...value.values()].every(primitive);
+        const lookupThreshold = lazyCosmetics && path.startsWith('snapshot["cosmetics"]') ? 1024
+            : lazyNetworkBuckets && path.startsWith('snapshot["network"]["bitsToBucket"]') ? 128 : Infinity;
+        const packedMapTable = value instanceof Map && value.size > lookupThreshold
+            && [...value.values()].every(primitive);
         const stringKeys = packedMapTable && [...value.keys()].every(key => typeof key === 'string');
         const numberKeys = packedMapTable && [...value.keys()].every(key => Number.isSafeInteger(key) && key >= 0);
         if (packedArrayTable || stringKeys || numberKeys) {
@@ -75,10 +77,11 @@ export function encodeSnapshot(snapshot, { lazyCosmetics = false, publicSuffixTe
     const metadata = JSON.stringify(encode(snapshot, 'snapshot')).replace(/[\u007F-\uFFFF]/g, character =>
         `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
     let suffixReader = '';
-    if (publicSuffixText !== undefined) {
-        const table = encodePackedTable([publicSuffixText], 1), offset = byteLength;
+    for (const [name, value] of [['publicSuffixText',publicSuffixText],['parserSource',parserSource]]) {
+        if (value === undefined) continue;
+        const table = encodePackedTable([value], 1), offset = byteLength;
         chunks.push(table); byteLength += table.length;
-        suffixReader = `publicSuffixText(){const bytes=globalThis.voxAdblockSnapshotBytes;return (globalThis.voxAdblockReadPackedValue||(${readPackedValue}))(new Uint8Array(bytes.buffer,bytes.byteOffset+${offset},${table.length}),0);},`;
+        suffixReader += `${name}(){const bytes=globalThis.voxAdblockSnapshotBytes;return (globalThis.voxAdblockReadPackedValue||(${readPackedValue}))(new Uint8Array(bytes.buffer,bytes.byteOffset+${offset},${table.length}),0);},`;
     }
     const readers = hasPackedTables ? `const packedArray=${packedArray},packedMap=${packedMap},read=globalThis.voxAdblockReadPackedValue||(${readPackedValue});` : '';
     const source = `export default {${suffixReader}restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');const clone=(Type,offset,length)=>{const view=new Type(bytes.buffer,bytes.byteOffset+offset,length);return typeof globalThis.voxAdblockCloneSnapshotView==='function'?globalThis.voxAdblockCloneSnapshotView(view):new Type(view);};${readers}let snapshot=globalThis.voxAdblockReadSnapshotMetadata();${fixups.join('')}return snapshot;}};\n`;

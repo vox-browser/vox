@@ -1,5 +1,5 @@
 // These factories are embedded in the generated snapshot module. Only the
-// immutable lookup tables in uBO's restored cosmetics database use them.
+// immutable lookup tables in uBO's restored filter databases use them.
 // Mutating or enumerating an array materializes the original dense array;
 // maps likewise retain their normal mutation and insertion-order behavior.
 export function packedArray(bytes, read, eager = false) {

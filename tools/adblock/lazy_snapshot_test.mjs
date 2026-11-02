@@ -104,6 +104,19 @@ test('raw public suffix text is decoded on demand without entering the engine so
     assert.equal(context.snapshot.publicSuffixText(), text);
 });
 
+test('large numeric network buckets retain request lookup, mutation and insertion order', () => {
+    const bucket = new Map(Array.from({length:512},(_,index)=>[index * 7,index + 1]));
+    const encoded = encodeSnapshot({network:{bitsToBucket:new Map([[16,bucket]])}}, {lazyNetworkBuckets:true});
+    assert.equal(JSON.parse(encoded.metadata).network.bitsToBucket[0][1],null);
+    const context = vm.createContext({TextDecoder,binary:Uint8Array.from(encoded.binary),metadata:encoded.metadata});
+    vm.runInContext('globalThis.voxAdblockReadSnapshotMetadata=()=>JSON.parse(metadata);globalThis.voxAdblockSnapshotBytes=new Uint8Array(binary);',context);
+    vm.runInContext(encoded.source.replace('export default ', 'globalThis.snapshot='),context);
+    const restored = context.snapshot.restore().network.bitsToBucket.get(16);
+    assert.equal(restored.get(77),12); assert.equal(restored.has(78),false);
+    restored.set(9000,42); bucket.set(9000,42);
+    assert.deepEqual(JSON.parse(JSON.stringify([...restored])),[...bucket]);
+});
+
 test('native lookup reader matches the portable reader and rejects corrupt storage', {skip: process.platform !== 'darwin'}, () => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'vox-packed-snapshot-'));
     try {

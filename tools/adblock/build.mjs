@@ -8,6 +8,8 @@ import { gzipSync } from 'node:zlib';
 import crypto from 'node:crypto';
 import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
 import { encodeSnapshot, encodeNativeSnapshot } from './snapshot.mjs';
+import { parserStub } from './lazy_parser.mjs';
+import * as parserExports from '../../adblock/vendor/ublock/js/static-filtering-parser.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
 const manifest = JSON.parse(await fs.readFile(path.join(root, 'adblock/lists/manifest.json'), 'utf8'));
@@ -18,11 +20,15 @@ const lists = await Promise.all(manifest.lists.map(async list => {
 }));
 const publicSuffixText = await fs.readFile(path.join(root, 'adblock/lists/public_suffix_list.dat'), 'utf8');
 await fs.writeFile(path.join(here, 'generated-defaults.js'), `export default {lists:${JSON.stringify(lists)},publicSuffixText(){return ${JSON.stringify(publicSuffixText)}}};\n`);
+let lazyParser = false;
 const options = {
     entryPoints: [path.join(here, 'runtime.js')], outfile: path.join(root, 'adblock/engine.js'),
     bundle: true, platform: 'browser', format: 'iife', target: 'safari16.4',
     define: { global: 'globalThis' }, minify: true, legalComments: 'eof', loader: { '.dat': 'text' }, metafile: true,
     plugins: [{ name: 'standalone-ublock-background', setup(b) {
+        b.onLoad({filter: /\/static-filtering-parser\.js$/}, args => lazyParser ? {
+            contents: parserStub(parserExports), loader:'js', resolveDir:path.dirname(args.path),
+        } : undefined);
         // Preserve the pinned vendor sources while using the host's exact
         // integer checksum backend for cold trie validation. Node/build hosts
         // without this callback retain uBO's original JavaScript checksum.
@@ -72,11 +78,16 @@ try {
     console.error('Cannot compile default filter snapshot: ' + error.message);
     process.exit(1);
 }
-const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, publicSuffixText });
+const parserBundle = await build({entryPoints:[path.join(root,'adblock/vendor/ublock/js/static-filtering-parser.js')],
+    bundle:true,platform:'browser',format:'iife',globalName:'voxAdblockParser',target:'safari16.4',
+    minify:true,legalComments:'eof',write:false});
+const parserSource = parserBundle.outputFiles[0].text;
+const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, lazyNetworkBuckets: true, publicSuffixText, parserSource });
 await fs.writeFile(path.join(here, 'generated-defaults.js'), snapshot.source);
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.bin'), encodeNativeSnapshot(snapshot.binary));
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.json.gz'), gzipSync(snapshot.metadata, {level: 9, mtime: 0}));
 await fs.writeFile(path.join(here, 'snapshot-layout.json'), JSON.stringify(snapshot.layout, null, 2) + '\n');
+lazyParser = true;
 const output = await build(options);
 await fs.writeFile(path.join(here, 'bundle-inputs.json'), JSON.stringify(Object.keys(output.metafile.inputs).sort(), null, 2) + '\n');
 const code = await fs.readFile(path.join(root, 'adblock/engine.js'));
