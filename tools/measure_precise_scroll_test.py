@@ -576,8 +576,7 @@ class PreciseScrollTests(unittest.TestCase):
                 summarize(invalid, 12)
 
 
-if __name__ == "__main__":
-    unittest.main()
+
 
 
 class ExplicitNativeCandidateIdentityTests(unittest.TestCase):
@@ -605,3 +604,7 @@ class ExplicitNativeCandidateIdentityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             measure_precise_scroll.verify_native_images(log, Path('/bundle/Vox'),
                                                        Path('/candidate/libLadybirdVSkiaText.dylib'))
+
+
+if __name__ == "__main__":
+    unittest.main()
