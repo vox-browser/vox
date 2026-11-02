@@ -5,6 +5,7 @@ import browsercookies
 import dom
 import encoding.base64
 import loader
+import net
 import net.http
 import time
 import url
@@ -137,6 +138,29 @@ fn data_response(resource_url string) !http.Response {
 	}
 }
 
+fn fetch_with_timeout_recovery(config http.FetchConfig, mut progress ResponseBodyProgress) !http.Response {
+	return http.fetch(config) or {
+		// A stalled HTTP/2 stream need not mean the origin is unreachable.
+		// Retry this GET once over HTTP/1, keeping TLS, proxy and redirect policy.
+		// Other failures (including TLS validation) retain their original error.
+		if config.method != .get || !config.enable_http2 || !config.url.starts_with('https://')
+			|| err.code() != net.err_timed_out_code
+			|| !err.msg().starts_with('h2: request timed out waiting for a response after ') {
+			return err
+		}
+		// Partial bytes from the abandoned response cannot describe the retry's
+		// image body, even if both responses happen to share the same prefix.
+		progress.previous = 0
+		progress.incomplete_prefix = 0
+		progress.prefix.clear()
+		http.fetch(http.FetchConfig{
+			...config
+			enable_http2: false
+			max_retries: 1
+		})!
+	}
+}
+
 // net.http's automatic redirect mode does not retain the final URL and would
 // hide redirect targets from the blocker. Resolve every hop explicitly while
 // retaining the document and resource type of the original request.
@@ -168,7 +192,7 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 				progress.observe(chunk, received, expected, status)
 			})
 		} else { http.RequestProgressBodyFn(unsafe { nil }) }
-		response := http.fetch(
+		response := fetch_with_timeout_recovery(http.FetchConfig{
 			url:            resource_url
 			proxy:          if proxy == '' { unsafe { nil } } else { http.new_http_proxy(proxy)! }
 			method:         .get
@@ -181,7 +205,7 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 			validate:       true
 			verify:         ca_bundle
 			on_progress_body: on_body
-		)!
+		}, mut progress)!
 		filter_response(adblock.Request{
 			url: resource_url
 			source_url: input.source_url

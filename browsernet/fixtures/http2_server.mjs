@@ -30,11 +30,25 @@ function save() {
 }
 const binary = Buffer.from([0, 1, 127, 128, 255, 0, 42]);
 function request(req, res) {
-    state.requests.push({ url: req.url, protocol: req.httpVersion });
+    state.requests.push({ url: req.url, method: req.method, protocol: req.httpVersion, headers: req.headers });
     state.active++;
     state.maximum_active = Math.max(state.maximum_active, state.active);
     save();
     res.on('finish', () => { state.active--; save(); });
+    // Keep the connection healthy while one response stalls. The browser must
+    // recover this request without abandoning other multiplexed streams.
+    if (req.url.startsWith('/timeout/') && req.httpVersionMajor === 2) {
+        if (req.url === '/timeout/partial') {
+            res.writeHead(200, { 'content-length': 256 });
+            res.write(Buffer.alloc(128, 120));
+        }
+        return;
+    }
+    if (req.url === '/never-responds') return;
+    if (req.url === '/timeout/partial') { res.writeHead(200, { 'content-length': 64 }); res.end(Buffer.alloc(64, 120)); return; }
+    if (req.url === '/timeout/redirect') { res.writeHead(302, { location: '../binary?recovered=1' }); res.end(); return; }
+    if (req.url === '/timeout/blocked-redirect') { res.writeHead(302, { location: 'https://www.google-analytics.com/g/collect?v=2' }); res.end(); return; }
+    if (req.url === '/unavailable') { res.writeHead(503); res.end('unavailable'); return; }
     if (req.url === '/dir/redirect') { res.writeHead(302, { location: '../binary?allowed=1' }); res.end(); return; }
     if (req.url === '/proxy-to-direct') { res.writeHead(302, { location: `http://127.0.0.1:${http_port}/binary` }); res.end(); return; }
     if (req.url === '/direct-to-proxy') { res.writeHead(302, { location: `http://remote-dns.invalid:${http_port}/binary` }); res.end(); return; }

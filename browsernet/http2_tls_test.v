@@ -24,6 +24,14 @@ struct HTTP2TLSReady {
 struct HTTP2TLSStats {
 	handshakes     map[string]int
 	maximum_active int
+	requests       []HTTP2TLSRequest
+}
+
+struct HTTP2TLSRequest {
+	url      string
+	method   string
+	protocol string
+	headers  map[string]string
 }
 
 struct HTTP2TLSReply {
@@ -141,4 +149,123 @@ fn test_https_pool_does_not_bypass_ca_or_hostname_validation() {
 		assert false, 'incorrect certificate hostname accepted: ${response.url}'
 	}
 	http.close_idle_connections()
+}
+
+fn http2_tls_stats(fixture HTTP2TLSFixture) HTTP2TLSStats {
+	return json2.decode[HTTP2TLSStats](os.read_file(os.join_path(fixture.directory, 'stats.json')) or { panic(err) }) or { panic(err) }
+}
+
+fn test_https_http2_timeout_recovers_navigation_and_keeps_redirect_filtering() {
+	fixture := start_http2_tls_fixture() or {
+		eprintln('SKIP HTTP2 TLS fixture: Node and OpenSSL required')
+		return
+	}
+	defer { fixture.close() }
+	defer { http.close_idle_connections() }
+	ca := os.join_path(fixture.directory, 'ca.pem')
+	address := 'https://127.0.0.1:${fixture.h2_port}'
+	result := get(adblock.Request{url: '${address}/timeout/redirect', source_url: address,
+		request_type: 'main_frame'}, ca)!
+	assert result.url == '${address}/binary?recovered=1'
+	assert result.response.status_code == 200
+	assert result.response.body.bytes() == [u8(0), 1, 127, 128, 255, 0, 42]
+	if response := get(http2_tls_request('${address}/timeout/blocked-redirect'), ca) {
+		assert false, 'redirected tracker reached transport: ${response.url}'
+	} else {
+		assert err.msg().starts_with('Blocked by adblock:'), err.msg()
+	}
+	stats := http2_tls_stats(fixture)
+	assert stats.requests.map(it.protocol) == ['2.0', '1.1', '2.0', '2.0', '1.1']
+	assert stats.requests.map(it.url) == ['/timeout/redirect', '/timeout/redirect',
+		'/binary?recovered=1', '/timeout/blocked-redirect', '/timeout/blocked-redirect']
+	for request in stats.requests {
+		assert request.method == 'GET'
+		request_type := if request.url == '/timeout/blocked-redirect' { 'image' } else { 'main_frame' }
+		assert request.headers['accept'] == request_accept_header(request_type)
+		assert request.headers['accept-encoding'] == 'gzip, deflate, br'
+		assert request.headers['user-agent'] == stats.requests[0].headers['user-agent']
+	}
+}
+
+fn test_https_timeout_retry_discards_abandoned_body_progress_and_preserves_headers() {
+	fixture := start_http2_tls_fixture() or {
+		eprintln('SKIP HTTP2 TLS fixture: Node and OpenSSL required')
+		return
+	}
+	defer { fixture.close() }
+	defer { http.close_idle_connections() }
+	mut progress := &ResponseBodyProgress{}
+	response := fetch_with_timeout_recovery(http.FetchConfig{
+		url: 'https://127.0.0.1:${fixture.h2_port}/timeout/partial'
+		header: http.new_header_from_map({http.CommonHeader.cookie: 'retry=retained'})
+		user_agent: 'Vox timeout recovery test'
+		enable_http2: true
+		allow_redirect: false
+		validate: true
+		verify: os.join_path(fixture.directory, 'ca.pem')
+		read_timeout: 500 * time.millisecond
+		write_timeout: time.second
+		on_progress_body: fn [mut progress] (_ &http.Request, chunk []u8,
+			received u64, expected u64, status int) ! {
+			progress.observe(chunk, received, expected, status)
+		}
+	}, mut progress)!
+	assert response.body == 'x'.repeat(64)
+	assert progress.previous == 64
+	assert progress.incomplete_prefix == 0
+	assert progress.prefix.bytestr() == 'x'.repeat(32)
+	stats := http2_tls_stats(fixture)
+	assert stats.requests.map(it.protocol) == ['2.0', '1.1']
+	assert stats.handshakes['h2'] == 2
+	for request in stats.requests {
+		assert request.url == '/timeout/partial'
+		assert request.headers['cookie'] == 'retry=retained'
+		assert request.headers['user-agent'] == 'Vox timeout recovery test'
+	}
+}
+
+fn test_https_timeout_recovery_is_bounded_and_does_not_replay_post_or_http1() {
+	fixture := start_http2_tls_fixture() or {
+		eprintln('SKIP HTTP2 TLS fixture: Node and OpenSSL required')
+		return
+	}
+	defer { fixture.close() }
+	defer { http.close_idle_connections() }
+	base := http.FetchConfig{
+		url: 'https://127.0.0.1:${fixture.h2_port}/never-responds'
+		enable_http2: true
+		allow_redirect: false
+		validate: true
+		verify: os.join_path(fixture.directory, 'ca.pem')
+		read_timeout: 500 * time.millisecond
+		write_timeout: time.second
+		max_retries: 1
+	}
+	for config in [base, http.FetchConfig{...base, method: .post, data: 'do not replay'},
+		http.FetchConfig{...base, url: 'https://127.0.0.1:${fixture.h1_port}/never-responds'},
+		http.FetchConfig{...base, enable_http2: false}] {
+		before := http2_tls_stats(fixture).requests.len
+		mut progress := ResponseBodyProgress{}
+		if response := fetch_with_timeout_recovery(config, mut progress) {
+			assert false, 'stalled response returned ${response.status_code}'
+		} else {
+			assert err.msg().contains('timed out') || err.msg().contains('did not receive any data'), err.msg()
+		}
+		after := http2_tls_stats(fixture)
+		expected := if config.method == .get && config.enable_http2 && config.url == base.url { 2 } else { 1 }
+		assert after.requests.len - before == expected
+		if expected == 2 {
+			assert after.requests[before..].map(it.protocol) == ['2.0', '1.1']
+		}
+	}
+	mut progress := ResponseBodyProgress{}
+	response := fetch_with_timeout_recovery(http.FetchConfig{
+		...base
+		url: 'https://127.0.0.1:${fixture.h2_port}/unavailable'
+	}, mut progress)!
+	assert response.status_code == 503
+	assert response.body == 'unavailable'
+	stats := http2_tls_stats(fixture)
+	assert stats.requests.filter(it.url == '/unavailable').len == 1
+	assert stats.requests.filter(it.method == 'POST').len == 1
 }
