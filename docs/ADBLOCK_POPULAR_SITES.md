@@ -1,14 +1,14 @@
 # Popular-site adblock verification
 
-Slashdot's frozen viewport is pixel-exact against Brave with matching full
-uBlock Origin in two complete-response-cache runs; its pinned build passes all
-96 rendering tests/102 captures. A newer production build also restores BBC to
-zero native and saved-live/frozen differences. The expanded 97-test regression
-suite still awaits production verification of the subsequent fractional-edge
-correction. Stack Overflow and Pikabu remain deferred at the user's request,
-and Reddit's access check does not count as page coverage. See the final
-checkpoints for pinned builds, workloads and evidence. These results concern
-the recorded frozen viewports and cache policies.
+Production executable `c8993aa0…` passes all **97 rendering tests/103 captures**
+with unchanged references. Hacker News, BBC and Slashdot pass strict frozen-page
+comparisons with full uBlock Origin; CNN, Guardian, The Verge and Lobsters native
+preservation captures also remain exact against their accepted Brave/uBO
+references. BBC passes two independent strict runs. Stack Overflow and Pikabu
+remain deferred at the user's request. Both modern and Old Reddit guest access
+are blocked, so Reddit does not count as page coverage. The final checkpoint
+records the pinned build, cache and author-script policies and evidence. These
+results establish the recorded frozen viewports, not live scripting parity.
 
 The matrix exercises guest pages on 13 representative news, video, social,
 shopping, reference, and developer sites. It compares Vox's native filtering
@@ -3574,3 +3574,54 @@ reference PNG qualifies. The
 [Old Reddit access receipts](../Build/reddit-old-guest-access-20261102-2144/)
 retain both attempts, raw commands, reports and 3 GiB guards. This alternative
 does not remove the catalog's existing modern-Reddit access failure.
+
+
+## Final translated-background validation, 2 November 2026
+
+The completed production executable
+`c8993aa08e74513dacc5fda3f384b9cd6eb2835eddc8f98cf315b4c39bd9c324`
+contains the recovered layout-snapping, Skia-edge and isolated-primitive fixes.
+Its native text bridge is
+`668a80986a5ecdf356efa6d777b6c48d6db1c1aa7bb05474fcee27c9a285d6f2`.
+The production receipt is `20261102-214922-a7e3a3da`; complete executable,
+native-library, runtime-asset, fixture and tool identities are retained in the
+[completed rendering validation](../Build/bbc-translation-recovered-20261102-2139/).
+All recorded browser identities remain unchanged throughout their checks.
+
+All **97 rendering methods/103 captures pass**, including the unchanged
+translated-solid-background reference that previously differed by 542 pixels,
+then 142 pixels. The eight focused methods/nine captures also pass. No reference,
+threshold, excluded region or pixel normalization changed.
+
+| Site | Native differing pixels | Current check |
+| --- | ---: | --- |
+| Hacker News | 0 | Strict full-uBO frozen replay; saved-live/frozen also 0 |
+| BBC News | 0 | Two independent strict full-uBO runs; saved-live/frozen also 0 |
+| Slashdot | 0 | Strict full-uBO frozen replay; saved-live/frozen also 0 |
+| CNN | 0 | Native preservation against accepted Brave/uBO reference |
+| Guardian | 0 | Native preservation against accepted Brave/uBO reference |
+| The Verge | 0 | Native preservation against accepted Brave/uBO reference |
+| Lobsters | 0 | Native preservation against accepted Brave/uBO reference |
+
+These use 1024×768 document viewports at scale one, original-origin sealed replay,
+complete encoded-response caches and fresh browser processes, with the same
+removed-author-script policy. The three-site strict driver, independent BBC
+repeat, broad suite, preservation driver and outer memory guard all exit zero.
+Independent RGBA decoding confirms both BBC pairs have identical pixel bytes,
+with SHA-256
+`78bf82a09953f082822f699baf61d6bd8b555bf6100ee2f52f4f2b93dacf22f1`.
+The earlier cold WebP decoder limitation remains separate. Stack Overflow and
+Pikabu stay deferred, and Reddit remains an access failure; this is not ten-site
+or live-scripting acceptance.
+
+A concurrent staging operation included the native large-shape experiment in
+commit `016cf333e` alongside the preceding documentation update. Its subsequent
+removal is recorded by `707e2b6a4`; shared history is retained. Supplemental
+checks pass five cache/policy cases, 2,880 exact GPU scenes and both disabled-path
+cases. An initial fault-injection invocation used the production library, where
+the diagnostic macro is compiled out; that rejected invocation is retained and
+is not a renderer defect. The existing ASan diagnostic's eight queued-readback
+failure/retry cases pass, and all seven recorded source hashes match the native
+files in `016cf333e`. The
+[supplemental receipts](../Build/shared-shape-commit-check-20261102/) distinguish
+those checks and their scopes. They supply no performance credit.
