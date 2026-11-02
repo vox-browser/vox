@@ -2874,3 +2874,20 @@ generated C were compressed with byte checks and restoration hashes. Existing
 references and tolerances remain unchanged. The saved-live reference gap and
 earlier synthetic/oracle qualifications stay open; there is no live-site or
 performance acceptance.
+
+
+## Reddit guest access recheck, 2 November 2026
+
+After deferring Pikabu, the catalog wraps to Reddit. A fresh isolated Brave
+session with full uBlock Origin still returns **HTTP 403** and the network
+security block page. No page archive or pixel reference qualifies. The one
+observed request is allowed in both engines' filtering comparison, but the
+cosmetic CSS comparison fails and the run exits nonzero. Reddit remains an
+unavailable acceptance case; it is not counted as a rendering pass.
+
+The [access receipt](benchmark-results/reddit-access-recheck-2026-11-02.json)
+and the catalog's `sites/reddit/status.json` retain the current result. Raw
+commands, browser report and the 3 GiB guard receipt are under
+`Build/reddit-parity-resume-20261102/`. Work continues with Lobsters, the next
+accessible unfinished catalog entry. Stack Overflow and Pikabu remain deferred
+as requested.
