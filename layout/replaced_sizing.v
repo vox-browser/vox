@@ -25,6 +25,19 @@ fn compute_replaced_size(box &Box, available_space AvailableSpace) CSSPixelSize 
 	})
 }
 
+fn chromium_auto_svg_transfers_block_size(node &Node) bool {
+	if !node.is_svg_svg_box() || node.document().font_rendering_policy() != .chromium
+		|| node.document().is_svg_image_document() { return false }
+	computed := node.computed_values()
+	if !computed.size_value(.width).is_auto() || !computed.size_value(.height).is_auto() {
+		return false
+	}
+	box := node.as_box() or { return false }
+	intrinsic := box.auto_content_box_size()
+	return intrinsic.width == none && intrinsic.height == none
+		&& box.preferred_aspect_ratio() != none
+}
+
 fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace, box_model ReplacedBoxModel) CSSPixelSize {
 	node := unsafe { &Node(box) }
 	computed := node.computed_values()
@@ -157,6 +170,17 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 	height = apply_replaced_block_axis_constraints(node, computed.size_value(.min_height),
 		computed.size_value(.max_height), height, available_space.height, box_model,
 		constraint_rerun_uses_intrinsic_height, constraint_rerun_intrinsic_height)
+	// Blink transfers an automatically sized outer SVG's used block size back
+	// through its natural ratio. The block size has already been quantized to
+	// LayoutUnit: a 20px-wide 448:512 icon becomes 22.84375px high and then
+	// 19.984375px wide. Keep authored sizes and SVG-image viewports independent.
+	if chromium_auto_svg_transfers_block_size(node) {
+		if natural_ratio := ratio {
+			width = apply_replaced_axis_constraints(node, computed.size_value(.min_width),
+				computed.size_value(.max_width), height.times_fraction(natural_ratio),
+				available_space.width, box_model, true)
+		}
+	}
 	return CSSPixelSize.new(width, height)
 }
 

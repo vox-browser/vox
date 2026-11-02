@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_automatic_svg_width_uses_the_quantized_ratio_height(self):
+        self.compare_fixture('svg-auto-ratio-rounding', width=1024, height=768)
+
     def test_later_full_width_float_stays_below_the_completed_inline_line(self):
         self.compare_fixture('inline-block-followed-by-full-float', width=1024, height=768)
     def test_chromium_blurred_byte_color_text_keeps_gpu_blending(self):

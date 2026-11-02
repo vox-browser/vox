@@ -651,7 +651,14 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			box_state.set_has_definite_height(true)
 		}
 	}
-	mut definite_content_height := resolve_content_height_for_node(mut state, box, box_state, height_resolution_basis)
+	// The auto SVG width was transferred from this already-resolved height.
+	// Deriving height from that width again loses another fractional layout unit.
+	mut definite_content_height := if sized_as_replaced
+		&& chromium_auto_svg_transfers_block_size(box_as_node) {
+		?f64(box_state.content_height().to_double())
+	} else {
+		resolve_content_height_for_node(mut state, box, box_state, height_resolution_basis)
+	}
 	if resolved_height := definite_content_height {
 		definite_content_height = clamp_content_height_for_node(mut state, box, box_state, css_px(resolved_height), height_resolution_basis).to_double()
 	}
