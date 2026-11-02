@@ -3008,3 +3008,80 @@ script limitations unchanged. See the local
 [evidence](benchmark-results/bbc-intrinsic-context-2026-11-02.json) and raw
 `Build/bbc-intrinsic-context-20261102/` receipts. Generated reports stay local
 under the repository ignore policy.
+
+## Rejected probe cache and reuse of completed contexts
+
+The first pass-scoped probe cache reaches a stable completed production build,
+`c8993aa08e74513dacc5fda3f384b9cd6eb2835eddc8f98cf315b4c39bd9c324`.
+Fresh enabled/control BBC diagnostics both pass the original pixel reference,
+full content, native exit and exclusive ownership. JavaScriptCore records one
+context and 2,017/1,917 evaluations. **Neither run executes that cache's replay
+path.** No instruction cohort is collected for an unused path, and no saving
+is credited. The same pinned app passes headless startup, all eleven smoke
+comparisons at unchanged bounds, and all eight required SVG comparisons
+pixel-exactly. Executable/native identities are unchanged across those checks.
+The earlier 120-pixel discrepancy has disappeared in this later shared build;
+that restoration is not attributed to the unused cache.
+
+A separate frozen-HTML C-O0 diagnostic, without resource replay or author-script
+execution, also records no hits. Both arms retain 2,854 layout nodes, 902 lines
+and the same scalar geometry checksum. These aggregates do not establish pixel
+conformance or full-browser performance. The first standalone compile overlaps
+a concurrent repository reset and lacks the candidate marker; it is retained
+as an invalid candidate diagnostic. The subsequent marked build supplies the
+reported standalone observations.
+
+Commit `c2b6f290e` removes the probe-to-probe cache and instead lets intrinsic
+probes read already completed ordinary retained contexts from their current
+layout pass. The existing cache owns all descendant geometry and lines, so
+this path creates no second snapshot cache. Pool closure releases its source
+state reference. Replay requires matching mode, available space, root sizes,
+constraints and definiteness, ancestor geometry, style/text/tree/image inputs,
+font policy and actual current font metrics. The cached root's post-formatting
+sizes/flags are retained explicitly. Rejection keeps the ordinary algorithm.
+Twenty-six focused cases pass enabled and disabled in all three memory modes:
+**156 executions, nine zero-exit jobs**. An initial key comparison fails because
+measurement ancestors deliberately sever their geometry pointers; the corrected
+key follows the logical node chain in either state. That failing run remains
+retained.
+
+The initial completed-context key is still too restrictive on the frozen HTML.
+A separate read-only diagnostic in generated C observes **7,481 lookup calls
+and 3,180 completed-context entries**. The first 32 expanded observations show
+matching child inputs with differing ancestor min/max probe markers. These
+are diagnostic counts, not retired instructions or an eligible-context total.
+The generated source, inserted scalar logging, native link flags, executable,
+commands and actual zero exits remain preserved. Its geometry aggregates stay
+unchanged. No production browser or canonical repository tool is copied.
+
+Commit `4d7edc800` compares ancestor dimensions and effective definiteness,
+while retaining the child's own min/max constraints in its key. Ancestor probe
+markers are not independently consumed by a closed child's formatting
+algorithm. A marker that changes effective ancestor definiteness still rejects
+replay. The dedicated case checks both outcomes against uncached geometry;
+its first preparation incorrectly expected replay after changing a previously
+definite axis and is retained as a failed check. Key comparison now walks the
+saved chain without allocating a temporary replacement vector for each lookup.
+All **27 focused cases pass enabled and disabled in default, no-GC and
+preallocated modes: 162 executions and nine zero-exit jobs**. Selected-font
+replacement rejects replay; unchanged actual faces may survive an unrelated
+font-generation change. The standalone metadata-key revision positively
+executes replay only when enabled, with the same geometry aggregates; that
+binary predates the final allocation-free lookup and earns no browser credit.
+
+Shared build receipts retain superseded successful compilations and failures
+from concurrent checkout changes, a transient reset/rebase and conflicted
+native files, then JavaScriptCore declarations corrected by the other session.
+The original completed commits are retained in evidence alongside their rebased
+identities (`132387c6a`, `0c10ec0f1`, `ac52c571e`). The recovered engine sources
+match the passing checks byte-for-byte. The recovery preview is never applied;
+no other session's native changes are overwritten. Latest completed bundles
+supply applicable baseline evidence while the guarded shared build progresses.
+
+The final candidate still needs production BBC eligibility, unchanged pixels,
+matched unprofiled instruction results, and any broad verification triggered by
+measured savings. There is no new accepted cohort or broad-check reset. The
+history remains 54 cohorts/1,313 cohort attempts, and BBC is not added to the
+catalog. The local [evidence](benchmark-results/bbc-intrinsic-context-2026-11-02.json)
+links all raw diagnostics, native checks, source changes, failed preparations
+and production receipts under `Build/bbc-intrinsic-context-20261102/`.
