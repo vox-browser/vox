@@ -1282,9 +1282,11 @@ of settling after typing passes in `vox-custom-element-settled-live-click/`.
 This slower test does not erase the earlier failure or establish a one-second
 input-readiness guarantee. The combined assessment retains the failed attempt.
 
-Both successful unmodified conversation captures now produce the same PNG,
-with 1,440 differing pixels against the unchanged live Brave reference. The
-remaining mismatch is confined to the assistant reply and its actions. The
+The successful Enter capture and instrumented controller capture produce the
+same PNG, with 1,440 differing pixels against the unchanged live Brave
+reference. The separate settled Send capture differs at 1,154 pixels, with a
+different assistant-action arrangement; both results are retained. The
+remaining mismatches are confined to the assistant reply and its actions. The
 user bubble now matches; the assistant still uses the ordinary paragraph DOM
 with its twelve-pixel margin offset.
 
