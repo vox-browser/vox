@@ -154,10 +154,20 @@ def run_build(root, stage, receipt, environment):
     environment = {k: v for k, v in environment.items() if not k.startswith('GIT_')}
     environment.update(VOX_BUILD_SUPERVISED='1', VOX_BUILD_OUTPUT_DIR=str(stage))
     guard = root / 'tools/run_memory_bounded.py'
+    # sh reads a script file incrementally. Editing that file while the compiler
+    # runs can move its unread tail and manufacture an EOF/quoting error. Read
+    # the canonical entry point once, then let the guarded shell consume those
+    # bytes in memory. Keep $0 and relative helper paths anchored to the checkout;
+    # do not copy repository tools into the receipt or staging directory.
+    script = root / ('build-linux-browser.sh' if sys.platform == 'linux' else 'build-prod-browser.sh')
+    script_bytes = script.read_bytes()
+    write_json(receipt / 'build-script.json', dict(path=str(script), bytes=len(script_bytes),
+               sha256=hashlib.sha256(script_bytes).hexdigest(), delivery='memory through stdin'))
     with (receipt / 'build.log').open('wb') as log:
         result = subprocess.run([sys.executable, str(guard), '--lock',
             str(root / 'Build/production-build/memory.lock'), '--report',
-            str(receipt / 'memory.json'), '--', 'sh', str(root / 'build-prod-browser.sh')],
+            str(receipt / 'memory.json'), '--', 'sh', '-c',
+            'exec sh -c "$(cat)" "$0"', str(script)], input=script_bytes,
             cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT)
     if result.returncode:
         return result.returncode

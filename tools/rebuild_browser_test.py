@@ -1,9 +1,11 @@
 from pathlib import Path
+import hashlib
 import json
 from types import SimpleNamespace
 import tempfile
 import unittest
 import sys
+import subprocess
 from unittest.mock import patch
 
 import rebuild_browser as build
@@ -169,6 +171,8 @@ class ProductionBuildTests(unittest.TestCase):
             root = Path(directory)
             stage, receipt = root / 'stage', root / 'receipt'
             receipt.mkdir()
+            script = root / ('build-linux-browser.sh' if sys.platform == 'linux' else 'build-prod-browser.sh')
+            script.write_text('exit 0\n')
             with patch.object(build.subprocess, 'run', return_value=SimpleNamespace(returncode=0)) as run:
                 self.assertEqual(build.run_build(root, stage, receipt, {}), 0)
             first, second = run.call_args_list
@@ -178,6 +182,59 @@ class ProductionBuildTests(unittest.TestCase):
             self.assertEqual(second.args[0][second.args[0].index('--limit-gib') + 1], '3')
             self.assertEqual(first.kwargs['cwd'], root)
             self.assertEqual(first.kwargs['env']['VOX_BUILD_OUTPUT_DIR'], str(stage))
+
+    def test_build_uses_one_complete_script_after_the_file_is_edited(self):
+        real_run = subprocess.run
+        with tempfile.TemporaryDirectory(prefix="vox script's path ") as directory:
+            root = Path(directory)
+            stage, receipt = root / 'stage', root / 'receipt'
+            stage.mkdir()
+            receipt.mkdir()
+            script = root / ('build-linux-browser.sh' if sys.platform == 'linux' else 'build-prod-browser.sh')
+            original = b'''set -eu
+printf '%s' "$0" > "$VOX_BUILD_OUTPUT_DIR/path"
+printf '%s' 'quoted "body" with $literal and `literal`' > "$VOX_BUILD_OUTPUT_DIR/body"
+'''
+            script.write_bytes(original)
+            calls = []
+            def launch(command, **kwargs):
+                calls.append(command)
+                if len(calls) == 1:
+                    # An unfinished editor write must not change the running
+                    # build, nor be published as unchanged canonical source.
+                    script.write_text('echo "unfinished edit\n')
+                    guarded_command = command[command.index('--') + 1:]
+                    return real_run(guarded_command, **kwargs)
+                return SimpleNamespace(returncode=0)
+            with patch.object(build.subprocess, 'run', side_effect=launch):
+                self.assertEqual(build.run_build(root, stage, receipt, {}), 0)
+            self.assertEqual((stage / 'path').read_text(), str(script))
+            self.assertEqual((stage / 'body').read_text(), 'quoted "body" with $literal and `literal`')
+            self.assertEqual(len(calls), 2)
+            identity = json.loads((receipt / 'build-script.json').read_text())
+            self.assertEqual(identity['sha256'], hashlib.sha256(original).hexdigest())
+            self.assertEqual(identity['bytes'], len(original))
+            self.assertFalse(any(p.suffix == '.sh' for p in receipt.iterdir()))
+            self.assertFalse(any(p.suffix == '.sh' for p in stage.iterdir()))
+
+    def test_script_stdin_reaches_the_build_through_the_real_memory_guard(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stage, receipt = root / 'stage', root / 'receipt'
+            receipt.mkdir()
+            (root / 'tools').mkdir()
+            (root / 'tools/run_memory_bounded.py').symlink_to(
+                Path(build.__file__).resolve().with_name('run_memory_bounded.py'))
+            script = root / ('build-linux-browser.sh' if sys.platform == 'linux' else 'build-prod-browser.sh')
+            executable = stage / ('vox' if sys.platform == 'linux' else 'Vox.app/Contents/MacOS/Vox')
+            script.write_text('set -eu\nmkdir -p "' + str(executable.parent) + '"\n'
+                'cat > "' + str(executable) + '" <<\'SMOKE\'\n#!/bin/sh\n'
+                'test "$1" = --headless-smoke\nSMOKE\nchmod +x "' + str(executable) + '"\n')
+            self.assertEqual(build.run_build(root, stage, receipt, {}), 0)
+            for name in ['memory.json', 'smoke-memory.json']:
+                evidence = json.loads((receipt / name).read_text())
+                self.assertEqual(evidence['reason'], 'completed')
+                self.assertEqual(evidence['child_exit_code'], 0)
 
 
 if __name__ == '__main__':
