@@ -3548,7 +3548,7 @@ retained; both are corrected before the commit.
 
 Seven alternating unprofiled **microbenchmark** pairs traverse the frozen
 BBC DOM 20 times, preserving checksum **64,980**. Process-delta medians are
-**112,206,970 candidate / 166,992,334 control**, a **32.8083%** reduction in
+**112,206,970 candidate / 166,992,334 control**, a **32.8071%** reduction in
 this narrow operation. The standalone C-O3/no-GC workload has no CSS cascade,
 scripts, resources, browser startup, layout or PNG and earns **no BBC
 instruction credit**. Its diagnostic witness is separate from timed trials.
@@ -3592,3 +3592,67 @@ fails. Brave4's receipt identifies a concurrent browser using the distinct
 the global-app assertion. This explains that failure's extra PIDs without
 retroactively validating it or relaxing counter ownership. Frozen-page and
 JavaScript limitations above continue to apply.
+
+
+## Rejected early-viewport experiment: valid cohort 59 (2026-11-03)
+
+**The 10% target remains unmet.** This cohort has all **seven complete
+alternating control/Vox/Brave triples**, with original per-engine PNGs, full
+content, exclusive ownership and normal native exit zero in **all 21 attempts**.
+All **1,639 pinned input files** rehash unchanged. Every root is adopted by
+the unchanged memory guard without errors. No attempt is retried or excluded.
+History now retains **59 cohorts / 1,418 attempts**.
+
+The candidate median is **30,223,856,904** instructions, against control
+**29,922,237,319** and Brave **15,061,869,449**. The candidate **regresses by
+301,619,585 instructions (1.0080%)**, with two improving and five regressing
+matched pairs. The conservative ratio is **2.0812862367**, and the integer
+gate fails: **311,494,026,220 > 134,697,774,222**. Driver and guard exit one
+reflect the failed numeric gate, rather than an invalid trial. The result
+supplies no optimization credit and no BBC homepage instruction-table entry.
+Exact intervals, commands, host load, identities and audits are in the
+[tracked ledger](performance/bbc-viewport-style-20261103.json) and
+`Build/bbc-viewport-style-20261103/viewport-matched-cohort/`.
+
+The experiment (`7a746d5a4`, tool `a5eb2449c`) installed the requested viewport
+before native scale-selection style queries. Separate diagnostics confirm
+that the original first query recomputes 2,493 elements at **800×600**, while
+the candidate recomputes 2,534 at the requested **1024×768**. They both pass
+reference pixels, full content and ownership, and witness JavaScriptCore
+execution (one context; 1,945 / 1,979 evaluations). Query and path probes are
+absent in the unprofiled cohort. The pinned production receipt is
+`20261103-023924-9e1a549f`, executable SHA-256
+`eb372f4d5ddf52e30963791fcccb16b88e15cc069fc6abbefed8946782e5dc6c`.
+The original page bytes, script policy, clock shim, viewport, scale, settlement,
+caches, RGB compatibility and PNG references remain unchanged.
+
+The earlier style query is an internal workflow change; the complete
+measurement shows a regression. Commit **`166a0a8b4` removes the experiment**,
+restoring all four existing implementation files byte-for-byte to their
+pre-experiment revisions and deleting its helper/tests. **`2a0ad2f02`** removes
+the unused benchmark control. Fresh restoration checks pass all **17 cases
+in default, no-GC and production-preallocated modes (51 executions)**; all
+239 remaining instruction-tool tests pass. The on-disk production bundle
+can still contain the experiment until a later successful publication; its
+identity must be checked before claiming restored-default browser validation.
+No broad verification checkpoint or cadence reset is claimed.
+
+### Corrected preallocated test configuration
+
+The first preallocated main-test run used raw current V, whose unbounded
+`v_realloc` copy crashes during PNG `realloc(nil,n)` in the initial-resource
+test (exit 139). This was a **test-harness configuration error**. Production
+already uses the repository's staged bounded allocator and arena-safe closure
+runtime through `tools/prepare_prealloc_runtime.py`; it was unaffected.
+
+Corrected checks reuse that exact immutable runtime/compiler view, its
+module path and compiler working directory, retaining the 10 GiB compiler
+limit and 12/3 GiB build/runtime guards. All **31 retained-formatting-tree
+cases, 17 ancestor-hash cases and 20 viewport cases** pass under both policies
+(**136 preallocated executions**). The viewport cases also pass default and
+no-GC modes under both policies, for **120 valid executions** before removal.
+The raw failed configuration and all corrected commands, runtime hashes,
+logs and guard exits are preserved under
+`Build/bbc-viewport-style-20261103/production-prealloc-v1/`. This corrects
+the preallocated-runtime coverage of cohorts 57 and 58 without changing any
+measured browser interval or earning performance credit.
