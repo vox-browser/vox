@@ -1094,6 +1094,10 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 
 	if old_style != none && (element_style_changed || element_custom_properties_changed) {
 		element.invalidate_descendant_styles_depending_on_style_container_query()
+		// Hidden SVG resources paint through their referencing elements. Their
+		// custom-property inputs can change without invalidating a visible box
+		// in this subtree, so retire the retained paint description explicitly.
+		element.note_svg_paint_resource_description_may_have_changed()
 	}
 
 	if !invalidation.is_none() && !invalidation.needs_layout_tree_rebuild() {
