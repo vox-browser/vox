@@ -2031,3 +2031,42 @@ this refresh checkpoint. The pending fixed-container visual pair, audited
 hidden-resource repaint check and live Send comparison explicitly pin the
 candidate executable, so the older bundle cannot stand in for validation of
 the new rendering fixes.
+
+## Fractional shadow color in recorded pictures
+
+`f447b8603` fixes another generic paint discrepancy exposed by the reduced
+banner. The leaf renderer accepts fractional sRGB shadow components, while
+the recorded compositor/decoration path converts them to a byte color before
+recording. A five-percent black shadow therefore loses precision only when
+its contents become eligible for a complete picture. Recorded shadows now
+retain their supplied floating components, and legacy byte colors keep their
+existing path.
+
+The new `tools/native_skia_shadow_recording_color_test.cpp` compares the native
+bridge with independently recorded GPU pictures at scales one and two. Before
+the fix, all four legacy-color controls are exact and the four fractional
+cases differ by 90, 130, 354 and 732 pixels. Afterwards all eight are exact.
+The existing shadow-layer checks pass 72 exact comparisons, including root
+controls against the published native library. All twelve outer-shadow group
+cases also pass. Compiler and runtime commands/guards are retained in
+`shadow-recording-color-before/` and `shadow-recording-color-after/` beneath
+the same private evidence root.
+
+The initial broad source fingerprint detects a concurrent change to
+`native_browser_tab_titles_test_darwin.h`. The compiler dependency list proves
+that header is not used by these tests. `dependency-seal.json` verifies the
+actual renderer inputs remain unchanged; `related-results.json` retains the
+original broad-fingerprint failure rather than relabeling it as a pass.
+Native library identities remain unchanged. Only the shadow-color hunk and
+its regression are committed; the unrelated pending native include is left
+with its owner's work.
+
+`banner-native-probe-1/` retains the diagnostic reductions, including the first
+failed link without Skia's required `-fno-rtti` and an initial unsnapped-geometry
+model. The corrected geometry follows the browser's recorded integer paint
+bounds rather than the fractional DOM rectangle. Independent shadow/border
+toggles isolate the precision change to shadow color. This probe still differs
+from the actual browser reduction, so it supplies no live-page pixel gain or
+whole-page acceptance claim. The last tested production ChatGPT result remains
+120 differing pixels until a published bundle containing the rendering fixes
+is captured against the unchanged Brave reference.
