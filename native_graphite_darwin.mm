@@ -285,12 +285,6 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
         || static_cast<size_t>(pitch) < static_cast<size_t>(width) * 4) return 0;
     std::lock_guard lock(gpu_mutex);
     auto cached = shadow_cache.prepare(*shadow, width, height, pitch, has_background, pixels);
-    if (std::getenv("VOX_SHADOW_CACHE_DIAGNOSTICS")) {
-        using Clock = double (*)();
-        static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
-        std::fprintf(stderr, "VOX_SHADOW_CACHE hit=%d pending=%d background=%d width=%d height=%d t_us=%.3f\n",
-            cached.hit, bool(cached.pending), has_background, width, height, clock ? clock() : -1);
-    }
     if (cached.hit) return 1;
     auto* gpu = context();
     if (!gpu) return 0;
