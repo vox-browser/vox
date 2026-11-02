@@ -467,7 +467,7 @@ pub fn add_document_author_style_sheet(document &dom.Document, css_text string) 
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }
 	holder := css_author_style_sheets_for(document)
-	mut sheet := parse_css_stylesheet_with_parser(css_text, none)
+	mut sheet := parse_css_stylesheet_with_params(ParsingParams{document: document}, css_text, none)
 	sheet.add_owning_document_or_shadow_root(unsafe { &dom.Node(document) })
 	// The holder is @[heap] (stable address) reached through a cached handle; append through the pointer.
 	unsafe {
@@ -603,7 +603,7 @@ fn load_imported_stylesheets(document &dom.Document, mut sheet CSSStyleSheet, lo
 		if active_urls[resolved_url] { continue }
 		active_urls[request_url] = true
 		active_urls[resolved_url] = true
-		mut imported_sheet := parse_css_stylesheet_with_parser(css_text, resolved_url)
+		mut imported_sheet := parse_css_stylesheet_with_params(ParsingParams{document: document}, css_text, resolved_url)
 		imported_sheet.set_parent_css_style_sheet(sheet)
 		load_imported_stylesheets(document, mut imported_sheet, resolved_url, mut active_urls)
 		imported_sheet.evaluate_media_queries(document)
@@ -629,7 +629,7 @@ fn parse_css_style_sheet_for_owner_node(document &dom.Document, css_text string,
 	defer {
 		platform.arena_phase_end('css_parse', phase_mark)
 	}
-	mut sheet := parse_css_stylesheet_in_workspace(ParsingParams{}, css_text, location, none, css_text.len >= 16_384)
+	mut sheet := parse_css_stylesheet_in_workspace(ParsingParams{document: document}, css_text, location, none, css_text.len >= 16_384)
 	sheet.base.type_string = 'text/css'
 	mut active_urls := map[string]bool{}
 	active_urls[location] = true
@@ -1064,7 +1064,7 @@ pub fn computed_properties_for_pseudo_element(element &dom.Element, pseudo_eleme
 // concrete CSSStyleSheet on css.StyleScope avoids a dom -> css import cycle.
 pub fn add_shadow_root_author_style_sheet(shadow_root &dom.ShadowRoot, css_text string) {
 	mut scope := css_style_scope_for_shadow_root(shadow_root)
-	mut sheet := parse_css_stylesheet_with_parser(css_text, none)
+	mut sheet := parse_css_stylesheet_with_params(ParsingParams{document: shadow_root.as_node().document()}, css_text, none)
 	sheet.add_owning_document_or_shadow_root(unsafe { &dom.Node(shadow_root) })
 	scope.author_style_sheets << sheet
 	scope.invalidate_rule_cache()
