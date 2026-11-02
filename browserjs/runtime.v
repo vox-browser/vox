@@ -74,6 +74,8 @@ mut:
 	protected_value_indices_  map[voidptr][]int
 	protected_value_positions_ []int
 	value_call_intrinsic_     voidptr
+	value_call_zero_intrinsic_ voidptr
+	value_call_one_intrinsic_ voidptr
 	promise_observe_intrinsic_ voidptr
 	value_error_intrinsic_     voidptr
 	value_same_intrinsic_      voidptr
