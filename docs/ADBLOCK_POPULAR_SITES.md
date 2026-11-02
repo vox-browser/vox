@@ -2765,3 +2765,52 @@ the inconclusive manual image-upload reconstruction. The next implementation
 must jointly replay a validated background/image/mask scope while retaining the
 mask's border radius, arbitrary ancestor clipping and fallback behavior. Raw
 artifacts are under `Build/pikabu-avatar-coverage-20261102/`.
+
+## Pikabu rounded masked images, 2 November 2026
+
+Commit `a0e68de0e` reduces the unchanged frozen-page comparison from **92 to
+38 differing pixels**. All 54 avatar-edge pixels are fixed, with no new or
+otherwise changed pixels. The entire visible photo remains exact. The
+remaining gap is 34 header notification/bell/badge pixels and four other
+small-control pixels; Pikabu's full-page zero-pixel gate stays open.
+
+The renderer now retains a representable CSS mask's rounded border clip and
+jointly replays a complete background/image/opaque-gradient-mask scope. The
+background and image share their content clip, followed by the independent
+rounded mask coverage. The implementation uses the actual background color,
+source decoding and destination clips. It does not clear earlier content or
+reset native clipping, unlike the earlier diagnostic prototype.
+
+The V matcher requires a complete four-command scope with one raster owner,
+matching normal integer corner radii and identity transforms. Nonopaque masks,
+extra effects, arbitrary clips, fractional radii and other corner shapes stay
+in general replay. A rejected GPU draw leaves the original replay available;
+an ordinary CPU image or retained unmasked picture cannot replace its mask.
+There are no site, URL, background-color or image-size exceptions.
+
+The new browser regression improves from **54 pixels to zero**. Two fresh
+Brave/full-uBO references match the previous unchanged isolated reference
+exactly. All **five focused V test functions** pass with default GC and
+`-gc none`, including parsed layout and negative eligibility cases. The native
+comparison passes **144 cases** across source/background alpha, two scales,
+two radii, fractional positions and destination clipping, plus GPU rejection
+and retained-picture preservation checks. The previous complete native backend
+fails its first matching case at 28 pixels. These checks use address and
+undefined-behavior sanitizers.
+
+The accepted production bundle passes **79 rendering tests / 84 captures**,
+fresh headless startup and the unchanged CNN, Guardian and Verge archived
+viewports at **zero pixels**. Its 52 Pikabu request decisions agree with full
+uBO, with zero blocks or disagreements. The other four focused native raster
+checks also pass: SVG clipping, parent MSAA, mask backdrops and rounded backing
+colors. Required production sources and the full source snapshot stayed stable
+during the accepted build.
+
+The [rounded masked-image receipt](benchmark-results/pikabu-rounded-masked-image-2026-11-02.json)
+records exact identities, source hashes, comparison regions, references,
+commands and guards, including the earlier compile/rpath failures and the
+successive eligibility refinements. Raw artifacts are under
+`Build/pikabu-masked-image-20261102/`. Existing goldens and tolerances are
+unchanged. These are frozen guest rendering results with author scripts
+removed, without live-site, instruction-count or scrolling acceptance. Earlier
+saved-live/oracle and synthetic SVG qualifications remain open.
