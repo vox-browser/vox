@@ -121,7 +121,10 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 				owner := plan.command_layers[gap]
 				if owner < 0 { continue }
 				rect := viewport or { return false }
-				if owner == index || owner >= plan.layers.len || !plan.has_paint_metadata {
+				if !plan.has_paint_metadata {
+					return chromium_svg_compositor_layer_declined(index, gap, 'interleaved layer needs paint metadata', commands[gap].kind)
+				}
+				if owner == index || owner >= plan.layers.len {
 					return false
 				}
 				// Native replay culls these ordinary leaves before selecting
