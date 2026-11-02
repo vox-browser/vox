@@ -63,6 +63,31 @@ int main(int argc, char** argv)
             return 1;
         }
     }
+    // A positioned child can follow another box's background. Keep gap draws
+    // on the ordinary destination while the bounded card region is replayed.
+    std::fill(actual.begin(), actual.end(), 255);
+    ladybird_v_skia_set_raster_layer(0, 0, 1);
+    ladybird_v_skia_set_raster_layer_size(width, 2200);
+    int root_tiles[] {0, 1, 2};
+    ladybird_v_skia_set_msaa_grid(root_tiles, 3, 1024, 256, 1);
+    assert(ladybird_v_skia_begin_inset_decorations(context,
+        701, 92, 298, height - 92, width, height, 0, 0));
+    for (int card = 0; card < 2; ++card) {
+        float y = card ? 672 : 92, h = card ? 561 : 560;
+        draw(701.5, y, 297, h - .5f, 9.5, 10, 9.5, 9.5, 230, 1);
+        float widths[] {0, 1, 1, 1};
+        ladybird_v_skia_set_rounded_border_widths(widths);
+        draw(701, y, 298, h, 10, 10, 10, 10, 204, 8);
+    }
+    draw(30, 20, 40, 20, 0, 0, 0, 0, 200, 1);
+    draw(701, 92, 298, 29, 10, 10, 0, 0, 76, 1);
+    draw(701, 672, 298, 30, 10, 10, 0, 0, 76, 1);
+    assert(ladybird_v_skia_end_deferred_inset_decorations(context));
+    CGContextFlush(context);
+    for (int y = 20; y < 40; ++y) for (int x = 30; x < 70; ++x)
+        for (int channel = 0; channel < 3; ++channel)
+            expected[(y * width + x) * 4 + channel] = 200;
+    assert(expected == actual);
     CGContextRelease(context);
     std::puts("Native partial rounded borders match Brave on cold and repeated draws");
 }

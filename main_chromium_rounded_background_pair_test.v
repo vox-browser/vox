@@ -78,3 +78,35 @@ fn test_partial_border_background_and_child_header_keep_one_resolve() {
 	assert chromium_partial_decoration_end(commands, layers, -1) == -1
 	assert chromium_partial_decoration_end(commands, layers, commands.len - 1) == commands.len - 1
 }
+
+fn test_positioned_partial_border_headers_keep_intervening_draw_order() {
+	mut document := html.parse_document(os.read_file('${@VMODROOT}/Tests/Browser/Brave/input/chromium-partial-rounded-border.html')!)
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	root := layout.layout_document_typed_in_viewport(document, 1024, 768)
+	source := root.paint_commands()
+	mut starts := []int{}
+	for i, command in source {
+		if command.kind == 'paint_partial_rounded_border' { starts << i - 1 }
+	}
+	assert starts.len == 2
+	a, b := starts[0], starts[1]
+	gap := layout.PaintCommand{kind: 'fill_rect', x: 30, y: 20, width: 40, height: 20,
+		color: 'rgb(200 200 200)', opacity: 1}
+	commands := [source[a], source[a + 1], gap, source[b], source[b + 1], source[a + 2], source[b + 2]]
+	layers := []int{len: commands.len}
+	assert chromium_partial_decoration_end(commands, layers, 0) == 0
+	assert chromium_rounded_background_pair_end(commands, layers, 0) == commands.len
+	for replacement in [layout.PaintCommand{...gap, kind: 'begin_css_effect_layer'},
+		layout.PaintCommand{...gap, opacity: 0.5}] {
+		mut changed := commands.clone()
+		changed[2] = replacement
+		assert chromium_rounded_background_pair_end(changed, layers, 0) == 0
+	}
+	mut foreign := layers.clone()
+	foreign[2] = 1
+	assert chromium_rounded_background_pair_end(commands, foreign, 0) == 0
+	mut missing := commands.clone()
+	missing[6].x += 1
+	assert chromium_rounded_background_pair_end(missing, layers, 0) == 0
+}
