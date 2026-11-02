@@ -251,6 +251,51 @@ also preserves source equality and has 45 native differences, confined to its
 masked columns. It is an authored diagnostic, not another homepage pass.
 The five additions remain incomplete.
 
+### Additional isolation and preservation coverage
+
+Commit `fa8782d01` adds `hidden-scroll-metadata` to the browser suite and three
+focused V tests. They cover a closed zero-opacity scroll menu, inherited zero
+opacity, an opaque scroll control and metadata restoration after live opacity
+changes. Two independent full-uBO acquisitions agree exactly, and each sealed
+source/frozen/native comparison has zero differing pixels:
+[first acquisition](../Build/forum-news-hidden-scroll-reference-20261103/summary.json),
+[second acquisition](../Build/forum-news-hidden-scroll-reference2-20261103/summary.json).
+The committed PNG has SHA-256
+`60791309e28da71e0d6868c57ac54eb007767dcc985851ba73420faeafee2911`.
+The [native browser test](../Build/forum-news-hidden-scroll-20261103/browser.log)
+and all three V cases pass with both default GC and GC disabled in
+[the focused receipt](../Build/forum-news-hidden-scroll-20261103/summary.json).
+The suite now registers 100 tests; the earlier complete 99-test batch remains
+separate from this later focused check.
+
+This is preservation coverage, **not a rendering fix**. The reduced hidden-menu
+case already passed in the existing browser and V planner. It therefore does
+not establish that invisible scroll metadata causes the full-page difference.
+The original unit attempt incorrectly required fractional-opacity groups to
+take the metadata path instead of their existing atomic fallback; its failure
+is retained, and the control now checks a fully opaque scroll container.
+No planner or renderer implementation change was retained.
+
+The later installed executable, SHA-256
+`7f7f497421070c18e8a32615cf206a5d5df242b59f69f0975d06a12424598aaa`,
+also gives **34,710 TechCrunch pixels and zero Hacker News pixels**, with source
+fidelity passing for both and unchanged bundle identities across the batch.
+[The later receipt and results](../Build/forum-news-latest-sites-20261103/summary.json)
+pin its complete native-library/runtime identity; this does not rerun or extend
+the earlier complete rendering-suite claim to that build.
+
+Further probes remain diagnostic. Replaying the homepage's captured backdrop
+and gradient arguments reproduces 19,634 errors in the examined 484×321 photo
+region; root-coordinate replay reduces that region to 28 errors. This does not
+establish a correct full-page layer assignment. A later interposed experiment
+used stale symbol offsets after a shared bundle publication and crashed; it is
+[explicitly rejected](../Build/forum-news-gradient-trace-20261103/candidate-rejected.json),
+with no qualified candidate PNG. The stronger Brave layer-snapshot diagnostic
+also changes its photo output, failing source fidelity at 79,032 pixels in
+[the retained attempt](../Build/forum-news-brave-layers3-20261103/summary.json).
+Its layer data is not pixel-acceptance evidence. No reference, threshold or
+registered site archive was changed to accept either experiment.
+
 ## Run
 
 ```sh
