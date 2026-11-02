@@ -138,8 +138,8 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		platform.leave_persistent(persistent)
 		allocation_scope.finish()
 	}
-	request := json2.decode[map[string]json2.Any](input)!
-	if snapshot := json_string_property(request, 'snapshot') {
+	request := decode_compact_element_query_request(input)!
+	if snapshot := request.snapshot {
 		mut messages := []string{}
 		mut elements := map[string]&dom.Element{}
 		if state := javascript_replay_state(snapshot, mut messages) {
@@ -149,7 +149,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		}
 		// Console output stays in the script snapshot for its normal consumer;
 		// only DOM replay failures can reject this selector operation.
-		mut log_count := json_int_property(request, 'logCount') or { 0 }
+		mut log_count := request.log_count
 		if log_count < 0 { log_count = 0 }
 		if log_count > messages.len { log_count = messages.len }
 		if messages.len > log_count {
@@ -160,11 +160,11 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 			binding.keys[voidptr(element)] = key
 		}
 	}
-	selector := json_string_property(request, 'selector') or {
+	selector := request.selector or {
 		return error('Invalid selector request')
 	}
-	action := json_string_property(request, 'action') or { return error('Invalid selector action') }
-	key := json_string_property(request, 'key') or { '' }
+	action := request.action or { return error('Invalid selector action') }
+	key := request.key
 	if action == 'cssSheet' { return binding.css_sheet_query(selector) }
 	if action == 'linkSheet' { return binding.link_sheet_query(key) }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
