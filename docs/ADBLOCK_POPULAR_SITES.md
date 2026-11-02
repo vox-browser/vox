@@ -2891,3 +2891,38 @@ commands, browser report and the 3 GiB guard receipt are under
 `Build/reddit-parity-resume-20261102/`. Work continues with Lobsters, the next
 accessible unfinished catalog entry. Stack Overflow and Pikabu remain deferred
 as requested.
+
+
+## Lobsters dated guest fixture reaches zero, 2 November 2026
+
+The refreshed Lobsters guest fixture passes **zero differing pixels** against
+Brave/full uBlock Origin at 1024×768 under the **complete-cache** policy. Three
+fresh replay pairs pass both the live-to-frozen and Vox-to-Brave comparisons.
+The registered canonical fixture is also exact against the earlier committed
+header-fix browser, independent of the discarded Pikabu validator prototypes.
+All 60 observed native request decisions agree with full uBO, with no blocks
+or disagreements. Replay cosmetic, procedural and scriptlet checks agree.
+
+Tooling commit `bdf8a0f51` corrects asymmetric cache preparation: complete mode
+now warms the live acquisition as well as the replay browsers. Each warmup
+closes before a fresh capture process copies its encoded cache. Cold mode and
+the supplied profile template preserve their behavior; failed preparation
+cannot seal a fixture. All **14 harness tests and seven archive tests** pass,
+and every registered resource body hash verifies. No browser rebuild is needed
+for this Python workflow change.
+
+The direct live attempt remains incomplete because five stylesheets do not
+finish loading. The existing explicit capture proxy provides a complete source
+page. An earlier acquisition yields zero native/frozen pixels but **151**
+live/frozen avatar pixels; its cold trial has **101** native/frozen and **252**
+live/frozen differences. Those failures remain retained. The feed changes
+between acquisitions: the earlier and registered frozen references differ at
+**37,981 pixels**. The new capture therefore earns **no engine rendering or
+performance credit**, and does not resolve the earlier reference variations.
+
+The [Lobsters receipt](benchmark-results/lobsters-brave-pixels-2026-11-02.json)
+records source bytes, the old fixture, all attempts, cache preparation, browser
+identities and guards under `Build/lobsters-parity-20261102-resume/`. The
+zero-pixel threshold remains unchanged. This qualifies the new frozen guest
+viewport with author scripts removed; interactions, other cache conditions and
+scroll positions remain outside this result.

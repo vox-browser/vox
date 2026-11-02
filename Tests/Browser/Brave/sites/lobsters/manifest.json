@@ -1,7 +1,8 @@
 {
   "version": 1,
   "url": "https://lobste.rs/",
-  "sealed_unix": 1793314308.90183,
+  "source_document_request_method": "GET",
+  "sealed_unix": 1793600281.74384,
   "responses": {
     "https://lobste.rs/": {
       "status": 200,
@@ -20,15 +21,15 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:13 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:56 GMT"
         },
         {
           "name": "etag",
-          "value": "\"dmhop8ywybfx-18ut-zstd\""
+          "value": "\"dmki6ymfu4y5-18ap-zstd\""
         },
         {
           "name": "last-modified",
-          "value": "Thu, 29 Oct 2026 22:44:00 GMT"
+          "value": "Mon, 02 Nov 2026 06:16:00 GMT"
         },
         {
           "name": "strict-transport-security",
@@ -40,34 +41,30 @@
         },
         {
           "name": "content-length",
-          "value": "57537"
+          "value": "56819"
         },
         {
           "name": "Content-Type",
           "value": "text/html;charset=utf-8"
         }
       ],
-      "sha256": "8e1d98bc91558951365f68420d03d65fc8b25fbbdfd7701db5a14970b9d67dab",
-      "bytes": 57537
+      "sha256": "00172b93b81ad8e789914d48cd659a869caf775d7466ce9f7325ce9b1d16f0f4",
+      "bytes": 56819
     },
     "https://lobste.rs/application.css": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"dme7w0d8da1p-vv0-zstd\""
-        },
-        {
           "name": "alt-svc",
           "value": "h3=\":443\"; ma=2592000"
         },
         {
+          "name": "etag",
+          "value": "\"dmk68rpf7hws-w09-zstd\""
+        },
+        {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:23 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:40 GMT"
         },
         {
           "name": "content-type",
@@ -75,7 +72,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Sun, 25 Oct 2026 20:55:31 GMT"
+          "value": "Sun, 01 Nov 2026 20:54:08 GMT"
         },
         {
           "name": "vary",
@@ -83,22 +80,18 @@
         },
         {
           "name": "content-length",
-          "value": "41292"
+          "value": "41481"
         }
       ],
-      "sha256": "d896fea99f39f615f35f9f5aed76275b756e986da510e1eb1529d9b58ec2fdc6",
-      "bytes": 41292
+      "sha256": "bedcc5b79afc4e87698c89a88cf271ee2148f5882c7b6ee366d787b95af9259f",
+      "bytes": 41481
     },
     "https://lobste.rs/system-system.css": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "etag",
-          "value": "\"dme7w0d8f7zx-c7\""
+          "value": "\"dmk68rpfacuo-c7\""
         },
         {
           "name": "accept-ranges",
@@ -110,7 +103,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:23 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:40 GMT"
         },
         {
           "name": "content-type",
@@ -118,7 +111,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Sun, 25 Oct 2026 20:55:31 GMT"
+          "value": "Sun, 01 Nov 2026 20:54:08 GMT"
         },
         {
           "name": "vary",
@@ -129,19 +122,15 @@
           "value": "439"
         }
       ],
-      "sha256": "4c2aa433623679b5f128c946283aac3c7a399968c6c8de459cb20fe8fb3102b9",
+      "sha256": "f0a40de6c26bb9486ae028148fdabe82ee5afe67484313e9e075d39e89e93a67",
       "bytes": 439
     },
     "https://lobste.rs/application.js": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "etag",
-          "value": "\"dme7w0d8be1i-1ia-zstd\""
+          "value": "\"dmk68rpexg15-1ia-zstd\""
         },
         {
           "name": "alt-svc",
@@ -149,7 +138,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:23 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:40 GMT"
         },
         {
           "name": "content-type",
@@ -157,7 +146,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Sun, 25 Oct 2026 20:55:31 GMT"
+          "value": "Sun, 01 Nov 2026 20:54:08 GMT"
         },
         {
           "name": "vary",
@@ -171,20 +160,16 @@
       "sha256": "2faab754bada455b66232d94d6a83347783c6f4e104bd8526904e3b18dfcbcc1",
       "bytes": 1954
     },
-    "https://lobste.rs/assets/dark-normal-b6128952.css": {
+    "https://lobste.rs/assets/light-normal-bf538ff1.css": {
       "status": 200,
       "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
         {
           "name": "cache-control",
           "value": "public, max-age=31536000"
         },
         {
           "name": "etag",
-          "value": "\"dme7w0criqoy-1m0-zstd\""
+          "value": "\"dmk68rozc07l-1lh-zstd\""
         },
         {
           "name": "alt-svc",
@@ -192,7 +177,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:28 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:45 GMT"
         },
         {
           "name": "content-type",
@@ -200,7 +185,85 @@
         },
         {
           "name": "last-modified",
-          "value": "Sun, 25 Oct 2026 20:55:31 GMT"
+          "value": "Sun, 01 Nov 2026 20:54:08 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "2069"
+        }
+      ],
+      "sha256": "f039f64a786ee24a49e3ead7a37e6d0ebb53da582752dfaff52262c9c7021d8f",
+      "bytes": 2069
+    },
+    "https://lobste.rs/assets/light-high-139615cb.css": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "etag",
+          "value": "\"dmk68rozhnzj-1kx-zstd\""
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:45 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 01 Nov 2026 20:54:08 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "2049"
+        }
+      ],
+      "sha256": "e51957af2f10ecf5cf9499ddb8fb67a85bab3aae36cfeca8095703a7c50574a6",
+      "bytes": 2049
+    },
+    "https://lobste.rs/assets/dark-normal-b6128952.css": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "cache-control",
+          "value": "public, max-age=31536000"
+        },
+        {
+          "name": "etag",
+          "value": "\"dmk68roy9jce-1m0-zstd\""
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:45 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "text/css; charset=utf-8"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sun, 01 Nov 2026 20:54:08 GMT"
         },
         {
           "name": "vary",
@@ -218,16 +281,12 @@
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "cache-control",
           "value": "public, max-age=31536000"
         },
         {
           "name": "etag",
-          "value": "\"dme7w0cru5mj-1l0-zstd\""
+          "value": "\"dmk68roymued-1l0-zstd\""
         },
         {
           "name": "alt-svc",
@@ -235,7 +294,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:28 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:45 GMT"
         },
         {
           "name": "content-type",
@@ -243,7 +302,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Sun, 25 Oct 2026 20:55:31 GMT"
+          "value": "Sun, 01 Nov 2026 20:54:08 GMT"
         },
         {
           "name": "vary",
@@ -257,149 +316,16 @@
       "sha256": "baed7e479a8a30f2dc9970777ba5a6bb62b87b56d8466aa6ff41470b4ce8d342",
       "bytes": 2052
     },
-    "https://lobste.rs/assets/light-high-56dfc432.css": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "cache-control",
-          "value": "public, max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"dme7w0cstixm-1kx-zstd\""
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:28 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "text/css; charset=utf-8"
-        },
-        {
-          "name": "last-modified",
-          "value": "Sun, 25 Oct 2026 20:55:31 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "2049"
-        }
-      ],
-      "sha256": "0abfe5d3ef73c1a952c14f22a0f2759c7b5f9aac45be3c0a91741d92e3b46156",
-      "bytes": 2049
-    },
-    "https://lobste.rs/assets/light-normal-bf538ff1.css": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "cache-control",
-          "value": "public, max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"dme7w0csjhkb-1lh-zstd\""
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:28 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "text/css; charset=utf-8"
-        },
-        {
-          "name": "last-modified",
-          "value": "Sun, 25 Oct 2026 20:55:31 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "2069"
-        }
-      ],
-      "sha256": "f039f64a786ee24a49e3ead7a37e6d0ebb53da582752dfaff52262c9c7021d8f",
-      "bytes": 2069
-    },
-    "https://lobste.rs/avatars/luke8086-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"daoywb2xies9-be\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 17 Jun 2025 17:00:22 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "410"
-        }
-      ],
-      "sha256": "1cd854fbd8bad08e5d7c49d3f86a98d4a63301b7c7b0a22e1f78bac12ba3989d",
-      "bytes": 410
-    },
     "https://lobste.rs/assets/logo-transparent-e4f2f8b4.svg": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "cache-control",
           "value": "public, max-age=31536000"
         },
         {
           "name": "etag",
-          "value": "\"dme7w0crg226-1q8-zstd\""
+          "value": "\"dmk68roy7bie-1q8-zstd\""
         },
         {
           "name": "alt-svc",
@@ -407,7 +333,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
         },
         {
           "name": "content-type",
@@ -415,7 +341,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Sun, 25 Oct 2026 20:55:31 GMT"
+          "value": "Sun, 01 Nov 2026 20:54:08 GMT"
         },
         {
           "name": "vary",
@@ -429,16 +355,12 @@
       "sha256": "8e708373deb4063bf7a4117801261bd1ff80c8a2374cdc2e491ea149ed47020b",
       "bytes": 2240
     },
-    "https://lobste.rs/avatars/kqr-16.png": {
+    "https://lobste.rs/avatars/typesanitizer-16.png": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "etag",
-          "value": "\"dap2pmkd54cs-ap\""
+          "value": "\"dmac4ag5pan8-b7\""
         },
         {
           "name": "accept-ranges",
@@ -450,7 +372,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
         },
         {
           "name": "content-type",
@@ -458,7 +380,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Tue, 17 Jun 2025 19:59:43 GMT"
+          "value": "Wed, 21 Oct 2026 07:23:44 GMT"
         },
         {
           "name": "vary",
@@ -466,22 +388,18 @@
         },
         {
           "name": "content-length",
-          "value": "385"
+          "value": "403"
         }
       ],
-      "sha256": "dddcca590c8532a1d5e12ea2fa8606345eddf834589b566fee9460fdb090b178",
-      "bytes": 385
+      "sha256": "0581e0f029640df9397f627102618594afd0aeb81ded6e8b835d26c461f554cb",
+      "bytes": 403
     },
-    "https://lobste.rs/avatars/icefox-16.png": {
+    "https://lobste.rs/avatars/vinipsmaker-16.png": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "etag",
-          "value": "\"dj70w1rcq2ec-bt\""
+          "value": "\"dly8g4a52ll4-o1\""
         },
         {
           "name": "accept-ranges",
@@ -493,7 +411,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
         },
         {
           "name": "content-type",
@@ -501,7 +419,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Fri, 12 Jun 2026 11:09:51 GMT"
+          "value": "Wed, 07 Oct 2026 01:59:07 GMT"
         },
         {
           "name": "vary",
@@ -509,22 +427,18 @@
         },
         {
           "name": "content-length",
-          "value": "425"
+          "value": "865"
         }
       ],
-      "sha256": "cb5849ea9b3ad1e55bb4313ede6cd3b9a93147959227536013f3b9a6980d87e0",
-      "bytes": 425
+      "sha256": "7302d40b37f8e9ff86ac7fa8b07d96b02ab8f0169bf9b8133eb742e2ca7a3b93",
+      "bytes": 865
     },
-    "https://lobste.rs/avatars/FedericoSchonborn-16.png": {
+    "https://lobste.rs/avatars/cesarandreu-16.png": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "etag",
-          "value": "\"dmer94e5x10m-ey\""
+          "value": "\"dat1j39no5we-nc\""
         },
         {
           "name": "accept-ranges",
@@ -536,7 +450,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
         },
         {
           "name": "content-type",
@@ -544,7 +458,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Mon, 26 Oct 2026 12:05:59 GMT"
+          "value": "Sun, 22 Jun 2025 11:54:50 GMT"
         },
         {
           "name": "vary",
@@ -552,22 +466,18 @@
         },
         {
           "name": "content-length",
-          "value": "538"
+          "value": "840"
         }
       ],
-      "sha256": "fb9226a25a88a741bad4f4300e211ac781320f4ce5965e58f9e5a0da0eea1a3b",
-      "bytes": 538
+      "sha256": "13266160f6bf5afacf23aa3107d4c4ec5076eb0e0584251215af4011416c0789",
+      "bytes": 840
     },
-    "https://lobste.rs/avatars/miro-16.png": {
+    "https://lobste.rs/avatars/jbauer-16.png": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "etag",
-          "value": "\"dlugcmxamq8u-m6\""
+          "value": "\"dlvc0okuep4i-fk\""
         },
         {
           "name": "accept-ranges",
@@ -579,7 +489,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
         },
         {
           "name": "content-type",
@@ -587,7 +497,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Fri, 02 Oct 2026 15:20:03 GMT"
+          "value": "Sat, 03 Oct 2026 16:09:02 GMT"
         },
         {
           "name": "vary",
@@ -595,578 +505,15 @@
         },
         {
           "name": "content-length",
-          "value": "798"
+          "value": "560"
         }
       ],
-      "sha256": "59d7746c3ac650ae67ec1b8e55e11a86ad0f06dde1c5fca3ad63c00a91a657d1",
-      "bytes": 798
-    },
-    "https://lobste.rs/avatars/ninakali-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"daoysgx22uv1-aw\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 17 Jun 2025 16:55:22 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "392"
-        }
-      ],
-      "sha256": "0d545fb0a01fb362b6b51c1f7e41e488cbe6d7906ca71ae1c5c377cfb3d40844",
-      "bytes": 392
-    },
-    "https://lobste.rs/avatars/retr0id-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"dlvblwnrfhl2-je\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Sat, 03 Oct 2026 15:49:44 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "698"
-        }
-      ],
-      "sha256": "5a0200367e333a23f871adc9cf6d1823ed27a0271706eba4d924b4cd075c656c",
-      "bytes": 698
-    },
-    "https://lobste.rs/avatars/snej-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"daoxphoc5850-ny\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 17 Jun 2025 16:04:27 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "862"
-        }
-      ],
-      "sha256": "dd363561629e48bdca05116705d83047e02eabeca9ee76d402105cb0fa21495f",
-      "bytes": 862
-    },
-    "https://lobste.rs/avatars/ndr-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"dd4k4chs1964-am\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Sun, 28 Sep 2025 16:00:12 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "382"
-        }
-      ],
-      "sha256": "29e5427f187b19e16e31db24d1c6cdec7a26a3cecaa9c0219480215de2ada542",
-      "bytes": 382
-    },
-    "https://lobste.rs/avatars/thesnowmancometh-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"daqqii3wonmf-nl\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Thu, 19 Jun 2025 18:51:32 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "849"
-        }
-      ],
-      "sha256": "f2e20c3b8536eb8ff6829d6fc43f519a3069807aa02722240d144be8ca4fce70",
-      "bytes": 849
-    },
-    "https://lobste.rs/avatars/toastal-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"dly8dnol3lcy-ew\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 07 Oct 2026 01:55:54 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "536"
-        }
-      ],
-      "sha256": "c3f50e36ca966dc6b0dace8cfa2b798279c102c63692097026304aa176507b55",
-      "bytes": 536
-    },
-    "https://lobste.rs/avatars/riking-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"daoxooqu9gtb-k9\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 17 Jun 2025 16:03:24 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "729"
-        }
-      ],
-      "sha256": "e95984c08dc576db5ee60aa6b1a79a6039a80ddad4a2fc3d2d24f1069e608fb3",
-      "bytes": 729
-    },
-    "https://lobste.rs/avatars/fanf-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"daoxoqkpq4qg-kr\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 17 Jun 2025 16:03:28 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "747"
-        }
-      ],
-      "sha256": "e8d84e8952d9778c855b3392d0f2dd97314c97866912a24a85e628fb3a7b1d94",
-      "bytes": 747
-    },
-    "https://lobste.rs/avatars/rslabbert-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"dap8cg9pjwuy-ec\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 18 Jun 2025 00:24:37 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "516"
-        }
-      ],
-      "sha256": "3e6b2cb482f12dbab9957d34635ce9b88162b84afa1a6fc22da9c9c29c8ce7db",
-      "bytes": 516
-    },
-    "https://lobste.rs/avatars/binjip978-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"dapm96tmfqde-e3\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 18 Jun 2025 11:18:37 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "507"
-        }
-      ],
-      "sha256": "32ab0c83052234a8b569477405a389ca6d78d9dcc21556fef87b9c93d9335f64",
-      "bytes": 507
-    },
-    "https://lobste.rs/avatars/durrendal-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"dmgve6ej755j-fx\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 28 Oct 2026 23:46:00 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "573"
-        }
-      ],
-      "sha256": "2fd0f94601f41d95a059c0ffdb9fc50168222f0c662ac0c5d795de969a015a7b",
-      "bytes": 573
-    },
-    "https://lobste.rs/avatars/galadran-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"daprvtrpt6fg-a0\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Wed, 18 Jun 2025 15:43:17 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "360"
-        }
-      ],
-      "sha256": "42422411ec104d62a97345b3f7abd4abcdf6cfb6b2e295993b186ca366bbef68",
-      "bytes": 360
-    },
-    "https://lobste.rs/avatars/facundoolano-16.png": {
-      "status": 200,
-      "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
-          "name": "etag",
-          "value": "\"daozh3weh1ak-nz\""
-        },
-        {
-          "name": "accept-ranges",
-          "value": "bytes"
-        },
-        {
-          "name": "alt-svc",
-          "value": "h3=\":443\"; ma=2592000"
-        },
-        {
-          "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
-        },
-        {
-          "name": "content-type",
-          "value": "image/png"
-        },
-        {
-          "name": "last-modified",
-          "value": "Tue, 17 Jun 2025 17:27:32 GMT"
-        },
-        {
-          "name": "vary",
-          "value": "Accept-Encoding"
-        },
-        {
-          "name": "content-length",
-          "value": "863"
-        }
-      ],
-      "sha256": "fd17e8d9945468897f10a818293e05396e562eb3099a71b841f40fac0f8bfbaf",
-      "bytes": 863
+      "sha256": "958ba2b77b89defa7754b4438a14f2a88e380cc51d957799cadfa70d97d77136",
+      "bytes": 560
     },
     "https://lobste.rs/avatars/prole-16.png": {
       "status": 200,
       "headers": [
-        {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
         {
           "name": "etag",
           "value": "\"dmhmfe9cr1id-iv\""
@@ -1181,7 +528,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
         },
         {
           "name": "content-type",
@@ -1203,16 +550,12 @@
       "sha256": "ae5bb83597137817c3dc3e10607323caae82c5823f47bd003605ae9588139c85",
       "bytes": 679
     },
-    "https://lobste.rs/avatars/haze-16.png": {
+    "https://lobste.rs/avatars/aphyr-16.png": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "etag",
-          "value": "\"daro62f1wtik-98\""
+          "value": "\"daoy16b0ll2d-nr\""
         },
         {
           "name": "accept-ranges",
@@ -1224,7 +567,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
         },
         {
           "name": "content-type",
@@ -1232,7 +575,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Fri, 20 Jun 2025 21:13:55 GMT"
+          "value": "Tue, 17 Jun 2025 16:19:43 GMT"
         },
         {
           "name": "vary",
@@ -1240,22 +583,18 @@
         },
         {
           "name": "content-length",
-          "value": "332"
+          "value": "855"
         }
       ],
-      "sha256": "37c4dd6b3cbcbd05d1a0a0fba2def75860e25aa2e6014a5cb0aa978f6b6d35ff",
-      "bytes": 332
+      "sha256": "307ae78381f4deec00e6d9aa73979615858041e8a69cadba560444af1ce6de31",
+      "bytes": 855
     },
-    "https://lobste.rs/avatars/eBPF-16.png": {
+    "https://lobste.rs/avatars/aggsol-16.png": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "etag",
-          "value": "\"daoy55dxs5ed-92\""
+          "value": "\"dmhlb9lzga5t-72\""
         },
         {
           "name": "accept-ranges",
@@ -1267,7 +606,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
         },
         {
           "name": "content-type",
@@ -1275,7 +614,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Tue, 17 Jun 2025 16:24:54 GMT"
+          "value": "Thu, 29 Oct 2026 20:04:41 GMT"
         },
         {
           "name": "vary",
@@ -1283,22 +622,18 @@
         },
         {
           "name": "content-length",
-          "value": "326"
+          "value": "254"
         }
       ],
-      "sha256": "705c8b869f091aff1832b659c90f61f3fecbf4b35efeddfaa26543372b6ae0d0",
-      "bytes": 326
+      "sha256": "dc2387b2c3992e038e191720732d49d105bda3a1e135b3ce8e14dc7a888dc04c",
+      "bytes": 254
     },
-    "https://lobste.rs/avatars/hongminhee-16.png": {
+    "https://lobste.rs/avatars/WilhelmVonWeiner-16.png": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
-        },
-        {
           "name": "etag",
-          "value": "\"dly8i642wyv8-po\""
+          "value": "\"daoxpjfxfymk-7b\""
         },
         {
           "name": "accept-ranges",
@@ -1310,7 +645,7 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:36 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
         },
         {
           "name": "content-type",
@@ -1318,7 +653,7 @@
         },
         {
           "name": "last-modified",
-          "value": "Wed, 07 Oct 2026 02:01:48 GMT"
+          "value": "Tue, 17 Jun 2025 16:04:31 GMT"
         },
         {
           "name": "vary",
@@ -1326,22 +661,22 @@
         },
         {
           "name": "content-length",
-          "value": "924"
+          "value": "263"
         }
       ],
-      "sha256": "90fc843884e794489c11a681c604efab5a29be2a13df1c66b7a872147bfe7558",
-      "bytes": 924
+      "sha256": "fba731656729c74203edec6b9d99d42155fef24140f29e62b5916b461dbc3418",
+      "bytes": 263
     },
-    "https://lobste.rs/favicon.ico": {
+    "https://lobste.rs/avatars/dzwdz-16.png": {
       "status": 200,
       "headers": [
         {
-          "name": "strict-transport-security",
-          "value": "max-age=31536000"
+          "name": "etag",
+          "value": "\"daoxupaizzsh-os\""
         },
         {
-          "name": "etag",
-          "value": "\"dme7v7b8rxts-8la-zstd\""
+          "name": "accept-ranges",
+          "value": "bytes"
         },
         {
           "name": "alt-svc",
@@ -1349,15 +684,15 @@
         },
         {
           "name": "date",
-          "value": "Thu, 29 Oct 2026 22:44:37 GMT"
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
         },
         {
           "name": "content-type",
-          "value": "image/vnd.microsoft.icon"
+          "value": "image/png"
         },
         {
           "name": "last-modified",
-          "value": "Sun, 25 Oct 2026 20:54:28 GMT"
+          "value": "Tue, 17 Jun 2025 16:11:15 GMT"
         },
         {
           "name": "vary",
@@ -1365,14 +700,599 @@
         },
         {
           "name": "content-length",
-          "value": "11134"
+          "value": "892"
         }
       ],
-      "sha256": "2265dc38cbab99bec7cd7c193acbc31ca2d46ac7085c6ef8427509f2a322be09",
-      "bytes": 11134
+      "sha256": "a2f4493b1edf18033961d85164ca30623e0fee6982660df6a9d25c18b2c7b663",
+      "bytes": 892
+    },
+    "https://lobste.rs/avatars/eduard-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"daoy5veaqfao-o2\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 17 Jun 2025 16:25:51 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "866"
+        }
+      ],
+      "sha256": "267bb2ea72b4cc8b8f008ac14ffeb472b32f9c07cc1b2c9a39546bfe8109f9a1",
+      "bytes": 866
+    },
+    "https://lobste.rs/avatars/robalex-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"davr12mvxg8y-e8\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 25 Jun 2025 16:19:07 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "512"
+        }
+      ],
+      "sha256": "34c45cbf7a27909ce67acb5d417c42e2d8e0ebea60bc678b9b2d127c6a699004",
+      "bytes": 512
+    },
+    "https://lobste.rs/avatars/rcalixte-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"dlvbzz3ogt1x-ay\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 03 Oct 2026 16:08:07 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "394"
+        }
+      ],
+      "sha256": "9cc6501acdefd7e34533e5624f118a4838e6578d3ab58427a011437f4f00feec",
+      "bytes": 394
+    },
+    "https://lobste.rs/avatars/telemachus-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"daoyu9shdcvl-nw\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 17 Jun 2025 16:57:43 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "860"
+        }
+      ],
+      "sha256": "35cc76d4926c73b2a63daadb426399663ba37aec059839e3fbb5ab958ee6fe2f",
+      "bytes": 860
+    },
+    "https://lobste.rs/avatars/veqq-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"dlvbmnuhxhuo-ga\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 03 Oct 2026 15:50:43 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "586"
+        }
+      ],
+      "sha256": "de2a9fb23a805aa8a67c2a5e8a47d73ef52436658b3ed7c37b459a07d9469a77",
+      "bytes": 586
+    },
+    "https://lobste.rs/avatars/JordiGH-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"daoxyx84ar7s-oe\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 17 Jun 2025 16:16:46 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "878"
+        }
+      ],
+      "sha256": "bdb65f490e0031aee3a423a0a9d84413fc11b680029e1aa517a205a2973f1d78",
+      "bytes": 878
+    },
+    "https://lobste.rs/avatars/bediger4000-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"dkjwuxkdmzm5-ai\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 08 Aug 2026 22:20:57 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "378"
+        }
+      ],
+      "sha256": "4e76f4f2099d808c9a668e63f9dc7aec8c9575f190003c9bbaaf1d439c61ee3b",
+      "bytes": 378
+    },
+    "https://lobste.rs/avatars/jaypatelani-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"dlvc2wkphcll-oh\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 03 Oct 2026 16:11:56 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "881"
+        }
+      ],
+      "sha256": "93451744219a5832b5819bb26030a6531e350032136af1581766f7786014d7d0",
+      "bytes": 881
+    },
+    "https://lobste.rs/avatars/raymii-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"dly8e8rhdg18-nm\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 01:56:40 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "850"
+        }
+      ],
+      "sha256": "6d04cec3e1e17c4edd1e2ba2a82de7869a60150d238a653196c12b1116c45e79",
+      "bytes": 850
+    },
+    "https://lobste.rs/avatars/EvanHahn-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"dlvc3p2rx9t7-kh\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 03 Oct 2026 16:12:58 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "737"
+        }
+      ],
+      "sha256": "32acc55e4902f85b77308b4353ece1ef5248c0bb7d9439f60a6c891f70dc6a99",
+      "bytes": 737
+    },
+    "https://lobste.rs/avatars/ehamberg-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"daozblq5yw42-fk\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 17 Jun 2025 17:20:21 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "560"
+        }
+      ],
+      "sha256": "401af84cf594ab3bd658b5e422c3303c7214d9848431b503a7d038a01a87d730",
+      "bytes": 560
+    },
+    "https://lobste.rs/avatars/nrposner-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"dly89ttd0ife-i4\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Wed, 07 Oct 2026 01:50:54 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "652"
+        }
+      ],
+      "sha256": "46508dee3f87ec283a2479889fdeeac5abdee0a4cad690d340dcf16b2e664e91",
+      "bytes": 652
+    },
+    "https://lobste.rs/avatars/zk-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"daoxst24dt50-an\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Tue, 17 Jun 2025 16:08:47 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "383"
+        }
+      ],
+      "sha256": "b63198c666ce33b9a022788feee880a364548eab3b34587fa6bb9d0d4ccf7bcd",
+      "bytes": 383
+    },
+    "https://lobste.rs/avatars/msangi-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"das36oupmp6y-dw\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 21 Jun 2025 09:00:00 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "500"
+        }
+      ],
+      "sha256": "5ab8d5aabdbb3063699cf5614e29c6b8ba2af61c54e3420b57c0b7ed81acaa9a",
+      "bytes": 500
+    },
+    "https://lobste.rs/avatars/abhin4v-16.png": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "etag",
+          "value": "\"dlvbqirmjbgj-n6\""
+        },
+        {
+          "name": "accept-ranges",
+          "value": "bytes"
+        },
+        {
+          "name": "alt-svc",
+          "value": "h3=\":443\"; ma=2592000"
+        },
+        {
+          "name": "date",
+          "value": "Mon, 02 Nov 2026 06:17:46 GMT"
+        },
+        {
+          "name": "content-type",
+          "value": "image/png"
+        },
+        {
+          "name": "last-modified",
+          "value": "Sat, 03 Oct 2026 15:55:46 GMT"
+        },
+        {
+          "name": "vary",
+          "value": "Accept-Encoding"
+        },
+        {
+          "name": "content-length",
+          "value": "834"
+        }
+      ],
+      "sha256": "63f551ba78cbf0e60251c8f75c51716458ab8881df4fd88b46a2416a39fc895d",
+      "bytes": 834
     }
   },
   "workload": "Frozen guest DOM; scripts removed; original resource bytes",
-  "live_png_sha256": "978c03d8e941ccaad2a4f6ae208afe0bc3c0b508474acb665efa35e765ef4b86",
-  "capture_report_sha256": "2d7456eeef2e2ab4ea9eb5af080277ae18f23cd82400de60f05baa5c8591c2c4"
+  "live_png_sha256": "8d6618c696e5c61a51f285ec00fcc801d5c21a4806c1acb50ae1d31c41c398c0",
+  "capture_report_sha256": "c1014f58548e0490610cc90c2f0bedcc9f4d54764d1b29a4e07462daf1a419a4"
 }
