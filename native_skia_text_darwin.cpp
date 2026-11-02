@@ -152,6 +152,9 @@ VoxRasterBufferPool s_sparse_raster_pool;
 
 struct IsolatedInputRecording {
     SkPictureRecorder recorder;
+    // Primitive recording owns these even when no shared root exists.
+    float canvas_height = 0;
+    float scale = 1;
     SkRect bounds = SkRect::MakeEmpty();
     bool unsupported = false;
     bool defer_leaf_raster = false;
@@ -2542,6 +2545,8 @@ extern "C" int ladybird_v_skia_begin_isolated_input(CGContextRef context,
     if (!context || !s_chromium_painting || !shared_picture_draw()
         || !(width > 0 && height > 0) || width > 16384 || height > 16384) return 0;
     auto recording = std::make_unique<IsolatedInputRecording>();
+    recording->canvas_height = height;
+    recording->scale = raster_scale_for_context(context);
     recording->recorder.beginRecording(SkRect::MakeWH(width, height));
     s_isolated_input_recordings[context] = std::move(recording);
     return 1;
