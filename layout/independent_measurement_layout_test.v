@@ -58,9 +58,6 @@ fn independent_probe_geometry(state &LayoutState, root &Node) []string {
 fn independent_probe_compare(mut source LayoutState, root &Node, width int, mode LayoutMode,
 	available_height AvailableSize) bool {
 	styled := root.as_node_with_style() or { panic('missing style') }
-	node_key := u64(voidptr(root))
-	before := source.measurement_chunk_pool_.independent_measurements_[node_key] or { []&IndependentMeasurementLayout{} }
-	previous := if before.len == 0 { unsafe { nil } } else { voidptr(before.last()) }
 	mut probe := source.new_measurement_for_subtree(styled)
 	populate_intrinsic_containing_block_chain(mut probe, mut source, root)
 	mut used := probe.get_mutable(styled)
@@ -68,13 +65,23 @@ fn independent_probe_compare(mut source LayoutState, root &Node, width int, mode
 	used.set_has_definite_width(true)
 	used.set_indefinite_content_height()
 	space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(width)), available_height)
+	cached := completed_context_for_measurement(probe, root, used, mode, space)
 	actual := run_retaining_independent_formatting_context(mut probe, root, mut used, mode, space)
 	mut retained := platform.enter_retained_allocations()
 	geometry := independent_probe_geometry(probe, root)
 	retained.finish()
-	after := source.measurement_chunk_pool_.independent_measurements_[node_key] or { []&IndependentMeasurementLayout{} }
-	reused := previous != unsafe { nil } && after.len == before.len && voidptr(after.last()) == previous
-	// Mutating a consumer must detach the cache's shared fragment buffers.
+	mut reused := false
+	if entry := cached {
+		if used.line_boxes.len > 0 { reused = used.line_boxes.data == entry.lines.data }
+		for child in entry.values {
+			if child.values.line_boxes.len == 0 { continue }
+			if values := probe.try_get(child.node) {
+				reused = reused || values.line_boxes.data == child.values.line_boxes.data
+			}
+		}
+	}
+	assert reused == (cached != none && !disable_independent_measurement_reuse)
+	// A writable consumer must detach the normal producer's retained fragments.
 	for child in root.children() {
 		if child_style := child.as_node_with_style() {
 			if child_used := probe.try_get(child_style) {
@@ -100,7 +107,19 @@ fn independent_probe_compare(mut source LayoutState, root &Node, width int, mode
 	return reused
 }
 
-fn test_independent_measurement_reuses_flow_flex_and_grid_geometry_after_scratch_retires() {
+fn independent_probe_complete(mut source LayoutState, root &Node, width int) {
+	styled := root.as_node_with_style() or { panic('missing style') }
+	mut used := source.get_mutable(styled)
+	used.set_content_width(CSSPixels.new(width))
+	used.set_has_definite_width(true)
+	used.set_content_height(CSSPixels.new(0))
+	used.set_has_definite_height(false)
+	used.clear_line_boxes()
+	space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(width)), AvailableSize.make_indefinite())
+	_ = run_retaining_independent_formatting_context(mut source, root, mut used, .normal, space)
+}
+
+fn test_independent_measurement_reuses_completed_flow_flex_and_grid_after_probe_scratch_retires() {
 	for style in ['display:flow-root', 'display:flex;gap:8px;align-items:stretch',
 		'display:grid;grid-template-columns:1fr 2fr;gap:7px'] {
 		mut document, layout, root := independent_probe_fixture(style,
@@ -110,24 +129,30 @@ fn test_independent_measurement_reuses_flow_flex_and_grid_geometry_after_scratch
 		mut source := layout.state
 		source.enable_measurement_chunk_pool()
 		source.measurement_chunk_pool_.scratch_enabled_ = true
+		independent_probe_complete(mut source, root, 300)
+		for _ in 0 .. 4 {
+			assert independent_probe_compare(mut source, root, 300, .normal, AvailableSize.make_indefinite()) == !disable_independent_measurement_reuse
+		}
+		// A dirty bit from this producing pass does not mean its inputs changed.
+		mut mutable_root := unsafe { &Node(root) }
+		mutable_root.set_needs_layout_update(true)
+		assert independent_probe_compare(mut source, root, 300, .normal, AvailableSize.make_indefinite()) == !disable_independent_measurement_reuse
 		for mode in [LayoutMode.normal, .intrinsic_sizing] {
 			for width in [160, 240] {
 				assert !independent_probe_compare(mut source, root, width, mode, AvailableSize.make_indefinite())
-				for _ in 0 .. 3 {
-					assert independent_probe_compare(mut source, root, width, mode, AvailableSize.make_indefinite()) == !disable_independent_measurement_reuse
-				}
 			}
 		}
+		assert !independent_probe_compare(mut source, root, 300, .normal, AvailableSize.make_definite(CSSPixels.new(400)))
 		pool := source.measurement_chunk_pool_
 		source.release_measurement_chunk_pool()
-		assert pool.closed && pool.independent_measurements_.len == 0
+		assert pool.closed && pool.source_state_ == unsafe { nil }
 		owner.finish()
 		document.finalize()
 		document.release_native_storage()
 	}
 }
 
-fn test_independent_measurement_rechecks_text_tree_style_fonts_and_containing_height() {
+fn test_independent_measurement_rechecks_text_style_tree_and_containing_height() {
 	mut document, layout, root := independent_probe_fixture('display:grid;grid-template-columns:1fr',
 		'<p id="text">A paragraph with several words</p><div style="height:20%">percentage child</div>')
 	defer { document.finalize() }
@@ -135,7 +160,7 @@ fn test_independent_measurement_rechecks_text_tree_style_fonts_and_containing_he
 	source.enable_measurement_chunk_pool()
 	defer { source.release_measurement_chunk_pool() }
 	space := AvailableSize.make_indefinite()
-	assert !independent_probe_compare(mut source, root, 180, .normal, space)
+	independent_probe_complete(mut source, root, 180)
 	assert independent_probe_compare(mut source, root, 180, .normal, space) == !disable_independent_measurement_reuse
 	text_node := root.children()[0].children()[0].as_text_node()?
 	mut data := text_node.dom_node()?.as_character_data()?
@@ -143,46 +168,86 @@ fn test_independent_measurement_rechecks_text_tree_style_fonts_and_containing_he
 	mut text := unsafe { &TextNode(text_node) }
 	text.invalidate_text_for_rendering()
 	assert !independent_probe_compare(mut source, root, 180, .normal, space)
+	independent_probe_complete(mut source, root, 180)
+	assert independent_probe_compare(mut source, root, 180, .normal, space) == !disable_independent_measurement_reuse
 	mut element := document.create_element('section')!
 	element.set_attribute_value('style', 'display:grid;grid-template-columns:1fr;row-gap:13px;font:16px/20px SerenitySans')
 	mut styled := root.as_node_with_style()?
 	styled.apply_style(css.css_style_computer_for(document).compute_style(dom.AbstractElement.new(element, none)))
 	assert !independent_probe_compare(mut source, root, 180, .normal, space)
-	mut font_computer := css.css_style_computer_for(document).font_computer()
-	font_computer.did_load_font('UnrelatedProbeFont')
-	assert !independent_probe_compare(mut source, root, 180, .normal, space)
-	document.bump_style_environment_version()
-	assert !independent_probe_compare(mut source, root, 180, .normal, space)
+	independent_probe_complete(mut source, root, 180)
+	assert independent_probe_compare(mut source, root, 180, .normal, space) == !disable_independent_measurement_reuse
 	containing := root.containing_block()?
 	mut containing_values := source.get_mutable(unsafe { &NodeWithStyle(containing) })
 	containing_values.set_content_height(CSSPixels.new(440))
 	assert !independent_probe_compare(mut source, root, 180, .normal, space)
+	independent_probe_complete(mut source, root, 180)
+	assert independent_probe_compare(mut source, root, 180, .normal, space) == !disable_independent_measurement_reuse
+	document.bump_style_environment_version()
+	assert !independent_probe_compare(mut source, root, 180, .normal, space)
+	independent_probe_complete(mut source, root, 180)
+	assert independent_probe_compare(mut source, root, 180, .normal, space) == !disable_independent_measurement_reuse
 	mut mutable_root := unsafe { &Node(root) }
 	extra := BlockContainer.new(document, none, root.computed_values())
 	mutable_root.append_child(unsafe { &Node(extra) })
 	assign_layout_indexes(layout.root)
 	recompute_containing_blocks(layout.root)
 	assert !independent_probe_compare(mut source, root, 180, .normal, space)
-	for width in [70, 90, 110, 130, 150, 170] {
-		_ = independent_probe_compare(mut source, root, width, .normal, space)
-	}
-	entries := source.measurement_chunk_pool_.independent_measurements_[u64(voidptr(root))] or { []&IndependentMeasurementLayout{} }
-	assert entries.len <= 4
+	independent_probe_complete(mut source, root, 180)
+	assert independent_probe_compare(mut source, root, 180, .normal, space) == !disable_independent_measurement_reuse
 }
 
-fn test_independent_measurement_excludes_external_and_specialized_dependencies() {
-	for contents in ['<div style="float:left;width:40px;height:60px"></div><p>float</p>',
+fn test_independent_measurement_excludes_uncompleted_and_specialized_contexts() {
+	for contents in [
+		'<div style="float:left;width:40px;height:60px"></div><p>float</p>',
 		'<div style="position:absolute;left:10%;top:20%">positioned</div>',
-		'<ol><li>marker</li></ol>', '<p style="max-lines:1;continue:discard">clamped text</p>',
+		'<ol><li>marker</li></ol>',
+		'<p style="max-lines:1;continue:discard">clamped text</p>',
 		'<div style="display:grid;grid-template-columns:subgrid">subgrid</div>',
-		'<div style="columns:2">column text</div>'] {
+		'<div style="columns:2">column text</div>',
+	] {
 		mut document, layout, root := independent_probe_fixture('display:flow-root', contents)
 		defer { document.finalize() }
 		mut source := layout.state
 		source.enable_measurement_chunk_pool()
-		for _ in 0 .. 2 { assert !independent_probe_compare(mut source, root, 180, .normal, AvailableSize.make_indefinite()) }
-		entries := source.measurement_chunk_pool_.independent_measurements_[u64(voidptr(root))] or { []&IndependentMeasurementLayout{} }
-		assert entries.len == 0
+		for _ in 0 .. 2 {
+			assert !independent_probe_compare(mut source, root, 180, .normal, AvailableSize.make_indefinite())
+		}
 		source.release_measurement_chunk_pool()
+	}
+	mut document, layout, root := independent_probe_fixture('display:flow-root', '<p>not completed</p>')
+	defer { document.finalize() }
+	mut source := layout.state
+	source.block_layouts_ = map[u64]&RetainedBlockLayout{}
+	source.enable_measurement_chunk_pool()
+	assert !independent_probe_compare(mut source, root, 300, .normal, AvailableSize.make_indefinite())
+	assert !independent_probe_compare(mut source, root, 300, .normal, AvailableSize.make_indefinite())
+	source.release_measurement_chunk_pool()
+}
+
+fn test_independent_measurement_rechecks_selected_and_unrelated_font_completion() {
+	$if macos {
+		mut document, layout, root := independent_probe_fixture('display:flow-root',
+			'<p style="font-family:LateIndependentProbe,monospace;font-size:18px;line-height:normal">Many words must wrap using the selected face and its current glyph advances.</p>')
+		defer { document.finalize() }
+		mut source := layout.state
+		source.enable_measurement_chunk_pool()
+		defer { source.release_measurement_chunk_pool() }
+		space := AvailableSize.make_indefinite()
+		independent_probe_complete(mut source, root, 180)
+		assert independent_probe_compare(mut source, root, 180, .normal, space) == !disable_independent_measurement_reuse
+		mut face := css.FontFaceObject.construct_impl('LateIndependentProbe',
+			css.FontFaceSource.from_string("url('file:///System/Library/Fonts/Supplemental/Arial.ttf')"), css.FontFaceDescriptors{})
+		mut computer := css.css_style_computer_for(document)
+		mut fonts := computer.font_face_set_
+		fonts.add(face)!
+		face.load()
+		assert face.status() == .loaded
+		assert !independent_probe_compare(mut source, root, 180, .normal, space)
+		independent_probe_complete(mut source, root, 180)
+		assert independent_probe_compare(mut source, root, 180, .normal, space) == !disable_independent_measurement_reuse
+		mut font_computer := computer.font_computer()
+		font_computer.did_load_font('UnrelatedIndependentProbe')
+		assert independent_probe_compare(mut source, root, 180, .normal, space) == !disable_independent_measurement_reuse
 	}
 }
