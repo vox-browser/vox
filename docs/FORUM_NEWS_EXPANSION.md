@@ -296,6 +296,80 @@ also changes its photo output, failing source fidelity at 79,032 pixels in
 Its layer data is not pixel-acceptance evidence. No reference, threshold or
 registered site archive was changed to accept either experiment.
 
+## Bookmark catalog and Engadget continuation (2026-11-03)
+
+Commit `74ee15370` adds all 15 comparison sites to the bookmark-bar catalog,
+startup migration and restricted-navigation routing. Wikipedia, Old Reddit's
+programming page and vlang.io remain available; Hacker News is deduplicated.
+The migration was also applied to the existing local profile: 14 missing entries
+were added, bringing its total from six to 20. All 15 comparison URLs occur once;
+existing entries, their order and bar visibility were preserved. Its saved flag
+prevents a later startup from restoring bookmarks the user removes.
+[The profile receipt](../Build/forum-news-bookmarks-20261103/profile-update.json)
+records counts and hashes without publishing personal bookmark contents.
+
+Seven bookmark/catalog test files pass with GC disabled. Default-GC coverage
+combines six passing files from the first run with a successful uncached rebuild
+of the remaining catalog test; its original cached-runtime loader failure is
+retained. The four native UI2 routing/bar checks also pass.
+[Module and UI receipts](../Build/forum-news-bookmarks-20261103/) retain the
+checks. Commit `4b623394e` lists all 15 sites, their URLs and their actual parity
+status in [OPTIMIZED_SITES.md](../OPTIMIZED_SITES.md); this does not award CPU
+optimization acceptance to an incomplete rendering target.
+
+Engadget is the next active site. Its
+[fresh cold baseline](../Build/engadget-next-20261103/baseline/summary.json)
+has **1,980 native differences and 90,850 saved-source/frozen differences**.
+The later [production checkpoint](../Build/engadget-next-20261103/production-site/summary.json)
+has **1,594 native differences**, with the same source-fidelity failure. Hacker
+News remains strict-zero in both batches. The later batch pins executable
+`f8618e0dd1854b53833106b154f9354dab0646d2e30069302a1c83163da33b60`
+and its native libraries. These shared builds contain other sessions' changes;
+the whole-page delta is not an isolated attribution to this fix.
+
+The reduced category-label fixture covers eight rounded labels: missing left
+and right borders, integer and fractional authored positions, 30px and 46px
+heights, normalized semicircles and a smaller-radius control. Two independent
+full-uBO acquisitions agree exactly with their frozen Brave replays:
+[first reference](../Build/engadget-next-20261103/capsule-reference/summary.json),
+[second reference](../Build/engadget-next-20261103/capsule-reference2/summary.json).
+The old native browser differs at **573 pixels**. Enabling native capsule replay
+reduces that to 100. Brave's
+[recorded painting commands](../Build/engadget-next-20261103/capsule-layers/layers.json)
+then identify the ordered soft missing-edge clips and hard corner miters that a
+single union fill loses. That diagnostic retains exact source fidelity.
+
+Commit `6978fea47` preserves this side sequence for three equal opaque
+sides around a symmetric rounded end. It also retains normalized complex-border
+colors: dividing the original byte channels by 255 resolves two remaining edge
+pixels that SkColor's reciprocal multiplication rounds differently. Other border
+shapes keep their existing paths, and portable SVG fallbacks remain available.
+The optimized and sanitized native replays are **pixel-exact on cold and repeated
+draws**, and the existing partial-border native control remains exact:
+[optimized](../Build/engadget-next-20261103/native-final-runtime.log),
+[sanitized](../Build/engadget-next-20261103/native-sanitized-runtime.log),
+[existing control](../Build/engadget-next-20261103/native-controls-runtime.log).
+Commit `036a60820` separately corrects that older probe's RTTI compiler flag to
+match the shared Skia library; its original linker failure is retained.
+
+All seven selected V cases in three files pass with default GC and GC disabled:
+[default](../Build/engadget-next-20261103/layout-final-default2.log),
+[GC disabled](../Build/engadget-next-20261103/layout-final-none.log).
+The first concurrent compiler batch exceeded the aggregate 12 GiB guard and was
+terminated; both sequential reruns completed below 7.1 GB sampled RSS. That
+[failed attempt](../Build/engadget-next-20261103/layout-final-default.guard.json)
+is retained. The existing partial-border control and fractional-color cases
+keep their assertions unchanged.
+
+The browser suite now registers 101 tests. This is not a new whole-suite pass.
+The intermediate production browser has the native side-order change but lacks
+the V color-retention change: its new fixture still fails at two one-byte pixels,
+while the existing partial-border and fractional-background controls pass.
+[The retained intermediate browser check](../Build/engadget-next-20261103/browser-focused.log)
+keeps that failure. Full production validation of the combined fix is pending.
+Engadget remains incomplete while its full-page native and source-fidelity gaps
+remain nonzero. No site archive, reference tolerance or acceptance gate changed.
+
 ## Run
 
 ```sh
