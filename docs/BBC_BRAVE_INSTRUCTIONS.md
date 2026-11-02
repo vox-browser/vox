@@ -3085,3 +3085,47 @@ history remains 54 cohorts/1,313 cohort attempts, and BBC is not added to the
 catalog. The local [evidence](benchmark-results/bbc-intrinsic-context-2026-11-02.json)
 links all raw diagnostics, native checks, source changes, failed preparations
 and production receipts under `Build/bbc-intrinsic-context-20261102/`.
+
+## Completed-context replay rejected after cohort 55
+
+The completed production executable
+`0bb14e2f940d1ee83a4a57f48179ab40fb3ecf71aa8b7331f199676792ab6974`
+does execute completed-context replay after navigation starts and before PNG
+encoding completes. The disabled control does not. Separate diagnostic launches
+pass full content, unchanged pixels, native exit and exclusive ownership;
+JavaScriptCore creates one context and records 1,980/1,986 evaluations. A native
+sample is retained separately and supplies no unprofiled instruction credit.
+
+Cohort 55 retains all seven alternating control/Vox/Brave triples, **21
+attempts**. All 21 native exits, independently checked complete content audits
+and original pixel references pass. One Vox trial fails capture ownership:
+its native endpoint counter remains unselected, and the cohort is invalid.
+All 1,638 pinned input files are independently rechecked before changing tools;
+none changed. The memory guard adopts the browser roots without errors.
+
+The raw seven-Vox median, including the unselected ownership failure solely as
+a diagnostic, is **30,794,848,249 instructions**, against control
+**30,548,193,331**: a **0.8074% regression**, with three paired improvements and
+four regressions. The six selected Vox values have median 30,801,990,584.5;
+this partial statistic cannot establish acceptance. Brave's seven lower-bound
+median is **14,846,110,043**. Even the partial conservative gate fails:
+`315396236710 > 133041026574`. Every raw value, failure and audit remains in
+`matching-cohort55-audit.json` and `matching-matched-cohort/` under the same raw
+evidence directory. No samples are retried or removed to pass.
+
+The regressing engine experiment is removed in `75d4b6ec8`; both modified
+common layout files match their pre-experiment versions byte-for-byte. The
+22 retained focused cases pass in default, no-GC and preallocated modes:
+**66 executions and six zero-exit compile/runtime jobs**. Its obsolete BBC
+control is removed separately in `41e8675bf`; all **211 browser-instruction
+tool tests pass** under the focused memory guard. These checks do not validate
+a newer production executable. The shared build receipt identifies when the
+restored source becomes available for native checks.
+
+The history is now **55 cohorts/1,334 cohort attempts**. This experiment earns
+no accepted instruction saving or broad-check reset. The target remains open
+and BBC remains absent from `OPTIMIZED_SITES.md`. Earlier broad failures,
+frozen replay scope and rendering/script limitations still apply. The local
+[evidence](benchmark-results/bbc-intrinsic-context-2026-11-02.json) links the
+phase witness, native sample, raw cohort, independent audits and restoration
+receipts; generated evidence remains ignored.
