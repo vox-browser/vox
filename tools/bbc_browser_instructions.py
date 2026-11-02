@@ -419,16 +419,12 @@ def main():
     args.post_readiness_expression = '''Promise.all([...document.images].filter(i=>{
       const r=i.getBoundingClientRect();return r.width>0&&r.height>0&&r.x<1024&&r.y<768
         &&r.right>0&&r.bottom>0}).map(i=>i.decode())).then(()=>true)'''
-    apps = {}
     sources = [('vox', args.vox_app), ('brave', args.brave_app)]
     if args.control_vox_app:
         sources.append(('control', args.control_vox_app))
-    for engine, source in sources:
-        target = args.output / engine / source.name
-        target.parent.mkdir()
-        shutil.copytree(source, target, symlinks=True, copy_function=browser.clone_file)
-        apps[engine] = target
+    apps = browser.reference_browser_apps(args.output, sources)
     paths = {path for app in apps.values() for path in app.rglob('*') if path.is_file()}
+    paths.add(args.output / 'browser-apps.json')
     paths.update(browser.native_dependencies(apps['vox'] / 'Contents/MacOS/Vox'))
     paths.update(path for path in args.archive.rglob('*') if path.is_file())
     paths.update(path for path in browser.COALITION_SERVICES if path.is_file())

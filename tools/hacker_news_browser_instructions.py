@@ -84,6 +84,27 @@ def write_json(path, value):
     Path(path).write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
 
 
+def reference_browser_apps(output, sources):
+    """Reference existing bundles; private profiles/caches remain per trial.
+
+    Per-trial input fingerprints reject a rebuild or update during a cohort.
+    Keeping links rather than copies also preserves the familiar result layout.
+    """
+    apps = {}
+    for engine, source in sources:
+        source = Path(source).resolve(strict=True)
+        require(source.is_dir() and (source / 'Contents/MacOS').is_dir(),
+                'Expected a browser application: ' + str(source))
+        link = Path(output) / engine / source.name
+        link.parent.mkdir()
+        link.symlink_to(source, target_is_directory=True)
+        apps[engine] = source
+    write_json(Path(output) / 'browser-apps.json', dict(
+        policy='Existing bundles; no per-cohort copies; changed hashes invalidate the run',
+        apps={engine: str(app) for engine, app in apps.items()}))
+    return apps
+
+
 def test_display():
     """Use native display coordinates, placing Brave away from the pointer."""
     class Point(ctypes.Structure):
@@ -728,13 +749,9 @@ def main():
     args.audit_config = args.output / 'audit-config.json'
     write_json(args.audit_config, dict(selectors=[dict(name=args.row_name, selector=args.row_selector,
                limit=len(args.expected_comments), attributes=['id'], layout_depth=0)]))
-    apps = {}
-    for engine, source in [('vox', args.vox_app), ('brave', args.brave_app)]:
-        app = args.output / engine / source.name
-        app.parent.mkdir()
-        shutil.copytree(source.resolve(), app, copy_function=clone_file, symlinks=True)
-        apps[engine] = app
-    paths = {args.document, args.expected, args.diff_tool, args.audit_config}
+    apps = reference_browser_apps(args.output, [('vox', args.vox_app), ('brave', args.brave_app)])
+    paths = {args.document, args.expected, args.diff_tool, args.audit_config,
+             args.output / 'browser-apps.json'}
     paths.update(path for path in COALITION_SERVICES if path.is_file())
     paths.update(Path(__file__).resolve().parent / name for name in (
         'hacker_news_browser_instructions.py', 'check_pixel_equality.py',

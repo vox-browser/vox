@@ -323,17 +323,13 @@ def main():
     # Match the established full-uBO reference. Calling decode() explicitly
     # changes Chromium's image decode sizing and is a different raster workload.
     args.post_readiness_expression = 'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>r(true))))'
-    apps = {}
     sources = [('vox', args.vox_app), ('brave', args.brave_app)]
     has_control = bool(args.control_vox_app or control_environment(args))
     if has_control:
         sources.append(('control', args.control_vox_app or args.vox_app))
-    for engine, source in sources:
-        target = args.output / engine / source.name
-        target.parent.mkdir()
-        shutil.copytree(source, target, symlinks=True, copy_function=browser.clone_file)
-        apps[engine] = target
+    apps = browser.reference_browser_apps(args.output, sources)
     paths = {p for app in apps.values() for p in app.rglob('*') if p.is_file()}
+    paths.add(args.output / 'browser-apps.json')
     paths.update(browser.native_dependencies(apps['vox'] / 'Contents/MacOS/Vox'))
     for folder in (args.archive, args.extension, args.brave_profile_template, args.vox_cache_template):
         paths.update(p for p in folder.rglob('*') if p.is_file() and not p.name.startswith('Singleton'))
