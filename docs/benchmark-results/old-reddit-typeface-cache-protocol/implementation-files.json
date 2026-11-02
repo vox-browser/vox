@@ -1,0 +1,6 @@
+{
+  "skia/shadow_raster.cpp": "9ee92dad543f16d99ce9a2102465dfe4f39bd44439f4c0f822c9632aa78ba16b",
+  "skia/shadow_typeface_cache.h": "5efc4608ff93953e2574ecb27de7ec742f6325d9b631a0e7814d609bc121a27b",
+  "tools/native_shadow_typeface_cache_test.cpp": "7a00dc6fdbd21e303bd407eadb28dff658ad6035277820e46219ab59268e8510",
+  "tools/test_shadow_typeface_cache.py": "227cc6e6e911196cea0718cc41c7467041c5d125f05f09ed4d934b9c9a6917e5"
+}

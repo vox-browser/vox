@@ -1,0 +1,41 @@
+{
+  "generated_c": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/skia_focused-lchh4x9f/boehm/vtmp/font_tests_boehm.600254.66009782864055.140096691240208.tmp.c",
+  "sha256": "70b2df05edf8af0a2b294acfd44a4b8b460e010e54619759dbdd7eb6c03b1015",
+  "registered_test_count": 8,
+  "registered_tests": [
+    {
+      "file": "skia/shadow_test.v",
+      "function": "test_outer_shadow_blurs_elliptical_corners_and_excludes_content"
+    },
+    {
+      "file": "skia/shadow_test.v",
+      "function": "test_inner_shadow_uses_difference_path_and_rounded_content_clip"
+    },
+    {
+      "file": "skia/shadow_test.v",
+      "function": "test_text_shadow_uses_retained_glyph_positions_flat_tint_and_single_alpha"
+    },
+    {
+      "file": "skia/shadow_test.v",
+      "function": "test_shadow_retains_visual_context_path_clip_before_command_transform"
+    },
+    {
+      "file": "skia/font_typeface_test.v",
+      "function": "test_source_skia_font_decoder_rejects_magic_without_tables"
+    },
+    {
+      "file": "skia/font_typeface_test.v",
+      "function": "test_source_skia_font_decoder_loads_real_truetype_data"
+    },
+    {
+      "file": "skia/bitmap_export_test.v",
+      "function": "test_bitmap_export_uses_source_skia_premultiplication_flip_and_nearest_scaling"
+    },
+    {
+      "file": "skia/bitmap_export_test.v",
+      "function": "test_bitmap_export_preserves_native_alpha_layout_and_source_unsupported_format"
+    }
+  ],
+  "known_linux_early_return_count": 1,
+  "verification": "Selected tests have explicit calls in the unchanged generated C main; zero runtime exit verifies the complete harness."
+}

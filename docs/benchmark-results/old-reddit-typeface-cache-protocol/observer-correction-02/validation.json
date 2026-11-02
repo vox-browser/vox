@@ -1,0 +1,46 @@
+{
+  "status": "passed",
+  "browser_processes_started": 0,
+  "candidate_observations": 0,
+  "synthetic_instruction_counts": false,
+  "original_diagnostic_and_failed_cohort_evidence_unchanged": true,
+  "raw_diagnostic_counts": {
+    "first_callgrind": 12,
+    "unmodified_cachegrind_control": 6
+  },
+  "only_different_raw_audit_field": "javascript_diagnostics",
+  "all_other_raw_fields_exact": true,
+  "normalized_documents_exact": true,
+  "raw_inputs_not_mutated": true,
+  "canonical_content_sha256": "6a74fd4daa5161d431788e2c54e45e6a451478702bf8c0554765025a2a5b866c",
+  "reference_pixel_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+  "strictly_reparsed_control": {
+    "report": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json",
+    "profile": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.cachegrind.576695",
+    "instructions": 6842705460,
+    "counter_backend": "cachegrind",
+    "instruction_metric": "cachegrind_guest_instruction_references",
+    "strict_parser": "/workspace/scratch/549231c7ae31/vox2/tools/linux_instruction_counts.py",
+    "strict_reparse_passed": true,
+    "original_cohort_status": "invalid",
+    "candidate_observations": 0,
+    "raw_native_renderer_diagnostic_count": 6,
+    "raw_audit_sha256": "f14e7b397570b7623d1bbde6f1f03ff599361e2b1fc9e8cdedffa0bd4660a8fc",
+    "canonical_content_sha256": "6a74fd4daa5161d431788e2c54e45e6a451478702bf8c0554765025a2a5b866c",
+    "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+    "included_in_normal_pairs_or_medians": false,
+    "included_in_mandatory_supplementary_gate": true
+  },
+  "supplementary_gate_formula": "10 * max(final_candidates) <= 9 * min(final_baselines + [6842705460])",
+  "control_only_candidate_ceiling": 6158434914,
+  "negative_correctness_checks": [
+    "empty_native_diagnostic_list",
+    "missing_native_diagnostic_list",
+    "different_native_diagnostic",
+    "additional_javascript_error",
+    "native_reported_error",
+    "missing_post",
+    "geometry_difference_detected",
+    "other_raw_audit_field_difference_detected"
+  ]
+}

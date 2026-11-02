@@ -1,0 +1,68 @@
+{
+  "schema_version": 2,
+  "created_at_utc": "2026-11-02T21:33:42.889481+00:00",
+  "scope": "Frozen old-reddit-worldnews Linux capture only; prospective exact contract before the Cachegrind acceptance cohort.",
+  "source_channel": "javascript_diagnostics",
+  "classified_as": "native_renderer_diagnostics",
+  "expected_native_reported_error_count": 0,
+  "expected_native_reported_errors": [],
+  "matching_policy": "Require a nonempty list containing only the exact source-proven native message. Preserve the complete raw list and its count; canonicalize only its multiplicity to one occurrence for stable document comparison. Any other text, missing/empty list, unclassified or JavaScript message fails. All other raw native audit fields, native errors and PNGs remain exact.",
+  "classification_provenance": {
+    "repository": "vlang/vox2",
+    "baseline_source_tree": "4f87e708424edf0ed929d130fdc4ef0002fa23b5",
+    "producer": {
+      "path": "main.v",
+      "git_blob_sha1": "3531d98020fbe0363b5333a9b0613b797d5a4bf8",
+      "function": "BrowserApp.draw_portable_shadow",
+      "lines": "4124-4128",
+      "behavior": "A native shadow-rasterization error appends Shadow replay: ${err.msg()} to app.js_messages and returns without drawing."
+    },
+    "condition": {
+      "path": "layout/portable_shadows.v",
+      "git_blob_sha1": "612b1bb9ccc4c509974ffc9412586c1dd10264b5",
+      "function": "rasterize_portable_shadow",
+      "lines": "71-73",
+      "behavior": "Empty shadow bounds is returned when transformed integer bitmap width <= 0 or height <= 0, before color parsing and Skia rasterization."
+    },
+    "audit_mapping": {
+      "path": "main_capture_audit.v",
+      "git_blob_sha1": "af07665830ee0c7c10f2467ec034b183e441ab52",
+      "line": 302,
+      "expression": "javascript_diagnostics: app.js_messages.clone()"
+    },
+    "rationale": "The audit field includes native renderer messages as well as JavaScript messages. Only this exact source-proven native diagnostic is classified; actual JavaScript/unclassified messages and native reported errors remain forbidden."
+  },
+  "reference_capture": {
+    "report": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json",
+    "report_sha256": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+    "audit_sha256": "80d0ab9160cc8202d14fe1a7eafe44a1f4e7b0a1a652c73b22ceb1074680a433",
+    "baseline_binary_sha256": "e74376514dbb0b55828ac26e8a9a355b9adb8b2a3c565f344f141ead793ecd54",
+    "screenshot": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png",
+    "screenshot_file_sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+    "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+    "original_failure_summary": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/summary.json",
+    "original_failure_summary_sha256": "53c68492747ffd9ae69dbc173fa403b9a70dcaff6c4c7a1e886d95f9ab1cc382",
+    "original_failure_exception": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/exception.txt",
+    "original_failure_exception_sha256": "fbaf7b4c0c66f9090e01478cc52d26245da28bf4d67d1d25ea76011d2ca20f9e",
+    "original_status": "invalid",
+    "original_error": "ValueError: Frozen script-free document reported JavaScript diagnostics",
+    "use": "Immutable rendering/content reference only; its diagnostic Callgrind count is excluded from all Cachegrind acceptance statistics."
+  },
+  "authorization": "Parent explicitly authorized this prospective multiplicity-only observer correction before cohort-02, retention of raw counts, and a mandatory supplementary conservative gate using the valid raw unmodified cohort-01 control. Original invalid evidence remains unchanged.",
+  "updated_at_utc": "2026-11-02T21:48:38.635288+00:00",
+  "known_diagnostic": "Shadow replay: Empty shadow bounds",
+  "expected_canonical_diagnostics": [
+    "Shadow replay: Empty shadow bounds"
+  ],
+  "minimum_occurrences": 1,
+  "multiplicity_evidence": {
+    "supplementary_control": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/supplementary-control.json",
+    "supplementary_control_sha256": "f854bb833f27ee235bfc6a545048b2cc1f5674d183b5afda7405e16d8352aeb7",
+    "first_callgrind_count": 12,
+    "unmodified_cachegrind_control_count": 6,
+    "all_other_raw_audit_fields_identical": true,
+    "pixels_identical": true,
+    "candidate_observations_before_correction": 0,
+    "interpretation": "The message is emitted by native draw replay; its repetition count is unsuitable as document identity. Actual frame count was not recorded."
+  }
+}

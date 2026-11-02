@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "attempts": [
+    {
+      "group": "layout_integration",
+      "gc": "boehm",
+      "compile_exit": 0,
+      "runtime_exit": 0,
+      "passed": true,
+      "binary_sha256": "ed40ce31fe6f81e436e5e682a75c12658614d86db51763bda9e1d380e3936384",
+      "registered_test_count": 2,
+      "known_linux_early_return_count": 0,
+      "runtime_environment": {
+        "LADYBIRD_SOURCE_ROOT": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/test-font-resources"
+      },
+      "changed_inputs": []
+    },
+    {
+      "group": "layout_integration",
+      "gc": "none",
+      "compile_exit": 0,
+      "runtime_exit": 0,
+      "passed": true,
+      "binary_sha256": "ec440d516e79bdf73f1f5b7f2cae0ac9c7f49414425b284574f0f2a8b8c2749c",
+      "registered_test_count": 2,
+      "known_linux_early_return_count": 0,
+      "runtime_environment": {
+        "LADYBIRD_SOURCE_ROOT": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/test-font-resources"
+      },
+      "changed_inputs": []
+    }
+  ]
+}

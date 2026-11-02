@@ -1,0 +1,50 @@
+{
+  "upstream_commit": "4f87e708424edf0ed929d130fdc4ef0002fa23b5",
+  "status": "Prepared; no V build or execution started",
+  "groups": [
+    {
+      "name": "skia_focused",
+      "files": [
+        "skia/shadow_test.v",
+        "skia/font_typeface_test.v",
+        "skia/bitmap_export_test.v"
+      ],
+      "declared_test_functions": 8,
+      "expected_platform_skips": 1
+    },
+    {
+      "name": "layout_integration",
+      "files": [
+        "layout/portable_shadows_test.v"
+      ],
+      "declared_test_functions": 2,
+      "expected_platform_skips": 0
+    },
+    {
+      "name": "platform_font_integration",
+      "files": [
+        "platform/fontconfig_linux_test.v",
+        "platform/font_face_retention_test.v",
+        "platform/font_glyph_cache_identity_test.v",
+        "platform/font_rendering_policy_test.v",
+        "platform/glyph_slice_storage_test.v",
+        "platform/harfbuzz_idle_test.v",
+        "platform/web_font_decode_test.v",
+        "platform/variable_font_test.v"
+      ],
+      "declared_test_functions": 19,
+      "expected_platform_skips": 0
+    }
+  ],
+  "test_only_environment": {
+    "LADYBIRD_SOURCE_ROOT": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/test-font-resources"
+  },
+  "constraints": [
+    "Use -new-compiler -memory-limit 10G; stage Linux/http compatibility modules as tools/test_linux_native.py does",
+    "Batch selected files within their module with -file-list; do not include unrelated test modules",
+    "Guard each compile with 12 GiB and each runtime with 3 GiB, using distinct per-job locks and reports",
+    "Do not launch V frontend until common browser object compilation has completed",
+    "Set LADYBIRD_SOURCE_ROOT only for relevant test runtime children; leave all browser benchmark environments unchanged",
+    "On Linux the real-font load case inside skia/font_typeface_test.v returns immediately; native C++ cache RGBA tests supply real font replay coverage"
+  ]
+}

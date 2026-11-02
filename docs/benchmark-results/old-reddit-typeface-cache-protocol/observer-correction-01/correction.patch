@@ -1,0 +1,275 @@
+--- compare.py.before
++++ compare.py.after
+@@ -36,6 +36,7 @@
+ HTML = FIXTURE / "index.html"
+ AUDIT_CONFIG = WORK / "audit-config.json"
+ EXPECTED_POSTS = WORK / "expected-posts.json"
++EXPECTED_NATIVE_DIAGNOSTICS = WORK / "expected-native-diagnostics.json"
+ WIDTH, HEIGHT = 1280, 900
+ TITLE = "World News"
+ METRICS = {name: name + "_guest_instruction_references" for name in ("callgrind", "cachegrind")}
+@@ -96,6 +97,18 @@
+     for name, expected in pins.items():
+         if digest(name) != expected:
+             raise ValueError("Pinned input changed: " + name)
++
++
++def native_diagnostic_contract():
++    contract = read_json(EXPECTED_NATIVE_DIAGNOSTICS)
++    if (contract.get("schema_version") != 1
++            or contract.get("source_channel") != "javascript_diagnostics"
++            or contract.get("classified_as") != "native_renderer_diagnostics"
++            or contract.get("expected_diagnostics") != ["Shadow replay: Empty shadow bounds"] * 12
++            or contract.get("expected_native_reported_error_count") != 0
++            or contract.get("expected_native_reported_errors") != []):
++        raise ValueError("Exact baseline native-renderer diagnostic contract changed")
++    return contract
+ 
+ 
+ class FixtureHTML(HTMLParser):
+@@ -172,7 +185,9 @@
+             "stylesheets": parser.stylesheets, "declared_font_face_count": font_face_count,
+             "file_sha256": files, "file_manifest_sha256": object_digest(files),
+             "audit_config_sha256": digest(AUDIT_CONFIG),
+-            "expected_posts_sha256": digest(EXPECTED_POSTS), "network_inventory": inventory}
++            "expected_posts_sha256": digest(EXPECTED_POSTS), "network_inventory": inventory,
++            "native_diagnostic_contract": native_diagnostic_contract(),
++            "native_diagnostic_contract_sha256": digest(EXPECTED_NATIVE_DIAGNOSTICS)}
+ 
+ 
+ class OfflineTransport:
+@@ -402,8 +417,10 @@
+             raise ValueError("Loaded font lacks parsed data")
+     if audit.get("native_reported_error_count", 0) or audit.get("native_reported_errors"):
+         raise ValueError("Native document reported script/runtime errors")
+-    if audit.get("javascript_diagnostics"):
+-        raise ValueError("Frozen script-free document reported JavaScript diagnostics")
++    diagnostics = audit.get("javascript_diagnostics")
++    if diagnostics != fixture["native_diagnostic_contract"]["expected_diagnostics"]:
++        raise ValueError("Diagnostic channel differs from the exact baseline native-renderer list; "
++                         "new, missing, changed or unclassified/JavaScript messages are forbidden")
+     paint = audit.get("paint_geometry")
+     if not isinstance(paint, list):
+         raise ValueError("Paint geometry audit is missing")
+@@ -412,7 +429,76 @@
+             "fonts": {"font_set_present": audit.get("font_set_present"),
+                       "fonts_status": audit.get("fonts_status"), "faces": faces},
+             "geometry": geometry, "paint_geometry": paint,
+-            "paint_commands": audit["paint_commands"]}
++            "paint_commands": audit["paint_commands"],
++            "diagnostics": {"source_channel": "javascript_diagnostics",
++                            "classified_native_renderer": diagnostics,
++                            "unclassified_or_javascript": [],
++                            "native_reported_error_count": 0, "native_reported_errors": []},
++            # Retain and compare the complete audit as well as the explicitly
++            # validated content. No native geometry/state field is discarded.
++            "native_document_audit": audit}
++
++
++def load_reference_capture(path, fixture):
++    """Validate the immutable first diagnostic's pixels and complete audit.
++
++    Its original observer rejection remains unchanged. Its Callgrind count is
++    diagnostic only and never enters the prospective comparison cohort.
++    """
++    contract = fixture["native_diagnostic_contract"]
++    reference = contract["reference_capture"]
++    if path != Path(reference["report"]).resolve():
++        raise ValueError("Reference report must be the pinned first diagnostic capture")
++    png = Path(reference["screenshot"]).resolve()
++    expected_pins = {
++        str(path): reference["report_sha256"],
++        str(png): reference["screenshot_file_sha256"],
++        reference["original_failure_summary"]: reference["original_failure_summary_sha256"],
++        reference["original_failure_exception"]: reference["original_failure_exception_sha256"],
++        str(EXPECTED_NATIVE_DIAGNOSTICS): fixture["native_diagnostic_contract_sha256"],
++    }
++    for name in expected_pins:
++        Path(name).resolve().relative_to(BUILD.resolve())
++    verify_files(expected_pins)
++    original = read_json(reference["original_failure_summary"])
++    if (original.get("status") != "invalid" or original.get("valid") is not False
++            or original.get("driver_exit") != 0
++            or original.get("error") != reference["original_error"]):
++        raise ValueError("Original observer failure provenance changed")
++    report = read_json(path)
++    if (report.get("exit") != 0 or report.get("root_final_exit_sample") is not True
++            or report.get("binary_sha256") != reference["baseline_binary_sha256"]
++            or report.get("measurement_driver_sha256") != digest(DRIVER)
++            or report.get("capture_audit_config_sha256") != fixture["audit_config_sha256"]
++            or report.get("url") != fixture["url"] or report.get("settle_seconds") != 0
++            or Path(report["screenshot"]).resolve() != png
++            or report.get("screenshot_sha256") != reference["screenshot_file_sha256"]
++            or original["fixture"]["file_sha256"] != fixture["file_sha256"]
++            or object_digest(report["document_audit"]) != reference["audit_sha256"]):
++        raise ValueError("Reference report identity, inputs or completion changed")
++    document = validate_document(report["document_audit"], fixture)
++    from PIL import Image
++    with Image.open(png) as raw:
++        raw.load()
++        rgba = raw.convert("RGBA")
++    rgba_sha256 = hashlib.sha256(rgba.tobytes()).hexdigest()
++    pixels = report.get("screenshot_validation", {})
++    if (rgba.size != (WIDTH, HEIGHT)
++            or (pixels.get("width"), pixels.get("height")) != (WIDTH, HEIGHT)
++            or rgba_sha256 != reference["decoded_rgba_sha256"]
++            or pixels.get("decoded_rgba_sha256") != rgba_sha256):
++        raise ValueError("Reference PNG does not decode to the pinned first diagnostic pixels")
++    return {"document": document, "png": png, "file_pins": expected_pins,
++            "metadata": {"report": str(path), "report_sha256": reference["report_sha256"],
++                         "audit_sha256": reference["audit_sha256"],
++                         "content_sha256": object_digest(document),
++                         "screenshot": str(png), "screenshot_file_sha256": digest(png),
++                         "decoded_rgba_sha256": rgba_sha256,
++                         "baseline_binary_sha256": reference["baseline_binary_sha256"],
++                         "original_observer_status": "invalid",
++                         "original_observer_error": original["error"],
++                         "source_counter_backend": report["counter_backend"],
++                         "instructions_used_in_acceptance_statistics": False}}
+ 
+ 
+ def first_differences(before, after, prefix="", limit=32):
+@@ -484,6 +570,8 @@
+                "scope_note": "Main process and instrumented threads/libraries; excludes children, kernel, GPU and Xvfb",
+                "geometry_scope": "Exact body/post/image bounding rectangles, retained SVG paint-geometry audit and paint-command count; PNGs cover the full viewport",
+                "image_policy": "Require every visible image decoded; compare all image source/dimension/state records exactly, retaining unresolved nonvisible images",
++               "reference_policy": "Every observation, including the first baseline, must exactly match the pinned first diagnostic PNG and complete native audit; that diagnostic count is excluded",
++               "diagnostic_policy": "Exact ordered equality with the 12 source-classified native shadow messages; all other/new/missing/changed messages and native errors fail",
+                "cache_note": "Fresh browser profile/cache and XDG caches per observation; OS filesystem caches retained",
+                "retry_policy": "No retries, excluded attempts or replacement observations; stop on first invalid observation",
+                "required_reduction_percent": 10, "observations": [], "pairs": [],
+@@ -494,8 +582,11 @@
+         transport = OfflineTransport()
+         environment = clean_environment(transport.proxy)
+         fixture = fixture_metadata()
++        reference = load_reference_capture(args.reference_capture_report, fixture)
+         binaries = {label: pin_binary(path, environment, args.runtime_library)
+                     for label, path in (("baseline", args.baseline), ("candidate", args.candidate))}
++        if binaries["baseline"]["sha256"] != reference["metadata"]["baseline_binary_sha256"]:
++            raise ValueError("Cohort baseline binary differs from the first diagnostic reference binary")
+         if library_content_identity(binaries["baseline"]) != library_content_identity(binaries["candidate"]):
+             raise ValueError("Baseline/candidate runtime-library contents differ")
+         font_pins = pin_fonts(environment)
+@@ -504,10 +595,12 @@
+         runtime_assets = pin_files(REPO / path for path in RUNTIME_ASSETS)
+         tools = pin_files([Path(__file__), WORK / "network_audit.py", DRIVER, REPO / "tools/linux_instruction_counts.py",
+                            REPO / "tools/process_instruction_counts.py", AUDIT_CONFIG, EXPECTED_POSTS,
++                           EXPECTED_NATIVE_DIAGNOSTICS, WORK / "observer-correction-01/provenance.json",
+                            Path(sys.executable), args.valgrind, Path(shutil.which("xvfb-run")),
+                            Path(shutil.which("Xvfb")), Path(shutil.which("fc-list"))])
+         all_pins = {**fixture["file_sha256"], **tools, **runtime_assets,
+-                    **font_pins["files_sha256"], **font_pins["fontconfig_files_sha256"]}
++                    **font_pins["files_sha256"], **font_pins["fontconfig_files_sha256"],
++                    **reference["file_pins"]}
+         for pin in binaries.values():
+             all_pins.update(binary_file_pins(pin))
+         summary.update(fixture=fixture, binaries=binaries, fonts=font_pins,
+@@ -517,20 +610,26 @@
+                                        "mechanism": "exclusively bound non-listening loopback TCP port",
+                                        "scope": "browsernet and libcurl HTTP(S); file/data remain unchanged",
+                                        "bypass_lists": "empty", "applies_to": "both variants"},
++                       reference_capture=reference["metadata"],
++                       reference_inputs_sha256=reference["file_pins"],
++                       reference_png=str(reference["png"]),
++                       reference_png_sha256=reference["metadata"]["screenshot_file_sha256"],
++                       reference_decoded_rgba_sha256=reference["metadata"]["decoded_rgba_sha256"],
+                        status="running")
+         write_json(args.output / "resource-network-inventory.json", fixture["network_inventory"])
++        write_json(args.output / "reference-content-validation.json", reference["document"])
+         write_json(summary_path, summary)
+-        reference_document = None
+-        reference_png = None
+-        reference_png_sha256 = None
++        reference_document = reference["document"]
++        reference_png = reference["png"]
++        reference_png_sha256 = reference["metadata"]["screenshot_file_sha256"]
+         valgrind_identity = None
+         for index in range(args.pairs):
+             pair = {}
+             labels = ("baseline", "candidate") if index % 2 == 0 else ("candidate", "baseline")
+             for label in labels:
+                 verify_files(all_pins)
+-                if reference_png is not None and digest(reference_png) != reference_png_sha256:
+-                    raise ValueError("First baseline reference PNG changed")
++                if digest(reference_png) != reference_png_sha256:
++                    raise ValueError("Pinned first diagnostic reference PNG changed")
+                 observation = args.output / f"pair-{index + 1:02d}-{label}"
+                 observation.mkdir(mode=0o700)
+                 temporary = observation / "tmp"
+@@ -549,8 +648,7 @@
+                            "--timeout", str(args.timeout), "--valgrind", str(args.valgrind)]
+                 for library in sorted(set(binary_file_pins(binaries[label])) - {binaries[label]["path"]}):
+                     command += ["--runtime-library", library]
+-                if reference_png is not None:
+-                    command += ["--expected-png", str(reference_png)]
++                command += ["--expected-png", str(reference_png)]
+                 row = {"pair": index + 1, "variant": label, "status": "running",
+                        "directory": str(observation), "command": command,
+                        "environment": env, "host_before": host_snapshot()}
+@@ -585,29 +683,19 @@
+                         raise ValueError("Valgrind executable/runtime identity changed")
+                     document = validate_document(report["document_audit"], fixture)
+                     write_json(observation / "content-validation.json", document)
+-                    if reference_document is not None:
+-                        compare_document(reference_document, document, observation)
+-                    else:
+-                        if label != "baseline" or index != 0:
+-                            raise ValueError("Only the first baseline may establish the reference")
+-                        reference_document = document
++                    compare_document(reference_document, document, observation)
+                     png = Path(report["screenshot"]).resolve()
+                     png.relative_to(observation)
+                     pixels = report.get("screenshot_validation", {})
+                     if (pixels.get("width"), pixels.get("height")) != (WIDTH, HEIGHT):
+                         raise ValueError("Viewport pixel dimensions changed")
+-                    if reference_png is None:
+-                        reference_png = png
+-                        reference_png_sha256 = digest(png)
+-                        summary["reference_png"] = str(png)
+-                        summary["reference_png_sha256"] = reference_png_sha256
+-                        summary["reference_decoded_rgba_sha256"] = pixels["decoded_rgba_sha256"]
+-                    elif (pixels.get("exact") is not True
+-                          or pixels.get("decoded_rgba_sha256") != summary["reference_decoded_rgba_sha256"]):
+-                        raise ValueError("Capture is not pixel-exact to the first baseline")
++                    if (pixels.get("exact") is not True
++                            or pixels.get("decoded_rgba_sha256") != summary["reference_decoded_rgba_sha256"]
++                            or pixels.get("expected_file_sha256") != reference_png_sha256):
++                        raise ValueError("Capture is not pixel-exact to the pinned first diagnostic")
+                     verify_files(all_pins)
+                     if digest(reference_png) != reference_png_sha256:
+-                        raise ValueError("Baseline PNG changed during capture")
++                        raise ValueError("Pinned reference PNG changed during capture")
+                     row.update(status="valid", pixel_exact=True, content_exact=True, geometry_exact=True,
+                                content_sha256=object_digest(document),
+                                unresolved_nonvisible_images=len(document["unresolved_nonvisible_images"]))
+@@ -657,6 +745,8 @@
+     parser.add_argument("--candidate", type=Path, required=True)
+     parser.add_argument("--output", type=Path, required=True,
+                         help="New evidence directory beneath this repository's Build/")
++    parser.add_argument("--reference-capture-report", type=Path, required=True,
++                        help="Pinned first diagnostic driver JSON; every observation must match its pixels and complete audit")
+     parser.add_argument("--pairs", type=int, default=3)
+     parser.add_argument("--counter-backend", choices=("callgrind", "cachegrind"), default="callgrind",
+                         help="Explicit metric for the entire cohort; never falls back or mixes counts")
+@@ -670,6 +760,9 @@
+     if platform.system() != "Linux":
+         parser.error("This software-instruction capture protocol requires Linux")
+     args.output = args.output.resolve()
++    args.reference_capture_report = args.reference_capture_report.resolve()
++    if not args.reference_capture_report.is_file():
++        parser.error("reference-capture-report must be an existing driver JSON report")
+     try:
+         args.output.relative_to(BUILD.resolve())
+     except ValueError:
+--- capture.py.before
++++ capture.py.after
+@@ -58,7 +58,8 @@
+                           protocol.WORK / "network_audit.py", protocol.DRIVER,
+                           protocol.REPO / "tools/linux_instruction_counts.py",
+                           protocol.REPO / "tools/process_instruction_counts.py",
+-                          protocol.AUDIT_CONFIG, protocol.EXPECTED_POSTS])}
++                          protocol.AUDIT_CONFIG, protocol.EXPECTED_POSTS,
++                          protocol.EXPECTED_NATIVE_DIAGNOSTICS])}
+             prefix = args.output / "capture"
+             command = ["xvfb-run", "-a", "-s", "-screen 0 1600x1200x24", sys.executable,
+                        str(protocol.DRIVER), "--engine", "vox", "--counter-backend", args.counter_backend,

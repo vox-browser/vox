@@ -1,0 +1,53 @@
+{
+  "pins": {
+    "/workspace/scratch/549231c7ae31/vox2/skia/shadow_test.v": "2ea68abf0bd3c900fa686df73d6a406f264c60722b991f4adaf9885ca826806f",
+    "/workspace/scratch/549231c7ae31/vox2/skia/font_typeface_test.v": "80c8d1b99bd638b8f1d83e9b6e482a1f25aec9489b4d5d3db8294040f773ffb7",
+    "/workspace/scratch/549231c7ae31/vox2/skia/bitmap_export_test.v": "0d397dc205fa4a2831a3588a0de8f9f0858fbc9caec8b3d5ecc8c956705c1f8a",
+    "/workspace/scratch/549231c7ae31/v/v": "eb83feee74cfd77d979dd874a0916806fdd59476603c02f0585a12d567a9d452",
+    "/workspace/scratch/549231c7ae31/vox2/Build/linux/native/skia.a": "3e952238187b77ddd7d11a0a8719b977bff6f9e76dcf36960d05793ae8c2c263",
+    "/workspace/scratch/549231c7ae31/vox2/Build/linux/native/stbi.a": "4590cd3024d87f23d7d64deaf53a48a0cdf2e680f955690304f5a045677c21c7",
+    "/workspace/scratch/549231c7ae31/vox2/skia/shadow_raster.cpp": "9ee92dad543f16d99ce9a2102465dfe4f39bd44439f4c0f822c9632aa78ba16b",
+    "/workspace/scratch/549231c7ae31/vox2/skia/shadow_typeface_cache.h": "5efc4608ff93953e2574ecb27de7ec742f6325d9b631a0e7814d609bc121a27b",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/run_font_validation.py": "66fbebc1d2406dbd3e8d2c56f0cde74009385e89812bc80ac50d56b388a23afb"
+  },
+  "selected": [
+    {
+      "file": "skia/shadow_test.v",
+      "function": "test_outer_shadow_blurs_elliptical_corners_and_excludes_content"
+    },
+    {
+      "file": "skia/shadow_test.v",
+      "function": "test_inner_shadow_uses_difference_path_and_rounded_content_clip"
+    },
+    {
+      "file": "skia/shadow_test.v",
+      "function": "test_text_shadow_uses_retained_glyph_positions_flat_tint_and_single_alpha"
+    },
+    {
+      "file": "skia/shadow_test.v",
+      "function": "test_shadow_retains_visual_context_path_clip_before_command_transform"
+    },
+    {
+      "file": "skia/font_typeface_test.v",
+      "function": "test_source_skia_font_decoder_rejects_magic_without_tables"
+    },
+    {
+      "file": "skia/font_typeface_test.v",
+      "function": "test_source_skia_font_decoder_loads_real_truetype_data"
+    },
+    {
+      "file": "skia/bitmap_export_test.v",
+      "function": "test_bitmap_export_uses_source_skia_premultiplication_flip_and_nearest_scaling"
+    },
+    {
+      "file": "skia/bitmap_export_test.v",
+      "function": "test_bitmap_export_preserves_native_alpha_layout_and_source_unsupported_format"
+    }
+  ],
+  "known_linux_skips": [
+    "test_source_skia_font_decoder_loads_real_truetype_data"
+  ],
+  "removed_child_environment": {},
+  "module_paths": "/workspace/scratch/549231c7ae31/vox2|/workspace/scratch/549231c7ae31/vox2/Build/linux/modules|/workspace/scratch/549231c7ae31/vox2/Build/v/httpcompat/32bae206d5ba729b/modules|@vmodules|@vlib",
+  "production_archive": "/workspace/scratch/549231c7ae31/vox2/Build/linux/native/skia.a"
+}

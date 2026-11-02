@@ -1,0 +1,387 @@
+{
+  "schema_version": 1,
+  "purpose": "Byte-identical frozen protocol scripts and supporting receipts; paths retain historical identity. make_results_ledger.py is a post-run exporter, not a measured observer.",
+  "files": {
+    "acceptance-counter-selection.json": {
+      "source": "Build/reddit-optimization/acceptance-counter-selection.json",
+      "sha256": "09f94d87a99a639d628cf3146ad6ecf724f9a686275ffb129b9a8a2d2852c02c",
+      "bytes": 1062
+    },
+    "audit-config.json": {
+      "source": "Build/reddit-optimization/audit-config.json",
+      "sha256": "23ca3a8137efab886f839cefd67b76b2042fd4a6c1f335ea6ea14f71bfc83f85",
+      "bytes": 474
+    },
+    "baseline-build-summary.json": {
+      "source": "Build/reddit-optimization/baseline-build-summary.json",
+      "sha256": "3e2ee732c47f23b0a0adfbfc8988eb2bb093a1880c7958e36bd5e25b0ba915e4",
+      "bytes": 2496
+    },
+    "build_variant.py": {
+      "source": "Build/reddit-optimization/build_variant.py",
+      "sha256": "9d87a80fd0b15121427a3c92e593e538fe22abaddbf7d8be0f930c7d98379818",
+      "bytes": 14809
+    },
+    "capture.py": {
+      "source": "Build/reddit-optimization/capture.py",
+      "sha256": "69ac32ff26108dfa3a00c31807e8951a9bd0db11f1be0306a7d29835a4e6bfea",
+      "bytes": 7064
+    },
+    "compare.py": {
+      "source": "Build/reddit-optimization/compare.py",
+      "sha256": "c03a7e335beb767bd50e79d72e9fa75f16c506e7fef1ff01a016aba478a7cd42",
+      "bytes": 55049
+    },
+    "environment.json": {
+      "source": "Build/reddit-optimization/environment.json",
+      "sha256": "f412efcc874eaff3c17aa090d29aeca2f6ca2a9cab96c422ba8c182201f08c5b",
+      "bytes": 1915
+    },
+    "expected-native-diagnostics.json": {
+      "source": "Build/reddit-optimization/expected-native-diagnostics.json",
+      "sha256": "6f7cf17037c4097000d5b3ca699da22a508fca0d03837ba608d25c648ef52bda",
+      "bytes": 4750
+    },
+    "expected-posts.json": {
+      "source": "Build/reddit-optimization/expected-posts.json",
+      "sha256": "f46afb190e6fc3d87fad328dbb81948f244c71fa44984dd81997985311d0caa6",
+      "bytes": 483
+    },
+    "implementation-files.json": {
+      "source": "Build/reddit-optimization/implementation-files.json",
+      "sha256": "3626e8744f47d437b905ec033e580bdb2a390f9aa8bfb499fac71fa70ac359ce",
+      "bytes": 427
+    },
+    "make_results_ledger.py": {
+      "source": "Build/reddit-optimization/make_results_ledger.py",
+      "sha256": "1703d4d559061eec6127478eee1237fcb76ab04ba1ced2446b85742c91065872",
+      "bytes": 13121
+    },
+    "native-archive-comparison.json": {
+      "source": "Build/reddit-optimization/native-archive-comparison.json",
+      "sha256": "72a748e86edfe2d240c568094928a794b8fa0537752bb4c75f5f6a154337d143",
+      "bytes": 1438
+    },
+    "network_audit.py": {
+      "source": "Build/reddit-optimization/network_audit.py",
+      "sha256": "30334d253bdc7c03bc06909ab7aa8794d5a46f18e000e57da524e6a2428b74e1",
+      "bytes": 15246
+    },
+    "observer-correction-01/before.json": {
+      "source": "Build/reddit-optimization/observer-correction-01/before.json",
+      "sha256": "617f9caf3b993ad16994b31ab4180c8e881634e252ac1b84a483656d4212ed64",
+      "bytes": 1853
+    },
+    "observer-correction-01/capture.after.py": {
+      "source": "Build/reddit-optimization/observer-correction-01/capture.after.py",
+      "sha256": "ba99f95f5a194409fef6c17ff78444d9cf5faaf6b0ce0926e9d1ddb96f3bb86a",
+      "bytes": 6676
+    },
+    "observer-correction-01/capture.before.py": {
+      "source": "Build/reddit-optimization/observer-correction-01/capture.before.py",
+      "sha256": "d38fce8ea8828efeb9d544655f96d1a06b0b47799ba64afce4db6286533a773f",
+      "bytes": 6612
+    },
+    "observer-correction-01/compare.after.py": {
+      "source": "Build/reddit-optimization/observer-correction-01/compare.after.py",
+      "sha256": "2d13461fa51d00ab670cf675d046bf70f646bbef050031bdb228bafd49277378",
+      "bytes": 44639
+    },
+    "observer-correction-01/compare.before.py": {
+      "source": "Build/reddit-optimization/observer-correction-01/compare.before.py",
+      "sha256": "8e37fcb93975c568912fa4e7876cbd8584e9d0035809d329d0979dad865b8ce1",
+      "bytes": 38191
+    },
+    "observer-correction-01/correction.patch": {
+      "source": "Build/reddit-optimization/observer-correction-01/correction.patch",
+      "sha256": "8c710b821a1527779326a908d1609e6b51f0a9142455821616c942ae8393fd63",
+      "bytes": 18015
+    },
+    "observer-correction-01/provenance.json": {
+      "source": "Build/reddit-optimization/observer-correction-01/provenance.json",
+      "sha256": "12a8516fbfdd3bef77ddc9f60f6a8af9b506385d4434994be40fb29f9007ea40",
+      "bytes": 4866
+    },
+    "observer-correction-01/validation.json": {
+      "source": "Build/reddit-optimization/observer-correction-01/validation.json",
+      "sha256": "d21c2b1195402e9e4910a8fa2bfd8c0775d3fb7606dae177019f2ef2201c3a62",
+      "bytes": 1797
+    },
+    "observer-correction-02/before.json": {
+      "source": "Build/reddit-optimization/observer-correction-02/before.json",
+      "sha256": "724ff957981c82cc26a5b295df82e703d9753898c34e2e038602451bc22a9cf8",
+      "bytes": 3140
+    },
+    "observer-correction-02/capture.py.after": {
+      "source": "Build/reddit-optimization/observer-correction-02/capture.py.after",
+      "sha256": "69ac32ff26108dfa3a00c31807e8951a9bd0db11f1be0306a7d29835a4e6bfea",
+      "bytes": 7064
+    },
+    "observer-correction-02/capture.py.before": {
+      "source": "Build/reddit-optimization/observer-correction-02/capture.py.before",
+      "sha256": "ba99f95f5a194409fef6c17ff78444d9cf5faaf6b0ce0926e9d1ddb96f3bb86a",
+      "bytes": 6676
+    },
+    "observer-correction-02/compare.py.after": {
+      "source": "Build/reddit-optimization/observer-correction-02/compare.py.after",
+      "sha256": "c03a7e335beb767bd50e79d72e9fa75f16c506e7fef1ff01a016aba478a7cd42",
+      "bytes": 55049
+    },
+    "observer-correction-02/compare.py.before": {
+      "source": "Build/reddit-optimization/observer-correction-02/compare.py.before",
+      "sha256": "2d13461fa51d00ab670cf675d046bf70f646bbef050031bdb228bafd49277378",
+      "bytes": 44639
+    },
+    "observer-correction-02/correction.patch": {
+      "source": "Build/reddit-optimization/observer-correction-02/correction.patch",
+      "sha256": "9b8885b5270c102beedb4f11b3ad2946635890233a564f2a2f3c17b5f9a5c06c",
+      "bytes": 26723
+    },
+    "observer-correction-02/expected-native-diagnostics.json.after": {
+      "source": "Build/reddit-optimization/observer-correction-02/expected-native-diagnostics.json.after",
+      "sha256": "6f7cf17037c4097000d5b3ca699da22a508fca0d03837ba608d25c648ef52bda",
+      "bytes": 4750
+    },
+    "observer-correction-02/expected-native-diagnostics.json.before": {
+      "source": "Build/reddit-optimization/observer-correction-02/expected-native-diagnostics.json.before",
+      "sha256": "2bbbc0660e7af18e461ea1bd4dfcbfd8a04aa94182372c911c14ff02d3e1f033",
+      "bytes": 4157
+    },
+    "observer-correction-02/provenance.json": {
+      "source": "Build/reddit-optimization/observer-correction-02/provenance.json",
+      "sha256": "e43a8739b2de34248e21d57b61f4127b87a33cc58aad5e3dc36edcc98483f7fc",
+      "bytes": 7720
+    },
+    "observer-correction-02/validation.json": {
+      "source": "Build/reddit-optimization/observer-correction-02/validation.json",
+      "sha256": "ed5579ec6e99cf1fbe2caece0786f5009a4380dc8ae1ac879735457a42b3b673",
+      "bytes": 2240
+    },
+    "prepare_common_object.py": {
+      "source": "Build/reddit-optimization/prepare_common_object.py",
+      "sha256": "a01a8f78f736fc7a638dc41493edb70a5d6408ad1722571099b04722cbb973c3",
+      "bytes": 1439
+    },
+    "relink-variants.json": {
+      "source": "Build/reddit-optimization/relink-variants.json",
+      "sha256": "25c1222920ad8b1844c44fd4564e848891b747afbd7f11d3acf26dca5d6fcca5",
+      "bytes": 10600
+    },
+    "relink_variants.py": {
+      "source": "Build/reddit-optimization/relink_variants.py",
+      "sha256": "782106d8b43b14604366bfd67a2e7a00624bfa70b93add75a6855f4897e4e72b",
+      "bytes": 3001
+    },
+    "supplementary-control.json": {
+      "source": "Build/reddit-optimization/supplementary-control.json",
+      "sha256": "f854bb833f27ee235bfc6a545048b2cc1f5674d183b5afda7405e16d8352aeb7",
+      "bytes": 5558
+    },
+    "independent-acceptance-audit.json": {
+      "source": "Build/reddit-optimization/independent-acceptance-audit.json",
+      "sha256": "ff0a3ac1680d2ed28b1962cc8f8dca3f1ae914080240f3e689834bf8c010d8f3",
+      "bytes": 14980
+    },
+    "font-validation-selection.json": {
+      "source": "Build/reddit-optimization/font-validation-selection.json",
+      "sha256": "556a7b7e22bd75bc15969b965444c10ce9fe2bb429d741e3e930a80f9a2c9c6e",
+      "bytes": 1955
+    },
+    "font-validation-summary.json": {
+      "source": "Build/reddit-optimization/font-validation-summary.json",
+      "sha256": "61d359d09643a4bbf3b30d3c0a4c728897a99ddf143e327949685d00c5f988b7",
+      "bytes": 8543
+    },
+    "layout_integration-e8o1opqr/boehm/compile.command.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/boehm/compile.command.json",
+      "sha256": "1908c732005fe99fe925b98c55ca6fbf48fbe498bc20c3780d5e1bd0b230fe51",
+      "bytes": 2384
+    },
+    "layout_integration-e8o1opqr/boehm/compile.guard.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/boehm/compile.guard.json",
+      "sha256": "9548e257c5899dcf1b26e45ca97c043617df6fccdd514266704ef8c410e66f0f",
+      "bytes": 1221
+    },
+    "layout_integration-e8o1opqr/boehm/harness.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/boehm/harness.json",
+      "sha256": "d4c65087f14d21a8cdb2ce42fad5a76c898a21f0d0c5a719e30ec10c99bd4e3b",
+      "bytes": 805
+    },
+    "layout_integration-e8o1opqr/boehm/runtime.command.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/boehm/runtime.command.json",
+      "sha256": "1146ddd9923a819b5f456c1e05f88bd323b1bc51544d9400288b5b75cfa7047b",
+      "bytes": 819
+    },
+    "layout_integration-e8o1opqr/boehm/runtime.guard.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/boehm/runtime.guard.json",
+      "sha256": "c2c98b0c3f2b44cbfc8cad4076099fd074281085c0cebddeb58cae920871e371",
+      "bytes": 436
+    },
+    "layout_integration-e8o1opqr/inputs.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/inputs.json",
+      "sha256": "b193a7d7c8a5ea0084e5fd3581b5c46177f03840bb6b95494d08c4ccae51c0c8",
+      "bytes": 1672
+    },
+    "layout_integration-e8o1opqr/none/compile.command.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/none/compile.command.json",
+      "sha256": "46d831705a0fda7978aed0a4ad85d40cff65dae3f50bdf1ef35afcbff9097888",
+      "bytes": 2314
+    },
+    "layout_integration-e8o1opqr/none/compile.guard.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/none/compile.guard.json",
+      "sha256": "9773024c9313eeae532600cec30fc9b790f097ec5d15dc0ce24b4c85ad003648",
+      "bytes": 1187
+    },
+    "layout_integration-e8o1opqr/none/harness.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/none/harness.json",
+      "sha256": "48131d9aa16795db24d6485853153f3960ef60f2fb0d82550e6e29ce4004c6a9",
+      "bytes": 803
+    },
+    "layout_integration-e8o1opqr/none/runtime.command.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/none/runtime.command.json",
+      "sha256": "417782df87e706c2c02909f30beaffcc556c02d32c0bfa10fa07be86aaf6ffb2",
+      "bytes": 812
+    },
+    "layout_integration-e8o1opqr/none/runtime.guard.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/none/runtime.guard.json",
+      "sha256": "fc3744e6fb6e0cb230f765e2e29976f094ad077e3feb76ccf315f62afb5cc931",
+      "bytes": 434
+    },
+    "layout_integration-e8o1opqr/results.json": {
+      "source": "Build/reddit-optimization/layout_integration-e8o1opqr/results.json",
+      "sha256": "760237274d57ae8b226505a197899c01fe8f0cc853377fb5487ab314eace7ee0",
+      "bytes": 1030
+    },
+    "platform_font_integration-047k0pxu/boehm/compile.command.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/boehm/compile.command.json",
+      "sha256": "0d3f11c273c0dfc0e23ed7d3f5dca7ce6657aee1f4334ead2975be98cac26285",
+      "bytes": 3472
+    },
+    "platform_font_integration-047k0pxu/boehm/compile.guard.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/boehm/compile.guard.json",
+      "sha256": "dc9a548f965b426472ae3d48175eb335dd13eba671c700fa65ec3aff40de0fb7",
+      "bytes": 1757
+    },
+    "platform_font_integration-047k0pxu/boehm/harness.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/boehm/harness.json",
+      "sha256": "4a94c36ac23e02b23e582b33c11fc1ef58e26e726410514520012244b2963ced",
+      "bytes": 3451
+    },
+    "platform_font_integration-047k0pxu/boehm/runtime.command.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/boehm/runtime.command.json",
+      "sha256": "0e5818161e8d031dab62dec842808beb33c32391db30347670fd17c3cb6880c9",
+      "bytes": 847
+    },
+    "platform_font_integration-047k0pxu/boehm/runtime.guard.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/boehm/runtime.guard.json",
+      "sha256": "ef666e7f0481f694690db84c3a0d44f9b4ae6e4ac6d680607d09d3e5ff09a893",
+      "bytes": 443
+    },
+    "platform_font_integration-047k0pxu/inputs.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/inputs.json",
+      "sha256": "49162ed0a723e784862896d3007c62fba849b3bec1a2a77ad4918f21ef215f7c",
+      "bytes": 5340
+    },
+    "platform_font_integration-047k0pxu/none/compile.command.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/none/compile.command.json",
+      "sha256": "16e855bbc4654c7291609295245b7abab9bb06844e4d31fceca13e84d8d3d475",
+      "bytes": 3402
+    },
+    "platform_font_integration-047k0pxu/none/compile.guard.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/none/compile.guard.json",
+      "sha256": "de1420659c117e7cdc9fccf94476d6c08d36583dd5a0a3a75f1832863e533076",
+      "bytes": 1723
+    },
+    "platform_font_integration-047k0pxu/none/harness.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/none/harness.json",
+      "sha256": "4126c681bd6b856baf62b398497162a187c61ad3e516014b0aa732ed9308ced3",
+      "bytes": 3449
+    },
+    "platform_font_integration-047k0pxu/none/runtime.command.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/none/runtime.command.json",
+      "sha256": "f15090d015f2d6b241245fd26c158a08ab5c6019de1132e7826a36a393aa09d8",
+      "bytes": 841
+    },
+    "platform_font_integration-047k0pxu/none/runtime.guard.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/none/runtime.guard.json",
+      "sha256": "5fa68c57403f84107a5abc718df95686d5a039f984f6d636e1c9bffd61df54b1",
+      "bytes": 442
+    },
+    "platform_font_integration-047k0pxu/results.json": {
+      "source": "Build/reddit-optimization/platform_font_integration-047k0pxu/results.json",
+      "sha256": "f458b012ae431ff1114ceaea6df1e03e1fe2c1e400b3d58d66503bcdd4435520",
+      "bytes": 1046
+    },
+    "run_font_validation.py": {
+      "source": "Build/reddit-optimization/run_font_validation.py",
+      "sha256": "66fbebc1d2406dbd3e8d2c56f0cde74009385e89812bc80ac50d56b388a23afb",
+      "bytes": 7251
+    },
+    "skia_focused-lchh4x9f/boehm/compile.command.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/boehm/compile.command.json",
+      "sha256": "02d0d8baaeccc787ec0713b314986673c6f5fd741d8f3aad710d8b25df816adf",
+      "bytes": 2638
+    },
+    "skia_focused-lchh4x9f/boehm/compile.guard.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/boehm/compile.guard.json",
+      "sha256": "e87122bd47afdd8d75263c51cb4a7e7deac3116143910c34f2e26e45643e0292",
+      "bytes": 1353
+    },
+    "skia_focused-lchh4x9f/boehm/harness.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/boehm/harness.json",
+      "sha256": "52ce5a07b643a05a3d4fa3f08ff3b3a1619b9d1609b5052a678fd74aae015250",
+      "bytes": 1621
+    },
+    "skia_focused-lchh4x9f/boehm/runtime.command.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/boehm/runtime.command.json",
+      "sha256": "797de88a53a69037cdc04ff93d0ecc5a5a9244c074a69161e2aeb37b74d08eb3",
+      "bytes": 795
+    },
+    "skia_focused-lchh4x9f/boehm/runtime.guard.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/boehm/runtime.guard.json",
+      "sha256": "b1cd24d30bd1fe375f4e96a689818f77eb92a608ae1b0a11db624a277a23ffdc",
+      "bytes": 430
+    },
+    "skia_focused-lchh4x9f/inputs.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/inputs.json",
+      "sha256": "7c0dd027492487c7ee93c89ed3f7550e04328160828f041fce5a30659995aa67",
+      "bytes": 2822
+    },
+    "skia_focused-lchh4x9f/none/compile.command.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/none/compile.command.json",
+      "sha256": "46097cbaba0a5afae4f8663db18c3445c3a78bc93234d3c7a9a5b21e72bfaf66",
+      "bytes": 2569
+    },
+    "skia_focused-lchh4x9f/none/compile.guard.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/none/compile.guard.json",
+      "sha256": "6c1861bfe95914f46e8f5a3280e9526b12dc675fd8c9c787b6bf649d4ab30efa",
+      "bytes": 1319
+    },
+    "skia_focused-lchh4x9f/none/harness.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/none/harness.json",
+      "sha256": "a216c827b7648aa81f61de7f26b30a278c28bd79b6ef48b57e0e2bace9b4903a",
+      "bytes": 1619
+    },
+    "skia_focused-lchh4x9f/none/runtime.command.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/none/runtime.command.json",
+      "sha256": "b63260c122743650036a0933c1e49523e37160afafe04200343963b998d9c4e3",
+      "bytes": 789
+    },
+    "skia_focused-lchh4x9f/none/runtime.guard.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/none/runtime.guard.json",
+      "sha256": "02d5186fcf52e7f3beee204dd8284f14d9ff88fa8fb36ac2075058d208dbecb2",
+      "bytes": 428
+    },
+    "skia_focused-lchh4x9f/results.json": {
+      "source": "Build/reddit-optimization/skia_focused-lchh4x9f/results.json",
+      "sha256": "dff78caeebb6523dd3be3fcd632b24893ad30167fc202c54659f3d148688ba01",
+      "bytes": 1018
+    }
+  },
+  "generated_documentation": {
+    "README.md": {
+      "sha256": "77def4714894bf64d64498d9553077d4cab8410c848b4b1092f05e90366f4004",
+      "bytes": 5942
+    }
+  }
+}

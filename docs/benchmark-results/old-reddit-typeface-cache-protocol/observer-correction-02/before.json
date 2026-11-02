@@ -1,0 +1,32 @@
+{
+  "recorded_at_utc": "2026-11-02T21:48:31.186595+00:00",
+  "original_observers": {
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/compare.py": {
+      "sha256": "2d13461fa51d00ab670cf675d046bf70f646bbef050031bdb228bafd49277378",
+      "preserved_copy": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/compare.py.before",
+      "preserved_copy_sha256": "2d13461fa51d00ab670cf675d046bf70f646bbef050031bdb228bafd49277378"
+    },
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/capture.py": {
+      "sha256": "ba99f95f5a194409fef6c17ff78444d9cf5faaf6b0ce0926e9d1ddb96f3bb86a",
+      "preserved_copy": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/capture.py.before",
+      "preserved_copy_sha256": "ba99f95f5a194409fef6c17ff78444d9cf5faaf6b0ce0926e9d1ddb96f3bb86a"
+    },
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/expected-native-diagnostics.json": {
+      "sha256": "2bbbc0660e7af18e461ea1bd4dfcbfd8a04aa94182372c911c14ff02d3e1f033",
+      "preserved_copy": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/expected-native-diagnostics.json.before",
+      "preserved_copy_sha256": "2bbbc0660e7af18e461ea1bd4dfcbfd8a04aa94182372c911c14ff02d3e1f033"
+    }
+  },
+  "original_failed_cohort_evidence": {
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/summary.json": "c9fc5f48781efbe79e77ddefc7efcbf16440c32535e94d3f6db9ec3b4b665dff",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/exception.txt": "cb0a729517b660984746e4f7e32a5f31cfcf9d606f4c0f1edfe4eda7d4fc9f92",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json": "b2b57732fc6af3d497b81fdc2ab1bcd46c80750164d89f2a9c7d611b77f95fe3",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.png": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/result.json": "ac43f504f37507a6741523328b5220fd9e9bc062dbf0f3f15d2a657e4556c919",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/invocation.json": "d0071550acc2c2054d2a2b91eed6ecd0ff9f2483524e289a31877837adde684f",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.cachegrind.576695": "d49be3eef93761a7d8daa94d52276de9bd78bb98a26966d23096dcae7e42bc95",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.valgrind.576695.log": "1b9c5ba5c9287d9f0b6ebd4588a71d01c06ea8895e20f33962fd3afa0c5b2385"
+  },
+  "supplementary_control": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/supplementary-control.json",
+  "supplementary_control_sha256": "f854bb833f27ee235bfc6a545048b2cc1f5674d183b5afda7405e16d8352aeb7"
+}

@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/skia_focused-lchh4x9f/none/font_tests_none"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {},
+  "adoption_error": null,
+  "limit_bytes": 3221225472,
+  "observed_peak_rss_bytes": 3510272,
+  "elapsed_seconds": 0.11322920699603856,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "created_at_utc": "2026-11-02T21:48:31.186595+00:00",
+  "purpose": "Supplementary conservative gate retaining the valid raw unmodified control from an invalid observer cohort; never a replacement or median/pair member.",
+  "instructions": 6842705460,
+  "counter_backend": "cachegrind",
+  "instruction_metric": "cachegrind_guest_instruction_references",
+  "report": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json",
+  "profile": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.cachegrind.576695",
+  "screenshot": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.png",
+  "cohort_summary": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/summary.json",
+  "observation_result": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/result.json",
+  "original_cohort_status": "invalid",
+  "original_error": "ValueError: Diagnostic channel differs from the exact baseline native-renderer list; new, missing, changed or unclassified/JavaScript messages are forbidden",
+  "original_observation_count": 1,
+  "candidate_observations": 0,
+  "evidence_sha256": {
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/summary.json": "c9fc5f48781efbe79e77ddefc7efcbf16440c32535e94d3f6db9ec3b4b665dff",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/exception.txt": "cb0a729517b660984746e4f7e32a5f31cfcf9d606f4c0f1edfe4eda7d4fc9f92",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json": "b2b57732fc6af3d497b81fdc2ab1bcd46c80750164d89f2a9c7d611b77f95fe3",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.png": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/result.json": "ac43f504f37507a6741523328b5220fd9e9bc062dbf0f3f15d2a657e4556c919",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/invocation.json": "d0071550acc2c2054d2a2b91eed6ecd0ff9f2483524e289a31877837adde684f",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.cachegrind.576695": "d49be3eef93761a7d8daa94d52276de9bd78bb98a26966d23096dcae7e42bc95",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.valgrind.576695.log": "1b9c5ba5c9287d9f0b6ebd4588a71d01c06ea8895e20f33962fd3afa0c5b2385"
+  },
+  "measurement_source_sha256": {
+    "/workspace/scratch/549231c7ae31/vox2/tools/measure_browser_instructions.py": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e",
+    "/workspace/scratch/549231c7ae31/vox2/tools/linux_instruction_counts.py": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227",
+    "/workspace/scratch/549231c7ae31/vox2/tools/process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+  },
+  "valgrind_runtime_sha256": {
+    "/usr/bin/valgrind": "4652774bd116cb49951ef74115ad4237cad5021b2bd4d80002f09d986ec438b9",
+    "/usr/bin/valgrind.bin": "def5fdcf6ae64a4d3e6af3786b622978d8313e0734ecf3f6cbe71d8be9e274c8",
+    "/usr/libexec/valgrind/cachegrind-amd64-linux": "38093b3bf8e9ffecb559a333c896a2fd2a2343bb79c3295f31c36475914deebf",
+    "/usr/libexec/valgrind/vgpreload_core-amd64-linux.so": "87edd6ad90b12bb5fe58f2ea2235db5b6a3d637657488f3e06d07e482354a8c5"
+  },
+  "baseline_binary": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-c/vox2",
+  "baseline_binary_sha256": "e74376514dbb0b55828ac26e8a9a355b9adb8b2a3c565f344f141ead793ecd54",
+  "raw_audit_sha256": "f14e7b397570b7623d1bbde6f1f03ff599361e2b1fc9e8cdedffa0bd4660a8fc",
+  "raw_native_renderer_diagnostic_count": 6,
+  "original_callgrind_reference_native_renderer_diagnostic_count": 12,
+  "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+  "source_identity": {
+    "repository": "vlang/vox2",
+    "baseline_source_tree": "4f87e708424edf0ed929d130fdc4ef0002fa23b5",
+    "measurement_driver_sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e",
+    "counter_module_sha256": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c",
+    "linux_counter_module_sha256": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227"
+  },
+  "gate": {
+    "expression": "10 * max(final_candidate_counts) <= 9 * min(final_baseline_counts + [6842705460])",
+    "required_in_addition_to_normal_cohort_gate": true,
+    "control_only_candidate_ceiling": 6158434914
+  },
+  "evidence_interpretation": "The same unmodified binary produced identical pixels and every raw native audit field except the multiplicity (6 versus 12) of the one source-proven native replay diagnostic. No candidate had been measured when this observer correction was authorized. This does not assign a measured frame count.",
+  "required_revalidation": "Reparse the pinned raw profile with the current unchanged strict Cachegrind parser; verify successful original browser/driver exit, pins, normalized audit identity and PNG before use."
+}

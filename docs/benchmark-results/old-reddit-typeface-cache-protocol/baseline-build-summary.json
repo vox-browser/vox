@@ -1,0 +1,73 @@
+{
+  "upstream_commit": "4f87e708424edf0ed929d130fdc4ef0002fa23b5",
+  "source_changed": false,
+  "route": "separate V C emission and native compilation, unchanged C-O2 production flags",
+  "c_generation": {
+    "command": [
+      "/workspace/scratch/549231c7ae31/v/v",
+      "-new-compiler",
+      "-glibc",
+      "-memory-limit",
+      "10G",
+      "-enable-globals",
+      "-cc",
+      "clang-18",
+      "-d",
+      "use_openssl",
+      "-exclude",
+      "@vlib/time/zoneinfo.native.v",
+      "-path",
+      "/workspace/scratch/549231c7ae31/vox2|/workspace/scratch/549231c7ae31/vox2/Build/linux/modules|/workspace/scratch/549231c7ae31/vox2/Build/v/httpcompat/32bae206d5ba729b/modules|/workspace/scratch/549231c7ae31/vox2/Build/v/modules|@vmodules|@vlib",
+      "-gc",
+      "boehm",
+      "-d",
+      "dynamic_boehm",
+      "-show-c-output",
+      "-dump-c-flags",
+      "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-cflags.txt",
+      "-cflags",
+      "-D_GNU_SOURCE=1 -O2",
+      "-generate-c-project",
+      "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-c",
+      "."
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 6140112896,
+    "elapsed_seconds": 117.20965465700283,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "native_compilation": {
+    "command": [
+      "sh",
+      "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-c/build.sh"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 3144503296,
+    "elapsed_seconds": 660.5742550150026,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "startup_smoke": {
+    "command": [
+      "Build/reddit-optimization/baseline-c/vox2",
+      "--headless-smoke",
+      "--js-engine=javascriptcore"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 93835264,
+    "elapsed_seconds": 0.33507499700499466,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "original_failed_build_receipt": "Build/production-build/receipts/20261102-215759-6e7c72b2/memory.json"
+}

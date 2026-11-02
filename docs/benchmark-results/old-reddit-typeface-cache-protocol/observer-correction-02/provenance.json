@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "completed_at_utc": "2026-11-02T21:51:19.768325+00:00",
+  "authorization": "Parent explicitly authorized prospective correction 2 before cohort-02: preserve raw native diagnostic multiplicity, canonicalize only repetition of the one exact known message, retain the invalid cohort, and require a supplementary conservative gate using its valid raw unmodified control.",
+  "trigger": {
+    "original_cohort_status": "invalid",
+    "unmodified_baseline_observations": 1,
+    "candidate_observations": 0,
+    "raw_cachegrind_control_instructions": 6842705460,
+    "first_callgrind_native_message_count": 12,
+    "cachegrind_native_message_count": 6,
+    "all_other_raw_audit_fields_and_pixels_exact": true
+  },
+  "interpretation": "Source-proven native draw replay messages accumulate in app.js_messages. The same unmodified binary and frozen input produced differing repetition counts with identical full pixels/content. Only this known message multiplicity is excluded from stable document identity; no exact frame count is inferred.",
+  "changes": [
+    "Require a nonempty diagnostic list consisting only of the exact string Shadow replay: Empty shadow bounds. Reject absent/empty lists, any different message and native document errors.",
+    "Preserve each raw list, occurrence count and raw audit hash in native-diagnostics.json and observation summaries. Compare a singleton diagnostic classification and every other raw audit field exactly.",
+    "Keep the original first-diagnostic report and PNG as the fixed reference for every capture, including each first baseline.",
+    "Pin the invalid cohort-01 report, raw profile, PNG, result, summary, exception, invocation, Valgrind log, source modules, Valgrind runtime and baseline binary. Reparse its count through the unchanged strict Cachegrind parser and revalidate its normalized audit/pixels before use.",
+    "Require font/config, linked/dynamic-library and embedded/runtime-asset identities to match the retained control as well as between final variants.",
+    "Report the normal final-cohort gate and a separate supplementary gate using min(all final baselines,6842705460). Final target_met requires both; the retained control is excluded from normal pairs and medians."
+  ],
+  "measurement_boundary_changed": false,
+  "measurement_driver_changed": false,
+  "counter_parser_changed": false,
+  "fixture_changed": false,
+  "native_browser_audit_changed": false,
+  "cache_and_transport_policies_changed": false,
+  "counter_policy": "Cachegrind only for final cohort and supplementary gate. The original Callgrind diagnostic count remains excluded. No retries, excluded final attempts, replacement observations, fallback or mixed counters.",
+  "original_failed_cohort_evidence_unchanged": true,
+  "original_failed_cohort_evidence": {
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/summary.json": "c9fc5f48781efbe79e77ddefc7efcbf16440c32535e94d3f6db9ec3b4b665dff",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/exception.txt": "cb0a729517b660984746e4f7e32a5f31cfcf9d606f4c0f1edfe4eda7d4fc9f92",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json": "b2b57732fc6af3d497b81fdc2ab1bcd46c80750164d89f2a9c7d611b77f95fe3",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.png": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/result.json": "ac43f504f37507a6741523328b5220fd9e9bc062dbf0f3f15d2a657e4556c919",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/invocation.json": "d0071550acc2c2054d2a2b91eed6ecd0ff9f2483524e289a31877837adde684f",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.cachegrind.576695": "d49be3eef93761a7d8daa94d52276de9bd78bb98a26966d23096dcae7e42bc95",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.valgrind.576695.log": "1b9c5ba5c9287d9f0b6ebd4588a71d01c06ea8895e20f33962fd3afa0c5b2385"
+  },
+  "observer_changes": {
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/compare.py": {
+      "before_sha256": "2d13461fa51d00ab670cf675d046bf70f646bbef050031bdb228bafd49277378",
+      "after_sha256": "c03a7e335beb767bd50e79d72e9fa75f16c506e7fef1ff01a016aba478a7cd42",
+      "preserved_before": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/compare.py.before",
+      "preserved_after": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/compare.py.after"
+    },
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/capture.py": {
+      "before_sha256": "ba99f95f5a194409fef6c17ff78444d9cf5faaf6b0ce0926e9d1ddb96f3bb86a",
+      "after_sha256": "69ac32ff26108dfa3a00c31807e8951a9bd0db11f1be0306a7d29835a4e6bfea",
+      "preserved_before": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/capture.py.before",
+      "preserved_after": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/capture.py.after"
+    },
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/expected-native-diagnostics.json": {
+      "before_sha256": "2bbbc0660e7af18e461ea1bd4dfcbfd8a04aa94182372c911c14ff02d3e1f033",
+      "after_sha256": "6f7cf17037c4097000d5b3ca699da22a508fca0d03837ba608d25c648ef52bda",
+      "preserved_before": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/expected-native-diagnostics.json.before",
+      "preserved_after": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/expected-native-diagnostics.json.after"
+    }
+  },
+  "patch": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/correction.patch",
+  "patch_sha256": "9b8885b5270c102beedb4f11b3ad2946635890233a564f2a2f3c17b5f9a5c06c",
+  "supplementary_control": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/supplementary-control.json",
+  "supplementary_control_sha256": "f854bb833f27ee235bfc6a545048b2cc1f5674d183b5afda7405e16d8352aeb7",
+  "expected_native_diagnostics": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/expected-native-diagnostics.json",
+  "expected_native_diagnostics_sha256": "6f7cf17037c4097000d5b3ca699da22a508fca0d03837ba608d25c648ef52bda",
+  "acceptance_counter_selection": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/acceptance-counter-selection.json",
+  "acceptance_counter_selection_sha256": "09f94d87a99a639d628cf3146ad6ecf724f9a686275ffb129b9a8a2d2852c02c",
+  "validation": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-02/validation.json",
+  "validation_sha256": "ed5579ec6e99cf1fbe2caece0786f5009a4380dc8ae1ac879735457a42b3b673",
+  "validation_summary": "Both actual unmodified captures validate to the same canonical content, with raw audits unchanged; eight negative correctness cases reject or differ. Retained control strictly reparses to 6842705460. No browser launched, no candidate measured, and no synthetic instruction counts used.",
+  "final_target_formula": "normal_cohort_gate AND (10 * max(final_candidates) <= 9 * min(final_baselines + [6842705460]))",
+  "frozen_reference_decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c"
+}

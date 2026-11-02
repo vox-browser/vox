@@ -1,0 +1,85 @@
+{
+  "generated_c": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/platform_font_integration-047k0pxu/boehm/vtmp/font_tests_boehm.606757.66248273758267.140132787481536.tmp.c",
+  "sha256": "f628235cc78576d3f066d933c666ae4e7c0664c4d446852dfd40ab04a605f6b0",
+  "registered_test_count": 19,
+  "registered_tests": [
+    {
+      "file": "platform/fontconfig_linux_test.v",
+      "function": "test_linux_font_discovery_supplies_real_faces_for_layout_and_replay"
+    },
+    {
+      "file": "platform/font_face_retention_test.v",
+      "function": "test_font_retains_its_loaded_face_after_source_file_removal"
+    },
+    {
+      "file": "platform/font_face_retention_test.v",
+      "function": "test_missing_font_source_does_not_pin_its_fallback_face"
+    },
+    {
+      "file": "platform/font_glyph_cache_identity_test.v",
+      "function": "test_glyph_units_follow_the_decoded_face_after_an_explicit_source_appears"
+    },
+    {
+      "file": "platform/font_glyph_cache_identity_test.v",
+      "function": "test_glyph_units_preserve_advances_and_indices_across_aliases_and_sizes"
+    },
+    {
+      "file": "platform/font_rendering_policy_test.v",
+      "function": "test_shaping_precision_keeps_fractional_advances_and_isolates_cached_runs"
+    },
+    {
+      "file": "platform/glyph_slice_storage_test.v",
+      "function": "test_layout_slices_match_eager_slices_after_publication_and_keep_private_storage"
+    },
+    {
+      "file": "platform/glyph_slice_storage_test.v",
+      "function": "test_translated_glyph_slices_match_the_independent_constructor_for_every_range"
+    },
+    {
+      "file": "platform/glyph_slice_storage_test.v",
+      "function": "test_local_context_slices_preserve_exact_rounding_trailing_spaces_and_owned_buffers"
+    },
+    {
+      "file": "platform/glyph_slice_storage_test.v",
+      "function": "test_real_shaped_context_slices_leave_the_shared_source_unchanged"
+    },
+    {
+      "file": "platform/glyph_slice_storage_test.v",
+      "function": "test_deferred_layout_slice_forks_publish_independent_replay_after_gc"
+    },
+    {
+      "file": "platform/harfbuzz_idle_test.v",
+      "function": "test_idle_native_font_retirement_preserves_retained_runs_and_refreshes_borrowed_faces"
+    },
+    {
+      "file": "platform/harfbuzz_idle_test.v",
+      "function": "test_idle_native_font_retirement_is_idempotent_and_reuses_scaled_slots"
+    },
+    {
+      "file": "platform/harfbuzz_idle_test.v",
+      "function": "test_retired_bitmap_classification_is_recomputed_from_the_new_face"
+    },
+    {
+      "file": "platform/harfbuzz_idle_test.v",
+      "function": "test_idle_refill_keeps_native_cache_capacity_bounded"
+    },
+    {
+      "file": "platform/web_font_decode_test.v",
+      "function": "test_web_font_preparation_retains_the_source_woff_conversion_verbatim"
+    },
+    {
+      "file": "platform/web_font_decode_test.v",
+      "function": "test_web_font_preparation_retains_the_source_woff2_conversion_verbatim"
+    },
+    {
+      "file": "platform/variable_font_test.v",
+      "function": "test_downloaded_variable_face_coordinates_change_shaping_and_replay_identity"
+    },
+    {
+      "file": "platform/variable_font_test.v",
+      "function": "test_static_sources_ignore_unsupported_variation_coordinates"
+    }
+  ],
+  "known_linux_early_return_count": 0,
+  "verification": "Selected tests have explicit calls in the unchanged generated C main; zero runtime exit verifies the complete harness."
+}

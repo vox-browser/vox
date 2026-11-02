@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "completed_at_utc": "2026-11-02T21:35:24.680075+00:00",
+  "authorization": "Parent explicitly authorized the exact native-shadow diagnostic classification and pinned first-diagnostic reference before any acceptance cohort.",
+  "reason": "The original audit field javascript_diagnostics contains app.js_messages, including source-proven native shadow rasterization diagnostics. The original observer incorrectly treated these 12 messages as JavaScript diagnostics.",
+  "changes": [
+    "Require exact ordered equality with all 12 recorded Shadow replay: Empty shadow bounds strings. Reject any added, missing, changed, unclassified or JavaScript message; continue requiring zero native reported errors.",
+    "Require --reference-capture-report to identify the pinned original driver report, verify its report, PNG, audit and original failed-wrapper provenance hashes, and independently decode the reference PNG.",
+    "Every cohort capture, including the first baseline, uses the original reference PNG via the unchanged driver --expected-png option and compares all prior validation fields plus the complete native audit exactly.",
+    "Pin the new diagnostic contract, reference evidence and this provenance file for the cohort. Future standalone diagnostics also pin the new contract."
+  ],
+  "measurement_boundary_changed": false,
+  "measurement_driver_changed": false,
+  "fixture_changed": false,
+  "native_browser_audit_changed": false,
+  "counter_parser_changed": false,
+  "counter_policy": "Acceptance remains explicitly selected Cachegrind, with no mixed counters or fallback. The original diagnostic Callgrind count is excluded from all acceptance statistics.",
+  "original_failed_evidence_unchanged": true,
+  "original_failed_evidence": {
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/summary.json": "53c68492747ffd9ae69dbc173fa403b9a70dcaff6c4c7a1e886d95f9ab1cc382",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/exception.txt": "fbaf7b4c0c66f9090e01478cc52d26245da28bf4d67d1d25ea76011d2ca20f9e",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475"
+  },
+  "observer_changes": {
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/compare.py": {
+      "before_sha256": "8e37fcb93975c568912fa4e7876cbd8584e9d0035809d329d0979dad865b8ce1",
+      "after_sha256": "2d13461fa51d00ab670cf675d046bf70f646bbef050031bdb228bafd49277378",
+      "preserved_before": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-01/compare.before.py",
+      "preserved_after": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-01/compare.after.py"
+    },
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/capture.py": {
+      "before_sha256": "d38fce8ea8828efeb9d544655f96d1a06b0b47799ba64afce4db6286533a773f",
+      "after_sha256": "ba99f95f5a194409fef6c17ff78444d9cf5faaf6b0ce0926e9d1ddb96f3bb86a",
+      "preserved_before": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-01/capture.before.py",
+      "preserved_after": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-01/capture.after.py"
+    }
+  },
+  "patch": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-01/correction.patch",
+  "patch_sha256": "8c710b821a1527779326a908d1609e6b51f0a9142455821616c942ae8393fd63",
+  "expected_native_diagnostics": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/expected-native-diagnostics.json",
+  "expected_native_diagnostics_sha256": "2bbbc0660e7af18e461ea1bd4dfcbfd8a04aa94182372c911c14ff02d3e1f033",
+  "acceptance_counter_selection": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/acceptance-counter-selection.json",
+  "acceptance_counter_selection_sha256": "09f94d87a99a639d628cf3146ad6ecf724f9a686275ffb129b9a8a2d2852c02c",
+  "validation": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-01/validation.json",
+  "validation_sha256": "d21c2b1195402e9e4910a8fa2bfd8c0775d3fb7606dae177019f2ef2201c3a62",
+  "validation_summary": "Actual original capture validates under the exact classification; PNG decoded independently to the fixed hash. Eight negative correctness checks confirm rejection or exact-identity mismatch. No browser launched and no instruction counts fabricated.",
+  "frozen_reference_decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c"
+}

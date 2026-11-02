@@ -1,0 +1,100 @@
+{
+  "pins": {
+    "/workspace/scratch/549231c7ae31/vox2/platform/fontconfig_linux_test.v": "fea1fbf40c2521d1645a3c12e0813db7ed74e308bc6d8eb2af994c5c4bf8ad23",
+    "/workspace/scratch/549231c7ae31/vox2/platform/font_face_retention_test.v": "dcc83fe02a2a92a9c0227d60361ce51d4b1c79ea3e3e8a6990fa5977705df69f",
+    "/workspace/scratch/549231c7ae31/vox2/platform/font_glyph_cache_identity_test.v": "6eb9e1cb353ed666be06dcde4f75bb46c13044f1be9a1a01355e0f02e7d5589c",
+    "/workspace/scratch/549231c7ae31/vox2/platform/font_rendering_policy_test.v": "4038ba8ecad85b57b94db7c9e3a398e08a75674d34e52de28e38742156210fc8",
+    "/workspace/scratch/549231c7ae31/vox2/platform/glyph_slice_storage_test.v": "f55bab99f08ffc92898e28c3b688158195fe5d7a1858d4dd0cffa5ea45d2b8f5",
+    "/workspace/scratch/549231c7ae31/vox2/platform/harfbuzz_idle_test.v": "12d2006639cb1ca28bd1f46e4c1e6489f540a84fa8756b1f74ce05eb0d37cc8b",
+    "/workspace/scratch/549231c7ae31/vox2/platform/web_font_decode_test.v": "d163b87fd14a0287384772fff8cc1b0e5e0417b5e7dd10e05ede4727b7b7f758",
+    "/workspace/scratch/549231c7ae31/vox2/platform/variable_font_test.v": "8396dee2b8e79d97af1b1f18f6096b3c60b022e4c6ebff03c23d6effcc2f9909",
+    "/workspace/scratch/549231c7ae31/v/v": "eb83feee74cfd77d979dd874a0916806fdd59476603c02f0585a12d567a9d452",
+    "/workspace/scratch/549231c7ae31/vox2/Build/linux/native/skia.a": "3e952238187b77ddd7d11a0a8719b977bff6f9e76dcf36960d05793ae8c2c263",
+    "/workspace/scratch/549231c7ae31/vox2/Build/linux/native/stbi.a": "4590cd3024d87f23d7d64deaf53a48a0cdf2e680f955690304f5a045677c21c7",
+    "/workspace/scratch/549231c7ae31/vox2/skia/shadow_raster.cpp": "9ee92dad543f16d99ce9a2102465dfe4f39bd44439f4c0f822c9632aa78ba16b",
+    "/workspace/scratch/549231c7ae31/vox2/skia/shadow_typeface_cache.h": "5efc4608ff93953e2574ecb27de7ec742f6325d9b631a0e7814d609bc121a27b",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/run_font_validation.py": "66fbebc1d2406dbd3e8d2c56f0cde74009385e89812bc80ac50d56b388a23afb"
+  },
+  "selected": [
+    {
+      "file": "platform/fontconfig_linux_test.v",
+      "function": "test_linux_font_discovery_supplies_real_faces_for_layout_and_replay"
+    },
+    {
+      "file": "platform/font_face_retention_test.v",
+      "function": "test_font_retains_its_loaded_face_after_source_file_removal"
+    },
+    {
+      "file": "platform/font_face_retention_test.v",
+      "function": "test_missing_font_source_does_not_pin_its_fallback_face"
+    },
+    {
+      "file": "platform/font_glyph_cache_identity_test.v",
+      "function": "test_glyph_units_follow_the_decoded_face_after_an_explicit_source_appears"
+    },
+    {
+      "file": "platform/font_glyph_cache_identity_test.v",
+      "function": "test_glyph_units_preserve_advances_and_indices_across_aliases_and_sizes"
+    },
+    {
+      "file": "platform/font_rendering_policy_test.v",
+      "function": "test_shaping_precision_keeps_fractional_advances_and_isolates_cached_runs"
+    },
+    {
+      "file": "platform/glyph_slice_storage_test.v",
+      "function": "test_layout_slices_match_eager_slices_after_publication_and_keep_private_storage"
+    },
+    {
+      "file": "platform/glyph_slice_storage_test.v",
+      "function": "test_translated_glyph_slices_match_the_independent_constructor_for_every_range"
+    },
+    {
+      "file": "platform/glyph_slice_storage_test.v",
+      "function": "test_local_context_slices_preserve_exact_rounding_trailing_spaces_and_owned_buffers"
+    },
+    {
+      "file": "platform/glyph_slice_storage_test.v",
+      "function": "test_real_shaped_context_slices_leave_the_shared_source_unchanged"
+    },
+    {
+      "file": "platform/glyph_slice_storage_test.v",
+      "function": "test_deferred_layout_slice_forks_publish_independent_replay_after_gc"
+    },
+    {
+      "file": "platform/harfbuzz_idle_test.v",
+      "function": "test_idle_native_font_retirement_preserves_retained_runs_and_refreshes_borrowed_faces"
+    },
+    {
+      "file": "platform/harfbuzz_idle_test.v",
+      "function": "test_idle_native_font_retirement_is_idempotent_and_reuses_scaled_slots"
+    },
+    {
+      "file": "platform/harfbuzz_idle_test.v",
+      "function": "test_retired_bitmap_classification_is_recomputed_from_the_new_face"
+    },
+    {
+      "file": "platform/harfbuzz_idle_test.v",
+      "function": "test_idle_refill_keeps_native_cache_capacity_bounded"
+    },
+    {
+      "file": "platform/web_font_decode_test.v",
+      "function": "test_web_font_preparation_retains_the_source_woff_conversion_verbatim"
+    },
+    {
+      "file": "platform/web_font_decode_test.v",
+      "function": "test_web_font_preparation_retains_the_source_woff2_conversion_verbatim"
+    },
+    {
+      "file": "platform/variable_font_test.v",
+      "function": "test_downloaded_variable_face_coordinates_change_shaping_and_replay_identity"
+    },
+    {
+      "file": "platform/variable_font_test.v",
+      "function": "test_static_sources_ignore_unsupported_variation_coordinates"
+    }
+  ],
+  "known_linux_skips": [],
+  "removed_child_environment": {},
+  "module_paths": "/workspace/scratch/549231c7ae31/vox2|/workspace/scratch/549231c7ae31/vox2/Build/linux/modules|/workspace/scratch/549231c7ae31/vox2/Build/v/httpcompat/32bae206d5ba729b/modules|@vmodules|@vlib",
+  "production_archive": "/workspace/scratch/549231c7ae31/vox2/Build/linux/native/skia.a"
+}

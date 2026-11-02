@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/layout_integration-e8o1opqr/none/font_tests_none"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {},
+  "adoption_error": null,
+  "limit_bytes": 3221225472,
+  "observed_peak_rss_bytes": 1921024,
+  "elapsed_seconds": 0.11960550599906128,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

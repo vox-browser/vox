@@ -1,0 +1,876 @@
+{
+  "schema_version": 1,
+  "created_at_utc": "2026-11-02T22:05:41.975782+00:00",
+  "scope": "Raw benchmark evidence for original diagnostic, invalid first cohort and final six-observation cohort; every archived source file is unchanged.",
+  "members": [
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01.guard.json",
+      "sha256": "16b580fcedad6d90fcc9e23fe4c45fe46a835ef2a0ecafa53411f8437bade4d1",
+      "bytes": 650,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01.log",
+      "sha256": "041954c60696e50d571d5e40fee7b93b54d50ac44abdd498a9d1d69c5c847b7b",
+      "bytes": 712,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/capture.json",
+      "sha256": "c69051ebe09e4dfcb0e2759b4745c3da99305a21105d7089450be6eb0d6884b0",
+      "bytes": 104702,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.audit.json",
+      "sha256": "8ca0bbcfd7471a67d096f90957599356223e56adf4e01a247b2d2bac3143af09",
+      "bytes": 48806,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.callgrind.535131",
+      "sha256": "c3ccdca73164052bd448aa04e4086c99b80a639c06729cd1a595b0cec995338c",
+      "bytes": 5766142,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json",
+      "sha256": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+      "bytes": 94706,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.log",
+      "sha256": "4bfa5c9edb4f124a49857e510ee3436f47fe4578d3e35910b55c25253216631e",
+      "bytes": 262,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png",
+      "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+      "bytes": 232293,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.valgrind.535131.log",
+      "sha256": "def9583a86624c37b62e35416f1f79b450dee71c98e207b8937da1781ed45c44",
+      "bytes": 1088,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.valgrind.537253.log",
+      "sha256": "d1eed7e7511d9c3892246ffaa738fa772f748973c7602810657b0e99971a686b",
+      "bytes": 650,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.window.png",
+      "sha256": "a8e95ccb59e594cce7991e1f0a7c46c075a32b7d11039c102bb5f945989763ef",
+      "bytes": 283985,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/driver.log",
+      "sha256": "15d95f5f6a5f064e82c2021eed680e4d072682ec0ffade553f1a15a5c8171649",
+      "bytes": 362,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/exception.txt",
+      "sha256": "fbaf7b4c0c66f9090e01478cc52d26245da28bf4d67d1d25ea76011d2ca20f9e",
+      "bytes": 561,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/flat.txt",
+      "sha256": "46191bc50ff4a6aca93db737d3233cecfab967e531b860a580b721be33532fa1",
+      "bytes": 192806,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/inclusive.txt",
+      "sha256": "4a0a670827dc4157662755eb293b8984bc93f4ffcf84e0ab41e88428c69a9be1",
+      "bytes": 16618,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/resource-network-inventory.json",
+      "sha256": "e1eedff1cc5d066b62ec44a788bb168f5865e623a10c8ec4f36a0a502cc9d781",
+      "bytes": 487338,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/baseline-callgrind-01/summary.json",
+      "sha256": "53c68492747ffd9ae69dbc173fa403b9a70dcaff6c4c7a1e886d95f9ab1cc382",
+      "bytes": 686445,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01.guard.json",
+      "sha256": "b142b3cd2955682bed29a8aae15afaa08c105c4a5163de2a775a58f87ca71e0c",
+      "bytes": 850,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01.log",
+      "sha256": "cd3ec40674feef1f8b755c38f04b1935c806c09e3ca1952f8790758685851f3b",
+      "bytes": 1120,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/exception.txt",
+      "sha256": "cb0a729517b660984746e4f7e32a5f31cfcf9d606f4c0f1edfe4eda7d4fc9f92",
+      "bytes": 641,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.json",
+      "sha256": "374abfe7cb8ffc39db194f76d0b784ef148170adb3b857ba0b977df02404a1be",
+      "bytes": 104693,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.audit.json",
+      "sha256": "33c00761f6547414a4d114eab366dff1c6a1697e9d4d7aa43e3ffbc8c7f72c5e",
+      "bytes": 48584,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.cachegrind.576695",
+      "sha256": "d49be3eef93761a7d8daa94d52276de9bd78bb98a26966d23096dcae7e42bc95",
+      "bytes": 922054,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json",
+      "sha256": "b2b57732fc6af3d497b81fdc2ab1bcd46c80750164d89f2a9c7d611b77f95fe3",
+      "bytes": 94719,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.log",
+      "sha256": "4bfa5c9edb4f124a49857e510ee3436f47fe4578d3e35910b55c25253216631e",
+      "bytes": 262,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.log"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.png",
+      "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+      "bytes": 232293,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.valgrind.576695.log",
+      "sha256": "1b9c5ba5c9287d9f0b6ebd4588a71d01c06ea8895e20f33962fd3afa0c5b2385",
+      "bytes": 906,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.valgrind.577409.log",
+      "sha256": "d1454d7dbb4ef2c8700b942b4c26c2b257587a704b0c4a0db4c88a63fc1c11cf",
+      "bytes": 663,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.window.png",
+      "sha256": "a8e95ccb59e594cce7991e1f0a7c46c075a32b7d11039c102bb5f945989763ef",
+      "bytes": 283985,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.window.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/driver.log",
+      "sha256": "8e666dd19b89a59aa1918452704bb715ca47133311440f6380ab4380c30db34e",
+      "bytes": 363,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/invocation.json",
+      "sha256": "d0071550acc2c2054d2a2b91eed6ecd0ff9f2483524e289a31877837adde684f",
+      "bytes": 10375,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/result.json",
+      "sha256": "ac43f504f37507a6741523328b5220fd9e9bc062dbf0f3f15d2a657e4556c919",
+      "bytes": 10956,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/reference-content-validation.json",
+      "sha256": "0383859bb7d558ac71544261cacc219a177b50cdb346c79d0eef830648d3a07b",
+      "bytes": 132062,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/resource-network-inventory.json",
+      "sha256": "e1eedff1cc5d066b62ec44a788bb168f5865e623a10c8ec4f36a0a502cc9d781",
+      "bytes": 487338,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/resource-network-inventory.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-01/summary.json",
+      "sha256": "c9fc5f48781efbe79e77ddefc7efcbf16440c32535e94d3f6db9ec3b4b665dff",
+      "bytes": 667096,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02.guard.json",
+      "sha256": "85be28efce253a0b3f7213e3bec2dc95a217e158cb82b1862084e8b102c323d6",
+      "bytes": 853,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02.log",
+      "sha256": "a46c22fdc6876a0741b05addc62872706b2ea092515566fd7e91eeb886597fdc",
+      "bytes": 2716,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.json",
+      "sha256": "725a54a972c4c6f6708944e8a923b8e672ba79e90345646fa82a3fc7480e48bc",
+      "bytes": 104838,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.audit.json",
+      "sha256": "e61a523fa06c1ac52422186fb23c379336c96e6621ce10838ab4616e584063ae",
+      "bytes": 48695,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.cachegrind.589444",
+      "sha256": "57dccabfe1843715e0075ed79396c1ac2254820dcd93204077952531e3e06186",
+      "bytes": 922143,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.json",
+      "sha256": "bde709eed1f53e4042e6ce976b32519b4f76c67ba30c5489fbafe2a1c96ddc7b",
+      "bytes": 94852,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.log",
+      "sha256": "4bfa5c9edb4f124a49857e510ee3436f47fe4578d3e35910b55c25253216631e",
+      "bytes": 262,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.log"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.png",
+      "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+      "bytes": 232293,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.valgrind.589444.log",
+      "sha256": "954e1ea0919a3e8c317ffe8bda21b9862820684a1157a21bd71908f2a69a7e93",
+      "bytes": 906,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.valgrind.590214.log",
+      "sha256": "5c382e62e0d9b0db9217859d8a11528bd78a701f20525202f4670a7a2f0fbed6",
+      "bytes": 663,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.window.png",
+      "sha256": "a8e95ccb59e594cce7991e1f0a7c46c075a32b7d11039c102bb5f945989763ef",
+      "bytes": 283985,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.window.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/content-validation.json",
+      "sha256": "ae8ba0d56570a53b4ae61f29026734821cfae44e915995f8e060508afa63eb3a",
+      "bytes": 131116,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/document-comparison.json",
+      "sha256": "dfdfcb4bace2b11c3832bf8905285498a51c84701ea39126703e78ab54d3d6b0",
+      "bytes": 249,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/driver.log",
+      "sha256": "9aa6be9fea3eaeed299aa8bb3ea9161683575ea5cb93d70e3a1070b2c94ca44f",
+      "bytes": 363,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/invocation.json",
+      "sha256": "a3497db3bf7211c32f4d5274f9256f9ac7de8c6becb312f23e75c288b242dc4e",
+      "bytes": 10371,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/native-diagnostics.json",
+      "sha256": "ad93b2438e68a7f948d014394fd84c4669839d0a5d92cabf6f2633aa73e989b0",
+      "bytes": 768,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/result.json",
+      "sha256": "c4a08dc30fdb7711956b56e8f1136d90df92cf9c853f1019863317df2d20cba9",
+      "bytes": 11108,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.json",
+      "sha256": "b52856c969d48f11ffd90cbdc3359217d76772a989fa07990143e0f0fae7ccff",
+      "bytes": 104846,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.audit.json",
+      "sha256": "e61a523fa06c1ac52422186fb23c379336c96e6621ce10838ab4616e584063ae",
+      "bytes": 48695,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.audit.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.cachegrind.591597",
+      "sha256": "bea8de5828ac4b6d8f2e49dea7d590e88d070038294246b079cd7dacc250605b",
+      "bytes": 921333,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.json",
+      "sha256": "695a2a70393c6e197795e5930d5cfff453fcd0260d2f6bab3de229c66e539b18",
+      "bytes": 94860,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.log",
+      "sha256": "4bfa5c9edb4f124a49857e510ee3436f47fe4578d3e35910b55c25253216631e",
+      "bytes": 262,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.log"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.png",
+      "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+      "bytes": 232293,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.valgrind.591597.log",
+      "sha256": "731f50424eea7eea60aec2fa29be51cdcc569f6b1c034d279110e0c02354ea54",
+      "bytes": 908,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.valgrind.592468.log",
+      "sha256": "873e4b4fd98f52b6366fb2f6bfa27fddfcf20f6cf70e0a752b0c2df54cd5d6ff",
+      "bytes": 665,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.window.png",
+      "sha256": "a8e95ccb59e594cce7991e1f0a7c46c075a32b7d11039c102bb5f945989763ef",
+      "bytes": 283985,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.window.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/content-validation.json",
+      "sha256": "ae8ba0d56570a53b4ae61f29026734821cfae44e915995f8e060508afa63eb3a",
+      "bytes": 131116,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/content-validation.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/document-comparison.json",
+      "sha256": "dfdfcb4bace2b11c3832bf8905285498a51c84701ea39126703e78ab54d3d6b0",
+      "bytes": 249,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/document-comparison.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/driver.log",
+      "sha256": "bada14589c10ea110e21630faa3069a7f3ef3696e1077f4c11985f9c85653a34",
+      "bytes": 363,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/invocation.json",
+      "sha256": "f5960206473f23eae4d20bd429457990523aba0f7fdce0d4952e9f69c3c71259",
+      "bytes": 10378,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/native-diagnostics.json",
+      "sha256": "ad93b2438e68a7f948d014394fd84c4669839d0a5d92cabf6f2633aa73e989b0",
+      "bytes": 768,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/native-diagnostics.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/result.json",
+      "sha256": "cda181eab625b1a2ffc4284c069200f65284f745e7ccb1dfb0087071af3c3d2f",
+      "bytes": 11120,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.json",
+      "sha256": "9e945ac231c38e56ae06b41626c3d51a33538e71fbd202e1084f0c026771fe0e",
+      "bytes": 104836,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.audit.json",
+      "sha256": "e61a523fa06c1ac52422186fb23c379336c96e6621ce10838ab4616e584063ae",
+      "bytes": 48695,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.audit.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.cachegrind.594951",
+      "sha256": "1eea8c6b1ea13c63c078c5e75905053444a3c6730344b978dbd4faee2e8d32f4",
+      "bytes": 922038,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.json",
+      "sha256": "0f2d7f2f8fdc0ae19d171e96f72723f14b6a144e318625fcb626100f824a57d0",
+      "bytes": 94850,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.log",
+      "sha256": "4bfa5c9edb4f124a49857e510ee3436f47fe4578d3e35910b55c25253216631e",
+      "bytes": 262,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.log"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.png",
+      "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+      "bytes": 232293,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.valgrind.594951.log",
+      "sha256": "9209f0e4d481824dae38d92647b62adeea70e1cf7fadbdb30eec70eac825d564",
+      "bytes": 906,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.valgrind.595639.log",
+      "sha256": "123cbc7b7c90258d651c5617904db76a2569850544b883310ad47c1be2fccfb0",
+      "bytes": 663,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.window.png",
+      "sha256": "a8e95ccb59e594cce7991e1f0a7c46c075a32b7d11039c102bb5f945989763ef",
+      "bytes": 283985,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.window.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/content-validation.json",
+      "sha256": "ae8ba0d56570a53b4ae61f29026734821cfae44e915995f8e060508afa63eb3a",
+      "bytes": 131116,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/content-validation.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/document-comparison.json",
+      "sha256": "dfdfcb4bace2b11c3832bf8905285498a51c84701ea39126703e78ab54d3d6b0",
+      "bytes": 249,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/document-comparison.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/driver.log",
+      "sha256": "20b194ed82430847495a8fd27ce2e6f46c5fb2ff2baa0e61d30eb3130b69413e",
+      "bytes": 363,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/invocation.json",
+      "sha256": "0412673cd10279ba7360a74741fdcdcbeec23be4c41584813f6c72bd975aefa7",
+      "bytes": 10370,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/native-diagnostics.json",
+      "sha256": "ad93b2438e68a7f948d014394fd84c4669839d0a5d92cabf6f2633aa73e989b0",
+      "bytes": 768,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/native-diagnostics.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/result.json",
+      "sha256": "f898b0e44190897ec479e0e26444cfeca2253e0e792f57b4e029fedcc9fcb67a",
+      "bytes": 11111,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.json",
+      "sha256": "f228f41fa852ad1116d2dcaa30125b464fc47dc2cf0df2b5902f630e837a456f",
+      "bytes": 104703,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.audit.json",
+      "sha256": "33c00761f6547414a4d114eab366dff1c6a1697e9d4d7aa43e3ffbc8c7f72c5e",
+      "bytes": 48584,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.audit.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.cachegrind.593479",
+      "sha256": "fd3271105641984b31f6f82325844873a9251883d0c7f814ac3f4e1ef08347dc",
+      "bytes": 921544,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.json",
+      "sha256": "41bc8e072f9953f3110caa94e40adaf7a35418faf40858698f33b79025c0f2ec",
+      "bytes": 94729,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.log",
+      "sha256": "4bfa5c9edb4f124a49857e510ee3436f47fe4578d3e35910b55c25253216631e",
+      "bytes": 262,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.log"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.png",
+      "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+      "bytes": 232293,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.valgrind.593479.log",
+      "sha256": "ff7dc814593db9b56c7a11b2a45da073fe2f5687d647240684fc1bce3506bc31",
+      "bytes": 908,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.valgrind.593963.log",
+      "sha256": "0cad3cd3dc979b457612cb083d1baf38db6db9ec4105ed410ff556ba706c3f6a",
+      "bytes": 665,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.window.png",
+      "sha256": "a8e95ccb59e594cce7991e1f0a7c46c075a32b7d11039c102bb5f945989763ef",
+      "bytes": 283985,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.window.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/content-validation.json",
+      "sha256": "ae8ba0d56570a53b4ae61f29026734821cfae44e915995f8e060508afa63eb3a",
+      "bytes": 131116,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/content-validation.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/document-comparison.json",
+      "sha256": "dfdfcb4bace2b11c3832bf8905285498a51c84701ea39126703e78ab54d3d6b0",
+      "bytes": 249,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/document-comparison.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/driver.log",
+      "sha256": "0229f7f405ea56cdd40653a7952e81859b8b3e5d5725efb8c9b3033fcf3b117c",
+      "bytes": 363,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/invocation.json",
+      "sha256": "a0dca87a66f45a570c7f260c7b25d56e011e163c3fd464267a396ea14a879524",
+      "bytes": 10385,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/native-diagnostics.json",
+      "sha256": "d35864cd9c3bce54e6c92ad29f9820cb68436f6b87e2d951fc029015134f7165",
+      "bytes": 642,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/result.json",
+      "sha256": "de72bb5c8a518ed82d2835739e73d92bd7da0a0ea7a97cbb50ac750a37865439",
+      "bytes": 11125,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.json",
+      "sha256": "7f476d1906e30ee15445254d5c61619c61e9ad7f44947180806d9059cf4dbab2",
+      "bytes": 104693,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.audit.json",
+      "sha256": "33c00761f6547414a4d114eab366dff1c6a1697e9d4d7aa43e3ffbc8c7f72c5e",
+      "bytes": 48584,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.audit.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.cachegrind.596599",
+      "sha256": "dd6d75fcebaa4b1d4052a70be7221885d77bdb285ba97bb2df1d9db8a54fee9a",
+      "bytes": 921850,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.json",
+      "sha256": "704964a68656e6f8c979c815c06b96fbfa6dded129de3261f29858f911ab15af",
+      "bytes": 94719,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.log",
+      "sha256": "4bfa5c9edb4f124a49857e510ee3436f47fe4578d3e35910b55c25253216631e",
+      "bytes": 262,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.log"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.png",
+      "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+      "bytes": 232293,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.valgrind.596599.log",
+      "sha256": "01fb207be00e5144a39cbc0877146b384a1440bc804085cc2a4a0a4de06016e9",
+      "bytes": 906,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.valgrind.596878.log",
+      "sha256": "4eddac9450d5f6c3f1b2c2ce81c1afc6a39df0400536368e5e4cc594242b6460",
+      "bytes": 663,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.window.png",
+      "sha256": "a8e95ccb59e594cce7991e1f0a7c46c075a32b7d11039c102bb5f945989763ef",
+      "bytes": 283985,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.window.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/content-validation.json",
+      "sha256": "ae8ba0d56570a53b4ae61f29026734821cfae44e915995f8e060508afa63eb3a",
+      "bytes": 131116,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/content-validation.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/document-comparison.json",
+      "sha256": "dfdfcb4bace2b11c3832bf8905285498a51c84701ea39126703e78ab54d3d6b0",
+      "bytes": 249,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/document-comparison.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/driver.log",
+      "sha256": "18338032a6db8cc1fbc945328030f9002d3b802cc3ceb90b9512689ce180fd0f",
+      "bytes": 363,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/invocation.json",
+      "sha256": "34857845bc63180e38a1d24bee5d58702f5834a0fc0513266dd3ec7a94b2d8be",
+      "bytes": 10372,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/native-diagnostics.json",
+      "sha256": "d35864cd9c3bce54e6c92ad29f9820cb68436f6b87e2d951fc029015134f7165",
+      "bytes": 642,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/native-diagnostics.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/result.json",
+      "sha256": "ab030200be399185b70fb93b4d9fb916f05eba802be42f8d1859c645e45a459f",
+      "bytes": 11116,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.json",
+      "sha256": "af9854f7da79d15cd8c6a8f9791db5910fc7c5928fb497a4596432aacb65767f",
+      "bytes": 104848,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.audit.json",
+      "sha256": "e61a523fa06c1ac52422186fb23c379336c96e6621ce10838ab4616e584063ae",
+      "bytes": 48695,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.audit.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.cachegrind.597321",
+      "sha256": "a1d5a6ba3b9f2d43ee2832d507b7a5823ff5818951ebda02793aad82b59058fd",
+      "bytes": 921385,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.json",
+      "sha256": "d95132b7ec8174a54844e74f2ce612e1b34d2247089e88c19d43a1c116946e94",
+      "bytes": 94862,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.log",
+      "sha256": "4bfa5c9edb4f124a49857e510ee3436f47fe4578d3e35910b55c25253216631e",
+      "bytes": 262,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.log"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.png",
+      "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+      "bytes": 232293,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.valgrind.597321.log",
+      "sha256": "cd8bb7fe807158c90fa9ce5939b2d59bd5db18426f15b8d0a19da56e977dee71",
+      "bytes": 908,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.valgrind.598044.log",
+      "sha256": "6bbab53a9a5d2539f10c6733e16852785478e7d7e27c767c8944fb4c1b00d9f2",
+      "bytes": 665,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.window.png",
+      "sha256": "a8e95ccb59e594cce7991e1f0a7c46c075a32b7d11039c102bb5f945989763ef",
+      "bytes": 283985,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.window.png"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/content-validation.json",
+      "sha256": "ae8ba0d56570a53b4ae61f29026734821cfae44e915995f8e060508afa63eb3a",
+      "bytes": 131116,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/content-validation.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/document-comparison.json",
+      "sha256": "dfdfcb4bace2b11c3832bf8905285498a51c84701ea39126703e78ab54d3d6b0",
+      "bytes": 249,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/document-comparison.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/driver.log",
+      "sha256": "d57e983f20468c096864d29381731e075c3e208d7821486e5db8e95f6e241d85",
+      "bytes": 363,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/invocation.json",
+      "sha256": "74c5085d922e32500afd0bb15b522e15183f62e3dc8432209723f00aad12dbb2",
+      "bytes": 10384,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/native-diagnostics.json",
+      "sha256": "ad93b2438e68a7f948d014394fd84c4669839d0a5d92cabf6f2633aa73e989b0",
+      "bytes": 768,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/native-diagnostics.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/result.json",
+      "sha256": "90e33188b09d9033778c32b40048a248fa1ef3218bf4aacf832b585794148f6d",
+      "bytes": 11127,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/reference-content-validation.json",
+      "sha256": "ae8ba0d56570a53b4ae61f29026734821cfae44e915995f8e060508afa63eb3a",
+      "bytes": 131116,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/content-validation.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/resource-network-inventory.json",
+      "sha256": "e1eedff1cc5d066b62ec44a788bb168f5865e623a10c8ec4f36a0a502cc9d781",
+      "bytes": 487338,
+      "tar_type": "hardlink",
+      "link_target": "Build/reddit-optimization/baseline-callgrind-01/resource-network-inventory.json"
+    },
+    {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/summary.json",
+      "sha256": "7ff1fe7df9cb8d0fb222a07374468345df7fa19a0ea5811d154216e1dc7ba506",
+      "bytes": 737802,
+      "tar_type": "file"
+    },
+    {
+      "path": "Build/reddit-optimization/independent-acceptance-audit.json",
+      "sha256": "ff0a3ac1680d2ed28b1962cc8f8dca3f1ae914080240f3e689834bf8c010d8f3",
+      "bytes": 14980,
+      "tar_type": "file"
+    }
+  ],
+  "member_count": 131,
+  "unique_payload_count": 88,
+  "total_source_bytes": 23344125,
+  "unique_payload_bytes": 17719529,
+  "deduplication": "Identical SHA256 and size payloads are represented as tar hardlinks to an earlier archive member; extraction restores all original paths and bytes.",
+  "exclusions": [
+    "Temporary browser profile/cache directories",
+    "Executables, generated C, object archives and system font/library binaries",
+    "Build/test directories, including in-progress broad V validation"
+  ],
+  "companion_protocol_directory": "docs/benchmark-results/old-reddit-typeface-cache-protocol/",
+  "restoration": "Extract into a repository root to restore the original relative Build/reddit-optimization layout. Historical report paths and identities remain unchanged; new-machine benchmarking requires deliberate repinning, while raw profile/PNG/hash verification uses the archived bytes.",
+  "archive": {
+    "path": "docs/benchmark-results/old-reddit-linux-typeface-cache-2026-11-02-evidence.tar.gz",
+    "sha256": "ce6fa293d91abd2710d23fd9aad2ac9a6f018ee842dff4250b1b7c284b1fe702",
+    "bytes": 3642508,
+    "format": "POSIX pax tar + gzip level 9",
+    "metadata": "File timestamps, uid/gid, user/group names and gzip mtime normalized; original file bytes unchanged."
+  },
+  "internal_manifest": {
+    "path": "Build/reddit-optimization/durable-evidence-members.json",
+    "sha256": "ce587f51f546599b32a52818354299c03d8ef8ed6cbe39ad1169b1cf0238ca2a",
+    "bytes": 37509
+  },
+  "verification": {
+    "archive_reopened": true,
+    "all_member_bytes_and_hashes_match": true,
+    "all_selected_source_hashes_rechecked": true,
+    "total_archive_members": 132,
+    "regular_source_payloads": 88,
+    "hardlink_entries": 43
+  },
+  "independent_audit": {
+    "path": "Build/reddit-optimization/independent-acceptance-audit.json",
+    "sha256": "ff0a3ac1680d2ed28b1962cc8f8dca3f1ae914080240f3e689834bf8c010d8f3"
+  },
+  "frozen_final_summary": {
+    "path": "Build/reddit-optimization/cachegrind-cohort-02/summary.json",
+    "sha256": "7ff1fe7df9cb8d0fb222a07374468345df7fa19a0ea5811d154216e1dc7ba506"
+  }
+}

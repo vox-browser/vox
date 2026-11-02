@@ -1,0 +1,17 @@
+{
+  "selected_at_utc": "2026-11-02T21:26:59.576010+00:00",
+  "acceptance_counter_backend": "cachegrind",
+  "acceptance_instruction_metric": "cachegrind_guest_instruction_references",
+  "diagnostic_counter_backend": "callgrind",
+  "selection_basis": "Explicit root instruction before the first browser measurement; retained upstream Callgrind summary/footer discrepancy warrants separate diagnostic attribution only.",
+  "no_backend_fallback": true,
+  "no_metric_mixing": true,
+  "required_reduction_percent": 10,
+  "gate": "10 * max(candidate) <= 9 * min(baseline)",
+  "invocation_requirement": "Pass --counter-backend cachegrind to compare.py; capture.py defaults to diagnostic Callgrind.",
+  "observer_sha256": {
+    "Build/reddit-optimization/compare.py": "8e37fcb93975c568912fa4e7876cbd8584e9d0035809d329d0979dad865b8ce1",
+    "Build/reddit-optimization/capture.py": "d38fce8ea8828efeb9d544655f96d1a06b0b47799ba64afce4db6286533a773f",
+    "Build/reddit-optimization/network_audit.py": "30334d253bdc7c03bc06909ab7aa8794d5a46f18e000e57da524e6a2428b74e1"
+  }
+}

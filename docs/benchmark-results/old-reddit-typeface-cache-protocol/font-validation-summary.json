@@ -1,0 +1,188 @@
+{
+  "passed": true,
+  "groups": [
+    {
+      "receipt_directory": "Build/reddit-optimization/skia_focused-lchh4x9f",
+      "attempts": [
+        {
+          "group": "skia_focused",
+          "gc": "boehm",
+          "compile_exit": 0,
+          "runtime_exit": 0,
+          "passed": true,
+          "binary_sha256": "efdd4164c61fb5e0114c9fd29d6e303bc05ad3adbec3920f957953d4e82c85e2",
+          "registered_test_count": 8,
+          "known_linux_early_return_count": 1,
+          "runtime_environment": {
+            "LADYBIRD_SOURCE_ROOT": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/test-font-resources"
+          },
+          "changed_inputs": [],
+          "compile_guard": {
+            "path": "Build/reddit-optimization/skia_focused-lchh4x9f/boehm/compile.guard.json",
+            "sha256": "e87122bd47afdd8d75263c51cb4a7e7deac3116143910c34f2e26e45643e0292",
+            "elapsed_seconds": 3.465180204002536,
+            "sampled_process_tree_peak_rss_bytes": 391483392
+          },
+          "runtime_guard": {
+            "path": "Build/reddit-optimization/skia_focused-lchh4x9f/boehm/runtime.guard.json",
+            "sha256": "b1cd24d30bd1fe375f4e96a689818f77eb92a608ae1b0a11db624a277a23ffdc",
+            "elapsed_seconds": 0.11698386099305935,
+            "sampled_process_tree_peak_rss_bytes": 3522560
+          }
+        },
+        {
+          "group": "skia_focused",
+          "gc": "none",
+          "compile_exit": 0,
+          "runtime_exit": 0,
+          "passed": true,
+          "binary_sha256": "a3eb8033703b14f6efe76e045892049001dc516137760b8be1bf8ae319625751",
+          "registered_test_count": 8,
+          "known_linux_early_return_count": 1,
+          "runtime_environment": {
+            "LADYBIRD_SOURCE_ROOT": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/test-font-resources"
+          },
+          "changed_inputs": [],
+          "compile_guard": {
+            "path": "Build/reddit-optimization/skia_focused-lchh4x9f/none/compile.guard.json",
+            "sha256": "6c1861bfe95914f46e8f5a3280e9526b12dc675fd8c9c787b6bf649d4ab30efa",
+            "elapsed_seconds": 3.583430762999342,
+            "sampled_process_tree_peak_rss_bytes": 385327104
+          },
+          "runtime_guard": {
+            "path": "Build/reddit-optimization/skia_focused-lchh4x9f/none/runtime.guard.json",
+            "sha256": "02d5186fcf52e7f3beee204dd8284f14d9ff88fa8fb36ac2075058d208dbecb2",
+            "elapsed_seconds": 0.11322920699603856,
+            "sampled_process_tree_peak_rss_bytes": 3510272
+          }
+        }
+      ]
+    },
+    {
+      "receipt_directory": "Build/reddit-optimization/layout_integration-e8o1opqr",
+      "attempts": [
+        {
+          "group": "layout_integration",
+          "gc": "boehm",
+          "compile_exit": 0,
+          "runtime_exit": 0,
+          "passed": true,
+          "binary_sha256": "ed40ce31fe6f81e436e5e682a75c12658614d86db51763bda9e1d380e3936384",
+          "registered_test_count": 2,
+          "known_linux_early_return_count": 0,
+          "runtime_environment": {
+            "LADYBIRD_SOURCE_ROOT": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/test-font-resources"
+          },
+          "changed_inputs": [],
+          "compile_guard": {
+            "path": "Build/reddit-optimization/layout_integration-e8o1opqr/boehm/compile.guard.json",
+            "sha256": "9548e257c5899dcf1b26e45ca97c043617df6fccdd514266704ef8c410e66f0f",
+            "elapsed_seconds": 99.04633191299217,
+            "sampled_process_tree_peak_rss_bytes": 6868844544
+          },
+          "runtime_guard": {
+            "path": "Build/reddit-optimization/layout_integration-e8o1opqr/boehm/runtime.guard.json",
+            "sha256": "c2c98b0c3f2b44cbfc8cad4076099fd074281085c0cebddeb58cae920871e371",
+            "elapsed_seconds": 0.11554509200504981,
+            "sampled_process_tree_peak_rss_bytes": 1884160
+          }
+        },
+        {
+          "group": "layout_integration",
+          "gc": "none",
+          "compile_exit": 0,
+          "runtime_exit": 0,
+          "passed": true,
+          "binary_sha256": "ec440d516e79bdf73f1f5b7f2cae0ac9c7f49414425b284574f0f2a8b8c2749c",
+          "registered_test_count": 2,
+          "known_linux_early_return_count": 0,
+          "runtime_environment": {
+            "LADYBIRD_SOURCE_ROOT": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/test-font-resources"
+          },
+          "changed_inputs": [],
+          "compile_guard": {
+            "path": "Build/reddit-optimization/layout_integration-e8o1opqr/none/compile.guard.json",
+            "sha256": "9773024c9313eeae532600cec30fc9b790f097ec5d15dc0ce24b4c85ad003648",
+            "elapsed_seconds": 91.99103682600253,
+            "sampled_process_tree_peak_rss_bytes": 6899961856
+          },
+          "runtime_guard": {
+            "path": "Build/reddit-optimization/layout_integration-e8o1opqr/none/runtime.guard.json",
+            "sha256": "fc3744e6fb6e0cb230f765e2e29976f094ad077e3feb76ccf315f62afb5cc931",
+            "elapsed_seconds": 0.11960550599906128,
+            "sampled_process_tree_peak_rss_bytes": 1921024
+          }
+        }
+      ]
+    },
+    {
+      "receipt_directory": "Build/reddit-optimization/platform_font_integration-047k0pxu",
+      "attempts": [
+        {
+          "group": "platform_font_integration",
+          "gc": "boehm",
+          "compile_exit": 0,
+          "runtime_exit": 0,
+          "passed": true,
+          "binary_sha256": "d8dc8f8ccd61decb8601e1bca1e1c457719a6f77f5493b4d6aebf0ce0c5144d6",
+          "registered_test_count": 19,
+          "known_linux_early_return_count": 0,
+          "runtime_environment": {
+            "LADYBIRD_SOURCE_ROOT": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/test-font-resources"
+          },
+          "changed_inputs": [],
+          "compile_guard": {
+            "path": "Build/reddit-optimization/platform_font_integration-047k0pxu/boehm/compile.guard.json",
+            "sha256": "dc9a548f965b426472ae3d48175eb335dd13eba671c700fa65ec3aff40de0fb7",
+            "elapsed_seconds": 4.484360151007422,
+            "sampled_process_tree_peak_rss_bytes": 389144576
+          },
+          "runtime_guard": {
+            "path": "Build/reddit-optimization/platform_font_integration-047k0pxu/boehm/runtime.guard.json",
+            "sha256": "ef666e7f0481f694690db84c3a0d44f9b4ae6e4ac6d680607d09d3e5ff09a893",
+            "elapsed_seconds": 0.3296560440066969,
+            "sampled_process_tree_peak_rss_bytes": 13967360
+          }
+        },
+        {
+          "group": "platform_font_integration",
+          "gc": "none",
+          "compile_exit": 0,
+          "runtime_exit": 0,
+          "passed": true,
+          "binary_sha256": "6be06668088cdc0d3ee51e14fc8f03f255294bc9c92a09772a632a3029d77211",
+          "registered_test_count": 19,
+          "known_linux_early_return_count": 0,
+          "runtime_environment": {
+            "LADYBIRD_SOURCE_ROOT": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/test-font-resources"
+          },
+          "changed_inputs": [],
+          "compile_guard": {
+            "path": "Build/reddit-optimization/platform_font_integration-047k0pxu/none/compile.guard.json",
+            "sha256": "de1420659c117e7cdc9fccf94476d6c08d36583dd5a0a3a75f1832863e533076",
+            "elapsed_seconds": 4.291741995999473,
+            "sampled_process_tree_peak_rss_bytes": 378232832
+          },
+          "runtime_guard": {
+            "path": "Build/reddit-optimization/platform_font_integration-047k0pxu/none/runtime.guard.json",
+            "sha256": "5fa68c57403f84107a5abc718df95686d5a039f984f6d636e1c9bffd61df54b1",
+            "elapsed_seconds": 0.22415096600889228,
+            "sampled_process_tree_peak_rss_bytes": 24293376
+          }
+        }
+      ]
+    }
+  ],
+  "initial_setup_attempt": {
+    "path": "skia_focused-nprk7yxu",
+    "status": "Failed before compilation: restricted /proc and invalid supplemental file-list syntax; corrected on retry"
+  },
+  "compile_policy": "Sequential groups and GC modes; explicit new compiler, V 10G limit, 12 GiB process-tree guard",
+  "runtime_policy": "3 GiB guard; isolated LADYBIRD_SOURCE_ROOT only in runtime children",
+  "native_artifact_mutation_during_tests": false,
+  "registered_test_functions_across_modes": 58,
+  "known_platform_early_returns_across_modes": 2,
+  "active_test_functions_across_modes": 56,
+  "distinct_registered_test_functions": 29,
+  "distinct_active_linux_test_functions": 28
+}

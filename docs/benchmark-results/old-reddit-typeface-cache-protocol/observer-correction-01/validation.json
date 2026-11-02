@@ -1,0 +1,35 @@
+{
+  "status": "passed",
+  "browser_processes_started": 0,
+  "synthetic_instruction_counts": false,
+  "original_failed_evidence_unchanged": true,
+  "independent_reference_png_decode": {
+    "report": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json",
+    "report_sha256": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+    "audit_sha256": "80d0ab9160cc8202d14fe1a7eafe44a1f4e7b0a1a652c73b22ceb1074680a433",
+    "content_sha256": "6c52ce8572884e6946320711b788454f4d94240d685692e9633ea786be94633f",
+    "screenshot": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png",
+    "screenshot_file_sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+    "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+    "baseline_binary_sha256": "e74376514dbb0b55828ac26e8a9a355b9adb8b2a3c565f344f141ead793ecd54",
+    "original_observer_status": "invalid",
+    "original_observer_error": "ValueError: Frozen script-free document reported JavaScript diagnostics",
+    "source_counter_backend": "callgrind",
+    "instructions_used_in_acceptance_statistics": false
+  },
+  "actual_reference_content_sha256": "6c52ce8572884e6946320711b788454f4d94240d685692e9633ea786be94633f",
+  "negative_correctness_checks": [
+    "missing_native_diagnostic",
+    "additional_native_diagnostic",
+    "changed_native_diagnostic",
+    "javascript_error",
+    "native_reported_error",
+    "missing_post",
+    "geometry_difference_detected",
+    "complete_raw_audit_difference_detected"
+  ],
+  "body_utf8_bytes": 10944,
+  "body_sha256": "756d2fb4b3529ac5f313de7bdd20d81e5803953160b115b2f5a8660f8af3d8fc",
+  "post_count": 30,
+  "image_count": 34
+}

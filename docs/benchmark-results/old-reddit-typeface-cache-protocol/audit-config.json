@@ -1,0 +1,28 @@
+{
+  "selectors": [
+    {
+      "name": "posts",
+      "selector": ".thing[data-fullname^=\"t3_\"]",
+      "limit": 100,
+      "attributes": [
+        "data-fullname"
+      ]
+    },
+    {
+      "name": "body",
+      "selector": "body",
+      "limit": 1
+    },
+    {
+      "name": "images",
+      "selector": "img",
+      "limit": 200,
+      "attributes": [
+        "src",
+        "alt"
+      ]
+    }
+  ],
+  "describe_native_errors": true,
+  "describe_paint_geometry": true
+}

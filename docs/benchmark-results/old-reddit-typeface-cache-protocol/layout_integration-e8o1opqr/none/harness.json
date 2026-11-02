@@ -1,0 +1,17 @@
+{
+  "generated_c": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/layout_integration-e8o1opqr/none/vtmp/font_tests_none.602965.66186448772539.140632027866848.tmp.c",
+  "sha256": "6cc2edd42adf09100ff33adc4e7de8072cec03b0ef4a772beda2803650c3867c",
+  "registered_test_count": 2,
+  "registered_tests": [
+    {
+      "file": "layout/portable_shadows_test.v",
+      "function": "test_portable_shadow_replays_transformed_radii_clip_and_source_bounds"
+    },
+    {
+      "file": "layout/portable_shadows_test.v",
+      "function": "test_portable_text_shadow_keeps_glyph_slices_and_baseline_translation"
+    }
+  ],
+  "known_linux_early_return_count": 0,
+  "verification": "Selected tests have explicit calls in the unchanged generated C main; zero runtime exit verifies the complete harness."
+}

@@ -1,0 +1,25 @@
+{
+  "pins": {
+    "/workspace/scratch/549231c7ae31/vox2/layout/portable_shadows_test.v": "bf2b89a437c76edb34cb6e1a5ae5caa0ea386e2cb5585b438381f281f965b554",
+    "/workspace/scratch/549231c7ae31/v/v": "eb83feee74cfd77d979dd874a0916806fdd59476603c02f0585a12d567a9d452",
+    "/workspace/scratch/549231c7ae31/vox2/Build/linux/native/skia.a": "3e952238187b77ddd7d11a0a8719b977bff6f9e76dcf36960d05793ae8c2c263",
+    "/workspace/scratch/549231c7ae31/vox2/Build/linux/native/stbi.a": "4590cd3024d87f23d7d64deaf53a48a0cdf2e680f955690304f5a045677c21c7",
+    "/workspace/scratch/549231c7ae31/vox2/skia/shadow_raster.cpp": "9ee92dad543f16d99ce9a2102465dfe4f39bd44439f4c0f822c9632aa78ba16b",
+    "/workspace/scratch/549231c7ae31/vox2/skia/shadow_typeface_cache.h": "5efc4608ff93953e2574ecb27de7ec742f6325d9b631a0e7814d609bc121a27b",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/run_font_validation.py": "66fbebc1d2406dbd3e8d2c56f0cde74009385e89812bc80ac50d56b388a23afb"
+  },
+  "selected": [
+    {
+      "file": "layout/portable_shadows_test.v",
+      "function": "test_portable_shadow_replays_transformed_radii_clip_and_source_bounds"
+    },
+    {
+      "file": "layout/portable_shadows_test.v",
+      "function": "test_portable_text_shadow_keeps_glyph_slices_and_baseline_translation"
+    }
+  ],
+  "known_linux_skips": [],
+  "removed_child_environment": {},
+  "module_paths": "/workspace/scratch/549231c7ae31/vox2|/workspace/scratch/549231c7ae31/vox2/Build/linux/modules|/workspace/scratch/549231c7ae31/vox2/Build/v/httpcompat/32bae206d5ba729b/modules|@vmodules|@vlib",
+  "production_archive": "/workspace/scratch/549231c7ae31/vox2/Build/linux/native/skia.a"
+}

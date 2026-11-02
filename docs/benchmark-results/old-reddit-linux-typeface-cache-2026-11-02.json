@@ -1,0 +1,2945 @@
+{
+  "schema_version": 1,
+  "path_basis": "Paths inside the checkout are relative to repository root; external tool/font paths retain their recorded identity",
+  "scope": {
+    "counter_backend": "cachegrind",
+    "instruction_metric": "cachegrind_guest_instruction_references",
+    "hardware_retired": false,
+    "endpoint": "program exec through process exit after native document PNG capture and audit",
+    "scope_note": "Main process and instrumented threads/libraries; excludes children, kernel, GPU and Xvfb",
+    "cache_note": "Fresh browser profile/cache and XDG caches per observation; OS filesystem caches retained",
+    "reference_policy": "Every observation, including the first baseline, must exactly match the pinned first diagnostic PNG and all native audit fields except the explicitly canonicalized repetition count of one native message; that diagnostic Callgrind count is excluded",
+    "diagnostic_policy": "A positive list containing only the exact source-proven native shadow message; preserve raw lists/counts/audit hashes and compare a singleton classification. All other/new/changed messages, empty lists and native errors fail"
+  },
+  "source_environment": {
+    "upstream_commit": "4f87e708424edf0ed929d130fdc4ef0002fa23b5",
+    "workload": "Frozen old.reddit.com/r/worldnews HTML/CSS fixture, script-free",
+    "viewport": [
+      1280,
+      900
+    ],
+    "counter_backend": "cachegrind",
+    "counter_metric": "Cachegrind guest instruction references (Ir)",
+    "measurement_scope": "program exec through process exit after native document capture, including startup, readiness, audit, PNG encoding and teardown",
+    "pmu_probe": {
+      "available": false,
+      "errno": 2,
+      "message": "No such file or directory",
+      "counter": "perf_event_open/PERF_COUNT_HW_INSTRUCTIONS",
+      "scope": "availability check only"
+    },
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "cpu_count": 9,
+    "compiler_source": "8636a8fe6c2d285f6bb60ad5686b6ffda61f9835",
+    "compiler_sha256": "eb83feee74cfd77d979dd874a0916806fdd59476603c02f0585a12d567a9d452",
+    "ui2_source": "96f5924d73f69c0302de3c5c31d9964d4d11f573",
+    "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin",
+    "valgrind": "valgrind-3.22.0",
+    "skia_revision": "ee20d565acb08dece4a32e3f209cdd41119015ca",
+    "production_flags": "-new-compiler -glibc -memory-limit 10G -enable-globals -cc clang-18 -gc boehm -d dynamic_boehm -d use_openssl -cflags -D_GNU_SOURCE=1 -O2",
+    "acceptance_gate": "10 * max(candidate) <= 9 * min(baseline), with exact pixels and complete content checks",
+    "diagnostic_counter_backend": "callgrind",
+    "backend_selection_note": "Chosen before any browser measurement: Callgrind for attribution; Cachegrind for the matched acceptance cohort. Upstream documents a strict Callgrind header/footer discrepancy on this platform. Metrics are not mixed; parsers remain unchanged.",
+    "build_route": "V -generate-c-project -glibc then generated build.sh; separate guarded phases retaining the Linux production -O2 flags"
+  },
+  "binaries": {
+    "baseline": {
+      "path": "Build/reddit-optimization/baseline-c/vox2",
+      "sha256": "e74376514dbb0b55828ac26e8a9a355b9adb8b2a3c565f344f141ead793ecd54",
+      "bytes": 35932416,
+      "libraries": {
+        "libgc.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgc.so.1.5.3",
+          "sha256": "1e3eab1378bd6be4e1e383f50e42dc7bb6d03c9fe5cd7dd35f046cef9cebbbee"
+        },
+        "libicuuc.so.74": {
+          "path": "/usr/lib/x86_64-linux-gnu/libicuuc.so.74.2",
+          "sha256": "7560aadde38e5f4237a47a1ddd5891f9b36768a77a60faae30beee003ac01901"
+        },
+        "libjavascriptcoregtk-4.1.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so.0.10.11",
+          "sha256": "713befb6ed6dfe8672a44604cfce6c7899f4b81ee57c33983233c4c781295e83"
+        },
+        "libgobject-2.0.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.8000.0",
+          "sha256": "99bf0727e0ca4faf12ab09b753b3d03294562c29c559b970c4dad435f9ec2bc6"
+        },
+        "libglib-2.0.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0.8000.0",
+          "sha256": "42467d0dbcc0a6c9e0a31f05a5944095504ce98f093c3fe0825f0a1533fa8207"
+        },
+        "libz.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3",
+          "sha256": "9b64150b28505a33d6bc3ecf709c279f6de97a1c184dbda65d06ee4537f6d286"
+        },
+        "libXrandr.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXrandr.so.2.2.0",
+          "sha256": "bc6120a734d52e7f5e3611334e9f3cff0b3ce1b129bb20b6412ce8f0f62c049d"
+        },
+        "libm.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "e9c4b28d340e415b8137480ec442662f981e1399386c5931dae0e886e3639e91"
+        },
+        "libfontconfig.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1",
+          "sha256": "a94b4059b27766f563894c8f7e61762b6f6b2e25c59ef36b730164d4b75c6c98"
+        },
+        "libfreetype.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.1",
+          "sha256": "c14c53c5baff12afafb610c6312fb879e9bb77e80dd42e27504d52d6d8bcd059"
+        },
+        "libharfbuzz.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libharfbuzz.so.0.60830.0",
+          "sha256": "4562cfcfd18935324ba3ac74a944898b867ab87a56e925ab3e351ba773f1513e"
+        },
+        "libstdc++.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+          "sha256": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11"
+        },
+        "libicui18n.so.74": {
+          "path": "/usr/lib/x86_64-linux-gnu/libicui18n.so.74.2",
+          "sha256": "3550b194eb2cf2e6f798f033eb9ca279d498c21296b4a18790ce158d2023e47b"
+        },
+        "libicudata.so.74": {
+          "path": "/usr/lib/x86_64-linux-gnu/libicudata.so.74.2",
+          "sha256": "ddbb3718b8bd9cbd780e5ab08b4503c30a6c4fa0706ebe5d074ed6b596c1714e"
+        },
+        "libcurl.so.4": {
+          "path": "/usr/lib/x86_64-linux-gnu/libcurl.so.4.8.0",
+          "sha256": "eac8f2e9aa13017db58f59ea8608fef7564d7421bd1bab35a7ce5c41ba326b45"
+        },
+        "libEGL.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libEGL.so.1.1.0",
+          "sha256": "875ecbb2a07d60e32216c9f102965abc1e9cc1da7789558e2e9b8b9c107e231d"
+        },
+        "libGLESv2.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libGLESv2.so.2.1.0",
+          "sha256": "4d410c7e883b6e4bab42fafae7ebad6ae5702883bfce07a5e6ffdf4c3fec433b"
+        },
+        "libssl.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+          "sha256": "8e49cebd373d90b55f3626da71dd97fe8e95c68dc4c064d8962b27907690736e"
+        },
+        "libcrypto.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+          "sha256": "6a66c3ba6b3749aacc9497973fff00f6ba61c703ba7015d0d7ab3fd9510974b6"
+        },
+        "libwoff2dec.so.1.0.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2",
+          "sha256": "8079e4fd739be1012ea096233d9d1198994e77dbdcb9145af3f6d777042b1ce8"
+        },
+        "libwoff2common.so.1.0.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2",
+          "sha256": "a33d24cab3be64d29777d2d8217a3f6b0aa82a648df410f018e7452b0ef0c1f0"
+        },
+        "libbrotlidec.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0",
+          "sha256": "64d8a5019d4c294b89fde1193343ea324bbd8603652554e5545f0a01595fa2c5"
+        },
+        "libbrotlicommon.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0",
+          "sha256": "a91ead095d2c80520c55a89057bbe10b031a075340442e63f44b310f93883a1b"
+        },
+        "libpng16.so.16": {
+          "path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.43.0",
+          "sha256": "eac265b3506df0d9110dd9143e1d0503e2daabafe1d98b23fac8ca17b71d1f6b"
+        },
+        "libjpeg.so.8": {
+          "path": "/usr/lib/x86_64-linux-gnu/libjpeg.so.8.2.2",
+          "sha256": "ac09f2cd6f8a3b8e3cb123999ce275f9bcbe31c6cf9e20212c8f297772591d15"
+        },
+        "libwebp.so.7": {
+          "path": "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.8",
+          "sha256": "9664db51ec65209078abbb8bc7b699888a43ecc2f3c74ce8dd4e497175aa5bf0"
+        },
+        "libwebpdemux.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libwebpdemux.so.2.0.14",
+          "sha256": "f31bf01638c352533e18720676db66fcb190a622db5bf617558a49bc445d0b83"
+        },
+        "libX11.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0",
+          "sha256": "c5b5d782bd9cab3420a62df88f5c991507edf3331a89f98464ddbc538c37b879"
+        },
+        "libXi.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXi.so.6.1.0",
+          "sha256": "a51348c921ce1a35123fa7c99dc59bfd3e815be6829874fe15ae55172901d3e4"
+        },
+        "libXcursor.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXcursor.so.1.0.2",
+          "sha256": "09bd5941a53ee7fb06898fa066709cf098df8e33a45042e065d2f8461d92672c"
+        },
+        "libGL.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libGL.so.1.7.0",
+          "sha256": "67f471213576d225d38347a0b6d2a08a231980685301ff6461bd74d3994e5027"
+        },
+        "libgcc_s.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "sha256": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb"
+        },
+        "libc.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "8db37cf3f2169f59a0f07ef1fea308c35656668c64c8ff294e1860f4121eb161"
+        },
+        "ld-linux-x86-64.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+          "sha256": "cd4df4f3c7b83673d61189bf2eaebd33ca4f2853ab9772b8a25e025ef99b1e81"
+        },
+        "libatomic.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libatomic.so.1.2.0",
+          "sha256": "9d8a34468e614a71a6427dbabb0ac24eb8cb1e324dc6aa3bf95eb6f59201f000"
+        },
+        "libgio-2.0.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.8000.0",
+          "sha256": "d8c4cf698e9b8790584cc5ede813a86ec4f041c0d58daa452b72431572685a87"
+        },
+        "libsystemd.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libsystemd.so.0.38.0",
+          "sha256": "bdf59c828b547bcdbe7b3576c0810d9d9d2e982d8b61b365812542da6a4c4a99"
+        },
+        "libffi.so.8": {
+          "path": "/usr/lib/x86_64-linux-gnu/libffi.so.8.1.4",
+          "sha256": "00f593fe192f2851b8ce23b25cec2488d769beb5a8f63e8c9e563071e1075153"
+        },
+        "libpcre2-8.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libpcre2-8.so.0.11.2",
+          "sha256": "e00576d71d81d3ba0cfa4903c835a44a8723aac96f72f79ff75200b4cff9071b"
+        },
+        "libXext.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXext.so.6.4.0",
+          "sha256": "2907e6a996465de5b32a0dd10534d4416b87f1dee5670aaa7b19301a1fc93f44"
+        },
+        "libXrender.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXrender.so.1.3.0",
+          "sha256": "250977e0e004b6c0556144c3e683487063b4582dc83d205196ec3aa65d54e2c6"
+        },
+        "libexpat.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.9.1",
+          "sha256": "7ae38be4b2f909d25c5ca3107ed04bc3128a8a24ea7adfe30102c3f04089c9c3"
+        },
+        "libbz2.so.1.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4",
+          "sha256": "218c4abdabce31161f3c2778762986d1fe06633705c7eb004a740946a5ccdfff"
+        },
+        "libgraphite2.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgraphite2.so.3.2.1",
+          "sha256": "fcfaf843b25b58b88319ced52f826fc8213a661f3693c916f88641eddffe05b8"
+        },
+        "libnghttp2.so.14": {
+          "path": "/usr/lib/x86_64-linux-gnu/libnghttp2.so.14.26.0",
+          "sha256": "398c6d2025210279f4c7413ebdb7f4c63bc5afda5ec3b1ccc58885a65acc2b78"
+        },
+        "libidn2.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libidn2.so.0.4.0",
+          "sha256": "6e632fd9a3125db60bbc623719bbc17b0470330321c5b1c57f1ff7190e5551ad"
+        },
+        "librtmp.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/librtmp.so.1",
+          "sha256": "15a2a75e8c437b9c99971b5ee10278ab110beef1a56d1d9e5d6759ea140e98ac"
+        },
+        "libssh.so.4": {
+          "path": "/usr/lib/x86_64-linux-gnu/libssh.so.4.9.6",
+          "sha256": "ad1513debc90c2662c2c63b587cd815b118b03b3a983f7fdbd89968354674d63"
+        },
+        "libpsl.so.5": {
+          "path": "/usr/lib/x86_64-linux-gnu/libpsl.so.5.3.4",
+          "sha256": "ae6c5a9aecc249fc66e03c16ec6c4385d09d7e12e0ea7694bb831ab4fee8133c"
+        },
+        "libgssapi_krb5.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2.2",
+          "sha256": "b9a20df712d206654477c079f03b568276933e91cbe237e62af791f0f3ab8d8b"
+        },
+        "libldap.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libldap.so.2.0.200",
+          "sha256": "4a0664ab6a8a66c685e78d5604b79df330f5710f0c5e2c382536a8325dc4c2a4"
+        },
+        "liblber.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/liblber.so.2.0.200",
+          "sha256": "6f6935b26c962d5b51ef2011332472cfd96ff244a4edc9d47120be6faa70e602"
+        },
+        "libzstd.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5",
+          "sha256": "0a2128bc10841fb29e76d08d945864dfb0b6a66da5df6df5d8299197439e54bb"
+        },
+        "libGLdispatch.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libGLdispatch.so.0.0.0",
+          "sha256": "ca01a91104c8887b3d8e59499b58cbb8f604cc285666b50d9ec888eb0c915182"
+        },
+        "libsharpyuv.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.0.1",
+          "sha256": "b2e62799e5dbd783a0671d53be99f7c6489567a5332a1e8f471e6bb250f294dc"
+        },
+        "libxcb.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0",
+          "sha256": "7958a0136b121bdc4c708968569ad152a9ed208ab026e2537b1005dde64ca440"
+        },
+        "libXfixes.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXfixes.so.3.1.0",
+          "sha256": "89e5897f438456013d2297850a7558cd28c9ad1f6978447197568949fb6a0fd9"
+        },
+        "libGLX.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0",
+          "sha256": "16fc8a37eea9210dc83c57eeff5aedc10ab4c6673f2f97e8bb6ee103df657b40"
+        },
+        "libgmodule-2.0.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgmodule-2.0.so.0.8000.0",
+          "sha256": "f8445c01952fd3ff0bb4f17f73be821af3e4b9b61546ff517392e9baeb8f2126"
+        },
+        "libmount.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libmount.so.1.1.0",
+          "sha256": "43831ab1f85948e5599c5c0295d87ad6d03e3d58b801534abdf4cd5d266388de"
+        },
+        "libselinux.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libselinux.so.1",
+          "sha256": "0ec0843463f90e227b0e138e1f379774f50b5514bd7f5dbd4c8a87aca0aa6670"
+        },
+        "libcap.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libcap.so.2.66",
+          "sha256": "0e62ac3921a103914968b82c8c8514f34a056f4c9ac3d1ab927ca35de383ae02"
+        },
+        "libgcrypt.so.20": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgcrypt.so.20.4.3",
+          "sha256": "f207cbaa2f5ad2acb0a0991f79c2329808493af500ca8cf25dfc386e6639bf1b"
+        },
+        "liblz4.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/liblz4.so.1.9.4",
+          "sha256": "40bffd0a098387368b16b992abd5f7cf43c0fa2f05cabe5a6d483719554adfda"
+        },
+        "liblzma.so.5": {
+          "path": "/usr/lib/x86_64-linux-gnu/liblzma.so.5.4.5",
+          "sha256": "a9793942a8a5f6f4d0f523ef9e0a5be4f0033f2c6c28520cd2b4e706d53c6e17"
+        },
+        "libunistring.so.5": {
+          "path": "/usr/lib/x86_64-linux-gnu/libunistring.so.5.0.0",
+          "sha256": "7bcf825cd449892db5105ad2aed91dcf94a27b796426600c765720c584c54dd1"
+        },
+        "libgnutls.so.30": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgnutls.so.30.37.1",
+          "sha256": "96137275400f39510c9a533c6ad8a921e94266e664e7e09c9ad6ea9f23277c23"
+        },
+        "libhogweed.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libhogweed.so.6.8",
+          "sha256": "c3c606139d4f7776efa4dbd4a6b62e30c916b07a0cafd8c3ef173d6f093607e3"
+        },
+        "libnettle.so.8": {
+          "path": "/usr/lib/x86_64-linux-gnu/libnettle.so.8.8",
+          "sha256": "a245ed916229583d6fe0b07657b3ed945bc148c28cc08b5266295f620d2b91cc"
+        },
+        "libgmp.so.10": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgmp.so.10.5.0",
+          "sha256": "0ccdfb6d6f5c039465f6d002cf7e4c072d48ac6a2cffc8dd6c748dec31592804"
+        },
+        "libkrb5.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libkrb5.so.3.3",
+          "sha256": "52c143c9c77a223a4dac5449eac41fd2490e37c8a30430f1559c1421f4f8ed73"
+        },
+        "libk5crypto.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libk5crypto.so.3.1",
+          "sha256": "8394027f2be7c2cc7b2da4797476a8b688a21f75ee231941fa2df8d00ba79d08"
+        },
+        "libcom_err.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libcom_err.so.2.1",
+          "sha256": "022943b3b11c860b049bce41342f1c2594941b7b401d95dfdf235521099fee08"
+        },
+        "libkrb5support.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libkrb5support.so.0.1",
+          "sha256": "8e1ef5a40f7b0d5b0fbcd6e4f28dd50b263650338a2bb72503be34632f3629d6"
+        },
+        "libsasl2.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libsasl2.so.2.0.25",
+          "sha256": "a0f410ad093236856eee59c4ff2838dc04d932ea0993400f23ed77d67d85af34"
+        },
+        "libXau.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0",
+          "sha256": "8040da3f8516c1acfe39f04ff022480cdb273705ba5e7a4ca70bbdb1527cd67a"
+        },
+        "libXdmcp.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0",
+          "sha256": "667d97d6da16016400ab10de9f83ef4ab209ceb6adf68ff9650225ec13e723b0"
+        },
+        "libblkid.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libblkid.so.1.1.0",
+          "sha256": "f3d6283f6b58de134f0f13094deac9c3af6764923c62e85f08a5780ad4ebe039"
+        },
+        "libgpg-error.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgpg-error.so.0.34.0",
+          "sha256": "6cb18a007bfcb623029f4528a36b46578fea7dc34c2b505b8e6e0d99e6348cd1"
+        },
+        "libp11-kit.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libp11-kit.so.0.3.1",
+          "sha256": "c6b469a006685ebf2075e200180c3b21f41b88ad722c5697d736ea558cfe3ea1"
+        },
+        "libtasn1.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libtasn1.so.6.6.3",
+          "sha256": "7c9c7830afbaac7b07ec21ddaa6b4d606423432c264efd2636e8ca9734b4d7b6"
+        },
+        "libkeyutils.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libkeyutils.so.1.10",
+          "sha256": "f48214417757f18793ed6e180cc14ee1d6f04252a518fc7270e8ca1d0b4260fe"
+        },
+        "libresolv.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libresolv.so.2",
+          "sha256": "4086b12d3b95ef6f02373b30b88444e7d79fb8693ed1cfeaa5162e6959878912"
+        },
+        "libbsd.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libbsd.so.0.12.1",
+          "sha256": "e86cd4f0019f42c2ba5e60602e0edc8694d2948377d98c3654d0f6bddb5254bb"
+        },
+        "libmd.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libmd.so.0.1.0",
+          "sha256": "423e18586b6ea740f4465afd64f7a9a4cb7264ed979c8e7256f9085af5345fef"
+        }
+      },
+      "dynamically_loaded_libraries": {
+        "libdril_dri.so": {
+          "path": "/usr/lib/x86_64-linux-gnu/dri/libdril_dri.so",
+          "sha256": "c28638b02783ebc96a78bb982fe59ad0d54230bc1faf53305af33edab29cd388",
+          "dependencies": {
+            "libgbm.so.1": {
+              "path": "/usr/lib/x86_64-linux-gnu/libgbm.so.1.0.0",
+              "sha256": "66f584160554d07f03d2a2fd1037d6af8f071e189c92438a77924e99c4572f0d"
+            },
+            "libm.so.6": {
+              "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+              "sha256": "e9c4b28d340e415b8137480ec442662f981e1399386c5931dae0e886e3639e91"
+            },
+            "libc.so.6": {
+              "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+              "sha256": "8db37cf3f2169f59a0f07ef1fea308c35656668c64c8ff294e1860f4121eb161"
+            },
+            "libdrm.so.2": {
+              "path": "/usr/lib/x86_64-linux-gnu/libdrm.so.2.125.0",
+              "sha256": "ff39219aa058421e46afd36851342370cd1932d2557eb22f54e129755642bf67"
+            },
+            "libexpat.so.1": {
+              "path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.9.1",
+              "sha256": "7ae38be4b2f909d25c5ca3107ed04bc3128a8a24ea7adfe30102c3f04089c9c3"
+            },
+            "ld-linux-x86-64.so.2": {
+              "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+              "sha256": "cd4df4f3c7b83673d61189bf2eaebd33ca4f2853ab9772b8a25e025ef99b1e81"
+            }
+          }
+        },
+        "libVoxJPEGXL.so": {
+          "path": "Build/linux/libVoxJPEGXL.so",
+          "sha256": "d3cbf80b055ac79b17c605d4cdad7fadfeab9137eb21f0ad353fef7108607ad9",
+          "dependencies": {
+            "libgcc_s.so.1": {
+              "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+              "sha256": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb"
+            },
+            "libm.so.6": {
+              "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+              "sha256": "e9c4b28d340e415b8137480ec442662f981e1399386c5931dae0e886e3639e91"
+            },
+            "libc.so.6": {
+              "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+              "sha256": "8db37cf3f2169f59a0f07ef1fea308c35656668c64c8ff294e1860f4121eb161"
+            },
+            "ld-linux-x86-64.so.2": {
+              "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+              "sha256": "cd4df4f3c7b83673d61189bf2eaebd33ca4f2853ab9772b8a25e025ef99b1e81"
+            }
+          }
+        }
+      },
+      "ldd": "\tlinux-vdso.so.1 (0x00007fe2321fb000)\n\tlibgc.so.1 => /lib/x86_64-linux-gnu/libgc.so.1 (0x00007fe2305d3000)\n\tlibicuuc.so.74 => /lib/x86_64-linux-gnu/libicuuc.so.74 (0x00007fe2303c6000)\n\tlibjavascriptcoregtk-4.1.so.0 => /lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so.0 (0x00007fe22e540000)\n\tlibgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x00007fe22e4dd000)\n\tlibglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x00007fe22e394000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007fe22e376000)\n\tlibXrandr.so.2 => /lib/x86_64-linux-gnu/libXrandr.so.2 (0x00007fe22e369000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fe22e280000)\n\tlibfontconfig.so.1 => /lib/x86_64-linux-gnu/libfontconfig.so.1 (0x00007fe22e22f000)\n\tlibfreetype.so.6 => /lib/x86_64-linux-gnu/libfreetype.so.6 (0x00007fe22e163000)\n\tlibharfbuzz.so.0 => /lib/x86_64-linux-gnu/libharfbuzz.so.0 (0x00007fe22e056000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fe22ddd6000)\n\tlibicui18n.so.74 => /lib/x86_64-linux-gnu/libicui18n.so.74 (0x00007fe22da88000)\n\tlibicudata.so.74 => /lib/x86_64-linux-gnu/libicudata.so.74 (0x00007fe22bd28000)\n\tlibcurl.so.4 => /lib/x86_64-linux-gnu/libcurl.so.4 (0x00007fe22bc67000)\n\tlibEGL.so.1 => /lib/x86_64-linux-gnu/libEGL.so.1 (0x00007fe22bc55000)\n\tlibGLESv2.so.2 => /lib/x86_64-linux-gnu/libGLESv2.so.2 (0x00007fe22bc43000)\n\tlibssl.so.3 => /lib/x86_64-linux-gnu/libssl.so.3 (0x00007fe22bb97000)\n\tlibcrypto.so.3 => /lib/x86_64-linux-gnu/libcrypto.so.3 (0x00007fe22b683000)\n\tlibwoff2dec.so.1.0.2 => /lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2 (0x00007fe22b678000)\n\tlibwoff2common.so.1.0.2 => /lib/x86_64-linux-gnu/libwoff2common.so.1.0.2 (0x00007fe22b673000)\n\tlibbrotlidec.so.1 => /lib/x86_64-linux-gnu/libbrotlidec.so.1 (0x00007fe22b665000)\n\tlibbrotlicommon.so.1 => /lib/x86_64-linux-gnu/libbrotlicommon.so.1 (0x00007fe22b642000)\n\tlibpng16.so.16 => /lib/x86_64-linux-gnu/libpng16.so.16 (0x00007fe22b608000)\n\tlibjpeg.so.8 => /lib/x86_64-linux-gnu/libjpeg.so.8 (0x00007fe22b585000)\n\tlibwebp.so.7 => /lib/x86_64-linux-gnu/libwebp.so.7 (0x00007fe22b50a000)\n\tlibwebpdemux.so.2 => /lib/x86_64-linux-gnu/libwebpdemux.so.2 (0x00007fe22b503000)\n\tlibX11.so.6 => /lib/x86_64-linux-gnu/libX11.so.6 (0x00007fe22b3c6000)\n\tlibXi.so.6 => /lib/x86_64-linux-gnu/libXi.so.6 (0x00007fe22b3b3000)\n\tlibXcursor.so.1 => /lib/x86_64-linux-gnu/libXcursor.so.1 (0x00007fe22b3a5000)\n\tlibGL.so.1 => /lib/x86_64-linux-gnu/libGL.so.1 (0x00007fe22b31e000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fe22b2f0000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fe22b0de000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fe2321fd000)\n\tlibatomic.so.1 => /lib/x86_64-linux-gnu/libatomic.so.1 (0x00007fe22b0d3000)\n\tlibgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x00007fe22af01000)\n\tlibsystemd.so.0 => /lib/x86_64-linux-gnu/libsystemd.so.0 (0x00007fe22ae21000)\n\tlibffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x00007fe22ae15000)\n\tlibpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007fe22ad7b000)\n\tlibXext.so.6 => /lib/x86_64-linux-gnu/libXext.so.6 (0x00007fe22ad67000)\n\tlibXrender.so.1 => /lib/x86_64-linux-gnu/libXrender.so.1 (0x00007fe22ad59000)\n\tlibexpat.so.1 => /lib/x86_64-linux-gnu/libexpat.so.1 (0x00007fe22ad2d000)\n\tlibbz2.so.1.0 => /lib/x86_64-linux-gnu/libbz2.so.1.0 (0x00007fe22ad19000)\n\tlibgraphite2.so.3 => /lib/x86_64-linux-gnu/libgraphite2.so.3 (0x00007fe22acf3000)\n\tlibnghttp2.so.14 => /lib/x86_64-linux-gnu/libnghttp2.so.14 (0x00007fe22acc8000)\n\tlibidn2.so.0 => /lib/x86_64-linux-gnu/libidn2.so.0 (0x00007fe22aca4000)\n\tlibrtmp.so.1 => /lib/x86_64-linux-gnu/librtmp.so.1 (0x00007fe22ac86000)\n\tlibssh.so.4 => /lib/x86_64-linux-gnu/libssh.so.4 (0x00007fe22ac14000)\n\tlibpsl.so.5 => /lib/x86_64-linux-gnu/libpsl.so.5 (0x00007fe22ac00000)\n\tlibgssapi_krb5.so.2 => /lib/x86_64-linux-gnu/libgssapi_krb5.so.2 (0x00007fe22abac000)\n\tlibldap.so.2 => /lib/x86_64-linux-gnu/libldap.so.2 (0x00007fe22ab4e000)\n\tliblber.so.2 => /lib/x86_64-linux-gnu/liblber.so.2 (0x00007fe22ab3c000)\n\tlibzstd.so.1 => /lib/x86_64-linux-gnu/libzstd.so.1 (0x00007fe22aa82000)\n\tlibGLdispatch.so.0 => /lib/x86_64-linux-gnu/libGLdispatch.so.0 (0x00007fe22a9ca000)\n\tlibsharpyuv.so.0 => /lib/x86_64-linux-gnu/libsharpyuv.so.0 (0x00007fe22a9c2000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007fe22a999000)\n\tlibXfixes.so.3 => /lib/x86_64-linux-gnu/libXfixes.so.3 (0x00007fe22a98f000)\n\tlibGLX.so.0 => /lib/x86_64-linux-gnu/libGLX.so.0 (0x00007fe22a95c000)\n\tlibgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x00007fe22a955000)\n\tlibmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x00007fe22a908000)\n\tlibselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007fe22a8db000)\n\tlibcap.so.2 => /lib/x86_64-linux-gnu/libcap.so.2 (0x00007fe22a8cc000)\n\tlibgcrypt.so.20 => /lib/x86_64-linux-gnu/libgcrypt.so.20 (0x00007fe22a784000)\n\tliblz4.so.1 => /lib/x86_64-linux-gnu/liblz4.so.1 (0x00007fe22a762000)\n\tliblzma.so.5 => /lib/x86_64-linux-gnu/liblzma.so.5 (0x00007fe22a730000)\n\tlibunistring.so.5 => /lib/x86_64-linux-gnu/libunistring.so.5 (0x00007fe22a583000)\n\tlibgnutls.so.30 => /lib/x86_64-linux-gnu/libgnutls.so.30 (0x00007fe22a387000)\n\tlibhogweed.so.6 => /lib/x86_64-linux-gnu/libhogweed.so.6 (0x00007fe22a33f000)\n\tlibnettle.so.8 => /lib/x86_64-linux-gnu/libnettle.so.8 (0x00007fe22a2ea000)\n\tlibgmp.so.10 => /lib/x86_64-linux-gnu/libgmp.so.10 (0x00007fe22a266000)\n\tlibkrb5.so.3 => /lib/x86_64-linux-gnu/libkrb5.so.3 (0x00007fe22a19d000)\n\tlibk5crypto.so.3 => /lib/x86_64-linux-gnu/libk5crypto.so.3 (0x00007fe22a16f000)\n\tlibcom_err.so.2 => /lib/x86_64-linux-gnu/libcom_err.so.2 (0x00007fe22a169000)\n\tlibkrb5support.so.0 => /lib/x86_64-linux-gnu/libkrb5support.so.0 (0x00007fe22a15c000)\n\tlibsasl2.so.2 => /lib/x86_64-linux-gnu/libsasl2.so.2 (0x00007fe22a142000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007fe22a13c000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007fe22a132000)\n\tlibblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x00007fe22a0f7000)\n\tlibgpg-error.so.0 => /lib/x86_64-linux-gnu/libgpg-error.so.0 (0x00007fe22a0d2000)\n\tlibp11-kit.so.0 => /lib/x86_64-linux-gnu/libp11-kit.so.0 (0x00007fe229f2e000)\n\tlibtasn1.so.6 => /lib/x86_64-linux-gnu/libtasn1.so.6 (0x00007fe229f18000)\n\tlibkeyutils.so.1 => /lib/x86_64-linux-gnu/libkeyutils.so.1 (0x00007fe229f0f000)\n\tlibresolv.so.2 => /lib/x86_64-linux-gnu/libresolv.so.2 (0x00007fe229efd000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007fe229ee7000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007fe229ed8000)\n"
+    },
+    "candidate": {
+      "path": "Build/reddit-optimization/candidate-c/vox2",
+      "sha256": "9c2ac167c046be1f5e8f7fed2f261ea8fd60e7d2fe525df87dd6c9cc426a6c07",
+      "bytes": 35933120,
+      "libraries": {
+        "libgc.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgc.so.1.5.3",
+          "sha256": "1e3eab1378bd6be4e1e383f50e42dc7bb6d03c9fe5cd7dd35f046cef9cebbbee"
+        },
+        "libicuuc.so.74": {
+          "path": "/usr/lib/x86_64-linux-gnu/libicuuc.so.74.2",
+          "sha256": "7560aadde38e5f4237a47a1ddd5891f9b36768a77a60faae30beee003ac01901"
+        },
+        "libjavascriptcoregtk-4.1.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so.0.10.11",
+          "sha256": "713befb6ed6dfe8672a44604cfce6c7899f4b81ee57c33983233c4c781295e83"
+        },
+        "libgobject-2.0.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0.8000.0",
+          "sha256": "99bf0727e0ca4faf12ab09b753b3d03294562c29c559b970c4dad435f9ec2bc6"
+        },
+        "libglib-2.0.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libglib-2.0.so.0.8000.0",
+          "sha256": "42467d0dbcc0a6c9e0a31f05a5944095504ce98f093c3fe0825f0a1533fa8207"
+        },
+        "libz.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3",
+          "sha256": "9b64150b28505a33d6bc3ecf709c279f6de97a1c184dbda65d06ee4537f6d286"
+        },
+        "libXrandr.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXrandr.so.2.2.0",
+          "sha256": "bc6120a734d52e7f5e3611334e9f3cff0b3ce1b129bb20b6412ce8f0f62c049d"
+        },
+        "libm.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "e9c4b28d340e415b8137480ec442662f981e1399386c5931dae0e886e3639e91"
+        },
+        "libfontconfig.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1",
+          "sha256": "a94b4059b27766f563894c8f7e61762b6f6b2e25c59ef36b730164d4b75c6c98"
+        },
+        "libfreetype.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.1",
+          "sha256": "c14c53c5baff12afafb610c6312fb879e9bb77e80dd42e27504d52d6d8bcd059"
+        },
+        "libharfbuzz.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libharfbuzz.so.0.60830.0",
+          "sha256": "4562cfcfd18935324ba3ac74a944898b867ab87a56e925ab3e351ba773f1513e"
+        },
+        "libstdc++.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+          "sha256": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11"
+        },
+        "libicui18n.so.74": {
+          "path": "/usr/lib/x86_64-linux-gnu/libicui18n.so.74.2",
+          "sha256": "3550b194eb2cf2e6f798f033eb9ca279d498c21296b4a18790ce158d2023e47b"
+        },
+        "libicudata.so.74": {
+          "path": "/usr/lib/x86_64-linux-gnu/libicudata.so.74.2",
+          "sha256": "ddbb3718b8bd9cbd780e5ab08b4503c30a6c4fa0706ebe5d074ed6b596c1714e"
+        },
+        "libcurl.so.4": {
+          "path": "/usr/lib/x86_64-linux-gnu/libcurl.so.4.8.0",
+          "sha256": "eac8f2e9aa13017db58f59ea8608fef7564d7421bd1bab35a7ce5c41ba326b45"
+        },
+        "libEGL.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libEGL.so.1.1.0",
+          "sha256": "875ecbb2a07d60e32216c9f102965abc1e9cc1da7789558e2e9b8b9c107e231d"
+        },
+        "libGLESv2.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libGLESv2.so.2.1.0",
+          "sha256": "4d410c7e883b6e4bab42fafae7ebad6ae5702883bfce07a5e6ffdf4c3fec433b"
+        },
+        "libssl.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+          "sha256": "8e49cebd373d90b55f3626da71dd97fe8e95c68dc4c064d8962b27907690736e"
+        },
+        "libcrypto.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+          "sha256": "6a66c3ba6b3749aacc9497973fff00f6ba61c703ba7015d0d7ab3fd9510974b6"
+        },
+        "libwoff2dec.so.1.0.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2",
+          "sha256": "8079e4fd739be1012ea096233d9d1198994e77dbdcb9145af3f6d777042b1ce8"
+        },
+        "libwoff2common.so.1.0.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2",
+          "sha256": "a33d24cab3be64d29777d2d8217a3f6b0aa82a648df410f018e7452b0ef0c1f0"
+        },
+        "libbrotlidec.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0",
+          "sha256": "64d8a5019d4c294b89fde1193343ea324bbd8603652554e5545f0a01595fa2c5"
+        },
+        "libbrotlicommon.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0",
+          "sha256": "a91ead095d2c80520c55a89057bbe10b031a075340442e63f44b310f93883a1b"
+        },
+        "libpng16.so.16": {
+          "path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.43.0",
+          "sha256": "eac265b3506df0d9110dd9143e1d0503e2daabafe1d98b23fac8ca17b71d1f6b"
+        },
+        "libjpeg.so.8": {
+          "path": "/usr/lib/x86_64-linux-gnu/libjpeg.so.8.2.2",
+          "sha256": "ac09f2cd6f8a3b8e3cb123999ce275f9bcbe31c6cf9e20212c8f297772591d15"
+        },
+        "libwebp.so.7": {
+          "path": "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.8",
+          "sha256": "9664db51ec65209078abbb8bc7b699888a43ecc2f3c74ce8dd4e497175aa5bf0"
+        },
+        "libwebpdemux.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libwebpdemux.so.2.0.14",
+          "sha256": "f31bf01638c352533e18720676db66fcb190a622db5bf617558a49bc445d0b83"
+        },
+        "libX11.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0",
+          "sha256": "c5b5d782bd9cab3420a62df88f5c991507edf3331a89f98464ddbc538c37b879"
+        },
+        "libXi.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXi.so.6.1.0",
+          "sha256": "a51348c921ce1a35123fa7c99dc59bfd3e815be6829874fe15ae55172901d3e4"
+        },
+        "libXcursor.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXcursor.so.1.0.2",
+          "sha256": "09bd5941a53ee7fb06898fa066709cf098df8e33a45042e065d2f8461d92672c"
+        },
+        "libGL.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libGL.so.1.7.0",
+          "sha256": "67f471213576d225d38347a0b6d2a08a231980685301ff6461bd74d3994e5027"
+        },
+        "libgcc_s.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "sha256": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb"
+        },
+        "libc.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "8db37cf3f2169f59a0f07ef1fea308c35656668c64c8ff294e1860f4121eb161"
+        },
+        "ld-linux-x86-64.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+          "sha256": "cd4df4f3c7b83673d61189bf2eaebd33ca4f2853ab9772b8a25e025ef99b1e81"
+        },
+        "libatomic.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libatomic.so.1.2.0",
+          "sha256": "9d8a34468e614a71a6427dbabb0ac24eb8cb1e324dc6aa3bf95eb6f59201f000"
+        },
+        "libgio-2.0.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgio-2.0.so.0.8000.0",
+          "sha256": "d8c4cf698e9b8790584cc5ede813a86ec4f041c0d58daa452b72431572685a87"
+        },
+        "libsystemd.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libsystemd.so.0.38.0",
+          "sha256": "bdf59c828b547bcdbe7b3576c0810d9d9d2e982d8b61b365812542da6a4c4a99"
+        },
+        "libffi.so.8": {
+          "path": "/usr/lib/x86_64-linux-gnu/libffi.so.8.1.4",
+          "sha256": "00f593fe192f2851b8ce23b25cec2488d769beb5a8f63e8c9e563071e1075153"
+        },
+        "libpcre2-8.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libpcre2-8.so.0.11.2",
+          "sha256": "e00576d71d81d3ba0cfa4903c835a44a8723aac96f72f79ff75200b4cff9071b"
+        },
+        "libXext.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXext.so.6.4.0",
+          "sha256": "2907e6a996465de5b32a0dd10534d4416b87f1dee5670aaa7b19301a1fc93f44"
+        },
+        "libXrender.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXrender.so.1.3.0",
+          "sha256": "250977e0e004b6c0556144c3e683487063b4582dc83d205196ec3aa65d54e2c6"
+        },
+        "libexpat.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.9.1",
+          "sha256": "7ae38be4b2f909d25c5ca3107ed04bc3128a8a24ea7adfe30102c3f04089c9c3"
+        },
+        "libbz2.so.1.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4",
+          "sha256": "218c4abdabce31161f3c2778762986d1fe06633705c7eb004a740946a5ccdfff"
+        },
+        "libgraphite2.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgraphite2.so.3.2.1",
+          "sha256": "fcfaf843b25b58b88319ced52f826fc8213a661f3693c916f88641eddffe05b8"
+        },
+        "libnghttp2.so.14": {
+          "path": "/usr/lib/x86_64-linux-gnu/libnghttp2.so.14.26.0",
+          "sha256": "398c6d2025210279f4c7413ebdb7f4c63bc5afda5ec3b1ccc58885a65acc2b78"
+        },
+        "libidn2.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libidn2.so.0.4.0",
+          "sha256": "6e632fd9a3125db60bbc623719bbc17b0470330321c5b1c57f1ff7190e5551ad"
+        },
+        "librtmp.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/librtmp.so.1",
+          "sha256": "15a2a75e8c437b9c99971b5ee10278ab110beef1a56d1d9e5d6759ea140e98ac"
+        },
+        "libssh.so.4": {
+          "path": "/usr/lib/x86_64-linux-gnu/libssh.so.4.9.6",
+          "sha256": "ad1513debc90c2662c2c63b587cd815b118b03b3a983f7fdbd89968354674d63"
+        },
+        "libpsl.so.5": {
+          "path": "/usr/lib/x86_64-linux-gnu/libpsl.so.5.3.4",
+          "sha256": "ae6c5a9aecc249fc66e03c16ec6c4385d09d7e12e0ea7694bb831ab4fee8133c"
+        },
+        "libgssapi_krb5.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2.2",
+          "sha256": "b9a20df712d206654477c079f03b568276933e91cbe237e62af791f0f3ab8d8b"
+        },
+        "libldap.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libldap.so.2.0.200",
+          "sha256": "4a0664ab6a8a66c685e78d5604b79df330f5710f0c5e2c382536a8325dc4c2a4"
+        },
+        "liblber.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/liblber.so.2.0.200",
+          "sha256": "6f6935b26c962d5b51ef2011332472cfd96ff244a4edc9d47120be6faa70e602"
+        },
+        "libzstd.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.5",
+          "sha256": "0a2128bc10841fb29e76d08d945864dfb0b6a66da5df6df5d8299197439e54bb"
+        },
+        "libGLdispatch.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libGLdispatch.so.0.0.0",
+          "sha256": "ca01a91104c8887b3d8e59499b58cbb8f604cc285666b50d9ec888eb0c915182"
+        },
+        "libsharpyuv.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.0.1",
+          "sha256": "b2e62799e5dbd783a0671d53be99f7c6489567a5332a1e8f471e6bb250f294dc"
+        },
+        "libxcb.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0",
+          "sha256": "7958a0136b121bdc4c708968569ad152a9ed208ab026e2537b1005dde64ca440"
+        },
+        "libXfixes.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXfixes.so.3.1.0",
+          "sha256": "89e5897f438456013d2297850a7558cd28c9ad1f6978447197568949fb6a0fd9"
+        },
+        "libGLX.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0",
+          "sha256": "16fc8a37eea9210dc83c57eeff5aedc10ab4c6673f2f97e8bb6ee103df657b40"
+        },
+        "libgmodule-2.0.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgmodule-2.0.so.0.8000.0",
+          "sha256": "f8445c01952fd3ff0bb4f17f73be821af3e4b9b61546ff517392e9baeb8f2126"
+        },
+        "libmount.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libmount.so.1.1.0",
+          "sha256": "43831ab1f85948e5599c5c0295d87ad6d03e3d58b801534abdf4cd5d266388de"
+        },
+        "libselinux.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libselinux.so.1",
+          "sha256": "0ec0843463f90e227b0e138e1f379774f50b5514bd7f5dbd4c8a87aca0aa6670"
+        },
+        "libcap.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libcap.so.2.66",
+          "sha256": "0e62ac3921a103914968b82c8c8514f34a056f4c9ac3d1ab927ca35de383ae02"
+        },
+        "libgcrypt.so.20": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgcrypt.so.20.4.3",
+          "sha256": "f207cbaa2f5ad2acb0a0991f79c2329808493af500ca8cf25dfc386e6639bf1b"
+        },
+        "liblz4.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/liblz4.so.1.9.4",
+          "sha256": "40bffd0a098387368b16b992abd5f7cf43c0fa2f05cabe5a6d483719554adfda"
+        },
+        "liblzma.so.5": {
+          "path": "/usr/lib/x86_64-linux-gnu/liblzma.so.5.4.5",
+          "sha256": "a9793942a8a5f6f4d0f523ef9e0a5be4f0033f2c6c28520cd2b4e706d53c6e17"
+        },
+        "libunistring.so.5": {
+          "path": "/usr/lib/x86_64-linux-gnu/libunistring.so.5.0.0",
+          "sha256": "7bcf825cd449892db5105ad2aed91dcf94a27b796426600c765720c584c54dd1"
+        },
+        "libgnutls.so.30": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgnutls.so.30.37.1",
+          "sha256": "96137275400f39510c9a533c6ad8a921e94266e664e7e09c9ad6ea9f23277c23"
+        },
+        "libhogweed.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libhogweed.so.6.8",
+          "sha256": "c3c606139d4f7776efa4dbd4a6b62e30c916b07a0cafd8c3ef173d6f093607e3"
+        },
+        "libnettle.so.8": {
+          "path": "/usr/lib/x86_64-linux-gnu/libnettle.so.8.8",
+          "sha256": "a245ed916229583d6fe0b07657b3ed945bc148c28cc08b5266295f620d2b91cc"
+        },
+        "libgmp.so.10": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgmp.so.10.5.0",
+          "sha256": "0ccdfb6d6f5c039465f6d002cf7e4c072d48ac6a2cffc8dd6c748dec31592804"
+        },
+        "libkrb5.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libkrb5.so.3.3",
+          "sha256": "52c143c9c77a223a4dac5449eac41fd2490e37c8a30430f1559c1421f4f8ed73"
+        },
+        "libk5crypto.so.3": {
+          "path": "/usr/lib/x86_64-linux-gnu/libk5crypto.so.3.1",
+          "sha256": "8394027f2be7c2cc7b2da4797476a8b688a21f75ee231941fa2df8d00ba79d08"
+        },
+        "libcom_err.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libcom_err.so.2.1",
+          "sha256": "022943b3b11c860b049bce41342f1c2594941b7b401d95dfdf235521099fee08"
+        },
+        "libkrb5support.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libkrb5support.so.0.1",
+          "sha256": "8e1ef5a40f7b0d5b0fbcd6e4f28dd50b263650338a2bb72503be34632f3629d6"
+        },
+        "libsasl2.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libsasl2.so.2.0.25",
+          "sha256": "a0f410ad093236856eee59c4ff2838dc04d932ea0993400f23ed77d67d85af34"
+        },
+        "libXau.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0",
+          "sha256": "8040da3f8516c1acfe39f04ff022480cdb273705ba5e7a4ca70bbdb1527cd67a"
+        },
+        "libXdmcp.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0",
+          "sha256": "667d97d6da16016400ab10de9f83ef4ab209ceb6adf68ff9650225ec13e723b0"
+        },
+        "libblkid.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libblkid.so.1.1.0",
+          "sha256": "f3d6283f6b58de134f0f13094deac9c3af6764923c62e85f08a5780ad4ebe039"
+        },
+        "libgpg-error.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libgpg-error.so.0.34.0",
+          "sha256": "6cb18a007bfcb623029f4528a36b46578fea7dc34c2b505b8e6e0d99e6348cd1"
+        },
+        "libp11-kit.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libp11-kit.so.0.3.1",
+          "sha256": "c6b469a006685ebf2075e200180c3b21f41b88ad722c5697d736ea558cfe3ea1"
+        },
+        "libtasn1.so.6": {
+          "path": "/usr/lib/x86_64-linux-gnu/libtasn1.so.6.6.3",
+          "sha256": "7c9c7830afbaac7b07ec21ddaa6b4d606423432c264efd2636e8ca9734b4d7b6"
+        },
+        "libkeyutils.so.1": {
+          "path": "/usr/lib/x86_64-linux-gnu/libkeyutils.so.1.10",
+          "sha256": "f48214417757f18793ed6e180cc14ee1d6f04252a518fc7270e8ca1d0b4260fe"
+        },
+        "libresolv.so.2": {
+          "path": "/usr/lib/x86_64-linux-gnu/libresolv.so.2",
+          "sha256": "4086b12d3b95ef6f02373b30b88444e7d79fb8693ed1cfeaa5162e6959878912"
+        },
+        "libbsd.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libbsd.so.0.12.1",
+          "sha256": "e86cd4f0019f42c2ba5e60602e0edc8694d2948377d98c3654d0f6bddb5254bb"
+        },
+        "libmd.so.0": {
+          "path": "/usr/lib/x86_64-linux-gnu/libmd.so.0.1.0",
+          "sha256": "423e18586b6ea740f4465afd64f7a9a4cb7264ed979c8e7256f9085af5345fef"
+        }
+      },
+      "dynamically_loaded_libraries": {
+        "libdril_dri.so": {
+          "path": "/usr/lib/x86_64-linux-gnu/dri/libdril_dri.so",
+          "sha256": "c28638b02783ebc96a78bb982fe59ad0d54230bc1faf53305af33edab29cd388",
+          "dependencies": {
+            "libgbm.so.1": {
+              "path": "/usr/lib/x86_64-linux-gnu/libgbm.so.1.0.0",
+              "sha256": "66f584160554d07f03d2a2fd1037d6af8f071e189c92438a77924e99c4572f0d"
+            },
+            "libm.so.6": {
+              "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+              "sha256": "e9c4b28d340e415b8137480ec442662f981e1399386c5931dae0e886e3639e91"
+            },
+            "libc.so.6": {
+              "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+              "sha256": "8db37cf3f2169f59a0f07ef1fea308c35656668c64c8ff294e1860f4121eb161"
+            },
+            "libdrm.so.2": {
+              "path": "/usr/lib/x86_64-linux-gnu/libdrm.so.2.125.0",
+              "sha256": "ff39219aa058421e46afd36851342370cd1932d2557eb22f54e129755642bf67"
+            },
+            "libexpat.so.1": {
+              "path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.9.1",
+              "sha256": "7ae38be4b2f909d25c5ca3107ed04bc3128a8a24ea7adfe30102c3f04089c9c3"
+            },
+            "ld-linux-x86-64.so.2": {
+              "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+              "sha256": "cd4df4f3c7b83673d61189bf2eaebd33ca4f2853ab9772b8a25e025ef99b1e81"
+            }
+          }
+        },
+        "libVoxJPEGXL.so": {
+          "path": "Build/linux/libVoxJPEGXL.so",
+          "sha256": "d3cbf80b055ac79b17c605d4cdad7fadfeab9137eb21f0ad353fef7108607ad9",
+          "dependencies": {
+            "libgcc_s.so.1": {
+              "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+              "sha256": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb"
+            },
+            "libm.so.6": {
+              "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+              "sha256": "e9c4b28d340e415b8137480ec442662f981e1399386c5931dae0e886e3639e91"
+            },
+            "libc.so.6": {
+              "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+              "sha256": "8db37cf3f2169f59a0f07ef1fea308c35656668c64c8ff294e1860f4121eb161"
+            },
+            "ld-linux-x86-64.so.2": {
+              "path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+              "sha256": "cd4df4f3c7b83673d61189bf2eaebd33ca4f2853ab9772b8a25e025ef99b1e81"
+            }
+          }
+        }
+      },
+      "ldd": "\tlinux-vdso.so.1 (0x00007f077db51000)\n\tlibgc.so.1 => /lib/x86_64-linux-gnu/libgc.so.1 (0x00007f077bf29000)\n\tlibicuuc.so.74 => /lib/x86_64-linux-gnu/libicuuc.so.74 (0x00007f077bd1c000)\n\tlibjavascriptcoregtk-4.1.so.0 => /lib/x86_64-linux-gnu/libjavascriptcoregtk-4.1.so.0 (0x00007f0779e96000)\n\tlibgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x00007f0779e33000)\n\tlibglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x00007f0779cea000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f0779ccc000)\n\tlibXrandr.so.2 => /lib/x86_64-linux-gnu/libXrandr.so.2 (0x00007f0779cbf000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f0779bd6000)\n\tlibfontconfig.so.1 => /lib/x86_64-linux-gnu/libfontconfig.so.1 (0x00007f0779b85000)\n\tlibfreetype.so.6 => /lib/x86_64-linux-gnu/libfreetype.so.6 (0x00007f0779ab9000)\n\tlibharfbuzz.so.0 => /lib/x86_64-linux-gnu/libharfbuzz.so.0 (0x00007f07799ac000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f077972c000)\n\tlibicui18n.so.74 => /lib/x86_64-linux-gnu/libicui18n.so.74 (0x00007f07793de000)\n\tlibicudata.so.74 => /lib/x86_64-linux-gnu/libicudata.so.74 (0x00007f077767e000)\n\tlibcurl.so.4 => /lib/x86_64-linux-gnu/libcurl.so.4 (0x00007f07775bd000)\n\tlibEGL.so.1 => /lib/x86_64-linux-gnu/libEGL.so.1 (0x00007f07775ab000)\n\tlibGLESv2.so.2 => /lib/x86_64-linux-gnu/libGLESv2.so.2 (0x00007f0777599000)\n\tlibssl.so.3 => /lib/x86_64-linux-gnu/libssl.so.3 (0x00007f07774ed000)\n\tlibcrypto.so.3 => /lib/x86_64-linux-gnu/libcrypto.so.3 (0x00007f0776fd9000)\n\tlibwoff2dec.so.1.0.2 => /lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2 (0x00007f0776fce000)\n\tlibwoff2common.so.1.0.2 => /lib/x86_64-linux-gnu/libwoff2common.so.1.0.2 (0x00007f0776fc9000)\n\tlibbrotlidec.so.1 => /lib/x86_64-linux-gnu/libbrotlidec.so.1 (0x00007f0776fbb000)\n\tlibbrotlicommon.so.1 => /lib/x86_64-linux-gnu/libbrotlicommon.so.1 (0x00007f0776f98000)\n\tlibpng16.so.16 => /lib/x86_64-linux-gnu/libpng16.so.16 (0x00007f0776f5e000)\n\tlibjpeg.so.8 => /lib/x86_64-linux-gnu/libjpeg.so.8 (0x00007f0776edb000)\n\tlibwebp.so.7 => /lib/x86_64-linux-gnu/libwebp.so.7 (0x00007f0776e60000)\n\tlibwebpdemux.so.2 => /lib/x86_64-linux-gnu/libwebpdemux.so.2 (0x00007f0776e59000)\n\tlibX11.so.6 => /lib/x86_64-linux-gnu/libX11.so.6 (0x00007f0776d1c000)\n\tlibXi.so.6 => /lib/x86_64-linux-gnu/libXi.so.6 (0x00007f0776d09000)\n\tlibXcursor.so.1 => /lib/x86_64-linux-gnu/libXcursor.so.1 (0x00007f0776cfb000)\n\tlibGL.so.1 => /lib/x86_64-linux-gnu/libGL.so.1 (0x00007f0776c74000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f0776c46000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f0776a34000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f077db53000)\n\tlibatomic.so.1 => /lib/x86_64-linux-gnu/libatomic.so.1 (0x00007f0776a29000)\n\tlibgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x00007f0776857000)\n\tlibsystemd.so.0 => /lib/x86_64-linux-gnu/libsystemd.so.0 (0x00007f0776777000)\n\tlibffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x00007f077676b000)\n\tlibpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007f07766d1000)\n\tlibXext.so.6 => /lib/x86_64-linux-gnu/libXext.so.6 (0x00007f07766bd000)\n\tlibXrender.so.1 => /lib/x86_64-linux-gnu/libXrender.so.1 (0x00007f07766af000)\n\tlibexpat.so.1 => /lib/x86_64-linux-gnu/libexpat.so.1 (0x00007f0776683000)\n\tlibbz2.so.1.0 => /lib/x86_64-linux-gnu/libbz2.so.1.0 (0x00007f077666f000)\n\tlibgraphite2.so.3 => /lib/x86_64-linux-gnu/libgraphite2.so.3 (0x00007f0776649000)\n\tlibnghttp2.so.14 => /lib/x86_64-linux-gnu/libnghttp2.so.14 (0x00007f077661e000)\n\tlibidn2.so.0 => /lib/x86_64-linux-gnu/libidn2.so.0 (0x00007f07765fa000)\n\tlibrtmp.so.1 => /lib/x86_64-linux-gnu/librtmp.so.1 (0x00007f07765dc000)\n\tlibssh.so.4 => /lib/x86_64-linux-gnu/libssh.so.4 (0x00007f077656a000)\n\tlibpsl.so.5 => /lib/x86_64-linux-gnu/libpsl.so.5 (0x00007f0776556000)\n\tlibgssapi_krb5.so.2 => /lib/x86_64-linux-gnu/libgssapi_krb5.so.2 (0x00007f0776502000)\n\tlibldap.so.2 => /lib/x86_64-linux-gnu/libldap.so.2 (0x00007f07764a4000)\n\tliblber.so.2 => /lib/x86_64-linux-gnu/liblber.so.2 (0x00007f0776492000)\n\tlibzstd.so.1 => /lib/x86_64-linux-gnu/libzstd.so.1 (0x00007f07763d8000)\n\tlibGLdispatch.so.0 => /lib/x86_64-linux-gnu/libGLdispatch.so.0 (0x00007f0776320000)\n\tlibsharpyuv.so.0 => /lib/x86_64-linux-gnu/libsharpyuv.so.0 (0x00007f0776318000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007f07762ef000)\n\tlibXfixes.so.3 => /lib/x86_64-linux-gnu/libXfixes.so.3 (0x00007f07762e5000)\n\tlibGLX.so.0 => /lib/x86_64-linux-gnu/libGLX.so.0 (0x00007f07762b2000)\n\tlibgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x00007f07762ab000)\n\tlibmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x00007f077625e000)\n\tlibselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007f0776231000)\n\tlibcap.so.2 => /lib/x86_64-linux-gnu/libcap.so.2 (0x00007f0776222000)\n\tlibgcrypt.so.20 => /lib/x86_64-linux-gnu/libgcrypt.so.20 (0x00007f07760da000)\n\tliblz4.so.1 => /lib/x86_64-linux-gnu/liblz4.so.1 (0x00007f07760b8000)\n\tliblzma.so.5 => /lib/x86_64-linux-gnu/liblzma.so.5 (0x00007f0776086000)\n\tlibunistring.so.5 => /lib/x86_64-linux-gnu/libunistring.so.5 (0x00007f0775ed9000)\n\tlibgnutls.so.30 => /lib/x86_64-linux-gnu/libgnutls.so.30 (0x00007f0775cdd000)\n\tlibhogweed.so.6 => /lib/x86_64-linux-gnu/libhogweed.so.6 (0x00007f0775c95000)\n\tlibnettle.so.8 => /lib/x86_64-linux-gnu/libnettle.so.8 (0x00007f0775c40000)\n\tlibgmp.so.10 => /lib/x86_64-linux-gnu/libgmp.so.10 (0x00007f0775bbc000)\n\tlibkrb5.so.3 => /lib/x86_64-linux-gnu/libkrb5.so.3 (0x00007f0775af3000)\n\tlibk5crypto.so.3 => /lib/x86_64-linux-gnu/libk5crypto.so.3 (0x00007f0775ac5000)\n\tlibcom_err.so.2 => /lib/x86_64-linux-gnu/libcom_err.so.2 (0x00007f0775abf000)\n\tlibkrb5support.so.0 => /lib/x86_64-linux-gnu/libkrb5support.so.0 (0x00007f0775ab2000)\n\tlibsasl2.so.2 => /lib/x86_64-linux-gnu/libsasl2.so.2 (0x00007f0775a98000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007f0775a92000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007f0775a88000)\n\tlibblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x00007f0775a4d000)\n\tlibgpg-error.so.0 => /lib/x86_64-linux-gnu/libgpg-error.so.0 (0x00007f0775a28000)\n\tlibp11-kit.so.0 => /lib/x86_64-linux-gnu/libp11-kit.so.0 (0x00007f0775884000)\n\tlibtasn1.so.6 => /lib/x86_64-linux-gnu/libtasn1.so.6 (0x00007f077586e000)\n\tlibkeyutils.so.1 => /lib/x86_64-linux-gnu/libkeyutils.so.1 (0x00007f0775865000)\n\tlibresolv.so.2 => /lib/x86_64-linux-gnu/libresolv.so.2 (0x00007f0775853000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007f077583d000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007f077582e000)\n"
+    }
+  },
+  "fonts_and_configuration": {
+    "files_sha256": {
+      "/usr/share/fonts/X11/Type1/C059-BdIta.pfb": "84e46c470c20e491d0524c492e9475644c22c7fbd8d4051d2d0edd7378427f84",
+      "/usr/share/fonts/X11/Type1/C059-Bold.pfb": "9d894dcd30c106a9a6479f7661be5c65e5393ab58f83c00f807e607f769371e3",
+      "/usr/share/fonts/X11/Type1/C059-Italic.pfb": "0e41d03403505156c3b493f5e26b20e69710deab9c0666ff720fbb8856357224",
+      "/usr/share/fonts/X11/Type1/C059-Roman.pfb": "ba0422d833959fdc8487359619ce51b13e489e2bed7161d7ea35c17a49b1c0ac",
+      "/usr/share/fonts/X11/Type1/D050000L.pfb": "ccdfebc4e67fa4345578124674cce4dc5a5360dfafcea10c33586b3cc608bbb1",
+      "/usr/share/fonts/X11/Type1/NimbusMonoPS-Bold.pfb": "a58ba41467c2cfa7109f8044e4ccfc94f5a91b1e88cc28860339dbcdcb69be2b",
+      "/usr/share/fonts/X11/Type1/NimbusMonoPS-BoldItalic.pfb": "586a30dddc478481a562cf78f323fc88b310fed15648be8f3b50ad55af02d05f",
+      "/usr/share/fonts/X11/Type1/NimbusMonoPS-Italic.pfb": "684c1bae77b242edc911a073bcbbbfe7431af445a55b966bfead43e974bbf132",
+      "/usr/share/fonts/X11/Type1/NimbusMonoPS-Regular.pfb": "49d0a528458cab48c8c4df850d182b3cf312d2b8a056a0dfae5202fc1f005dc1",
+      "/usr/share/fonts/X11/Type1/NimbusRoman-Bold.pfb": "f9b971dad9e71ed5fe00171fc3edc759131e9528083f69daf36a7d324b89b177",
+      "/usr/share/fonts/X11/Type1/NimbusRoman-BoldItalic.pfb": "514e0a862504e4accfebf076b506eee56f0ce1d37f9e9c9cde98ffa6fa4ada2d",
+      "/usr/share/fonts/X11/Type1/NimbusRoman-Italic.pfb": "89302adb5f31f89ca743142f2142471c6a53cb358838806a48cc4399638e999c",
+      "/usr/share/fonts/X11/Type1/NimbusRoman-Regular.pfb": "9b494780baf0161d3fc8fba4953f504199d63153d320d61c2375ea73c5a881e3",
+      "/usr/share/fonts/X11/Type1/NimbusSans-Bold.pfb": "803fd379b7d84dff114e3cf6b5916cab366ef840554f2b45abb23ab4c0abd482",
+      "/usr/share/fonts/X11/Type1/NimbusSans-BoldItalic.pfb": "f4b93fdba7fcf980e2a8cfd7840f06cd46ffd16b64edb6586551e722a6d5522b",
+      "/usr/share/fonts/X11/Type1/NimbusSans-Italic.pfb": "f90ca2e7970ceb090139040597d8dced2bac63aebd61643b8ae0e8e1ddeef90d",
+      "/usr/share/fonts/X11/Type1/NimbusSans-Regular.pfb": "5b8d9ada4eba53c6034aca723e4317d1d2f46ff9b7ff15afbfabb23797c55915",
+      "/usr/share/fonts/X11/Type1/NimbusSansNarrow-Bold.pfb": "4975c4cc3177b228abc4af44625ae5087b166f90e27aa902f48a0516381e043c",
+      "/usr/share/fonts/X11/Type1/NimbusSansNarrow-BoldOblique.pfb": "8a776d1dfba3a3abf515139bf5fb77e2d9f3be24d7982aeaa55aa5cefc0bc952",
+      "/usr/share/fonts/X11/Type1/NimbusSansNarrow-Oblique.pfb": "758e2608b60bada9e0eb01707fccb9975d7d773e4c9ec825b07b14a3b06a37ba",
+      "/usr/share/fonts/X11/Type1/NimbusSansNarrow-Regular.pfb": "16c9e663fd33375edc6c7ef8141646f38bea5826a0b8e5e7292628f5dd3d8bdb",
+      "/usr/share/fonts/X11/Type1/P052-Bold.pfb": "dcd50f92602409cf6da8fe93c5a86728f8b5717bed2df85b2e4c451c59c60708",
+      "/usr/share/fonts/X11/Type1/P052-BoldItalic.pfb": "56282b038237b2657328d86b0fecc3c57f3f7cec9bca73aca86a5eadffcbe113",
+      "/usr/share/fonts/X11/Type1/P052-Italic.pfb": "ce1443da1bd80360215a45eca7bcb193540586f6b20e15a6bb789dfeee9c42e1",
+      "/usr/share/fonts/X11/Type1/P052-Roman.pfb": "92bce52505c204e4f34fbc569948371cf06c2e1183927fe9e9483ad93e7748d7",
+      "/usr/share/fonts/X11/Type1/StandardSymbolsPS.pfb": "113fc4aed6eb0dc1e3812de5dc5f18de1276d3a885467d9f312b66d4c732eb40",
+      "/usr/share/fonts/X11/Type1/URWBookman-Demi.pfb": "a00eaa50a57b194381f141fb290b7ea6ac6a4438c5fe3d010caf555cad6b30cd",
+      "/usr/share/fonts/X11/Type1/URWBookman-DemiItalic.pfb": "7844e30491a9db65da5c0f4853eefaab20ac7eb45c8be47988d978945884b039",
+      "/usr/share/fonts/X11/Type1/URWBookman-Light.pfb": "d771b6b9dc8659781dccf3bf0888b37df8a29ecfb830d21a29058584ae35375e",
+      "/usr/share/fonts/X11/Type1/URWBookman-LightItalic.pfb": "6f5927e0692ff5d733a0b543af60f73193d4ccccf70baa3c8db9fd317b9a6d75",
+      "/usr/share/fonts/X11/Type1/URWGothic-Book.pfb": "1819f2a949a4cd015365d23fe4efb515cf983d4f922233511bf3c978743413d8",
+      "/usr/share/fonts/X11/Type1/URWGothic-BookOblique.pfb": "6046ec5eb15e16171caf53c1d6382794fcda96c56b3ea37b6f80005f76780c3b",
+      "/usr/share/fonts/X11/Type1/URWGothic-Demi.pfb": "3af87fd39cf8efedd4b497e8640bad98da932902e93a83b70c55e949a25eb594",
+      "/usr/share/fonts/X11/Type1/URWGothic-DemiOblique.pfb": "75659b3f8cbe1407f97ced044b52002a5c3e5d7034db5b3934394de619aae75a",
+      "/usr/share/fonts/X11/Type1/Z003-MediumItalic.pfb": "994f2d1a4a46fc5e1ca4f1e6b1427fedddaf1ceaeba3dbc89113eab2572ea408",
+      "/usr/share/fonts/opentype/urw-base35/C059-BdIta.otf": "60d0ab6a22e4018b1232806d98f4015e04f9a0a569db7a169c40d55e2a9f6252",
+      "/usr/share/fonts/opentype/urw-base35/C059-Bold.otf": "75dea10068264324522e7b96612083582eee0158eb728fa9c219279890f33e26",
+      "/usr/share/fonts/opentype/urw-base35/C059-Italic.otf": "77852deabd3a84f7d0213932239de522410309374c2255ccbd510f01dc7c6e80",
+      "/usr/share/fonts/opentype/urw-base35/C059-Roman.otf": "e00cc7b88f0cf25ae43f0e48de39d0043fe042b55719a3ac32669ab3369542ec",
+      "/usr/share/fonts/opentype/urw-base35/D050000L.otf": "a7bd946b69ae526328f26b5339fb31057dd40950d7b60598f36b2bd06542f105",
+      "/usr/share/fonts/opentype/urw-base35/NimbusMonoPS-Bold.otf": "f036d05d2168c7f71cb11d31e81d11133f3d09711e24ebde19d08a24842384d5",
+      "/usr/share/fonts/opentype/urw-base35/NimbusMonoPS-BoldItalic.otf": "a67ed9e364c933c79fc3ce88e17a0265334697c184b065407e754d43cbbf6d0a",
+      "/usr/share/fonts/opentype/urw-base35/NimbusMonoPS-Italic.otf": "7f1f85498027e07befadd3c7592518909b9e8c7f96ee5615e0b21be0c399c4b4",
+      "/usr/share/fonts/opentype/urw-base35/NimbusMonoPS-Regular.otf": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b",
+      "/usr/share/fonts/opentype/urw-base35/NimbusRoman-Bold.otf": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+      "/usr/share/fonts/opentype/urw-base35/NimbusRoman-BoldItalic.otf": "c84bcb17ab4ee54f16dadad6a3b0b2df37a24f9fc812897c4a59eeca785a5dec",
+      "/usr/share/fonts/opentype/urw-base35/NimbusRoman-Italic.otf": "b7c424e6cb79baddfcdcd9a9d87f9fc4fdd06f0e5160066e2b2e47bcd647c7b9",
+      "/usr/share/fonts/opentype/urw-base35/NimbusRoman-Regular.otf": "fd41669443616a7ae890c42e53a58f47fa24a940fd1e367acaff665cf5b6e9d8",
+      "/usr/share/fonts/opentype/urw-base35/NimbusSans-Bold.otf": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+      "/usr/share/fonts/opentype/urw-base35/NimbusSans-BoldItalic.otf": "3f47fb34fcb7de09f8cbc9f305191340ddebf7a068419f4bb5f49287dea59b87",
+      "/usr/share/fonts/opentype/urw-base35/NimbusSans-Italic.otf": "7b0bef5686aa58c0fd0f0d01beeae56664208490e30ca6a25431281c9a0c6402",
+      "/usr/share/fonts/opentype/urw-base35/NimbusSans-Regular.otf": "7c25be4d78155523080ab85b10277150657ff7dabbcad7037bdd536c9b6d0d08",
+      "/usr/share/fonts/opentype/urw-base35/NimbusSansNarrow-Bold.otf": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+      "/usr/share/fonts/opentype/urw-base35/NimbusSansNarrow-BoldOblique.otf": "3cefbe4a602a08a0400798fc4aba2d48f7b7e05fa6ed54c2009d68adc6eccef9",
+      "/usr/share/fonts/opentype/urw-base35/NimbusSansNarrow-Oblique.otf": "6fd8dd67ab951f36f66563ef8443bafdf10836e73ebe856f85f4a9c282293585",
+      "/usr/share/fonts/opentype/urw-base35/NimbusSansNarrow-Regular.otf": "0111cf7c05377c4f1685d37bfa8b3edd2033278122f69e0a9803a8514e352b99",
+      "/usr/share/fonts/opentype/urw-base35/P052-Bold.otf": "ba6503baaf0f9e4e40a69cc4c0e57049fbde313fe183aba8fe823208337a94af",
+      "/usr/share/fonts/opentype/urw-base35/P052-BoldItalic.otf": "63e15828175e55559ae09c9bdcd09fc0354537657d43109edb6e2a5509f8299f",
+      "/usr/share/fonts/opentype/urw-base35/P052-Italic.otf": "1feac6055211cf5c6c812c026e398195070f174064cc4d390f0db01647443b0e",
+      "/usr/share/fonts/opentype/urw-base35/P052-Roman.otf": "f054a7389d8d0e9f4c5f7b4c21feb7e2b14bec8004a1e92778a78d149524eea9",
+      "/usr/share/fonts/opentype/urw-base35/StandardSymbolsPS.otf": "df570efda2df425dbfc004e4e5f77c55ca1b47f8ff28ad60dfad0fccf422b0bd",
+      "/usr/share/fonts/opentype/urw-base35/URWBookman-Demi.otf": "ab8b2fe57cbea9783c6179188dc013c76cfc5717c22cf59bbf3016ef2d7d93ee",
+      "/usr/share/fonts/opentype/urw-base35/URWBookman-DemiItalic.otf": "4d9dbaae8178ffa2f5d557245d09dc968eeac9eed7e453cc2db4cc6a9aacb44d",
+      "/usr/share/fonts/opentype/urw-base35/URWBookman-Light.otf": "7b1bc8e6a16cef53785ce03d4848f8971f3ba38cd9e266e4786a50e08bd9235b",
+      "/usr/share/fonts/opentype/urw-base35/URWBookman-LightItalic.otf": "ed722e6c2996b08e8516d27a7c017972cfabf5d1736b496b6526da78fd17691a",
+      "/usr/share/fonts/opentype/urw-base35/URWGothic-Book.otf": "04318316cee29950805110c9c8949eea189ef5575132881f4d4d7e03e5299903",
+      "/usr/share/fonts/opentype/urw-base35/URWGothic-BookOblique.otf": "ec4e947734950fd344918e560bc8ad0c5d8b17d0ab4853988824f13b9f77e53f",
+      "/usr/share/fonts/opentype/urw-base35/URWGothic-Demi.otf": "5b009410cf5231dcb1e45b155c1afedcfc63d82042fd8c414d0dd7705c9fbbae",
+      "/usr/share/fonts/opentype/urw-base35/URWGothic-DemiOblique.otf": "d57abaa6d40718cfbf735ad50080d0b095e7194e451992e02786a7c0113db35c",
+      "/usr/share/fonts/opentype/urw-base35/Z003-MediumItalic.otf": "a04947e59fc9339ea3c4b34c31fd46764f22af7512afc2c074ce190e79ed7a09",
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf": "5c1247acef7f2b8522a31742c76d6adcb5569bacc0be7ceaa4dc39dd252ce895",
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280",
+      "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf": "3a3c502eeff669a231549e80df9f7c49de109bafe303170409e905d0b31a38fe",
+      "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf": "a5251173370e30760e6919711dcd33e149d216ca4814eb74332bda03fcc7e834",
+      "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf": "3d7955616e69721f7edb8e1b7a580f8fbd7d737111c6b54266ddc1d9ef13202f",
+      "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf": "c805f9436dbc268644c1d9584f01a601a653e028e08fd74b9b949f6cf8304d88",
+      "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf": "847b33e13925f19ff87e4d934d6b3cf7cac35ce16424f6f670e40c2f377cf2df",
+      "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf": "8f2c103bfa3fd5de71f1b92b18f21906b5a26871fb7e19a9a4c9af539c3cc7ab",
+      "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf": "626655e94dd82f3f42549daf995c921b0915fa8ab1f4b839559e8892ea41d240",
+      "/usr/share/fonts/truetype/liberation/LiberationMono-BoldItalic.ttf": "15eb161953e3ecc7fc05a3fec8a59e0f4e0a54a4e375736adf8e98d65981f813",
+      "/usr/share/fonts/truetype/liberation/LiberationMono-Italic.ttf": "a71b2c25c89da05cf0e7c4dbba8d473fdead0b181ae56165217747d2c1f39215",
+      "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf": "395fa5ab8d40c8eba390ced528744ea75a7f69aabf3e68b6f925ca0e39a27370",
+      "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf": "3973aa5054fb467dd5627245d3dc82e37bf16fe075756156a570455871351582",
+      "/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf": "c80fa7f2ffa0e01d4d8dcd6a6d1e43eda665222d1b4db597dde1174c456006cf",
+      "/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf": "830c5fa600505fb4c1a271b4271c53c44bae43f492b2a240d0e98a3a7a380121",
+      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf": "4659bc0c58c5028dd488ec928d41d9265db43d9b669fc14ca8b0832daca7b144",
+      "/usr/share/fonts/truetype/liberation/LiberationSansNarrow-Bold.ttf": "4cd16b98cea43a9ce4471df068634fce71ab279dfc9b303b6b188bd96b35226a",
+      "/usr/share/fonts/truetype/liberation/LiberationSansNarrow-BoldItalic.ttf": "4f98c92c0a8565131aa41c8c50eeb3611f529647026b0e151614a57cce969f14",
+      "/usr/share/fonts/truetype/liberation/LiberationSansNarrow-Italic.ttf": "ea0f8a0d2cdba7d9d36a7622caa6f2f72dad28c2ad091610e3828a5563fe22b2",
+      "/usr/share/fonts/truetype/liberation/LiberationSansNarrow-Regular.ttf": "ab74085ab53ca88945d1ef57493c955c1dca3f2e7d7b4b7ab90cd107a7262bc7",
+      "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf": "9e66c25e20868756bf12eb24a520a4552727c9cd108f577f7ae33e3c0110e39c",
+      "/usr/share/fonts/truetype/liberation/LiberationSerif-BoldItalic.ttf": "379010e87421a883f7bbfa7936d23dfe0257a54ce850819b74556e9f2c615a8a",
+      "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf": "eaeaf7f2b12544ecde64290c1fa7ec403ff70fd58b313637b265400b20249242",
+      "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf": "705903ae1382f0150f115d6f10a30f5b2f3d6ade649c474afe6366c39174fb65",
+      "/usr/share/fonts/type1/urw-base35/C059-BdIta.t1": "f7aafd96bbb8ef07792d33302fb4905bfe7a47888b08782d95f6f1b8a388f5ee",
+      "/usr/share/fonts/type1/urw-base35/C059-Bold.t1": "78110e7b34a1e89c86f010ae1fb87d3cffba73bbd557374bd16dfd41bdc3c60f",
+      "/usr/share/fonts/type1/urw-base35/C059-Italic.t1": "304c523c14d49e90733a73c301055377a0176d4b5b087b6fd2ef74d723348fe2",
+      "/usr/share/fonts/type1/urw-base35/C059-Roman.t1": "be8224624a91fc315b66bbf640e18ebddc79076937bdb3bbb5b96aaf90ec84c5",
+      "/usr/share/fonts/type1/urw-base35/D050000L.t1": "51cc2fe0953718f9fc93e0de7853a700557cc8d0cd58089c9a2d531d06c8fa4b",
+      "/usr/share/fonts/type1/urw-base35/NimbusMonoPS-Bold.t1": "63e2c80d0e6983c68dd986f7044944e9f58463f8bb118c21fb4372c298906b18",
+      "/usr/share/fonts/type1/urw-base35/NimbusMonoPS-BoldItalic.t1": "f9006fd0749c906fe51a570bb246883e0af127eff2ca13cdbd250db3e5a1cec9",
+      "/usr/share/fonts/type1/urw-base35/NimbusMonoPS-Italic.t1": "0db4cd31b146794a931de48ca15f8bad3252ad744deb651a582f75af4c7ae8df",
+      "/usr/share/fonts/type1/urw-base35/NimbusMonoPS-Regular.t1": "b1c0f23ba9732ee495ea52658684dc36064d3c439ac81b7dfcf922e790e5160f",
+      "/usr/share/fonts/type1/urw-base35/NimbusRoman-Bold.t1": "4d31149fe14fb8fb9f84f8c6171eb90a654b6f7c4db8213a6e501b32e712e290",
+      "/usr/share/fonts/type1/urw-base35/NimbusRoman-BoldItalic.t1": "4a305bcf1950e2db6bb03ed68715a74930d00d630661d6e0c03375b3cc983888",
+      "/usr/share/fonts/type1/urw-base35/NimbusRoman-Italic.t1": "0c5cc5161c325440ed7a9de00869535e8f10f0eeccf1e65dbcd2c387ffbc1eb4",
+      "/usr/share/fonts/type1/urw-base35/NimbusRoman-Regular.t1": "cd63681b669f41d2b1cc828a6e26eeeee668ae3f9144f6ae2c1bad971fc146f2",
+      "/usr/share/fonts/type1/urw-base35/NimbusSans-Bold.t1": "ebf5ba685a44a194cc61ba3e34a1bf4718980871e5b72304ba9633411c7d6391",
+      "/usr/share/fonts/type1/urw-base35/NimbusSans-BoldItalic.t1": "73871c05c5c4670d39b690b802aacd5369b9209256ff3abe7db755c276e2deda",
+      "/usr/share/fonts/type1/urw-base35/NimbusSans-Italic.t1": "b0527ec015601b5d29eecdb75a982b39fe316d5d53caf45108d712f99debe98e",
+      "/usr/share/fonts/type1/urw-base35/NimbusSans-Regular.t1": "779a9c820bbe8b470d36e77bcf949eef7bf1b889184274ba0f51da4c8c883cfa",
+      "/usr/share/fonts/type1/urw-base35/NimbusSansNarrow-Bold.t1": "a383bbf4d6f8887a8ccda9e5ad2d6b2b6353c0620f4a29f49b27d68177d84ee2",
+      "/usr/share/fonts/type1/urw-base35/NimbusSansNarrow-BoldOblique.t1": "df4df8204bc5ac63dc13162e9a604adadebb779fd524d6f457fec118d530af31",
+      "/usr/share/fonts/type1/urw-base35/NimbusSansNarrow-Oblique.t1": "eb92b8ab971fe2b53882b05948127940f23c3003b6f6f3f7bb25d6ed226a652e",
+      "/usr/share/fonts/type1/urw-base35/NimbusSansNarrow-Regular.t1": "77561ac22852f0c289012e3e8578ff56afe016d3bcae05a33562369cb675127f",
+      "/usr/share/fonts/type1/urw-base35/P052-Bold.t1": "8e56ad1e6b08c6c931d4ff93fa4388abc6ea5be8c6a0ab23d0fdf9a504c1cdba",
+      "/usr/share/fonts/type1/urw-base35/P052-BoldItalic.t1": "557c1aad252d91a3ae4a19acf18277657cb34cd02caead1ea1d686961678cfd8",
+      "/usr/share/fonts/type1/urw-base35/P052-Italic.t1": "d384c8219f35cee51693c0ee09247fbf395910f7e6259e0956a90ab5173a8dbf",
+      "/usr/share/fonts/type1/urw-base35/P052-Roman.t1": "99a8259f8eaec4604ad8794dc63e67b0d4fe189bdf6acbd1a7047dbe1ef9c86f",
+      "/usr/share/fonts/type1/urw-base35/StandardSymbolsPS.t1": "b2f78d6ad103708a4483f75087c6ecb71753e9210170c14462b37ef05a3f957a",
+      "/usr/share/fonts/type1/urw-base35/URWBookman-Demi.t1": "baee9214653525ad01de0bc326e3c11b7826c51567336619517d50eab313e37b",
+      "/usr/share/fonts/type1/urw-base35/URWBookman-DemiItalic.t1": "c2877b3b139dec0544fa9b924517ccaa30600a206e89a9b9f89707ee003cbdfe",
+      "/usr/share/fonts/type1/urw-base35/URWBookman-Light.t1": "17c7e83cf66537d631a9e0920af9bfa37c8db1a40e29d951869c3562100174ca",
+      "/usr/share/fonts/type1/urw-base35/URWBookman-LightItalic.t1": "ab7166058aefa485d11109195a0736633c17e5ad2164083492d94418ee0a657e",
+      "/usr/share/fonts/type1/urw-base35/URWGothic-Book.t1": "aebc5a18ff50235f0850b3812d86a29d18932c4bb8a097b004b8abafc433a395",
+      "/usr/share/fonts/type1/urw-base35/URWGothic-BookOblique.t1": "03dd97fc09205d48cfb02cb00e1bb181cb10b1aeadef814ac107de21eb91c0b4",
+      "/usr/share/fonts/type1/urw-base35/URWGothic-Demi.t1": "83cb6f17a042dea63345e222593be1a1ccb13ded278482d13f6511cad0768c54",
+      "/usr/share/fonts/type1/urw-base35/URWGothic-DemiOblique.t1": "bcd4c23341a2324459079f8757f6761cfc0c95781d61a4baf4132453ba80a832",
+      "/usr/share/fonts/type1/urw-base35/Z003-MediumItalic.t1": "84ff513d45b7255ddc1ac0bad4b03b1a0fd055f9093617034b59d333ec77b1b6",
+      "/usr/share/texlive/texmf-dist/fonts/type1/adobe/courier/pcrb8a.pfb": "b2d7f1f030dbb4b66c756914acaf9f3de26adc64a9047d4d4971d43e883ad1ac",
+      "/usr/share/texlive/texmf-dist/fonts/type1/adobe/courier/pcrbo8a.pfb": "29e2091608c5878287ea506afdbd624932e4460dcb0462a32485d5d20d98fc53",
+      "/usr/share/texlive/texmf-dist/fonts/type1/adobe/courier/pcrr8a.pfb": "c7686082bf884c75233310028cd190491e19ed933e2ed9486d7be445f0c4071c",
+      "/usr/share/texlive/texmf-dist/fonts/type1/adobe/courier/pcrro8a.pfb": "b2583ac18a5dc7d2e6721da92e1088f286628e3afda5a7ea1911ee5a57da2a77",
+      "/usr/share/texlive/texmf-dist/fonts/type1/adobe/utopia/putb8a.pfb": "e06afdadd7a4e6fe53f16aa2235e126fec9dcbbca1012792863593f2576fe24c",
+      "/usr/share/texlive/texmf-dist/fonts/type1/adobe/utopia/putbi8a.pfb": "ad9e02419d8d99832a131637a73ecbc563a839a97ce06e7a2c2bccf30f6bc1e7",
+      "/usr/share/texlive/texmf-dist/fonts/type1/adobe/utopia/putr8a.pfb": "40c3290fed71e658e5438ab56444e17c2e3f68d3c1ff24bf242a4386e34961d9",
+      "/usr/share/texlive/texmf-dist/fonts/type1/adobe/utopia/putri8a.pfb": "081c20ca78698131e83459f49adb8c59061b7778f8a55e685eaf8cf48ea4d214",
+      "/usr/share/texlive/texmf-dist/fonts/type1/bitstrea/charter/bchb8a.pfb": "c50fd6e717599f306b8b3261d309c56849f4366771c1983c875eabf46bc2b956",
+      "/usr/share/texlive/texmf-dist/fonts/type1/bitstrea/charter/bchbi8a.pfb": "3e0c9ed37732c1ebcbed4e582fd70f5673ca415161396276097eca1cda87104b",
+      "/usr/share/texlive/texmf-dist/fonts/type1/bitstrea/charter/bchr8a.pfb": "8ac5bad34cad9b59b087eebfaf9087c16901b0761f7f9cc538f2f65567fc3959",
+      "/usr/share/texlive/texmf-dist/fonts/type1/bitstrea/charter/bchri8a.pfb": "0c3e189c6a52401c62c9fcde32f453a4dc95836d8c6e03fe8908100d854f3a83",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmono10-italic.otf": "14e6328a5383d2b927c47051093ce0aff60deea07e6df71b8b99ee8d9c2ff8f2",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmono10-regular.otf": "22deb6d3be3ffcb40b33f0e010afb256c677d97c2a2bdee1f5740cdc97751558",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmono12-regular.otf": "b826e490fa671f254840abe88afea0975b606f57fb4a8b93f53787c26d8ac319",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmono8-regular.otf": "17319490d20f24e192bd7e7999484b95111a4654ac2620e7aa215591142ae997",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmono9-regular.otf": "cdd53c7dc01a1d25f21eaf7cae44bfb8a9665e4cbd60e5f8da14287aca819bb9",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonocaps10-oblique.otf": "6bb7315ab000361195457b6c5efc75ed4bc24d278c6026d0aa8e0e4847394384",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonocaps10-regular.otf": "9fb93a8f39f8e55682d09edb93c4c07d976c13bb92253b875b5b6a19e9af9e0a",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonolt10-bold.otf": "2f4ae1bd30d4203a1c74c61d61dddbd5e2c2d5a7001d456b1b98e08b7c47ffb9",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonolt10-boldoblique.otf": "a739b6deaafe0b9e8ae1eec9db1f425c52e1f6f483ca8e07e359bdd118310bba",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonolt10-oblique.otf": "f19451a27c178d48b99921e72ff6acf568f670bf58c71c6dd506b1f96a2d9c9e",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonolt10-regular.otf": "176f2e3745e3d97eb7b96b25be919ed0e198f491dc363ad28971be1d5707ace7",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonoltcond10-oblique.otf": "2af9fab2c4d4c7a98aaebb9d66ffe1b55b3319e48c5d84add7ef27c2890747d2",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonoltcond10-regular.otf": "fd2e0afd73a6029887d222f1e379f9e977ed57f9471d48ba44fb42c52a650274",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonoprop10-oblique.otf": "7306b49832153fb387be1c741962a72d36127a2176f855d11c9903e6a15bfaca",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonoprop10-regular.otf": "59036dd0b599f3e90c41dc4b063849bb36ba29058f94d386718fb9ce523d8657",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonoproplt10-bold.otf": "c30d83cb4cdd879ea251243590e135e012e5d43e889a0d0990d196b1083715d2",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonoproplt10-boldoblique.otf": "4d1193e06d6042695f8caf9cde48785867bee8de8460a7a9c99504074d280f57",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonoproplt10-oblique.otf": "2d57934e1ae5f71cbcbed7b7ea6fa597f9212ebfd8d0cc91e9fabbb9622cab7f",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonoproplt10-regular.otf": "dedec8ee86f7448949cb695ace72f2e0de3ccc380ff92dfbc6c45c20209e3349",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmmonoslant10-regular.otf": "4b4a3e600db7f6ec434f8b48b31f22e12faced90e1681c93eeba5e23a6e55fde",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman10-bold.otf": "102fe06c430a8b681b2bf6876b7cd967ae4d47b4b6b41d915eb7913b726d9fb1",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman10-bolditalic.otf": "c37a28eed7a6e03f792b98b5e5f637b2fcda378bb4855f99284f1a88fe35f124",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman10-italic.otf": "c1fce25075567bb8dbf2151658c3b442690041db17a2d49fc9e55905ea5b7169",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman10-regular.otf": "1aa18cfefa58132c52ce5de70db1fd1154201c19cd2b2cdaffba4906a33e6852",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman12-bold.otf": "28c8782ac2b6486958b5dc7610ada7800c53546ff7f36bc65909a876e1cd338e",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman12-italic.otf": "ada6b3f451238784e5a5ea75d43efa1eb4329cd75ce65bf047ed2f31b7b5e2f3",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman12-regular.otf": "e6be218ae83e61aa8a29990d3cdc401c678c1962188cb9a4a8b6359e4f5e5870",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman17-regular.otf": "ed048c80fb4b67663b80899b89fe5fba17d7442e1286d61fd08fe5689c6b7c3c",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman5-bold.otf": "6326fb955d07bedcc8f73684e6b6bfa76706d38f3a85bd89c0659504ace366a1",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman5-regular.otf": "954bd9c376597c7043e7b616430163e0158155edf7434fd70082cf8460c08533",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman6-bold.otf": "f1ebd52916182bfc2e3f9d4b5ba847ad6acc6c7761354c0dc052fb01ec14f73c",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman6-regular.otf": "501396c437f76c260b8724265b8495f318a640ee5a4674852ecbb20daf256696",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman7-bold.otf": "063ea9e378b4fca4fd59771cf522faa21eb7c8516c89464745c79725b384fb9a",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman7-italic.otf": "19d20f2bb00fbffe5d3d66e9b6a54f0108289068029e9d88649d981d53613ddf",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman7-regular.otf": "48c4b46ab255eec96588fb992fba1ed6102e53d051da480738a61cc6cdb328c3",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman8-bold.otf": "04d4f633c3da31a169f4c54a7fe8c7e63925b39d030381f8d3eab955f16be7b2",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman8-italic.otf": "fb0536b5c3eee5b5622cd827ceb410e6514e36512ebdc51d2cf98a96c06d44e8",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman8-regular.otf": "f73015c3827596586faa380c398501caf9b5bcbb6f40b46af6a51277ca97c9fc",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman9-bold.otf": "f72feac9ea12eb858d8093d6c0ee710a6c25f59b61278c88ec41c0a680838415",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman9-italic.otf": "2106cffcdc9f9cb411d7c3441e34d77a168b998a58b40e727ab5b815437d1975",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmroman9-regular.otf": "8ab7b017fc67ea0e30cbf9e7ebd940010442ea67b40cf65f87d73f3ca11b0e6f",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromancaps10-oblique.otf": "603e6bb88c206f3252d2ca1a061d0faf252dd6c87501f2efa32ce2f70793b1ad",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromancaps10-regular.otf": "1ab40332a969892c7ed6cb010193b5276ccef1da6798bcbd1a465fee23d29334",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromandemi10-oblique.otf": "430d9237cfeb1b7ef25a36002adac0524a11a07f4a31b16ce5a0eb3330163217",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromandemi10-regular.otf": "63b6f9528e6117c5b0c0b1992517696ae09d05e7ca3711df0e0409d9db6df32c",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromandunh10-oblique.otf": "5f7b9361353271246ac66a2681399052cc261a943c8a03c754ee212fdfb4a64c",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromandunh10-regular.otf": "6c298b3680cc111c6e20eb2489bab9637ac316a686740fc1f8396230215e1161",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromanslant10-bold.otf": "5f6689646a5e88b402d2e60085c813fca3a4d60707b0383c65cb023107a8bddc",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromanslant10-regular.otf": "056ad4d08d2eb58d6b7fd0ac5de3f1fb799f2bb0c16b66c7e6b5bc5b6aef6481",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromanslant12-regular.otf": "25f2ecfb860f2e45e6ebe69d11bc6305f5bfbef8f13476638ba291f47d1f130c",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromanslant17-regular.otf": "4f30eda1d4674a1f4eea513b3baf85e3ba3fb17b2e4cf09bf627aee91dc0a4cc",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromanslant8-regular.otf": "a88ecd1a6b4d5aa1c9d537b98d0de8e19d63b292918fabf0cc36158ed770ca63",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromanslant9-regular.otf": "7441aee0c9dfbca16118fc7fe339c2e6c79ecc966a51ac1f76860351b6a8f02e",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmromanunsl10-regular.otf": "21bbbe167e824b93a956327bcc1efda99c1bb472e761834da40cef33cab46194",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans10-bold.otf": "a597b710326c1a8a2c7238d808e5d38711638a72a32383478db4829d63afd687",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans10-boldoblique.otf": "e45673d84754a94f2f053bd4c15950b4b320144fbb622c630a26fd7b68cfabc5",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans10-oblique.otf": "1b38b36efc21f9d3f34edf6a13f9d71f59c41f824e790f5d3ee5ba5b4936f377",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans10-regular.otf": "d431b786b9b603662718e79cfe9b441f47a8b0b3e854dde89d5acb3ed7cfd682",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans12-oblique.otf": "1f138e6203f7092f9a01f6193ed97d971b5045b99969f3a62c7e43a7faabc1c0",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans12-regular.otf": "f87ebdea035a96e8787e2c663cfcc78ce73205d37800eafe7948278e2cc7666a",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans17-oblique.otf": "0f6a4450c5fc9afd3650f24ad9003684fff3252691bbf2a33be94b383db8a77c",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans17-regular.otf": "f6c395a436e4fa7e88bbf1445e64b9c78ce4effba3668b13cc433077fc71a984",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans8-oblique.otf": "7f4227513bfd47b7077bedd125caa4c0a223a2cdad17a1470145cdea83353c88",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans8-regular.otf": "04f0d25ca474494cb707e752170f6c22cdcb8ae2b5fb80872143e18d5cc463f8",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans9-oblique.otf": "ac0535d7d4a8eb1b531c5faeb9060a4b9bac397d72cf54191ef53eea6f66b617",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsans9-regular.otf": "80ef596460b7b402621780f7cd73a348efedc4cd2c6deca37da58f07ee61b85d",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsansdemicond10-oblique.otf": "f98ed7d9cc5e10fd5c8e01f6ea708fddff5bbbf6f4503998c92b3c1f26d68d33",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsansdemicond10-regular.otf": "3a8cc8f72acaf6d4cc9200a838e5e118bf6f265233aa078e105559f6db6c2948",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsansquot8-bold.otf": "44cd928f556c68c3a6ce5938f6968c3da7b3d9d14d3c8add54005f0cc5e39a53",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsansquot8-boldoblique.otf": "0cac0a6909c1cb33df8d3aeda2817ef2671d7f466cc352d826551bf92ca5f877",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsansquot8-oblique.otf": "d858d237a69d432ca0ff67b930dabf5a60bfde69ca39bc555fab78ecbb5f4e4d",
+      "/usr/share/texmf/fonts/opentype/public/lm/lmsansquot8-regular.otf": "5da041def6d17825bb9b2d1d4fef66099a1e871005c08fc8f0d29976a923f4c9",
+      "/usr/share/texmf/fonts/opentype/public/lm-math/latinmodern-math.otf": "6075562b771f8b82f0c179e363389684f2dd09de30038269e2628e504bd7be0f"
+    },
+    "fontconfig_files_sha256": {
+      "/etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-sans-mono.conf": "0a6b0f1c1f5d1c06a811b517a3d2690700bba8e961cd55dd2c7648cde3605a21",
+      "/etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-sans.conf": "144619057c0a040de247c74cf09f230d737b9c1c534f3ba8804fdd3ddeded8b0",
+      "/etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-serif.conf": "977c24eb43f10d21263bbdb624649e5edf63147bd7bb4f84db97ce7d53bb9054",
+      "/etc/fonts/conf.avail/20-unhint-small-dejavu-sans-mono.conf": "3e90c9c36beef46f10d1529251f8683b9c4ac900695adbb4a23a4b6036f938a5",
+      "/etc/fonts/conf.avail/20-unhint-small-dejavu-sans.conf": "0d9c177b6a85daa9957ed6750d4eb26122604da18d340e7ba31e6f4d24f963ed",
+      "/etc/fonts/conf.avail/20-unhint-small-dejavu-serif.conf": "68777b1705ec7a05a86430def4be093668e84e305cc7e11291df52403a7318cc",
+      "/etc/fonts/conf.avail/57-dejavu-sans-mono.conf": "1f2ead86f8203d809abfc9d88d92b04316edd67b6291795ea74ea8a0c3c2e04d",
+      "/etc/fonts/conf.avail/57-dejavu-sans.conf": "f6285e2d336f93086acfa2ac7895ef75ef5ff34f833ba5a63c09fb2841aedc27",
+      "/etc/fonts/conf.avail/57-dejavu-serif.conf": "7c596f7e202090ded38fded904c4a17d5a189b6c9cc914a2e88554116f6474ca",
+      "/etc/fonts/conf.avail/58-dejavu-lgc-sans-mono.conf": "807e5222c6d11a72ad527ebc088f42daf2a807e7718c8f7ff227cbfecafd3d70",
+      "/etc/fonts/conf.avail/58-dejavu-lgc-sans.conf": "ecde2093f005c73d7da21cdd7b80c791910050609db36cb5eea84a4ba8da5cef",
+      "/etc/fonts/conf.avail/58-dejavu-lgc-serif.conf": "e685632c3edbb6868a7ca5275e7c71f25486a8cfd16113a478194a5631205619",
+      "/etc/fonts/conf.avail/65-fonts-lmodern.conf": "dc252715b7a0e1988a895268543f2552fdc35afec39cdfd0db9d838184c1ef42",
+      "/etc/fonts/conf.d/README": "fdc29a3ebd8816eb07ed04c2cbe151076e95a7b0b2a0ec8fe94e5c8a67931d3c",
+      "/etc/fonts/fonts.conf": "93a23ba073996edb8b42d6c89ebc2ec5fd2101ce82cb65ba0db358dabf55ca22",
+      "/usr/share/fontconfig/conf.avail/10-hinting-slight.conf": "d138eca2bac3f78d45ff7cfb649ad792caa4a6e61f73cea7cf0ea54b091f1ef4",
+      "/usr/share/fontconfig/conf.avail/10-scale-bitmap-fonts.conf": "df8e99abb6f82384c61978906a45a95794940545da95790d87f01d9391e0894b",
+      "/usr/share/fontconfig/conf.avail/10-sub-pixel-rgb.conf": "e4cfc04f5fc5093d2ba20c40f8709c9dfc099997313d0f96bc8256597a15d057",
+      "/usr/share/fontconfig/conf.avail/10-yes-antialias.conf": "e6d82a642d1b37f7d24dc37f938b999f00ff7aa4303b2602d04164d53f221005",
+      "/usr/share/fontconfig/conf.avail/11-lcdfilter-default.conf": "76aec9d8dac48faabe1bbde9e887cfb09fa45f30be5f8826e945a394a0097e48",
+      "/usr/share/fontconfig/conf.avail/20-unhint-small-vera.conf": "278732c68c16177f2aa3c7e4ea318b9f720aee13a433c32eb15ba626806c609d",
+      "/usr/share/fontconfig/conf.avail/30-metric-aliases.conf": "3baf25c82e1a14c606d45c212296852be06ae9795d60e84aab573226151450a2",
+      "/usr/share/fontconfig/conf.avail/40-nonlatin.conf": "9c56aeed6490db1d29602d7f8e028742b5e7a0268eaaa60de2fde582c6403715",
+      "/usr/share/fontconfig/conf.avail/45-generic.conf": "24de9f68189d544bb4cc084d9bd8f3a59d8b988a9dc44b11e9877d5add5fc948",
+      "/usr/share/fontconfig/conf.avail/45-latin.conf": "807638284032d8d8f6ed8b014a0edae79a4d4f3c4e70317fdb0bfa8edd66779e",
+      "/usr/share/fontconfig/conf.avail/48-spacing.conf": "99d839cd8aa28854e8f54f26e7200b6e57951f39f56791a0ed473662488bcef6",
+      "/usr/share/fontconfig/conf.avail/49-sansserif.conf": "7849a11ce5243e8bb3d06bcad558737a8682e5122e73c8e427f4c011a2054818",
+      "/usr/share/fontconfig/conf.avail/50-user.conf": "449137ccce57d60bca178d57519ba54e1942d757ad171f3a88cd78df2161c970",
+      "/usr/share/fontconfig/conf.avail/51-local.conf": "dca9d917e1f66f73bfa495943b4d1eaab2d93810a51bc8e600cf4d4e9df03e67",
+      "/usr/share/fontconfig/conf.avail/60-generic.conf": "195bc8605dd23289d42c10d79cc13a5ce4a4b3cf965df5b30ecc0b7149bb951f",
+      "/usr/share/fontconfig/conf.avail/60-latin.conf": "2de7c687e03b1fedf9fd016aa14ed8088f52578896a73f06158dda8acd264f09",
+      "/usr/share/fontconfig/conf.avail/65-fonts-persian.conf": "c675fab143a3638346874798be45f51f6878ebec591b4362d83cfffb828ec4ca",
+      "/usr/share/fontconfig/conf.avail/65-nonlatin.conf": "e309e38d7fb47cc3f639f4313b19e72c9be4d1f2db92d7d892ea65bfdd0cbd30",
+      "/usr/share/fontconfig/conf.avail/69-unifont.conf": "fa97c0cf5f79d70e2dc3dc48155d4c9220cd7c6a8bc95b89c4ebcc517f97479e",
+      "/usr/share/fontconfig/conf.avail/70-no-bitmaps-except-emoji.conf": "bb5df65896bf3011b2f2935b63ab12db1ecf078674ff73a533123445f122a92b",
+      "/usr/share/fontconfig/conf.avail/80-delicious.conf": "34f27b7fe9cd83b2b6d46f16ef9c477412f2d7ef63634f86b9b38b79bc4f81ad",
+      "/usr/share/fontconfig/conf.avail/90-synthetic.conf": "cdd0aac7840c664a7127b64db66bdfe8dc22be3774d10bc22f4a41c98de5d85e",
+      "/usr/share/fontconfig/conf.avail/urw-bookman.conf": "bf4b9e3b9ad7df22d2de13ba3988caa51af77bf1e691c84e6f70b1f3cd90c1f3",
+      "/usr/share/fontconfig/conf.avail/urw-c059.conf": "a2b8bca6be54cb95cebcfdf37ccd30b484a92c352d08ecd19af0180624afce5c",
+      "/usr/share/fontconfig/conf.avail/urw-d050000l.conf": "74ef8dd5e6efca12c9061c486bb7f823486aae94433cc5e230fb67ae46c2d1bc",
+      "/usr/share/fontconfig/conf.avail/urw-fallback-backwards.conf": "43cc53d3d237db875169473bafb2cdbef749f1374b7619af54889c9e759352ee",
+      "/usr/share/fontconfig/conf.avail/urw-fallback-generics.conf": "de9e5b2783e2bc00065b7de27ac9efa0a667b996578c5a8926f712d9f67d13b9",
+      "/usr/share/fontconfig/conf.avail/urw-gothic.conf": "bdb22104fb4980a1a2b14e5e9ecdd4f4d8339b42f7164de6afa8b4301f6ad95c",
+      "/usr/share/fontconfig/conf.avail/urw-nimbus-mono-ps.conf": "40aa886614eea2f019420dc8f1844aaeef553aee30c36c8c468880f11def388f",
+      "/usr/share/fontconfig/conf.avail/urw-nimbus-roman.conf": "7ce10a11b1385a85540fef15499bf8dd462fe95d773f20329f0c065d168462b7",
+      "/usr/share/fontconfig/conf.avail/urw-nimbus-sans.conf": "375ec83653a4dd3f6b088a334600bd3604a925e84e34cb5c5b47bf26b0442623",
+      "/usr/share/fontconfig/conf.avail/urw-p052.conf": "6e290be00629b12668baae0c2c620654d1131038d9dc6125bd49bb807b2b7ba6",
+      "/usr/share/fontconfig/conf.avail/urw-standard-symbols-ps.conf": "5ab1a4f3128046c6273eb29e38f46f4460368b2835ec2daf78ddbc33cf369751",
+      "/usr/share/fontconfig/conf.avail/urw-z003.conf": "f432bc765828b4b18e49a9f3d99fcd7af67dff9394a16f4ea2a129fbd53dc364"
+    },
+    "manifest_sha256": "d95e1e4e7d62e590f251eef506b8a51b40b253ccaef760b2aef37fd0b8e897ef"
+  },
+  "observer_inputs_sha256": {
+    "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3.12": "fa67443527ed9647f760d807e2a38f26340757123e643c4639cf273ed15d5ea7",
+    "/usr/bin/Xvfb": "2c7f5a9534410fed5092d782a69ca7ffd9fce80e98b81ffe4944d703dd11d3b1",
+    "/usr/bin/fc-list": "6ba4c9975e6c4a933627e223b15eb99a6f88b958ea38b33427b0ace1f8ac06a7",
+    "/usr/bin/valgrind": "4652774bd116cb49951ef74115ad4237cad5021b2bd4d80002f09d986ec438b9",
+    "/usr/bin/xvfb-run": "48ee444c30fdaaede4cc311644b30e554162e956f949b206858e37eb8ba1ae05",
+    "Build/reddit-optimization/audit-config.json": "23ca3a8137efab886f839cefd67b76b2042fd4a6c1f335ea6ea14f71bfc83f85",
+    "Build/reddit-optimization/compare.py": "c03a7e335beb767bd50e79d72e9fa75f16c506e7fef1ff01a016aba478a7cd42",
+    "Build/reddit-optimization/expected-native-diagnostics.json": "6f7cf17037c4097000d5b3ca699da22a508fca0d03837ba608d25c648ef52bda",
+    "Build/reddit-optimization/expected-posts.json": "f46afb190e6fc3d87fad328dbb81948f244c71fa44984dd81997985311d0caa6",
+    "Build/reddit-optimization/network_audit.py": "30334d253bdc7c03bc06909ab7aa8794d5a46f18e000e57da524e6a2428b74e1",
+    "Build/reddit-optimization/observer-correction-01/provenance.json": "12a8516fbfdd3bef77ddc9f60f6a8af9b506385d4434994be40fb29f9007ea40",
+    "Build/reddit-optimization/observer-correction-02/provenance.json": "e43a8739b2de34248e21d57b61f4127b87a33cc58aad5e3dc36edcc98483f7fc",
+    "Build/reddit-optimization/supplementary-control.json": "f854bb833f27ee235bfc6a545048b2cc1f5674d183b5afda7405e16d8352aeb7",
+    "tools/linux_instruction_counts.py": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227",
+    "tools/measure_browser_instructions.py": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e",
+    "tools/process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+  },
+  "runtime_assets_sha256": {
+    "adblock/engine.js.gz": "33990ad65f867b40c42e3c41e951c548670f1264b334c7cd1870a6f4fbed8398",
+    "adblock/engine.snapshot.bin": "6db83981936ad3f6629073cc086aabd46e1bcc8a4ffee780140fac6e0d8f6b4e",
+    "adblock/engine.snapshot.json.gz": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c",
+    "adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+    "aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+    "browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+    "browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+    "css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+    "css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+    "css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+    "css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+    "dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+    "html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+    "layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+    "layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+    "optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+    "optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+    "optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+    "optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+    "url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+  },
+  "valgrind": {
+    "path": "/usr/bin/valgrind",
+    "sha256": "4652774bd116cb49951ef74115ad4237cad5021b2bd4d80002f09d986ec438b9",
+    "version": "valgrind-3.22.0",
+    "runtime_files_sha256": {
+      "/usr/bin/valgrind": "4652774bd116cb49951ef74115ad4237cad5021b2bd4d80002f09d986ec438b9",
+      "/usr/bin/valgrind.bin": "def5fdcf6ae64a4d3e6af3786b622978d8313e0734ecf3f6cbe71d8be9e274c8",
+      "/usr/libexec/valgrind/cachegrind-amd64-linux": "38093b3bf8e9ffecb559a333c896a2fd2a2343bb79c3295f31c36475914deebf",
+      "/usr/libexec/valgrind/vgpreload_core-amd64-linux.so": "87edd6ad90b12bb5fe58f2ea2235db5b6a3d637657488f3e06d07e482354a8c5"
+    }
+  },
+  "controlled_environment": {
+    "PATH": "/root/.codex/tmp/arg0-linux/codex-arg0kOjFUJ:/opt/codex/codex-path:/opt/codex/runtimes/codex-primary-runtime/dependencies/bin/override:/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin:/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin:/opt/codex/runtimes/codex-primary-runtime/dependencies/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/codex/runtimes/codex-primary-runtime/dependencies/bin/fallback",
+    "HOME": "/root",
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "GC_MARKERS": "1",
+    "LIBGL_ALWAYS_SOFTWARE": "1",
+    "LP_NUM_THREADS": "1",
+    "GALLIUM_DRIVER": "llvmpipe",
+    "MESA_SHADER_CACHE_DISABLE": "true",
+    "LADYBIRD_ENABLE_SNAPSHOT_CACHE": "0",
+    "VOX_COOKIE_FILE": "",
+    "LADYBIRD_SCREENSHOT_SCALE": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "LD_LIBRARY_PATH": "Build/linux",
+    "NO_PROXY": "",
+    "no_proxy": "",
+    "TZ": "UTC",
+    "VOX_PROXY": "http://127.0.0.1:37293",
+    "HTTP_PROXY": "http://127.0.0.1:37293",
+    "http_proxy": "http://127.0.0.1:37293",
+    "HTTPS_PROXY": "http://127.0.0.1:37293",
+    "https_proxy": "http://127.0.0.1:37293",
+    "ALL_PROXY": "http://127.0.0.1:37293",
+    "all_proxy": "http://127.0.0.1:37293"
+  },
+  "network_policy": {
+    "proxy": "http://127.0.0.1:37293",
+    "forwarding": false,
+    "mechanism": "exclusively bound non-listening loopback TCP port",
+    "scope": "browsernet and libcurl HTTP(S); file/data remain unchanged",
+    "bypass_lists": "empty",
+    "applies_to": "both variants"
+  },
+  "fixture": {
+    "workload": "Frozen 2024-01-01 old.reddit.com/r/worldnews fixture; scripts removed",
+    "viewport": [
+      1280,
+      900
+    ],
+    "file_sha256": {
+      "pixel_tests/sites/old-reddit-worldnews/assets/-NTtdJXnjtGHAXee.png": "a23df83266297d6bd4552926d7669bf705794b9582a8ae6a7a0daf10cec5f5e9",
+      "pixel_tests/sites/old-reddit-worldnews/assets/-QLCwIoErioZ-bvoitj-TmatRxUqoD2RtRLnosqeH24.jpg": "7c4bda24103703cab25c063a189b91271b6c82bc7e61d74da17440d0b005c11f",
+      "pixel_tests/sites/old-reddit-worldnews/assets/0A7GTNzb5XLX9XGIYIC4lPR42Gs__5qRdYodMfhRSZM.jpg": "9faa85a765be1536165854276eef93153aa9e1941c07907834091a5e16de337e",
+      "pixel_tests/sites/old-reddit-worldnews/assets/0dZENxFpk34zQ0N0.png": "794000756d78b0adfab331b9e411d524da0272b2b1e5de768d2439cd024d0f85",
+      "pixel_tests/sites/old-reddit-worldnews/assets/12KcfPsMJL_7u6BAWxW_HhCyCh9cW85W25FLd7KQTzg.jpg": "d7342345ce9695b9d86fcaf4d951f5fd3d2acbe590ff8c3ebe25cc100f3a4d1a",
+      "pixel_tests/sites/old-reddit-worldnews/assets/1BZyuVW-WiPIgQ0_zPwh_dcoKKKyGWt_BHpXXbN90Io.jpg": "74b7134fdf4a63d6be7202dc64f836c0ad832f38323cd7ad8210cbfb17a3b5fa",
+      "pixel_tests/sites/old-reddit-worldnews/assets/4l5AmU840Sh8Xuwbij4CFXRR7F57v06lggmk0TvOlBc.jpg": "254635be2d467a9b1b24a1863b454601205de70f261a16b06c6a6b1b00efe6d7",
+      "pixel_tests/sites/old-reddit-worldnews/assets/6Ppjh1skddi2_6H8cvtHZTW_dxZoM4bV2HRruydPv4M.jpg": "3769228da127b695a42204fddbf00fe321373c617356f870c798ea39730fc8e7",
+      "pixel_tests/sites/old-reddit-worldnews/assets/6XJOrcSFoI9aeZ8Z.png": "f6bdfa2d25fcf7ad65cdcf0a26a7831f24415921144e34b907dcabaaf0710c51",
+      "pixel_tests/sites/old-reddit-worldnews/assets/6tI74MAVOtqt7nQNpBow7dkfhg7DbQIIp3sn781i6Gg.jpg": "ead23be0c0153adaadee740da41a30edd91f860ec36d0208a77b27efcd62e868",
+      "pixel_tests/sites/old-reddit-worldnews/assets/76nSv7_Ic205hwYz4vS6Klcrmi4Z4-hu31oxD6yHpg4.jpg": "fb271826b24dad319c5b2cc42bb4ee0fa73561d6799148b6c06eb531d2a4a77d",
+      "pixel_tests/sites/old-reddit-worldnews/assets/7O3xFT_pCIyXevmYO2EZj_2pj4uWEvOl11Zywjhhfj8.jpg": "7bf839ffb42eed38f1dddaba5251befdb07b97c175529aa4533c08be4fd652f9",
+      "pixel_tests/sites/old-reddit-worldnews/assets/Ar3bUnUEAiuDelLxhxiOpW3XPoTDXae9DfuWlD6Lnik.jpg": "81fa41d0c9f8aec8cc0362ae5e115aa1f5059b73b6b4fb21d6e8957167c8f4a9",
+      "pixel_tests/sites/old-reddit-worldnews/assets/Bagg1e_SoJq8FXJatwUM9wy38q7Npb34tDjKIPw3J5U.jpg": "06ea8df7cc84cf5c37013fbc1588d04a3c3a4050e75d4d878e8fcf8901bd0477",
+      "pixel_tests/sites/old-reddit-worldnews/assets/INScqkeegdKiVQBj_-KVgXqkCMG-vss9XCfg6PpPWbg.jpg": "4a0ef00113326d56e608e8fa8a01f2f6ff08da3eadb3c329f3931045edfc41e0",
+      "pixel_tests/sites/old-reddit-worldnews/assets/JtipXDjTdCtWLQMLh3I9mTzWaTP1vRlCWF2pYIfTnzE.jpg": "d90135c28c02bcfbf86d725b31bfc2e2bc4b0521daee60c0c13a674f2dfa77e3",
+      "pixel_tests/sites/old-reddit-worldnews/assets/Mp0Gx_HomhJWx5C7CqRbB60Ywgza6uqzNaRuHwatBz4.jpg": "5f075533f48771d2b9c5878bf68ee41fb06e61833afb9ae8dfa463a66441d270",
+      "pixel_tests/sites/old-reddit-worldnews/assets/RJ8gr0PhRIGLKSFmbt7VOqRg-MccsNWE8Z1tuB-qTZ0.jpg": "449f20af43e144818b2921666eded53aa460f8c71cb0d584f19d6db81faa4d9d",
+      "pixel_tests/sites/old-reddit-worldnews/assets/SZLAdsGSZu4Xi7bO.png": "eee06a4ec30bf58fac92c99fbc2acaac7be850034fe9908ec3d50e54857a6974",
+      "pixel_tests/sites/old-reddit-worldnews/assets/UGisZwkqhmWTjbQAH18QHuB90ZBIhxyMLAewvKa0WSg.jpg": "1c61eb9c2be6e129a8f2ccdcbc463724bdb3aeba22e95e49dcb41dee1fd48c52",
+      "pixel_tests/sites/old-reddit-worldnews/assets/XtICmkUqeDGvtyL6BFJw0NpEm7Xcfdd1C_lB85eE9l8.jpg": "525a3f13dc13f303cec97ccc651b61f88ce31dd9883e06a5af7135e82042cd72",
+      "pixel_tests/sites/old-reddit-worldnews/assets/__pOoTW1-JQld5xVU0-U22ppWA4sSYeIyeHUBOldEes.jpg": "42356b4de8816279243638fcb3ce9e6d9dff891a0b1de710c9f734e4de14ccce",
+      "pixel_tests/sites/old-reddit-worldnews/assets/_dEKpqlfDc2ClqlU635CzHC1TlTpU8DNX3eQK8TCDgI.jpg": "96a00876ab21a860d119b5895f5fd522e6472245b65f2e6132f7e79c464460d2",
+      "pixel_tests/sites/old-reddit-worldnews/assets/android-icon-192x192.png": "925fe993dba774b69b734410aad20f58a2c95eccaf7f0662abcc2e61530e105c",
+      "pixel_tests/sites/old-reddit-worldnews/assets/apple-icon-114x114.png": "e8f278c3fc3b655f5736c2ff5ac5f4104d0f4a5246c92d8d12d21856a6df3a15",
+      "pixel_tests/sites/old-reddit-worldnews/assets/apple-icon-120x120.png": "1068a1d141e10407619ad1e571239c7f29df60c2afc17409b7eda68c3cb31473",
+      "pixel_tests/sites/old-reddit-worldnews/assets/apple-icon-144x144.png": "61cdd0983711d95ed1033e9cc8cfa32f81bd294a19fe4189ee1004d4f06adf52",
+      "pixel_tests/sites/old-reddit-worldnews/assets/apple-icon-152x152.png": "fed6a2ca123dbb71600644b0668bfc46999f51f560e684cae703a3d4e67a228d",
+      "pixel_tests/sites/old-reddit-worldnews/assets/apple-icon-180x180.png": "d6b2d20ef184712f8c123d5c3a91c5800055bf77fdef98c162ad4799291e4168",
+      "pixel_tests/sites/old-reddit-worldnews/assets/apple-icon-57x57.png": "38ae64f36c82bb192e9bca9aea1d77d1ce3045f63ed033fcab181355b4bb3e8e",
+      "pixel_tests/sites/old-reddit-worldnews/assets/apple-icon-60x60.png": "6e99d82ef98515173e8711e8ea74b18cdde74cfd1ededf90b01f0976a6e40afd",
+      "pixel_tests/sites/old-reddit-worldnews/assets/apple-icon-72x72.png": "6f3055a82db8b50914191dcca2f2ede2071e53773992807d03f5b427eb0e4f9d",
+      "pixel_tests/sites/old-reddit-worldnews/assets/apple-icon-76x76.png": "0ab560c4917f784171c8c3657c81decf65213da17185c4cc11238476929d6d51",
+      "pixel_tests/sites/old-reddit-worldnews/assets/author-tooltip.1VKQhhDIRMI.css": "9f77140cba16e2d24dc62b7953553dfe36e6b7e262b874bea83105470ab7d11d",
+      "pixel_tests/sites/old-reddit-worldnews/assets/bannerBackgroundImage_5q0f5lsk6pu01.png": "97951e94024ae9aa643bdd9fe5d16e6dd2fde5d77a9c768e36d02712a69d3807",
+      "pixel_tests/sites/old-reddit-worldnews/assets/crosspost-preview.De3P20Yb4PY.css": "1299ae2476471a01a6ab2907d511b3233fb2b87746cc536e8e1153c982f90caa",
+      "pixel_tests/sites/old-reddit-worldnews/assets/d5uoeU28rC9ksXistuUaf4NALg7DSFHWUYfupPgKTJI.jpg": "4d53414ed45eeaea5a639a6df935a30db84af06c0431f91e6f2293014e365a0d",
+      "pixel_tests/sites/old-reddit-worldnews/assets/desktoponboarding.GwBQjruLr-k.css": "2a09d9c4aa95c0a434399099cad5dd6a42d18f5e3ed0550c5c30ed31d650843c",
+      "pixel_tests/sites/old-reddit-worldnews/assets/eSaoWY9FMp0ZogRFY-WZav8Iyf1Z-eNJP4iP3909_T0.jpg": "608b5ea4dba67c32fe1672a82df8760cf8ab63f5c2510eaf95477ba947338ab4",
+      "pixel_tests/sites/old-reddit-worldnews/assets/epvPiIU-z1iKraDZ-aCUi9Ll0Pa3f1W5L4536-rckYI.jpg": "ec34028ed80cd4ac0968f0c6eb5ea0b6b1de9dd6976490d468c7abf7b67d2e70",
+      "pixel_tests/sites/old-reddit-worldnews/assets/expando.gMzRK16vwrQ.css": "2f9d380cf7fdd5fcf8dfe047f977ad86ee594aa964aaef5438361ccaf420a100",
+      "pixel_tests/sites/old-reddit-worldnews/assets/favicon-16x16.png": "38ec4697f57d67227cc49eef44b17913ffbc03cc7ddef8b039ebcc5cb9e40c3b",
+      "pixel_tests/sites/old-reddit-worldnews/assets/favicon-32x32.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "pixel_tests/sites/old-reddit-worldnews/assets/favicon-96x96.png": "470f15491737c2493a3c696f9f655452e38398567542b00142b9b8fa16babea9",
+      "pixel_tests/sites/old-reddit-worldnews/assets/fh3q8m2b9-Ygj9NEuyt6euGSry46UCG8PyBZHsdFbYg.jpg": "916aaa871f09635bbdcd62ddf4745cc6403b0b74ddd0f2c58f76e3ac509950a9",
+      "pixel_tests/sites/old-reddit-worldnews/assets/gmER_lRizykyvgObGSYbt9aLp4bokG9-c_yv2BtK0_s.jpg": "a9145f412af78bd5155b0e288874daaa2bcab4ef0c1cfcc05d791d2d9c6061ef",
+      "pixel_tests/sites/old-reddit-worldnews/assets/icon-sponsored-rank.png": "89eca6a9d08ec5b9095f652879e1b2aee7fbc7130de4459f1aed2a894166c8ec",
+      "pixel_tests/sites/old-reddit-worldnews/assets/icon-sponsored-tiny.png": "c3492015c72c5610a207ee195c8ff15f23060aaf8e36efb4d674e21f9353a9ff",
+      "pixel_tests/sites/old-reddit-worldnews/assets/ilaLE1svJ-qqdk6VXqq8NzGAou0sqZSUkxDvMTkFI3o.jpg": "149334a3508c8205c7f3a2617f774e5209115b3a2aab8ef0a005d349767c62c9",
+      "pixel_tests/sites/old-reddit-worldnews/assets/jWqSTFxxKuo9aDK8JeM4yZL4Nb_RTA85H45u1-h63L8.jpg": "5f075533f48771d2b9c5878bf68ee41fb06e61833afb9ae8dfa463a66441d270",
+      "pixel_tests/sites/old-reddit-worldnews/assets/listing-comments.AZZO7Kj_O88.css": "57d18880dd3e28db974abdf435160f70ce2d77ba4d7d9f634ee205c1943af1c5",
+      "pixel_tests/sites/old-reddit-worldnews/assets/ms-icon-144x144.png": "61cdd0983711d95ed1033e9cc8cfa32f81bd294a19fe4189ee1004d4f06adf52",
+      "pixel_tests/sites/old-reddit-worldnews/assets/pixel.png": "ebf4f635a17d10d6eb46ba680b70142419aa3220f228001a036d311a22ee9d2a",
+      "pixel_tests/sites/old-reddit-worldnews/assets/popup-notification.6-JvPBpHWMo.css": "e8dd3ba85ec61c1ff393affe5b9878b78d87e9f6cbd1214f36272a484d095ae6",
+      "pixel_tests/sites/old-reddit-worldnews/assets/reddit.9V2SOaMwXRg.css": "b8b2e72b56343b100cfdd1db225f25ce46c41c144d697d9b40bb263fd690399d",
+      "pixel_tests/sites/old-reddit-worldnews/assets/sQFxgLGUh_AKVXr61ftgjGKH8fLHr95FmJltSc9N-y0.jpg": "fdd5782622d130f24561f9c77e9b61952f4749bc2a2823ccd73e1ff8fea06bc1",
+      "pixel_tests/sites/old-reddit-worldnews/assets/sprite-expando.69EqpDZz3HM.png": "b2ea3ba0a51f000b734296ca7f69c995f03299f77c646c2620b1d33593493bfd",
+      "pixel_tests/sites/old-reddit-worldnews/assets/sprite-reddit.vSUv8UUCI2g.png": "0c8a8151b52e65a132b16d7ace7fd00afca4a1cbe4362070528130c02072b3e4",
+      "pixel_tests/sites/old-reddit-worldnews/assets/usT4wrHO3To-B9Jb5-ciRJSxcQBXkJKEOW8emSfyYlQ.png": "bac4f8c2b1cedd3a3e07d25be7e7224494b1710057909284396f1e9927f26254",
+      "pixel_tests/sites/old-reddit-worldnews/assets/video-collapse.svg": "982a06e1246a9b6e3b480c9d95f5ae35a1359c7dd4bd61b2e8cc2ca0ed2a64e0",
+      "pixel_tests/sites/old-reddit-worldnews/assets/video-expand.svg": "abae55aaf8fc940402ecd170623e768524fe4da10946ca5a57b12eb2ce23ea50",
+      "pixel_tests/sites/old-reddit-worldnews/assets/video-mute.svg": "eb21f24b267d08e78425a97456d13ba9492bb29e39f2903d84ea1f593876a5d6",
+      "pixel_tests/sites/old-reddit-worldnews/assets/video-refresh.svg": "b87ddd590c0233370a947869522a9f3eb0edabdb02bee9cc319da4c53f7aa09b",
+      "pixel_tests/sites/old-reddit-worldnews/assets/video-settings-open.svg": "1a5048dcbabdfd6143c96d2218db096160fc249f018f42ac7cb90f05a0b6f4db",
+      "pixel_tests/sites/old-reddit-worldnews/assets/video-settings.svg": "156c9da0e87f79ee3e0fbb3b355a8657c17f9451200a78da66cf677845059b32",
+      "pixel_tests/sites/old-reddit-worldnews/assets/video-snoo.svg": "9ab307071a5461e95d672ed948b2cf12c5fda57a03e4183e6f9ff27cc64e6663",
+      "pixel_tests/sites/old-reddit-worldnews/assets/video-volume.svg": "1e960d8d760a72a79f16ece1eabb79768ebeaa8112daff55011b44b64a324810",
+      "pixel_tests/sites/old-reddit-worldnews/assets/videoplayer.ANmi3DZjWG4.css": "78f8594416b419c615df809e3ba3ff8ed4b5369681b03733cf19a23d8621d356",
+      "pixel_tests/sites/old-reddit-worldnews/assets/videoplayercontrols.a_TwaTy76-k.css": "2726f92ed75ce614ff705d8fa6dc63c8454a75ae533cf54d629e735bd583d235",
+      "pixel_tests/sites/old-reddit-worldnews/assets/worldnews.css": "c32c8f50763a0f01a463262ffadb5a87ee53809dd0cfb4cdfeee33fa1b8dc6c1",
+      "pixel_tests/sites/old-reddit-worldnews/assets/xixilquem10bGlYCxYCJGosXt_BpezCXOeshAG6GnP4.png": "c62c6296ab9e9b5d1b1a5602c580891a8b17b7f0697b309739eb21006e869cfe",
+      "pixel_tests/sites/old-reddit-worldnews/index.html": "85d9f0c71762bd5cb0e0b589909b015866c77cfd9086a23c43c1d778c8f9e057"
+    },
+    "file_manifest_sha256": "55470817acb6f0585c1885746c56b5adf1f34617d61da9cf73669b94efff9f75"
+  },
+  "reference_capture": {
+    "report": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json",
+    "report_sha256": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+    "audit_sha256": "80d0ab9160cc8202d14fe1a7eafe44a1f4e7b0a1a652c73b22ceb1074680a433",
+    "content_sha256": "6a74fd4daa5161d431788e2c54e45e6a451478702bf8c0554765025a2a5b866c",
+    "screenshot": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png",
+    "screenshot_file_sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+    "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+    "baseline_binary_sha256": "e74376514dbb0b55828ac26e8a9a355b9adb8b2a3c565f344f141ead793ecd54",
+    "raw_native_renderer_diagnostic_count": 12,
+    "original_observer_status": "invalid",
+    "original_observer_error": "ValueError: Frozen script-free document reported JavaScript diagnostics",
+    "source_counter_backend": "callgrind",
+    "instructions_used_in_acceptance_statistics": false
+  },
+  "observations_in_execution_order": [
+    {
+      "pair": 1,
+      "variant": "baseline",
+      "instructions": 7181886789,
+      "status": "valid",
+      "driver_exit": 0,
+      "report": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.json",
+      "pixel_exact": true,
+      "content_exact": true,
+      "geometry_exact": true,
+      "native_renderer_diagnostic_count": 9,
+      "raw_native_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+      "raw_profile": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.cachegrind.589444",
+      "screenshot": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.png"
+    },
+    {
+      "pair": 1,
+      "variant": "candidate",
+      "instructions": 5794954378,
+      "status": "valid",
+      "driver_exit": 0,
+      "report": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.json",
+      "pixel_exact": true,
+      "content_exact": true,
+      "geometry_exact": true,
+      "native_renderer_diagnostic_count": 9,
+      "raw_native_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+      "raw_profile": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.cachegrind.591597",
+      "screenshot": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.png"
+    },
+    {
+      "pair": 2,
+      "variant": "candidate",
+      "instructions": 5938311142,
+      "status": "valid",
+      "driver_exit": 0,
+      "report": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.json",
+      "pixel_exact": true,
+      "content_exact": true,
+      "geometry_exact": true,
+      "native_renderer_diagnostic_count": 6,
+      "raw_native_audit_sha256": "f14e7b397570b7623d1bbde6f1f03ff599361e2b1fc9e8cdedffa0bd4660a8fc",
+      "raw_profile": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.cachegrind.593479",
+      "screenshot": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.png"
+    },
+    {
+      "pair": 2,
+      "variant": "baseline",
+      "instructions": 7181198185,
+      "status": "valid",
+      "driver_exit": 0,
+      "report": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.json",
+      "pixel_exact": true,
+      "content_exact": true,
+      "geometry_exact": true,
+      "native_renderer_diagnostic_count": 9,
+      "raw_native_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+      "raw_profile": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.cachegrind.594951",
+      "screenshot": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.png"
+    },
+    {
+      "pair": 3,
+      "variant": "baseline",
+      "instructions": 6840551361,
+      "status": "valid",
+      "driver_exit": 0,
+      "report": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.json",
+      "pixel_exact": true,
+      "content_exact": true,
+      "geometry_exact": true,
+      "native_renderer_diagnostic_count": 6,
+      "raw_native_audit_sha256": "f14e7b397570b7623d1bbde6f1f03ff599361e2b1fc9e8cdedffa0bd4660a8fc",
+      "raw_profile": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.cachegrind.596599",
+      "screenshot": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.png"
+    },
+    {
+      "pair": 3,
+      "variant": "candidate",
+      "instructions": 5793881588,
+      "status": "valid",
+      "driver_exit": 0,
+      "report": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.json",
+      "pixel_exact": true,
+      "content_exact": true,
+      "geometry_exact": true,
+      "native_renderer_diagnostic_count": 9,
+      "raw_native_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+      "raw_profile": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.cachegrind.597321",
+      "screenshot": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.png"
+    }
+  ],
+  "derived": {
+    "baseline_counts": [
+      7181886789,
+      7181198185,
+      6840551361
+    ],
+    "candidate_counts": [
+      5794954378,
+      5938311142,
+      5793881588
+    ],
+    "baseline_median": 7181198185,
+    "candidate_median": 5794954378,
+    "paired_instruction_savings": [
+      1386932411,
+      1242887043,
+      1046669773
+    ],
+    "median_reduction_percent": 19.30379542923031,
+    "normal_conservative_reduction_percent": 13.189583286282113,
+    "supplementary_conservative_reduction_percent": 13.189583286282113,
+    "normal_gate": {
+      "left_integer": 59383111420,
+      "right_integer": 61564962249,
+      "passed": true
+    },
+    "supplementary_gate": {
+      "retained_control": 6842705460,
+      "left_integer": 59383111420,
+      "right_integer": 61564962249,
+      "passed": true
+    },
+    "target_met": true
+  },
+  "outer_guard": {
+    "command": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3",
+      "Build/reddit-optimization/compare.py",
+      "--baseline",
+      "Build/reddit-optimization/baseline-c/vox2",
+      "--candidate",
+      "Build/reddit-optimization/candidate-c/vox2",
+      "--reference-capture-report",
+      "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json",
+      "--counter-backend",
+      "cachegrind",
+      "--pairs",
+      "3",
+      "--timeout",
+      "1800",
+      "--output",
+      "Build/reddit-optimization/cachegrind-cohort-02"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1029513216,
+    "elapsed_seconds": 333.04767327899026,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "retained_invalid_attempt": {
+    "schema_version": 1,
+    "created_at_utc": "2026-11-02T21:48:31.186595+00:00",
+    "purpose": "Supplementary conservative gate retaining the valid raw unmodified control from an invalid observer cohort; never a replacement or median/pair member.",
+    "instructions": 6842705460,
+    "counter_backend": "cachegrind",
+    "instruction_metric": "cachegrind_guest_instruction_references",
+    "report": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json",
+    "profile": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.cachegrind.576695",
+    "screenshot": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.png",
+    "cohort_summary": "Build/reddit-optimization/cachegrind-cohort-01/summary.json",
+    "observation_result": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/result.json",
+    "original_cohort_status": "invalid",
+    "original_error": "ValueError: Diagnostic channel differs from the exact baseline native-renderer list; new, missing, changed or unclassified/JavaScript messages are forbidden",
+    "original_observation_count": 1,
+    "candidate_observations": 0,
+    "evidence_sha256": {
+      "Build/reddit-optimization/cachegrind-cohort-01/summary.json": "c9fc5f48781efbe79e77ddefc7efcbf16440c32535e94d3f6db9ec3b4b665dff",
+      "Build/reddit-optimization/cachegrind-cohort-01/exception.txt": "cb0a729517b660984746e4f7e32a5f31cfcf9d606f4c0f1edfe4eda7d4fc9f92",
+      "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json": "b2b57732fc6af3d497b81fdc2ab1bcd46c80750164d89f2a9c7d611b77f95fe3",
+      "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.png": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+      "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/result.json": "ac43f504f37507a6741523328b5220fd9e9bc062dbf0f3f15d2a657e4556c919",
+      "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/invocation.json": "d0071550acc2c2054d2a2b91eed6ecd0ff9f2483524e289a31877837adde684f",
+      "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.cachegrind.576695": "d49be3eef93761a7d8daa94d52276de9bd78bb98a26966d23096dcae7e42bc95",
+      "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.valgrind.576695.log": "1b9c5ba5c9287d9f0b6ebd4588a71d01c06ea8895e20f33962fd3afa0c5b2385"
+    },
+    "measurement_source_sha256": {
+      "tools/measure_browser_instructions.py": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e",
+      "tools/linux_instruction_counts.py": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227",
+      "tools/process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+    },
+    "valgrind_runtime_sha256": {
+      "/usr/bin/valgrind": "4652774bd116cb49951ef74115ad4237cad5021b2bd4d80002f09d986ec438b9",
+      "/usr/bin/valgrind.bin": "def5fdcf6ae64a4d3e6af3786b622978d8313e0734ecf3f6cbe71d8be9e274c8",
+      "/usr/libexec/valgrind/cachegrind-amd64-linux": "38093b3bf8e9ffecb559a333c896a2fd2a2343bb79c3295f31c36475914deebf",
+      "/usr/libexec/valgrind/vgpreload_core-amd64-linux.so": "87edd6ad90b12bb5fe58f2ea2235db5b6a3d637657488f3e06d07e482354a8c5"
+    },
+    "baseline_binary": "Build/reddit-optimization/baseline-c/vox2",
+    "baseline_binary_sha256": "e74376514dbb0b55828ac26e8a9a355b9adb8b2a3c565f344f141ead793ecd54",
+    "raw_audit_sha256": "f14e7b397570b7623d1bbde6f1f03ff599361e2b1fc9e8cdedffa0bd4660a8fc",
+    "raw_native_renderer_diagnostic_count": 6,
+    "original_callgrind_reference_native_renderer_diagnostic_count": 12,
+    "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+    "source_identity": {
+      "repository": "vlang/vox2",
+      "baseline_source_tree": "4f87e708424edf0ed929d130fdc4ef0002fa23b5",
+      "measurement_driver_sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e",
+      "counter_module_sha256": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c",
+      "linux_counter_module_sha256": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227"
+    },
+    "gate": {
+      "expression": "10 * max(final_candidate_counts) <= 9 * min(final_baseline_counts + [6842705460])",
+      "required_in_addition_to_normal_cohort_gate": true,
+      "control_only_candidate_ceiling": 6158434914
+    },
+    "evidence_interpretation": "The same unmodified binary produced identical pixels and every raw native audit field except the multiplicity (6 versus 12) of the one source-proven native replay diagnostic. No candidate had been measured when this observer correction was authorized. This does not assign a measured frame count.",
+    "required_revalidation": "Reparse the pinned raw profile with the current unchanged strict Cachegrind parser; verify successful original browser/driver exit, pins, normalized audit identity and PNG before use."
+  },
+  "supporting_receipts": {
+    "baseline_build": {
+      "upstream_commit": "4f87e708424edf0ed929d130fdc4ef0002fa23b5",
+      "source_changed": false,
+      "route": "separate V C emission and native compilation, unchanged C-O2 production flags",
+      "c_generation": {
+        "command": [
+          "/workspace/scratch/549231c7ae31/v/v",
+          "-new-compiler",
+          "-glibc",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-cc",
+          "clang-18",
+          "-d",
+          "use_openssl",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/workspace/scratch/549231c7ae31/vox2|/workspace/scratch/549231c7ae31/vox2/Build/linux/modules|/workspace/scratch/549231c7ae31/vox2/Build/v/httpcompat/32bae206d5ba729b/modules|/workspace/scratch/549231c7ae31/vox2/Build/v/modules|@vmodules|@vlib",
+          "-gc",
+          "boehm",
+          "-d",
+          "dynamic_boehm",
+          "-show-c-output",
+          "-dump-c-flags",
+          "Build/reddit-optimization/baseline-cflags.txt",
+          "-cflags",
+          "-D_GNU_SOURCE=1 -O2",
+          "-generate-c-project",
+          "Build/reddit-optimization/baseline-c",
+          "."
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 6140112896,
+        "elapsed_seconds": 117.20965465700283,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "native_compilation": {
+        "command": [
+          "sh",
+          "Build/reddit-optimization/baseline-c/build.sh"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3144503296,
+        "elapsed_seconds": 660.5742550150026,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "startup_smoke": {
+        "command": [
+          "Build/reddit-optimization/baseline-c/vox2",
+          "--headless-smoke",
+          "--js-engine=javascriptcore"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 93835264,
+        "elapsed_seconds": 0.33507499700499466,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "original_failed_build_receipt": "Build/production-build/receipts/20261102-215759-6e7c72b2/memory.json"
+    },
+    "matched_links": {
+      "common_object_sha256": "b0ccbf49931cefbaaf65878f79e60423222f6b87036422e8c35738b9d0cec37d",
+      "baseline_binary_sha256": "e74376514dbb0b55828ac26e8a9a355b9adb8b2a3c565f344f141ead793ecd54",
+      "native_archive_comparison": {
+        "original_archive_sha256": "1fe0735fb118ec5b27ca151a4190383cd1fb78bd739b1be25a2b96c1e629b38f",
+        "candidate_archive_sha256": "3e952238187b77ddd7d11a0a8719b977bff6f9e76dcf36960d05793ae8c2c263",
+        "original_members": {
+          "canvas_raster.o": "93c35823790b167df8356a5080509f27858fe0f938247cf45f40663c60dbba6f",
+          "shadow_raster.o": "cec525f13cef02011ef4bb1031c6d6acb2c159cff8e21b684080761103c904da",
+          "font_typeface.o": "97d0a2a547aa41a2783f16d8299a9a01cda71fd3bb068d6e6e8a53a03a05305d",
+          "bitmap_export.o": "e5971064972e9388b23e1940df65614715a1c805da3445419d578bc3eba61264"
+        },
+        "candidate_members": {
+          "canvas_raster.o": "93c35823790b167df8356a5080509f27858fe0f938247cf45f40663c60dbba6f",
+          "shadow_raster.o": "9a62c3871e02691516bfacc05f05ec33373cb79d45789e1c5d4ed1b0cf00fb5d",
+          "font_typeface.o": "97d0a2a547aa41a2783f16d8299a9a01cda71fd3bb068d6e6e8a53a03a05305d",
+          "bitmap_export.o": "e5971064972e9388b23e1940df65614715a1c805da3445419d578bc3eba61264"
+        },
+        "changed_members": [
+          "shadow_raster.o"
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "tools/build_linux_native.py"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 208916480,
+          "elapsed_seconds": 5.5696760270002414,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      },
+      "variants": {
+        "control": {
+          "command": [
+            "clang-18",
+            "-std=gnu11",
+            "-w",
+            "-Wno-incompatible-function-pointer-types",
+            "-fwrapv",
+            "-Wno-int-conversion",
+            "-o",
+            "Build/reddit-optimization/control-relinked/vox2",
+            "Build/reddit-optimization/common-object/vox2.o",
+            "/workspace/scratch/549231c7ae31/v/vlib/builtin/gc_boehm_helpers.c",
+            "/workspace/scratch/549231c7ae31/v/vlib/builtin/segfault_handler_nix.c",
+            "/workspace/scratch/549231c7ae31/v/vlib/os/execute_capture_nix.c",
+            "/workspace/scratch/549231c7ae31/v/vlib/sync/thread_helper.c",
+            "/workspace/scratch/549231c7ae31/v/vlib/fontstash/fontstash_impl.c",
+            "-DUSE_MMAP=1",
+            "-DUSE_MUNMAP=1",
+            "-DHANDLE_FORK=1",
+            "-DGC_THREADS=1",
+            "-DTHREAD_LOCAL_ALLOC=1",
+            "-lgc",
+            "-lpthread",
+            "-ldl",
+            "-DV_GCBOEHM_NATIVE",
+            "-licuuc",
+            "-lpthread",
+            "-I/usr/include/webkitgtk-4.1",
+            "-I/usr/include/glib-2.0",
+            "-I/usr/lib/x86_64-linux-gnu/glib-2.0/include",
+            "-ljavascriptcoregtk-4.1",
+            "-lgobject-2.0",
+            "-lglib-2.0",
+            "-lz",
+            "-lXrandr",
+            "-lm",
+            "-I/usr/include/freetype2",
+            "-I/usr/include/libpng16",
+            "-lfontconfig",
+            "-lfreetype",
+            "-I/usr/include/harfbuzz",
+            "-I/usr/include/freetype2",
+            "-I/usr/include/libpng16",
+            "-I/usr/include/glib-2.0",
+            "-I/usr/lib/x86_64-linux-gnu/glib-2.0/include",
+            "-lharfbuzz",
+            "-I/usr/include/glib-2.0",
+            "-I/usr/lib/x86_64-linux-gnu/glib-2.0/include",
+            "-lglib-2.0",
+            "platform/../Build/linux/native/platform.a",
+            "-lstdc++",
+            "-licui18n",
+            "-licuuc",
+            "-licudata",
+            "-lcurl",
+            "-I",
+            "/workspace/scratch/549231c7ae31/v/thirdparty/stb_image",
+            "Build/linux/native/stbi.a",
+            "-I",
+            "/workspace/scratch/549231c7ae31/v/thirdparty/stdatomic/nix",
+            "-I",
+            "libjs",
+            "-D_GNU_SOURCE=1",
+            "-lEGL",
+            "-lGLESv2",
+            "-lssl",
+            "-lcrypto",
+            "gfxfont/../Build/linux/native/gfxfont.a",
+            "-lwoff2dec",
+            "-lwoff2common",
+            "-lbrotlidec",
+            "-lbrotlicommon",
+            "Build/reddit-optimization/native-control/skia.a",
+            "-I/workspace/scratch/549231c7ae31/vox2/Build/deps/skia",
+            "-DSK_HIDE_PATH_EDIT_METHODS",
+            "-DSK_R32_SHIFT=16",
+            "-I/usr/include/freetype2",
+            "-I/usr/include/libpng16",
+            "-I/usr/include/webp",
+            "-L/workspace/scratch/549231c7ae31/vox2/Build/deps/skia/out/Release",
+            "-lskia",
+            "-lskcms",
+            "-lstdc++",
+            "-ldl",
+            "-lpthread",
+            "-lm",
+            "-lfontconfig",
+            "-lfreetype",
+            "-lpng16",
+            "-ljpeg",
+            "-lwebp",
+            "-lwebpdemux",
+            "-lz",
+            "-I",
+            "/workspace/scratch/549231c7ae31/v/thirdparty/fontstash",
+            "-DFONTSTASH_USE_GCBOEHM",
+            "libregex/../Build/libregex/linux/libregex_native.a",
+            "-Wl,--gc-sections",
+            "-ldl",
+            "-lpthread",
+            "-lm",
+            "-I",
+            "/workspace/scratch/549231c7ae31/v/thirdparty/sokol",
+            "-I",
+            "/workspace/scratch/549231c7ae31/v/thirdparty/sokol/util",
+            "-DSOKOL_GLCORE",
+            "-USOKOL_D3D11",
+            "-USOKOL_GLES3",
+            "-USOKOL_METAL",
+            "-USOKOL_VULKAN",
+            "-USOKOL_WGPU",
+            "-lX11",
+            "-lXi",
+            "-lXcursor",
+            "-lEGL",
+            "-lGL",
+            "-lpthread",
+            "-lm",
+            "-ldl",
+            "-DSOKOL_NO_ENTRY",
+            "-ldl",
+            "-I/usr/local/include/openssl",
+            "-L/usr/local/lib64",
+            "-DGC_MARKERS=1",
+            "-Wl,-rpath,/workspace/scratch/549231c7ae31/vox2/Build/linux",
+            "-D_GNU_SOURCE=1",
+            "-O2"
+          ],
+          "archive_sha256": "1fe0735fb118ec5b27ca151a4190383cd1fb78bd739b1be25a2b96c1e629b38f",
+          "exit_code": 0,
+          "binary_sha256": "e74376514dbb0b55828ac26e8a9a355b9adb8b2a3c565f344f141ead793ecd54",
+          "byte_identical_to_original": true
+        },
+        "candidate": {
+          "command": [
+            "clang-18",
+            "-std=gnu11",
+            "-w",
+            "-Wno-incompatible-function-pointer-types",
+            "-fwrapv",
+            "-Wno-int-conversion",
+            "-o",
+            "Build/reddit-optimization/candidate-c/vox2",
+            "Build/reddit-optimization/common-object/vox2.o",
+            "/workspace/scratch/549231c7ae31/v/vlib/builtin/gc_boehm_helpers.c",
+            "/workspace/scratch/549231c7ae31/v/vlib/builtin/segfault_handler_nix.c",
+            "/workspace/scratch/549231c7ae31/v/vlib/os/execute_capture_nix.c",
+            "/workspace/scratch/549231c7ae31/v/vlib/sync/thread_helper.c",
+            "/workspace/scratch/549231c7ae31/v/vlib/fontstash/fontstash_impl.c",
+            "-DUSE_MMAP=1",
+            "-DUSE_MUNMAP=1",
+            "-DHANDLE_FORK=1",
+            "-DGC_THREADS=1",
+            "-DTHREAD_LOCAL_ALLOC=1",
+            "-lgc",
+            "-lpthread",
+            "-ldl",
+            "-DV_GCBOEHM_NATIVE",
+            "-licuuc",
+            "-lpthread",
+            "-I/usr/include/webkitgtk-4.1",
+            "-I/usr/include/glib-2.0",
+            "-I/usr/lib/x86_64-linux-gnu/glib-2.0/include",
+            "-ljavascriptcoregtk-4.1",
+            "-lgobject-2.0",
+            "-lglib-2.0",
+            "-lz",
+            "-lXrandr",
+            "-lm",
+            "-I/usr/include/freetype2",
+            "-I/usr/include/libpng16",
+            "-lfontconfig",
+            "-lfreetype",
+            "-I/usr/include/harfbuzz",
+            "-I/usr/include/freetype2",
+            "-I/usr/include/libpng16",
+            "-I/usr/include/glib-2.0",
+            "-I/usr/lib/x86_64-linux-gnu/glib-2.0/include",
+            "-lharfbuzz",
+            "-I/usr/include/glib-2.0",
+            "-I/usr/lib/x86_64-linux-gnu/glib-2.0/include",
+            "-lglib-2.0",
+            "platform/../Build/linux/native/platform.a",
+            "-lstdc++",
+            "-licui18n",
+            "-licuuc",
+            "-licudata",
+            "-lcurl",
+            "-I",
+            "/workspace/scratch/549231c7ae31/v/thirdparty/stb_image",
+            "Build/linux/native/stbi.a",
+            "-I",
+            "/workspace/scratch/549231c7ae31/v/thirdparty/stdatomic/nix",
+            "-I",
+            "libjs",
+            "-D_GNU_SOURCE=1",
+            "-lEGL",
+            "-lGLESv2",
+            "-lssl",
+            "-lcrypto",
+            "gfxfont/../Build/linux/native/gfxfont.a",
+            "-lwoff2dec",
+            "-lwoff2common",
+            "-lbrotlidec",
+            "-lbrotlicommon",
+            "skia/../Build/linux/native/skia.a",
+            "-I/workspace/scratch/549231c7ae31/vox2/Build/deps/skia",
+            "-DSK_HIDE_PATH_EDIT_METHODS",
+            "-DSK_R32_SHIFT=16",
+            "-I/usr/include/freetype2",
+            "-I/usr/include/libpng16",
+            "-I/usr/include/webp",
+            "-L/workspace/scratch/549231c7ae31/vox2/Build/deps/skia/out/Release",
+            "-lskia",
+            "-lskcms",
+            "-lstdc++",
+            "-ldl",
+            "-lpthread",
+            "-lm",
+            "-lfontconfig",
+            "-lfreetype",
+            "-lpng16",
+            "-ljpeg",
+            "-lwebp",
+            "-lwebpdemux",
+            "-lz",
+            "-I",
+            "/workspace/scratch/549231c7ae31/v/thirdparty/fontstash",
+            "-DFONTSTASH_USE_GCBOEHM",
+            "libregex/../Build/libregex/linux/libregex_native.a",
+            "-Wl,--gc-sections",
+            "-ldl",
+            "-lpthread",
+            "-lm",
+            "-I",
+            "/workspace/scratch/549231c7ae31/v/thirdparty/sokol",
+            "-I",
+            "/workspace/scratch/549231c7ae31/v/thirdparty/sokol/util",
+            "-DSOKOL_GLCORE",
+            "-USOKOL_D3D11",
+            "-USOKOL_GLES3",
+            "-USOKOL_METAL",
+            "-USOKOL_VULKAN",
+            "-USOKOL_WGPU",
+            "-lX11",
+            "-lXi",
+            "-lXcursor",
+            "-lEGL",
+            "-lGL",
+            "-lpthread",
+            "-lm",
+            "-ldl",
+            "-DSOKOL_NO_ENTRY",
+            "-ldl",
+            "-I/usr/local/include/openssl",
+            "-L/usr/local/lib64",
+            "-DGC_MARKERS=1",
+            "-Wl,-rpath,/workspace/scratch/549231c7ae31/vox2/Build/linux",
+            "-D_GNU_SOURCE=1",
+            "-O2"
+          ],
+          "archive_sha256": "3e952238187b77ddd7d11a0a8719b977bff6f9e76dcf36960d05793ae8c2c263",
+          "exit_code": 0,
+          "binary_sha256": "9c2ac167c046be1f5e8f7fed2f261ea8fd60e7d2fe525df87dd6c9cc426a6c07"
+        }
+      },
+      "accepted": true
+    },
+    "implementation_files": {
+      "skia/shadow_raster.cpp": "9ee92dad543f16d99ce9a2102465dfe4f39bd44439f4c0f822c9632aa78ba16b",
+      "skia/shadow_typeface_cache.h": "5efc4608ff93953e2574ecb27de7ec742f6325d9b631a0e7814d609bc121a27b",
+      "tools/native_shadow_typeface_cache_test.cpp": "7a00dc6fdbd21e303bd407eadb28dff658ad6035277820e46219ab59268e8510",
+      "tools/test_shadow_typeface_cache.py": "227cc6e6e911196cea0718cc41c7467041c5d125f05f09ed4d934b9c9a6917e5"
+    },
+    "diagnostic_profile_attribution": {
+      "profile": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.callgrind.535131",
+      "metric": "Callgrind guest instruction references (Ir)",
+      "program_total": 7894617541,
+      "vox_skia_shadow_inclusive": 2085807507,
+      "shadow_calls": 1284,
+      "text_shadow_make_from_file_calls": 1264,
+      "text_shadow_make_from_file_inclusive": 122502349,
+      "text_blob_make_calls": 1264,
+      "text_blob_make_inclusive": 895077564,
+      "typeface_compute_bounds_calls": 1260,
+      "typeface_compute_bounds_inclusive": 894485920,
+      "mechanism": "Every text shadow creates a fresh SkTypeface. SkTypeface::getBounds memoizes via fBoundsOnce per typeface, and Skia strike descriptors include the typeface uniqueID. Keeping a typeface across repeated font-file/index calls permits both caches to work without changing font settings.",
+      "source_evidence": [
+        "skia/shadow_raster.cpp: vox_skia_shadow text branch",
+        "Build/deps/skia/src/ports/SkFontMgr_custom.cpp: SkFontMgr_Custom::onMakeFromFile",
+        "Build/deps/skia/src/core/SkTypeface.cpp: SkTypeface::getBounds and onComputeBounds",
+        "Build/deps/skia/src/core/SkScalerContext.cpp: SkScalerContextRec typeface uniqueID",
+        "native_skia_text_darwin.cpp: select_typeface path/index retention precedent"
+      ],
+      "proposal": "Thread-local 32-entry LRU, 32 MiB charged font-file bytes, owned strings/sk_sp, path/index plus regular-file device/inode/size/mtime/ctime nanosecond identity, positive entries only, post-load identity validation. SkFont and all rendering parameters remain per-call.",
+      "native_control_compiler": "GCC (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "native_control_flags": "tools/build_linux_native.py: -std=c++20 -O2 -fPIC and pkg-config skia flags",
+      "status": "Proposal validated by focused native tests; live runtime source and native archive not modified by this audit",
+      "native_test_results": "Build/reddit-optimization/shadow-typeface-proposal/native-test-results.json"
+    },
+    "original_object_native_test": {
+      "status": "passed",
+      "implementation": "proposal only; live runtime source and native archive unchanged by this test",
+      "build_receipt": "Build/reddit-optimization/shadow-native-test-01-build.guard.json",
+      "runtime_receipt": "Build/reddit-optimization/shadow-native-test-01-runtime.guard.json",
+      "inputs": "Build/reddit-optimization/shadow-native-test-01/inputs.json",
+      "commands": "Build/reddit-optimization/shadow-native-test-01/commands.jsonl",
+      "built": "Build/reddit-optimization/shadow-native-test-01/built.json",
+      "runtime_log": "Build/reddit-optimization/shadow-native-test-01-runtime.log",
+      "rgba_byte_equality_cases": 1152,
+      "case_count_derivation": "144 cases per compare_pixels invocation: 2 repeats x 3 sizes x 3 blurs x 4 smoothing modes x 2 clip modes; 6 serial and 2 concurrent invocations",
+      "control": "Extracted original shadow_raster.o from preserved baseline skia.a; objcopy renames only vox_skia_shadow to vox_skia_shadow_uncached",
+      "candidate": "/usr/bin/c++ GCC 13.3.0, -std=c++20 -O2 -fPIC and baseline pkg-config Skia flags",
+      "coverage": [
+        "typeface reuse by uniqueID and loader call count",
+        "owned string key after caller mutation",
+        "in-place equal-size replacement with restored mtime",
+        "atomic rename replacement",
+        "delete, invalid file, valid recreation without negative caching",
+        "entry-count exact LRU and caller ownership after eviction",
+        "TTC index separation and invalid index",
+        "oversized and disabled cache bypass",
+        "cumulative byte-budget eviction",
+        "post-load file replacement",
+        "full RGBA parity including two concurrent raster threads"
+      ],
+      "limitations": [
+        "This focused test establishes native cache correctness; full old.reddit.com output and instruction-count validation remain separate.",
+        "32 MiB budget charges retained font-file sizes, not all Skia decoded heap or shared strike-cache allocation."
+      ],
+      "build_guard": {
+        "command": [
+          "python3",
+          "Build/reddit-optimization/shadow-typeface-proposal/build_native_test.py",
+          "Build/reddit-optimization/shadow-native-test-01"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 269393920,
+        "elapsed_seconds": 4.264242066004954,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime_guard": {
+        "command": [
+          "Build/reddit-optimization/shadow-native-test-01/shadow_typeface_cache_test",
+          "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+          "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+          "Build/reddit-optimization/shadow-native-test-01/liberation-sans.ttc",
+          "Build/reddit-optimization/shadow-native-test-01/work"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 297881600,
+        "elapsed_seconds": 0.6510797959999763,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "durable_adapter_native_test": {
+      "passed": true,
+      "control": "uncached adapter",
+      "artifacts": {
+        "Build/reddit-optimization/shadow-native-adapter-02/shadow_typeface_cache_test": "d3c9296d8266fa5fdedb5bbdeaeb33179668562e6931a2b47bca5caba55a4b83",
+        "Build/reddit-optimization/shadow-native-adapter-02/shadow-candidate.o": "9a62c3871e02691516bfacc05f05ec33373cb79d45789e1c5d4ed1b0cf00fb5d",
+        "Build/reddit-optimization/shadow-native-adapter-02/shadow-control.o": "2aaa64dac832ad8940f876d980dde0095aadb8580031104be88466a0ae8058b0",
+        "Build/reddit-optimization/shadow-native-adapter-01/two-face-fonts.ttc": "1654ec11bd4e9860e04247c9f04e68d3c531773f4c0f2de7b571c10f9b821334"
+      },
+      "runtime_command": [
+        "Build/reddit-optimization/shadow-native-adapter-02/shadow_typeface_cache_test",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "Build/reddit-optimization/shadow-native-adapter-01/two-face-fonts.ttc",
+        "Build/reddit-optimization/shadow-native-adapter-02/work"
+      ],
+      "runtime_guard": {
+        "command": [
+          "Build/reddit-optimization/shadow-native-adapter-02/shadow_typeface_cache_test",
+          "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+          "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+          "Build/reddit-optimization/shadow-native-adapter-01/two-face-fonts.ttc",
+          "Build/reddit-optimization/shadow-native-adapter-02/work"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 310394880,
+        "elapsed_seconds": 0.5358665829990059,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "changed_inputs": []
+    },
+    "durable_adapter_native_test_inputs": {
+      "compiler": "/usr/bin/c++",
+      "compiler_version": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+      "pins": {
+        "tools/test_shadow_typeface_cache.py": "227cc6e6e911196cea0718cc41c7467041c5d125f05f09ed4d934b9c9a6917e5",
+        "tools/native_shadow_typeface_cache_test.cpp": "7a00dc6fdbd21e303bd407eadb28dff658ad6035277820e46219ab59268e8510",
+        "tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+        "skia/shadow_raster.cpp": "9ee92dad543f16d99ce9a2102465dfe4f39bd44439f4c0f822c9632aa78ba16b",
+        "skia/shadow_typeface_cache.h": "5efc4608ff93953e2574ecb27de7ec742f6325d9b631a0e7814d609bc121a27b",
+        "skia/shadow_raster.h": "d48aae5c03e364e52768f3042dbdfe88816771fcec7ca1a12930d762ed6d6272",
+        "skia/canvas_raster.h": "a61c92141199d9a96a0ac7f80c542a36a47722bc46f109b953c8a8d1ee767c36",
+        "/usr/bin/x86_64-linux-gnu-g++-13": "1353e9bdd29a7295c7226bf6c63abccce056d8cac31f112e5cdbecc3f28c2769",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf": "4659bc0c58c5028dd488ec928d41d9265db43d9b669fc14ca8b0832daca7b144",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf": "3973aa5054fb467dd5627245d3dc82e37bf16fe075756156a570455871351582",
+        "Build/deps/lib/pkgconfig/skia.pc": "daa83426767bb13b910cf3fc55ce3f5d8aeb5ccd7fd0b8d9860b9fa40547034e",
+        "Build/deps/skia/out/Release/libskia.a": "192cd257814b01169db1a4c3731564c3104785596ab7f47542e0e55a3da34950",
+        "Build/deps/skia/out/Release/libskcms.a": "34335cb50531ab591a795e746fe37db5fe34fa769a11db0e9d72e908d47e1b79",
+        "Build/reddit-optimization/shadow-native-adapter-01/two-face-fonts.ttc": "1654ec11bd4e9860e04247c9f04e68d3c531773f4c0f2de7b571c10f9b821334",
+        "Build/reddit-optimization/shadow-native-adapter-02/uncached_shadow_adapter.cpp": "1a6190f10bbdb81a3faa0bb093e77a702ddf678a7da413affafd28871bae4423"
+      },
+      "skia_version": "144",
+      "skia_cflags": [
+        "-I/workspace/scratch/549231c7ae31/vox2/Build/deps/skia",
+        "-DSK_HIDE_PATH_EDIT_METHODS",
+        "-DSK_R32_SHIFT=16",
+        "-I/usr/include/freetype2",
+        "-I/usr/include/libpng16",
+        "-I/usr/include/webp"
+      ],
+      "skia_libs": [
+        "-L/workspace/scratch/549231c7ae31/vox2/Build/deps/skia/out/Release",
+        "-lskia",
+        "-lskcms",
+        "-lstdc++",
+        "-ldl",
+        "-lpthread",
+        "-lm",
+        "-lfontconfig",
+        "-lfreetype",
+        "-lpng16",
+        "-ljpeg",
+        "-lwebp",
+        "-lwebpdemux",
+        "-lz"
+      ],
+      "pkg_config_path": "Build/deps/lib/pkgconfig:",
+      "control": "uncached adapter"
+    },
+    "observer_correction_1": {
+      "schema_version": 1,
+      "completed_at_utc": "2026-11-02T21:35:24.680075+00:00",
+      "authorization": "Parent explicitly authorized the exact native-shadow diagnostic classification and pinned first-diagnostic reference before any acceptance cohort.",
+      "reason": "The original audit field javascript_diagnostics contains app.js_messages, including source-proven native shadow rasterization diagnostics. The original observer incorrectly treated these 12 messages as JavaScript diagnostics.",
+      "changes": [
+        "Require exact ordered equality with all 12 recorded Shadow replay: Empty shadow bounds strings. Reject any added, missing, changed, unclassified or JavaScript message; continue requiring zero native reported errors.",
+        "Require --reference-capture-report to identify the pinned original driver report, verify its report, PNG, audit and original failed-wrapper provenance hashes, and independently decode the reference PNG.",
+        "Every cohort capture, including the first baseline, uses the original reference PNG via the unchanged driver --expected-png option and compares all prior validation fields plus the complete native audit exactly.",
+        "Pin the new diagnostic contract, reference evidence and this provenance file for the cohort. Future standalone diagnostics also pin the new contract."
+      ],
+      "measurement_boundary_changed": false,
+      "measurement_driver_changed": false,
+      "fixture_changed": false,
+      "native_browser_audit_changed": false,
+      "counter_parser_changed": false,
+      "counter_policy": "Acceptance remains explicitly selected Cachegrind, with no mixed counters or fallback. The original diagnostic Callgrind count is excluded from all acceptance statistics.",
+      "original_failed_evidence_unchanged": true,
+      "original_failed_evidence": {
+        "Build/reddit-optimization/baseline-callgrind-01/summary.json": "53c68492747ffd9ae69dbc173fa403b9a70dcaff6c4c7a1e886d95f9ab1cc382",
+        "Build/reddit-optimization/baseline-callgrind-01/exception.txt": "fbaf7b4c0c66f9090e01478cc52d26245da28bf4d67d1d25ea76011d2ca20f9e",
+        "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+        "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475"
+      },
+      "observer_changes": {
+        "Build/reddit-optimization/compare.py": {
+          "before_sha256": "8e37fcb93975c568912fa4e7876cbd8584e9d0035809d329d0979dad865b8ce1",
+          "after_sha256": "2d13461fa51d00ab670cf675d046bf70f646bbef050031bdb228bafd49277378",
+          "preserved_before": "Build/reddit-optimization/observer-correction-01/compare.before.py",
+          "preserved_after": "Build/reddit-optimization/observer-correction-01/compare.after.py"
+        },
+        "Build/reddit-optimization/capture.py": {
+          "before_sha256": "d38fce8ea8828efeb9d544655f96d1a06b0b47799ba64afce4db6286533a773f",
+          "after_sha256": "ba99f95f5a194409fef6c17ff78444d9cf5faaf6b0ce0926e9d1ddb96f3bb86a",
+          "preserved_before": "Build/reddit-optimization/observer-correction-01/capture.before.py",
+          "preserved_after": "Build/reddit-optimization/observer-correction-01/capture.after.py"
+        }
+      },
+      "patch": "Build/reddit-optimization/observer-correction-01/correction.patch",
+      "patch_sha256": "8c710b821a1527779326a908d1609e6b51f0a9142455821616c942ae8393fd63",
+      "expected_native_diagnostics": "Build/reddit-optimization/expected-native-diagnostics.json",
+      "expected_native_diagnostics_sha256": "2bbbc0660e7af18e461ea1bd4dfcbfd8a04aa94182372c911c14ff02d3e1f033",
+      "acceptance_counter_selection": "Build/reddit-optimization/acceptance-counter-selection.json",
+      "acceptance_counter_selection_sha256": "09f94d87a99a639d628cf3146ad6ecf724f9a686275ffb129b9a8a2d2852c02c",
+      "validation": "Build/reddit-optimization/observer-correction-01/validation.json",
+      "validation_sha256": "d21c2b1195402e9e4910a8fa2bfd8c0775d3fb7606dae177019f2ef2201c3a62",
+      "validation_summary": "Actual original capture validates under the exact classification; PNG decoded independently to the fixed hash. Eight negative correctness checks confirm rejection or exact-identity mismatch. No browser launched and no instruction counts fabricated.",
+      "frozen_reference_decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c"
+    },
+    "observer_correction_1_validation": {
+      "status": "passed",
+      "browser_processes_started": 0,
+      "synthetic_instruction_counts": false,
+      "original_failed_evidence_unchanged": true,
+      "independent_reference_png_decode": {
+        "report": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json",
+        "report_sha256": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+        "audit_sha256": "80d0ab9160cc8202d14fe1a7eafe44a1f4e7b0a1a652c73b22ceb1074680a433",
+        "content_sha256": "6c52ce8572884e6946320711b788454f4d94240d685692e9633ea786be94633f",
+        "screenshot": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png",
+        "screenshot_file_sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+        "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+        "baseline_binary_sha256": "e74376514dbb0b55828ac26e8a9a355b9adb8b2a3c565f344f141ead793ecd54",
+        "original_observer_status": "invalid",
+        "original_observer_error": "ValueError: Frozen script-free document reported JavaScript diagnostics",
+        "source_counter_backend": "callgrind",
+        "instructions_used_in_acceptance_statistics": false
+      },
+      "actual_reference_content_sha256": "6c52ce8572884e6946320711b788454f4d94240d685692e9633ea786be94633f",
+      "negative_correctness_checks": [
+        "missing_native_diagnostic",
+        "additional_native_diagnostic",
+        "changed_native_diagnostic",
+        "javascript_error",
+        "native_reported_error",
+        "missing_post",
+        "geometry_difference_detected",
+        "complete_raw_audit_difference_detected"
+      ],
+      "body_utf8_bytes": 10944,
+      "body_sha256": "756d2fb4b3529ac5f313de7bdd20d81e5803953160b115b2f5a8660f8af3d8fc",
+      "post_count": 30,
+      "image_count": 34
+    },
+    "observer_correction_2": {
+      "schema_version": 1,
+      "completed_at_utc": "2026-11-02T21:51:19.768325+00:00",
+      "authorization": "Parent explicitly authorized prospective correction 2 before cohort-02: preserve raw native diagnostic multiplicity, canonicalize only repetition of the one exact known message, retain the invalid cohort, and require a supplementary conservative gate using its valid raw unmodified control.",
+      "trigger": {
+        "original_cohort_status": "invalid",
+        "unmodified_baseline_observations": 1,
+        "candidate_observations": 0,
+        "raw_cachegrind_control_instructions": 6842705460,
+        "first_callgrind_native_message_count": 12,
+        "cachegrind_native_message_count": 6,
+        "all_other_raw_audit_fields_and_pixels_exact": true
+      },
+      "interpretation": "Source-proven native draw replay messages accumulate in app.js_messages. The same unmodified binary and frozen input produced differing repetition counts with identical full pixels/content. Only this known message multiplicity is excluded from stable document identity; no exact frame count is inferred.",
+      "changes": [
+        "Require a nonempty diagnostic list consisting only of the exact string Shadow replay: Empty shadow bounds. Reject absent/empty lists, any different message and native document errors.",
+        "Preserve each raw list, occurrence count and raw audit hash in native-diagnostics.json and observation summaries. Compare a singleton diagnostic classification and every other raw audit field exactly.",
+        "Keep the original first-diagnostic report and PNG as the fixed reference for every capture, including each first baseline.",
+        "Pin the invalid cohort-01 report, raw profile, PNG, result, summary, exception, invocation, Valgrind log, source modules, Valgrind runtime and baseline binary. Reparse its count through the unchanged strict Cachegrind parser and revalidate its normalized audit/pixels before use.",
+        "Require font/config, linked/dynamic-library and embedded/runtime-asset identities to match the retained control as well as between final variants.",
+        "Report the normal final-cohort gate and a separate supplementary gate using min(all final baselines,6842705460). Final target_met requires both; the retained control is excluded from normal pairs and medians."
+      ],
+      "measurement_boundary_changed": false,
+      "measurement_driver_changed": false,
+      "counter_parser_changed": false,
+      "fixture_changed": false,
+      "native_browser_audit_changed": false,
+      "cache_and_transport_policies_changed": false,
+      "counter_policy": "Cachegrind only for final cohort and supplementary gate. The original Callgrind diagnostic count remains excluded. No retries, excluded final attempts, replacement observations, fallback or mixed counters.",
+      "original_failed_cohort_evidence_unchanged": true,
+      "original_failed_cohort_evidence": {
+        "Build/reddit-optimization/cachegrind-cohort-01/summary.json": "c9fc5f48781efbe79e77ddefc7efcbf16440c32535e94d3f6db9ec3b4b665dff",
+        "Build/reddit-optimization/cachegrind-cohort-01/exception.txt": "cb0a729517b660984746e4f7e32a5f31cfcf9d606f4c0f1edfe4eda7d4fc9f92",
+        "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json": "b2b57732fc6af3d497b81fdc2ab1bcd46c80750164d89f2a9c7d611b77f95fe3",
+        "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.png": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+        "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/result.json": "ac43f504f37507a6741523328b5220fd9e9bc062dbf0f3f15d2a657e4556c919",
+        "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/invocation.json": "d0071550acc2c2054d2a2b91eed6ecd0ff9f2483524e289a31877837adde684f",
+        "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.cachegrind.576695": "d49be3eef93761a7d8daa94d52276de9bd78bb98a26966d23096dcae7e42bc95",
+        "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.valgrind.576695.log": "1b9c5ba5c9287d9f0b6ebd4588a71d01c06ea8895e20f33962fd3afa0c5b2385"
+      },
+      "observer_changes": {
+        "Build/reddit-optimization/compare.py": {
+          "before_sha256": "2d13461fa51d00ab670cf675d046bf70f646bbef050031bdb228bafd49277378",
+          "after_sha256": "c03a7e335beb767bd50e79d72e9fa75f16c506e7fef1ff01a016aba478a7cd42",
+          "preserved_before": "Build/reddit-optimization/observer-correction-02/compare.py.before",
+          "preserved_after": "Build/reddit-optimization/observer-correction-02/compare.py.after"
+        },
+        "Build/reddit-optimization/capture.py": {
+          "before_sha256": "ba99f95f5a194409fef6c17ff78444d9cf5faaf6b0ce0926e9d1ddb96f3bb86a",
+          "after_sha256": "69ac32ff26108dfa3a00c31807e8951a9bd0db11f1be0306a7d29835a4e6bfea",
+          "preserved_before": "Build/reddit-optimization/observer-correction-02/capture.py.before",
+          "preserved_after": "Build/reddit-optimization/observer-correction-02/capture.py.after"
+        },
+        "Build/reddit-optimization/expected-native-diagnostics.json": {
+          "before_sha256": "2bbbc0660e7af18e461ea1bd4dfcbfd8a04aa94182372c911c14ff02d3e1f033",
+          "after_sha256": "6f7cf17037c4097000d5b3ca699da22a508fca0d03837ba608d25c648ef52bda",
+          "preserved_before": "Build/reddit-optimization/observer-correction-02/expected-native-diagnostics.json.before",
+          "preserved_after": "Build/reddit-optimization/observer-correction-02/expected-native-diagnostics.json.after"
+        }
+      },
+      "patch": "Build/reddit-optimization/observer-correction-02/correction.patch",
+      "patch_sha256": "9b8885b5270c102beedb4f11b3ad2946635890233a564f2a2f3c17b5f9a5c06c",
+      "supplementary_control": "Build/reddit-optimization/supplementary-control.json",
+      "supplementary_control_sha256": "f854bb833f27ee235bfc6a545048b2cc1f5674d183b5afda7405e16d8352aeb7",
+      "expected_native_diagnostics": "Build/reddit-optimization/expected-native-diagnostics.json",
+      "expected_native_diagnostics_sha256": "6f7cf17037c4097000d5b3ca699da22a508fca0d03837ba608d25c648ef52bda",
+      "acceptance_counter_selection": "Build/reddit-optimization/acceptance-counter-selection.json",
+      "acceptance_counter_selection_sha256": "09f94d87a99a639d628cf3146ad6ecf724f9a686275ffb129b9a8a2d2852c02c",
+      "validation": "Build/reddit-optimization/observer-correction-02/validation.json",
+      "validation_sha256": "ed5579ec6e99cf1fbe2caece0786f5009a4380dc8ae1ac879735457a42b3b673",
+      "validation_summary": "Both actual unmodified captures validate to the same canonical content, with raw audits unchanged; eight negative correctness cases reject or differ. Retained control strictly reparses to 6842705460. No browser launched, no candidate measured, and no synthetic instruction counts used.",
+      "final_target_formula": "normal_cohort_gate AND (10 * max(final_candidates) <= 9 * min(final_baselines + [6842705460]))",
+      "frozen_reference_decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c"
+    },
+    "observer_correction_2_validation": {
+      "status": "passed",
+      "browser_processes_started": 0,
+      "candidate_observations": 0,
+      "synthetic_instruction_counts": false,
+      "original_diagnostic_and_failed_cohort_evidence_unchanged": true,
+      "raw_diagnostic_counts": {
+        "first_callgrind": 12,
+        "unmodified_cachegrind_control": 6
+      },
+      "only_different_raw_audit_field": "javascript_diagnostics",
+      "all_other_raw_fields_exact": true,
+      "normalized_documents_exact": true,
+      "raw_inputs_not_mutated": true,
+      "canonical_content_sha256": "6a74fd4daa5161d431788e2c54e45e6a451478702bf8c0554765025a2a5b866c",
+      "reference_pixel_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+      "strictly_reparsed_control": {
+        "report": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json",
+        "profile": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.cachegrind.576695",
+        "instructions": 6842705460,
+        "counter_backend": "cachegrind",
+        "instruction_metric": "cachegrind_guest_instruction_references",
+        "strict_parser": "tools/linux_instruction_counts.py",
+        "strict_reparse_passed": true,
+        "original_cohort_status": "invalid",
+        "candidate_observations": 0,
+        "raw_native_renderer_diagnostic_count": 6,
+        "raw_audit_sha256": "f14e7b397570b7623d1bbde6f1f03ff599361e2b1fc9e8cdedffa0bd4660a8fc",
+        "canonical_content_sha256": "6a74fd4daa5161d431788e2c54e45e6a451478702bf8c0554765025a2a5b866c",
+        "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+        "included_in_normal_pairs_or_medians": false,
+        "included_in_mandatory_supplementary_gate": true
+      },
+      "supplementary_gate_formula": "10 * max(final_candidates) <= 9 * min(final_baselines + [6842705460])",
+      "control_only_candidate_ceiling": 6158434914,
+      "negative_correctness_checks": [
+        "empty_native_diagnostic_list",
+        "missing_native_diagnostic_list",
+        "different_native_diagnostic",
+        "additional_javascript_error",
+        "native_reported_error",
+        "missing_post",
+        "geometry_difference_detected",
+        "other_raw_audit_field_difference_detected"
+      ]
+    },
+    "native_diagnostic_contract": {
+      "schema_version": 2,
+      "created_at_utc": "2026-11-02T21:33:42.889481+00:00",
+      "scope": "Frozen old-reddit-worldnews Linux capture only; prospective exact contract before the Cachegrind acceptance cohort.",
+      "source_channel": "javascript_diagnostics",
+      "classified_as": "native_renderer_diagnostics",
+      "expected_native_reported_error_count": 0,
+      "expected_native_reported_errors": [],
+      "matching_policy": "Require a nonempty list containing only the exact source-proven native message. Preserve the complete raw list and its count; canonicalize only its multiplicity to one occurrence for stable document comparison. Any other text, missing/empty list, unclassified or JavaScript message fails. All other raw native audit fields, native errors and PNGs remain exact.",
+      "classification_provenance": {
+        "repository": "vlang/vox2",
+        "baseline_source_tree": "4f87e708424edf0ed929d130fdc4ef0002fa23b5",
+        "producer": {
+          "path": "main.v",
+          "git_blob_sha1": "3531d98020fbe0363b5333a9b0613b797d5a4bf8",
+          "function": "BrowserApp.draw_portable_shadow",
+          "lines": "4124-4128",
+          "behavior": "A native shadow-rasterization error appends Shadow replay: ${err.msg()} to app.js_messages and returns without drawing."
+        },
+        "condition": {
+          "path": "layout/portable_shadows.v",
+          "git_blob_sha1": "612b1bb9ccc4c509974ffc9412586c1dd10264b5",
+          "function": "rasterize_portable_shadow",
+          "lines": "71-73",
+          "behavior": "Empty shadow bounds is returned when transformed integer bitmap width <= 0 or height <= 0, before color parsing and Skia rasterization."
+        },
+        "audit_mapping": {
+          "path": "main_capture_audit.v",
+          "git_blob_sha1": "af07665830ee0c7c10f2467ec034b183e441ab52",
+          "line": 302,
+          "expression": "javascript_diagnostics: app.js_messages.clone()"
+        },
+        "rationale": "The audit field includes native renderer messages as well as JavaScript messages. Only this exact source-proven native diagnostic is classified; actual JavaScript/unclassified messages and native reported errors remain forbidden."
+      },
+      "reference_capture": {
+        "report": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json",
+        "report_sha256": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+        "audit_sha256": "80d0ab9160cc8202d14fe1a7eafe44a1f4e7b0a1a652c73b22ceb1074680a433",
+        "baseline_binary_sha256": "e74376514dbb0b55828ac26e8a9a355b9adb8b2a3c565f344f141ead793ecd54",
+        "screenshot": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png",
+        "screenshot_file_sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+        "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+        "original_failure_summary": "Build/reddit-optimization/baseline-callgrind-01/summary.json",
+        "original_failure_summary_sha256": "53c68492747ffd9ae69dbc173fa403b9a70dcaff6c4c7a1e886d95f9ab1cc382",
+        "original_failure_exception": "Build/reddit-optimization/baseline-callgrind-01/exception.txt",
+        "original_failure_exception_sha256": "fbaf7b4c0c66f9090e01478cc52d26245da28bf4d67d1d25ea76011d2ca20f9e",
+        "original_status": "invalid",
+        "original_error": "ValueError: Frozen script-free document reported JavaScript diagnostics",
+        "use": "Immutable rendering/content reference only; its diagnostic Callgrind count is excluded from all Cachegrind acceptance statistics."
+      },
+      "authorization": "Parent explicitly authorized this prospective multiplicity-only observer correction before cohort-02, retention of raw counts, and a mandatory supplementary conservative gate using the valid raw unmodified cohort-01 control. Original invalid evidence remains unchanged.",
+      "updated_at_utc": "2026-11-02T21:48:38.635288+00:00",
+      "known_diagnostic": "Shadow replay: Empty shadow bounds",
+      "expected_canonical_diagnostics": [
+        "Shadow replay: Empty shadow bounds"
+      ],
+      "minimum_occurrences": 1,
+      "multiplicity_evidence": {
+        "supplementary_control": "Build/reddit-optimization/supplementary-control.json",
+        "supplementary_control_sha256": "f854bb833f27ee235bfc6a545048b2cc1f5674d183b5afda7405e16d8352aeb7",
+        "first_callgrind_count": 12,
+        "unmodified_cachegrind_control_count": 6,
+        "all_other_raw_audit_fields_identical": true,
+        "pixels_identical": true,
+        "candidate_observations_before_correction": 0,
+        "interpretation": "The message is emitted by native draw replay; its repetition count is unsuitable as document identity. Actual frame count was not recorded."
+      }
+    }
+  },
+  "independent_acceptance_audit": {
+    "schema_version": 1,
+    "audited_at_utc": "2026-11-02T22:03:37.341967+00:00",
+    "status": "passed",
+    "new_browser_processes_started": 0,
+    "synthetic_instruction_counts": false,
+    "method": "Independent raw Ir row/footer/log equality, PNG byte comparison after RGBA decoding, full native audit comparison with only the prospectively documented native-message multiplicity canonicalized, Decimal statistics and integer gates, and a fresh SHA256 pass over every pinned input. The observer comparison implementation was not imported.",
+    "summary": {
+      "path": "Build/reddit-optimization/cachegrind-cohort-02/summary.json",
+      "sha256": "7ff1fe7df9cb8d0fb222a07374468345df7fa19a0ea5811d154216e1dc7ba506"
+    },
+    "instruction_metric": "cachegrind_guest_instruction_references",
+    "hardware_retired": false,
+    "endpoint": "program exec through process exit after native document PNG capture and audit",
+    "scope_note": "Main process and instrumented threads/libraries; excludes children, kernel, GPU and Xvfb",
+    "observations": [
+      {
+        "execution_order": 1,
+        "pair": 1,
+        "variant": "baseline",
+        "instructions": 7181886789,
+        "flat_cost_rows": 22208,
+        "flat_cost_row_sum": 7181886789,
+        "final_footer_ir": 7181886789,
+        "valgrind_log_ir": 7181886789,
+        "counter_equality": true,
+        "profile_events": [
+          "Ir"
+        ],
+        "root_pid": 589444,
+        "driver_exit": 0,
+        "browser_exit": 0,
+        "root_final_exit_sample": true,
+        "png_rgba_exact": true,
+        "all_other_raw_audit_fields_exact": true,
+        "raw_native_renderer_diagnostic_count": 9,
+        "raw_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+        "runtime_library_pins_exact": true,
+        "runtime_library_count": 89,
+        "files": {
+          "report": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.json",
+            "sha256": "bde709eed1f53e4042e6ce976b32519b4f76c67ba30c5489fbafe2a1c96ddc7b",
+            "bytes": 94852
+          },
+          "raw_profile": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.cachegrind.589444",
+            "sha256": "57dccabfe1843715e0075ed79396c1ac2254820dcd93204077952531e3e06186",
+            "bytes": 922143
+          },
+          "valgrind_log": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.valgrind.589444.log",
+            "sha256": "954e1ea0919a3e8c317ffe8bda21b9862820684a1157a21bd71908f2a69a7e93",
+            "bytes": 906
+          },
+          "png": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.png",
+            "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+            "bytes": 232293
+          }
+        }
+      },
+      {
+        "execution_order": 2,
+        "pair": 1,
+        "variant": "candidate",
+        "instructions": 5794954378,
+        "flat_cost_rows": 22241,
+        "flat_cost_row_sum": 5794954378,
+        "final_footer_ir": 5794954378,
+        "valgrind_log_ir": 5794954378,
+        "counter_equality": true,
+        "profile_events": [
+          "Ir"
+        ],
+        "root_pid": 591597,
+        "driver_exit": 0,
+        "browser_exit": 0,
+        "root_final_exit_sample": true,
+        "png_rgba_exact": true,
+        "all_other_raw_audit_fields_exact": true,
+        "raw_native_renderer_diagnostic_count": 9,
+        "raw_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+        "runtime_library_pins_exact": true,
+        "runtime_library_count": 89,
+        "files": {
+          "report": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.json",
+            "sha256": "695a2a70393c6e197795e5930d5cfff453fcd0260d2f6bab3de229c66e539b18",
+            "bytes": 94860
+          },
+          "raw_profile": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.cachegrind.591597",
+            "sha256": "bea8de5828ac4b6d8f2e49dea7d590e88d070038294246b079cd7dacc250605b",
+            "bytes": 921333
+          },
+          "valgrind_log": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.valgrind.591597.log",
+            "sha256": "731f50424eea7eea60aec2fa29be51cdcc569f6b1c034d279110e0c02354ea54",
+            "bytes": 908
+          },
+          "png": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.png",
+            "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+            "bytes": 232293
+          }
+        }
+      },
+      {
+        "execution_order": 3,
+        "pair": 2,
+        "variant": "candidate",
+        "instructions": 5938311142,
+        "flat_cost_rows": 22252,
+        "flat_cost_row_sum": 5938311142,
+        "final_footer_ir": 5938311142,
+        "valgrind_log_ir": 5938311142,
+        "counter_equality": true,
+        "profile_events": [
+          "Ir"
+        ],
+        "root_pid": 593479,
+        "driver_exit": 0,
+        "browser_exit": 0,
+        "root_final_exit_sample": true,
+        "png_rgba_exact": true,
+        "all_other_raw_audit_fields_exact": true,
+        "raw_native_renderer_diagnostic_count": 6,
+        "raw_audit_sha256": "f14e7b397570b7623d1bbde6f1f03ff599361e2b1fc9e8cdedffa0bd4660a8fc",
+        "runtime_library_pins_exact": true,
+        "runtime_library_count": 89,
+        "files": {
+          "report": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.json",
+            "sha256": "41bc8e072f9953f3110caa94e40adaf7a35418faf40858698f33b79025c0f2ec",
+            "bytes": 94729
+          },
+          "raw_profile": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.cachegrind.593479",
+            "sha256": "fd3271105641984b31f6f82325844873a9251883d0c7f814ac3f4e1ef08347dc",
+            "bytes": 921544
+          },
+          "valgrind_log": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.valgrind.593479.log",
+            "sha256": "ff7dc814593db9b56c7a11b2a45da073fe2f5687d647240684fc1bce3506bc31",
+            "bytes": 908
+          },
+          "png": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.png",
+            "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+            "bytes": 232293
+          }
+        }
+      },
+      {
+        "execution_order": 4,
+        "pair": 2,
+        "variant": "baseline",
+        "instructions": 7181198185,
+        "flat_cost_rows": 22204,
+        "flat_cost_row_sum": 7181198185,
+        "final_footer_ir": 7181198185,
+        "valgrind_log_ir": 7181198185,
+        "counter_equality": true,
+        "profile_events": [
+          "Ir"
+        ],
+        "root_pid": 594951,
+        "driver_exit": 0,
+        "browser_exit": 0,
+        "root_final_exit_sample": true,
+        "png_rgba_exact": true,
+        "all_other_raw_audit_fields_exact": true,
+        "raw_native_renderer_diagnostic_count": 9,
+        "raw_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+        "runtime_library_pins_exact": true,
+        "runtime_library_count": 89,
+        "files": {
+          "report": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.json",
+            "sha256": "0f2d7f2f8fdc0ae19d171e96f72723f14b6a144e318625fcb626100f824a57d0",
+            "bytes": 94850
+          },
+          "raw_profile": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.cachegrind.594951",
+            "sha256": "1eea8c6b1ea13c63c078c5e75905053444a3c6730344b978dbd4faee2e8d32f4",
+            "bytes": 922038
+          },
+          "valgrind_log": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.valgrind.594951.log",
+            "sha256": "9209f0e4d481824dae38d92647b62adeea70e1cf7fadbdb30eec70eac825d564",
+            "bytes": 906
+          },
+          "png": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.png",
+            "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+            "bytes": 232293
+          }
+        }
+      },
+      {
+        "execution_order": 5,
+        "pair": 3,
+        "variant": "baseline",
+        "instructions": 6840551361,
+        "flat_cost_rows": 22194,
+        "flat_cost_row_sum": 6840551361,
+        "final_footer_ir": 6840551361,
+        "valgrind_log_ir": 6840551361,
+        "counter_equality": true,
+        "profile_events": [
+          "Ir"
+        ],
+        "root_pid": 596599,
+        "driver_exit": 0,
+        "browser_exit": 0,
+        "root_final_exit_sample": true,
+        "png_rgba_exact": true,
+        "all_other_raw_audit_fields_exact": true,
+        "raw_native_renderer_diagnostic_count": 6,
+        "raw_audit_sha256": "f14e7b397570b7623d1bbde6f1f03ff599361e2b1fc9e8cdedffa0bd4660a8fc",
+        "runtime_library_pins_exact": true,
+        "runtime_library_count": 89,
+        "files": {
+          "report": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.json",
+            "sha256": "704964a68656e6f8c979c815c06b96fbfa6dded129de3261f29858f911ab15af",
+            "bytes": 94719
+          },
+          "raw_profile": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.cachegrind.596599",
+            "sha256": "dd6d75fcebaa4b1d4052a70be7221885d77bdb285ba97bb2df1d9db8a54fee9a",
+            "bytes": 921850
+          },
+          "valgrind_log": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.valgrind.596599.log",
+            "sha256": "01fb207be00e5144a39cbc0877146b384a1440bc804085cc2a4a0a4de06016e9",
+            "bytes": 906
+          },
+          "png": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.png",
+            "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+            "bytes": 232293
+          }
+        }
+      },
+      {
+        "execution_order": 6,
+        "pair": 3,
+        "variant": "candidate",
+        "instructions": 5793881588,
+        "flat_cost_rows": 22257,
+        "flat_cost_row_sum": 5793881588,
+        "final_footer_ir": 5793881588,
+        "valgrind_log_ir": 5793881588,
+        "counter_equality": true,
+        "profile_events": [
+          "Ir"
+        ],
+        "root_pid": 597321,
+        "driver_exit": 0,
+        "browser_exit": 0,
+        "root_final_exit_sample": true,
+        "png_rgba_exact": true,
+        "all_other_raw_audit_fields_exact": true,
+        "raw_native_renderer_diagnostic_count": 9,
+        "raw_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+        "runtime_library_pins_exact": true,
+        "runtime_library_count": 89,
+        "files": {
+          "report": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.json",
+            "sha256": "d95132b7ec8174a54844e74f2ce612e1b34d2247089e88c19d43a1c116946e94",
+            "bytes": 94862
+          },
+          "raw_profile": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.cachegrind.597321",
+            "sha256": "a1d5a6ba3b9f2d43ee2832d507b7a5823ff5818951ebda02793aad82b59058fd",
+            "bytes": 921385
+          },
+          "valgrind_log": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.valgrind.597321.log",
+            "sha256": "cd8bb7fe807158c90fa9ce5939b2d59bd5db18426f15b8d0a19da56e977dee71",
+            "bytes": 908
+          },
+          "png": {
+            "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.png",
+            "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+            "bytes": 232293
+          }
+        }
+      }
+    ],
+    "reference": {
+      "report": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json",
+      "report_sha256": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+      "png": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png",
+      "png_file_sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+      "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+      "dimensions": [
+        1280,
+        900
+      ],
+      "raw_diagnostic_count": 12
+    },
+    "diagnostic_policy": {
+      "only_known_message": "Shadow replay: Empty shadow bounds",
+      "positive_list_required": true,
+      "only_repetition_count_canonicalized": true,
+      "all_other_raw_audit_fields_exact": true,
+      "raw_lists_retained_in_reports": true,
+      "native_reported_errors": 0
+    },
+    "pin_verification": {
+      "verified": true,
+      "distinct_files": 477,
+      "manifest_canonical_sha256": "c79017dbbf2738062c1fd59967211ae5701fc5d53ed4e7c4d8fd1c14c2b57cdf",
+      "font_files": 214,
+      "fontconfig_files": 49,
+      "source": "Complete union of final-summary fixture, observer, runtime assets, fonts/configuration, reference, supplementary control, Valgrind, binary and linked/dynamic-library pins; absolute paths remain in the original summary."
+    },
+    "statistics": {
+      "baseline_counts": [
+        7181886789,
+        7181198185,
+        6840551361
+      ],
+      "candidate_counts": [
+        5794954378,
+        5938311142,
+        5793881588
+      ],
+      "baseline_median": 7181198185,
+      "candidate_median": 5794954378,
+      "paired_savings": [
+        1386932411,
+        1242887043,
+        1046669773
+      ],
+      "paired_reduction_percent": [
+        "19.311532634074218348138876517731752844537911860420",
+        "17.307516252595944753194414171428413237699831006683",
+        "15.300956279158620880648044592614820365501236384913"
+      ],
+      "median_reduction_percent": "19.303795429230310261935766364036087384489862815282",
+      "median_paired_reduction_percent": "17.307516252595944753194414171428413237699831006683",
+      "conservative_reduction_percent": "13.189583286282118743381217922266836408598087565766",
+      "worst_candidate_over_best_baseline": "0.86810416713717881256618782077733163591401912434234"
+    },
+    "normal_gate": {
+      "expression": "10 * max(candidate) <= 9 * min(baseline)",
+      "left_integer": 59383111420,
+      "right_integer": 61564962249,
+      "passed": true
+    },
+    "supplementary_gate": {
+      "retained_control_instructions": 6842705460,
+      "retained_control_report": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json",
+      "original_cohort_remains_invalid": true,
+      "retained_control_excluded_from_pairs_and_medians": true,
+      "lowest_control": 6840551361,
+      "expression": "10 * max(final_candidates) <= 9 * min(final_baselines + [6842705460])",
+      "left_integer": 59383111420,
+      "right_integer": 61564962249,
+      "conservative_reduction_percent": "13.189583286282118743381217922266836408598087565766",
+      "passed": true
+    },
+    "target_met": true,
+    "frozen_inputs_modified": false
+  },
+  "durable_raw_evidence": {
+    "archive": {
+      "path": "docs/benchmark-results/old-reddit-linux-typeface-cache-2026-11-02-evidence.tar.gz",
+      "sha256": "ce6fa293d91abd2710d23fd9aad2ac9a6f018ee842dff4250b1b7c284b1fe702",
+      "bytes": 3642508
+    },
+    "manifest": {
+      "path": "docs/benchmark-results/old-reddit-linux-typeface-cache-2026-11-02-evidence-manifest.json",
+      "sha256": "b2e4607ef8550cc96841051883d596105e81eb0ba53980fad5989e0eb1c5b182",
+      "bytes": 38720
+    }
+  },
+  "selected_v_regression_validation": {
+    "passed": true,
+    "groups": [
+      {
+        "receipt_directory": "Build/reddit-optimization/skia_focused-lchh4x9f",
+        "attempts": [
+          {
+            "group": "skia_focused",
+            "gc": "boehm",
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "passed": true,
+            "binary_sha256": "efdd4164c61fb5e0114c9fd29d6e303bc05ad3adbec3920f957953d4e82c85e2",
+            "registered_test_count": 8,
+            "known_linux_early_return_count": 1,
+            "runtime_environment": {
+              "LADYBIRD_SOURCE_ROOT": "Build/reddit-optimization/test-font-resources"
+            },
+            "changed_inputs": [],
+            "compile_guard": {
+              "path": "Build/reddit-optimization/skia_focused-lchh4x9f/boehm/compile.guard.json",
+              "sha256": "e87122bd47afdd8d75263c51cb4a7e7deac3116143910c34f2e26e45643e0292",
+              "elapsed_seconds": 3.465180204002536,
+              "sampled_process_tree_peak_rss_bytes": 391483392
+            },
+            "runtime_guard": {
+              "path": "Build/reddit-optimization/skia_focused-lchh4x9f/boehm/runtime.guard.json",
+              "sha256": "b1cd24d30bd1fe375f4e96a689818f77eb92a608ae1b0a11db624a277a23ffdc",
+              "elapsed_seconds": 0.11698386099305935,
+              "sampled_process_tree_peak_rss_bytes": 3522560
+            }
+          },
+          {
+            "group": "skia_focused",
+            "gc": "none",
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "passed": true,
+            "binary_sha256": "a3eb8033703b14f6efe76e045892049001dc516137760b8be1bf8ae319625751",
+            "registered_test_count": 8,
+            "known_linux_early_return_count": 1,
+            "runtime_environment": {
+              "LADYBIRD_SOURCE_ROOT": "Build/reddit-optimization/test-font-resources"
+            },
+            "changed_inputs": [],
+            "compile_guard": {
+              "path": "Build/reddit-optimization/skia_focused-lchh4x9f/none/compile.guard.json",
+              "sha256": "6c1861bfe95914f46e8f5a3280e9526b12dc675fd8c9c787b6bf649d4ab30efa",
+              "elapsed_seconds": 3.583430762999342,
+              "sampled_process_tree_peak_rss_bytes": 385327104
+            },
+            "runtime_guard": {
+              "path": "Build/reddit-optimization/skia_focused-lchh4x9f/none/runtime.guard.json",
+              "sha256": "02d5186fcf52e7f3beee204dd8284f14d9ff88fa8fb36ac2075058d208dbecb2",
+              "elapsed_seconds": 0.11322920699603856,
+              "sampled_process_tree_peak_rss_bytes": 3510272
+            }
+          }
+        ]
+      },
+      {
+        "receipt_directory": "Build/reddit-optimization/layout_integration-e8o1opqr",
+        "attempts": [
+          {
+            "group": "layout_integration",
+            "gc": "boehm",
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "passed": true,
+            "binary_sha256": "ed40ce31fe6f81e436e5e682a75c12658614d86db51763bda9e1d380e3936384",
+            "registered_test_count": 2,
+            "known_linux_early_return_count": 0,
+            "runtime_environment": {
+              "LADYBIRD_SOURCE_ROOT": "Build/reddit-optimization/test-font-resources"
+            },
+            "changed_inputs": [],
+            "compile_guard": {
+              "path": "Build/reddit-optimization/layout_integration-e8o1opqr/boehm/compile.guard.json",
+              "sha256": "9548e257c5899dcf1b26e45ca97c043617df6fccdd514266704ef8c410e66f0f",
+              "elapsed_seconds": 99.04633191299217,
+              "sampled_process_tree_peak_rss_bytes": 6868844544
+            },
+            "runtime_guard": {
+              "path": "Build/reddit-optimization/layout_integration-e8o1opqr/boehm/runtime.guard.json",
+              "sha256": "c2c98b0c3f2b44cbfc8cad4076099fd074281085c0cebddeb58cae920871e371",
+              "elapsed_seconds": 0.11554509200504981,
+              "sampled_process_tree_peak_rss_bytes": 1884160
+            }
+          },
+          {
+            "group": "layout_integration",
+            "gc": "none",
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "passed": true,
+            "binary_sha256": "ec440d516e79bdf73f1f5b7f2cae0ac9c7f49414425b284574f0f2a8b8c2749c",
+            "registered_test_count": 2,
+            "known_linux_early_return_count": 0,
+            "runtime_environment": {
+              "LADYBIRD_SOURCE_ROOT": "Build/reddit-optimization/test-font-resources"
+            },
+            "changed_inputs": [],
+            "compile_guard": {
+              "path": "Build/reddit-optimization/layout_integration-e8o1opqr/none/compile.guard.json",
+              "sha256": "9773024c9313eeae532600cec30fc9b790f097ec5d15dc0ce24b4c85ad003648",
+              "elapsed_seconds": 91.99103682600253,
+              "sampled_process_tree_peak_rss_bytes": 6899961856
+            },
+            "runtime_guard": {
+              "path": "Build/reddit-optimization/layout_integration-e8o1opqr/none/runtime.guard.json",
+              "sha256": "fc3744e6fb6e0cb230f765e2e29976f094ad077e3feb76ccf315f62afb5cc931",
+              "elapsed_seconds": 0.11960550599906128,
+              "sampled_process_tree_peak_rss_bytes": 1921024
+            }
+          }
+        ]
+      },
+      {
+        "receipt_directory": "Build/reddit-optimization/platform_font_integration-047k0pxu",
+        "attempts": [
+          {
+            "group": "platform_font_integration",
+            "gc": "boehm",
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "passed": true,
+            "binary_sha256": "d8dc8f8ccd61decb8601e1bca1e1c457719a6f77f5493b4d6aebf0ce0c5144d6",
+            "registered_test_count": 19,
+            "known_linux_early_return_count": 0,
+            "runtime_environment": {
+              "LADYBIRD_SOURCE_ROOT": "Build/reddit-optimization/test-font-resources"
+            },
+            "changed_inputs": [],
+            "compile_guard": {
+              "path": "Build/reddit-optimization/platform_font_integration-047k0pxu/boehm/compile.guard.json",
+              "sha256": "dc9a548f965b426472ae3d48175eb335dd13eba671c700fa65ec3aff40de0fb7",
+              "elapsed_seconds": 4.484360151007422,
+              "sampled_process_tree_peak_rss_bytes": 389144576
+            },
+            "runtime_guard": {
+              "path": "Build/reddit-optimization/platform_font_integration-047k0pxu/boehm/runtime.guard.json",
+              "sha256": "ef666e7f0481f694690db84c3a0d44f9b4ae6e4ac6d680607d09d3e5ff09a893",
+              "elapsed_seconds": 0.3296560440066969,
+              "sampled_process_tree_peak_rss_bytes": 13967360
+            }
+          },
+          {
+            "group": "platform_font_integration",
+            "gc": "none",
+            "compile_exit": 0,
+            "runtime_exit": 0,
+            "passed": true,
+            "binary_sha256": "6be06668088cdc0d3ee51e14fc8f03f255294bc9c92a09772a632a3029d77211",
+            "registered_test_count": 19,
+            "known_linux_early_return_count": 0,
+            "runtime_environment": {
+              "LADYBIRD_SOURCE_ROOT": "Build/reddit-optimization/test-font-resources"
+            },
+            "changed_inputs": [],
+            "compile_guard": {
+              "path": "Build/reddit-optimization/platform_font_integration-047k0pxu/none/compile.guard.json",
+              "sha256": "de1420659c117e7cdc9fccf94476d6c08d36583dd5a0a3a75f1832863e533076",
+              "elapsed_seconds": 4.291741995999473,
+              "sampled_process_tree_peak_rss_bytes": 378232832
+            },
+            "runtime_guard": {
+              "path": "Build/reddit-optimization/platform_font_integration-047k0pxu/none/runtime.guard.json",
+              "sha256": "5fa68c57403f84107a5abc718df95686d5a039f984f6d636e1c9bffd61df54b1",
+              "elapsed_seconds": 0.22415096600889228,
+              "sampled_process_tree_peak_rss_bytes": 24293376
+            }
+          }
+        ]
+      }
+    ],
+    "initial_setup_attempt": {
+      "path": "skia_focused-nprk7yxu",
+      "status": "Failed before compilation: restricted /proc and invalid supplemental file-list syntax; corrected on retry"
+    },
+    "compile_policy": "Sequential groups and GC modes; explicit new compiler, V 10G limit, 12 GiB process-tree guard",
+    "runtime_policy": "3 GiB guard; isolated LADYBIRD_SOURCE_ROOT only in runtime children",
+    "native_artifact_mutation_during_tests": false,
+    "registered_test_functions_across_modes": 58,
+    "known_platform_early_returns_across_modes": 2,
+    "active_test_functions_across_modes": 56,
+    "distinct_registered_test_functions": 29,
+    "distinct_active_linux_test_functions": 28
+  },
+  "regression_scope": "Selected native Skia, portable-shadow layout and platform-font checks; this is not a claim that every repository test ran.",
+  "evidence_sha256": {
+    "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.json": "bde709eed1f53e4042e6ce976b32519b4f76c67ba30c5489fbafe2a1c96ddc7b",
+    "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.json": "695a2a70393c6e197795e5930d5cfff453fcd0260d2f6bab3de229c66e539b18",
+    "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.json": "41bc8e072f9953f3110caa94e40adaf7a35418faf40858698f33b79025c0f2ec",
+    "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.json": "0f2d7f2f8fdc0ae19d171e96f72723f14b6a144e318625fcb626100f824a57d0",
+    "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.json": "704964a68656e6f8c979c815c06b96fbfa6dded129de3261f29858f911ab15af",
+    "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.json": "d95132b7ec8174a54844e74f2ce612e1b34d2247089e88c19d43a1c116946e94",
+    "Build/reddit-optimization/cachegrind-cohort-02/summary.json": "7ff1fe7df9cb8d0fb222a07374468345df7fa19a0ea5811d154216e1dc7ba506",
+    "Build/reddit-optimization/cachegrind-cohort-02.guard.json": "85be28efce253a0b3f7213e3bec2dc95a217e158cb82b1862084e8b102c323d6",
+    "Build/reddit-optimization/make_results_ledger.py": "1703d4d559061eec6127478eee1237fcb76ab04ba1ced2446b85742c91065872",
+    "Build/reddit-optimization/environment.json": "f412efcc874eaff3c17aa090d29aeca2f6ca2a9cab96c422ba8c182201f08c5b",
+    "Build/reddit-optimization/relink-variants.json": "25c1222920ad8b1844c44fd4564e848891b747afbd7f11d3acf26dca5d6fcca5",
+    "Build/reddit-optimization/supplementary-control.json": "f854bb833f27ee235bfc6a545048b2cc1f5674d183b5afda7405e16d8352aeb7",
+    "Build/reddit-optimization/observer-correction-01/provenance.json": "12a8516fbfdd3bef77ddc9f60f6a8af9b506385d4434994be40fb29f9007ea40",
+    "Build/reddit-optimization/observer-correction-02/provenance.json": "e43a8739b2de34248e21d57b61f4127b87a33cc58aad5e3dc36edcc98483f7fc",
+    "Build/reddit-optimization/baseline-build-summary.json": "3e2ee732c47f23b0a0adfbfc8988eb2bb093a1880c7958e36bd5e25b0ba915e4",
+    "Build/reddit-optimization/implementation-files.json": "3626e8744f47d437b905ec033e580bdb2a390f9aa8bfb499fac71fa70ac359ce",
+    "Build/reddit-optimization/shadow-typeface-proposal/findings.json": "edf9dcfc8cb9e0639409dc4e4c549ecded3aba802a2e95d736ae312fa0fd2588",
+    "Build/reddit-optimization/shadow-typeface-proposal/native-test-results.json": "94af81141dae59f1cc8a17044c0239cc95b696d0c810043628ff69a82fd62b1c",
+    "Build/reddit-optimization/shadow-native-adapter-02/result.json": "8d3a72038461ec827d17c5f9f741c922cdc4b6ad8e956ca4c9daf5abff88ad7b",
+    "Build/reddit-optimization/shadow-native-adapter-02/inputs.json": "210d27fd1f57f31018305244d9c120e74e93f3521bbc268cf8dac67b19100ae1",
+    "Build/reddit-optimization/observer-correction-01/validation.json": "d21c2b1195402e9e4910a8fa2bfd8c0775d3fb7606dae177019f2ef2201c3a62",
+    "Build/reddit-optimization/observer-correction-02/validation.json": "ed5579ec6e99cf1fbe2caece0786f5009a4380dc8ae1ac879735457a42b3b673",
+    "Build/reddit-optimization/expected-native-diagnostics.json": "6f7cf17037c4097000d5b3ca699da22a508fca0d03837ba608d25c648ef52bda",
+    "Build/reddit-optimization/independent-acceptance-audit.json": "ff0a3ac1680d2ed28b1962cc8f8dca3f1ae914080240f3e689834bf8c010d8f3",
+    "Build/reddit-optimization/font-validation-summary.json": "61d359d09643a4bbf3b30d3c0a4c728897a99ddf143e327949685d00c5f988b7"
+  },
+  "qualification": "This exports receipt data; it does not replace raw profiles, screenshots, complete audits or the strict measurement parser. Broad regression results must be recorded separately."
+}

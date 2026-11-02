@@ -1,0 +1,370 @@
+{
+  "schema_version": 1,
+  "audited_at_utc": "2026-11-02T22:03:37.341967+00:00",
+  "status": "passed",
+  "new_browser_processes_started": 0,
+  "synthetic_instruction_counts": false,
+  "method": "Independent raw Ir row/footer/log equality, PNG byte comparison after RGBA decoding, full native audit comparison with only the prospectively documented native-message multiplicity canonicalized, Decimal statistics and integer gates, and a fresh SHA256 pass over every pinned input. The observer comparison implementation was not imported.",
+  "summary": {
+    "path": "Build/reddit-optimization/cachegrind-cohort-02/summary.json",
+    "sha256": "7ff1fe7df9cb8d0fb222a07374468345df7fa19a0ea5811d154216e1dc7ba506"
+  },
+  "instruction_metric": "cachegrind_guest_instruction_references",
+  "hardware_retired": false,
+  "endpoint": "program exec through process exit after native document PNG capture and audit",
+  "scope_note": "Main process and instrumented threads/libraries; excludes children, kernel, GPU and Xvfb",
+  "observations": [
+    {
+      "execution_order": 1,
+      "pair": 1,
+      "variant": "baseline",
+      "instructions": 7181886789,
+      "flat_cost_rows": 22208,
+      "flat_cost_row_sum": 7181886789,
+      "final_footer_ir": 7181886789,
+      "valgrind_log_ir": 7181886789,
+      "counter_equality": true,
+      "profile_events": [
+        "Ir"
+      ],
+      "root_pid": 589444,
+      "driver_exit": 0,
+      "browser_exit": 0,
+      "root_final_exit_sample": true,
+      "png_rgba_exact": true,
+      "all_other_raw_audit_fields_exact": true,
+      "raw_native_renderer_diagnostic_count": 9,
+      "raw_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+      "runtime_library_pins_exact": true,
+      "runtime_library_count": 89,
+      "files": {
+        "report": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.json",
+          "sha256": "bde709eed1f53e4042e6ce976b32519b4f76c67ba30c5489fbafe2a1c96ddc7b",
+          "bytes": 94852
+        },
+        "raw_profile": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.cachegrind.589444",
+          "sha256": "57dccabfe1843715e0075ed79396c1ac2254820dcd93204077952531e3e06186",
+          "bytes": 922143
+        },
+        "valgrind_log": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.valgrind.589444.log",
+          "sha256": "954e1ea0919a3e8c317ffe8bda21b9862820684a1157a21bd71908f2a69a7e93",
+          "bytes": 906
+        },
+        "png": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-baseline/capture.run-1.png",
+          "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+          "bytes": 232293
+        }
+      }
+    },
+    {
+      "execution_order": 2,
+      "pair": 1,
+      "variant": "candidate",
+      "instructions": 5794954378,
+      "flat_cost_rows": 22241,
+      "flat_cost_row_sum": 5794954378,
+      "final_footer_ir": 5794954378,
+      "valgrind_log_ir": 5794954378,
+      "counter_equality": true,
+      "profile_events": [
+        "Ir"
+      ],
+      "root_pid": 591597,
+      "driver_exit": 0,
+      "browser_exit": 0,
+      "root_final_exit_sample": true,
+      "png_rgba_exact": true,
+      "all_other_raw_audit_fields_exact": true,
+      "raw_native_renderer_diagnostic_count": 9,
+      "raw_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+      "runtime_library_pins_exact": true,
+      "runtime_library_count": 89,
+      "files": {
+        "report": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.json",
+          "sha256": "695a2a70393c6e197795e5930d5cfff453fcd0260d2f6bab3de229c66e539b18",
+          "bytes": 94860
+        },
+        "raw_profile": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.cachegrind.591597",
+          "sha256": "bea8de5828ac4b6d8f2e49dea7d590e88d070038294246b079cd7dacc250605b",
+          "bytes": 921333
+        },
+        "valgrind_log": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.valgrind.591597.log",
+          "sha256": "731f50424eea7eea60aec2fa29be51cdcc569f6b1c034d279110e0c02354ea54",
+          "bytes": 908
+        },
+        "png": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-01-candidate/capture.run-1.png",
+          "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+          "bytes": 232293
+        }
+      }
+    },
+    {
+      "execution_order": 3,
+      "pair": 2,
+      "variant": "candidate",
+      "instructions": 5938311142,
+      "flat_cost_rows": 22252,
+      "flat_cost_row_sum": 5938311142,
+      "final_footer_ir": 5938311142,
+      "valgrind_log_ir": 5938311142,
+      "counter_equality": true,
+      "profile_events": [
+        "Ir"
+      ],
+      "root_pid": 593479,
+      "driver_exit": 0,
+      "browser_exit": 0,
+      "root_final_exit_sample": true,
+      "png_rgba_exact": true,
+      "all_other_raw_audit_fields_exact": true,
+      "raw_native_renderer_diagnostic_count": 6,
+      "raw_audit_sha256": "f14e7b397570b7623d1bbde6f1f03ff599361e2b1fc9e8cdedffa0bd4660a8fc",
+      "runtime_library_pins_exact": true,
+      "runtime_library_count": 89,
+      "files": {
+        "report": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.json",
+          "sha256": "41bc8e072f9953f3110caa94e40adaf7a35418faf40858698f33b79025c0f2ec",
+          "bytes": 94729
+        },
+        "raw_profile": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.cachegrind.593479",
+          "sha256": "fd3271105641984b31f6f82325844873a9251883d0c7f814ac3f4e1ef08347dc",
+          "bytes": 921544
+        },
+        "valgrind_log": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.valgrind.593479.log",
+          "sha256": "ff7dc814593db9b56c7a11b2a45da073fe2f5687d647240684fc1bce3506bc31",
+          "bytes": 908
+        },
+        "png": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-candidate/capture.run-1.png",
+          "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+          "bytes": 232293
+        }
+      }
+    },
+    {
+      "execution_order": 4,
+      "pair": 2,
+      "variant": "baseline",
+      "instructions": 7181198185,
+      "flat_cost_rows": 22204,
+      "flat_cost_row_sum": 7181198185,
+      "final_footer_ir": 7181198185,
+      "valgrind_log_ir": 7181198185,
+      "counter_equality": true,
+      "profile_events": [
+        "Ir"
+      ],
+      "root_pid": 594951,
+      "driver_exit": 0,
+      "browser_exit": 0,
+      "root_final_exit_sample": true,
+      "png_rgba_exact": true,
+      "all_other_raw_audit_fields_exact": true,
+      "raw_native_renderer_diagnostic_count": 9,
+      "raw_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+      "runtime_library_pins_exact": true,
+      "runtime_library_count": 89,
+      "files": {
+        "report": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.json",
+          "sha256": "0f2d7f2f8fdc0ae19d171e96f72723f14b6a144e318625fcb626100f824a57d0",
+          "bytes": 94850
+        },
+        "raw_profile": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.cachegrind.594951",
+          "sha256": "1eea8c6b1ea13c63c078c5e75905053444a3c6730344b978dbd4faee2e8d32f4",
+          "bytes": 922038
+        },
+        "valgrind_log": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.valgrind.594951.log",
+          "sha256": "9209f0e4d481824dae38d92647b62adeea70e1cf7fadbdb30eec70eac825d564",
+          "bytes": 906
+        },
+        "png": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-02-baseline/capture.run-1.png",
+          "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+          "bytes": 232293
+        }
+      }
+    },
+    {
+      "execution_order": 5,
+      "pair": 3,
+      "variant": "baseline",
+      "instructions": 6840551361,
+      "flat_cost_rows": 22194,
+      "flat_cost_row_sum": 6840551361,
+      "final_footer_ir": 6840551361,
+      "valgrind_log_ir": 6840551361,
+      "counter_equality": true,
+      "profile_events": [
+        "Ir"
+      ],
+      "root_pid": 596599,
+      "driver_exit": 0,
+      "browser_exit": 0,
+      "root_final_exit_sample": true,
+      "png_rgba_exact": true,
+      "all_other_raw_audit_fields_exact": true,
+      "raw_native_renderer_diagnostic_count": 6,
+      "raw_audit_sha256": "f14e7b397570b7623d1bbde6f1f03ff599361e2b1fc9e8cdedffa0bd4660a8fc",
+      "runtime_library_pins_exact": true,
+      "runtime_library_count": 89,
+      "files": {
+        "report": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.json",
+          "sha256": "704964a68656e6f8c979c815c06b96fbfa6dded129de3261f29858f911ab15af",
+          "bytes": 94719
+        },
+        "raw_profile": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.cachegrind.596599",
+          "sha256": "dd6d75fcebaa4b1d4052a70be7221885d77bdb285ba97bb2df1d9db8a54fee9a",
+          "bytes": 921850
+        },
+        "valgrind_log": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.valgrind.596599.log",
+          "sha256": "01fb207be00e5144a39cbc0877146b384a1440bc804085cc2a4a0a4de06016e9",
+          "bytes": 906
+        },
+        "png": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-baseline/capture.run-1.png",
+          "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+          "bytes": 232293
+        }
+      }
+    },
+    {
+      "execution_order": 6,
+      "pair": 3,
+      "variant": "candidate",
+      "instructions": 5793881588,
+      "flat_cost_rows": 22257,
+      "flat_cost_row_sum": 5793881588,
+      "final_footer_ir": 5793881588,
+      "valgrind_log_ir": 5793881588,
+      "counter_equality": true,
+      "profile_events": [
+        "Ir"
+      ],
+      "root_pid": 597321,
+      "driver_exit": 0,
+      "browser_exit": 0,
+      "root_final_exit_sample": true,
+      "png_rgba_exact": true,
+      "all_other_raw_audit_fields_exact": true,
+      "raw_native_renderer_diagnostic_count": 9,
+      "raw_audit_sha256": "217b89e1a1beb8446c8acc5fe365b6b3ac37eb4bcaa6708ab604005b03746bc9",
+      "runtime_library_pins_exact": true,
+      "runtime_library_count": 89,
+      "files": {
+        "report": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.json",
+          "sha256": "d95132b7ec8174a54844e74f2ce612e1b34d2247089e88c19d43a1c116946e94",
+          "bytes": 94862
+        },
+        "raw_profile": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.cachegrind.597321",
+          "sha256": "a1d5a6ba3b9f2d43ee2832d507b7a5823ff5818951ebda02793aad82b59058fd",
+          "bytes": 921385
+        },
+        "valgrind_log": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.valgrind.597321.log",
+          "sha256": "cd8bb7fe807158c90fa9ce5939b2d59bd5db18426f15b8d0a19da56e977dee71",
+          "bytes": 908
+        },
+        "png": {
+          "path": "Build/reddit-optimization/cachegrind-cohort-02/pair-03-candidate/capture.run-1.png",
+          "sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+          "bytes": 232293
+        }
+      }
+    }
+  ],
+  "reference": {
+    "report": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json",
+    "report_sha256": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+    "png": "Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png",
+    "png_file_sha256": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475",
+    "decoded_rgba_sha256": "297eaf3dc7316f9469b91059b650688659f387144faef693537f5f9d9b8e786c",
+    "dimensions": [
+      1280,
+      900
+    ],
+    "raw_diagnostic_count": 12
+  },
+  "diagnostic_policy": {
+    "only_known_message": "Shadow replay: Empty shadow bounds",
+    "positive_list_required": true,
+    "only_repetition_count_canonicalized": true,
+    "all_other_raw_audit_fields_exact": true,
+    "raw_lists_retained_in_reports": true,
+    "native_reported_errors": 0
+  },
+  "pin_verification": {
+    "verified": true,
+    "distinct_files": 477,
+    "manifest_canonical_sha256": "c79017dbbf2738062c1fd59967211ae5701fc5d53ed4e7c4d8fd1c14c2b57cdf",
+    "font_files": 214,
+    "fontconfig_files": 49,
+    "source": "Complete union of final-summary fixture, observer, runtime assets, fonts/configuration, reference, supplementary control, Valgrind, binary and linked/dynamic-library pins; absolute paths remain in the original summary."
+  },
+  "statistics": {
+    "baseline_counts": [
+      7181886789,
+      7181198185,
+      6840551361
+    ],
+    "candidate_counts": [
+      5794954378,
+      5938311142,
+      5793881588
+    ],
+    "baseline_median": 7181198185,
+    "candidate_median": 5794954378,
+    "paired_savings": [
+      1386932411,
+      1242887043,
+      1046669773
+    ],
+    "paired_reduction_percent": [
+      "19.311532634074218348138876517731752844537911860420",
+      "17.307516252595944753194414171428413237699831006683",
+      "15.300956279158620880648044592614820365501236384913"
+    ],
+    "median_reduction_percent": "19.303795429230310261935766364036087384489862815282",
+    "median_paired_reduction_percent": "17.307516252595944753194414171428413237699831006683",
+    "conservative_reduction_percent": "13.189583286282118743381217922266836408598087565766",
+    "worst_candidate_over_best_baseline": "0.86810416713717881256618782077733163591401912434234"
+  },
+  "normal_gate": {
+    "expression": "10 * max(candidate) <= 9 * min(baseline)",
+    "left_integer": 59383111420,
+    "right_integer": 61564962249,
+    "passed": true
+  },
+  "supplementary_gate": {
+    "retained_control_instructions": 6842705460,
+    "retained_control_report": "Build/reddit-optimization/cachegrind-cohort-01/pair-01-baseline/capture.run-1.json",
+    "original_cohort_remains_invalid": true,
+    "retained_control_excluded_from_pairs_and_medians": true,
+    "lowest_control": 6840551361,
+    "expression": "10 * max(final_candidates) <= 9 * min(final_baselines + [6842705460])",
+    "left_integer": 59383111420,
+    "right_integer": 61564962249,
+    "conservative_reduction_percent": "13.189583286282118743381217922266836408598087565766",
+    "passed": true
+  },
+  "target_met": true,
+  "frozen_inputs_modified": false
+}

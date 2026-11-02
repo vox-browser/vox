@@ -1,0 +1,23 @@
+{
+  "recorded_at_utc": "2026-11-02T21:33:42.889481+00:00",
+  "original_observers": {
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/compare.py": {
+      "sha256": "8e37fcb93975c568912fa4e7876cbd8584e9d0035809d329d0979dad865b8ce1",
+      "preserved_copy": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-01/compare.before.py",
+      "preserved_copy_sha256": "8e37fcb93975c568912fa4e7876cbd8584e9d0035809d329d0979dad865b8ce1"
+    },
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/capture.py": {
+      "sha256": "d38fce8ea8828efeb9d544655f96d1a06b0b47799ba64afce4db6286533a773f",
+      "preserved_copy": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/observer-correction-01/capture.before.py",
+      "preserved_copy_sha256": "d38fce8ea8828efeb9d544655f96d1a06b0b47799ba64afce4db6286533a773f"
+    }
+  },
+  "original_evidence": {
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/summary.json": "53c68492747ffd9ae69dbc173fa403b9a70dcaff6c4c7a1e886d95f9ab1cc382",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/exception.txt": "fbaf7b4c0c66f9090e01478cc52d26245da28bf4d67d1d25ea76011d2ca20f9e",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/capture.run-1.json": "9f729611bf0e549c1b4e5ae138979fe708417d3ec218e4e515d9395d07168937",
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/baseline-callgrind-01/capture.run-1.png": "d61507f5747a336d8720aabccdd706eb8d5dedb8d313912772d39e548790c475"
+  },
+  "diagnostic_contract": "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/expected-native-diagnostics.json",
+  "diagnostic_contract_sha256": "2bbbc0660e7af18e461ea1bd4dfcbfd8a04aa94182372c911c14ff02d3e1f033"
+}

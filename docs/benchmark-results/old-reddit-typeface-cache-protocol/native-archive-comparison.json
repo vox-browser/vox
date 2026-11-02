@@ -1,0 +1,33 @@
+{
+  "original_archive_sha256": "1fe0735fb118ec5b27ca151a4190383cd1fb78bd739b1be25a2b96c1e629b38f",
+  "candidate_archive_sha256": "3e952238187b77ddd7d11a0a8719b977bff6f9e76dcf36960d05793ae8c2c263",
+  "original_members": {
+    "canvas_raster.o": "93c35823790b167df8356a5080509f27858fe0f938247cf45f40663c60dbba6f",
+    "shadow_raster.o": "cec525f13cef02011ef4bb1031c6d6acb2c159cff8e21b684080761103c904da",
+    "font_typeface.o": "97d0a2a547aa41a2783f16d8299a9a01cda71fd3bb068d6e6e8a53a03a05305d",
+    "bitmap_export.o": "e5971064972e9388b23e1940df65614715a1c805da3445419d578bc3eba61264"
+  },
+  "candidate_members": {
+    "canvas_raster.o": "93c35823790b167df8356a5080509f27858fe0f938247cf45f40663c60dbba6f",
+    "shadow_raster.o": "9a62c3871e02691516bfacc05f05ec33373cb79d45789e1c5d4ed1b0cf00fb5d",
+    "font_typeface.o": "97d0a2a547aa41a2783f16d8299a9a01cda71fd3bb068d6e6e8a53a03a05305d",
+    "bitmap_export.o": "e5971064972e9388b23e1940df65614715a1c805da3445419d578bc3eba61264"
+  },
+  "changed_members": [
+    "shadow_raster.o"
+  ],
+  "guard": {
+    "command": [
+      "python3",
+      "tools/build_linux_native.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 208916480,
+    "elapsed_seconds": 5.5696760270002414,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

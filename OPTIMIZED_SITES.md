@@ -27,6 +27,19 @@ claim remains frozen-page startup/capture work and establishes no rendering-time
 or scrolling-FPS gain. See the [report](docs/HACKER_NEWS_VOX_REDUCTION.md) and
 [raw counts](docs/performance/hn-vox-reduction-20261102.json).
 
+**Old Reddit /r/worldnews, Linux Vox follow-up (2026-11-02):** typeface reuse
+reduced median **Cachegrind guest instruction references (Ir)** from
+**7,181,198,185** to **5,794,954,378**, a **19.30%** reduction. The conservative
+highest-candidate/lowest-control reduction is **13.19%**, also passing the
+retained earlier-control gate. Three alternating Vox control/candidate pairs
+preserve exact PNGs and audited content for the frozen 2024-01-01 script-free
+fixture at 1280×900. Scope is program execution through exit after PNG capture
+and audit, including startup and teardown. These software counts establish a
+Linux Vox before/after improvement; they do not measure hardware-retired
+instructions, live Reddit, native latency, or a new Brave comparison. Known
+baseline rendering gaps remain. See the [report](docs/OLD_REDDIT_LINUX_TYPEFACE_CACHE.md)
+and [raw-count ledger](docs/benchmark-results/old-reddit-linux-typeface-cache-2026-11-02.json).
+
 **‡ RAM** is the median observed peak of simultaneous browser process-tree
 physical footprints from separate **2026-11-02** measurements: two fresh pairs
 per site, three for vlang.io. MiB means 1,048,576 bytes. Sampling covers root

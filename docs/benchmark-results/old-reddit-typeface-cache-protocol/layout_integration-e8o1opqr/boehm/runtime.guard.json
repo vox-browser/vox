@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/workspace/scratch/549231c7ae31/vox2/Build/reddit-optimization/layout_integration-e8o1opqr/boehm/font_tests_boehm"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {},
+  "adoption_error": null,
+  "limit_bytes": 3221225472,
+  "observed_peak_rss_bytes": 1884160,
+  "elapsed_seconds": 0.11554509200504981,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}
