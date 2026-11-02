@@ -168,6 +168,15 @@ int vox_graphite_draw_image_region_pixels(const VoxGraphitePixelRegion *region,
 // Unsupported shapes and failures leave every view and its padding untouched.
 int vox_graphite_draw_rounded_parts_pixels(const VoxGraphitePixelRegion *regions, int count,
     int width, int height, int has_background, const VoxGraphiteShape *shape);
+typedef struct {
+    const VoxGraphitePixelRegion *regions;
+    int count;
+    VoxGraphiteShape shape;
+} VoxGraphiteShapeParts;
+// Independent original-sized tiles, with up to four output views per tile.
+// Inputs are immutable until all GPU transfers succeed; then publish together.
+int vox_graphite_draw_shape_parts_batch_pixels(const VoxGraphiteShapeParts *jobs,
+    int count, int surface_width, int surface_height, int has_background);
 int vox_graphite_draw_shape_region_pixels(const VoxGraphitePixelRegion *region,
     int surface_width, int surface_height, int has_background, const VoxGraphiteShape *shape);
 // Independent tiles of one leaf, each with its own immutable backdrop and

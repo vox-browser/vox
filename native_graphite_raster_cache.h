@@ -459,6 +459,23 @@ public:
             Rows {reinterpret_cast<uint8_t const*>(shape.clip_outs), size_t(shape.clip_out_count) * 4 * sizeof(float), 0, 1}, pixel_count, 1,
             pixel_count * 4, has_background, pixels);
     }
+    Request prepare_shape_parts(VoxGraphiteShape const& shape, int surface_width,
+        int surface_height, int pixel_count, bool has_background, uint8_t* pixels,
+        std::vector<int> const& rectangles)
+    {
+        if (shape.clip_out_count < 0 || (shape.clip_out_count && !shape.clip_outs)
+            || surface_width <= 0 || surface_height <= 0 || pixel_count <= 0
+            || size_t(pixel_count) > max_entry_bytes / 4) return {};
+        Entry parameters;
+        parameters.is_shape = true;
+        parameters.shape = shape;
+        parameters.surface_width = surface_width;
+        parameters.surface_height = surface_height;
+        return prepare_entry(parameters,
+            Rows {reinterpret_cast<uint8_t const*>(shape.clip_outs), size_t(shape.clip_out_count) * 4 * sizeof(float), 0, 1},
+            pixel_count, 1, pixel_count * 4, has_background, pixels,
+            Rows {reinterpret_cast<uint8_t const*>(rectangles.data()), rectangles.size() * sizeof(int), 0, 1});
+    }
 private:
     Request prepare_entry(Entry const& parameters, Rows source, int width, int height,
         int pitch, bool has_background, uint8_t* pixels, Rows extra = {nullptr, 0, 0, 1})
