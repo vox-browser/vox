@@ -175,6 +175,15 @@ void shared_recording_block(SkRect bounds)
         s_shared_root_recording->blocked_bounds.push_back(bounds.makeOutset(2, 2));
 }
 
+void shared_recording_block(CGContextRef destination, SkRect bounds)
+{
+    auto input = s_isolated_input_recordings.find(destination);
+    if (input != s_isolated_input_recordings.end())
+        input->second->unsupported = true;
+    else
+        shared_recording_block(bounds);
+}
+
 void shared_recording_clip(CGContextRef destination, SkCanvas* canvas)
 {
     canvas->resetMatrix();
@@ -245,7 +254,7 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
     if ((image.flags & (4 | 64 | 128 | VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK)) || image.has_background_color
         || image.border_width > 0
         || size_t(image.width) * image.height > 8 * 1024 * 1024) {
-        shared_recording_block(matrix.mapRect(target));
+        shared_recording_block(destination, matrix.mapRect(target));
         return;
     }
     auto info = SkImageInfo::Make(image.width, image.height, kRGBA_8888_SkColorType,
@@ -257,13 +266,17 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         premultiplied.resize(size_t(image.width) * image.height * 4);
         info = info.makeAlphaType(kPremul_SkAlphaType);
         if (!source.readPixels(info, premultiplied.data(), size_t(image.width) * 4)) {
-            shared_recording_block(matrix.mapRect(target));
+            shared_recording_block(destination, matrix.mapRect(target));
             return;
         }
         source = SkPixmap(info, premultiplied.data(), size_t(image.width) * 4);
     }
     int upload_width = image.width, upload_height = image.height;
-    float scale = s_shared_root_recording->scale;
+    auto input = s_isolated_input_recordings.find(destination);
+    float scale = input != s_isolated_input_recordings.end()
+        ? input->second->scale : s_shared_root_recording->scale;
+    if (input != s_isolated_input_recordings.end())
+        input->second->bounds.join(matrix.mapRect(target));
     float scale_x = std::hypot(matrix.getScaleX() * scale, matrix.getSkewY() * scale)
         * image.destination[2] / image.source[2];
     float scale_y = std::hypot(matrix.getSkewX() * scale, matrix.getScaleY() * scale)
@@ -304,13 +317,13 @@ void shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
             ? resize(&input, scaled.data(), upload_width, upload_height, upload_width * 4)
             : source.scalePixels(resized, SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest));
         if (!success) {
-            shared_recording_block(matrix.mapRect(target));
+            shared_recording_block(destination, matrix.mapRect(target));
             return;
         }
         source = resized;
     }
     auto bitmap = SkImages::RasterFromPixmapCopy(source);
-    if (!bitmap) { shared_recording_block(matrix.mapRect(target)); return; }
+    if (!bitmap) { shared_recording_block(destination, matrix.mapRect(target)); return; }
     float sx = float(upload_width) / image.width, sy = float(upload_height) / image.height;
     auto source_rect = SkRect::MakeXYWH(image.source[0] * sx, image.source[1] * sy,
         image.source[2] * sx, image.source[3] * sy);
@@ -610,13 +623,17 @@ extern "C" void ladybird_v_skia_record_rect(CGContextRef destination, float x,
 {
     auto* canvas = shared_recording_canvas(destination);
     if (!canvas) return;
+    auto input = s_isolated_input_recordings.find(destination);
+    float canvas_height = input != s_isolated_input_recordings.end()
+        ? input->second->canvas_height : s_shared_root_recording->canvas_height;
+    auto rect = SkRect::MakeXYWH(x, canvas_height - y - height, width, height);
+    if (input != s_isolated_input_recordings.end()) input->second->bounds.join(rect);
     SkPaint paint;
     paint.setAntiAlias(true);
     paint.setColor(SkColorSetARGB(alpha, red, green, blue));
     canvas->save();
     shared_recording_clip(destination, canvas);
-    canvas->drawRect(SkRect::MakeXYWH(x,
-        s_shared_root_recording->canvas_height - y - height, width, height), paint);
+    canvas->drawRect(rect, paint);
     canvas->restore();
 }
 
