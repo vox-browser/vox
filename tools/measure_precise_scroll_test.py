@@ -185,6 +185,29 @@ class PreciseScrollTests(unittest.TestCase):
                              {library.name: str(library.resolve())})
 
     @unittest.skipUnless(sys.platform == "darwin", "macOS injected observer")
+    def test_native_diagnostic_clock_uses_input_epoch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            observer = Path(measure_precise_scroll.__file__).with_name('measure_precise_scroll_darwin.m')
+            source = root / 'clock.m'
+            source.write_text('#include "' + str(observer) + '"\n' + r'''
+                int main(void) {
+                    if (vox_precise_scroll_diagnostic_time() != -1) return 1;
+                    started = CACurrentMediaTime() - 1;
+                    active = YES;
+                    double elapsed = vox_precise_scroll_diagnostic_time();
+                    if (elapsed < 1000000 || elapsed > 1100000) return 2;
+                    active = NO;
+                    return vox_precise_scroll_diagnostic_time() == -1 ? 0 : 3;
+                }
+            ''')
+            binary = root / 'clock'
+            subprocess.run(['clang', '-O2', '-fobjc-arc', str(source), '-framework', 'Cocoa',
+                            '-framework', 'QuartzCore', '-Wl,-undefined,dynamic_lookup',
+                            '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS injected observer")
     def test_native_profile_reset_calls_real_symbol_and_rejects_missing_profiler(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

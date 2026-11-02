@@ -69,6 +69,12 @@ static BOOL active;
 static const char *required_title;
 static double settle_seconds, ready_since = -1;
 
+// Optional native diagnostics share the observer's input epoch. They can
+// distinguish startup and tail work without changing the acceptance schedule.
+__attribute__((visibility("default"))) double vox_precise_scroll_diagnostic_time(void) {
+    return active ? (CACurrentMediaTime() - started) * 1e6 : -1;
+}
+
 static void reset_v_profile_if_requested(void) {
     const char *requested = getenv("VOX_PRECISE_RESET_V_PROFILE");
     if (!requested || !*requested) return;
