@@ -9,6 +9,10 @@
 - Build and test from the canonical checkout; do not copy or clone the source
   tree into `Build/` for individual sessions. Keep build identities, receipts,
   logs, and generated outputs there without duplicating the source tree.
+- Do not copy browser app bundles or snapshot repository tools into session or
+  benchmark directories under `Build/`. Reference `Build/v/Vox.app`, installed
+  comparison browsers, and the canonical tools directly. Verify input hashes
+  throughout measurements and reject runs whose inputs change.
 - Keep new history linear with focused commits; do not rewrite existing shared
   history. Remove an existing worktree only after its committed and uncommitted
   logic has been incorporated into `master` and verified.
