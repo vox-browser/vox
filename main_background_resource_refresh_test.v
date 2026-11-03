@@ -99,7 +99,7 @@ fn test_polled_svg_background_completion_keeps_paint_projection_in_mixed_and_fav
 	}
 }
 
-fn test_polled_svg_completion_preserves_pending_repaint_fallback() {
+fn test_polled_svg_completion_patches_a_pending_repaint_without_replacing_owners() {
 	address := 'https://polled-background.example.test/pending.svg'
 	mut document := html.parse_document('<!doctype html><div id="target" style="width:40px;height:20px;background:url(${address})"></div>')
 	defer { document.finalize() }
@@ -117,7 +117,7 @@ fn test_polled_svg_completion_preserves_pending_repaint_fallback() {
 	}
 	app.poll_background_resources()
 	after := layout.document_layout_result(document) or { panic('lost layout') }
-	assert voidptr(after.paint_tree.children.data) != children
+	assert voidptr(after.paint_tree.children.data) == children
 	assert app.paint_commands.any(it.image().background_svg_document != none
 		|| it.image().background_static_svg_resource != none)
 	assert document.cached_display_list() != none

@@ -1,6 +1,10 @@
 module layout
 
 import dom
+import os
+
+const disable_pending_background_refresh = os.getenv('VOX_DISABLE_PENDING_BACKGROUND_REFRESH') != ''
+const pending_background_refresh_diagnostics = os.getenv('VOX_PENDING_BACKGROUND_REFRESH_DIAGNOSTICS') != ''
 
 struct CompletedBackgroundResource {
 	document        ?&dom.Document
@@ -11,8 +15,8 @@ struct CompletedBackgroundResource {
 
 // A completed CSS background changes decoded paint input, not style or layout.
 // The caller has already excluded resources used by replaced/generated images.
-// Keep the general renderer refresh for every pending style, geometry or paint
-// update; its snapshots may contain changes beyond these resource bytes.
+// Keep the general renderer refresh for pending style or geometry changes.
+// A repaint alone does not stale the retained paint-tree snapshot.
 pub fn refresh_document_background_resources(document &dom.Document, changed map[string]bool) bool {
 	if changed.len == 0 { return false }
 	mut result := document_layout_result(document) or { return false }
@@ -24,11 +28,16 @@ pub fn refresh_document_background_resources(document &dom.Document, changed map
 		if !refreshed {
 			result.paint_tree_needs_style_update = true
 			result.paint_style_update_requires_full_refresh = true
+			result.needs_repaint = true
+			mut mutable_document := unsafe { &dom.Document(document) }
+			mutable_document.set_needs_repaint_with_invalidation(.paint_commands)
 		}
 	}
 	if !document.layout_is_up_to_date() || document.needs_style_update_after_layout() { return false }
-	if result.needs_repaint || result.paint_tree.layout_handle == unsafe { nil }
-		|| document.cached_display_list() == none { return false }
+	if result.paint_tree.layout_handle == unsafe { nil }
+		|| result.paint_tree_needs_style_update || result.paint_style_update_requires_full_refresh { return false }
+	pending_repaint := result.needs_repaint || document.cached_display_list() == none
+	if disable_pending_background_refresh && pending_repaint { return false }
 	node := document.as_node()
 	root := document.document_element() or { return false }
 	if node.needs_style_update() || node.child_needs_style_update()
@@ -50,6 +59,9 @@ pub fn refresh_document_background_resources(document &dom.Document, changed map
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_needs_repaint_with_invalidation(.paint_commands)
 	refreshed = true
+	if pending_repaint && pending_background_refresh_diagnostics {
+		eprintln('VOX_PENDING_BACKGROUND_REFRESH boxes=${changed_boxes.len}')
+	}
 	return true
 }
 

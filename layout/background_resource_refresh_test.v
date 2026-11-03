@@ -85,7 +85,7 @@ fn test_background_refresh_replaces_same_size_bytes_and_drops_failed_resource_wi
 	assert new_document.get_element_by_id('shape')?.get_attribute_value('fill') == 'blue'
 }
 
-fn test_background_refresh_falls_back_for_pending_style_repaint_and_unmatched_resources() {
+fn test_background_refresh_falls_back_for_pending_style_and_unmatched_resources() {
 	address := 'https://resource-refresh.test/fallback.svg'
 	document := html.parse_document('<!doctype html><div id="target" style="width:20px;height:10px;background:url(${address})"></div>')
 	assert !refresh_document_background_resources(document, {address:true})
@@ -99,7 +99,7 @@ fn test_background_refresh_falls_back_for_pending_style_repaint_and_unmatched_re
 	_ = resource_refresh_commands(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_needs_repaint_with_invalidation(.paint_commands)
-	assert !refresh_document_background_resources(document, {address:true})
+	assert refresh_document_background_resources(document, {address:true})
 	_ = resource_refresh_commands(document)
 	assert refresh_document_background_resources(document, {address:true})
 	box := document_layout_result(document)?.paint_tree.find_box(i64(target.as_node().unique_id()))?
@@ -126,7 +126,7 @@ fn test_background_refresh_defers_pending_container_query_stabilization_to_norma
  assert refresh_document_background_resources(document, {address:true})
 }
 
-fn test_declined_background_completion_refreshes_snapshot_during_retained_viewport_relayout() {
+fn test_background_completion_refreshes_pending_repaint_without_replacing_geometry() {
 	address := 'https://resource-refresh.test/late-arrow.svg'
 	mut document := html.parse_document('<!doctype html><div style="width:10px;height:10px;background:url(${address})"></div>')
 	defer { document.finalize() }
@@ -135,11 +135,29 @@ fn test_declined_background_completion_refreshes_snapshot_during_retained_viewpo
 	assert !resource_refresh_commands(document).any(it.image().background_svg_document != none
 		|| it.image().background_static_svg_resource != none)
 	root := document.layout_engine_handle()
+	before := document_layout_result(document)?
+	children := voidptr(before.paint_tree.children.data)
 	resource_refresh_publish(address, resource_refresh_source)
 	document.set_needs_repaint_with_invalidation(.paint_commands)
-	assert !refresh_document_background_resources(document, {address:true})
-	_ = layout_document_typed_in_viewport(document, 200, 100)
+	assert refresh_document_background_resources(document, {address:true})
+	assert voidptr(document_layout_result(document)?.paint_tree.children.data) == children
 	assert document.layout_engine_handle() == root
+	assert resource_refresh_commands(document).any(it.image().background_svg_document != none
+		|| it.image().background_static_svg_resource != none)
+}
+
+fn test_background_completion_keeps_pending_paint_style_refresh_on_fallback() {
+	address := 'https://resource-refresh.test/paint-style.svg'
+	mut document := html.parse_document('<!doctype html><div style="width:10px;height:10px;background:url(${address})"></div>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 200, 100)
+	_ = resource_refresh_commands(document)
+	mut result := document_layout_result(document)?
+	result.paint_tree_needs_style_update = true
+	resource_refresh_publish(address, resource_refresh_source)
+	assert !refresh_document_background_resources(document, {address:true})
+	assert result.paint_style_update_requires_full_refresh
+	_ = layout_document_typed_in_viewport(document, 200, 100)
 	assert resource_refresh_commands(document).any(it.image().background_svg_document != none
 		|| it.image().background_static_svg_resource != none)
 }
