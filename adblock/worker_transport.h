@@ -193,6 +193,11 @@ static void vox_adblock_worker_cleanup(void) {
     vox_adblock_worker_pid = 0;
     pthread_mutex_unlock(&vox_adblock_worker_lifecycle_mutex);
 }
+static pthread_once_t vox_ab_exit_cleanup_once = PTHREAD_ONCE_INIT;
+static int vox_ab_exit_cleanup_result;
+static void vox_ab_register_exit_cleanup(void) {
+    vox_ab_exit_cleanup_result = atexit(vox_adblock_worker_cleanup);
+}
 /* dyld image index zero can be an injected library, not the executable.
    Ask the kernel for this process's image path instead of relying on argv[0]
    or image ordering. The caller owns the returned bytes. */
@@ -229,6 +234,13 @@ VOX_AB_API int vox_adblock_worker_configure(const unsigned char *path, size_t si
     return 0;
 }
 static int vox_ab_spawn(void) {
+    /* Normal browser exit must reap before returning to its launcher. The
+       lifeline remains the fallback for crashes and abrupt parent death. */
+    int registered = pthread_once(&vox_ab_exit_cleanup_once, vox_ab_register_exit_cleanup);
+    if (registered || vox_ab_exit_cleanup_result) {
+        errno = registered ? registered : ENOMEM;
+        return -1;
+    }
     int requests[2] = {-1,-1}, responses[2] = {-1,-1}, life[2] = {-1,-1};
     int child[3] = {-1,-1,-1}, result = -1;
     if (vox_ab_pipe(requests) || vox_ab_pipe(responses) || vox_ab_pipe(life)) goto done;
