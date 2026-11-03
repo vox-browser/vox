@@ -75,10 +75,26 @@ def mime(headers):
 
 def capture(args):
     output = args.output.resolve()
+    progress_source = getattr(args, 'from_progress', None)
+    progress_sha = getattr(args, 'expected_progress_sha256', None)
+    progress = None
+    if progress_source:
+        progress_source = progress_source.resolve()
+        if args.from_archive or args.from_cache:
+            raise ValueError('Capture progress cannot be combined with another import')
+        if output == progress_source or progress_source in output.parents:
+            raise ValueError('Output must be outside the imported capture')
+        progress = load_capture_progress(progress_source, progress_sha)
+        if progress['url'] != args.url:
+            raise ValueError('Capture progress references a different entry URL')
+    elif progress_sha is not None:
+        raise ValueError('Expected progress SHA256 requires --from-progress')
     output.mkdir(parents=True, exist_ok=False)
     (output / 'bodies').mkdir()
     entries, pending = {}, {args.url, *args.extra_url}
-    previous = load_archive(args.from_archive) if args.from_archive else None
+    if progress is not None:
+        pending.update(progress['responses'])
+    previous = progress or (load_archive(args.from_archive) if args.from_archive else None)
     # Reuse a previous raw native cache without refetching or serializing a DOM.
     cached = {}
     if args.from_cache:
@@ -89,6 +105,9 @@ def capture(args):
                     proxy_used_for_capture=args.proxy, author_scripts='original bytes retained',
                     imported_cache=str(args.from_cache) if args.from_cache else None,
                     imported_archive=str(args.from_archive) if args.from_archive else None,
+                    imported_capture_progress=str(progress_source) if progress_source else None,
+                    imported_capture_progress_sha256=progress_sha,
+                    optional_http_error_urls=sorted(set(args.extra_url)),
                     responses=entries)
     while pending:
         url = sorted(pending)[0]
@@ -98,10 +117,16 @@ def capture(args):
         path = cached.get(url)
         if previous and url in previous['responses']:
             entry = previous['responses'][url]
-            body = (args.from_archive / 'bodies' / entry['sha256']).read_bytes()
+            imported = progress_source if progress is not None else args.from_archive
+            body = checked_response_body(imported, url, entry)
             headers, status = entry['headers'], entry['status']
-            provenance = dict(source='sealed archive', archive=str(args.from_archive.resolve()),
-                              manifest_sha256=digest((args.from_archive / 'manifest.json').read_bytes()))
+            if progress is not None:
+                provenance = dict(source='unfinished capture', capture=str(progress_source),
+                                  capture_progress_sha256=progress_sha,
+                                  original_provenance=entry.get('provenance'))
+            else:
+                provenance = dict(source='sealed archive', archive=str(args.from_archive.resolve()),
+                                  manifest_sha256=digest((args.from_archive / 'manifest.json').read_bytes()))
         elif path and path.is_file():
             body = path.read_bytes()
             hp = Path(str(path) + '.headers.json')
@@ -145,9 +170,42 @@ def capture(args):
         (output / 'capture-progress.json').write_text(json.dumps(manifest, indent=2) + '\n')
     for name in ['download.body', 'download.headers']:
         (output / name).unlink(missing_ok=True)
+    if progress is not None:
+        load_capture_progress(progress_source, progress_sha)
     manifest['sealed_unix'] = time.time()
     (output / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(f'Sealed {len(entries)} responses in {output}', flush=True)
+
+
+def checked_response_body(archive, url, entry):
+    sha = entry['sha256']
+    if not re.fullmatch('[0-9a-f]{64}', sha):
+        raise ValueError('Invalid body identity')
+    path = archive / 'bodies' / sha
+    if path.is_symlink():
+        raise ValueError('Archived body is a symlink: ' + url)
+    body = path.read_bytes()
+    if digest(body) != sha or len(body) != entry['bytes']:
+        raise ValueError('Archived response changed: ' + url)
+    if urlsplit(url).scheme not in {'http', 'https'}:
+        raise ValueError('Invalid archive URL')
+    return body
+
+
+def load_capture_progress(archive, expected_sha256):
+    """Import verified responses without treating a failed capture as sealed."""
+    if not isinstance(expected_sha256, str) or not re.fullmatch('[0-9a-f]{64}', expected_sha256):
+        raise ValueError('Capture progress requires its expected SHA256')
+    raw = (archive / 'capture-progress.json').read_bytes()
+    if digest(raw) != expected_sha256:
+        raise ValueError('Capture progress SHA256 mismatch')
+    manifest = json.loads(raw)
+    if (manifest.get('version') != 1 or manifest.get('sealed_unix')
+            or not isinstance(manifest.get('responses'), dict) or not manifest['responses']):
+        raise ValueError('Import requires nonempty unfinished capture progress')
+    for url, entry in manifest['responses'].items():
+        checked_response_body(archive, url, entry)
+    return manifest
 
 
 def load_archive(archive):
@@ -155,14 +213,7 @@ def load_archive(archive):
     if manifest.get('version') != 1 or not manifest.get('sealed_unix'):
         raise ValueError('Archive must be sealed')
     for url, entry in manifest['responses'].items():
-        sha = entry['sha256']
-        if not re.fullmatch('[0-9a-f]{64}', sha):
-            raise ValueError('Invalid body identity')
-        body = (archive / 'bodies' / sha).read_bytes()
-        if digest(body) != sha or len(body) != entry['bytes']:
-            raise ValueError('Archived response changed: ' + url)
-        if urlsplit(url).scheme not in {'http', 'https'}:
-            raise ValueError('Invalid archive URL')
+        checked_response_body(archive, url, entry)
     return manifest
 
 
@@ -322,6 +373,10 @@ def main():
     cap.add_argument('--proxy')
     cap.add_argument('--from-cache', type=Path)
     cap.add_argument('--from-archive', type=Path)
+    cap.add_argument('--from-progress', type=Path,
+                     help='Import verified responses from an unfinished capture into a new output.')
+    cap.add_argument('--expected-progress-sha256',
+                     help='Required SHA256 of the imported capture-progress.json.')
     cap.add_argument('--extra-url', action='append', default=[])
     serve = commands.add_parser('replay')
     serve.add_argument('archive', type=Path)

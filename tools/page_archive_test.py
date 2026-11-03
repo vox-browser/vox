@@ -217,5 +217,175 @@ class PageArchiveTests(unittest.TestCase):
                                   SSL_CERT_FILE='/private/cert.pem', NO_PROXY=''))
 
 
+class CaptureProgressTests(unittest.TestCase):
+    url = 'https://archive.invalid/page'
+
+    def prepare(self, root):
+        source = root / 'unfinished'
+        (source / 'bodies').mkdir(parents=True)
+        rows = {
+            self.url: (b'<link rel="stylesheet" href="/a.css"><script src="/missing.js"></script>', 'text/html'),
+            'https://archive.invalid/a.css': (b'p{color:green}', 'text/css'),
+            'https://archive.invalid/earlier-api': (b'{"original":true}', 'application/json'),
+        }
+        entries = {}
+        for url, (body, mime) in rows.items():
+            sha = page_archive.digest(body)
+            (source / 'bodies' / sha).write_bytes(body)
+            entries[url] = dict(sha256=sha, bytes=len(body), status=200,
+                headers=[dict(name='Content-Type', value=mime), dict(name='X-Original', value='retained')],
+                provenance=dict(source='curl', captured_unix=100))
+        path = source / 'capture-progress.json'
+        path.write_text(json.dumps(dict(version=1, url=self.url, responses=entries)))
+        return source, page_archive.digest(path.read_bytes()), entries
+
+    def args(self, root, source, pin, **changes):
+        args = argparse.Namespace(output=root / 'resumed', url=self.url, proxy=None,
+            from_archive=None, from_cache=None, extra_url=[], from_progress=source,
+            expected_progress_sha256=pin)
+        for name, value in changes.items():
+            setattr(args, name, value)
+        return args
+
+    def download(self, args, status=200, body=b'window.original=true;', callback=None):
+        calls = []
+
+        def run(command, **kwargs):
+            calls.append(command[-1])
+            args.output.joinpath('download.body').write_bytes(body)
+            args.output.joinpath('download.headers').write_text(
+                f'HTTP/1.1 {status} Fixture\r\nContent-Type: text/javascript\r\nX-New: kept\r\n\r\n')
+            if callback:
+                callback()
+            return page_archive.subprocess.CompletedProcess(command, 0, str(status), '')
+        return calls, run
+
+    def test_resume_reuses_every_verified_response_and_downloads_only_missing_work(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, pin, entries = self.prepare(root)
+            original = (source / 'capture-progress.json').read_bytes()
+            args = self.args(root, source, pin)
+            calls, run = self.download(args)
+            with mock.patch.object(page_archive.subprocess, 'run', side_effect=run), redirect_stdout(io.StringIO()):
+                page_archive.capture(args)
+            self.assertEqual(calls, ['https://archive.invalid/missing.js'])
+            manifest = page_archive.load_archive(args.output)
+            self.assertEqual(len(manifest['responses']), 4)
+            for url, entry in entries.items():
+                current = manifest['responses'][url]
+                for name in ('sha256', 'bytes', 'status', 'headers'):
+                    self.assertEqual(current[name], entry[name])
+                self.assertEqual(current['provenance']['original_provenance'], entry['provenance'])
+            self.assertEqual(manifest['imported_capture_progress_sha256'], pin)
+            self.assertEqual((source / 'capture-progress.json').read_bytes(), original)
+            self.assertFalse((source / 'manifest.json').exists())
+
+    def test_wrong_or_missing_pin_is_rejected_before_creating_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, pin, _ = self.prepare(root)
+            for bad in (None, 'not a digest', '0' * 64):
+                args = self.args(root, source, bad)
+                with self.subTest(pin=bad), self.assertRaisesRegex(ValueError, 'SHA256'):
+                    page_archive.capture(args)
+                self.assertFalse(args.output.exists())
+
+    def test_import_rejects_modified_missing_and_symlinked_bodies(self):
+        for mutation in ('changed', 'missing', 'symlink'):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                source, pin, entries = self.prepare(root)
+                body = source / 'bodies' / entries[self.url]['sha256']
+                if mutation == 'changed':
+                    body.write_bytes(b'changed')
+                elif mutation == 'missing':
+                    body.unlink()
+                else:
+                    target = root / 'elsewhere'
+                    body.rename(target)
+                    body.symlink_to(target)
+                with self.assertRaises((ValueError, FileNotFoundError)):
+                    page_archive.capture(self.args(root, source, pin))
+                self.assertFalse((root / 'resumed').exists())
+
+    def test_import_requires_matching_entry_and_unambiguous_external_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, pin, _ = self.prepare(root)
+            for changes in [dict(url='https://other.invalid/'), dict(from_archive=source),
+                            dict(from_cache=source), dict(output=source), dict(output=source / 'nested')]:
+                with self.subTest(changes=changes), self.assertRaises(ValueError):
+                    page_archive.capture(self.args(root, source, pin, **changes))
+            self.assertFalse((root / 'resumed').exists())
+
+    def test_progress_is_not_replayable_and_completed_manifest_cannot_be_imported_as_progress(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, pin, _ = self.prepare(root)
+            progress = json.loads((source / 'capture-progress.json').read_text())
+            (source / 'manifest.json').write_text(json.dumps(progress))
+            with self.assertRaisesRegex(ValueError, 'sealed'):
+                page_archive.load_archive(source)
+            progress['sealed_unix'] = 100
+            (source / 'capture-progress.json').write_text(json.dumps(progress))
+            pin = page_archive.digest((source / 'capture-progress.json').read_bytes())
+            with self.assertRaisesRegex(ValueError, 'unfinished'):
+                page_archive.load_capture_progress(source, pin)
+
+    def test_concurrent_source_change_prevents_sealing_the_new_capture(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, pin, _ = self.prepare(root)
+            args = self.args(root, source, pin)
+            _, run = self.download(args, callback=lambda: (source / 'capture-progress.json').write_text('{}'))
+            with mock.patch.object(page_archive.subprocess, 'run', side_effect=run), redirect_stdout(io.StringIO()):
+                with self.assertRaisesRegex(ValueError, 'SHA256 mismatch'):
+                    page_archive.capture(args)
+            self.assertFalse((args.output / 'manifest.json').exists())
+
+    def test_explicit_optional_error_keeps_original_status_body_and_headers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, pin, _ = self.prepare(root)
+            missing = 'https://archive.invalid/missing.js'
+            args = self.args(root, source, pin, extra_url=[missing])
+            _, run = self.download(args, status=404, body=b'original missing body')
+            with mock.patch.object(page_archive.subprocess, 'run', side_effect=run), redirect_stdout(io.StringIO()):
+                page_archive.capture(args)
+            manifest = page_archive.load_archive(args.output)
+            row = manifest['responses'][missing]
+            self.assertEqual(row['status'], 404)
+            self.assertEqual((args.output / 'bodies' / row['sha256']).read_bytes(), b'original missing body')
+            self.assertIn(dict(name='X-New', value='kept'), row['headers'])
+            self.assertEqual(manifest['optional_http_error_urls'], [missing])
+
+    def test_unlisted_resource_error_still_fails_and_preserves_original_capture(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, pin, _ = self.prepare(root)
+            args = self.args(root, source, pin)
+            _, run = self.download(args, status=404)
+            with mock.patch.object(page_archive.subprocess, 'run', side_effect=run), redirect_stdout(io.StringIO()):
+                with self.assertRaisesRegex(RuntimeError, 'required resource: 404'):
+                    page_archive.capture(args)
+            self.assertFalse((args.output / 'manifest.json').exists())
+            page_archive.load_capture_progress(source, pin)
+
+    def test_entry_http_error_is_required_even_when_explicitly_listed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, pin, _ = self.prepare(root)
+            path = source / 'capture-progress.json'
+            progress = json.loads(path.read_text())
+            progress['responses'][self.url]['status'] = 404
+            path.write_text(json.dumps(progress))
+            args = self.args(root, source, page_archive.digest(path.read_bytes()), extra_url=[self.url])
+            with mock.patch.object(page_archive.subprocess, 'run', side_effect=AssertionError('Refetch')):
+                with self.assertRaisesRegex(RuntimeError, 'required resource: 404'):
+                    page_archive.capture(args)
+            self.assertFalse((args.output / 'manifest.json').exists())
+
+
 if __name__ == '__main__':
     unittest.main()
