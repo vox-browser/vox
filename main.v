@@ -8124,6 +8124,7 @@ fn main() {
 		app.initialize_browser_history()
 		app.initialize_browser_bookmarks()
 	}
+	app.prepare_initial_viewport(options.height, options.screenshot_viewport_height)
 	app.install_chrome_widget_input_bridge()
 	main_checkpoint = debug_timing_checkpoint('startup_input_bridge', main_checkpoint)
 	if restored_tab.version > 0 {
