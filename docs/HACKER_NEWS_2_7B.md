@@ -1,11 +1,61 @@
 # Hacker News 2.7B instruction target
 
-The **2,700,000,000 median/maximum instruction gate has passed on two pinned
-production builds**. Final-current-build qualification remains in progress:
-a later shared build misses the maximum gate, and the corrective codec change
-still needs its packaged default-production cohort. Acceptance requires seven
-complete fresh default trials, with unchanged correctness and ownership gates.
+The **2,700,000,000 median/maximum instruction gate passes on the packaged
+production build**: `codec-default` measures **2,655,492,802 median /
+2,676,747,832 maximum** across seven complete fresh default trials. Every trial
+passes the unchanged correctness, identity, ownership and exit gates. The shared
+worker subsequently installed a newer build; its qualification is recorded below.
 The earlier [3.2B result](HACKER_NEWS_3_2B.md) remains independently recorded.
+
+The latest completed shared build's separate `grid-default` cohort measures
+**2,675,233,606 median / 2,701,876,818 maximum**. The median is below the user's
+2.7B target, but its maximum narrowly fails the retained conservative gate.
+The passing claim is therefore pinned to `codec-default`, rather than transferred
+to a subsequent executable.
+
+The passing packaged cohort uses executable
+`db4eab235d92fa1d57bd1cda027d16f6540067b261d036697bb6eb6d4bfc34ad`,
+receipt `20261103-142818-b5138f54`. Counts, in launch order, are 2,676,747,832;
+2,660,271,669; 2,659,996,066; 2,644,991,642; 2,655,492,802; 2,652,303,143;
+2,654,913,926. The run uses packaged assets and native libraries without an
+experimental override. All seven captures preserve exact original pixels,
+all 30 story identities and current PNG profile/density/metadata. PID adoption
+succeeds, inputs stay pinned and no independent captures are excluded. The
+guard exits normally with 341,344,256 bytes observed peak RSS.
+
+The subsequent `packaged-default` cohort uses executable
+`3fafbc6189d483cfcd826f5d6b7880e1c705dce36604856b79f005759ad60f48`,
+receipt `20261103-143903-aa841465`. Its seven counts are 2,708,788,833;
+2,667,263,039; 2,678,855,173; 2,658,204,722; 2,696,494,883; 2,671,583,007;
+2,686,719,056: **2,678,855,173 median / 2,708,788,833 maximum**. All correctness
+and ownership gates pass, but the first launch exceeds the instruction ceiling.
+It remains in the cohort. This build passes signature, headless/helper startup
+and all 21 rendering checks with default packaged assets. Its separate live
+HTTPS check preserves all 30 stories, runs author JavaScript through JSC and
+reports no script/native errors. The live observer supplies functional evidence
+only. These later checks do not transfer the earlier build's instruction result
+to this executable.
+
+The `grid-default` executable is
+`2e53ce1329b6f4c34a641385f13353c698d98746b058fd71d903ef7f8f6f3790`,
+receipt `20261103-144643-8e77433f`. Its counts are 2,686,050,019; 2,675,233,606;
+2,670,688,849; 2,673,005,324; 2,674,009,557; 2,701,876,818; 2,680,217,164.
+All seven pass exact original pixels, complete story IDs, current PNG metadata,
+unchanged inputs, ownership and normal exits. No independent captures are
+excluded, and guard adoption succeeds. The sixth trial remains included.
+This build also passes all 21 rendering checks, signing and headless/helper
+startup. Its packaged filter assets match the verified codec bytes exactly.
+Its live HTTPS audit also passes with all 30 stories, successful author-script
+evaluation and no script/native errors; it makes no live instruction claim.
+
+A further lazy text-encoding prototype is rejected after seven alternating
+pairs: medians **2,692,581,496 → 2,693,247,101**, a 665,605 regression. Two pairs
+improve and five regress, despite exact pixels in all fourteen captures. Initial
+bootstrap failures and the corrected 46-test pass are retained; the source and
+new tests are removed from production and saved with the diagnostic evidence.
+A separate two-pair synchronous-JIT pilot also regresses between medians
+(2,697,054,096.5 → 2,699,976,514). It changes no production runtime settings and
+earns no optimization credit. Neither experiment replaces a default cohort.
 
 The first passing cohort, `inline1500-default`, uses executable
 `904ce62baa0e755a003f763ba56044239d694963679b2f45eca8cd8e07e72b35`,
@@ -43,8 +93,9 @@ measure **2,697,881,938 → 2,662,769,675** medians, a **35,112,263** difference
 five pairs improve and two regress. The candidate maximum is 2,686,618,557.
 All fourteen captures pass the original pixels/content, current PNG metadata,
 ownership, identity, exit and adoption gates, with no concurrent-capture
-exclusions. This is an asset-override diagnostic; default-build credit remains
-pending. The original pinned Core-js Base64 and DOMException implementation is
+exclusions. This asset-override diagnostic isolates the change; the packaged
+default cohort above supplies production credit. The original pinned Core-js
+Base64 and DOMException implementation is
 loaded before its first use in the isolated filter realm. The first new test
 catches a stub-property enumerability mismatch; it is corrected to match the
 original polyfill before this final matched cohort. Earlier prototype cohorts
@@ -66,9 +117,9 @@ invalidates commands; focused checks pass in all three memory modes. Standalone
 static HarfBuzz checks also require explicit CoreGraphics/CoreFoundation link
 declarations, which are now present. Fixture/compiler failures, the initial
 non-isolated font batch and the packaging-fixture override failure remain
-recorded. The current codec configuration passes another 21 screenshot checks
-with an explicit asset override on the available production executable; it still
-needs the completed packaged build's default cohort.
+recorded. The codec configuration also passes 21 screenshot checks with an
+explicit asset override on the preceding production executable. Those checks
+are separate from the final default packaged-build verification.
 
 A separate native observer records successful JavaScriptCore evaluation of the
 archived author script: **5,217 UTF-8 bytes / 5,215 characters**, FNV64

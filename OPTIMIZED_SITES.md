@@ -45,14 +45,16 @@ separately from the historical paired Vox/Brave row above.
 | Workload | Trials | Vox median instructions | Vox maximum instructions | Status | Evidence |
 | --- | ---: | ---: | ---: | --- | --- |
 | Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | Earlier validated 3.2B result | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
-| Same archived homepage and capture scope, pinned build `6e79a2f8` | 7 | **2,686,120,086** | **2,692,598,899** | 2.7B instruction gate passed; current-build qualification pending | [Report](docs/HACKER_NEWS_2_7B.md), [evidence](docs/performance/hn-2700-resume-20261103.json) |
+| Same archived homepage and capture scope, pinned build `db4eab23` | 7 | **2,655,492,802** | **2,676,747,832** | Packaged default build passes the 2.7B median/maximum gate | [Report](docs/HACKER_NEWS_2_7B.md), [evidence](docs/performance/hn-2700-resume-20261103.json) |
+| Latest verified shared build `2e53ce13`, same workload | 7 | **2,675,233,606** | **2,701,876,818** | Median below 2.7B; maximum gate narrowly fails | [Retained cohort](docs/HACKER_NEWS_2_7B.md) |
 
-Two pinned default builds pass the 2.7B median/maximum gate with exact original
-pixels, all 30 stories and ownership/identity/exit audits. The newer `8f1ee6b0`
-cohort has a **2,682,052,830 median / 2,705,217,405 maximum**, so its highest
-trial fails and remains recorded. A corrective private-codec change measures
-**2,662,769,675 median / 2,686,618,557 maximum** in seven matched diagnostic
-pairs, saving 35.1M between medians; its packaged default cohort is pending.
+The packaged `db4eab23` cohort passes with exact original pixels, all 30 stories
+and ownership/identity/exit audits. The corrective private-codec change also
+saves 35.1M between medians in seven matched diagnostic pairs. Two earlier
+pinned default builds pass the target; the `8f1ee6b0`, `3fafbc61` and `2e53ce13`
+maximum-gate failures remain recorded. The latter builds pass default packaged
+startup/helper checks, all 21 rendering cases and live HTTPS navigation with
+successful author-script execution; their high trials still exceed the ceiling.
 Regression suites start only after the first passing default cohort, as the
 user requested. Source, native memory-safety, font, filtering, UI2, PNG and
 21-case rendering checks now pass. The PNG literal optimization trades an
