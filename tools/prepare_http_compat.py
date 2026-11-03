@@ -226,7 +226,7 @@ def compiler_vlib(compiler, work):
     with tempfile.TemporaryDirectory(prefix="compiler-root-", dir=work) as temporary:
         probe = Path(temporary) / "compiler_root.v"
         probe.write_text("module main\nfn main() { println(@VEXEROOT) }\n")
-        result = subprocess.run([compiler, "run", str(probe)],
+        result = subprocess.run([compiler, "-memory-limit", "10G", "run", str(probe)],
                                 capture_output=True, text=True, check=True)
     return Path(result.stdout.strip()).resolve() / "vlib"
 
