@@ -4378,3 +4378,34 @@ See the [profile ledger](performance/bbc-viewport-debugger-profile-20261103.json
 and [authenticated raw evidence](performance/raw/bbc-viewport-debugger-profile-20261103.tar.gz).
 The original sealed replay and fixed pixel references are still missing; the
 10% instruction target remains open.
+
+
+### Preserve exact inputs before launch (2026-11-03)
+
+The BBC runner now accepts an optional preservation destination:
+
+```sh
+--preserve-inputs docs/performance/raw/bbc-inputs-MANIFEST_SHA.tar.gz
+```
+
+Before launching a browser, this saves the original sealed replay manifest,
+every referenced response body and each supplied reference PNG, preserving
+encoded bytes exactly. It reads back and verifies every member, then checks
+source and archive identities again when pinning the cohort. A matching existing
+archive is verified and reused; another session's file is never overwritten.
+Missing/corrupt bodies, changed references, source mutation, extra archive members
+and links fail preservation. The destination must be outside both `Build/` and
+the trial output directory so build cleanup cannot remove the preserved inputs.
+The preservation receipt and archive identity are included in `inputs.json`.
+This setup runs outside both browsers' instruction endpoints.
+
+All **11 preservation tests**, **224 selected instruction-tool tests** and **seven
+sealed-replay tests** pass (242 cases). The retained first test selection has one
+path-alias fixture failure: `/var` and `/private/var` need the same canonical
+receipt path. A real invocation against the deleted original fixture exits 1
+before launching a browser or creating trial/export output. It does not invent
+a replacement workload or increment the cohort history. See the
+[tooling ledger](performance/bbc-input-preservation-20261103.json) and
+[authenticated raw results](performance/raw/bbc-input-preservation-20261103.tar.gz).
+The original archive/reference files remain missing, the dataset choice remains
+unresolved and the **10% BBC instruction target stays open**.

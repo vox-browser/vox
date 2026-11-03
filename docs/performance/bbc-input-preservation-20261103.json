@@ -1,0 +1,170 @@
+{
+  "status": "Optional input preservation implemented; original BBC 10% acceptance workload still missing",
+  "target_met": false,
+  "catalog_entry_added": false,
+  "history_cohorts": 74,
+  "history_browser_attempts": 1681,
+  "behavior": "--preserve-inputs writes and round-trip verifies the sealed replay manifest, referenced response bodies and supplied reference PNGs outside Build before launch. Deterministic archive bytes, source identity checks, no overwrite publication, and preserved-archive identity pinning protect the workload. No browser process or measurement scope is changed.",
+  "tests": [
+    {
+      "suite": "preservation",
+      "cases": 11,
+      "guard": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "browser_input_evidence_test.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 23298048,
+        "elapsed_seconds": 0.400370417,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "suite": "instruction tools",
+      "cases": 224,
+      "guard": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "*browser_instructions_test.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 63897600,
+        "elapsed_seconds": 3.041527167,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "suite": "sealed replay",
+      "cases": 7,
+      "guard": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "page_archive_test.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 33832960,
+        "elapsed_seconds": 2.102924125,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "preparation": {
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "browser_input_evidence_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 26869760,
+      "elapsed_seconds": 0.34824266600000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "cause": "One test used a /var temporary path for the archive identity while production resolves it to /private/var. The fixture now pins the canonical receipt path; no source change was needed."
+  },
+  "sources": {
+    "tools/browser_input_evidence.py": {
+      "bytes": 6385,
+      "sha256": "8984601f34c8d16048449d87f04a24ef1026fad38a04a10b6b47f7da49e7be45"
+    },
+    "tools/browser_input_evidence_test.py": {
+      "bytes": 10269,
+      "sha256": "48836b26022ff2daa86c35a0a883226a683142f6392a63cf031ee544a7fc5594"
+    },
+    "tools/bbc_browser_instructions.py": {
+      "bytes": 50184,
+      "sha256": "b915fec72600d992a6de58d8b489eee229807ed87fd7afae4d330520aa504835"
+    },
+    "tools/bbc_browser_instructions_test.py": {
+      "bytes": 81148,
+      "sha256": "3123169f58fd0f0b484a86cf7252ca4b07fc2c507e04d5e68f95c09528adc271"
+    }
+  },
+  "commit": "aee1b3e6c7fa509fb59eac35a1dddcb9cbed8462",
+  "limitations": [
+    "Tooling change only; no instruction reduction or acceptance result.",
+    "The original 595-response homepage archive and fixed references remain missing.",
+    "The pending fresh-versus-restored dataset choice is not selected by this change.",
+    "Browser helper ownership, pixel/content audits and the seven-pair integer gate remain required."
+  ],
+  "raw_root": "Build/bbc-input-preservation-20261103",
+  "missing_original_preflight": {
+    "expected_failure": true,
+    "guard": {
+      "command": [
+        "python3",
+        "tools/bbc_browser_instructions.py",
+        "--archive",
+        "Build/bbc-home-instructions-20261101-054807/clock-archive",
+        "--output",
+        "Build/bbc-input-preservation-20261103/missing-original-trial",
+        "--memory-guard-registry",
+        "Build/bbc-input-preservation-20261103/missing-original-pids.json",
+        "--expected-vox",
+        "Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-vox/document.png",
+        "--expected-brave",
+        "Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-missing-original-inputs.tar.gz"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3571712,
+      "elapsed_seconds": 0.19639045900000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser_launched": false,
+    "output_created": false,
+    "preserved_archive_created": false
+  },
+  "durable_raw_evidence": {
+    "path": "docs/performance/raw/bbc-input-preservation-20261103.tar.gz",
+    "sha256": "fdf9a8dd9be753c9e8231df439da846d0dbc18cb3a914346690336bb62f0f484",
+    "bytes": 6994,
+    "files": 10,
+    "round_trip_verified": true
+  }
+}
