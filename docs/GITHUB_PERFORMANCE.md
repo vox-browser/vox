@@ -20206,3 +20206,65 @@ Observation SHA256: `3ac7275a48184909c6759f86b1f058b3c64b241d31e280af9c9743d8d0d
 Primary-log SHA256: `018d0759942f62ba24a1b5f8d54877bf4fdfe8f6f4b5fd125910757c561a2ac4`.
 Generated-C archive SHA256: `e6e5efcea8d4a8f67c3fbfa9e5b5e2b7a4a85ce04e40443684952d1200e8d246`.
 Instrumented binary SHA256: `ec4140956283ddaa324a10c945f634b6cb6ca20445218858d52fb655db321c21`.
+
+## Native synchronous custom-element construction, November 3, 2026
+
+Feature `a365f9b4f17ad112b5666f5e3d152cc751ef3fcb` connects the DOM factory's
+synchronous autonomous custom-element branch to actual JavaScript construction.
+The HTML constructor resolves the real native registry definition, allocates a
+native element, and obtains its existing compact wrapper provider's owning
+wrapper. JavaScript class initialization runs on that wrapper. The document's
+older own factory methods are removed so public creation uses the native
+Document factory, preserving identity across selectors, insertion and native
+EventTarget lookups. Namespace prefixes are refreshed after construction.
+
+The adapter rejects unregistered constructors and mismatched HTML interfaces,
+reads the new target's prototype once, and preserves the actual thrown value.
+Synchronous factory results are checked for HTMLElement ownership, attributes,
+children, parent, document, namespace and local name. Failures are reported to
+the owning settings object and return a new native HTMLUnknownElement in the
+failed state. Direct registered customized built-in construction is also covered.
+Existing-element upgrades and lifecycle callback delivery remain incomplete;
+Document factory options for customized built-ins/scoped registries are outside
+this slice.
+
+Both new focused cases pass in Boehm, GC-disabled and preallocation C-O0
+builds. The two existing HTML-interface cases also pass in Boehm and GC-disabled
+builds: ten final executions across four cases, with actual compiler/runtime/guard
+exits zero.
+They exercise initialized delegate state, inherited methods, wrapper and native
+identity, nested construction, namespace prefixes, interface validation, native
+failure state, original exceptions, author-modified intrinsics, and construction
+inside scratch storage after the realm is initialized. Earlier failed checks
+remain in the evidence: duplicate old factory wrappers, an unavailable attributes
+fixture API, an uncaptured wrapper intrinsic, and a preallocation fixture that
+incorrectly reset the arena containing its whole bootstrap. Final checks use the
+correct lifetime boundary and preserve the previous receipts.
+
+The already queued shared production build
+`20261103-202701-a1d446d6` completes successfully with executable SHA-256
+`ffae25e87305ecfabcdeac6c062993c467b8b0e5a4b2ec5412b37cc7108bee86`. Eight relevant generated-C bodies match the tested
+preallocation build exactly after resolving string constants; that audit does
+not establish whole-program isolation. A fresh private-profile process passes the
+public constructor assertions and ordinary image, media, canvas, iframe, select,
+script and template factory checks at an exact 640×480 viewport. Its browser,
+controller and 3 GiB guard actually exit zero. No duplicate production build or
+app copy was requested, and the user's running GUI was preserved.
+
+The separately declared N=1 GitHub diagnostic uses the unchanged 193-response
+archive, strict 33-row/66-link/21-image contract and exact 1024×768 viewport.
+Its browser, controller and 12 GiB guard exit zero. The PNG remains byte-identical
+to the previous retained capture, SHA-256
+`65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`. Main-task retired instructions are
+**12,766,101,023** at the legacy
+paint marker and **39,239,196,369**
+at native submission. These overlapping scopes remain separate. Host load
+averages and active guarded checks are retained; this unpaired diagnostic cannot
+attribute a gain or regression, and earns zero instruction credit.
+
+The `turbo-frame.delegate` error is gone. Execution now reaches
+`Error: Unable to get document domain`, and the four unarchived CSS modules still
+receive replay 404s. Complete hydration and Chrome parity remain open. No paired
+cohort was replaced, extended or credited, and no broad baseline was reset.
+See [the structured audit](performance/github-custom-construction-20261103.json)
+and [durable checks, commands, logs and captures](performance/raw/github-custom-construction-20261103.tar.gz).
