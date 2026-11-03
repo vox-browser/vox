@@ -63,7 +63,7 @@ ICU/Brotli dependencies, so the absolute result supplies no isolated attribution
 A later two-launch diagnostic (`current-default-pilot`) reaches 2,892,199,045
 median but cannot replace the required seven-trial cohort.
 
-The latest complete matched production cohort, `initial-background-matched`,
+An earlier complete matched production cohort, `initial-background-matched`,
 uses executable `7b7b6983906c38dd92d3d052162b98c61e5419cbbca5084bd1b3ea1c450847f8`,
 receipt `20261103-082817-8bf5ceb0`. Starting a bounded set of computed background
 requests before geometry, together with conservative pending-repaint resource
@@ -78,10 +78,33 @@ Separate profiles identify image-completion restyling after first geometry and
 rejected longhand-cache inputs (`vertical-align: inherit`, inherited border
 colors, `font-weight: bolder`, background images and font-relative margins).
 The source now consumes only already-buffered initial image completions before
-first geometry and extends longhand reuse with snapshots of explicitly inherited
-non-inherited parent inputs. Resource/context-dependent parent values retain
-normal computation. Both changes pass type checks and have authored regression
-cases; their production measurements and execution checks are pending.
+first geometry. A diagnostic confirms two ready responses and exact pixels.
+The latest complete cohort, `ready-inherit-matched3`, uses executable
+`f5d3441370685d8d032fffe76deeb5c727aff0b0c46c2f85637b09084c4d1fad`,
+receipt `20261103-084947-ca92c271`. Its seven default trials measure
+**2,834,461,737 median / 2,852,355,429 maximum**, with all 21 captures passing
+the original gates. The matched image-completion control measures
+2,895,680,613 median: a **61,218,876** difference, with every pair improving.
+The earlier attempt has an ownership failure; the second attempt stops after
+eight captures because the production bundle changes. Both remain invalid.
+
+The expanded longhand cache snapshots explicitly inherited non-inherited parent
+inputs. Its separate control measures 2,890,073,543 versus 2,895,680,613 median:
+a **5,607,070 regression**, with five of seven pairs slower. This experiment
+and its authored tests are removed from source and preserved under the raw
+evidence root. No regression suite has been run.
+
+A direct text-surface experiment first used RGBA Skia blitters and changed
+reference pixels, while retaining PNG profile/density/metadata. It is rejected.
+The revised path keeps the original BGRA format, crop, matrix and surface
+properties, temporarily swapping only an eligible private rectangular bitmap
+region and detaching earlier Quartz snapshots before writing. A diagnostic
+confirms 215 eligible draws. Seven `glyph-surface-bgra-matched` pairs on the
+same executable with a pinned private native bridge measure
+**2,832,080,113 → 2,821,580,780** medians; candidate maximum is 2,825,335,713.
+Every pair improves and all fourteen captures pass the unchanged gates. Its
+authored coverage/ownership tests are deferred, and this diagnostic bridge
+result does not validate the final default production build or reach 2.7B.
 
 JSC collection pilots retain every launch. A single-marker setting is promising
 in two alternating pilots, but the seven-pair cohort has helper-ownership failures
@@ -89,6 +112,9 @@ and supplies no acceptance or production-setting credit. Synchronous collection
 and larger heaps remain diagnostics, with no new source setting. The relevant
 options are documented in the upstream
 [WebKit options list](https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/runtime/OptionsList.h).
+An additional private-helper-only collector diagnostic confirms one marker
+while leaving the page runtime unchanged. Its pilot has another ownership
+failure and supplies no credit; no collector setting is retained in source.
 
 Retained experiments include demand-loaded ANGLE, deferred private-filter URL
 and regex services, broader scale-only CSS projection, wider lossless PNG pixel
