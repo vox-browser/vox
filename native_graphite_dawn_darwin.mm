@@ -29,6 +29,7 @@
 #include <vector>
 #include <chrono>
 #include <algorithm>
+#include "native_graphite_shared_dawn.h"
 
 namespace {
 std::mutex gpu_mutex;
@@ -151,7 +152,7 @@ private:
                 ++reused;
                 return entry.texture;
             }
-        auto texture = SkImages::TextureFromImage(recorder, image, properties);
+        auto texture = vox_dawn_shared_image(recorder, image, properties);
         // Chromium converts a tagged upload to an eight-bit sRGB texture on
         // the GPU before sampling it. CPU conversion and conversion during
         // the final image draw both change the filtered texels.
@@ -211,7 +212,8 @@ int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int heig
     auto recorder = gpu->makeRecorder(options);
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    auto shared = VoxDawnSharedSurface::Make(recorder.get(), info);
+    auto surface = shared.surface;
     if (!surface) return 0;
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
@@ -223,6 +225,14 @@ int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int heig
     skgpu::graphite::InsertRecordingInfo insertion;
     insertion.fRecording = recording.get();
     if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
+    if (shared.pixels) {
+        std::vector<uint8_t> result;
+        if (!shared.read(gpu, SkIRect::MakeXYWH(x, y, region_width, region_height), result)) return 0;
+        for (int row = 0; row < region_height; ++row)
+            std::memcpy(pixels + size_t(row) * pitch,
+                result.data() + size_t(row) * region_width * 4, size_t(region_width) * 4);
+        return 1;
+    }
     std::unique_ptr<const SkImage::AsyncReadResult> result;
     gpu->asyncRescaleAndReadPixels(surface.get(), info.makeWH(region_width, region_height),
         SkIRect::MakeXYWH(x, y, region_width, region_height),
@@ -295,10 +305,12 @@ static int draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
     if (!recorder) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    auto shared = VoxDawnSharedSurface::Make(recorder.get(), info);
+    auto surface = shared.surface;
     if (!surface) return 0;
     struct Readback { std::unique_ptr<const SkImage::AsyncReadResult> result; };
     std::vector<std::shared_ptr<Readback>> reads(count);
+    std::vector<std::vector<uint8_t>> shared_reads(count);
     int queued = 0;
     bool success = true;
     for (int i = 0; i < count; ++i) {
@@ -307,9 +319,12 @@ static int draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
         canvas->resetMatrix();
         canvas->clear(SK_ColorTRANSPARENT);
         auto const& backdrop = regions[i].output;
-        if (has_background)
-            surface->writePixels(SkPixmap(info.makeWH(backdrop.width, backdrop.height),
-                backdrop.pixels, backdrop.pitch), backdrop.x, backdrop.y);
+        if (has_background) {
+            SkPixmap source(info.makeWH(backdrop.width, backdrop.height), backdrop.pixels, backdrop.pitch);
+            if (shared.pixels) {
+                if (!shared.write(gpu, source, backdrop.x, backdrop.y)) { success = false; break; }
+            } else surface->writePixels(source, backdrop.x, backdrop.y);
+        }
         SkMatrix matrix; matrix.set9(regions[i].matrix);
         canvas->setMatrix(matrix);
         canvas->drawPicture(pictures[i]);
@@ -318,6 +333,13 @@ static int draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
         insertion.fRecording = recording.get();
         if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) {
             success = false; break;
+        }
+        if (shared.pixels) {
+            auto const& out = regions[i].output;
+            if (!shared.read(gpu, SkIRect::MakeXYWH(out.x, out.y, out.width, out.height), shared_reads[i])) {
+                success = false; break;
+            }
+            continue;
         }
         reads[i] = std::make_shared<Readback>();
         auto* callback = new std::shared_ptr<Readback>(reads[i]);
@@ -335,6 +357,15 @@ static int draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
     if (queued && !gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes)))
         success = false;
     if (!success) return 0;
+    if (shared.pixels) {
+        for (int i = 0; i < count; ++i) {
+            auto const& out = regions[i].output;
+            for (int y = 0; y < out.height; ++y)
+                std::memcpy(out.pixels + size_t(y) * out.pitch,
+                    shared_reads[i].data() + size_t(y) * out.width * 4, size_t(out.width) * 4);
+        }
+        return 1;
+    }
     for (int i = 0; i < count; ++i)
         if (!reads[i] || !reads[i]->result || reads[i]->result->count() != 1
             || reads[i]->result->rowBytes(0) < size_t(regions[i].output.width) * 4) return 0;

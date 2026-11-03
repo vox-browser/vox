@@ -8,10 +8,20 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tarfile
+import tempfile
 
 from build_mac_graphite import REVISION, SHA512, executable, extract_skia_archive
 
 DAWN_REVISION = '42d0e90fe3552a2a8e95ca8e506bc19bbda12729'
+SHARED_PIXELS_INPUTS = {
+    'src/gpu/graphite/BufferManager.cpp': (
+        'f81fc38e9865febc986b57d60931315e89a4c610db068c35b32d3a9a7fa27065',
+        'd9adf241a756610b73cb163be55e3dfeeef52eeb7edbe2489ae092c223562205'),
+    'src/gpu/graphite/dawn/DawnResourceProvider.cpp': (
+        '66b02cff04e37897138b7cfd7f4325d5821b10a7b8f2ea59c6f363ff36bc3eca',
+        '298c27c0afa66d0bd05550c262dab0fd9d053f6f1aacd5d18bc45d6bb5551318'),
+}
 DEPENDENCIES = [
     ('dawn', 'https://dawn.googlesource.com/dawn.git', DAWN_REVISION),
     ('abseil-cpp', 'https://chromium.googlesource.com/chromium/src/third_party/abseil-cpp',
@@ -21,6 +31,34 @@ DEPENDENCIES = [
     ('webgpu-headers', 'https://chromium.googlesource.com/external/github.com/webgpu-native/webgpu-headers',
      'b5ff182caa90e53293f47939716281342c0812ba'),
 ]
+
+
+def prepare_shared_pixels_patch(source, archive, patch):
+    """Authenticate both Dawn buffer changes before modifying either input."""
+    original = {name: values[0] for name, values in SHARED_PIXELS_INPUTS.items()}
+    expected = {name: values[1] for name, values in SHARED_PIXELS_INPUTS.items()}
+    actual = {name: hashlib.sha256((source / name).read_bytes()).hexdigest() for name in original}
+    if actual == expected:
+        return
+    if actual != original:
+        raise SystemExit('Unexpected or partially patched Dawn buffer source')
+    with tempfile.TemporaryDirectory(prefix='vox-dawn-buffers-') as temporary:
+        staged = Path(temporary)
+        with tarfile.open(archive) as bundle:
+            for name, digest in original.items():
+                data = bundle.extractfile(f'skia-{REVISION}/{name}').read()
+                if hashlib.sha256(data).hexdigest() != digest:
+                    raise SystemExit('Unexpected original Dawn buffer source: ' + name)
+                target = staged / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(data)
+        subprocess.run(['patch', '--batch', '--fuzz=0', '-p1', '-i', str(patch.resolve())],
+                       cwd=staged, check=True)
+        for name, digest in expected.items():
+            if hashlib.sha256((staged / name).read_bytes()).hexdigest() != digest:
+                raise SystemExit('Unexpected patched Dawn buffer source: ' + name)
+        for name in original:
+            (source / name).write_bytes((staged / name).read_bytes())
 
 
 def checkout(item, external):
@@ -59,6 +97,9 @@ def main():
     external.mkdir(exist_ok=True)
     with ThreadPoolExecutor(max_workers=4) as pool:
         list(pool.map(lambda item: checkout(item, external), DEPENDENCIES))
+    prepare_shared_pixels_patch(source,
+        repo / 'Build/deps/skia-brave' / f'{REVISION}.tar.gz',
+        repo / 'tools/skia_dawn_shared_pixels.patch')
 
     python = root / 'python/bin/python3'
     if not python.is_file():
