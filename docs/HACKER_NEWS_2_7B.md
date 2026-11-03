@@ -35,18 +35,25 @@ the 2.7B instruction gate passes. A first injected sampling diagnostic rendered
 exactly but captured no usable stacks and changed bundle identity during its
 run; it is retained as invalid and supplies no performance credit.
 
-The latest fully valid seven-pair production cohort is `semantic-matched`,
-executable SHA256
-`3168441b4104efbbfd9dfdddafddaf91137b531b01f05e291387ca2c387b8954`,
-receipt `20261103-061731-b799d512`. Its default median is **2,950,799,202**
-instructions and maximum **2,953,553,447**. All fourteen captures pass the
+The latest complete seven-pair production cohort is
+`tokenized-preloads-matched`, executable SHA256
+`b2c78a1c7959754aae157be4b03471e6260370865935892aa5c7db4dcec01066`,
+receipt `20261103-074640-eeb788bc`. Its default median is **2,911,506,984**
+instructions and maximum **2,917,899,987**. All fourteen captures pass the
 unchanged pixel/content/PNG/identity/ownership/exit gates. The matched control
-median is 2,948,666,955: the first semantic interner adds about 2.13M and earns
-no optimization credit. The lower absolute count also includes the compiler
-adjustment and other shared changes. Required regression suites remain deferred,
-so this is benchmark progress, not a completed 2.7B result. The
+median is 2,918,739,304, a **7,232,320** difference; two pairs regress by about
+10.42M and 6.05M. A separate debugger capture confirms the tokenized preload
+path executes, with exact output; debugger counts earn no performance credit.
+Required regression suites remain deferred, so this is benchmark progress,
+with **2.7B still open**. The
 [durable ledger](performance/hn-2700-progress-20261103.json) retains raw counts,
 pinned inputs, guards and all earlier attempts.
+
+The earlier `semantic-matched` production cohort remains recorded:
+2,950,799,202 default median and 2,953,553,447 maximum. Its initial semantic
+interner adds about 2.13M against its control and earns no isolated credit.
+The later geometry cache uses the broader interner together with conservative
+projection invariants; its matched result is recorded below.
 
 Retained experiments include demand-loaded ANGLE, deferred private-filter URL
 and regex services, broader scale-only CSS projection, wider lossless PNG pixel
@@ -60,7 +67,7 @@ fail pixels because the glyph-copy capability collided with the synthetic-italic
 flag; the capability now has a separate bit. Their failures remain recorded.
 Later ownership failures also remain invalid rather than being retried away.
 
-Plain-window hosting, a higher DFG compilation threshold, the identical-layout
+Plain-window hosting, a higher DFG compilation threshold, the first identical-layout
 input cache, and lazy WebGL prototype initialization showed no useful gain and
 remain rejected diagnostics. Two signed executables built from the same frozen
 production input with ordinary versus larger compiler inlining thresholds pass
@@ -83,17 +90,29 @@ seven matched medians and has been removed. A larger JSC heap also increases
 instructions in its two-pair pilot and has no source change. The framework
 preload and allocator pilots remain diagnostics with no production credit.
 
-The layout diagnostic finds 350 repeated complete raw-property/font signatures
-among 400 styles after setting aside two repeatedly projected pages. A narrow
-grid-default invariant and a revised geometry-input cache are pending production
-measurement. The second cache preserves document ownership, typed-value context,
-font and raw-page generations, scale and copy-on-write behavior. A new native GG
-adapter defers its unused Sokol renderer/font atlas until an explicit GG drawing
-or legacy font-metrics operation needs them. It preserves native host setup,
-input and application callbacks; compilation passes, measurements are pending.
-The first grid compilation and a concurrent immutable-font compilation failure
-are retained in the build receipts and corrected in source. No test suite has
-been run during this continuation.
+The revised identical-layout-input cache executes about 735 hits on the archived
+page. Seven `geometry-matched` pairs use executable
+`73c98de015d89a592565d1d83a89e15e7e94cb8d0c99af912b1fa211f4ecdcf9`,
+receipt `20261103-073211-15eccc1c`. Medians fall from **2,947,025,315** to
+**2,919,661,324**, a **27,363,991** difference, with every pair improving and
+all fourteen captures passing the unchanged gates. The cache preserves document
+ownership, typed-value context, font/raw-page generations, scale and copy-on-write
+behavior. Default grid and repeat-style values now retain their scale-independent
+projection. Focused mutation and ownership suites are authored but deferred.
+
+The native GG experiment is removed. An existing optimized host already skips
+GG renderer initialization on this browser path. Its seven-pair pilot has exact
+captures but no eligible execution, so the 5.9M median difference supplies no
+attribution. Both source and failed eligibility evidence remain under the raw
+evidence root. The first grid compilation and a concurrent immutable-font
+compilation failure remain recorded and were corrected in source.
+
+A component diagnostic on the latest bundle observes roughly 279M instructions
+in the filter helper and 239M in its owned macOS SetStoreUpdateService. These
+per-process samples are diagnostic lower bounds; acceptance continues to include
+both through the original exclusive-coalition counter. Unused helper-library
+stripping is pending a completed build. No test suite has been run during this
+continuation.
 
 Disk recovery compressed inactive generated C/preprocessed compiler inputs,
 verified each decompressed SHA256, and retained their compressed hashes and

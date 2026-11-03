@@ -46,8 +46,8 @@ separately from the historical paired Vox/Brave row above.
 | --- | ---: | ---: | ---: | --- | --- |
 | Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | 3.2B reached; **2.7B target open** | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
 
-The ongoing 2.7B work has a newer complete production benchmark: **2,950,799,202
-median**, **2,953,553,447 maximum**, with exact pixels and all content, PNG,
+The ongoing 2.7B work has a newer complete production benchmark: **2,911,506,984
+median**, **2,917,899,987 maximum**, with exact pixels and all content, PNG,
 identity, ownership and exit audits passing in seven matched pairs. Regression
 suites are deferred until the requested goal is reached, so the fully validated
 row above remains unchanged. See the [progress report](docs/HACKER_NEWS_2_7B.md)
