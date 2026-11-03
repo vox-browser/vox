@@ -52,6 +52,7 @@
 #include <unistd.h>
 
 #include "native_graphite_shared_metal.h"
+#include "native_graphite_shared_yuva_metal.h"
 
 namespace {
 std::mutex gpu_mutex;
@@ -495,7 +496,7 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
             // JPEG planes use the full BT.601 range; WebP planes are limited.
             (image->flags & 8) ? kJPEG_Full_SkYUVColorSpace : kRec601_SkYUVColorSpace);
         auto pixmaps = SkYUVAPixmaps::FromExternalPixmaps(yuva, planes);
-        texture = SkImages::TextureFromYUVAPixmaps(recorder, pixmaps, properties, false,
+        texture = vox_shared_yuva_image(recorder, pixmaps, properties,
             SkColorSpace::MakeSRGB());
     } else if (!texture) {
         if (static_cast<size_t>(image->pitch) < static_cast<size_t>(image->width) * 4) return false;
