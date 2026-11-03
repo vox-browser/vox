@@ -57,6 +57,28 @@ exclusions. This is an explicit native-library override diagnostic. Production
 source now selects `-O3` for that library, without fast-math; its default-build
 target measurement and deferred regression checks remain pending.
 
+The new `filter-refs-matched` asset comparison keeps the same executable and
+`-O3` native bridge in both arms. Seven alternating pairs measure
+**2,711,639,659 → 2,698,024,884** medians, a **13,614,775** difference, with
+five improving pairs and two regressions. Candidate counts are 2,700,795,640;
+2,704,968,327; 2,689,722,233; 2,690,408,421; 2,708,326,232; 2,698,024,884;
+2,697,971,627. All fourteen captures pass the unchanged correctness gates,
+input pins and normal exits. Concurrent independent captures are authenticated
+and excluded by the shared driver's ownership audit (130 scan entries); host
+contention is retained. The preceding two-pair pilot regresses by 2.19M between
+medians and remains recorded. Neither cohort establishes a default-production
+2.7B result; the seven-pair candidate maximum still exceeds the ceiling.
+
+This change packs the network reference array without dropping entries, and
+transfers each newly restored array to uBO once. Unrecognized caller arrays
+retain the original copy path. Object mutations retain identity; array mutation,
+reset and enumeration materialize the original contents. Regular expressions
+retain source and flags and are constructed on access. A separate native path
+diagnostic reads **0 of 7,415 references at initialization and 77 after the
+archived requests**, preserving the full array for subsequent queries. Focused
+ownership, mutation, regular-expression and fallback checks are authored and
+remain unexecuted under the user's test deferral.
+
 The preceding complete default-production benchmark (`font-final-matched`,
 executable `7b96605d1ea4d26f7fa565202e6a7b5976a2ddf0064f2aa2ee2dafd346ca6fd9`,
 receipt `20261103-123257-90afe652`) measures **2,743,357,004 median /

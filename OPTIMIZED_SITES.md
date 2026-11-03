@@ -54,7 +54,11 @@ The **2.7B target remains open**. A separate seven-pair PNG diagnostic saves
 is 8.68% larger and stays within the existing size bound. Compiling the same
 native sources with `-O3` saves another 14.6M between seven matched medians
 (six improving pairs, one regression), reaching a diagnostic 2.709B median and
-2.724B maximum. These overrides have no final default-build credit yet.
+2.724B maximum. Lazy network references then measure **2.698B median /
+2.708B maximum** in seven matched diagnostic pairs; the preceding two-pair
+pilot regresses and remains recorded. That cohort includes authenticated
+independent concurrent captures and does not pass the 2.7B maximum gate.
+These overrides have no final default-build credit yet.
 Failed cohorts and rejected font/text/capture prototypes remain
 recorded. PNG metadata is stable against a newly pinned control PNG; the
 historical Vox PNG and earlier raw directory are unavailable after shared Build
