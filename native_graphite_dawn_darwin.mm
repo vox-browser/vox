@@ -40,8 +40,11 @@ skgpu::graphite::Context* context()
 {
     gpu_context_last_use = std::chrono::steady_clock::now();
     if (!gpu_context_attempted) {
+        // Retire the peer backend only after it is idle, not on every switch.
+        // Interleaved shadow/picture drawing within one frame would otherwise
+        // thrash a Metal device create/destroy and stall on its thread pool.
         vox_retire_other_graphite_context("@rpath/libVoxGraphite.dylib",
-            "vox_graphite_retire_graphics_context");
+            "vox_graphite_release_idle_graphics_memory");
         gpu_context_attempted = true;
         gpu_context = [] {
         static std::unique_ptr<dawn::native::Instance> instance;

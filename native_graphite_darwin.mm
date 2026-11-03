@@ -156,8 +156,12 @@ skgpu::graphite::Context* context()
 {
     gpu_context_last_use = std::chrono::steady_clock::now();
     if (!gpu_context_attempted) {
+        // Only retire the peer backend once it has gone idle. A frame that
+        // interleaves shadows (this backend) with pictures/gradients (the
+        // Dawn backend) otherwise destroys and recreates a Metal device on
+        // every switch; its worker-thread-pool teardown blocks the frame.
         vox_retire_other_graphite_context("@rpath/libVoxGraphiteDawn.dylib",
-            "vox_graphite_picture_retire_graphics_context");
+            "vox_graphite_picture_release_idle_graphics_memory");
         gpu_context_attempted = true;
         gpu_context = [] {
         skgpu::graphite::MtlBackendContext backend;
