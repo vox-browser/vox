@@ -1,6 +1,7 @@
 module css
 
 import dom
+import math
 import strings
 
 // Translated media/support CSSOM logic formerly hosted as stubs in cssom_rules.v.
@@ -1672,12 +1673,21 @@ fn compare_media_feature_values(left MediaFeatureValueLocal, comparison MediaFea
 	}
 	left_value := media_feature_numeric_value(left, document) or { return .false_ }
 	right_value := media_feature_numeric_value(right, document) or { return .false_ }
+	// Blink's inclusive length comparisons allow one LayoutUnit (1/64px).
+	// Keep the resolved values intact: strict operators still compare exactly,
+	// and LibWeb queries and non-length features retain their own precision.
+	chromium := if doc := document { doc.font_rendering_policy() == .chromium } else { false }
+	precision := if chromium && left.kind == .length && left_value >= 0 && right_value >= 0 {
+		1.0 / 64.0
+	} else {
+		0.0
+	}
 	return match comparison {
-		.equal { as_match_result(left_value == right_value) }
+		.equal { as_match_result(math.abs(left_value - right_value) <= precision) }
 		.less_than { as_match_result(left_value < right_value) }
-		.less_than_or_equal { as_match_result(left_value <= right_value) }
+		.less_than_or_equal { as_match_result(left_value <= right_value + precision) }
 		.greater_than { as_match_result(left_value > right_value) }
-		.greater_than_or_equal { as_match_result(left_value >= right_value) }
+		.greater_than_or_equal { as_match_result(left_value >= right_value - precision) }
 	}
 }
 

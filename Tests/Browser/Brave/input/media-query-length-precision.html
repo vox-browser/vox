@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Inclusive media lengths retain Chromium precision</title>
+<style>
+  body { margin: 0; background: white; }
+  .case { width: 160px; height: 24px; margin: 8px; background: red; }
+  @media (min-width: 800.01px) { #minimum { background: green; } }
+  @media (max-width: 799.99px) { #maximum { background: green; } }
+  @media (width: 800.015625px) { #equality { background: green; } }
+  @media (800.01px <= width <= 799.99px) { #range { background: green; } }
+  @media (width >= calc(50rem + .01px)) and (pointer: fine) { #calculated { background: green; } }
+  @media (height <= 599.99px) { #height { background: green; } }
+  #strict, #outside, #negative { background: green; }
+  @media (width > 800.001px), (width < 799.999px) { #strict { background: red; } }
+  @media (width >= 800.016px), (width <= 799.984px) { #outside { background: red; } }
+  @media (width: -.01px) { #negative { background: red; } }
+</style>
+<div class="case" id="minimum"></div>
+<div class="case" id="maximum"></div>
+<div class="case" id="equality"></div>
+<div class="case" id="range"></div>
+<div class="case" id="calculated"></div>
+<div class="case" id="height"></div>
+<div class="case" id="strict"></div>
+<div class="case" id="outside"></div>
+<div class="case" id="negative"></div>
