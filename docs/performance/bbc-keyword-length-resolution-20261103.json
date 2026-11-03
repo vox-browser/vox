@@ -1586,7 +1586,9 @@
       "elapsed_seconds": 2.4643429589999997,
       "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
     },
-    "native_validation_pending_later_bundle": true
+    "native_validation_pending_later_bundle": false,
+    "later_native_validation": "bbc-borrowed-invalidation-values-20261103.json#native",
+    "later_rollback_source_proof": "Build/bbc-borrowed-invalidation-values-20261103/production-function-proof.json"
   },
   "broad": {
     "new_suite_required_for_credited_reduction": false,

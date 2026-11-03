@@ -4163,3 +4163,47 @@ retains every count, failure, profile, explicit preprocessor-normalization proof
 command and identity/ownership/guard receipt. History reaches **71 cohorts /
 1,635 browser attempts**. The **10% goal remains open**, without a BBC homepage
 catalog entry.
+
+### Retained scalar invalidation comparisons (2026-11-03)
+
+`5fc8829e0` compares complete retained scalar payloads during style invalidation,
+preserving NaN non-reflexivity, inactive Display fields, live mutations and the
+existing composite/untyped fallback. All **162 focused executions** and **244
+tool tests** pass. A separate `v -profile` diagnostic confirms fewer wrapper
+and deep-comparison calls within the selected scope. Two unprofiled standalone
+pairs save **21,643,484.5 instructions** across first/second layout medians,
+with unchanged geometry and paint. This diagnostic changes body color during
+the second update and retains the then-present keyword shortcut in both arms;
+it is not the frozen browser acceptance workload and earns no BBC credit.
+
+Fresh original-origin diagnostics confirm this path before encoded PNG,
+original content/pixels, ownership and actual JavaScriptCore execution.
+Cohort 72 retains four launches and fails executable identity when a shared
+publication replaces the bundle. Cohort 73 completes seven alternating
+control/Vox/Brave triples with **all 21 original PNGs exact** and successful
+content, ownership, adoption, identity and normal-exit checks. Its observed
+medians are **29,640,606,074 control**, **28,994,053,751 Vox**, and
+**15,082,070,722 Brave**. The difference of medians is **646,552,323 lower**;
+four matched pairs improve and three regress, with paired median reduction
+726,040,284. Large variation and regressions remain: these observations do not
+establish that the full median difference derives from this path. The valid
+cohort still fails the target:
+**299,732,467,880 > 134,768,464,452**, ratio **2.0016494377**.
+
+Broad verification enters all **490 cases per default/no-GC mode**, with **487
+passes and the same three known failures** per mode, and unchanged owned
+inputs. It is not a full pass or cadence reset. The pinned later bundle passes
+headless startup, eleven smoke and eight SVG checks with stable identities.
+That build also removes the rejected keyword shortcut, validating its rollback.
+The generated-C comparison explicitly normalizes preprocessing of booleans,
+null and diagnostic string symbols; it does not claim raw byte equality.
+The [durable ledger](performance/bbc-borrowed-invalidation-values-20261103.json)
+retains all results and interrupted/preparation attempts. History reaches
+**73 cohorts / 1,660 browser attempts**. The **10% target remains open**,
+without a BBC homepage catalog entry or live-site/rendering-time/FPS claim.
+
+The separate broader [layout-scope profile](performance/bbc-layout-scope-profile-20261103.json)
+records 5,064 function rows on frozen HTML with identical geometry/paint.
+Its C-O1 instrumentation disproportionately charges small adapter calls, and
+recursive inclusive times overlap. These call patterns guide investigation;
+they are not unprofiled instruction savings or CPU percentages.
