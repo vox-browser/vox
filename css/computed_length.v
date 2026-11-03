@@ -28,6 +28,10 @@ pub fn (c &ComputedProperties) length_percentage_to_px(property_id PropertyID, p
 }
 
 fn (c &ComputedProperties) absolute_layout_length_to_px(length Length) CSSPixels {
+	if !retain_absolute_length_context && length.unit_ == .px && length.value_ == 0 {
+		c.report_exact_layout_length()
+		return CSSPixels.from_raw(0)
+	}
 	if subject := c.subject_element_ {
 		if subject.document().font_rendering_policy() == .chromium {
 			return CSSPixels.truncated_value_for(length.absolute_length_to_px_without_rounding())
