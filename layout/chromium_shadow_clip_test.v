@@ -17,13 +17,13 @@ fn opaque_shadow_test_commands(chromium bool, alpha u8, size f64) []PaintCommand
 			background_color_clip: 'border-box'
 			border_radius:         3
 			shadows:               [
-			BoxShadow{
-				offset_x: 2
-				offset_y: 2
-				blur:     5
-				color:    css.Color{136, 136, 136, 255}
-			},
-		]
+				BoxShadow{
+					offset_x: 2
+					offset_y: 2
+					blur:     5
+					color:    css.Color{136, 136, 136, 255}
+				},
+			]
 		})
 	}
 	return box.paint_commands()
@@ -54,7 +54,7 @@ fn test_opaque_chromium_shadow_paints_before_background_with_inset_cutout() {
 	assert tiny.content_rect.width == 0 && tiny.content_rect.height == 0
 }
 
-fn test_opaque_shadow_cutouts_keep_one_css_pixel_in_device_layout() {
+fn test_opaque_shadow_cutouts_keep_one_device_pixel_in_every_coordinate_space() {
 	for policy in [dom.FontRenderingPolicy.libweb, .chromium] {
 		mut document := html.parse_document('<!doctype html><style>
 			body{margin:0}.shadow{background:#def;border-radius:8px;box-shadow:0 0 5px #0004}
@@ -63,19 +63,22 @@ fn test_opaque_shadow_cutouts_keep_one_css_pixel_in_device_layout() {
 		</style><div class="shadow"></div><span class="shadow">Inline shadow</span>')
 		defer { document.finalize() }
 		document.set_font_rendering_policy(policy)
-		for scale in [1.0, 1.5, 2.0] {
-			document.set_layout_coordinate_scale(scale)
-			root := layout_document_typed_in_viewport(document, 300, 150)
-			shadows := root.paint_commands().filter(it.kind == 'paint_outer_box_shadow')
-			assert shadows.len == 2
-			for shadow in shadows {
-				clip := shadow.box_shadow().content_rect
-				inset := if policy == .chromium { scale } else { 0.0 }
-				assert clip.x == shadow.x + inset
-				assert clip.y == shadow.y + inset
-				assert clip.width == shadow.width - 2 * inset
-				assert clip.height == shadow.height - 2 * inset
-				assert shadow.box_shadow().content_radii.top_left.x == shadow.corner_radii.top_left.x - inset
+		for density in [f64(1), 1.5, 2, 3, 1] {
+			document.set_display_device_pixel_ratio(density)
+			for scale in [1.0, 1.5, 2.0] {
+				document.set_layout_coordinate_scale(scale)
+				root := layout_document_typed_in_viewport(document, 300, 150)
+				shadows := root.paint_commands().filter(it.kind == 'paint_outer_box_shadow')
+				assert shadows.len == 2
+				for shadow in shadows {
+					clip := shadow.box_shadow().content_rect
+					inset := if policy == .chromium { scale / density } else { 0.0 }
+					assert clip.x == shadow.x + inset
+					assert clip.y == shadow.y + inset
+					assert clip.width == shadow.width - 2 * inset
+					assert clip.height == shadow.height - 2 * inset
+					assert shadow.box_shadow().content_radii.top_left.x == shadow.corner_radii.top_left.x - inset
+				}
 			}
 		}
 	}

@@ -156,6 +156,13 @@ fn chromium_pair_rounded_border_background(mut commands []PaintCommand, backgrou
 	if border.kind == 'paint_uniform_border' && background.x != border.x {
 		inset = border.stroke_width / 2
 		if inset <= 0 { return }
+		if background.x > border.x {
+			// A translucent border shares the outer clipping layer with a
+			// padding/content background, but that fill keeps its inner extent.
+			color := css.parse_color_string(border.color) or { return }
+			if color.a == 255 || background.x < border.x + inset { return }
+			inset = border.x - background.x
+		}
 	}
 	if [background.x + inset, background.y + inset,
 		background.width - inset * 2, background.height - inset * 2] !=

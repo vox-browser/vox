@@ -3,7 +3,7 @@ module main
 import html
 import layout
 
-fn test_translucent_uniform_border_pairs_only_its_outer_background_clip() {
+fn test_translucent_uniform_border_pairs_matching_outer_and_inner_backgrounds() {
 	for shadows in ['none', '0 2px 8px #0001', '0 0 0 1px #0000000a,0 2px 8px #0000000a,0 4px 40px 8px #00000006'] {
 	for clip in ['border-box', 'padding-box', 'content-box'] {
 		mut document := html.parse_document('<!doctype html><style>
@@ -19,11 +19,15 @@ fn test_translucent_uniform_border_pairs_only_its_outer_background_clip() {
 		assert borders.len == 1 && backgrounds.len == 1
 		border := borders[0]
 		background := backgrounds[0]
-		assert background.underlays_next == (clip == 'border-box')
+		// Content-box shadows retain their original intervening paint order.
+		paired := clip != 'content-box' || shadows == 'none'
+		assert background.underlays_next == paired
 		assert chromium_uniform_border_shares_outer_clip(&border, &background) == (clip == 'border-box')
+		assert chromium_uniform_border_shares_inner_background(&border, &background) == (clip != 'border-box')
+		assert chromium_uniform_border_uses_clip_layer(&border, &background) == paired
 		// The inverse path belongs to the offscreen ClipLayer; it must not
 		// select MSAA for unrelated shapes in the parent raster tile.
-		assert chromium_msaa_triggers(commands).len == 0
+		if paired { assert chromium_msaa_triggers(commands).len == 0 }
 		mut hidden := commands.clone()
 		for i, command in hidden {
 			if command.kind == 'paint_uniform_border' {
@@ -54,7 +58,7 @@ fn test_uniform_border_outer_clip_requires_matching_circular_geometry() {
 		&layout.PaintCommand{...background,radius:0})
 }
 
-fn test_invisible_uniform_border_clips_only_the_matching_outer_background() {
+fn test_invisible_uniform_border_preserves_each_matching_background_clip() {
 	for shadow in ['none', '0 2px 8px #0001'] {
 		for clip in ['border-box', 'padding-box', 'content-box'] {
 			mut document := html.parse_document('<!doctype html><style>
@@ -70,11 +74,59 @@ fn test_invisible_uniform_border_clips_only_the_matching_outer_background() {
 			assert borders.len == 1 && backgrounds.len == 1
 			border := borders[0]
 			background := backgrounds[0]
-			assert background.underlays_next == (clip == 'border-box')
-			assert chromium_uniform_border_uses_clip_layer(&border, &background) == (clip == 'border-box')
+			// Content-box shadows retain their original intervening paint order.
+		paired := clip != 'content-box' || shadow == 'none'
+		assert background.underlays_next == paired
+			assert chromium_uniform_border_uses_clip_layer(&border, &background) == paired
 			assert !chromium_uniform_border_uses_clip_layer(
 				&layout.PaintCommand{...border, color:'#000'}, &background)
 			document.finalize()
 		}
+	}
+}
+
+fn test_rounded_border_inner_background_requires_concentric_circular_geometry() {
+	border := layout.PaintCommand{
+		kind:         'paint_uniform_border'
+		x:            10.5
+		y:            20.5
+		width:        99
+		height:       39
+		stroke_width: 1
+		color:        '#0004'
+		corner_radii: layout.BoxRadii{
+			top_left:     layout.CornerRadius{5.5, 5.5}
+			top_right:    layout.CornerRadius{5.5, 5.5}
+			bottom_right: layout.CornerRadius{5.5, 5.5}
+			bottom_left:  layout.CornerRadius{5.5, 5.5}
+		}
+	}
+	for inset in [f64(0.5), 1.5, 3.5] {
+		background := layout.PaintCommand{
+			kind:           'fill_rect'
+			x:              10.5 + inset
+			y:              20.5 + inset
+			width:          99 - 2 * inset
+			height:         39 - 2 * inset
+			radius:         5.5 - inset
+			underlays_next: true
+		}
+		assert chromium_uniform_border_shares_inner_background(&border, &background)
+		assert chromium_uniform_border_uses_clip_layer(&border, &background)
+		assert !chromium_uniform_border_shares_outer_clip(&border, &background)
+		for changed in [
+			layout.PaintCommand{ ...background, x: background.x + 0.25 },
+			layout.PaintCommand{ ...background, y: background.y + 0.25 },
+			layout.PaintCommand{ ...background, width: background.width + 0.25 },
+			layout.PaintCommand{ ...background, height: background.height + 0.25 },
+			layout.PaintCommand{ ...background, radius: background.radius + 0.25 },
+			layout.PaintCommand{ ...background, radius: 0 },
+		] {
+			assert !chromium_uniform_border_shares_inner_background(&border, &changed)
+		}
+		assert !chromium_uniform_border_uses_clip_layer(&border,
+			&layout.PaintCommand{ ...background, underlays_next: false })
+		assert !chromium_uniform_border_uses_clip_layer(&layout.PaintCommand{ ...border, color: '#000' }, &background)
+		assert !chromium_uniform_border_uses_clip_layer(&layout.PaintCommand{ ...border, has_clip: true, clip_width: 0, clip_height: 10 }, &background)
 	}
 }

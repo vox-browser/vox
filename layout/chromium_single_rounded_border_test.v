@@ -89,6 +89,8 @@ fn test_chromium_single_opaque_side_insets_its_background_without_a_shared_layer
 		</style><div></div>')
 		document.set_font_rendering_policy(.chromium)
 		document.set_layout_coordinate_scale(2)
+		// Scaled layout represents a matching 2x display in this raster test.
+		document.set_display_device_pixel_ratio(2)
 		root := layout_document_typed_in_viewport(document, 800, 600)
 		commands := root.paint_commands()
 		backgrounds := commands.filter(it.kind == 'fill_rounded_rect')

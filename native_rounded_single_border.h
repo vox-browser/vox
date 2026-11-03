@@ -10,7 +10,8 @@
 // A single solid rounded CSS border uses Blink's outer/interior clips and a
 // rectangle fill. The draw modes 2..5 select top, right, bottom and left.
 inline void vox_draw_rounded_single_border(SkCanvas* canvas, SkRRect const& outer,
-    SkPaint const& paint, int mode, float const* widths, SkPaint const* background = nullptr)
+    SkPaint const& paint, int mode, float const* widths, SkPaint const* background = nullptr,
+    SkRRect const* background_shape = nullptr)
 {
     // A uniform elliptical CSS border has independently inset radii. A
     // stroked ellipse offsets its contour instead, producing different edges.
@@ -27,18 +28,27 @@ inline void vox_draw_rounded_single_border(SkCanvas* canvas, SkRRect const& oute
         // Independent antialias coverage of a background and translucent
         // stroke darkens their shared edge.
         if (mode == 7 && background) {
+            bool const inset_background = background_shape
+                && background_shape->rect().width() < outer.rect().width()
+                && background_shape->rect().height() < outer.rect().height();
+            auto draw_background = [&] {
+                // Only an outer fill relies on the shared clip for its shape.
+                // Padding/content fills retain their own rounded boundary.
+                if (inset_background) canvas->drawRRect(*background_shape, *background);
+                else canvas->drawRect(outside.rect(), *background);
+            };
             canvas->save();
             canvas->clipRRect(outside, SkClipOp::kIntersect, paint.isAntiAlias());
             // With an invisible border Blink only clips the background. A
             // drawRRect, or an unnecessary saveLayer, resolves its edge with
             // different GPU coverage and premultiplied rounding.
             if (paint.getAlphaf() == 0) {
-                canvas->drawRect(outside.rect(), *background);
+                draw_background();
                 canvas->restore();
                 return;
             }
             canvas->saveLayer(nullptr, nullptr);
-            canvas->drawRect(outside.rect(), *background);
+            draw_background();
             SkPathBuilder builder;
             builder.addRRect(inside);
             auto inverse_inner = builder.detach();

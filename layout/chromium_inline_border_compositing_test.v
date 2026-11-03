@@ -45,7 +45,7 @@ fn test_inline_background_pairing_keeps_intervening_paint_and_other_border_shape
 	}
 }
 
-fn test_translucent_block_border_keeps_its_distinct_background_painting() {
+fn test_translucent_block_border_pairs_its_original_outer_background() {
 	mut document := html.parse_document('<!doctype html><style>
 		body{margin:0}div{width:80px;height:30px;border:1px solid rgba(240,178,184,.5);
 		border-radius:5px;background:#f9ddde}
@@ -56,7 +56,7 @@ fn test_translucent_block_border_keeps_its_distinct_background_painting() {
 	commands := root.paint_commands()
 	background := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(249 221 222)')[0]
 	border := commands.filter(it.kind == 'paint_uniform_border')[0]
-	assert !background.underlays_next
+	assert background.underlays_next
 	assert background.radius == 5
 	assert background.x == border.x - 0.5
 	assert background.y == border.y - 0.5

@@ -3990,7 +3990,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         if (has_underlay && (fill < 2 || fill == 6)) canvas->drawRRect(local_underlay, recorded_underlay);
         if (fill >= 2)
             vox_draw_rounded_single_border(canvas, local_rect, paint, fill, border_widths,
-                has_underlay ? &recorded_underlay : nullptr);
+                has_underlay ? &recorded_underlay : nullptr,
+                has_underlay ? &local_underlay : nullptr);
         else
             canvas->drawRRect(local_rect, paint);
         canvas->restore();
@@ -4007,7 +4008,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             canvas->drawRRect(underlay_rect, underlay_paint);
         if (fill >= 2)
             vox_draw_rounded_single_border(canvas, rounded_rect, paint, fill, border_widths,
-                has_underlay ? &underlay_paint : nullptr);
+                has_underlay ? &underlay_paint : nullptr,
+                has_underlay ? &underlay_rect : nullptr);
         else
             canvas->drawRRect(rounded_rect, paint);
         canvas->restore();
@@ -4024,6 +4026,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         && matrix.isScaleTranslate();
     if (tight_compound_stroke)
         local_bounds = rounded_rect.rect().makeOutset(thickness / 2, thickness / 2);
+    if (fill == 7 && has_underlay)
+        local_bounds = rounded_rect.rect().makeOutset(border_widths[0] / 2, border_widths[0] / 2);
     if (has_underlay)
         local_bounds.join(underlay_rect.rect());
     if (auto input = s_isolated_input_recordings.find(destination);
@@ -4178,7 +4182,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                 background.setColor4f({s_underlay_float_color[0], s_underlay_float_color[1],
                     s_underlay_float_color[2], s_underlay_float_color[3]});
             vox_draw_rounded_single_border(canvas, rounded_rect, paint, fill,
-                border_widths, &background);
+                border_widths, &background, &underlay_rect);
             SkSerialProcs procs;
             procs.fImageProc = serialize_shared_picture_image;
             auto bytes = recorder.finishRecordingAsPicture()->serialize(&procs);
@@ -4400,7 +4404,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         canvas->drawRRect(underlay_rect, underlay_paint);
     if (fill >= 2)
         vox_draw_rounded_single_border(canvas, rounded_rect, paint, fill, border_widths,
-                has_underlay ? &underlay_paint : nullptr);
+            has_underlay ? &underlay_paint : nullptr,
+            has_underlay ? &underlay_rect : nullptr);
     else
         canvas->drawRRect(rounded_rect, paint);
     surface.reset();

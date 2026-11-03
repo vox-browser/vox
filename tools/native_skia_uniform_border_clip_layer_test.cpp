@@ -9,7 +9,7 @@ int main()
     assert(shared_picture_draw());
     int cases = 0;
     for (int scale : {1, 2}) for (bool recording : {false, true})
-    for (int alpha : {26, 38, 128}) {
+    for (int alpha : {0, 26, 38, 128}) for (int inset : {0, 1, 4}) {
         int width = 96 * scale, height = 64 * scale;
         int tile_height = 256 * scale;
         std::vector<uint8_t> actual(size_t(width) * height * 4, 252);
@@ -25,7 +25,9 @@ int main()
         int tile = 0;
         ladybird_v_skia_set_msaa_grid(&tile, 1, width, tile_height, 1);
         ladybird_v_skia_set_shared_recording(recording, 96, 64);
-        float background[] {10, 12, 76, 40, 20, 20, 20, 20, 20, 20, 20, 20};
+        float radius = 20 - inset;
+        float background[] {float(10 + inset), float(12 + inset), float(76 - 2 * inset),
+            float(40 - 2 * inset), radius, radius, radius, radius, radius, radius, radius, radius};
         float widths[] {1, 1, 1, 1};
         ladybird_v_skia_set_rounded_rect_underlay(background, 255, 255, 255, 255);
         ladybird_v_skia_set_rounded_border_widths(widths);
@@ -43,14 +45,23 @@ int main()
         auto inner = SkRRect::MakeRectXY(SkRect::MakeXYWH(11, 13, 74, 38), 19, 19);
         canvas->save();
         canvas->clipRRect(outer, SkClipOp::kIntersect, true);
-        canvas->saveLayer(nullptr, nullptr);
+        if (alpha) canvas->saveLayer(nullptr, nullptr);
         SkPaint paint; paint.setAntiAlias(true); paint.setColor(SK_ColorWHITE);
-        canvas->drawRect(outer.rect(), paint);
-        SkPathBuilder path; path.addRRect(inner);
-        auto hole = path.detach(); hole.setFillType(SkPathFillType::kInverseWinding);
-        paint.setColor(SkColorSetARGB(alpha, 0, 0, 0));
-        canvas->drawPath(hole, paint);
-        canvas->restore(); canvas->restore();
+        if (inset) {
+            auto fill = SkRRect::MakeRectXY(SkRect::MakeXYWH(10 + inset, 12 + inset,
+                76 - 2 * inset, 40 - 2 * inset), radius, radius);
+            canvas->drawRRect(fill, paint);
+        } else {
+            canvas->drawRect(outer.rect(), paint);
+        }
+        if (alpha) {
+            SkPathBuilder path; path.addRRect(inner);
+            auto hole = path.detach(); hole.setFillType(SkPathFillType::kInverseWinding);
+            paint.setColor(SkColorSetARGB(alpha, 0, 0, 0));
+            canvas->drawPath(hole, paint);
+            canvas->restore();
+        }
+        canvas->restore();
         auto bytes = recorder.finishRecordingAsPicture()->serialize();
         std::vector<uint8_t> expected(size_t(width) * tile_height * 4);
         float identity[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
@@ -58,8 +69,8 @@ int main()
             bytes->data(), bytes->size(), identity));
         expected.resize(actual.size()); // The viewport owns the leading tile rows.
         if (actual != expected) {
-            std::fprintf(stderr, "clip layer differs scale=%d recording=%d alpha=%d\n",
-                scale, recording, alpha);
+            std::fprintf(stderr, "clip layer differs scale=%d recording=%d alpha=%d inset=%d\n",
+                scale, recording, alpha, inset);
             int shown = 0;
             for (size_t i = 0; i < actual.size(); i += 4) if (actual[i] != expected[i] && shown++ < 12)
                 std::fprintf(stderr, "%zu,%zu actual=%d expected=%d\n", i / 4 % width,
