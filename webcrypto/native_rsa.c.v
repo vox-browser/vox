@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webcrypto
 
-#pkgconfig openssl
+$if macos {
+	#pkgconfig --cflags openssl
+} $else {
+	#pkgconfig openssl
+}
 #include "@DIR/native_rsa.h"
 
 struct C.VoxRsaPart {

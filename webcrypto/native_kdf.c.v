@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webcrypto
 
-#pkgconfig openssl
+$if macos {
+	#pkgconfig --cflags openssl
+} $else {
+	#pkgconfig openssl
+}
 #include "@DIR/native_kdf.h"
 
 fn C.vox_kdf_derive(int, &char, &u8, uint, &u8, uint, &u8, uint, u32, &u8, uint) int

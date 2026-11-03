@@ -4,10 +4,13 @@
 #define VOX_WEBCRYPTO_NATIVE_AES_H
 #include <openssl/evp.h>
 
+#include "openssl_dispatch_darwin.h"
+
 static int vox_aes_cbc(int decrypt, int no_padding, unsigned char const* key,
     size_t key_size, unsigned char const* input, size_t input_size,
     unsigned char const* iv, unsigned char* output, size_t* output_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     EVP_CIPHER const* cipher = key_size == 16 ? EVP_aes_128_cbc()
         : key_size == 24 ? EVP_aes_192_cbc() : key_size == 32 ? EVP_aes_256_cbc() : NULL;
     if (!cipher)
@@ -38,6 +41,7 @@ static int vox_aes_ctr(int decrypt, unsigned char const* key, size_t key_size,
     unsigned char const* input, size_t input_size, unsigned char const* iv,
     unsigned char* output, size_t* output_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     EVP_CIPHER const* cipher = key_size == 16 ? EVP_aes_128_ctr()
         : key_size == 24 ? EVP_aes_192_ctr() : key_size == 32 ? EVP_aes_256_ctr() : NULL;
     if (!cipher)
@@ -68,6 +72,7 @@ static int vox_aes_gcm(int decrypt, unsigned char const* key, size_t key_size,
     unsigned char const* aad, size_t aad_size, unsigned char const* tag, size_t tag_size,
     unsigned char* output, size_t* output_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     EVP_CIPHER const* cipher = key_size == 16 ? EVP_aes_128_gcm()
         : key_size == 24 ? EVP_aes_192_gcm() : key_size == 32 ? EVP_aes_256_gcm() : NULL;
     if (!cipher)
@@ -108,6 +113,7 @@ static int vox_aes_gcm(int decrypt, unsigned char const* key, size_t key_size,
 static int vox_aes_kw(int decrypt, unsigned char const* key, size_t key_size,
     unsigned char const* input, size_t input_size, unsigned char* output, size_t* output_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     EVP_CIPHER const* cipher = key_size == 16 ? EVP_aes_128_wrap()
         : key_size == 24 ? EVP_aes_192_wrap() : key_size == 32 ? EVP_aes_256_wrap() : NULL;
     if (!cipher)

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webcrypto
 
-#pkgconfig openssl
+$if macos {
+	#pkgconfig --cflags openssl
+} $else {
+	#pkgconfig openssl
+}
 #include "@DIR/native_ml.h"
 
 fn C.vox_ml_generate(&char, &char, &u8, uint, &u8, &uint, &u8, &uint, &u8, &uint) &char

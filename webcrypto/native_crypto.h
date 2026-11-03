@@ -9,9 +9,12 @@
 #include <string.h>
 
 /* LibCrypto/Authentication/HMAC.cpp: reset, update, digest. */
+#include "openssl_dispatch_darwin.h"
+
 static int vox_hmac(char const* hash, unsigned char const* key, size_t key_size,
     unsigned char const* message, size_t message_size, unsigned char* output, size_t* output_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     EVP_MAC* mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
     if (!mac)
         return 0;
@@ -39,6 +42,7 @@ static int vox_kmac(char const* name, unsigned char const* key, size_t key_size,
     unsigned char const* message, size_t message_size, unsigned char const* custom,
     size_t custom_size, unsigned char* output, size_t output_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     EVP_MAC* mac = EVP_MAC_fetch(NULL, name, NULL);
     if (!mac)
         return 0;
@@ -65,6 +69,7 @@ static char const* vox_aes_ocb(int decrypt, unsigned char const* key, size_t key
     unsigned char const* input, size_t input_size, unsigned char const* iv, size_t iv_size,
     unsigned char const* aad, size_t aad_size, size_t tag_size, unsigned char* output)
 {
+    if (!vox_crypto_prepare()) return "OpenSSL WebCrypto backend is unavailable";
     EVP_CIPHER const* cipher = key_size == 16 ? EVP_aes_128_ocb()
         : key_size == 24 ? EVP_aes_192_ocb() : key_size == 32 ? EVP_aes_256_ocb() : NULL;
     if (!cipher)

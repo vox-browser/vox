@@ -12,10 +12,13 @@
 #endif
 
 /* LibCrypto/Hash/HKDF.cpp and PBKDF2.cpp provider parameters/derivation. */
+#include "openssl_dispatch_darwin.h"
+
 static int vox_kdf_derive(int pbkdf2, const char* hash, const unsigned char* key, size_t key_size,
     const unsigned char* salt, size_t salt_size, const unsigned char* info, size_t info_size,
     uint32_t iterations, unsigned char* output, size_t output_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     int success = 0;
     static unsigned char empty_salt = 0;
     EVP_KDF* kdf = EVP_KDF_fetch(NULL, pbkdf2 ? "PBKDF2" : "HKDF", NULL);
@@ -43,6 +46,7 @@ static const char* vox_argon2(const char* name, const unsigned char* password, s
     uint32_t passes, const unsigned char* secret, size_t secret_size, int has_secret,
     const unsigned char* ad, size_t ad_size, int has_ad, unsigned char* output, uint32_t tag_size)
 {
+    if (!vox_crypto_prepare()) return "OpenSSL WebCrypto backend is unavailable";
 #if OPENSSL_VERSION_NUMBER >= 0x30200000L
     EVP_KDF* kdf = EVP_KDF_fetch(NULL, name, NULL);
     EVP_KDF_CTX* ctx = kdf ? EVP_KDF_CTX_new(kdf) : NULL;

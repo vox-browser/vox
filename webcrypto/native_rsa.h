@@ -11,8 +11,11 @@
 typedef struct VoxRsaPart { unsigned char* bytes; size_t length; } VoxRsaPart;
 
 /* LibCrypto/PK/RSA.cpp generate_key_pair and OpenSSL.cpp integer export. */
+#include "openssl_dispatch_darwin.h"
+
 static int vox_rsa_generate(size_t bits, const unsigned char* exponent, size_t exponent_size, VoxRsaPart* output)
 {
+    if (!vox_crypto_prepare()) return 0;
     int success = 0;
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
     EVP_PKEY* key = NULL;
@@ -53,6 +56,7 @@ cleanup:
 /* LibCrypto/PK/RSA.cpp *_key_to_openssl_pkey. */
 static EVP_PKEY* vox_rsa_key(VoxRsaPart* values, int private_key)
 {
+    if (!vox_crypto_prepare()) return NULL;
     EVP_PKEY* key = NULL;
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
     OSSL_PARAM_BLD* builder = NULL;
@@ -83,6 +87,7 @@ cleanup:
 
 static const EVP_MD* vox_rsa_hash(const char* name)
 {
+    if (!vox_crypto_prepare()) return NULL;
     if (!strcmp(name, "SHA-1")) return EVP_sha1();
     if (!strcmp(name, "SHA-256")) return EVP_sha256();
     if (!strcmp(name, "SHA-384")) return EVP_sha384();
@@ -95,6 +100,7 @@ static int vox_rsa_oaep(VoxRsaPart* values, int decrypt, const char* hash_name,
     const unsigned char* label, size_t label_size, const unsigned char* input, size_t input_size,
     unsigned char* output, size_t* output_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     int success = 0;
     EVP_PKEY* key = vox_rsa_key(values, decrypt);
     EVP_PKEY_CTX* ctx = key ? EVP_PKEY_CTX_new_from_pkey(NULL, key, NULL) : NULL;
@@ -124,6 +130,7 @@ cleanup:
 
 static int vox_rsa_emsa_configure(EVP_PKEY_CTX* ctx, const EVP_MD* hash, int pss, unsigned int salt_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     if (EVP_PKEY_CTX_set_rsa_padding(ctx, pss ? RSA_PKCS1_PSS_PADDING : RSA_PKCS1_PADDING) != 1) return 0;
     if (pss && (EVP_PKEY_CTX_set_rsa_mgf1_md(ctx, hash) != 1 || EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, (int)salt_size) != 1)) return 0;
     return 1;
@@ -133,6 +140,7 @@ static int vox_rsa_emsa_configure(EVP_PKEY_CTX* ctx, const EVP_MD* hash, int pss
 static int vox_rsa_sign(VoxRsaPart* values, const char* hash_name, int pss, unsigned int salt_size,
     const unsigned char* message, size_t message_size, unsigned char* signature, size_t* signature_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     int success = 0;
     EVP_PKEY* key = vox_rsa_key(values, 1);
     EVP_MD_CTX* ctx = EVP_MD_CTX_new();
@@ -156,6 +164,7 @@ cleanup:
 static int vox_rsa_verify(VoxRsaPart* values, const char* hash_name, int pss, unsigned int salt_size,
     const unsigned char* signature, size_t signature_size, const unsigned char* message, size_t message_size)
 {
+    if (!vox_crypto_prepare()) return 0;
     int result = -1;
     EVP_PKEY* key = vox_rsa_key(values, 0);
     EVP_MD_CTX* ctx = EVP_MD_CTX_new();
@@ -176,6 +185,7 @@ cleanup:
 /* Direct translation of RSAPublicKey/RSAPrivateKey::is_valid. */
 static int vox_rsa_valid(VoxRsaPart* values, int private_key)
 {
+    if (!vox_crypto_prepare()) return 0;
     int result = -1;
     BIGNUM* bns[8] = { NULL };
     BIGNUM* three = BN_new();

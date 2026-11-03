@@ -4,11 +4,14 @@
 #define VOX_WEBCRYPTO_NATIVE_CHACHA_H
 #include <openssl/evp.h>
 
+#include "openssl_dispatch_darwin.h"
+
 static char const* vox_chacha20_poly1305(int decrypt, unsigned char const* key,
     size_t key_size, unsigned char const* nonce, size_t nonce_size,
     unsigned char const* input, size_t input_size, unsigned char const* aad,
     size_t aad_size, unsigned char* output, size_t* output_size)
 {
+    if (!vox_crypto_prepare()) return "OpenSSL WebCrypto backend is unavailable";
     if (key_size != 32)
         return "ChaCha20-Poly1305 key must be 32 bytes";
     if (nonce_size != 12)

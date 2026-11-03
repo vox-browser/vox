@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webcrypto
 
-#pkgconfig openssl
+$if macos {
+	#pkgconfig --cflags openssl
+} $else {
+	#pkgconfig openssl
+}
 #include "@DIR/native_aes.h"
 
 fn C.vox_aes_cbc(int, int, &u8, uint, &u8, uint, &u8, &u8, &uint) int

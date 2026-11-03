@@ -9,8 +9,11 @@
 #include <openssl/param_build.h>
 
 /* LibCrypto/Curves/SECPxxxr1.cpp generate_private_key, scalar_to_bytes. */
+#include "openssl_dispatch_darwin.h"
+
 static int vox_ec_private(const char* curve, unsigned char* output, size_t size)
 {
+    if (!vox_crypto_prepare()) return 0;
     EVP_PKEY* key = EVP_PKEY_Q_keygen(NULL, NULL, "EC", curve);
     BIGNUM* scalar = NULL;
     int success = key && EVP_PKEY_get_bn_param(key, OSSL_PKEY_PARAM_PRIV_KEY, &scalar) == 1
@@ -24,6 +27,7 @@ static int vox_ec_private(const char* curve, unsigned char* output, size_t size)
 static int vox_ec_public(const char* curve, const unsigned char* scalar, size_t scalar_size,
     unsigned char* x_out, unsigned char* y_out, size_t size)
 {
+    if (!vox_crypto_prepare()) return 0;
     int success = 0;
     EC_GROUP* group = EC_GROUP_new_by_curve_name(EC_curve_nist2nid(curve));
     EC_POINT* point = group ? EC_POINT_new(group) : NULL;
@@ -44,6 +48,7 @@ cleanup:
 static int vox_ec_valid(const char* curve, const unsigned char* x_bytes, size_t x_size,
     const unsigned char* y_bytes, size_t y_size, const unsigned char* d_bytes, size_t d_size, int private_key)
 {
+    if (!vox_crypto_prepare()) return -1;
     int result = -1;
     EC_GROUP* group = EC_GROUP_new_by_curve_name(EC_curve_nist2nid(curve));
     EC_POINT* point = group ? EC_POINT_new(group) : NULL;
@@ -68,6 +73,7 @@ cleanup:
 static int vox_ec_decompress(const char* curve, const unsigned char* bytes, size_t length,
     unsigned char* x_out, unsigned char* y_out, size_t size)
 {
+    if (!vox_crypto_prepare()) return 0;
     int success = 0;
     EC_GROUP* group = EC_GROUP_new_by_curve_name(EC_curve_nist2nid(curve));
     EC_POINT* point = group ? EC_POINT_new(group) : NULL;
@@ -84,6 +90,7 @@ cleanup:
 /* sign/verify import the same group-name and scalar/point parameters upstream uses. */
 static const char* vox_ec_import(const char* curve, const unsigned char* bytes, size_t size, int private_key, EVP_PKEY** key)
 {
+    if (!vox_crypto_prepare()) return "OpenSSL WebCrypto backend is unavailable";
     const char* failure = NULL;
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_from_name(NULL, "EC", NULL);
     OSSL_PARAM_BLD* builder = NULL;
@@ -118,6 +125,7 @@ cleanup:
 static const char* vox_ec_sign(const char* curve, const unsigned char* d, size_t d_size,
     const unsigned char* hash, size_t hash_size, unsigned char* output, size_t scalar_size)
 {
+    if (!vox_crypto_prepare()) return "OpenSSL WebCrypto backend is unavailable";
     EVP_PKEY* key = NULL;
     const char* failure = vox_ec_import(curve, d, d_size, 1, &key);
     EVP_PKEY_CTX* ctx = NULL;
@@ -146,6 +154,7 @@ cleanup:
 static const char* vox_ec_verify(const char* curve, const unsigned char* public_bytes, size_t public_size,
     const unsigned char* hash, size_t hash_size, const unsigned char* bytes, size_t half_size, int* result)
 {
+    if (!vox_crypto_prepare()) return "OpenSSL WebCrypto backend is unavailable";
     static const unsigned char zero = 0;
     if (!bytes) bytes = &zero;
     EVP_PKEY* key = NULL;
@@ -182,6 +191,7 @@ static const char* vox_ec_coordinate(const char* curve, const unsigned char* d_b
     const unsigned char* x_bytes, size_t x_size, const unsigned char* y_bytes, size_t y_size,
     unsigned char* x_out, unsigned char* y_out, size_t size)
 {
+    if (!vox_crypto_prepare()) return "OpenSSL WebCrypto backend is unavailable";
     const char* failure = NULL;
     EC_GROUP* group = EC_GROUP_new_by_curve_name(EC_curve_nist2nid(curve));
     EC_POINT* q = group ? EC_POINT_new(group) : NULL;
