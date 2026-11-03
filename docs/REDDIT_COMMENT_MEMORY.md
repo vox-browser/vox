@@ -1438,3 +1438,72 @@ browser-memory or performance credit. The
 records the expected failing control, final checks, matched page attempts,
 sanitizer scope and native-library identities. Raw evidence remains private
 under `Build/reddit-comment-memory-20261103-dawn-shared/`.
+
+## Bookmark/settings polling and completed Dawn readback
+
+Commit `366dc1d6c` memoizes bookmark favicon URLs, including rejected addresses,
+and retires temporary icon-list/settings work after each lookup. Cached URLs,
+keys and decoded image IDs keep their persistent ownership. The fixed optimized
+bookmark list is shared by its read-only consumers. In a focused prealloc
+control, 1,024 rounds of four uncached URL resolutions retain **19,251,205 B**;
+the warmed icon/URL lookup rounds retain **0 B**. These are component allocation
+counts, not whole-browser RAM. Nine focused cases pass in prealloc, poisoned
+prealloc and Boehm modes. Twelve cases pass with native UI2 enabled, both normally
+and with poisoned storage, covering icon completion, button identity, overflow
+clicks and settings policy. The ownership test checks lookup after its caller
+retires; map iteration itself clones string keys into the iteration's caller.
+
+Commit `782935e78` also retires temporary file metadata/errors from settings
+snapshot reads. `Proxy` and its strings are immutable; profile replacement
+installs new persistent strings, so previous snapshots survive without per-read
+clones. Both missing-profile and configured-profile runs retain **0 B** across
+1,024 reads. All 21 selected settings cases pass in prealloc, poisoned prealloc
+and Boehm modes, including saved/external replacements, caller lifetimes, worker
+refresh, proxy rules and zoom preferences. The existing external-refresh test
+file is another session's work and is exercised without including it in this
+commit.
+
+Commit `cd4fd62ad` removes the intermediate CPU vector from completed single-draw
+Dawn readback. After GPU completion and `EndAccess`, the IOSurface copies into
+the caller's owned output; this surface is then retired. Reused batch surfaces
+retain their existing staging/resume path. The same 104 native comparisons,
+32 additional staged/direct comparisons, cached-view retirement guard and
+ASan/Metal validation pass. All twelve canonical screenshot guards remain
+pixel-exact with an explicit candidate native library. Two alternating
+2048 × 2048 component pairs have identical pixel hashes and show a conservative
+**16,023,552 B** reduction in lifetime physical-footprint peak.
+
+A separate page diagnostic confirms that direct readback executes, but the
+largest of its 95 requests is only **608 × 164**. It cannot explain a large
+page-level saving. Four unprofiled alternating observations use executable
+`5e3e9612…` with the same explicit native library and its staged-read control:
+
+| 65-second observation | Observed simultaneous peak | Final two-second median |
+| --- | ---: | ---: |
+| Staged control 1 | 544,770,808 B | 259,016,720 B |
+| Direct read 1 | 543,755,048 B | 252,438,592 B |
+| Staged control 2 | 541,608,696 B | 247,318,592 B |
+| Direct read 2 | 545,737,440 B | 247,777,272 B |
+
+Every trial retains the normal author-script audit, 49 comments, two images,
+stable fixture/runtime identities and zero browser/guard exits. The variation
+includes a candidate peak above both controls; no whole-page reduction is
+attributed to direct readback. A separate stock `db4eab23…` launch peaks at
+544,377,592 B and settles at 249,415,696 B. Its peak occurs about 1.5 seconds after
+launch. Earlier bitmap-lifetime instrumentation changes runtime identity during
+observation and is rejected. Early compiler/runtime setup and edited-input
+attempts are retained but do not supply acceptance.
+
+**The 500,000,000 B production peak cap, bounded long idle growth and successful
+live-URL validation remain open.** New V changes need a containing production
+bundle for installed validation; shared production builds remain independently
+managed. Separate Boehm browser builds are diagnostics and do not change the
+browser's default allocator. Early diagnostic builds omit production native
+renderer flags; their apparently smaller 352 MB/524 MB peaks are rejected.
+A later native-flag run resolves cache libraries outside the intended bundle.
+The explicitly pinned native run records a 586,598,800 B peak but fails the
+exact viewport audit (1708 × 954 instead of 1708 × 953), and is also rejected.
+These differing diagnostics establish no GC optimization or passing cap. The [polling/readback receipt](benchmark-results/reddit-comment-memory-2026-11-03-idle-readback.json)
+preserves source/build hashes, focused checks, pixel results, raw trial values,
+commands, host contention and rejected attempts under
+`Build/reddit-comment-memory-20261103-idle-followup/`.
