@@ -1,3 +1,7 @@
+// The pinned Graphite archive uses release layouts, including private records.
+#ifndef SK_RELEASE
+#define SK_RELEASE
+#endif
 #import <Metal/Metal.h>
 #include "native_frame_metal_queue.h"
 #include "native_graphite_bridge.h"
@@ -45,6 +49,8 @@
 #include <vector>
 #include <chrono>
 #include <unistd.h>
+
+#include "native_graphite_shared_metal.h"
 
 namespace {
 std::mutex gpu_mutex;
@@ -134,7 +140,7 @@ SkSurface* region_target(skgpu::graphite::Context* gpu, SkImageInfo const& info)
         region_target_bytes -= size_t(old.width) * size_t(old.height) * 4;
         region_targets.pop_back();
     }
-    auto surface = SkSurfaces::RenderTarget(region_recorder.get(), info);
+    auto surface = vox_shared_surface(region_recorder.get(), info);
     if (!surface) return nullptr;
     region_targets.push_front({info.width(), info.height(), std::move(surface)});
     region_target_bytes += cost;
@@ -207,7 +213,7 @@ int read_pixels(skgpu::graphite::Context* gpu, skgpu::graphite::Recorder* record
     insertion.fRecording = recording.get();
     if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
     std::unique_ptr<const SkImage::AsyncReadResult> result;
-    gpu->asyncRescaleAndReadPixels(surface, info, SkIRect::MakeWH(info.width(), info.height()),
+    vox_shared_readback(gpu, surface, info, SkIRect::MakeWH(info.width(), info.height()),
         SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
         [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
             *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
@@ -309,10 +315,10 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
     if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    auto surface = vox_shared_surface(recorder.get(), info);
     if (!surface) return 0;
     auto* canvas = surface->getCanvas();
-    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(info, pixels, pitch), 0, 0);
     else canvas->clear(SK_ColorTRANSPARENT);
     SkMatrix matrix;
     matrix.set9(shadow->matrix);
@@ -454,7 +460,7 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
     }
     sk_sp<SkImage> texture = upload.texture;
     if (upload.needs_mipmaps) {
-        texture = SkImages::TextureFromImage(recorder, texture, properties);
+        texture = vox_shared_image(recorder, texture, properties);
         if (!texture) return false;
         // Reusing an uploaded image matches Chromium's mip upgrade: the
         // GPU generates its levels instead of uploading a fresh CPU chain.
@@ -530,7 +536,7 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
             prepared.source_scale_y = static_cast<float>(upload_height) / image->height;
         }
         auto raster = SkImages::RasterFromPixmapCopy(pixmap);
-        texture = SkImages::TextureFromImage(recorder, raster, properties);
+        texture = vox_shared_image(recorder, raster, properties);
         // Chromium's GPU image cache converts a tagged upload into an 8-bit
         // sRGB texture before drawing it, so premultiplied texels are quantized
         // before they are filtered and blended.
@@ -642,8 +648,8 @@ int vox_graphite_draw_direct_image_pixels(uint8_t* pixels, int width, int height
     FullDrawRecorder recorder(gpu); if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info); if (!surface) return 0;
-    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    auto surface = vox_shared_surface(recorder.get(), info); if (!surface) return 0;
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(info, pixels, pitch), 0, 0);
     else surface->getCanvas()->clear(SK_ColorTRANSPARENT);
     PreparedImageDraw prepared;
     prepared.upload_width = image->width; prepared.upload_height = image->height;
@@ -671,10 +677,10 @@ int vox_graphite_draw_image_pixels(uint8_t* pixels, int width, int height,
     if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    auto surface = vox_shared_surface(recorder.get(), info);
     if (!surface) return 0;
     auto* canvas = surface->getCanvas();
-    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(info, pixels, pitch), 0, 0);
     else canvas->clear(SK_ColorTRANSPARENT);
     PreparedImageDraw prepared;
     plan_image_draw(image, prepared);
@@ -718,7 +724,7 @@ int vox_graphite_draw_image_region_pixels(VoxGraphitePixelRegion const* region,
         temporary_recorder = gpu->makeRecorder();
         recorder = temporary_recorder.get();
         if (!recorder) return 0;
-        temporary_surface = SkSurfaces::RenderTarget(recorder, info);
+        temporary_surface = vox_shared_surface(recorder, info);
         surface = temporary_surface.get();
     }
     if (!surface) return 0;
@@ -726,7 +732,7 @@ int vox_graphite_draw_image_region_pixels(VoxGraphitePixelRegion const* region,
     SkAutoCanvasRestore state(canvas, true);
     canvas->clear(SK_ColorTRANSPARENT);
     auto view_info = info.makeWH(region->width, region->height);
-    if (has_background) surface->writePixels(SkPixmap(view_info, region->pixels,
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(view_info, region->pixels,
         region->pitch), region->x, region->y);
     PreparedImageDraw prepared;
     plan_image_draw(image, prepared);
@@ -738,7 +744,7 @@ int vox_graphite_draw_image_region_pixels(VoxGraphitePixelRegion const* region,
     insertion.fRecording = recording.get();
     if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
     std::unique_ptr<const SkImage::AsyncReadResult> result;
-    gpu->asyncRescaleAndReadPixels(surface, view_info,
+    vox_shared_readback(gpu, surface, view_info,
         SkIRect::MakeXYWH(region->x, region->y, region->width, region->height),
         SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
         [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
@@ -776,10 +782,10 @@ int vox_graphite_draw_image_tiles(uint8_t* pixels, int width, int height,
     if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    auto surface = vox_shared_surface(recorder.get(), info);
     if (!surface) return 0;
     auto* canvas = surface->getCanvas();
-    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(info, pixels, pitch), 0, 0);
     else canvas->clear(SK_ColorTRANSPARENT);
     std::vector<PreparedImageDraw> prepared(static_cast<size_t>(count));
     for (int index = 0; index < count; ++index) {
@@ -945,12 +951,12 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
             if (!recorder) return false;
             auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
                 kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-            auto surface = SkSurfaces::RenderTarget(recorder, info);
+            auto surface = vox_shared_surface(recorder, info);
             if (!surface) return false;
             auto* canvas = surface->getCanvas();
             canvas->clear(SK_ColorTRANSPARENT);
             if (has_background) for (auto const& patch : patches)
-                surface->writePixels(SkPixmap(info.makeWH(patch.width, patch.height),
+                vox_shared_write(gpu, surface, SkPixmap(info.makeWH(patch.width, patch.height),
                     packed.data() + patch.offset, size_t(patch.width) * 4), patch.left, patch.top);
             draw_shape_on_canvas(canvas, shape, width, height);
             auto recording = recorder->snap();
@@ -962,7 +968,7 @@ static bool draw_large_rounded_shape(uint8_t* pixels, int width, int height,
             std::vector<std::unique_ptr<const SkImage::AsyncReadResult>> results(patches.size());
             for (size_t i = 0; i < patches.size(); ++i) {
                 auto const& patch = patches[i];
-                gpu->asyncRescaleAndReadPixels(surface.get(), info.makeWH(patch.width, patch.height),
+                vox_shared_readback(gpu, surface.get(), info.makeWH(patch.width, patch.height),
                     SkIRect::MakeXYWH(patch.left, patch.top, patch.width, patch.height),
                     SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
                     [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
@@ -1129,7 +1135,7 @@ static bool draw_rounded_parts(VoxGraphitePixelRegion const* regions, int count,
                 temporary_recorder = gpu->makeRecorder();
                 recorder = temporary_recorder.get();
                 if (!recorder) return false;
-                temporary_surface = SkSurfaces::RenderTarget(recorder, info);
+                temporary_surface = vox_shared_surface(recorder, info);
                 surface = temporary_surface.get();
             }
             if (!surface) return false;
@@ -1137,7 +1143,7 @@ static bool draw_rounded_parts(VoxGraphitePixelRegion const* regions, int count,
             SkAutoCanvasRestore state(canvas, true);
             canvas->clear(SK_ColorTRANSPARENT);
             if (has_background) for (auto const& patch : patches)
-                surface->writePixels(SkPixmap(info.makeWH(patch.width, patch.height),
+                vox_shared_write(gpu, surface, SkPixmap(info.makeWH(patch.width, patch.height),
                     packed.data() + patch.offset, size_t(patch.width) * 4), patch.left, patch.top);
             draw_shape_on_canvas(canvas, shape, width, height);
             auto recording = recorder->snap();
@@ -1149,7 +1155,7 @@ static bool draw_rounded_parts(VoxGraphitePixelRegion const* regions, int count,
             std::vector<std::unique_ptr<const SkImage::AsyncReadResult>> results(patches.size());
             for (size_t i = 0; i < patches.size(); ++i) {
                 auto const& patch = patches[i];
-                gpu->asyncRescaleAndReadPixels(surface, info.makeWH(patch.width, patch.height),
+                vox_shared_readback(gpu, surface, info.makeWH(patch.width, patch.height),
                     SkIRect::MakeXYWH(patch.left, patch.top, patch.width, patch.height),
                     SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
                     [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
@@ -1347,7 +1353,7 @@ static bool draw_small_shape_patch(VoxGraphitePixelRegion const& region, int wid
                 temporary_recorder = gpu->makeRecorder();
                 recorder = temporary_recorder.get();
                 if (!recorder) return false;
-                temporary_surface = SkSurfaces::RenderTarget(recorder, info);
+                temporary_surface = vox_shared_surface(recorder, info);
                 surface = temporary_surface.get();
             }
             if (!surface) return false;
@@ -1355,7 +1361,7 @@ static bool draw_small_shape_patch(VoxGraphitePixelRegion const& region, int wid
             SkAutoCanvasRestore state(canvas, true);
             canvas->clear(SK_ColorTRANSPARENT);
             if (has_background)
-                surface->writePixels(SkPixmap(info.makeWH(patch_width, patch_height),
+                vox_shared_write(gpu, surface, SkPixmap(info.makeWH(patch_width, patch_height),
                     patch.data(), size_t(patch_width) * 4), left, top);
             draw_shape_on_canvas(canvas, shape, width, height);
             auto recording = recorder->snap();
@@ -1364,7 +1370,7 @@ static bool draw_small_shape_patch(VoxGraphitePixelRegion const& region, int wid
             if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess)
                 return false;
             std::unique_ptr<const SkImage::AsyncReadResult> result;
-            gpu->asyncRescaleAndReadPixels(surface, info.makeWH(patch_width, patch_height),
+            vox_shared_readback(gpu, surface, info.makeWH(patch_width, patch_height),
                 SkIRect::MakeXYWH(left, top, patch_width, patch_height),
                 SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
                 [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
@@ -1432,10 +1438,10 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
     if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    auto surface = vox_shared_surface(recorder.get(), info);
     if (!surface) return 0;
     auto* canvas = surface->getCanvas();
-    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(info, pixels, pitch), 0, 0);
     else canvas->clear(SK_ColorTRANSPARENT);
     draw_shape_on_canvas(canvas, *shape, width, height);
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
@@ -1543,10 +1549,10 @@ int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
     if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    auto surface = vox_shared_surface(recorder.get(), info);
     if (!surface) return 0;
     auto* canvas = surface->getCanvas();
-    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(info, pixels, pitch), 0, 0);
     else canvas->clear(SK_ColorTRANSPARENT);
     if (!draw_path_on_canvas(canvas, path)) return 0;
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
@@ -1578,7 +1584,7 @@ int vox_graphite_draw_path_region_pixels(VoxGraphitePixelRegion const* region,
     if (!surface) {
         temporary_recorder = gpu->makeRecorder();
         recorder = temporary_recorder.get();
-        temporary_surface = SkSurfaces::RenderTarget(recorder, info);
+        temporary_surface = vox_shared_surface(recorder, info);
         surface = temporary_surface.get();
     }
     if (!surface) return 0;
@@ -1586,7 +1592,7 @@ int vox_graphite_draw_path_region_pixels(VoxGraphitePixelRegion const* region,
     SkAutoCanvasRestore state(canvas, true);
     canvas->clear(SK_ColorTRANSPARENT);
     auto view_info = info.makeWH(region->width, region->height);
-    if (has_background) surface->writePixels(SkPixmap(view_info, region->pixels,
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(view_info, region->pixels,
             region->pitch), region->x, region->y);
     if (!draw_path_on_canvas(canvas, path)) return 0;
     auto recording = recorder->snap();
@@ -1594,7 +1600,7 @@ int vox_graphite_draw_path_region_pixels(VoxGraphitePixelRegion const* region,
     insertion.fRecording = recording.get();
     if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
     std::unique_ptr<const SkImage::AsyncReadResult> result;
-    gpu->asyncRescaleAndReadPixels(surface, view_info,
+    vox_shared_readback(gpu, surface, view_info,
         SkIRect::MakeXYWH(region->x, region->y, region->width, region->height),
         SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
         [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
@@ -1657,7 +1663,7 @@ int vox_graphite_draw_path_parts_pixels(VoxGraphitePixelRegion const* regions, i
             temporary_recorder = gpu->makeRecorder();
             recorder = temporary_recorder.get();
             if (!recorder) return 0;
-            temporary_surface = SkSurfaces::RenderTarget(recorder, info);
+            temporary_surface = vox_shared_surface(recorder, info);
             surface = temporary_surface.get();
         }
         if (!surface) return 0;
@@ -1666,7 +1672,7 @@ int vox_graphite_draw_path_parts_pixels(VoxGraphitePixelRegion const* regions, i
         offset = 0;
         if (has_background) for (int i = 0; i < count; ++i) {
             auto const& view = regions[i];
-            surface->writePixels(SkPixmap(info.makeWH(view.width, view.height),
+            vox_shared_write(gpu, surface, SkPixmap(info.makeWH(view.width, view.height),
                 packed.data() + offset, size_t(view.width) * 4), view.x, view.y);
             offset += size_t(view.width) * view.height * 4;
         }
@@ -1678,7 +1684,7 @@ int vox_graphite_draw_path_parts_pixels(VoxGraphitePixelRegion const* regions, i
         std::vector<std::unique_ptr<const SkImage::AsyncReadResult>> results(count);
         for (int i = 0; i < count; ++i) {
             auto const& view = regions[i];
-            gpu->asyncRescaleAndReadPixels(surface, info.makeWH(view.width, view.height),
+            vox_shared_readback(gpu, surface, info.makeWH(view.width, view.height),
                 SkIRect::MakeXYWH(view.x, view.y, view.width, view.height),
                 SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
                 [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
@@ -1727,10 +1733,10 @@ int vox_graphite_draw_path_batch_pixels(uint8_t* pixels, int width, int height,
     if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    auto surface = vox_shared_surface(recorder.get(), info);
     if (!surface) return 0;
     auto* canvas = surface->getCanvas();
-    if (has_background) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(info, pixels, pitch), 0, 0);
     else canvas->clear(SK_ColorTRANSPARENT);
     for (int index = 0; index < count; ++index)
         if (!draw_path_on_canvas(canvas, paths + index)) return 0;
@@ -1757,13 +1763,13 @@ static int draw_svg_image_pixels(uint8_t* pixels, int width, int height,
     if (!recorder.get()) return 0;
     auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
+    auto surface = vox_shared_surface(recorder.get(), info);
     if (!surface) return 0;
     if (region) {
         surface->getCanvas()->clear(SK_ColorTRANSPARENT);
         if (flags & VOX_GRAPHITE_SVG_BACKDROP)
-            surface->writePixels(SkPixmap(info.makeWH(region->width, region->height), pixels, pitch), region->x, region->y);
-    } else if (flags & VOX_GRAPHITE_SVG_BACKDROP) surface->writePixels(SkPixmap(info, pixels, pitch), 0, 0);
+            vox_shared_write(gpu, surface, SkPixmap(info.makeWH(region->width, region->height), pixels, pitch), region->x, region->y);
+    } else if (flags & VOX_GRAPHITE_SVG_BACKDROP) vox_shared_write(gpu, surface, SkPixmap(info, pixels, pitch), 0, 0);
     else surface->getCanvas()->clear(SK_ColorTRANSPARENT);
     SkMatrix matrix;
     matrix.set9(parent_values);
@@ -1787,7 +1793,7 @@ static int draw_svg_image_pixels(uint8_t* pixels, int width, int height,
     insertion.fRecording = recording.get();
     if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
     std::unique_ptr<const SkImage::AsyncReadResult> result;
-    gpu->asyncRescaleAndReadPixels(surface.get(), info.makeWH(region->width, region->height),
+    vox_shared_readback(gpu, surface.get(), info.makeWH(region->width, region->height),
         SkIRect::MakeXYWH(region->x, region->y, region->width, region->height),
         SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
         [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
