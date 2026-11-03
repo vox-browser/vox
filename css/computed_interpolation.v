@@ -1355,6 +1355,15 @@ fn style_value_identity_is_reflexive(value StyleValue) bool {
 fn style_value_option_changed(old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) bool {
 	if old := old_value {
 		if new := new_value {
+			if !retain_invalidation_value_copies && old.css_value_handle != unsafe { nil }
+				&& new.css_value_handle != unsafe { nil } {
+				old_box := unsafe { &TypedStyleValueBox(old.css_value_handle) }
+				new_box := unsafe { &TypedStyleValueBox(new.css_value_handle) }
+				if changed := borrowed_scalar_style_values_changed(old_box, new_box) {
+					record_borrowed_invalidation_value()
+					return changed
+				}
+			}
 			if old.css_value_handle != unsafe { nil } {
 				if old.css_value_handle == new.css_value_handle {
 					box := unsafe { &TypedStyleValueBox(old.css_value_handle) }

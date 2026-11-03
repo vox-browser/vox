@@ -6,6 +6,8 @@ import dom
 // slots directly, preserving the ordinary value comparison for distinct values.
 fn compute_raw_property_invalidation(old_style &ComputedProperties,
 	new_style &ComputedProperties) RequiredInvalidationAfterStyleChange {
+	diagnostic_start := borrowed_invalidation_diagnostic_start()
+	defer { report_borrowed_invalidation_values(old_style, diagnostic_start) }
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	old_store := old_style.property_store_
 	new_store := new_style.property_store_
