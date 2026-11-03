@@ -4,8 +4,8 @@ The earlier guest homepage and live ChatGPT send/reply workflow were recorded
 as pixel-exact against Brave at 1024×768, scale 1. The November 3 follow-up fixes
 a fractional media-query breakpoint and the fixed picture's partial-recording
 tile origin. The refreshed frozen guest homepage is now pixel-exact at
-800×600, 1024×768 and 1280×800 on the focused source browser. Validation of the
-tile-origin fix in a completed shared production bundle remains pending.
+800×600, 1024×768 and 1280×800 on both the focused source browser and the
+completed shared production bundle.
 Original frontend/static captures use SOCKS and are replayed; earlier ordinary
 conversation checks kept backend, identity and telemetry requests live.
 Fresh-session captures and their request counts are recorded separately below.
@@ -159,8 +159,16 @@ border. A separate single-SVG reduction still differs at eighteen pixels in
 both control and candidate; its input/reference are preserved in
 `rejected-single-svg-reduction-9/`, with no acceptance claim for that case.
 
-The latest completed production bundle predates this final fix; a shared build
-request is queued. The exact frozen-page result does not revalidate the current
+The completed shared production executable
+`904ce62baa0e755a003f763ba56044239d694963679b2f45eca8cd8e07e72b35`,
+from receipt `20261103-133720-8d009b74`, independently repeats all three exact
+captures in `matrix-production-fixed-18/`. All document, viewport, resource,
+reference and executable/native-library identity checks pass, with empty
+native error/script diagnostic arrays and successful browser/guard exits.
+The preceding guarded build failures remain retained; no additional production
+build was queued for this check.
+
+The exact frozen-page result does not revalidate the current
 live frontend, backend conversation workflow, responsive scripts, signed-in
 sessions or other routes. Earlier live results above remain historical because
 their raw evidence was removed externally.

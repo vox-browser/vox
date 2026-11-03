@@ -460,5 +460,150 @@
     "control": "../tiling-fixture-control-9/assessment.json",
     "candidate": "../tiling-fixture-candidate-9/assessment.json"
   },
-  "production_validation": "Pending a completed shared production bundle containing this fix."
+  "production_validation": "Verified on the completed shared production bundle at three unchanged viewport references.",
+  "production": {
+    "assessment": {
+      "results": [
+        {
+          "viewport": [
+            800,
+            600
+          ],
+          "exit": 0,
+          "stable": true,
+          "differing_pixels": 0,
+          "max_channel_error": 0,
+          "bounds": null,
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        },
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "differing_pixels": 0,
+          "max_channel_error": 0,
+          "bounds": null,
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        },
+        {
+          "viewport": [
+            1280,
+            800
+          ],
+          "exit": 0,
+          "stable": true,
+          "differing_pixels": 0,
+          "max_channel_error": 0,
+          "bounds": null,
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+    },
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "904ce62baa0e755a003f763ba56044239d694963679b2f45eca8cd8e07e72b35",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2ec426f818871c2bde264ed444c55621a58bdcab5004e9e325f062896f1a2737",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a373609a3aad7c013bcaa73114657b9e3043740359e106b230259736d22d82af",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "25a64f6149d4e96bb56a3313373ba5d37d690af81aacbfd48a2513e66dc8fe51",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "66a4de15d3f6bb9db6bc8e01d270430753a02af9bcdbc94d86887abeb0bc21de",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "a987fdf5fc63266a2286dccf433d33eca565adb7542fba3e9518255a93d5673c",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "ac0f8b9bba993f70840b326246b067da95bacb0164f13775bad9cc7496c71d54",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "receipt": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "904ce62baa0e755a003f763ba56044239d694963679b2f45eca8cd8e07e72b35",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-133720-8d009b74/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "558cdef47a1b31fecccd2ddf9e98e6a32fdcaa938405e5457f0232dea1f3d20e",
+        "dirty": true,
+        "head": "737f1a11005a9c44ef33434594b3a3ecd38ddf36",
+        "repository_sha256": "b6cde1c9ea7c6177d898005a1ce4eb249570826c9c21276adcf35d1c71595639"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "5e4f02c2c4fb66eacc8fc3d20abca931662b511139c1abe0a97eb8a9c0845861",
+        "dirty": true,
+        "head": "d71d992a48ef6610189d479c00b7108f522ff1cc",
+        "repository_sha256": "c1683eaee6132d29d353d1ef5cd08fcc7c397a9b5dc7fa0a0ee62b884cf6f1e0"
+      },
+      "request": {
+        "head": "737f1a11005a9c44ef33434594b3a3ecd38ddf36",
+        "id": "1bf38dac08b44124b36d86ea75eeb091"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "558cdef47a1b31fecccd2ddf9e98e6a32fdcaa938405e5457f0232dea1f3d20e",
+        "dirty": true,
+        "head": "737f1a11005a9c44ef33434594b3a3ecd38ddf36",
+        "repository_sha256": "b6cde1c9ea7c6177d898005a1ce4eb249570826c9c21276adcf35d1c71595639"
+      }
+    },
+    "evidence": "Build/chatgpt-responsive-20261103/matrix-production-fixed-18",
+    "fixed_sibling_input": {
+      "exit": 0,
+      "identity_stable": true,
+      "fixture_stable": true,
+      "fixture_sha256": "3bd3b9672d7e6ea50297d5516503f526780ce553ee8467e179cba7517d78e50d",
+      "reference_stable": true,
+      "reference_sha256": "124d2296a825948e510bfbee2a7b17e36ad8dc64a7fb124a1a83c0679ebdad03",
+      "differing_pixels": 0,
+      "max_channel_error": 0,
+      "bounds": null,
+      "ready": "complete",
+      "native_reported_errors": [],
+      "url": "file:///Users/alex/code/vox2/Tests/Browser/Ref/fixed-sibling-raster.html"
+    },
+    "fixed_sibling_reference": {
+      "exit": 0,
+      "identity_stable": true,
+      "fixture_stable": true,
+      "fixture_sha256": "9357716969fec1ea43dcc61a1d20fee1eb3151f22f89ead697f0e724c1ede0fa",
+      "reference_stable": true,
+      "reference_sha256": "124d2296a825948e510bfbee2a7b17e36ad8dc64a7fb124a1a83c0679ebdad03",
+      "differing_pixels": 0,
+      "max_channel_error": 0,
+      "bounds": null,
+      "ready": "complete",
+      "native_reported_errors": [],
+      "url": "file:///Users/alex/code/vox2/Tests/Browser/Ref/fixed-sibling-raster.ref.html"
+    }
+  }
 }
