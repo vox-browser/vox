@@ -3533,3 +3533,41 @@ paint diagnostic leaves its frozen reply PNG unchanged (`reply-brave-pictures-12
 The one-pixel homepage and three-pixel reply results remain the accepted current
 measurements. Shared production receipt `20261103-225602-1816d46b` is still
 compiling; no second production build is started for this session.
+
+
+## November 3: fixed opacity paint offsets
+
+`e4359ac35` keeps a fixed opacity group's paint offset separate from its
+containing raster tile. A bounded opaque continuation proof allows the group
+to use its immediate parent's raster grid, and native curve construction uses
+the fixed owner's local coordinates. Root, transformed and unrelated legacy
+surfaces keep their existing policy. This removes the two one-level blue edge
+errors on the disabled Send button: the frozen Retina reply improves from
+**three differing pixels to one**. The remaining cookie-shadow pixel is
+Brave RGB (244, 244, 244) versus Vox (243, 243, 243).
+
+The [capture](parity/raw/chatgpt-retina-reply-opacity-paint-origin.png) and
+[receipt](parity/chatgpt-retina-opacity-paint-origin-20261103.json) retain
+unchanged reference hashes, full input identities and raw evidence. Both V
+regression groups pass under default, no-GC and prealloc modes. The native
+GPU test passes at densities one and two; disabling only the paint-origin
+projection reproduces the two density-two edge errors. All nine SVG mutation
+comparisons remain exact. The older Retina homepage stays at one pixel, and
+800×600, 1024×768 and 1280×800 scale-one homepages remain exact.
+
+The focused canonical-source executable and native library also complete a
+real native Send/reply through SOCKS, with zero native/script errors
+(`live-opacity-152/`). Its live selection/hover state differs from Brave, so
+the 7,300-pixel live comparison does not establish visual parity. The executable
+uses the C backend without the production C optimization flags; these results
+validate that candidate, not a pending shared bundle or an optimization claim.
+
+The completed shared build `20261103-225602-1816d46b` independently preserves
+the previous three-pixel frozen reply with its normal loader
+(`production-reply-140/`). Its native-input attempt `production-live-142/`
+crashes in calculated-width snapshot comparison (exit 139). A debugger attempt
+with that executable exits normally but receives the service's unusual-activity
+response; it does not exercise a successful reply. Both failures are retained.
+The unsafe-looking empty-map comparison is an investigation lead; no speculative
+CSS change is included in the paint-offset fix. Production crash resolution,
+literal Retina equality and broader live functionality remain open.
