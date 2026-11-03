@@ -454,7 +454,7 @@
   },
   "rejected_diagnostics": [
     {
-      "directory": "reply-opacity-float-134",
+      "directory": "reply-shape-byte-float-134",
       "result": "Changing byte-to-float normalization alone does not remove either edge error."
     },
     {
