@@ -8,7 +8,7 @@ import os
 fn configure_browser_javascript_startup() {
 	$if macos {
 		if os.getenv_opt('JSC_thresholdForJITAfterWarmUp') == none {
-			os.setenv('JSC_thresholdForJITAfterWarmUp', '5000', false)
+			os.setenv('JSC_thresholdForJITAfterWarmUp', '10000', false)
 		}
 	}
 }

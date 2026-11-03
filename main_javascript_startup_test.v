@@ -12,7 +12,7 @@ fn test_startup_warmup_precedes_a_real_javascript_context() {
 		}
 		os.unsetenv('JSC_thresholdForJITAfterWarmUp')
 		configure_browser_javascript_startup()
-		assert os.getenv('JSC_thresholdForJITAfterWarmUp') == '5000'
+		assert os.getenv('JSC_thresholdForJITAfterWarmUp') == '10000'
 		mut runtime := browserjs.Runtime.create()
 		defer { runtime.close() }
 		assert runtime.evaluate_host('(()=>{let n=0;for(let i=0;i<100000;i++)n+=i;return n})()')! == '4999950000'
