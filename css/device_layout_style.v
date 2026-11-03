@@ -28,7 +28,7 @@ fn (mut style ComputedProperties) inherit_layout_coordinate_context(source &Comp
 }
 
 fn device_layout_font(font PlatformFont, factor f64, pixel_size f64) PlatformFont {
-	return PlatformFont{
+	mut projected := PlatformFont{
 		...font
 		point_size:           f32(f64(font.point_size) * factor)
 		// Native Chromium layout measures the selected physical face. Rounding
@@ -39,6 +39,51 @@ fn device_layout_font(font PlatformFont, factor f64, pixel_size f64) PlatformFon
 			none
 		}
 		metrics_font_:        unsafe { nil }
+	}
+	if factor != 1 && font.font_rendering_policy == .chromium {
+		original := font.font_for_rendering()
+		if original.point_size > 0 {
+			if face := original.system_face() {
+				if face.variations.any(it.tag == 0x6f70737a) {
+					// Device layout scales glyphs and metrics, not the optical
+					// instance selected at the CSS font size.
+					native := projected.font_for_rendering()
+					ratio := f64(native.point_size) / f64(original.point_size)
+					persistent := platform.enter_persistent()
+					projected.metrics_font_ = &platform.Font{
+						family: native.family
+						point_size: native.point_size
+						weight: native.weight
+						italic: native.italic
+						source_path: native.source_path
+						requested_variations: native.requested_variations
+						is_invisible: native.is_invisible
+						font_rendering_policy: native.font_rendering_policy
+						font_synthesis_disabled: native.font_synthesis_disabled
+						system_face_override: platform.SystemFontFace{
+							...face
+							metrics: device_layout_font_metrics(face.metrics, ratio)
+						}
+					}
+					platform.leave_persistent(persistent)
+				}
+			}
+		}
+	}
+	return projected
+}
+
+fn device_layout_font_metrics(metrics platform.SystemFontMetrics, scale f64) platform.SystemFontMetrics {
+	return platform.SystemFontMetrics{
+		ascent: metrics.ascent * scale
+		descent: metrics.descent * scale
+		leading: metrics.leading * scale
+		x_height: metrics.x_height * scale
+		cap_height: metrics.cap_height * scale
+		bbox_x_min: metrics.bbox_x_min * scale
+		bbox_x_max: metrics.bbox_x_max * scale
+		bbox_y_min: metrics.bbox_y_min * scale
+		bbox_y_max: metrics.bbox_y_max * scale
 	}
 }
 
