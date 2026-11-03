@@ -35,15 +35,18 @@ the 2.7B instruction gate passes. A first injected sampling diagnostic rendered
 exactly but captured no usable stacks and changed bundle identity during its
 run; it is retained as invalid and supplies no performance credit.
 
-The latest complete seven-pair production cohort is `visual-production`,
+The latest fully valid seven-pair production cohort is `semantic-matched`,
 executable SHA256
-`debacdbdc6ab9f460539dd7e78229ded387363fc7fde43ada3d65432a7bfe1fc`,
-receipt `20261103-054402-46ca719e`. Its default median is **3,021,467,114**
-instructions and maximum **3,025,561,110**. All fourteen captures pass the
-unchanged pixel/content/PNG/identity/ownership/exit gates. Required regression
-suites remain deferred, so this is benchmark progress, not a completed 2.7B
-result. The [durable ledger](performance/hn-2700-progress-20261103.json) retains
-the raw counts, pinned input identities, guards and all earlier attempts.
+`3168441b4104efbbfd9dfdddafddaf91137b531b01f05e291387ca2c387b8954`,
+receipt `20261103-061731-b799d512`. Its default median is **2,950,799,202**
+instructions and maximum **2,953,553,447**. All fourteen captures pass the
+unchanged pixel/content/PNG/identity/ownership/exit gates. The matched control
+median is 2,948,666,955: the first semantic interner adds about 2.13M and earns
+no optimization credit. The lower absolute count also includes the compiler
+adjustment and other shared changes. Required regression suites remain deferred,
+so this is benchmark progress, not a completed 2.7B result. The
+[durable ledger](performance/hn-2700-progress-20261103.json) retains raw counts,
+pinned inputs, guards and all earlier attempts.
 
 Retained experiments include demand-loaded ANGLE, deferred private-filter URL
 and regex services, broader scale-only CSS projection, wider lossless PNG pixel
@@ -67,13 +70,22 @@ and lack the exclusive coalition boundary, and cannot satisfy this target.
 The first compiler pilot, which lacked the production JIT entitlement, and the
 instrumented profiles remain separate evidence.
 
-The next shared production build contains that compiler adjustment and a new
-property-page interning experiment. The layout diagnostic found equivalent
-computed color and corner-shape defaults on separate pages; the experiment
-shares only pages with complete typed equality, retaining resource identities
-and copy-on-write mutation. Compilation passes; its production measurements
-and all newly authored focused tests remain pending. No test suite has been run
-during this continuation.
+The minimal computation-context experiment adds 547,101 instructions between
+seven matched medians and has been removed. A larger JSC heap also increases
+instructions in its two-pair pilot and has no source change. The framework
+preload and allocator pilots remain diagnostics with no production credit.
+
+The layout diagnostic finds 350 repeated complete raw-property/font signatures
+among 400 styles after setting aside two repeatedly projected pages. A narrow
+grid-default invariant and a revised geometry-input cache are pending production
+measurement. The second cache preserves document ownership, typed-value context,
+font and raw-page generations, scale and copy-on-write behavior. A new native GG
+adapter defers its unused Sokol renderer/font atlas until an explicit GG drawing
+or legacy font-metrics operation needs them. It preserves native host setup,
+input and application callbacks; compilation passes, measurements are pending.
+The first grid compilation and a concurrent immutable-font compilation failure
+are retained in the build receipts and corrected in source. No test suite has
+been run during this continuation.
 
 Disk recovery compressed inactive generated C/preprocessed compiler inputs,
 verified each decompressed SHA256, and retained their compressed hashes and
