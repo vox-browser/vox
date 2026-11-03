@@ -492,8 +492,11 @@ void finish_shared_recording()
         if (!group->blocked_bounds.empty() || !(group->layer_width > 0)
             || !(group->layer_height > 0) || !std::isfinite(group->layer_width)
             || !std::isfinite(group->layer_height)
-            || group->layer_width * group->scale > (group->checks_prefix ? 16777216 : 16384)
-            || group->layer_height * group->scale > (group->checks_prefix ? 16777216 : 16384)) return;
+            // Logical layer bounds anchor the tile grid; only their visible
+            // intersection allocates pixels below. Tall fixed/scroll layers
+            // can exceed the texture limit while their capture stays small.
+            || group->layer_width * group->scale > 16777216
+            || group->layer_height * group->scale > 16777216) return;
         float left = group->origin_x;
         float top = group->origin_y + group->page_y - group->scroll_y;
         // A root segment owns only its recorded ink. Its logical document
