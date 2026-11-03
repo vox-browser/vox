@@ -12,11 +12,29 @@ static size_t round_trip(std::vector<uint8_t> const& input, size_t alignment)
     size_t capacity = output.size() - alignment - 16;
     size_t written = vox_snapshot_pixel_runs::compress(source.data() + alignment,
         input.size(), output.data() + alignment, capacity);
+    std::vector<uint8_t> narrow(output.size(), 0xa5);
+    setenv("VOX_DISABLE_WIDE_PIXEL_RUNS", "1", 1);
+    size_t narrow_written = vox_snapshot_pixel_runs::compress(source.data() + alignment,
+        input.size(), narrow.data() + alignment, capacity);
+    unsetenv("VOX_DISABLE_WIDE_PIXEL_RUNS");
+    assert(narrow_written == written);
+    assert(std::memcmp(narrow.data() + alignment, output.data() + alignment, written) == 0);
     assert(written && written <= capacity);
     std::vector<uint8_t> decoded(input.size());
     uLongf size = decoded.size();
     assert(uncompress(decoded.data(), &size, output.data() + alignment, written) == Z_OK);
     assert(size == input.size() && decoded == input);
+    std::vector<uint8_t> legacy(output.size(), 0xa5);
+    setenv("VOX_DISABLE_QUAD_PIXEL_LITERALS", "1", 1);
+    size_t legacy_written = vox_snapshot_pixel_runs::compress(source.data() + alignment,
+        input.size(), legacy.data() + alignment, capacity);
+    unsetenv("VOX_DISABLE_QUAD_PIXEL_LITERALS");
+    assert(legacy_written && legacy_written <= capacity);
+    size = decoded.size();
+    assert(uncompress(decoded.data(), &size, legacy.data() + alignment, legacy_written) == Z_OK);
+    assert(size == input.size() && decoded == input);
+    for (size_t i = 0; i < alignment; ++i) assert(legacy[i] == 0xa5);
+    for (size_t i = alignment + capacity; i < legacy.size(); ++i) assert(legacy[i] == 0xa5);
     for (size_t i = 0; i < alignment; ++i) assert(output[i] == 0xa5);
     for (size_t i = alignment + capacity; i < output.size(); ++i) assert(output[i] == 0xa5);
     // A partially written stream is discarded on overflow; the caller's bounds

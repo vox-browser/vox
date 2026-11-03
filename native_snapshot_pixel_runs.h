@@ -2,6 +2,8 @@
 
 #include <array>
 #include <cstdint>
+#include <cstdlib>
+#include <cstdio>
 #include <cstring>
 #include <libdeflate.h>
 
@@ -41,6 +43,13 @@ constexpr std::array<Code, 259> match_codes()
     return result;
 }
 constexpr auto matches = match_codes();
+constexpr std::array<Code, 257> literal_codes()
+{
+    std::array<Code, 257> result {};
+    for (unsigned i = 0; i < result.size(); ++i) result[i] = literal(i);
+    return result;
+}
+constexpr auto literals = literal_codes();
 
 struct Writer {
     uint8_t* output;
@@ -90,12 +99,19 @@ inline size_t compress(void const* source, size_t size, void* destination, size_
     output[0] = 0x78; output[1] = 0x01;
     Writer writer {output + 2, limit - 6};
     writer.put({3, 3}); // final block, fixed Huffman codes
+    bool const wide_runs = !std::getenv("VOX_DISABLE_WIDE_PIXEL_RUNS");
+    bool const quad_literals = !std::getenv("VOX_DISABLE_QUAD_PIXEL_LITERALS");
     size_t position = 0;
+    bool used_quad_literals = false;
     while (position < size) {
         if (!writer.good) return 0;
         if (position >= 4 && size - position >= 4
             && !std::memcmp(input + position, input + position - 4, 4)) {
             size_t start = position;
+            if (wide_runs) {
+                while (size - position >= 32
+                    && !std::memcmp(input + position, input + position - 4, 32)) position += 32;
+            }
             while (size - position >= 8
                 && !std::memcmp(input + position, input + position - 4, 8)) position += 8;
             while (position < size && input[position] == input[position - 4]) ++position;
@@ -106,15 +122,32 @@ inline size_t compress(void const* source, size_t size, void* destination, size_
                 if (!writer.good) return 0;
                 remaining -= length;
             }
-            for (size_t byte = position - remaining; byte < position; ++byte) writer.put(literal(input[byte]));
+            for (size_t byte = position - remaining; byte < position; ++byte) writer.put(literals[input[byte]]);
         } else {
-            writer.put(literal(input[position++]));
+            // Unmatched RGBA spans usually need all four bytes. Combine two
+            // literals per write, keeping the writer's <=18-bit input bound.
+            // A match starting inside this quartet may be missed; the existing
+            // output-size ceiling still declines a poorly compressed stream.
+            if (quad_literals && size - position >= 4) {
+                used_quad_literals = true;
+                for (unsigned pair = 0; pair < 2; ++pair) {
+                    auto first = literals[input[position++]];
+                    auto second = literals[input[position++]];
+                    writer.put({first.bits | (second.bits << first.length),
+                        first.length + second.length});
+                }
+            } else {
+                writer.put(literals[input[position++]]);
+            }
         }
     }
     writer.put(literal(256));
     if (!writer.finish()) return 0;
     auto sum = libdeflate_adler32(1, input, size);
     for (unsigned byte = 0; byte < 4; ++byte) output[writer.size + 2 + byte] = uint8_t(sum >> (24 - 8 * byte));
+    if (std::getenv("VOX_QUAD_PIXEL_LITERAL_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_PIXEL_RUN_CODEC quad_literals=%d input=%zu output=%zu\n",
+            int(used_quad_literals), size, writer.size + 6);
     return writer.size + 6;
 }
 }
