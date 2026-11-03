@@ -181,11 +181,17 @@ fn (mut state Runtime) refresh() {
 }
 
 pub fn current() Proxy {
+	// Chrome polls settings even when nothing changed. Retire stat/error work
+	// after each read; refresh() stores a changed profile in persistent memory.
+	scratch := platform.begin_thread_scratch('settings snapshot')
+	defer { scratch.finish() }
 	mut state := unsafe { runtime }
 	state.lock.lock()
 	defer { state.lock.unlock() }
 	state.refresh()
-	return Proxy{ ...state.proxy, host: state.proxy.host.clone(), port: state.proxy.port.clone(), sites: state.proxy.sites.clone() }
+	// Proxy and its strings are immutable. A replacement installs new owned
+	// strings, so existing snapshots remain valid without per-poll clones.
+	return state.proxy
 }
 
 // None preserves ambient proxies; an empty string explicitly selects direct
