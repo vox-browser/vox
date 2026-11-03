@@ -26,6 +26,7 @@ import os
 from pathlib import Path
 import plistlib
 import select
+import shlex
 import shutil
 import statistics
 import subprocess
@@ -360,6 +361,111 @@ def verified_preexisting_app_pids(process_api, coalition_api, cid, rows, existin
     return excluded
 
 
+def private_capture_marker(command, binary):
+    """Recognize an explicit private instance, without guessing from its URL."""
+    prefix = str(binary) + ' '
+    if not command.startswith(prefix):
+        return None
+    try:
+        arguments = shlex.split(command[len(prefix):])
+    except ValueError:
+        return None
+    option = '--user-data-dir' if binary.name == 'Brave Browser' else '--screenshot'
+    values = []
+    for index, argument in enumerate(arguments):
+        if argument == option and index + 1 < len(arguments):
+            values.append(arguments[index + 1])
+        elif argument.startswith(option + '='):
+            values.append(argument[len(option) + 1:])
+    if len(values) != 1 or not Path(values[0]).is_absolute():
+        return None
+    return option, str(Path(values[0]).resolve())
+
+
+def verified_concurrent_capture_tasks(process_api, coalition_api, cid, app, pid, rows):
+    """Separate independently launched captures of the shared installed app.
+
+    A new unrelated capture can start after launch.json's preexisting snapshot.
+    Authenticate its distinct private profile/output and live root, then pin
+    each excluded task's executable, creation time and different coalition.
+    An escaped descendant of our root, an ambiguous root or a CDP-owned process
+    must still fail the ordinary ownership checks.
+    """
+    app = app.resolve()
+    by_pid = {row['pid']: row for row in rows}
+    ours = by_pid.get(pid)
+    if ours is None:
+        return [], []
+    name = 'Brave Browser' if app.name == 'Brave Browser.app' else 'Vox'
+    binary = (app / 'Contents/MacOS' / name).resolve()
+    marker = private_capture_marker(ours['command'], binary)
+    if marker is None:
+        return [], []
+
+    def descendant(child, ancestor):
+        seen = set()
+        while child in by_pid and child not in seen:
+            if child == ancestor:
+                return True
+            seen.add(child)
+            child = by_pid[child]['parent']
+        return False
+
+    def identity(row):
+        try:
+            before = process_api.read(row['pid'])
+            path = Path(process_api.path(row['pid'])).resolve()
+            current_cid = coalition_api.resource_coalition(row['pid'])
+            after = process_api.read(row['pid'])
+        except OSError as error:
+            if error.errno in (2, 3):
+                return None
+            raise
+        if (before.exited or after.exited or before.start != after.start
+                or type(before.start) is not int or before.start <= 0
+                or type(current_cid) is not int or current_cid <= 0
+                or current_cid == cid or not path.is_relative_to(app / 'Contents')):
+            return None
+        base = {key: row[key] for key in ('pid', 'parent', 'uid', 'command')}
+        return dict(base, start_ticks=before.start, resource_coalition=current_cid,
+                    executable=str(path))
+
+    roots = []
+    for row in rows:
+        other_marker = private_capture_marker(row['command'], binary)
+        if (other_marker is None or other_marker == marker or row['pid'] == pid
+                or descendant(row['pid'], pid) or descendant(pid, row['pid'])):
+            continue
+        root = identity(row)
+        if root is not None and root['executable'] == str(binary):
+            roots.append(dict(root, private_marker=list(other_marker)))
+    tasks = []
+    for row in rows:
+        if descendant(row['pid'], pid):
+            continue
+        task = identity(row) if roots else None
+        if task is None:
+            continue
+        anchors = [root for root in roots
+                   if task['resource_coalition'] == root['resource_coalition']
+                   and task['start_ticks'] >= root['start_ticks']]
+        if anchors:
+            tasks.append(dict(task, independent_root_pids=[root['pid'] for root in anchors]))
+    # Re-read roots after their helpers: PID reuse or a coalition move cannot
+    # authorize any exemption derived from an earlier observation.
+    stable_roots = [root for root in roots if identity(root) ==
+                    {key: value for key, value in root.items() if key != 'private_marker'}]
+    observed = {row['pid']: row for row in processes()} if stable_roots else {}
+    def same_command(row):
+        return observed.get(row['pid']) == {
+            key: row[key] for key in ('pid', 'parent', 'uid', 'command')}
+    stable_roots = [root for root in stable_roots if same_command(root)]
+    stable_pids = {root['pid'] for root in stable_roots}
+    return stable_roots, [task for task in tasks
+                         if same_command(task)
+                         and stable_pids.intersection(task['independent_root_pids'])]
+
+
 def launch(app, arguments, folder, environment):
     """LaunchServices gives this fresh app its own resource coalition."""
     # Shared installed bundles may already host the user's windows. -n and the
@@ -481,8 +587,14 @@ def membership(api, cid, app, pid, deadline, attempts, browser=None, existing_pr
                          if row['command'].startswith(str(app) + '/Contents/')]
         excluded = verified_preexisting_app_pids(process_api, api, cid, app_processes,
                                                 existing_processes)
+        concurrent_roots, concurrent_tasks = verified_concurrent_capture_tasks(
+            process_api, api, cid, app, pid, app_processes)
+        concurrent = {row['pid'] for row in concurrent_tasks}
+        excluded |= concurrent
         owned = {row['pid'] for row in app_processes} - excluded
-        scan['preexisting_app_pids'] = sorted(excluded)
+        scan['preexisting_app_pids'] = sorted(excluded - concurrent)
+        scan['concurrent_capture_roots'] = concurrent_roots
+        scan['concurrent_capture_tasks'] = concurrent_tasks
         scan['private_app_pids'] = sorted(owned)
         # Preserve argv and ancestry even when the ownership assertion below
         # fails. PIDs alone cannot distinguish an escaped helper from another
