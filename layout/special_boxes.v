@@ -286,22 +286,7 @@ pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_value
 		ReplacedBox: replaced_box_base(document, element, computed_values)
 	}
 	box.is_image_box_ = true
-	mut source := image_source_selected_from_attributes(element)
-	if element.as_node().is_html_image_element() {
-		image := unsafe { &dom.HTMLImageElement(element) }
-		if html.html_image_element_is_image_available(image) {
-			current_source := html.html_image_element_current_src(image)
-			if current_source != '' {
-				source = current_source
-			}
-		}
-	} else if element.is_html_element() && element.local_name() == 'object' {
-		object_element := unsafe { &dom.HTMLObjectElement(element) }
-		model := html.html_object_element_model_for_dom_element(object_element)
-		if model.is_image_available() {
-			source = model.data()
-		}
-	}
+	source := image_source_for_layout(element)
 	box.source_ = source
 	if intrinsic_size := available_html_image_natural_size(element) {
 		box.natural_size_ = intrinsic_size
@@ -950,15 +935,8 @@ pub fn (mut box ImageBox) reset_for_relayout() {
 					source = model.data()
 					provider_natural_size = available_object_image_natural_size(element)
 				} else {
-					source = image_source_selected_from_attributes(element)
+					source = image_source_for_layout(element)
 					provider_natural_size = available_html_image_natural_size(element)
-				}
-				if provider_natural_size != none && element.as_node().is_html_image_element() {
-					image := unsafe { &dom.HTMLImageElement(element) }
-					current_source := html.html_image_element_current_src(image)
-					if current_source != '' {
-						source = current_source
-					}
 				}
 			}
 		}
