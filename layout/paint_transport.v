@@ -3245,7 +3245,9 @@ fn append_unselected_text_fragment_commands(mut commands []PaintCommand,
 	mut i := 0
 	for i < fragments.len {
 		platform.cooperative_work_checkpoint()
-		first := fragments[i]
+		// The color bridge borrows this fragment. Taking a local copy's address
+		// makes current V retain a wide heap copy for every painted text run.
+		first := unsafe { &fragments[i] }
 		mut j := i + 1
 		for j < fragments.len && text_fragments_share_run(first, fragments[j]) {
 			j++
@@ -3296,7 +3298,7 @@ fn append_unselected_text_fragment_commands(mut commands []PaintCommand,
 			width: run_right - run_left
 			height: first.height
 			color: first.color.serialize()
-			srgb_color_data: chromium_text_srgb_color(&first)
+			srgb_color_data: chromium_text_srgb_color(first)
 			text: text
 			font_size: first.font_size
 			bold: first.bold
