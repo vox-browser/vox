@@ -3815,3 +3815,80 @@ code. No acceptance cohort, broad cadence reset or catalog entry results.
 Exact counts, compiler identities, commands, profiles, rejected source and
 checks are retained in the [tracked ledger](performance/bbc-noop-geometry-20261103.json)
 and `Build/bbc-noop-geometry-20261103/`.
+
+
+## Rejected image-containing flow trees: cohort 62 (2026-11-03)
+
+**The target remains unmet.** Seven alternating control/Vox/Brave triples
+bring history to **62 cohorts / 1,481 attempts**. All 21 native exits, complete
+content and exclusive ownership audits pass. All 1,637 pinned files independently
+rehash unchanged, and every attempt retains its successful post-trial input
+receipt. No attempt, first-launch outlier or regression is excluded.
+
+| Statistic | Vox candidate | Vox control | Brave lower bound |
+| --- | ---: | ---: | ---: |
+| Median launch-to-PNG instructions | 30,362,759,138 | 29,508,136,091 | 15,099,500,362 |
+
+The candidate **regresses by 854,623,047 instructions (2.8962%)**, with three
+improving and four regressing matched pairs. All fourteen Vox/control captures
+match their unchanged reference. Brave4 differs by **64,177 pixels**, invalidating
+acceptance; the raw conservative gate also fails: **318,773,530,540 >
+135,353,319,102**, ratio **2.1196094739**. The exact counts, brackets, all attempts,
+commands, host telemetry and adoption records remain in the
+[tracked ledger](performance/bbc-flow-images-20261103.json) and
+`Build/bbc-flow-images-20261103/flow-images-matched-cohort/`. The pinned
+executable is `dc6b9b950efc257a654f9ee4fabaa11ca80c8256c8b89da22e254f591c74cede`,
+receipt **20261103-053636-6b35402a**. Guard/driver exit one reflects the failed
+acceptance checks; peak browser-inclusive sampled RSS is 1,442,512,896 bytes.
+
+The prototype retained HTML image branches only while their source, natural
+size and constructor metadata matched. It rejected SVG/resource replacements,
+data/file images and other replaced content, and checked unavailable HTTP
+images through the original SVG loader/MIME path. Geometry and containing blocks
+still reran, including absolute-positioned placeholder images. Commit
+**9969a278d** and its isolated control **b58c436f9** are removed by **a077833aa**
+and **bd69501f7** after this browser regression.
+
+The separate typed **DisplayStyleValue** comparison **4b9950bdb** remains:
+blockification allocates equal display records, which can be compared by their
+complete enum fields without relaxing resource identity. Its focused tests pass;
+no isolated BBC instruction reduction is attributed to that change.
+
+The final C-O3/no-GC standalone probe has an actual selected-subtree witness and
+preserves 2,855 nodes, 902 lines, extent 55,212,771 and the unchanged paint dump.
+Across two alternating pairs, second-layout medians are **1,174,548,382.5 control /
+1,152,315,459.5 candidate**, saving **22,232,923** instructions, while first layout
+regresses by **6,951,355.5**. It excludes scripts, resources, startup, window setup
+and PNG and supplies no BBC credit. Earlier unused-path probes and all diagnostic
+preparations are retained.
+
+The initial completed build **20261103-052152-d626bb42** produces the identical
+216,162-pixel italic-text mismatch in candidate, image-disabled and strict
+style-identity controls. Those diagnostics are rejected. A separate font-boundary
+probe initially breaks the adblock helper through an unresolved Skia symbol,
+producing navigation-error pages and zero author contexts; both attempts remain.
+Its weak-import revision succeeds on a later bundle, observes normal flags with
+no synthetic slant, and matches the original pixels with or without clearing the
+slant bit. No cause or rendering correction is attributed to these probes.
+Final candidate/control production diagnostics on the cohort build pass content,
+pixels, native exit and ownership, with the new path only in the candidate
+between navigation and capture. JavaScriptCore executes **1,916 / 1,897**
+evaluations in one context. All instrumentation is absent from the cohort.
+
+All **27 layout cases** pass both policies in three memory modes (**162
+executions**), with **27 additional CSS executions** and **241 tool tests**.
+The final broad run enters **494 cases in each default/no-GC mode**, passing
+**491** with the same three baseline failures in each. This is not a full pass
+or cadence reset. Headless, eleven smoke and eight SVG checks initially all exit
+zero but cross a shared publication and are rejected as stable-bundle evidence.
+Their fresh rerun passes on unchanged executable/native-library identities.
+After removal, **57 layout restoration executions** and **240 tool tests** pass.
+A native rollback claim awaits a completed bundle containing the removal.
+
+Low disk space required lossless compression of 109 completed diagnostic C/binary
+artifacts from the R11/R12 directories, saving 1,901,550,265 bytes. Every archive
+round-trips to its recorded original hash; the manifest is
+`Build/bbc-flow-images-20261103/compressed-completed-artifacts.json`. Raw
+measurements, logs, PNGs and durable ledgers remain unchanged. BBC is not added
+to the homepage instruction table; the frozen workload and known limitations
+remain unchanged.
