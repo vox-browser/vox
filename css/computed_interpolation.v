@@ -11915,6 +11915,26 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 				properties.add_inheritance_dependent_specified_value(property_id, style_value)
 			}
 			mut computed_value := unsafe { style_value }
+			if requires_computation && property_id in [.font_weight, .font_style, .font_width] {
+				if scalar := compute_scalar_font_property(property_id, style_value,
+					abstract_element.element_to_inherit_style_from()) {
+					properties.set_property_without_modifying_flags(property_id, scalar)
+					continue
+				}
+			}
+			if requires_computation && property_id == .font_size {
+				if absolute := compute_absolute_font_size(style_value, abstract_element.document()) {
+					properties.set_property_without_modifying_flags(property_id, absolute)
+					continue
+				}
+			}
+			if requires_computation && computed_scalar_value_is_resolved(property_id, style_value) {
+				properties.set_property_without_modifying_flags(property_id, style_value)
+				if can_reuse_default_computed_value {
+					computed_interpolation_default_computed_value_cache[property_index] = style_value
+				}
+				continue
+			}
 			if requires_computation {
 				context_scope_start := begin_diagnostic_instruction_scope()
 				mut computation_context := s.get_computation_context_for_property(property_id, properties, abstract_element)
