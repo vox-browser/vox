@@ -45,6 +45,8 @@ import webvtt
 import xpath
 import x.json2
 
+const frame_part_diagnostics_enabled = os.getenv('VOX_DIAGNOSTIC_FRAME_PARTS') != ''
+
 // Mark on the initiating thread by default; GC_MARKERS can override this.
 #flag -DGC_MARKERS=1
 
@@ -7351,6 +7353,9 @@ fn (mut app BrowserApp) draw() {
 	app.scroll_profile_prepared()
 	processmetrics.instruction_checkpoint('frame_prepared')
 	begin_browser_frame(app.ctx)
+	if frame_part_diagnostics_enabled {
+		processmetrics.instruction_checkpoint('frame_context_ready')
+	}
 	app.paint_effect_depth = 0
 	app.paint_svg_mask_depth = 0
 	paint_document := app.document_pixels_ready_for_frame()
@@ -7589,12 +7594,18 @@ fn (mut app BrowserApp) draw() {
 		if app.ctx.native_rendering && paint_document { C.native_end_stationary_raster() }
 	}
 
+	if frame_part_diagnostics_enabled {
+		processmetrics.instruction_checkpoint('frame_document_replayed')
+	}
 	if app.chrome_height() > 0 {
 		$if vox_ui2 ? {
 			app.update_browser_chrome(window.width, window.height)
 		} $else {
 			app.draw_portable_browser_chrome(window)
 		}
+	}
+	if frame_part_diagnostics_enabled {
+		processmetrics.instruction_checkpoint('frame_chrome_updated')
 	}
 	end_browser_frame(app.ctx)
 	if submission_claim.installation != 0 {
