@@ -70,6 +70,14 @@ and lack the exclusive coalition boundary, and cannot satisfy this target.
 The first compiler pilot, which lacked the production JIT entitlement, and the
 instrumented profiles remain separate evidence.
 
+Seven matched `svg-coverage-matched` pairs use executable
+`ada886d05a2041fdcd430ee4b27b90f6af74de2cda6def01f214c0d1ad68b948`
+with a pinned private native bridge. Reusing exact validated polygon coverage
+reduces medians 3,032,622,828 → 2,996,691,589; every pair improves, and all
+fourteen captures pass the original gates. The cache keeps paint/backdrop live,
+retains at most 32 masks per thread, and preserves transactional fallback. This
+attributes the native change; it is not a final default-production result.
+
 The minimal computation-context experiment adds 547,101 instructions between
 seven matched medians and has been removed. A larger JSC heap also increases
 instructions in its two-pair pilot and has no source change. The framework
