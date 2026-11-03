@@ -2,6 +2,7 @@
 
 #ifdef LADYBIRD_V_HAS_SNAPSHOT_DEFLATE
 #include <libdeflate.h>
+#include "native_snapshot_pixel_runs.h"
 
 // The capture bridge discovers this optional service from its loaded native
 // renderer. Keep compression ownership local and preserve zlib fallback.
@@ -10,6 +11,9 @@ size_t ladybird_v_snapshot_compress_zlib(void const* input, size_t size,
     void* output, size_t capacity)
 {
     if (!input || !output || !size || size > 64 * 1024 * 1024 || !capacity) return 0;
+    if (!std::getenv("VOX_DISABLE_PIXEL_RUN_PNG")) {
+        if (size_t written = vox_snapshot_pixel_runs::compress(input, size, output, capacity)) return written;
+    }
     auto* compressor = libdeflate_alloc_compressor(1);
     if (!compressor) return 0;
     size_t written = libdeflate_zlib_compress(compressor, input, size, output, capacity);
