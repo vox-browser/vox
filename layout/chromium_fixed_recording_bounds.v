@@ -40,7 +40,11 @@ fn chromium_layerize_fixed_container_metadata(command_count int,
 
 fn chromium_fixed_raster_group(box &BlockBox, node &Node) int {
 	transform := normalized_affine(box.paint_transform)
-	if transform[0] != 1 || transform[1] != 0 || transform[2] != 0 || transform[3] != 1 {
+	// Paint transforms include the inverse device-layout projection. It does
+	// not change a fixed box's viewport anchors; author scaling still does.
+	layout_scale := node.document().layout_coordinate_scale()
+	if transform[0] * layout_scale != 1 || transform[1] != 0 || transform[2] != 0
+		|| transform[3] * layout_scale != 1 {
 		return 0
 	}
 	inset := node.computed_values().inset()
