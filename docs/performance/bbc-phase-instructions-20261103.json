@@ -1,0 +1,3929 @@
+{
+  "status": "Current production diagnostic only; no optimization credit",
+  "bbc_instruction_credit": false,
+  "scope": "Diagnostic cumulative process snapshots at load/layout/frame/capture checkpoints; selected browser comparison still uses exclusive launch coalition counts",
+  "environment": {
+    "VOX_PROFILE_INSTRUCTIONS": "1",
+    "VOX_DIAGNOSTIC_STYLE_REASONS": "1",
+    "LADYBIRD_DEBUG_TIMING": "1",
+    "DYLD_INSERT_LIBRARIES": "R0 JavaScriptCore execution probe"
+  },
+  "exits": {
+    "driver_and_guard": 0,
+    "native": 0
+  },
+  "content_exact": true,
+  "ownership": {
+    "endpoint": {
+      "coalition_id": 66410,
+      "instructions": 29488959468,
+      "label": "capture_document_encoded",
+      "tasks_exited": 2,
+      "tasks_started": 5
+    },
+    "exited_task_identity_limit": "Aggregate exited work is included; individual exited identities are not recovered",
+    "method": "Stable live ownership with native endpoint task totals",
+    "passed": true,
+    "scan": {
+      "after_ownership_snapshot": {
+        "coalition_id": 66410,
+        "cycles": 9579361915,
+        "instructions": 27650199712,
+        "sample_completed": 8.488805708,
+        "sample_started": 8.488784375,
+        "tasks_exited": 2,
+        "tasks_started": 5
+      },
+      "after_snapshot": {
+        "coalition_id": 66410,
+        "cycles": 9562245644,
+        "instructions": 27619842917,
+        "sample_completed": 8.350473791,
+        "sample_started": 8.350449625,
+        "tasks_exited": 2,
+        "tasks_started": 5
+      },
+      "all_owned": true,
+      "before_snapshot": {
+        "coalition_id": 66410,
+        "cycles": 9501123629,
+        "instructions": 27441051663,
+        "sample_completed": 8.281795666,
+        "sample_started": 8.28177,
+        "tasks_exited": 2,
+        "tasks_started": 5
+      },
+      "exact_live_count": true,
+      "members": [
+        {
+          "accepted": true,
+          "code_sign_clone_identity": null,
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-phase-instructions-20261103/phase-instructions-candidate-diagnostic/pair-1-vox/document.png https://www.bbc.com/",
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "parent": 1,
+          "pid": 66419,
+          "uid": 501
+        },
+        {
+          "accepted": true,
+          "code_sign_clone_identity": null,
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker --vox-adblock-worker-v1",
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+          "parent": 66419,
+          "pid": 66424,
+          "uid": 501
+        },
+        {
+          "accepted": true,
+          "code_sign_clone_identity": null,
+          "command": "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService",
+          "executable": "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService",
+          "parent": 1,
+          "pid": 66439,
+          "uid": 501
+        }
+      ],
+      "observed_app_processes": [
+        {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --window-width=1708 --window-height=1065 --js-engine=javascriptcore vox://newtab",
+          "parent": 89467,
+          "pid": 13697,
+          "uid": 501
+        },
+        {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-css-error-lifetime-20261102/production-cached-sprite-41/vox.png https://chatgpt.com/",
+          "parent": 64955,
+          "pid": 64959,
+          "uid": 501
+        },
+        {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-phase-instructions-20261103/phase-instructions-candidate-diagnostic/pair-1-vox/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 66419,
+          "uid": 501
+        },
+        {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker --vox-adblock-worker-v1",
+          "parent": 66419,
+          "pid": 66424,
+          "uid": 501
+        },
+        {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --window-width=1708 --window-height=1065 --js-engine=javascriptcore vox://newtab",
+          "parent": 1,
+          "pid": 89467,
+          "uid": 501
+        }
+      ],
+      "ownership_stable": true,
+      "preexisting_app_pids": [
+        13697,
+        64959,
+        89467
+      ],
+      "private_app_pids": [
+        66419,
+        66424
+      ],
+      "root_present": true,
+      "stable": true,
+      "vanished_during_scan": [
+        19078,
+        38821,
+        65820,
+        66707,
+        83701
+      ]
+    }
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/Build/bbc-phase-instructions-20261103/diagnose-production.py",
+      "--archive",
+      "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/clock-archive",
+      "--output",
+      "/Users/alex/code/vox2/Build/bbc-phase-instructions-20261103/phase-instructions-candidate-diagnostic",
+      "--memory-guard-registry",
+      "/Users/alex/code/vox2/Build/bbc-phase-instructions-20261103/phase-instructions-candidate-diagnostic-pids.json",
+      "--vox-app",
+      "/Users/alex/code/vox2/Build/v/Vox.app",
+      "--brave-app",
+      "/Applications/Brave Browser.app",
+      "--expected-vox",
+      "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-vox/document.png",
+      "--expected-brave",
+      "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-brave/document.png",
+      "--capture-reference",
+      "--reference-engine",
+      "vox",
+      "--diff-tool",
+      "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+      "--retain-incremental-webp-paint-policy"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "66419": "Tue Nov  3 08:36:06 2026    ",
+      "66424": "Tue Nov  3 08:36:06 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1321451520,
+    "elapsed_seconds": 11.339031417,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "deltas": {
+    "samples": [
+      [
+        0,
+        "startup",
+        306971719
+      ],
+      [
+        3,
+        "startup_page_model",
+        310492492
+      ],
+      [
+        5,
+        "startup_browser_state",
+        310685489
+      ],
+      [
+        7,
+        "startup_input_bridge",
+        311849416
+      ],
+      [
+        9,
+        "startup_context",
+        312464880
+      ],
+      [
+        11,
+        "navigation_started",
+        312743770
+      ],
+      [
+        13,
+        "startup_navigation",
+        313013034
+      ],
+      [
+        15,
+        "startup_filter_worker",
+        377145071
+      ],
+      [
+        18,
+        "frame_prepared",
+        1245861235
+      ],
+      [
+        19,
+        "frame_complete",
+        1254062233
+      ],
+      [
+        20,
+        "main_resource_fetch",
+        1370687128
+      ],
+      [
+        22,
+        "main_resource_cache",
+        1375664406
+      ],
+      [
+        24,
+        "frame_prepared",
+        1699478843
+      ],
+      [
+        25,
+        "frame_complete",
+        1708515819
+      ],
+      [
+        26,
+        "frame_prepared",
+        1968342173
+      ],
+      [
+        27,
+        "frame_complete",
+        1977568622
+      ],
+      [
+        28,
+        "frame_prepared",
+        1996630564
+      ],
+      [
+        29,
+        "frame_complete",
+        2028710537
+      ],
+      [
+        30,
+        "frame_prepared",
+        2137091948
+      ],
+      [
+        31,
+        "frame_complete",
+        2198394358
+      ],
+      [
+        32,
+        "frame_prepared",
+        2262966131
+      ],
+      [
+        33,
+        "frame_complete",
+        2284570396
+      ],
+      [
+        34,
+        "frame_prepared",
+        2331463807
+      ],
+      [
+        35,
+        "frame_complete",
+        2339244190
+      ],
+      [
+        36,
+        "frame_prepared",
+        2442774847
+      ],
+      [
+        37,
+        "frame_complete",
+        2459470789
+      ],
+      [
+        38,
+        "frame_prepared",
+        2566229293
+      ],
+      [
+        39,
+        "frame_complete",
+        2615533760
+      ],
+      [
+        40,
+        "frame_prepared",
+        2686244008
+      ],
+      [
+        41,
+        "frame_complete",
+        2705965225
+      ],
+      [
+        42,
+        "parse_document",
+        3147899545
+      ],
+      [
+        44,
+        "preload_resources",
+        4103358334
+      ],
+      [
+        46,
+        "install_styles",
+        4103786013
+      ],
+      [
+        48,
+        "install_video_frames",
+        4114736236
+      ],
+      [
+        50,
+        "javascript_native_bindings",
+        5201218976
+      ],
+      [
+        51,
+        "javascript_initial_state",
+        5298937078
+      ],
+      [
+        52,
+        "javascript_bootstrap_source",
+        5299312976
+      ],
+      [
+        53,
+        "javascript_bootstrap_evaluated",
+        5384118979
+      ],
+      [
+        54,
+        "javascript_document_bindings",
+        5405883069
+      ],
+      [
+        55,
+        "javascript_adblock_scriptlets",
+        5418480560
+      ],
+      [
+        56,
+        "javascript_readiness_events",
+        7593944082
+      ],
+      [
+        57,
+        "javascript_finalized",
+        7594469245
+      ],
+      [
+        59,
+        "run_javascript",
+        7595610337
+      ],
+      [
+        61,
+        "cookie_blocker",
+        7596005339
+      ],
+      [
+        63,
+        "script_inserted_stylesheets",
+        7596672841
+      ],
+      [
+        65,
+        "unsized_script_images",
+        7598279194
+      ],
+      [
+        67,
+        "build_boxes",
+        9025768132
+      ],
+      [
+        69,
+        "tree_fixups",
+        9028399210
+      ],
+      [
+        71,
+        "build_tree_total",
+        9028744751
+      ],
+      [
+        73,
+        "formatting_contexts",
+        9702764150
+      ],
+      [
+        75,
+        "absolute_descendants",
+        9861093495
+      ],
+      [
+        77,
+        "relative_insets",
+        9862124523
+      ],
+      [
+        79,
+        "scrollable_overflow",
+        9868818599
+      ],
+      [
+        82,
+        "attach_layout",
+        9882379328
+      ],
+      [
+        91,
+        "layout_tree",
+        9957892540
+      ],
+      [
+        93,
+        "relayout",
+        9958101806
+      ],
+      [
+        95,
+        "script_inserted_images",
+        9958863704
+      ],
+      [
+        97,
+        "install_total",
+        9959041727
+      ],
+      [
+        100,
+        "paint_commands",
+        10084193165
+      ],
+      [
+        102,
+        "frame_prepared",
+        10096216963
+      ],
+      [
+        103,
+        "frame_complete",
+        10166571365
+      ],
+      [
+        105,
+        "first_paint_total",
+        10166817824
+      ],
+      [
+        111,
+        "build_tree_total",
+        10675981971
+      ],
+      [
+        113,
+        "formatting_contexts",
+        11109891300
+      ],
+      [
+        115,
+        "absolute_descendants",
+        11117093501
+      ],
+      [
+        117,
+        "relative_insets",
+        11117783573
+      ],
+      [
+        119,
+        "scrollable_overflow",
+        11122857043
+      ],
+      [
+        122,
+        "attach_layout",
+        11135784528
+      ],
+      [
+        125,
+        "paint_commands",
+        11209402150
+      ],
+      [
+        127,
+        "frame_prepared",
+        11209580910
+      ],
+      [
+        128,
+        "frame_complete",
+        11252573454
+      ],
+      [
+        131,
+        "build_tree_total",
+        11441530729
+      ],
+      [
+        133,
+        "formatting_contexts",
+        11657506160
+      ],
+      [
+        135,
+        "absolute_descendants",
+        11681578837
+      ],
+      [
+        137,
+        "relative_insets",
+        11684379370
+      ],
+      [
+        139,
+        "scrollable_overflow",
+        11689563762
+      ],
+      [
+        142,
+        "attach_layout",
+        11702344101
+      ],
+      [
+        145,
+        "paint_commands",
+        11776239937
+      ],
+      [
+        147,
+        "frame_prepared",
+        11776436001
+      ],
+      [
+        148,
+        "frame_complete",
+        11784526216
+      ],
+      [
+        151,
+        "build_tree_total",
+        11884039951
+      ],
+      [
+        153,
+        "formatting_contexts",
+        11999437617
+      ],
+      [
+        155,
+        "absolute_descendants",
+        12006653563
+      ],
+      [
+        157,
+        "relative_insets",
+        12007361670
+      ],
+      [
+        159,
+        "scrollable_overflow",
+        12012362787
+      ],
+      [
+        162,
+        "attach_layout",
+        12025108066
+      ],
+      [
+        165,
+        "paint_commands",
+        12107587638
+      ],
+      [
+        167,
+        "frame_prepared",
+        12107796011
+      ],
+      [
+        168,
+        "frame_complete",
+        12115890054
+      ],
+      [
+        171,
+        "frame_prepared",
+        12135608335
+      ],
+      [
+        172,
+        "frame_complete",
+        12143799715
+      ],
+      [
+        175,
+        "frame_prepared",
+        12168725189
+      ],
+      [
+        176,
+        "frame_complete",
+        12176590337
+      ],
+      [
+        179,
+        "build_boxes",
+        15203882358
+      ],
+      [
+        181,
+        "tree_fixups",
+        15206053702
+      ],
+      [
+        183,
+        "build_tree_total",
+        15206337491
+      ],
+      [
+        185,
+        "formatting_contexts",
+        15753928606
+      ],
+      [
+        187,
+        "absolute_descendants",
+        15782984071
+      ],
+      [
+        189,
+        "relative_insets",
+        15783731707
+      ],
+      [
+        191,
+        "scrollable_overflow",
+        15789433975
+      ],
+      [
+        194,
+        "attach_layout",
+        15802762772
+      ],
+      [
+        197,
+        "build_boxes",
+        17625819505
+      ],
+      [
+        199,
+        "tree_fixups",
+        17628277769
+      ],
+      [
+        201,
+        "build_tree_total",
+        17628567147
+      ],
+      [
+        203,
+        "formatting_contexts",
+        17885867756
+      ],
+      [
+        205,
+        "absolute_descendants",
+        17901845723
+      ],
+      [
+        207,
+        "relative_insets",
+        17902542889
+      ],
+      [
+        209,
+        "scrollable_overflow",
+        17907814399
+      ],
+      [
+        212,
+        "attach_layout",
+        17921086808
+      ],
+      [
+        215,
+        "build_boxes",
+        18791677824
+      ],
+      [
+        217,
+        "tree_fixups",
+        18793364790
+      ],
+      [
+        219,
+        "build_tree_total",
+        18793624586
+      ],
+      [
+        221,
+        "formatting_contexts",
+        19352581482
+      ],
+      [
+        223,
+        "absolute_descendants",
+        19382302927
+      ],
+      [
+        225,
+        "relative_insets",
+        19383150078
+      ],
+      [
+        227,
+        "scrollable_overflow",
+        19389443737
+      ],
+      [
+        230,
+        "attach_layout",
+        19403112861
+      ],
+      [
+        239,
+        "layout_tree",
+        19474289522
+      ],
+      [
+        241,
+        "paint_commands",
+        19527763489
+      ],
+      [
+        243,
+        "frame_prepared",
+        19527946470
+      ],
+      [
+        244,
+        "frame_complete",
+        19539498251
+      ],
+      [
+        247,
+        "build_boxes",
+        20212679042
+      ],
+      [
+        249,
+        "tree_fixups",
+        20214056458
+      ],
+      [
+        251,
+        "build_tree_total",
+        20214233787
+      ],
+      [
+        253,
+        "formatting_contexts",
+        20823480643
+      ],
+      [
+        255,
+        "absolute_descendants",
+        20852537773
+      ],
+      [
+        257,
+        "relative_insets",
+        20853352269
+      ],
+      [
+        259,
+        "scrollable_overflow",
+        20859240506
+      ],
+      [
+        262,
+        "attach_layout",
+        20872875108
+      ],
+      [
+        265,
+        "build_boxes",
+        21354001555
+      ],
+      [
+        267,
+        "tree_fixups",
+        21355457611
+      ],
+      [
+        269,
+        "build_tree_total",
+        21355661408
+      ],
+      [
+        271,
+        "formatting_contexts",
+        21653330238
+      ],
+      [
+        273,
+        "absolute_descendants",
+        21669364683
+      ],
+      [
+        275,
+        "relative_insets",
+        21670133004
+      ],
+      [
+        277,
+        "scrollable_overflow",
+        21675804808
+      ],
+      [
+        280,
+        "attach_layout",
+        21689701018
+      ],
+      [
+        289,
+        "layout_tree",
+        21750090879
+      ],
+      [
+        291,
+        "paint_commands",
+        21784547524
+      ],
+      [
+        293,
+        "frame_prepared",
+        21784727560
+      ],
+      [
+        294,
+        "frame_complete",
+        21792733974
+      ],
+      [
+        297,
+        "frame_prepared",
+        21799755164
+      ],
+      [
+        298,
+        "frame_complete",
+        21807732148
+      ],
+      [
+        301,
+        "frame_prepared",
+        22233648256
+      ],
+      [
+        302,
+        "frame_complete",
+        22241726804
+      ],
+      [
+        305,
+        "frame_prepared",
+        22244774944
+      ],
+      [
+        306,
+        "frame_complete",
+        22257337150
+      ],
+      [
+        309,
+        "frame_prepared",
+        22278727722
+      ],
+      [
+        310,
+        "frame_complete",
+        22291571967
+      ],
+      [
+        313,
+        "frame_prepared",
+        22333049791
+      ],
+      [
+        314,
+        "frame_complete",
+        22346441628
+      ],
+      [
+        317,
+        "frame_prepared",
+        22543467132
+      ],
+      [
+        318,
+        "frame_complete",
+        22551542311
+      ],
+      [
+        321,
+        "frame_prepared",
+        22554078878
+      ],
+      [
+        322,
+        "frame_complete",
+        22561964987
+      ],
+      [
+        325,
+        "frame_prepared",
+        22573150687
+      ],
+      [
+        326,
+        "frame_complete",
+        22581169271
+      ],
+      [
+        329,
+        "build_tree_total",
+        22671352371
+      ],
+      [
+        331,
+        "formatting_contexts",
+        23384942565
+      ],
+      [
+        333,
+        "absolute_descendants",
+        23426458428
+      ],
+      [
+        335,
+        "relative_insets",
+        23427210374
+      ],
+      [
+        337,
+        "scrollable_overflow",
+        23433387109
+      ],
+      [
+        340,
+        "attach_layout",
+        23446817669
+      ],
+      [
+        343,
+        "paint_commands",
+        23587973345
+      ],
+      [
+        345,
+        "frame_prepared",
+        23588171166
+      ],
+      [
+        346,
+        "frame_complete",
+        23596320922
+      ],
+      [
+        353,
+        "build_tree_total",
+        23628349831
+      ],
+      [
+        355,
+        "formatting_contexts",
+        23865038601
+      ],
+      [
+        357,
+        "absolute_descendants",
+        23883418400
+      ],
+      [
+        359,
+        "relative_insets",
+        23884180518
+      ],
+      [
+        361,
+        "scrollable_overflow",
+        23889580832
+      ],
+      [
+        364,
+        "attach_layout",
+        23903039288
+      ],
+      [
+        367,
+        "paint_commands",
+        24003845090
+      ],
+      [
+        369,
+        "frame_prepared",
+        24004039549
+      ],
+      [
+        370,
+        "frame_complete",
+        24011921132
+      ],
+      [
+        377,
+        "frame_prepared",
+        24015361932
+      ],
+      [
+        378,
+        "frame_complete",
+        24023422136
+      ],
+      [
+        385,
+        "frame_prepared",
+        24029080770
+      ],
+      [
+        386,
+        "frame_complete",
+        24036913745
+      ],
+      [
+        393,
+        "build_tree_total",
+        24108525434
+      ],
+      [
+        395,
+        "formatting_contexts",
+        24431737567
+      ],
+      [
+        397,
+        "absolute_descendants",
+        24453354207
+      ],
+      [
+        399,
+        "relative_insets",
+        24454355967
+      ],
+      [
+        401,
+        "scrollable_overflow",
+        24461165143
+      ],
+      [
+        404,
+        "attach_layout",
+        24474623371
+      ],
+      [
+        407,
+        "paint_commands",
+        24579956489
+      ],
+      [
+        409,
+        "frame_prepared",
+        24580136395
+      ],
+      [
+        410,
+        "frame_complete",
+        26285828199
+      ],
+      [
+        421,
+        "frame_prepared",
+        26306481853
+      ],
+      [
+        422,
+        "frame_complete",
+        26306832658
+      ],
+      [
+        429,
+        "frame_prepared",
+        26347844913
+      ],
+      [
+        430,
+        "frame_complete",
+        26348178429
+      ],
+      [
+        437,
+        "frame_prepared",
+        26395954993
+      ],
+      [
+        438,
+        "frame_complete",
+        26396305957
+      ],
+      [
+        445,
+        "frame_prepared",
+        26401116188
+      ],
+      [
+        446,
+        "frame_complete",
+        26401467115
+      ],
+      [
+        453,
+        "frame_prepared",
+        26404312742
+      ],
+      [
+        454,
+        "frame_complete",
+        26404663727
+      ],
+      [
+        461,
+        "frame_prepared",
+        26408032958
+      ],
+      [
+        462,
+        "frame_complete",
+        26408384523
+      ],
+      [
+        469,
+        "frame_prepared",
+        26417798920
+      ],
+      [
+        470,
+        "frame_complete",
+        26418150086
+      ],
+      [
+        477,
+        "frame_prepared",
+        26437365703
+      ],
+      [
+        478,
+        "frame_complete",
+        26437716827
+      ],
+      [
+        485,
+        "frame_prepared",
+        26440544296
+      ],
+      [
+        486,
+        "frame_complete",
+        26440895340
+      ],
+      [
+        493,
+        "frame_prepared",
+        26447641714
+      ],
+      [
+        494,
+        "frame_complete",
+        26447992668
+      ],
+      [
+        501,
+        "frame_prepared",
+        26472976903
+      ],
+      [
+        502,
+        "frame_complete",
+        26473310405
+      ],
+      [
+        509,
+        "frame_prepared",
+        26476190201
+      ],
+      [
+        510,
+        "frame_complete",
+        26476541133
+      ],
+      [
+        517,
+        "frame_prepared",
+        26479599845
+      ],
+      [
+        518,
+        "frame_complete",
+        26479951160
+      ],
+      [
+        525,
+        "frame_prepared",
+        26498828211
+      ],
+      [
+        526,
+        "frame_complete",
+        26499179452
+      ],
+      [
+        533,
+        "frame_prepared",
+        26580648445
+      ],
+      [
+        534,
+        "frame_complete",
+        26580999674
+      ],
+      [
+        541,
+        "frame_prepared",
+        26633737742
+      ],
+      [
+        542,
+        "frame_complete",
+        26634089453
+      ],
+      [
+        549,
+        "frame_prepared",
+        26641322590
+      ],
+      [
+        550,
+        "frame_complete",
+        26641673981
+      ],
+      [
+        557,
+        "frame_prepared",
+        26668352226
+      ],
+      [
+        558,
+        "frame_complete",
+        26668720571
+      ],
+      [
+        565,
+        "frame_prepared",
+        26671611783
+      ],
+      [
+        566,
+        "frame_complete",
+        26671963199
+      ],
+      [
+        573,
+        "frame_prepared",
+        26680500452
+      ],
+      [
+        574,
+        "frame_complete",
+        26680851969
+      ],
+      [
+        581,
+        "frame_prepared",
+        26700920861
+      ],
+      [
+        582,
+        "frame_complete",
+        26701272163
+      ],
+      [
+        589,
+        "frame_prepared",
+        26720637536
+      ],
+      [
+        590,
+        "frame_complete",
+        26720989096
+      ],
+      [
+        597,
+        "frame_prepared",
+        26799702820
+      ],
+      [
+        598,
+        "frame_complete",
+        26800054135
+      ],
+      [
+        605,
+        "frame_prepared",
+        26846459173
+      ],
+      [
+        606,
+        "frame_complete",
+        26846810505
+      ],
+      [
+        613,
+        "frame_prepared",
+        26879899355
+      ],
+      [
+        614,
+        "frame_complete",
+        26880267243
+      ],
+      [
+        621,
+        "frame_prepared",
+        26883517280
+      ],
+      [
+        622,
+        "frame_complete",
+        26883871271
+      ],
+      [
+        629,
+        "frame_prepared",
+        26909999781
+      ],
+      [
+        630,
+        "frame_complete",
+        26910365328
+      ],
+      [
+        637,
+        "frame_prepared",
+        26913635366
+      ],
+      [
+        638,
+        "frame_complete",
+        26913985868
+      ],
+      [
+        645,
+        "frame_prepared",
+        26939936572
+      ],
+      [
+        646,
+        "frame_complete",
+        26940287163
+      ],
+      [
+        653,
+        "frame_prepared",
+        26951733347
+      ],
+      [
+        654,
+        "frame_complete",
+        26952083883
+      ],
+      [
+        661,
+        "frame_prepared",
+        27033734799
+      ],
+      [
+        662,
+        "frame_complete",
+        27034085313
+      ],
+      [
+        669,
+        "frame_prepared",
+        27070765921
+      ],
+      [
+        670,
+        "frame_complete",
+        27071128247
+      ],
+      [
+        677,
+        "frame_prepared",
+        27091543444
+      ],
+      [
+        678,
+        "frame_complete",
+        27091893957
+      ],
+      [
+        685,
+        "frame_prepared",
+        27097225421
+      ],
+      [
+        686,
+        "frame_complete",
+        27097575763
+      ],
+      [
+        693,
+        "frame_prepared",
+        27120903941
+      ],
+      [
+        694,
+        "frame_complete",
+        27121254661
+      ],
+      [
+        701,
+        "frame_prepared",
+        27124727785
+      ],
+      [
+        702,
+        "frame_complete",
+        27125310124
+      ],
+      [
+        709,
+        "frame_prepared",
+        27152018878
+      ],
+      [
+        710,
+        "frame_complete",
+        27152383768
+      ],
+      [
+        717,
+        "frame_prepared",
+        27159471971
+      ],
+      [
+        718,
+        "frame_complete",
+        27159822487
+      ],
+      [
+        725,
+        "frame_prepared",
+        27236973375
+      ],
+      [
+        726,
+        "frame_complete",
+        27237323973
+      ],
+      [
+        733,
+        "frame_prepared",
+        27257824063
+      ],
+      [
+        734,
+        "frame_complete",
+        27258271299
+      ],
+      [
+        741,
+        "frame_prepared",
+        27321981245
+      ],
+      [
+        742,
+        "frame_complete",
+        27322332076
+      ],
+      [
+        749,
+        "frame_prepared",
+        27344737077
+      ],
+      [
+        750,
+        "frame_complete",
+        27345087896
+      ],
+      [
+        757,
+        "frame_prepared",
+        27351156104
+      ],
+      [
+        758,
+        "frame_complete",
+        27351506719
+      ],
+      [
+        765,
+        "frame_prepared",
+        27361701042
+      ],
+      [
+        766,
+        "frame_complete",
+        27362051890
+      ],
+      [
+        773,
+        "frame_prepared",
+        27380744999
+      ],
+      [
+        774,
+        "frame_complete",
+        27381095637
+      ],
+      [
+        781,
+        "frame_prepared",
+        27387809502
+      ],
+      [
+        782,
+        "frame_complete",
+        27388163547
+      ],
+      [
+        789,
+        "frame_prepared",
+        27440077072
+      ],
+      [
+        790,
+        "frame_complete",
+        27440427607
+      ],
+      [
+        797,
+        "frame_prepared",
+        27473685534
+      ],
+      [
+        798,
+        "frame_complete",
+        27474036198
+      ],
+      [
+        805,
+        "frame_prepared",
+        27523128928
+      ],
+      [
+        806,
+        "frame_complete",
+        27523479462
+      ],
+      [
+        813,
+        "frame_prepared",
+        27526569909
+      ],
+      [
+        814,
+        "frame_complete",
+        27526920595
+      ],
+      [
+        821,
+        "frame_prepared",
+        27552162111
+      ],
+      [
+        822,
+        "frame_complete",
+        27552512768
+      ],
+      [
+        829,
+        "frame_prepared",
+        27555494224
+      ],
+      [
+        830,
+        "frame_complete",
+        27555844873
+      ],
+      [
+        837,
+        "frame_prepared",
+        27581914075
+      ],
+      [
+        838,
+        "frame_complete",
+        27582264788
+      ],
+      [
+        845,
+        "frame_prepared",
+        27590543891
+      ],
+      [
+        846,
+        "frame_complete",
+        27590961133
+      ],
+      [
+        853,
+        "frame_prepared",
+        27622800364
+      ],
+      [
+        854,
+        "frame_complete",
+        27623133893
+      ],
+      [
+        861,
+        "frame_prepared",
+        27680099497
+      ],
+      [
+        862,
+        "frame_complete",
+        27680450334
+      ],
+      [
+        869,
+        "frame_prepared",
+        27729260751
+      ],
+      [
+        870,
+        "frame_complete",
+        27729611668
+      ],
+      [
+        877,
+        "frame_prepared",
+        27755496326
+      ],
+      [
+        878,
+        "frame_complete",
+        27755847257
+      ],
+      [
+        885,
+        "frame_prepared",
+        27760340837
+      ],
+      [
+        886,
+        "frame_complete",
+        27760691910
+      ],
+      [
+        893,
+        "frame_prepared",
+        27786836099
+      ],
+      [
+        894,
+        "frame_complete",
+        27787186720
+      ],
+      [
+        901,
+        "frame_prepared",
+        27790265860
+      ],
+      [
+        902,
+        "frame_complete",
+        27790616387
+      ],
+      [
+        909,
+        "frame_prepared",
+        27816598525
+      ],
+      [
+        910,
+        "frame_complete",
+        27816979540
+      ],
+      [
+        917,
+        "frame_prepared",
+        27836709148
+      ],
+      [
+        918,
+        "frame_complete",
+        27837059708
+      ],
+      [
+        925,
+        "frame_prepared",
+        27911218219
+      ],
+      [
+        926,
+        "frame_complete",
+        27911575578
+      ],
+      [
+        933,
+        "frame_prepared",
+        27959817008
+      ],
+      [
+        934,
+        "frame_complete",
+        27960167638
+      ],
+      [
+        941,
+        "frame_prepared",
+        27963178306
+      ],
+      [
+        942,
+        "frame_complete",
+        27963528964
+      ],
+      [
+        949,
+        "frame_prepared",
+        27989142049
+      ],
+      [
+        950,
+        "frame_complete",
+        27989500788
+      ],
+      [
+        957,
+        "frame_prepared",
+        28181456645
+      ],
+      [
+        958,
+        "frame_complete",
+        28181807252
+      ],
+      [
+        965,
+        "frame_prepared",
+        28207500095
+      ],
+      [
+        966,
+        "frame_complete",
+        28207833885
+      ],
+      [
+        973,
+        "frame_prepared",
+        28307063205
+      ],
+      [
+        974,
+        "frame_complete",
+        28307413750
+      ],
+      [
+        981,
+        "frame_prepared",
+        28355995536
+      ],
+      [
+        982,
+        "frame_complete",
+        28356346148
+      ],
+      [
+        989,
+        "frame_prepared",
+        28382785921
+      ],
+      [
+        990,
+        "frame_complete",
+        28383119064
+      ],
+      [
+        997,
+        "capture_started",
+        28385137138
+      ],
+      [
+        999,
+        "capture_cached",
+        28403099937
+      ],
+      [
+        1000,
+        "capture_converted",
+        28403159663
+      ],
+      [
+        1002,
+        "capture_document_encoded",
+        28752388630
+      ]
+    ],
+    "deltas": [
+      {
+        "line": 0,
+        "label": "startup",
+        "instructions": 306971719,
+        "delta": 306971719
+      },
+      {
+        "line": 3,
+        "label": "startup_page_model",
+        "instructions": 310492492,
+        "delta": 3520773
+      },
+      {
+        "line": 5,
+        "label": "startup_browser_state",
+        "instructions": 310685489,
+        "delta": 192997
+      },
+      {
+        "line": 7,
+        "label": "startup_input_bridge",
+        "instructions": 311849416,
+        "delta": 1163927
+      },
+      {
+        "line": 9,
+        "label": "startup_context",
+        "instructions": 312464880,
+        "delta": 615464
+      },
+      {
+        "line": 11,
+        "label": "navigation_started",
+        "instructions": 312743770,
+        "delta": 278890
+      },
+      {
+        "line": 13,
+        "label": "startup_navigation",
+        "instructions": 313013034,
+        "delta": 269264
+      },
+      {
+        "line": 15,
+        "label": "startup_filter_worker",
+        "instructions": 377145071,
+        "delta": 64132037
+      },
+      {
+        "line": 18,
+        "label": "frame_prepared",
+        "instructions": 1245861235,
+        "delta": 868716164
+      },
+      {
+        "line": 19,
+        "label": "frame_complete",
+        "instructions": 1254062233,
+        "delta": 8200998
+      },
+      {
+        "line": 20,
+        "label": "main_resource_fetch",
+        "instructions": 1370687128,
+        "delta": 116624895
+      },
+      {
+        "line": 22,
+        "label": "main_resource_cache",
+        "instructions": 1375664406,
+        "delta": 4977278
+      },
+      {
+        "line": 24,
+        "label": "frame_prepared",
+        "instructions": 1699478843,
+        "delta": 323814437
+      },
+      {
+        "line": 25,
+        "label": "frame_complete",
+        "instructions": 1708515819,
+        "delta": 9036976
+      },
+      {
+        "line": 26,
+        "label": "frame_prepared",
+        "instructions": 1968342173,
+        "delta": 259826354
+      },
+      {
+        "line": 27,
+        "label": "frame_complete",
+        "instructions": 1977568622,
+        "delta": 9226449
+      },
+      {
+        "line": 28,
+        "label": "frame_prepared",
+        "instructions": 1996630564,
+        "delta": 19061942
+      },
+      {
+        "line": 29,
+        "label": "frame_complete",
+        "instructions": 2028710537,
+        "delta": 32079973
+      },
+      {
+        "line": 30,
+        "label": "frame_prepared",
+        "instructions": 2137091948,
+        "delta": 108381411
+      },
+      {
+        "line": 31,
+        "label": "frame_complete",
+        "instructions": 2198394358,
+        "delta": 61302410
+      },
+      {
+        "line": 32,
+        "label": "frame_prepared",
+        "instructions": 2262966131,
+        "delta": 64571773
+      },
+      {
+        "line": 33,
+        "label": "frame_complete",
+        "instructions": 2284570396,
+        "delta": 21604265
+      },
+      {
+        "line": 34,
+        "label": "frame_prepared",
+        "instructions": 2331463807,
+        "delta": 46893411
+      },
+      {
+        "line": 35,
+        "label": "frame_complete",
+        "instructions": 2339244190,
+        "delta": 7780383
+      },
+      {
+        "line": 36,
+        "label": "frame_prepared",
+        "instructions": 2442774847,
+        "delta": 103530657
+      },
+      {
+        "line": 37,
+        "label": "frame_complete",
+        "instructions": 2459470789,
+        "delta": 16695942
+      },
+      {
+        "line": 38,
+        "label": "frame_prepared",
+        "instructions": 2566229293,
+        "delta": 106758504
+      },
+      {
+        "line": 39,
+        "label": "frame_complete",
+        "instructions": 2615533760,
+        "delta": 49304467
+      },
+      {
+        "line": 40,
+        "label": "frame_prepared",
+        "instructions": 2686244008,
+        "delta": 70710248
+      },
+      {
+        "line": 41,
+        "label": "frame_complete",
+        "instructions": 2705965225,
+        "delta": 19721217
+      },
+      {
+        "line": 42,
+        "label": "parse_document",
+        "instructions": 3147899545,
+        "delta": 441934320
+      },
+      {
+        "line": 44,
+        "label": "preload_resources",
+        "instructions": 4103358334,
+        "delta": 955458789
+      },
+      {
+        "line": 46,
+        "label": "install_styles",
+        "instructions": 4103786013,
+        "delta": 427679
+      },
+      {
+        "line": 48,
+        "label": "install_video_frames",
+        "instructions": 4114736236,
+        "delta": 10950223
+      },
+      {
+        "line": 50,
+        "label": "javascript_native_bindings",
+        "instructions": 5201218976,
+        "delta": 1086482740
+      },
+      {
+        "line": 51,
+        "label": "javascript_initial_state",
+        "instructions": 5298937078,
+        "delta": 97718102
+      },
+      {
+        "line": 52,
+        "label": "javascript_bootstrap_source",
+        "instructions": 5299312976,
+        "delta": 375898
+      },
+      {
+        "line": 53,
+        "label": "javascript_bootstrap_evaluated",
+        "instructions": 5384118979,
+        "delta": 84806003
+      },
+      {
+        "line": 54,
+        "label": "javascript_document_bindings",
+        "instructions": 5405883069,
+        "delta": 21764090
+      },
+      {
+        "line": 55,
+        "label": "javascript_adblock_scriptlets",
+        "instructions": 5418480560,
+        "delta": 12597491
+      },
+      {
+        "line": 56,
+        "label": "javascript_readiness_events",
+        "instructions": 7593944082,
+        "delta": 2175463522
+      },
+      {
+        "line": 57,
+        "label": "javascript_finalized",
+        "instructions": 7594469245,
+        "delta": 525163
+      },
+      {
+        "line": 59,
+        "label": "run_javascript",
+        "instructions": 7595610337,
+        "delta": 1141092
+      },
+      {
+        "line": 61,
+        "label": "cookie_blocker",
+        "instructions": 7596005339,
+        "delta": 395002
+      },
+      {
+        "line": 63,
+        "label": "script_inserted_stylesheets",
+        "instructions": 7596672841,
+        "delta": 667502
+      },
+      {
+        "line": 65,
+        "label": "unsized_script_images",
+        "instructions": 7598279194,
+        "delta": 1606353
+      },
+      {
+        "line": 67,
+        "label": "build_boxes",
+        "instructions": 9025768132,
+        "delta": 1427488938
+      },
+      {
+        "line": 69,
+        "label": "tree_fixups",
+        "instructions": 9028399210,
+        "delta": 2631078
+      },
+      {
+        "line": 71,
+        "label": "build_tree_total",
+        "instructions": 9028744751,
+        "delta": 345541
+      },
+      {
+        "line": 73,
+        "label": "formatting_contexts",
+        "instructions": 9702764150,
+        "delta": 674019399
+      },
+      {
+        "line": 75,
+        "label": "absolute_descendants",
+        "instructions": 9861093495,
+        "delta": 158329345
+      },
+      {
+        "line": 77,
+        "label": "relative_insets",
+        "instructions": 9862124523,
+        "delta": 1031028
+      },
+      {
+        "line": 79,
+        "label": "scrollable_overflow",
+        "instructions": 9868818599,
+        "delta": 6694076
+      },
+      {
+        "line": 82,
+        "label": "attach_layout",
+        "instructions": 9882379328,
+        "delta": 13560729
+      },
+      {
+        "line": 91,
+        "label": "layout_tree",
+        "instructions": 9957892540,
+        "delta": 75513212
+      },
+      {
+        "line": 93,
+        "label": "relayout",
+        "instructions": 9958101806,
+        "delta": 209266
+      },
+      {
+        "line": 95,
+        "label": "script_inserted_images",
+        "instructions": 9958863704,
+        "delta": 761898
+      },
+      {
+        "line": 97,
+        "label": "install_total",
+        "instructions": 9959041727,
+        "delta": 178023
+      },
+      {
+        "line": 100,
+        "label": "paint_commands",
+        "instructions": 10084193165,
+        "delta": 125151438
+      },
+      {
+        "line": 102,
+        "label": "frame_prepared",
+        "instructions": 10096216963,
+        "delta": 12023798
+      },
+      {
+        "line": 103,
+        "label": "frame_complete",
+        "instructions": 10166571365,
+        "delta": 70354402
+      },
+      {
+        "line": 105,
+        "label": "first_paint_total",
+        "instructions": 10166817824,
+        "delta": 246459
+      },
+      {
+        "line": 111,
+        "label": "build_tree_total",
+        "instructions": 10675981971,
+        "delta": 509164147
+      },
+      {
+        "line": 113,
+        "label": "formatting_contexts",
+        "instructions": 11109891300,
+        "delta": 433909329
+      },
+      {
+        "line": 115,
+        "label": "absolute_descendants",
+        "instructions": 11117093501,
+        "delta": 7202201
+      },
+      {
+        "line": 117,
+        "label": "relative_insets",
+        "instructions": 11117783573,
+        "delta": 690072
+      },
+      {
+        "line": 119,
+        "label": "scrollable_overflow",
+        "instructions": 11122857043,
+        "delta": 5073470
+      },
+      {
+        "line": 122,
+        "label": "attach_layout",
+        "instructions": 11135784528,
+        "delta": 12927485
+      },
+      {
+        "line": 125,
+        "label": "paint_commands",
+        "instructions": 11209402150,
+        "delta": 73617622
+      },
+      {
+        "line": 127,
+        "label": "frame_prepared",
+        "instructions": 11209580910,
+        "delta": 178760
+      },
+      {
+        "line": 128,
+        "label": "frame_complete",
+        "instructions": 11252573454,
+        "delta": 42992544
+      },
+      {
+        "line": 131,
+        "label": "build_tree_total",
+        "instructions": 11441530729,
+        "delta": 188957275
+      },
+      {
+        "line": 133,
+        "label": "formatting_contexts",
+        "instructions": 11657506160,
+        "delta": 215975431
+      },
+      {
+        "line": 135,
+        "label": "absolute_descendants",
+        "instructions": 11681578837,
+        "delta": 24072677
+      },
+      {
+        "line": 137,
+        "label": "relative_insets",
+        "instructions": 11684379370,
+        "delta": 2800533
+      },
+      {
+        "line": 139,
+        "label": "scrollable_overflow",
+        "instructions": 11689563762,
+        "delta": 5184392
+      },
+      {
+        "line": 142,
+        "label": "attach_layout",
+        "instructions": 11702344101,
+        "delta": 12780339
+      },
+      {
+        "line": 145,
+        "label": "paint_commands",
+        "instructions": 11776239937,
+        "delta": 73895836
+      },
+      {
+        "line": 147,
+        "label": "frame_prepared",
+        "instructions": 11776436001,
+        "delta": 196064
+      },
+      {
+        "line": 148,
+        "label": "frame_complete",
+        "instructions": 11784526216,
+        "delta": 8090215
+      },
+      {
+        "line": 151,
+        "label": "build_tree_total",
+        "instructions": 11884039951,
+        "delta": 99513735
+      },
+      {
+        "line": 153,
+        "label": "formatting_contexts",
+        "instructions": 11999437617,
+        "delta": 115397666
+      },
+      {
+        "line": 155,
+        "label": "absolute_descendants",
+        "instructions": 12006653563,
+        "delta": 7215946
+      },
+      {
+        "line": 157,
+        "label": "relative_insets",
+        "instructions": 12007361670,
+        "delta": 708107
+      },
+      {
+        "line": 159,
+        "label": "scrollable_overflow",
+        "instructions": 12012362787,
+        "delta": 5001117
+      },
+      {
+        "line": 162,
+        "label": "attach_layout",
+        "instructions": 12025108066,
+        "delta": 12745279
+      },
+      {
+        "line": 165,
+        "label": "paint_commands",
+        "instructions": 12107587638,
+        "delta": 82479572
+      },
+      {
+        "line": 167,
+        "label": "frame_prepared",
+        "instructions": 12107796011,
+        "delta": 208373
+      },
+      {
+        "line": 168,
+        "label": "frame_complete",
+        "instructions": 12115890054,
+        "delta": 8094043
+      },
+      {
+        "line": 171,
+        "label": "frame_prepared",
+        "instructions": 12135608335,
+        "delta": 19718281
+      },
+      {
+        "line": 172,
+        "label": "frame_complete",
+        "instructions": 12143799715,
+        "delta": 8191380
+      },
+      {
+        "line": 175,
+        "label": "frame_prepared",
+        "instructions": 12168725189,
+        "delta": 24925474
+      },
+      {
+        "line": 176,
+        "label": "frame_complete",
+        "instructions": 12176590337,
+        "delta": 7865148
+      },
+      {
+        "line": 179,
+        "label": "build_boxes",
+        "instructions": 15203882358,
+        "delta": 3027292021
+      },
+      {
+        "line": 181,
+        "label": "tree_fixups",
+        "instructions": 15206053702,
+        "delta": 2171344
+      },
+      {
+        "line": 183,
+        "label": "build_tree_total",
+        "instructions": 15206337491,
+        "delta": 283789
+      },
+      {
+        "line": 185,
+        "label": "formatting_contexts",
+        "instructions": 15753928606,
+        "delta": 547591115
+      },
+      {
+        "line": 187,
+        "label": "absolute_descendants",
+        "instructions": 15782984071,
+        "delta": 29055465
+      },
+      {
+        "line": 189,
+        "label": "relative_insets",
+        "instructions": 15783731707,
+        "delta": 747636
+      },
+      {
+        "line": 191,
+        "label": "scrollable_overflow",
+        "instructions": 15789433975,
+        "delta": 5702268
+      },
+      {
+        "line": 194,
+        "label": "attach_layout",
+        "instructions": 15802762772,
+        "delta": 13328797
+      },
+      {
+        "line": 197,
+        "label": "build_boxes",
+        "instructions": 17625819505,
+        "delta": 1823056733
+      },
+      {
+        "line": 199,
+        "label": "tree_fixups",
+        "instructions": 17628277769,
+        "delta": 2458264
+      },
+      {
+        "line": 201,
+        "label": "build_tree_total",
+        "instructions": 17628567147,
+        "delta": 289378
+      },
+      {
+        "line": 203,
+        "label": "formatting_contexts",
+        "instructions": 17885867756,
+        "delta": 257300609
+      },
+      {
+        "line": 205,
+        "label": "absolute_descendants",
+        "instructions": 17901845723,
+        "delta": 15977967
+      },
+      {
+        "line": 207,
+        "label": "relative_insets",
+        "instructions": 17902542889,
+        "delta": 697166
+      },
+      {
+        "line": 209,
+        "label": "scrollable_overflow",
+        "instructions": 17907814399,
+        "delta": 5271510
+      },
+      {
+        "line": 212,
+        "label": "attach_layout",
+        "instructions": 17921086808,
+        "delta": 13272409
+      },
+      {
+        "line": 215,
+        "label": "build_boxes",
+        "instructions": 18791677824,
+        "delta": 870591016
+      },
+      {
+        "line": 217,
+        "label": "tree_fixups",
+        "instructions": 18793364790,
+        "delta": 1686966
+      },
+      {
+        "line": 219,
+        "label": "build_tree_total",
+        "instructions": 18793624586,
+        "delta": 259796
+      },
+      {
+        "line": 221,
+        "label": "formatting_contexts",
+        "instructions": 19352581482,
+        "delta": 558956896
+      },
+      {
+        "line": 223,
+        "label": "absolute_descendants",
+        "instructions": 19382302927,
+        "delta": 29721445
+      },
+      {
+        "line": 225,
+        "label": "relative_insets",
+        "instructions": 19383150078,
+        "delta": 847151
+      },
+      {
+        "line": 227,
+        "label": "scrollable_overflow",
+        "instructions": 19389443737,
+        "delta": 6293659
+      },
+      {
+        "line": 230,
+        "label": "attach_layout",
+        "instructions": 19403112861,
+        "delta": 13669124
+      },
+      {
+        "line": 239,
+        "label": "layout_tree",
+        "instructions": 19474289522,
+        "delta": 71176661
+      },
+      {
+        "line": 241,
+        "label": "paint_commands",
+        "instructions": 19527763489,
+        "delta": 53473967
+      },
+      {
+        "line": 243,
+        "label": "frame_prepared",
+        "instructions": 19527946470,
+        "delta": 182981
+      },
+      {
+        "line": 244,
+        "label": "frame_complete",
+        "instructions": 19539498251,
+        "delta": 11551781
+      },
+      {
+        "line": 247,
+        "label": "build_boxes",
+        "instructions": 20212679042,
+        "delta": 673180791
+      },
+      {
+        "line": 249,
+        "label": "tree_fixups",
+        "instructions": 20214056458,
+        "delta": 1377416
+      },
+      {
+        "line": 251,
+        "label": "build_tree_total",
+        "instructions": 20214233787,
+        "delta": 177329
+      },
+      {
+        "line": 253,
+        "label": "formatting_contexts",
+        "instructions": 20823480643,
+        "delta": 609246856
+      },
+      {
+        "line": 255,
+        "label": "absolute_descendants",
+        "instructions": 20852537773,
+        "delta": 29057130
+      },
+      {
+        "line": 257,
+        "label": "relative_insets",
+        "instructions": 20853352269,
+        "delta": 814496
+      },
+      {
+        "line": 259,
+        "label": "scrollable_overflow",
+        "instructions": 20859240506,
+        "delta": 5888237
+      },
+      {
+        "line": 262,
+        "label": "attach_layout",
+        "instructions": 20872875108,
+        "delta": 13634602
+      },
+      {
+        "line": 265,
+        "label": "build_boxes",
+        "instructions": 21354001555,
+        "delta": 481126447
+      },
+      {
+        "line": 267,
+        "label": "tree_fixups",
+        "instructions": 21355457611,
+        "delta": 1456056
+      },
+      {
+        "line": 269,
+        "label": "build_tree_total",
+        "instructions": 21355661408,
+        "delta": 203797
+      },
+      {
+        "line": 271,
+        "label": "formatting_contexts",
+        "instructions": 21653330238,
+        "delta": 297668830
+      },
+      {
+        "line": 273,
+        "label": "absolute_descendants",
+        "instructions": 21669364683,
+        "delta": 16034445
+      },
+      {
+        "line": 275,
+        "label": "relative_insets",
+        "instructions": 21670133004,
+        "delta": 768321
+      },
+      {
+        "line": 277,
+        "label": "scrollable_overflow",
+        "instructions": 21675804808,
+        "delta": 5671804
+      },
+      {
+        "line": 280,
+        "label": "attach_layout",
+        "instructions": 21689701018,
+        "delta": 13896210
+      },
+      {
+        "line": 289,
+        "label": "layout_tree",
+        "instructions": 21750090879,
+        "delta": 60389861
+      },
+      {
+        "line": 291,
+        "label": "paint_commands",
+        "instructions": 21784547524,
+        "delta": 34456645
+      },
+      {
+        "line": 293,
+        "label": "frame_prepared",
+        "instructions": 21784727560,
+        "delta": 180036
+      },
+      {
+        "line": 294,
+        "label": "frame_complete",
+        "instructions": 21792733974,
+        "delta": 8006414
+      },
+      {
+        "line": 297,
+        "label": "frame_prepared",
+        "instructions": 21799755164,
+        "delta": 7021190
+      },
+      {
+        "line": 298,
+        "label": "frame_complete",
+        "instructions": 21807732148,
+        "delta": 7976984
+      },
+      {
+        "line": 301,
+        "label": "frame_prepared",
+        "instructions": 22233648256,
+        "delta": 425916108
+      },
+      {
+        "line": 302,
+        "label": "frame_complete",
+        "instructions": 22241726804,
+        "delta": 8078548
+      },
+      {
+        "line": 305,
+        "label": "frame_prepared",
+        "instructions": 22244774944,
+        "delta": 3048140
+      },
+      {
+        "line": 306,
+        "label": "frame_complete",
+        "instructions": 22257337150,
+        "delta": 12562206
+      },
+      {
+        "line": 309,
+        "label": "frame_prepared",
+        "instructions": 22278727722,
+        "delta": 21390572
+      },
+      {
+        "line": 310,
+        "label": "frame_complete",
+        "instructions": 22291571967,
+        "delta": 12844245
+      },
+      {
+        "line": 313,
+        "label": "frame_prepared",
+        "instructions": 22333049791,
+        "delta": 41477824
+      },
+      {
+        "line": 314,
+        "label": "frame_complete",
+        "instructions": 22346441628,
+        "delta": 13391837
+      },
+      {
+        "line": 317,
+        "label": "frame_prepared",
+        "instructions": 22543467132,
+        "delta": 197025504
+      },
+      {
+        "line": 318,
+        "label": "frame_complete",
+        "instructions": 22551542311,
+        "delta": 8075179
+      },
+      {
+        "line": 321,
+        "label": "frame_prepared",
+        "instructions": 22554078878,
+        "delta": 2536567
+      },
+      {
+        "line": 322,
+        "label": "frame_complete",
+        "instructions": 22561964987,
+        "delta": 7886109
+      },
+      {
+        "line": 325,
+        "label": "frame_prepared",
+        "instructions": 22573150687,
+        "delta": 11185700
+      },
+      {
+        "line": 326,
+        "label": "frame_complete",
+        "instructions": 22581169271,
+        "delta": 8018584
+      },
+      {
+        "line": 329,
+        "label": "build_tree_total",
+        "instructions": 22671352371,
+        "delta": 90183100
+      },
+      {
+        "line": 331,
+        "label": "formatting_contexts",
+        "instructions": 23384942565,
+        "delta": 713590194
+      },
+      {
+        "line": 333,
+        "label": "absolute_descendants",
+        "instructions": 23426458428,
+        "delta": 41515863
+      },
+      {
+        "line": 335,
+        "label": "relative_insets",
+        "instructions": 23427210374,
+        "delta": 751946
+      },
+      {
+        "line": 337,
+        "label": "scrollable_overflow",
+        "instructions": 23433387109,
+        "delta": 6176735
+      },
+      {
+        "line": 340,
+        "label": "attach_layout",
+        "instructions": 23446817669,
+        "delta": 13430560
+      },
+      {
+        "line": 343,
+        "label": "paint_commands",
+        "instructions": 23587973345,
+        "delta": 141155676
+      },
+      {
+        "line": 345,
+        "label": "frame_prepared",
+        "instructions": 23588171166,
+        "delta": 197821
+      },
+      {
+        "line": 346,
+        "label": "frame_complete",
+        "instructions": 23596320922,
+        "delta": 8149756
+      },
+      {
+        "line": 353,
+        "label": "build_tree_total",
+        "instructions": 23628349831,
+        "delta": 32028909
+      },
+      {
+        "line": 355,
+        "label": "formatting_contexts",
+        "instructions": 23865038601,
+        "delta": 236688770
+      },
+      {
+        "line": 357,
+        "label": "absolute_descendants",
+        "instructions": 23883418400,
+        "delta": 18379799
+      },
+      {
+        "line": 359,
+        "label": "relative_insets",
+        "instructions": 23884180518,
+        "delta": 762118
+      },
+      {
+        "line": 361,
+        "label": "scrollable_overflow",
+        "instructions": 23889580832,
+        "delta": 5400314
+      },
+      {
+        "line": 364,
+        "label": "attach_layout",
+        "instructions": 23903039288,
+        "delta": 13458456
+      },
+      {
+        "line": 367,
+        "label": "paint_commands",
+        "instructions": 24003845090,
+        "delta": 100805802
+      },
+      {
+        "line": 369,
+        "label": "frame_prepared",
+        "instructions": 24004039549,
+        "delta": 194459
+      },
+      {
+        "line": 370,
+        "label": "frame_complete",
+        "instructions": 24011921132,
+        "delta": 7881583
+      },
+      {
+        "line": 377,
+        "label": "frame_prepared",
+        "instructions": 24015361932,
+        "delta": 3440800
+      },
+      {
+        "line": 378,
+        "label": "frame_complete",
+        "instructions": 24023422136,
+        "delta": 8060204
+      },
+      {
+        "line": 385,
+        "label": "frame_prepared",
+        "instructions": 24029080770,
+        "delta": 5658634
+      },
+      {
+        "line": 386,
+        "label": "frame_complete",
+        "instructions": 24036913745,
+        "delta": 7832975
+      },
+      {
+        "line": 393,
+        "label": "build_tree_total",
+        "instructions": 24108525434,
+        "delta": 71611689
+      },
+      {
+        "line": 395,
+        "label": "formatting_contexts",
+        "instructions": 24431737567,
+        "delta": 323212133
+      },
+      {
+        "line": 397,
+        "label": "absolute_descendants",
+        "instructions": 24453354207,
+        "delta": 21616640
+      },
+      {
+        "line": 399,
+        "label": "relative_insets",
+        "instructions": 24454355967,
+        "delta": 1001760
+      },
+      {
+        "line": 401,
+        "label": "scrollable_overflow",
+        "instructions": 24461165143,
+        "delta": 6809176
+      },
+      {
+        "line": 404,
+        "label": "attach_layout",
+        "instructions": 24474623371,
+        "delta": 13458228
+      },
+      {
+        "line": 407,
+        "label": "paint_commands",
+        "instructions": 24579956489,
+        "delta": 105333118
+      },
+      {
+        "line": 409,
+        "label": "frame_prepared",
+        "instructions": 24580136395,
+        "delta": 179906
+      },
+      {
+        "line": 410,
+        "label": "frame_complete",
+        "instructions": 26285828199,
+        "delta": 1705691804
+      },
+      {
+        "line": 421,
+        "label": "frame_prepared",
+        "instructions": 26306481853,
+        "delta": 20653654
+      },
+      {
+        "line": 422,
+        "label": "frame_complete",
+        "instructions": 26306832658,
+        "delta": 350805
+      },
+      {
+        "line": 429,
+        "label": "frame_prepared",
+        "instructions": 26347844913,
+        "delta": 41012255
+      },
+      {
+        "line": 430,
+        "label": "frame_complete",
+        "instructions": 26348178429,
+        "delta": 333516
+      },
+      {
+        "line": 437,
+        "label": "frame_prepared",
+        "instructions": 26395954993,
+        "delta": 47776564
+      },
+      {
+        "line": 438,
+        "label": "frame_complete",
+        "instructions": 26396305957,
+        "delta": 350964
+      },
+      {
+        "line": 445,
+        "label": "frame_prepared",
+        "instructions": 26401116188,
+        "delta": 4810231
+      },
+      {
+        "line": 446,
+        "label": "frame_complete",
+        "instructions": 26401467115,
+        "delta": 350927
+      },
+      {
+        "line": 453,
+        "label": "frame_prepared",
+        "instructions": 26404312742,
+        "delta": 2845627
+      },
+      {
+        "line": 454,
+        "label": "frame_complete",
+        "instructions": 26404663727,
+        "delta": 350985
+      },
+      {
+        "line": 461,
+        "label": "frame_prepared",
+        "instructions": 26408032958,
+        "delta": 3369231
+      },
+      {
+        "line": 462,
+        "label": "frame_complete",
+        "instructions": 26408384523,
+        "delta": 351565
+      },
+      {
+        "line": 469,
+        "label": "frame_prepared",
+        "instructions": 26417798920,
+        "delta": 9414397
+      },
+      {
+        "line": 470,
+        "label": "frame_complete",
+        "instructions": 26418150086,
+        "delta": 351166
+      },
+      {
+        "line": 477,
+        "label": "frame_prepared",
+        "instructions": 26437365703,
+        "delta": 19215617
+      },
+      {
+        "line": 478,
+        "label": "frame_complete",
+        "instructions": 26437716827,
+        "delta": 351124
+      },
+      {
+        "line": 485,
+        "label": "frame_prepared",
+        "instructions": 26440544296,
+        "delta": 2827469
+      },
+      {
+        "line": 486,
+        "label": "frame_complete",
+        "instructions": 26440895340,
+        "delta": 351044
+      },
+      {
+        "line": 493,
+        "label": "frame_prepared",
+        "instructions": 26447641714,
+        "delta": 6746374
+      },
+      {
+        "line": 494,
+        "label": "frame_complete",
+        "instructions": 26447992668,
+        "delta": 350954
+      },
+      {
+        "line": 501,
+        "label": "frame_prepared",
+        "instructions": 26472976903,
+        "delta": 24984235
+      },
+      {
+        "line": 502,
+        "label": "frame_complete",
+        "instructions": 26473310405,
+        "delta": 333502
+      },
+      {
+        "line": 509,
+        "label": "frame_prepared",
+        "instructions": 26476190201,
+        "delta": 2879796
+      },
+      {
+        "line": 510,
+        "label": "frame_complete",
+        "instructions": 26476541133,
+        "delta": 350932
+      },
+      {
+        "line": 517,
+        "label": "frame_prepared",
+        "instructions": 26479599845,
+        "delta": 3058712
+      },
+      {
+        "line": 518,
+        "label": "frame_complete",
+        "instructions": 26479951160,
+        "delta": 351315
+      },
+      {
+        "line": 525,
+        "label": "frame_prepared",
+        "instructions": 26498828211,
+        "delta": 18877051
+      },
+      {
+        "line": 526,
+        "label": "frame_complete",
+        "instructions": 26499179452,
+        "delta": 351241
+      },
+      {
+        "line": 533,
+        "label": "frame_prepared",
+        "instructions": 26580648445,
+        "delta": 81468993
+      },
+      {
+        "line": 534,
+        "label": "frame_complete",
+        "instructions": 26580999674,
+        "delta": 351229
+      },
+      {
+        "line": 541,
+        "label": "frame_prepared",
+        "instructions": 26633737742,
+        "delta": 52738068
+      },
+      {
+        "line": 542,
+        "label": "frame_complete",
+        "instructions": 26634089453,
+        "delta": 351711
+      },
+      {
+        "line": 549,
+        "label": "frame_prepared",
+        "instructions": 26641322590,
+        "delta": 7233137
+      },
+      {
+        "line": 550,
+        "label": "frame_complete",
+        "instructions": 26641673981,
+        "delta": 351391
+      },
+      {
+        "line": 557,
+        "label": "frame_prepared",
+        "instructions": 26668352226,
+        "delta": 26678245
+      },
+      {
+        "line": 558,
+        "label": "frame_complete",
+        "instructions": 26668720571,
+        "delta": 368345
+      },
+      {
+        "line": 565,
+        "label": "frame_prepared",
+        "instructions": 26671611783,
+        "delta": 2891212
+      },
+      {
+        "line": 566,
+        "label": "frame_complete",
+        "instructions": 26671963199,
+        "delta": 351416
+      },
+      {
+        "line": 573,
+        "label": "frame_prepared",
+        "instructions": 26680500452,
+        "delta": 8537253
+      },
+      {
+        "line": 574,
+        "label": "frame_complete",
+        "instructions": 26680851969,
+        "delta": 351517
+      },
+      {
+        "line": 581,
+        "label": "frame_prepared",
+        "instructions": 26700920861,
+        "delta": 20068892
+      },
+      {
+        "line": 582,
+        "label": "frame_complete",
+        "instructions": 26701272163,
+        "delta": 351302
+      },
+      {
+        "line": 589,
+        "label": "frame_prepared",
+        "instructions": 26720637536,
+        "delta": 19365373
+      },
+      {
+        "line": 590,
+        "label": "frame_complete",
+        "instructions": 26720989096,
+        "delta": 351560
+      },
+      {
+        "line": 597,
+        "label": "frame_prepared",
+        "instructions": 26799702820,
+        "delta": 78713724
+      },
+      {
+        "line": 598,
+        "label": "frame_complete",
+        "instructions": 26800054135,
+        "delta": 351315
+      },
+      {
+        "line": 605,
+        "label": "frame_prepared",
+        "instructions": 26846459173,
+        "delta": 46405038
+      },
+      {
+        "line": 606,
+        "label": "frame_complete",
+        "instructions": 26846810505,
+        "delta": 351332
+      },
+      {
+        "line": 613,
+        "label": "frame_prepared",
+        "instructions": 26879899355,
+        "delta": 33088850
+      },
+      {
+        "line": 614,
+        "label": "frame_complete",
+        "instructions": 26880267243,
+        "delta": 367888
+      },
+      {
+        "line": 621,
+        "label": "frame_prepared",
+        "instructions": 26883517280,
+        "delta": 3250037
+      },
+      {
+        "line": 622,
+        "label": "frame_complete",
+        "instructions": 26883871271,
+        "delta": 353991
+      },
+      {
+        "line": 629,
+        "label": "frame_prepared",
+        "instructions": 26909999781,
+        "delta": 26128510
+      },
+      {
+        "line": 630,
+        "label": "frame_complete",
+        "instructions": 26910365328,
+        "delta": 365547
+      },
+      {
+        "line": 637,
+        "label": "frame_prepared",
+        "instructions": 26913635366,
+        "delta": 3270038
+      },
+      {
+        "line": 638,
+        "label": "frame_complete",
+        "instructions": 26913985868,
+        "delta": 350502
+      },
+      {
+        "line": 645,
+        "label": "frame_prepared",
+        "instructions": 26939936572,
+        "delta": 25950704
+      },
+      {
+        "line": 646,
+        "label": "frame_complete",
+        "instructions": 26940287163,
+        "delta": 350591
+      },
+      {
+        "line": 653,
+        "label": "frame_prepared",
+        "instructions": 26951733347,
+        "delta": 11446184
+      },
+      {
+        "line": 654,
+        "label": "frame_complete",
+        "instructions": 26952083883,
+        "delta": 350536
+      },
+      {
+        "line": 661,
+        "label": "frame_prepared",
+        "instructions": 27033734799,
+        "delta": 81650916
+      },
+      {
+        "line": 662,
+        "label": "frame_complete",
+        "instructions": 27034085313,
+        "delta": 350514
+      },
+      {
+        "line": 669,
+        "label": "frame_prepared",
+        "instructions": 27070765921,
+        "delta": 36680608
+      },
+      {
+        "line": 670,
+        "label": "frame_complete",
+        "instructions": 27071128247,
+        "delta": 362326
+      },
+      {
+        "line": 677,
+        "label": "frame_prepared",
+        "instructions": 27091543444,
+        "delta": 20415197
+      },
+      {
+        "line": 678,
+        "label": "frame_complete",
+        "instructions": 27091893957,
+        "delta": 350513
+      },
+      {
+        "line": 685,
+        "label": "frame_prepared",
+        "instructions": 27097225421,
+        "delta": 5331464
+      },
+      {
+        "line": 686,
+        "label": "frame_complete",
+        "instructions": 27097575763,
+        "delta": 350342
+      },
+      {
+        "line": 693,
+        "label": "frame_prepared",
+        "instructions": 27120903941,
+        "delta": 23328178
+      },
+      {
+        "line": 694,
+        "label": "frame_complete",
+        "instructions": 27121254661,
+        "delta": 350720
+      },
+      {
+        "line": 701,
+        "label": "frame_prepared",
+        "instructions": 27124727785,
+        "delta": 3473124
+      },
+      {
+        "line": 702,
+        "label": "frame_complete",
+        "instructions": 27125310124,
+        "delta": 582339
+      },
+      {
+        "line": 709,
+        "label": "frame_prepared",
+        "instructions": 27152018878,
+        "delta": 26708754
+      },
+      {
+        "line": 710,
+        "label": "frame_complete",
+        "instructions": 27152383768,
+        "delta": 364890
+      },
+      {
+        "line": 717,
+        "label": "frame_prepared",
+        "instructions": 27159471971,
+        "delta": 7088203
+      },
+      {
+        "line": 718,
+        "label": "frame_complete",
+        "instructions": 27159822487,
+        "delta": 350516
+      },
+      {
+        "line": 725,
+        "label": "frame_prepared",
+        "instructions": 27236973375,
+        "delta": 77150888
+      },
+      {
+        "line": 726,
+        "label": "frame_complete",
+        "instructions": 27237323973,
+        "delta": 350598
+      },
+      {
+        "line": 733,
+        "label": "frame_prepared",
+        "instructions": 27257824063,
+        "delta": 20500090
+      },
+      {
+        "line": 734,
+        "label": "frame_complete",
+        "instructions": 27258271299,
+        "delta": 447236
+      },
+      {
+        "line": 741,
+        "label": "frame_prepared",
+        "instructions": 27321981245,
+        "delta": 63709946
+      },
+      {
+        "line": 742,
+        "label": "frame_complete",
+        "instructions": 27322332076,
+        "delta": 350831
+      },
+      {
+        "line": 749,
+        "label": "frame_prepared",
+        "instructions": 27344737077,
+        "delta": 22405001
+      },
+      {
+        "line": 750,
+        "label": "frame_complete",
+        "instructions": 27345087896,
+        "delta": 350819
+      },
+      {
+        "line": 757,
+        "label": "frame_prepared",
+        "instructions": 27351156104,
+        "delta": 6068208
+      },
+      {
+        "line": 758,
+        "label": "frame_complete",
+        "instructions": 27351506719,
+        "delta": 350615
+      },
+      {
+        "line": 765,
+        "label": "frame_prepared",
+        "instructions": 27361701042,
+        "delta": 10194323
+      },
+      {
+        "line": 766,
+        "label": "frame_complete",
+        "instructions": 27362051890,
+        "delta": 350848
+      },
+      {
+        "line": 773,
+        "label": "frame_prepared",
+        "instructions": 27380744999,
+        "delta": 18693109
+      },
+      {
+        "line": 774,
+        "label": "frame_complete",
+        "instructions": 27381095637,
+        "delta": 350638
+      },
+      {
+        "line": 781,
+        "label": "frame_prepared",
+        "instructions": 27387809502,
+        "delta": 6713865
+      },
+      {
+        "line": 782,
+        "label": "frame_complete",
+        "instructions": 27388163547,
+        "delta": 354045
+      },
+      {
+        "line": 789,
+        "label": "frame_prepared",
+        "instructions": 27440077072,
+        "delta": 51913525
+      },
+      {
+        "line": 790,
+        "label": "frame_complete",
+        "instructions": 27440427607,
+        "delta": 350535
+      },
+      {
+        "line": 797,
+        "label": "frame_prepared",
+        "instructions": 27473685534,
+        "delta": 33257927
+      },
+      {
+        "line": 798,
+        "label": "frame_complete",
+        "instructions": 27474036198,
+        "delta": 350664
+      },
+      {
+        "line": 805,
+        "label": "frame_prepared",
+        "instructions": 27523128928,
+        "delta": 49092730
+      },
+      {
+        "line": 806,
+        "label": "frame_complete",
+        "instructions": 27523479462,
+        "delta": 350534
+      },
+      {
+        "line": 813,
+        "label": "frame_prepared",
+        "instructions": 27526569909,
+        "delta": 3090447
+      },
+      {
+        "line": 814,
+        "label": "frame_complete",
+        "instructions": 27526920595,
+        "delta": 350686
+      },
+      {
+        "line": 821,
+        "label": "frame_prepared",
+        "instructions": 27552162111,
+        "delta": 25241516
+      },
+      {
+        "line": 822,
+        "label": "frame_complete",
+        "instructions": 27552512768,
+        "delta": 350657
+      },
+      {
+        "line": 829,
+        "label": "frame_prepared",
+        "instructions": 27555494224,
+        "delta": 2981456
+      },
+      {
+        "line": 830,
+        "label": "frame_complete",
+        "instructions": 27555844873,
+        "delta": 350649
+      },
+      {
+        "line": 837,
+        "label": "frame_prepared",
+        "instructions": 27581914075,
+        "delta": 26069202
+      },
+      {
+        "line": 838,
+        "label": "frame_complete",
+        "instructions": 27582264788,
+        "delta": 350713
+      },
+      {
+        "line": 845,
+        "label": "frame_prepared",
+        "instructions": 27590543891,
+        "delta": 8279103
+      },
+      {
+        "line": 846,
+        "label": "frame_complete",
+        "instructions": 27590961133,
+        "delta": 417242
+      },
+      {
+        "line": 853,
+        "label": "frame_prepared",
+        "instructions": 27622800364,
+        "delta": 31839231
+      },
+      {
+        "line": 854,
+        "label": "frame_complete",
+        "instructions": 27623133893,
+        "delta": 333529
+      },
+      {
+        "line": 861,
+        "label": "frame_prepared",
+        "instructions": 27680099497,
+        "delta": 56965604
+      },
+      {
+        "line": 862,
+        "label": "frame_complete",
+        "instructions": 27680450334,
+        "delta": 350837
+      },
+      {
+        "line": 869,
+        "label": "frame_prepared",
+        "instructions": 27729260751,
+        "delta": 48810417
+      },
+      {
+        "line": 870,
+        "label": "frame_complete",
+        "instructions": 27729611668,
+        "delta": 350917
+      },
+      {
+        "line": 877,
+        "label": "frame_prepared",
+        "instructions": 27755496326,
+        "delta": 25884658
+      },
+      {
+        "line": 878,
+        "label": "frame_complete",
+        "instructions": 27755847257,
+        "delta": 350931
+      },
+      {
+        "line": 885,
+        "label": "frame_prepared",
+        "instructions": 27760340837,
+        "delta": 4493580
+      },
+      {
+        "line": 886,
+        "label": "frame_complete",
+        "instructions": 27760691910,
+        "delta": 351073
+      },
+      {
+        "line": 893,
+        "label": "frame_prepared",
+        "instructions": 27786836099,
+        "delta": 26144189
+      },
+      {
+        "line": 894,
+        "label": "frame_complete",
+        "instructions": 27787186720,
+        "delta": 350621
+      },
+      {
+        "line": 901,
+        "label": "frame_prepared",
+        "instructions": 27790265860,
+        "delta": 3079140
+      },
+      {
+        "line": 902,
+        "label": "frame_complete",
+        "instructions": 27790616387,
+        "delta": 350527
+      },
+      {
+        "line": 909,
+        "label": "frame_prepared",
+        "instructions": 27816598525,
+        "delta": 25982138
+      },
+      {
+        "line": 910,
+        "label": "frame_complete",
+        "instructions": 27816979540,
+        "delta": 381015
+      },
+      {
+        "line": 917,
+        "label": "frame_prepared",
+        "instructions": 27836709148,
+        "delta": 19729608
+      },
+      {
+        "line": 918,
+        "label": "frame_complete",
+        "instructions": 27837059708,
+        "delta": 350560
+      },
+      {
+        "line": 925,
+        "label": "frame_prepared",
+        "instructions": 27911218219,
+        "delta": 74158511
+      },
+      {
+        "line": 926,
+        "label": "frame_complete",
+        "instructions": 27911575578,
+        "delta": 357359
+      },
+      {
+        "line": 933,
+        "label": "frame_prepared",
+        "instructions": 27959817008,
+        "delta": 48241430
+      },
+      {
+        "line": 934,
+        "label": "frame_complete",
+        "instructions": 27960167638,
+        "delta": 350630
+      },
+      {
+        "line": 941,
+        "label": "frame_prepared",
+        "instructions": 27963178306,
+        "delta": 3010668
+      },
+      {
+        "line": 942,
+        "label": "frame_complete",
+        "instructions": 27963528964,
+        "delta": 350658
+      },
+      {
+        "line": 949,
+        "label": "frame_prepared",
+        "instructions": 27989142049,
+        "delta": 25613085
+      },
+      {
+        "line": 950,
+        "label": "frame_complete",
+        "instructions": 27989500788,
+        "delta": 358739
+      },
+      {
+        "line": 957,
+        "label": "frame_prepared",
+        "instructions": 28181456645,
+        "delta": 191955857
+      },
+      {
+        "line": 958,
+        "label": "frame_complete",
+        "instructions": 28181807252,
+        "delta": 350607
+      },
+      {
+        "line": 965,
+        "label": "frame_prepared",
+        "instructions": 28207500095,
+        "delta": 25692843
+      },
+      {
+        "line": 966,
+        "label": "frame_complete",
+        "instructions": 28207833885,
+        "delta": 333790
+      },
+      {
+        "line": 973,
+        "label": "frame_prepared",
+        "instructions": 28307063205,
+        "delta": 99229320
+      },
+      {
+        "line": 974,
+        "label": "frame_complete",
+        "instructions": 28307413750,
+        "delta": 350545
+      },
+      {
+        "line": 981,
+        "label": "frame_prepared",
+        "instructions": 28355995536,
+        "delta": 48581786
+      },
+      {
+        "line": 982,
+        "label": "frame_complete",
+        "instructions": 28356346148,
+        "delta": 350612
+      },
+      {
+        "line": 989,
+        "label": "frame_prepared",
+        "instructions": 28382785921,
+        "delta": 26439773
+      },
+      {
+        "line": 990,
+        "label": "frame_complete",
+        "instructions": 28383119064,
+        "delta": 333143
+      },
+      {
+        "line": 997,
+        "label": "capture_started",
+        "instructions": 28385137138,
+        "delta": 2018074
+      },
+      {
+        "line": 999,
+        "label": "capture_cached",
+        "instructions": 28403099937,
+        "delta": 17962799
+      },
+      {
+        "line": 1000,
+        "label": "capture_converted",
+        "instructions": 28403159663,
+        "delta": 59726
+      },
+      {
+        "line": 1002,
+        "label": "capture_document_encoded",
+        "instructions": 28752388630,
+        "delta": 349228967
+      }
+    ],
+    "delta_group": {
+      "startup": 306971719,
+      "startup_page_model": 3520773,
+      "startup_browser_state": 192997,
+      "startup_input_bridge": 1163927,
+      "startup_context": 615464,
+      "navigation_started": 278890,
+      "startup_navigation": 269264,
+      "startup_filter_worker": 64132037,
+      "frame_prepared": 4820746982,
+      "frame_complete": 2242244797,
+      "main_resource_fetch": 116624895,
+      "main_resource_cache": 4977278,
+      "parse_document": 441934320,
+      "preload_resources": 955458789,
+      "install_styles": 427679,
+      "install_video_frames": 10950223,
+      "javascript_native_bindings": 1086482740,
+      "javascript_initial_state": 97718102,
+      "javascript_bootstrap_source": 375898,
+      "javascript_bootstrap_evaluated": 84806003,
+      "javascript_document_bindings": 21764090,
+      "javascript_adblock_scriptlets": 12597491,
+      "javascript_readiness_events": 2175463522,
+      "javascript_finalized": 525163,
+      "run_javascript": 1141092,
+      "cookie_blocker": 395002,
+      "script_inserted_stylesheets": 667502,
+      "unsized_script_images": 1606353,
+      "build_boxes": 8302735946,
+      "tree_fixups": 11781124,
+      "build_tree_total": 993018485,
+      "formatting_contexts": 4983557228,
+      "absolute_descendants": 398178923,
+      "relative_insets": 11620334,
+      "scrollable_overflow": 69166758,
+      "attach_layout": 160162218,
+      "layout_tree": 207079734,
+      "relayout": 209266,
+      "script_inserted_images": 761898,
+      "install_total": 178023,
+      "paint_commands": 790369676,
+      "first_paint_total": 246459,
+      "capture_started": 2018074,
+      "capture_cached": 17962799,
+      "capture_converted": 59726,
+      "capture_document_encoded": 349228967
+    },
+    "limitations": "Cumulative process snapshots at diagnostic checkpoints. Gaps include asynchronous work and query overhead. All spaced subphase labels included in corrected extraction. Earlier incomplete parser retained separately. Not exclusive engine-phase instruction costs."
+  },
+  "evidence_root": "Build/bbc-phase-instructions-20261103",
+  "limitations": "Corrected parser includes labels with spaces. Earlier parser omitted detailed layout labels and is retained separately. Gaps include interleaved callbacks/asynchronous work and instrumentation overhead; they are not exclusive function costs. No pixel/reference/endpoint changed."
+}

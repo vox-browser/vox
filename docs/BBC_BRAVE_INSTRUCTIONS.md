@@ -4114,3 +4114,21 @@ profiles, commands, guard exits, ownership, identities and local evidence.
 History reaches **70 cohorts / 1,614 browser attempts**. The **10% target
 remains open**, without a BBC homepage catalog entry, live-site, rendering-time
 or scrolling-FPS claim.
+
+### Selection-cache experiment removed (2026-11-03)
+
+Extending the longhand cache to selection styles passes 216 focused executions
+and 244 tool tests, but the separate frozen-HTML witness records no actual
+selection-cache hit. Scanning all archived responses finds no `::selection`
+rules. The experiment and its control are removed without a feature commit or
+performance credit. All five standalone attempts, including their unchanged
+geometry/paint and an erroneous post-run assertion, remain recorded in the
+[rejected-experiment ledger](performance/bbc-selection-longhand-reuse-20261103.json).
+
+A current-production checkpoint diagnostic preserves original content and
+pixels, ownership and normal exits. Its corrected parser retains labels with
+spaces, including detailed layout subphases omitted by the initial parser.
+The [raw diagnostic ledger](performance/bbc-phase-instructions-20261103.json)
+retains both extractions. Checkpoint gaps include interleaved callbacks,
+asynchronous work and probe overhead; they are leads for investigation, rather
+than exclusive function instruction costs or optimization credit.

@@ -1,0 +1,205 @@
+{
+  "status": "Rejected and removed before feature commit: selected path does not execute on BBC fixture",
+  "feature_retained": false,
+  "target_met": false,
+  "bbc_instruction_credit": false,
+  "catalog_entry_added": false,
+  "focused": {
+    "cases": 36,
+    "policies": 2,
+    "memory_modes": 3,
+    "executions": 216,
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ]
+  },
+  "retained_compile_attempts": {
+    "focused-css-v1": [
+      {
+        "name": "default-compile",
+        "exit": 1
+      },
+      {
+        "name": "none-compile",
+        "exit": 1
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 1
+      }
+    ],
+    "focused-css-v2": [
+      {
+        "name": "default-compile",
+        "exit": 1
+      },
+      {
+        "name": "none-compile",
+        "exit": 1
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 1
+      }
+    ]
+  },
+  "tool_tests": 244,
+  "standalone": {
+    "diagnostic_only": true,
+    "bbc_instruction_credit": false,
+    "acceptance": false,
+    "executable_sha256": "b62ddf9f28900448dc8e28d75eaeb354cde5d4acb7770699b7ec42eb6c5af71f",
+    "html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+    "rows": [
+      {
+        "pair": 0,
+        "arm": "witness",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 351092154,
+        "first_layout": 2702572459,
+        "mutation": 113630,
+        "second_layout": 1183735102,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "selection_reuse": false
+        }
+      },
+      {
+        "pair": 1,
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 345169739,
+        "first_layout": 2698448067,
+        "mutation": 107651,
+        "second_layout": 1186885757,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "selection_reuse": false
+        }
+      },
+      {
+        "pair": 1,
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 346339989,
+        "first_layout": 2692710977,
+        "mutation": 98611,
+        "second_layout": 1184347903,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "selection_reuse": false
+        }
+      },
+      {
+        "pair": 2,
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 344750336,
+        "first_layout": 2693020460,
+        "mutation": 98110,
+        "second_layout": 1194372717,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "selection_reuse": false
+        }
+      },
+      {
+        "pair": 2,
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 345840793,
+        "first_layout": 2691473499,
+        "mutation": 99000,
+        "second_layout": 1185177723,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "selection_reuse": false
+        }
+      }
+    ],
+    "limitations": "Standalone C-O3 no-GC engine, frozen BBC HTML without scripts or resource replay, viewport1024x768/layout scale1. First layout and second update after appending a zero-size body child use process deltas. Includes synchronous native style/layout but no browser startup/window/PNG. Dumps and scalar geometry do not establish pixel equality or full-browser savings. Witness has diagnostic logging and supplies no timing credit."
+  },
+  "post_run_audit": {
+    "actual_browser_instruction_credit": false,
+    "feature_retained": false,
+    "all_five_native_and_guard_exits_zero": true,
+    "geometry_and_paint_unchanged": true,
+    "actual_fast_path_executed": false,
+    "controller_error": "Post-run assertion retained stale cascade_borrow key and raised KeyError after all5 runs. No runs repeated, no exits inferred.",
+    "reason": "Frozen archive has no ::selection rules; actual hit marker absent. No savings attributed to an unused path."
+  },
+  "fixture_audit": "All595 archived response bodies scanned; no ::selection rules. No actual restore marker in separate witness. No engine gain attributed.",
+  "evidence_root": "Build/bbc-selection-longhand-reuse-20261103",
+  "patch": "Build/bbc-selection-longhand-reuse-20261103/rejected-experiment.patch",
+  "patch_sha256": "ca138aa05f33049b75bba4a2598c9b16b4499b5f667059e4d243a12dd5e9521a"
+}
