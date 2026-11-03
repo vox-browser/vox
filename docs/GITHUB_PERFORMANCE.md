@@ -5,6 +5,95 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Native custom-element registration, November 3, 2026
+
+`7e9dfeadb` exposes Window `customElements`, `CustomElementRegistry`, and scoped
+registry construction through the existing native HTML registry. `define()`,
+`get()`, `getName()`, `whenDefined()`, `upgrade()` and `initialize()` use native
+identity, validation and queue operations. Constructors and lifecycle callback
+snapshots remain actual JavaScript values. This slice does **not** execute HTML
+subclass constructors or deliver lifecycle/upgrade reactions; a queued native
+upgrade does not establish a hydrated custom element.
+
+Metadata getters run under the native definition guard, after WebIDL argument
+conversion and the name/constructor/extends checks. Throwing getters and
+iterators preserve their original exception and clear the guard without
+publishing a definition. Observed attributes, disabled features, form metadata
+and callback getter order follow the local upstream source. The bridge keeps
+DOMString code units, including distinct surrogate and replacement-character
+names under upstream's current element-name rules. `whenDefined()` returns real
+engine promises, preserving pending identity and exact constructor values.
+
+Review found that a metadata getter can register the same constructor in a
+different registry. `a0f568f06` reserves its identity before invoking author
+code, preserves successful nested registrations when an outer definition fails,
+and releases unpublished reservations and temporary constructor roots. One
+additional actual-JSC case checks these paths and repeated getter failures.
+
+The base slice passed eight binding cases in Boehm, GC-none and preallocation,
+plus 17 focused native cases in both GC modes: 58 executions. After the identity
+fix, all nine binding cases pass in each of the three modes. Combined with the
+unchanged native results, the final composite comprises 61 case executions.
+All use native C-O0 and the current compiler, 12 GiB compile guards with the
+compiler's 10G limit, and 3 GiB runtime guards. Final compiler child exits and all
+final runtime/guard terminal exits are zero. The two native compile launchers did not
+capture their outer guard terminal status; their completed guard reports record
+compiler child zero. That unavailable outer status is not invented.
+
+Retained failures include the original strict global getter's undefined
+receiver, a supplemental test's incorrect assumption that upstream rejects
+surrogate names, and a new root-count assertion that included primitive
+exceptions retained by the existing exception transport. The final assertion
+checks constructor identity keys and object roots separately. All failed logs
+and commands remain; none receives whole-run pass credit. Both feature commits
+used private indices under the shared index lock. Only four registry-installation
+lines from `main.v` were committed; concurrent scroll-raster work was preserved.
+
+The already queued shared production build completed as receipt
+`20261103-162511-a268cc3b`, executable SHA-256
+`6638f91b535e23667fcccd363a01067e334d109827c104d804c51cf2f05d574a`.
+A fresh process passes the 640×480 page API check for registration, captured
+callbacks, promises, scopes and native upgrade queues. Browser, controller and
+3 GiB guard exit zero. This bundle contains the base registration slice and
+predates the cross-registry identity correction; its page checks do not validate
+that later correction. No duplicate production build or app copy was requested,
+and the user's GUI browser was left running.
+
+The later queued shared build then completed as receipt
+`20261103-163329-594b8eb4`, executable SHA-256
+`4bb975f954307747bb4d7046b126fc2adfb0b22b75b207f613f2e4a0adf7b270`.
+Its registry operation, metadata conversion, native definition method, factory,
+and metadata reader match the passing preallocation test's generated C after
+resolving exact string constants and consistently renaming the reader and its
+capture context. A fresh 640×480 page checks successful nested registration,
+duplicate-constructor rejection in both registries, and recovery after an outer
+definition throws. Browser, controller and 3 GiB guard all exit zero. This later
+check validates the identity correction; it adds no GitHub observation or
+instruction credit. The function comparison is not a whole-program performance
+isolation audit.
+
+A separately declared single GitHub observation uses the same pinned 193-response
+archive and strict 33-row/66-link/21-image contract as the earlier new-fixture
+diagnostic. Actual browser, controller and 12 GiB guard exits are zero, and the
+document viewport is exactly 1024×768. The PNG remains byte-identical, SHA-256
+`65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`.
+All missing-registry errors disappear. The six remaining diagnostics are two
+script errors (a spread over an unavailable iterable and missing
+`HTMLSelectElement`) plus four unarchived CSS module requests, returned as 404
+by the sealed replay. The archive and completed earlier observations were not
+changed to satisfy those new requests.
+
+Main-task retired instructions are 12,868,050,116 at the legacy document-paint
+marker and 44,813,100,914 at first native-layer submission. These are different
+endpoints, with overlapping scopes kept separate. This single diagnostic uses
+a shared build with other concurrent changes and supplies no paired median,
+savings claim or optimization credit. It does not establish full hydration or
+Chrome parity. The historical missing evidence, broad baseline and instruction
+ledger remain unchanged.
+
+See [the structured audit](performance/github-custom-element-registry-20261103.json)
+and [durable commands, logs, checks and captures](performance/raw/github-custom-element-registry-20261103.tar.gz).
+
 ## Public Performance marks, November 3, 2026
 
 The missing `performance.mark()` call found in the new archived GitHub run now
