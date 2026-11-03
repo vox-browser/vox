@@ -1,0 +1,833 @@
+{
+  "version": 1,
+  "status": "open",
+  "scope": "Frozen 1024x768 scale-1 guest viewport with full uBlock Origin, original encoded resource bytes and zero pixel tolerance; no performance or whole-site parity claim.",
+  "commits": {
+    "source_capture_guard": "cf5684597",
+    "decode_diagnostic": "733b88a5d"
+  },
+  "registered_archive": {
+    "path": "Tests/Browser/Brave/sites/engadget/manifest.json",
+    "sha256": "53ea109a6418706286f6401849a4a1f6aa5be20f42f24ee498ac6e59c8ad3872",
+    "unchanged": true
+  },
+  "fresh_capture": {
+    "path": "Build/engadget-observation-20261103-1436/guarded-site/summary.json",
+    "sha256": "81ca138c54ac08df153eec23a8531841fa76ba107a54eac6070744acb557e588",
+    "data": {
+      "started_at": "2026-11-03T14:53:45+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "complete",
+      "sites": [
+        {
+          "id": "engadget",
+          "name": "Engadget",
+          "url": "https://www.engadget.com/",
+          "status": "live-to-frozen-mismatch",
+          "cache_policy": "complete",
+          "different_pixels": 2294,
+          "artifacts": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget",
+          "live_to_frozen_different_pixels": 2485,
+          "manifest_sha256": "6fb9b12b5f696bfb315ef889c07edd492333c37801e38e0123adf8e0a98a2fa8"
+        }
+      ],
+      "passed": 0
+    }
+  },
+  "identities": {
+    "vox": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "3fafbc6189d483cfcd826f5d6b7880e1c705dce36604856b79f005759ad60f48",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2ec426f818871c2bde264ed444c55621a58bdcab5004e9e325f062896f1a2737",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a373609a3aad7c013bcaa73114657b9e3043740359e106b230259736d22d82af",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b3c61e4f01686262854bf97ae047d7a4eb43072dadc690a6490c944fbb9e3098",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "5bfa034bffe84c63c10be6df604fe84634f27ab3b1f0387999c9e15bf3d01482",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "brave": {
+      "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+    }
+  },
+  "unchanged_browser_inputs": true,
+  "source_pixel_state": {
+    "path": "Build/engadget-observation-20261103-1436/guarded-site/engadget/capture/live.png.json",
+    "sha256": "652f90c4cd4863585173aa26f8aa3d9f08dc5e0213756ecc87523925375a05c2",
+    "stable": true,
+    "source_pixels": {
+      "file": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/capture/live.png",
+      "sha256": "93529f245c3dcea7faa0f1b449d8455e6b0a4e9d62a810b000cc0d78a59c1c8b",
+      "width": 1024,
+      "height": 768,
+      "scale": 1,
+      "stable": true
+    }
+  },
+  "image_pairs": {
+    "native": {
+      "path": "Build/engadget-observation-20261103-1436/guarded-site/engadget/pixels.json",
+      "sha256": "6bbf472d140969bf036ef8be9048a7f9309c16cdb24f7e60feddf2200f06f1ff",
+      "data": {
+        "exact": false,
+        "different_pixels": 2294,
+        "expected": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/brave.png",
+        "actual": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/vox.png",
+        "diff": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/diff.png",
+        "metrics": "pixels: 786432\ndifferent_pixels: 2294 (0.2917%)\ndifference_bounds: 24,741 293x27\nmaximum_error_pixel: 225,748 expected=49,32,55,255 actual=47,32,60,255\nmaximum_error_pixel: 220,751 expected=46,29,45,255 actual=44,28,50,255\nmaximum_error_pixel: 205,763 expected=139,99,67,255 actual=142,98,62,255\nmaximum_error_pixel: 198,766 expected=63,35,48,255 actual=63,34,53,255\npixels_over_3: 10 (0.0013%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 5\nmean_absolute_error: 0.0010\nrmse: 0.0341\ndiff: /Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/diff.png\n"
+      }
+    },
+    "source": {
+      "path": "Build/engadget-observation-20261103-1436/guarded-site/engadget/live-to-frozen.json",
+      "sha256": "fa63876f985e2bdf5bf3d1a32c47f87de0db8d5bdda86044e6fec22792082c86",
+      "data": {
+        "exact": false,
+        "different_pixels": 2485,
+        "expected": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-fixtures/engadget/live.png",
+        "actual": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/brave.png",
+        "diff": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/live-to-frozen.diff.png",
+        "metrics": "pixels: 786432\ndifferent_pixels: 2485 (0.3160%)\ndifference_bounds: 24,88 976x680\nmaximum_error_pixel: 225,748 expected=47,32,60,255 actual=49,32,55,255\nmaximum_error_pixel: 220,751 expected=44,28,50,255 actual=46,29,45,255\nmaximum_error_pixel: 205,763 expected=142,98,62,255 actual=139,99,67,255\nmaximum_error_pixel: 198,766 expected=63,34,53,255 actual=63,35,48,255\npixels_over_3: 10 (0.0013%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 5\nmean_absolute_error: 0.0014\nrmse: 0.0445\ndiff: /Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/live-to-frozen.diff.png\n"
+      }
+    }
+  },
+  "frames": [
+    {
+      "path": "Build/engadget-observation-20261103-1436/guarded-fixtures/engadget/live.png",
+      "png_sha256": "93529f245c3dcea7faa0f1b449d8455e6b0a4e9d62a810b000cc0d78a59c1c8b",
+      "rgba_sha256": "53801ebd212ae2fb0d8f69a87da0c537f776618ad6d94e5c848b78549b56b0b1"
+    },
+    {
+      "path": "Build/engadget-observation-20261103-1436/guarded-site/engadget/brave.png",
+      "png_sha256": "f2a295ce41cb9b621b535324f9753c2bfa33180ec42fddd069089cf438f2b08d",
+      "rgba_sha256": "59df18ed1abad0ea3bd87e42dc12f1a0cda803cc294353199990a3b4afeff53e"
+    },
+    {
+      "path": "Build/engadget-observation-20261103-1436/guarded-site/engadget/vox.png",
+      "png_sha256": "9a868857b3c215384ad1ee0078c2866838b11ccd2b234795e8a4e4ab9cdfe6c9",
+      "rgba_sha256": "f66534cba2a3be488dd24f57dd572464c25f107316e9e85ade055a98892b5fe9"
+    }
+  ],
+  "filters": {
+    "capture": {
+      "counts": {
+        "requests": 183,
+        "blocked": 8,
+        "allowed": 175,
+        "mismatches": 0,
+        "oracle_disagreements": 0
+      },
+      "common_stream": {
+        "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+        "population": "one shared captured stream; these are not browser popup totals",
+        "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+        "input_checks": 224,
+        "distinct_requests": 80,
+        "distinct_checks": 183,
+        "repeated_checks": 41,
+        "phases": {
+          "request": {
+            "checks": 80,
+            "vox": {
+              "blocked": 8,
+              "allowed": 72,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 8,
+              "allowed": 72,
+              "errors": 0
+            }
+          },
+          "response": {
+            "checks": 103,
+            "vox": {
+              "blocked": 0,
+              "allowed": 103,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 103,
+              "errors": 0
+            }
+          }
+        },
+        "vox": {
+          "blocked": 8,
+          "allowed": 72,
+          "errors": 0
+        },
+        "full_ublock_origin": {
+          "blocked": 8,
+          "allowed": 72,
+          "errors": 0
+        },
+        "equal_block_counts": true,
+        "decision_mismatches": 0,
+        "conflicting_duplicates": [],
+        "matches": true
+      },
+      "cosmetic": {
+        "css_matches": true,
+        "procedural_matches": true,
+        "scriptlet_filters_match": true
+      }
+    },
+    "brave": {
+      "counts": {
+        "requests": 85,
+        "blocked": 0,
+        "allowed": 85,
+        "mismatches": 0,
+        "oracle_disagreements": 0
+      },
+      "common_stream": {
+        "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+        "population": "one shared captured stream; these are not browser popup totals",
+        "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+        "input_checks": 85,
+        "distinct_requests": 45,
+        "distinct_checks": 85,
+        "repeated_checks": 0,
+        "phases": {
+          "request": {
+            "checks": 45,
+            "vox": {
+              "blocked": 0,
+              "allowed": 45,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 45,
+              "errors": 0
+            }
+          },
+          "response": {
+            "checks": 40,
+            "vox": {
+              "blocked": 0,
+              "allowed": 40,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 40,
+              "errors": 0
+            }
+          }
+        },
+        "vox": {
+          "blocked": 0,
+          "allowed": 45,
+          "errors": 0
+        },
+        "full_ublock_origin": {
+          "blocked": 0,
+          "allowed": 45,
+          "errors": 0
+        },
+        "equal_block_counts": true,
+        "decision_mismatches": 0,
+        "conflicting_duplicates": [],
+        "matches": true
+      },
+      "cosmetic": {
+        "css_matches": true,
+        "procedural_matches": true,
+        "scriptlet_filters_match": true
+      }
+    },
+    "vox.ubo": {
+      "counts": {
+        "requests": 82,
+        "blocked": 0,
+        "allowed": 82,
+        "mismatches": 0,
+        "oracle_disagreements": 0
+      },
+      "common_stream": {
+        "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+        "population": "one shared captured stream; these are not browser popup totals",
+        "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+        "input_checks": 178,
+        "distinct_requests": 41,
+        "distinct_checks": 82,
+        "repeated_checks": 96,
+        "phases": {
+          "request": {
+            "checks": 41,
+            "vox": {
+              "blocked": 0,
+              "allowed": 41,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 41,
+              "errors": 0
+            }
+          },
+          "response": {
+            "checks": 41,
+            "vox": {
+              "blocked": 0,
+              "allowed": 41,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 41,
+              "errors": 0
+            }
+          }
+        },
+        "vox": {
+          "blocked": 0,
+          "allowed": 41,
+          "errors": 0
+        },
+        "full_ublock_origin": {
+          "blocked": 0,
+          "allowed": 41,
+          "errors": 0
+        },
+        "equal_block_counts": true,
+        "decision_mismatches": 0,
+        "conflicting_duplicates": [],
+        "matches": true
+      },
+      "cosmetic": null
+    }
+  },
+  "retained_replay_attempts": {
+    "path": "Build/engadget-observation-20261103-1436/repeat-brave/summary.json",
+    "sha256": "034a6497e1670d066b9c444126e56558c89ceba17d7dd21fcaa12585a244788d",
+    "data": {
+      "attempts": [
+        {
+          "index": 1,
+          "first-brave": 2294,
+          "prior-native": 0,
+          "status": "stable-filter-qualified",
+          "unchanged_brave_inputs": true,
+          "unchanged_archive": true
+        },
+        {
+          "index": 2,
+          "first-brave": 17936,
+          "prior-native": 15642,
+          "status": "stable-filter-qualified",
+          "unchanged_brave_inputs": true,
+          "unchanged_archive": true
+        },
+        {
+          "index": 3,
+          "first-brave": 2294,
+          "prior-native": 0,
+          "status": "stable-filter-qualified",
+          "unchanged_brave_inputs": true,
+          "unchanged_archive": true
+        }
+      ],
+      "all_attempts_retained": true
+    }
+  },
+  "replay_policy": "Each attempt copies the same closed encoded-cache profile into a fresh private Brave process. Same sealed bytes, viewport, flags, lists, settle and proxy; no forwarding. No retry exclusions.",
+  "replay_frames": [
+    {
+      "name": "attempt-1",
+      "frame": {
+        "path": "Build/engadget-observation-20261103-1436/repeat-brave/attempt-1/brave.png",
+        "png_sha256": "765c9c12e4b7533ed28dddf674b3f88b377b86d8dbacd017f8ab549b2d22e15c",
+        "rgba_sha256": "f66534cba2a3be488dd24f57dd572464c25f107316e9e85ade055a98892b5fe9"
+      },
+      "state_stable": true,
+      "filters": {
+        "requests": 85,
+        "blocked": 0,
+        "allowed": 85,
+        "mismatches": 0,
+        "oracle_disagreements": 0
+      },
+      "native_comparison": {
+        "exact": true,
+        "different_pixels": 0,
+        "expected": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/vox.png",
+        "actual": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-1/brave.png",
+        "diff": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-1/prior-native.diff.png",
+        "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-1/prior-native.diff.png\n"
+      },
+      "first_brave_comparison": {
+        "exact": false,
+        "different_pixels": 2294,
+        "expected": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/brave.png",
+        "actual": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-1/brave.png",
+        "diff": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-1/first-brave.diff.png",
+        "metrics": "pixels: 786432\ndifferent_pixels: 2294 (0.2917%)\ndifference_bounds: 24,741 293x27\nmaximum_error_pixel: 225,748 expected=49,32,55,255 actual=47,32,60,255\nmaximum_error_pixel: 220,751 expected=46,29,45,255 actual=44,28,50,255\nmaximum_error_pixel: 205,763 expected=139,99,67,255 actual=142,98,62,255\nmaximum_error_pixel: 198,766 expected=63,35,48,255 actual=63,34,53,255\npixels_over_3: 10 (0.0013%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 5\nmean_absolute_error: 0.0010\nrmse: 0.0341\ndiff: /Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-1/first-brave.diff.png\n"
+      },
+      "guard": {
+        "path": "Build/engadget-observation-20261103-1436/repeat-brave/attempt-1/brave.guard.json",
+        "sha256": "60f9403473e69a5641c052faecdb871474b7883647a1d104faafcbe11b208192",
+        "data": {
+          "command": [
+            "node",
+            "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+            "--url",
+            "https://www.engadget.com/",
+            "--extension",
+            "/Users/alex/code/vox2/Build/engadget-continue-20261103-1002/extension/uBlock0.chromium",
+            "--checker",
+            "/Users/alex/code/vox2/Build/engadget-continue-20261103-1002/adblock-check",
+            "--settle",
+            "5",
+            "--proxy-server",
+            "socks5://127.0.0.1:56784",
+            "--replay-spki",
+            "HOgHTjlJhEkOGRQx85hmn210KdrCYQkHTwPgJT3bxxI=",
+            "--profile-template",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/brave-warm-profile",
+            "--pixel-reference",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-1/brave.png",
+            "--output",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-1/oracle.json"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 3221225472,
+          "observed_peak_rss_bytes": 1961295872,
+          "elapsed_seconds": 14.143439167,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      }
+    },
+    {
+      "name": "attempt-2",
+      "frame": {
+        "path": "Build/engadget-observation-20261103-1436/repeat-brave/attempt-2/brave.png",
+        "png_sha256": "0516c310fd36277dc6b846c59bde4615661a1c05378df4b5c5ad029f6ad1d229",
+        "rgba_sha256": "7528c95ba3c734966938e0190a83c9bfa5c5da6183af79795b0124a60c7ee9d9"
+      },
+      "state_stable": true,
+      "filters": {
+        "requests": 85,
+        "blocked": 0,
+        "allowed": 85,
+        "mismatches": 0,
+        "oracle_disagreements": 0
+      },
+      "native_comparison": {
+        "exact": false,
+        "different_pixels": 15642,
+        "expected": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/vox.png",
+        "actual": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-2/brave.png",
+        "diff": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-2/prior-native.diff.png",
+        "metrics": "pixels: 786432\ndifferent_pixels: 15642 (1.9890%)\ndifference_bounds: 365,376 635x392\nmaximum_error_pixel: 894,446 expected=124,154,224,255 actual=129,154,206,255\nmaximum_error_pixel: 897,446 expected=206,100,129,255 actual=188,105,134,255\npixels_over_3: 248 (0.0315%)\npixels_over_10: 9 (0.0011%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 18\nmean_absolute_error: 0.0084\nrmse: 0.1119\ndiff: /Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-2/prior-native.diff.png\n"
+      },
+      "first_brave_comparison": {
+        "exact": false,
+        "different_pixels": 17936,
+        "expected": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/brave.png",
+        "actual": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-2/brave.png",
+        "diff": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-2/first-brave.diff.png",
+        "metrics": "pixels: 786432\ndifferent_pixels: 17936 (2.2807%)\ndifference_bounds: 24,376 976x392\nmaximum_error_pixel: 894,446 expected=124,154,224,255 actual=129,154,206,255\nmaximum_error_pixel: 897,446 expected=206,100,129,255 actual=188,105,134,255\npixels_over_3: 258 (0.0328%)\npixels_over_10: 9 (0.0011%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 18\nmean_absolute_error: 0.0094\nrmse: 0.1170\ndiff: /Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-2/first-brave.diff.png\n"
+      },
+      "guard": {
+        "path": "Build/engadget-observation-20261103-1436/repeat-brave/attempt-2/brave.guard.json",
+        "sha256": "17f313cc7fb57b5c07a2c285bb4410226b675c371a1a80c5c32de790a82e50d4",
+        "data": {
+          "command": [
+            "node",
+            "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+            "--url",
+            "https://www.engadget.com/",
+            "--extension",
+            "/Users/alex/code/vox2/Build/engadget-continue-20261103-1002/extension/uBlock0.chromium",
+            "--checker",
+            "/Users/alex/code/vox2/Build/engadget-continue-20261103-1002/adblock-check",
+            "--settle",
+            "5",
+            "--proxy-server",
+            "socks5://127.0.0.1:56784",
+            "--replay-spki",
+            "HOgHTjlJhEkOGRQx85hmn210KdrCYQkHTwPgJT3bxxI=",
+            "--profile-template",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/brave-warm-profile",
+            "--pixel-reference",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-2/brave.png",
+            "--output",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-2/oracle.json"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 3221225472,
+          "observed_peak_rss_bytes": 1984610304,
+          "elapsed_seconds": 14.070094124999999,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      }
+    },
+    {
+      "name": "attempt-3",
+      "frame": {
+        "path": "Build/engadget-observation-20261103-1436/repeat-brave/attempt-3/brave.png",
+        "png_sha256": "765c9c12e4b7533ed28dddf674b3f88b377b86d8dbacd017f8ab549b2d22e15c",
+        "rgba_sha256": "f66534cba2a3be488dd24f57dd572464c25f107316e9e85ade055a98892b5fe9"
+      },
+      "state_stable": true,
+      "filters": {
+        "requests": 85,
+        "blocked": 0,
+        "allowed": 85,
+        "mismatches": 0,
+        "oracle_disagreements": 0
+      },
+      "native_comparison": {
+        "exact": true,
+        "different_pixels": 0,
+        "expected": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/vox.png",
+        "actual": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-3/brave.png",
+        "diff": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-3/prior-native.diff.png",
+        "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-3/prior-native.diff.png\n"
+      },
+      "first_brave_comparison": {
+        "exact": false,
+        "different_pixels": 2294,
+        "expected": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/brave.png",
+        "actual": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-3/brave.png",
+        "diff": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-3/first-brave.diff.png",
+        "metrics": "pixels: 786432\ndifferent_pixels: 2294 (0.2917%)\ndifference_bounds: 24,741 293x27\nmaximum_error_pixel: 225,748 expected=49,32,55,255 actual=47,32,60,255\nmaximum_error_pixel: 220,751 expected=46,29,45,255 actual=44,28,50,255\nmaximum_error_pixel: 205,763 expected=139,99,67,255 actual=142,98,62,255\nmaximum_error_pixel: 198,766 expected=63,35,48,255 actual=63,34,53,255\npixels_over_3: 10 (0.0013%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 5\nmean_absolute_error: 0.0010\nrmse: 0.0341\ndiff: /Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-3/first-brave.diff.png\n"
+      },
+      "guard": {
+        "path": "Build/engadget-observation-20261103-1436/repeat-brave/attempt-3/brave.guard.json",
+        "sha256": "d0410301a74aa3af769608616cafec6fd265f475cd3622d84ee27c1217f47eda",
+        "data": {
+          "command": [
+            "node",
+            "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+            "--url",
+            "https://www.engadget.com/",
+            "--extension",
+            "/Users/alex/code/vox2/Build/engadget-continue-20261103-1002/extension/uBlock0.chromium",
+            "--checker",
+            "/Users/alex/code/vox2/Build/engadget-continue-20261103-1002/adblock-check",
+            "--settle",
+            "5",
+            "--proxy-server",
+            "socks5://127.0.0.1:56784",
+            "--replay-spki",
+            "HOgHTjlJhEkOGRQx85hmn210KdrCYQkHTwPgJT3bxxI=",
+            "--profile-template",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-site/engadget/brave-warm-profile",
+            "--pixel-reference",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-3/brave.png",
+            "--output",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/repeat-brave/attempt-3/oracle.json"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 3221225472,
+          "observed_peak_rss_bytes": 1972781056,
+          "elapsed_seconds": 14.280242125000001,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      }
+    }
+  ],
+  "repaint_diagnostic": {
+    "status": "diagnostic-only; instrumented reference fails the consecutive-frame gate",
+    "operation": "LayerTree.enable after the original screenshot and three additional identical frames; Page.captureScreenshot; then unmodified harness second screenshot",
+    "before": {
+      "path": "Build/engadget-observation-20261103-1436/source-paint/replay.png.unstable-1.png",
+      "png_sha256": "e716a54a10bd3ea3c6b36e0447660f4e7c128192d7e36af8d6c026446441a599",
+      "rgba_sha256": "4df4615f410d37656df9dce995056d7d5d9422e16105587c0b8dc98f8c692b31"
+    },
+    "after": {
+      "path": "Build/engadget-observation-20261103-1436/source-paint/replay.png.unstable-2.png",
+      "png_sha256": "8074f89017bb9c5ea44541f1ef7a18463e2e11ba7571e80fee9e604a84453e1f",
+      "rgba_sha256": "b268891f3aff401339c3bf7bd182a8c1b98f32b4bda2808c5339245b3ed1a6d0"
+    },
+    "different_pixels": 221,
+    "max_channel_error": 3,
+    "author_dom_or_css_changes": false,
+    "conclusion": "Corner pixels change on Chromium repaint. Post-repaint records omit the now-opaque photo backgrounds. Prior cached paint record was not observed; background-culling causality remains an inference.",
+    "guard": {
+      "path": "Build/engadget-observation-20261103-1436/source-paint/replay.guard.json",
+      "sha256": "c5296f931eef5a740180b141e3c15b0294ee95449289cf1cd08b1cd4d6f7f8e2",
+      "data": {
+        "command": [
+          "node",
+          "--import",
+          "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/observe.mjs",
+          "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+          "--url",
+          "https://www.engadget.com/",
+          "--extension",
+          "/Users/alex/code/vox2/Build/engadget-continue-20261103-1002/extension/uBlock0.chromium",
+          "--checker",
+          "/Users/alex/code/vox2/Build/engadget-continue-20261103-1002/adblock-check",
+          "--settle",
+          "5",
+          "--profile-template",
+          "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/source-paint/replay-warmup/brave-warm-profile",
+          "--proxy-server",
+          "socks5://127.0.0.1:54369",
+          "--replay-spki",
+          "h0636msePUaqNXkuqiOF4ggrFnQzEn03OQ2iUDJaUiM=",
+          "--pixel-reference",
+          "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/source-paint/replay.png",
+          "--output",
+          "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/source-paint/replay-oracle.json"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 2005450752,
+        "elapsed_seconds": 12.727175791999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "four_preinspection_png_hashes": [
+      "e716a54a10bd3ea3c6b36e0447660f4e7c128192d7e36af8d6c026446441a599",
+      "e716a54a10bd3ea3c6b36e0447660f4e7c128192d7e36af8d6c026446441a599",
+      "e716a54a10bd3ea3c6b36e0447660f4e7c128192d7e36af8d6c026446441a599",
+      "e716a54a10bd3ea3c6b36e0447660f4e7c128192d7e36af8d6c026446441a599"
+    ]
+  },
+  "decode_readiness_diagnostic": {
+    "path": "Build/engadget-observation-20261103-1436/decode-readiness/source-replay.json",
+    "sha256": "dbebd9ef091929ec7c54e10123962b80a603c807d557a6d0bc5e9f56c8e9ef0f",
+    "data": {
+      "exact": false,
+      "different_pixels": 23363,
+      "expected": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode-readiness/sealed/live.png",
+      "actual": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode-readiness/replay.png",
+      "diff": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode-readiness/source-replay.diff.png",
+      "metrics": "pixels: 786432\ndifferent_pixels: 23363 (2.9708%)\ndifference_bounds: 24,88 976x660\nmaximum_error_pixel: 650,185 expected=151,141,119,255 actual=164,137,104,255\npixels_over_3: 1482 (0.1884%)\npixels_over_10: 5 (0.0006%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 15\nmean_absolute_error: 0.0162\nrmse: 0.1839\ndiff: /Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode-readiness/source-replay.diff.png\n"
+    }
+  },
+  "decode_probe": {
+    "path": "Build/engadget-observation-20261103-1436/decode-probe2.json",
+    "sha256": "65ad4d8542341d36ef60386f5f81ed154301e0e7dc1cf6a3e8e28edf2b3f3eb3",
+    "data": {
+      "identity_before": {
+        "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-fixtures/engadget/bodies/904e208794f50534e0ef37086d7a6ec3f4d171ed2846233a004b03f5e85ecea6": "904e208794f50534e0ef37086d7a6ec3f4d171ed2846233a004b03f5e85ecea6",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a373609a3aad7c013bcaa73114657b9e3043740359e106b230259736d22d82af",
+        "/opt/homebrew/Cellar/webp/1.6.0/lib/libwebpdecoder.3.2.0.dylib": "c9f72f8e4fb002d1d13eee98c1f85c33160cf2319a7860f9a62b59e11320b6b7",
+        "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode_probe.cpp": "231b251af3736ca869ab2bebe6e43ae4e38916dbac00d1af32681ec3047ec3c0",
+        "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode_probe2": "d5028ba76101ec8030711ae86eecb612551cae6684eacf973309b9c327ff882c",
+        "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/source.rgba": "53801ebd212ae2fb0d8f69a87da0c537f776618ad6d94e5c848b78549b56b0b1",
+        "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/brave.rgba": "59df18ed1abad0ea3bd87e42dc12f1a0cda803cc294353199990a3b4afeff53e"
+      },
+      "identity_after": {
+        "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-fixtures/engadget/bodies/904e208794f50534e0ef37086d7a6ec3f4d171ed2846233a004b03f5e85ecea6": "904e208794f50534e0ef37086d7a6ec3f4d171ed2846233a004b03f5e85ecea6",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a373609a3aad7c013bcaa73114657b9e3043740359e106b230259736d22d82af",
+        "/opt/homebrew/Cellar/webp/1.6.0/lib/libwebpdecoder.3.2.0.dylib": "c9f72f8e4fb002d1d13eee98c1f85c33160cf2319a7860f9a62b59e11320b6b7",
+        "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode_probe.cpp": "231b251af3736ca869ab2bebe6e43ae4e38916dbac00d1af32681ec3047ec3c0",
+        "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode_probe2": "d5028ba76101ec8030711ae86eecb612551cae6684eacf973309b9c327ff882c",
+        "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/source.rgba": "53801ebd212ae2fb0d8f69a87da0c537f776618ad6d94e5c848b78549b56b0b1",
+        "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/brave.rgba": "59df18ed1abad0ea3bd87e42dc12f1a0cda803cc294353199990a3b4afeff53e"
+      },
+      "results": {
+        "brave": {
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/brave-decode-probe2.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/brave-decode-probe2.guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode_probe2",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-fixtures/engadget/bodies/904e208794f50534e0ef37086d7a6ec3f4d171ed2846233a004b03f5e85ecea6",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/brave.rgba",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+            "brave"
+          ],
+          "exit": 0,
+          "stdout": "brave RGB interior different_pixels=0 max_channel_error=0\nbrave YUV interior different_pixels=937 max_channel_error=5\n",
+          "stderr": "{\"command\": [\"/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode_probe2\", \"/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-fixtures/engadget/bodies/904e208794f50534e0ef37086d7a6ec3f4d171ed2846233a004b03f5e85ecea6\", \"/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/brave.rgba\", \"/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib\", \"brave\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 37470208, \"elapsed_seconds\": 0.477479958, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n"
+        },
+        "source": {
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/source-decode-probe2.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/source-decode-probe2.guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode_probe2",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-fixtures/engadget/bodies/904e208794f50534e0ef37086d7a6ec3f4d171ed2846233a004b03f5e85ecea6",
+            "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/source.rgba",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+            "source"
+          ],
+          "exit": 0,
+          "stdout": "source RGB interior different_pixels=937 max_channel_error=5\nsource YUV interior different_pixels=1 max_channel_error=1\n",
+          "stderr": "{\"command\": [\"/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/decode_probe2\", \"/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/guarded-fixtures/engadget/bodies/904e208794f50534e0ef37086d7a6ec3f4d171ed2846233a004b03f5e85ecea6\", \"/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/source.rgba\", \"/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib\", \"source\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 3784704, \"elapsed_seconds\": 0.205570916, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n"
+        }
+      },
+      "unchanged_inputs": true,
+      "region": {
+        "x": 160,
+        "y": 750,
+        "width": 140,
+        "height": 18
+      }
+    }
+  },
+  "decode_interpretation": "In the retained 2520-pixel interior crop, frozen Brave matches the RGB draw exactly and differs from YUV at 937 pixels. The live source differs from the YUV probe at one pixel by one channel value; do not describe that as exact YUV parity.",
+  "checks": {
+    "node_source_and_reference": {
+      "path": "Build/engadget-observation-20261103-1436/source-checks-guard.json",
+      "sha256": "9231171ff65a607f62f7fbdd2afed4a3e284d505d873e6e5b5dc50f04efa3bb6",
+      "data": {
+        "command": [
+          "node",
+          "--test",
+          "tools/adblock/capture_archive_test.mjs",
+          "tools/adblock/pixel_reference_test.mjs"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 150454272,
+        "elapsed_seconds": 4.074560582999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "python_conformance": {
+      "path": "Build/engadget-observation-20261103-1436/conformance-guard.json",
+      "sha256": "3864b365efd9c89c793f8129aeb10ec7e8463c7598c0e77161da81fed0d207c2",
+      "data": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "forum_news_pixels_test.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 61767680,
+        "elapsed_seconds": 1.118117583,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "cssom_live_frozen": {
+      "path": "Build/engadget-observation-20261103-1436/cssom-control/pixels.json",
+      "sha256": "cc1d0773ee104848be36418e5bc73ca22326e91ead2380d42a6fbc411f8436ce",
+      "data": {
+        "exact": true,
+        "different_pixels": 0,
+        "expected": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/cssom-control/capture/live.png",
+        "actual": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/cssom-control/replay.png",
+        "diff": "/Users/alex/code/vox2/Build/engadget-observation-20261103-1436/cssom-control/diff.png",
+        "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/engadget-observation-20261103-1436/cssom-control/diff.png\n"
+      }
+    },
+    "native_decode": {
+      "path": "Build/engadget-observation-20261103-1436/decode-choice-regression/summary.json",
+      "sha256": "0546a215fd4466c5885b9b608d2f80cd796965ee1f1caf68fb8ce401a61ce642",
+      "data": {
+        "status": "pass",
+        "child_exit": 0,
+        "unchanged_inputs": true,
+        "sanitized": false,
+        "reference_pixels": 2520,
+        "full_site_parity": false,
+        "rgb_different_pixels": 0,
+        "yuv_control_different_pixels": 937
+      }
+    },
+    "native_decode_sanitized": {
+      "path": "Build/engadget-observation-20261103-1436/decode-choice-sanitized/summary.json",
+      "sha256": "dd52cce59bd2f224a53295f54459e7f622ef13a5eddb541da964cbd3c5528830",
+      "data": {
+        "status": "pass",
+        "child_exit": 0,
+        "unchanged_inputs": true,
+        "sanitized": true,
+        "reference_pixels": 2520,
+        "full_site_parity": false,
+        "rgb_different_pixels": 0,
+        "yuv_control_different_pixels": 937
+      }
+    },
+    "node_test_count": 16,
+    "python_test_count": 21
+  },
+  "limitations": [
+    "Fresh source/frozen fidelity fails at 2485 pixels, including the repaint-sensitive corners and changed article image. Registered archive/reference/tolerance remain unchanged.",
+    "The complete-cache full native capture differs from its first frozen Brave reference by 2294 pixels. Later pinned Brave repeats differ from that native PNG by 0, 15642, 0. These are all retained; no unconditional parity claim.",
+    "The native RGB/YUV test is a diagnostic path comparison, not a production renderer change or full-site acceptance.",
+    "No new production build was needed for tooling changes; current browser evidence pins executable 3fafbc6189d483cfcd826f5d6b7880e1c705dce36604856b79f005759ad60f48."
+  ]
+}

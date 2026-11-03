@@ -620,21 +620,72 @@ counts, image hashes, engine identities and failures independently of Build
 cleanup. Authored WebP/texture reducers with decoding or sampling differences
 are diagnostic only; none replaced an existing reference or lowered a gate.
 
+## Engadget source stability and decode-path diagnosis (2026-11-03)
+
+Commit `cf5684597` applies the frozen reference's readiness and consecutive-frame
+checks to live acquisition too. Missing visible images, active stylesheets,
+pending fonts or changing screenshots now prevent sealing an archive. Failed
+frames and readiness sidecars remain available. No reference or tolerance changed.
+All **16 focused Node checks and 21 Python conformance checks pass**; the live
+CSSOM/quirks-mode source and frozen replay also remain exact.
+
+The fresh complete-cache acquisition passes the stronger checks. On executable
+`3fafbc6189d483cfcd826f5d6b7880e1c705dce36604856b79f005759ad60f48`, its
+native/frozen gap is **2,294 pixels**, confined to a newly published photo at the
+bottom of the viewport. Source/frozen fidelity fails at **2,485 pixels**. Full
+uBO audits pass and browser identities remain unchanged. This is an additional
+retained failure; the earlier pinned exact captures still stand.
+
+Three fresh Brave replays copy the **same closed encoded-cache profile** and
+load the **same sealed archive**. Each passes its consecutive-frame and filtering
+checks, yet their differences from the retained native PNG are **0, 15,642, 0**.
+Brave and archive identities remain unchanged throughout. Every attempt is
+retained, including the differing middle result; no repeat earns unconditional
+site acceptance.
+
+Two diagnostic controls narrow the reference variation:
+
+- Enabling Chromium's paint-record inspection after four identical screenshots
+  causes precisely the **221 corner pixels** to change, with maximum channel
+  error 3. That instrumented replay fails the normal stability gate and is not
+  an acceptance run. Post-repaint records omit backgrounds behind opaque photos;
+  attributing the prior cached pixels to background culling remains an inference.
+  Waiting for visible images' `decode()` promises does not resolve the mismatch.
+- Commit `733b88a5d` retains the new publisher WebP and an independent frozen
+  Brave interior crop. RGB decoding matches all **2,520 crop pixels**; the YUV
+  control differs at **937**. Optimized and sanitized tests both pass. The live
+  source is within one channel value of the YUV probe at one pixel, so that
+  diagnostic is not called exact. The test validates both existing draw paths;
+  it does not select a production path or establish whole-site parity.
+
+Strict Engadget parity remains open. These checks distinguish stable frames
+within a process from reproducible images across processes. No renderer change
+is justified merely by choosing one of Brave's differing decode results. The
+registered archive, bookmarks and fifteen-site test catalog remain unchanged.
+[Durable counts, identities, image hashes and retained failures](evidence/engadget-capture-state-20261103.json),
+[fresh full comparison](../Build/engadget-observation-20261103-1436/guarded-site/summary.json),
+[three Brave replays](../Build/engadget-observation-20261103-1436/repeat-brave/summary.json).
+
 ## Run
 
 ```sh
 python3 tools/forum_news_pixels.py \
   --sites techcrunch,engadget,theregister,slate,wired \
-  --extension Build/forum-news-parity-20261030/extension/uBlock0.chromium \
-  --checker Build/slashdot-packaged-validation-20261102/adblock-check \
-  --diff-tool Build/forum-news-parity-20261030/hn-baseline/pixel_diff \
+  --extension Build/engadget-continue-20261103-1002/extension/uBlock0.chromium \
+  --checker Build/engadget-continue-20261103-1002/adblock-check \
+  --diff-tool Build/engadget-continue-20261103-1002/pixel_diff \
   --output Build/forum-news-five-UNIQUE
 
 python3 tools/forum_news_image_effects.py \
-  --extension Build/forum-news-parity-20261030/extension/uBlock0.chromium \
-  --checker Build/slashdot-packaged-validation-20261102/adblock-check \
-  --diff-tool Build/forum-news-parity-20261030/hn-baseline/pixel_diff \
+  --extension Build/engadget-continue-20261103-1002/extension/uBlock0.chromium \
+  --checker Build/engadget-continue-20261103-1002/adblock-check \
+  --diff-tool Build/engadget-continue-20261103-1002/pixel_diff \
   --output Build/forum-news-image-effects-UNIQUE
+
+python3 tools/test_native_webp_decode_choice.py \
+  --output Build/engadget-webp-decode-UNIQUE
+python3 tools/test_native_webp_decode_choice.py --sanitize \
+  --output Build/engadget-webp-decode-sanitized-UNIQUE
 ```
 
 Run expensive checks through the repository's memory guard. The driver also
