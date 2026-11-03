@@ -1,11 +1,86 @@
 # Hacker News 2.7B instruction target
 
-The requested **2,700,000,000 instruction target remains open**. Acceptance
-requires seven complete fresh default-production trials with both median and
-maximum observed coalition instructions at or below that ceiling. The earlier
-[3.2B result](HACKER_NEWS_3_2B.md) remains independently recorded.
+The **2,700,000,000 median/maximum instruction gate has passed on two pinned
+production builds**. Final-current-build qualification remains in progress:
+a later shared build misses the maximum gate, and the corrective codec change
+still needs its packaged default-production cohort. Acceptance requires seven
+complete fresh default trials, with unchanged correctness and ownership gates.
+The earlier [3.2B result](HACKER_NEWS_3_2B.md) remains independently recorded.
 
-The latest complete default-production cohort (`static-harfbuzz-default`,
+The first passing cohort, `inline1500-default`, uses executable
+`904ce62baa0e755a003f763ba56044239d694963679b2f45eca8cd8e07e72b35`,
+receipt `20261103-133720-8d009b74`. Counts are 2,656,851,305; 2,673,742,003;
+2,671,424,141; 2,688,920,135; 2,682,631,672; 2,672,310,295; 2,668,746,404:
+**2,672,310,295 median / 2,688,920,135 maximum**. All seven captures pass exact
+original pixels, all 30 story IDs, current PNG metadata stability, input pins,
+ownership, normal exits and PID adoption. No independent captures are excluded.
+The 1,500-threshold build completes under the unchanged 12GiB guard, observing
+10,247,831,552 bytes. Regression suites begin only after this cohort passes,
+honoring the user's deferral.
+
+The subsequent `installed-default` cohort, executable
+`6e79a2f8cf2e6e6dd02851b8329c32635aa8aa84c4666a4dadda3fa1517cd183`,
+receipt `20261103-134808-a021d411`, also passes at **2,686,120,086 median /
+2,692,598,899 maximum**. Its counts are 2,676,950,433; 2,685,450,958;
+2,684,253,577; 2,692,598,899; 2,686,120,086; 2,687,389,704; 2,691,018,379.
+It passes all audits; 27 ownership scan entries authenticate and exclude
+independent concurrent captures. That build also passes all 21 screenshot
+comparisons, signing, headless startup and private-helper startup.
+
+The later `latest-default` cohort, executable
+`8f1ee6b09dfe99f13dd8f8ba92add4f6db27db39c29c651f3d81828ab49aeb36`,
+receipt `20261103-140008-3c10239e`, measures **2,682,052,830 median /
+2,705,217,405 maximum**. Every capture is exact and complete, but the maximum
+fails the gate. This cohort is retained without excluding or retrying its high
+trial. Its separate live HTTPS audit passes all 30 stories, complete readiness,
+the correct URL/title/viewport, native JSC author execution and no script errors.
+The live check is functional, with an observer and no instruction-count claim.
+
+The corrected `base64-verified-matched` diagnostic, on executable
+`a602bbc5d95204b13c794b4d3911f96a93bfbbc6ee70b3caa7171e8b6bd602f2`,
+uses the production native libraries in both arms. Seven alternating pairs
+measure **2,697,881,938 → 2,662,769,675** medians, a **35,112,263** difference;
+five pairs improve and two regress. The candidate maximum is 2,686,618,557.
+All fourteen captures pass the original pixels/content, current PNG metadata,
+ownership, identity, exit and adoption gates, with no concurrent-capture
+exclusions. This is an asset-override diagnostic; default-build credit remains
+pending. The original pinned Core-js Base64 and DOMException implementation is
+loaded before its first use in the isolated filter realm. The first new test
+catches a stub-property enumerability mismatch; it is corrected to match the
+original polyfill before this final matched cohort. Earlier prototype cohorts
+remain diagnostic evidence for their own source, with no final-source credit.
+
+Source checks pass: 43 JavaScript/native snapshot tests; 66 V filter tests in
+both GC modes (the default-mode packaging case is rerun after isolating its
+intentional codec-corruption fixture from diagnostic asset selection); 115 font
+and shaping checks across 39 separately executed files in default, no-GC and
+production arena modes; focused CSS, initial-resource and layout checks in all
+three modes; and focused UI2 cache checks. Native CRC, glyph, SVG, dispatch and
+PNG checks pass optimized and ASan/UBSan variants, including 270 PNG conformance
+comparisons and 1,088 exact GPU triangle comparisons per native variant. Local
+MP4 and HTTP HLS playback pass on both lazy and eager AVFoundation paths.
+
+Deferred validation exposes a real background-refresh fallback bug: flags mark
+the snapshot stale without scheduling repaint. The repair schedules repaint and
+invalidates commands; focused checks pass in all three memory modes. Standalone
+static HarfBuzz checks also require explicit CoreGraphics/CoreFoundation link
+declarations, which are now present. Fixture/compiler failures, the initial
+non-isolated font batch and the packaging-fixture override failure remain
+recorded. The current codec configuration passes another 21 screenshot checks
+with an explicit asset override on the available production executable; it still
+needs the completed packaged build's default cohort.
+
+A separate native observer records successful JavaScriptCore evaluation of the
+archived author script: **5,217 UTF-8 bytes / 5,215 characters**, FNV64
+`c937e1591a282c69`, matching the archived resource exactly, with no exception.
+Optional frame phase markers also execute. Observer counts earn no performance
+credit. The new [durable ledger](performance/hn-2700-resume-20261103.json)
+retains all raw counts, input identities, guards, checks and production receipts.
+
+The following paragraphs preserve earlier progress and its original validation
+status; they do not replace the later cohorts above.
+
+An earlier complete default-production cohort (`static-harfbuzz-default`,
 executable `d69e4a67a9106adcdddf288df892c948d661389670b7098860debc5b7a6b8a7b`,
 receipt `20261103-124638-4d084d66`) measures **2,713,777,398 median /
 2,737,710,296 maximum**. Its seven counts are 2,737,710,296; 2,728,480,651;

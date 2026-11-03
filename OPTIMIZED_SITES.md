@@ -44,26 +44,23 @@ separately from the historical paired Vox/Brave row above.
 
 | Workload | Trials | Vox median instructions | Vox maximum instructions | Status | Evidence |
 | --- | ---: | ---: | ---: | --- | --- |
-| Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | 3.2B reached; **2.7B target open** | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
+| Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | Earlier validated 3.2B result | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
+| Same archived homepage and capture scope, pinned build `6e79a2f8` | 7 | **2,686,120,086** | **2,692,598,899** | 2.7B instruction gate passed; current-build qualification pending | [Report](docs/HACKER_NEWS_2_7B.md), [evidence](docs/performance/hn-2700-resume-20261103.json) |
 
-The ongoing 2.7B work's latest complete default-production cohort measures
-**2,713,777,398 median / 2,737,710,296 maximum** (2026-11-03), with exact original
-pixels, all 30 stories, identity, ownership and normal exits in seven launches.
-The **2.7B target remains open**. A separate seven-pair PNG diagnostic saves
-12.4M between medians, with two pair regressions; its lossless compressed stream
-is 8.68% larger and stays within the existing size bound. Compiling the same
-native sources with `-O3` saves another 14.6M between seven matched medians
-(six improving pairs, one regression), reaching a diagnostic 2.709B median and
-2.724B maximum. Lazy network references then measure **2.698B median /
-2.708B maximum** in seven matched diagnostic pairs; the preceding two-pair
-pilot regresses and remains recorded. That cohort includes authenticated
-independent concurrent captures and does not pass the 2.7B maximum gate.
-These overrides have no final default-build credit yet.
-Failed cohorts and rejected font/text/capture prototypes remain
-recorded. PNG metadata is stable against a newly pinned control PNG; the
-historical Vox PNG and earlier raw directory are unavailable after shared Build
-cleanup. Regression suites remain deferred by the user's instruction, so the
-fully validated row above stays unchanged. See the
+Two pinned default builds pass the 2.7B median/maximum gate with exact original
+pixels, all 30 stories and ownership/identity/exit audits. The newer `8f1ee6b0`
+cohort has a **2,682,052,830 median / 2,705,217,405 maximum**, so its highest
+trial fails and remains recorded. A corrective private-codec change measures
+**2,662,769,675 median / 2,686,618,557 maximum** in seven matched diagnostic
+pairs, saving 35.1M between medians; its packaged default cohort is pending.
+Regression suites start only after the first passing default cohort, as the
+user requested. Source, native memory-safety, font, filtering, UI2, PNG and
+21-case rendering checks now pass. The PNG literal optimization trades an
+8.68% larger compressed stream for less work, within the existing size bound.
+Failed cohorts and rejected prototypes remain recorded. PNG metadata is stable
+against a newly pinned control PNG; the historical Vox PNG and earlier raw
+directory are unavailable after shared Build cleanup. These are frozen-page
+startup/capture counts, with no new Brave ratio or scrolling claim. See the
 [fresh evidence](docs/performance/hn-2700-resume-20261103.json),
 [progress report](docs/HACKER_NEWS_2_7B.md) and
 [all retained attempts](docs/performance/hn-2700-progress-20261103.json).
