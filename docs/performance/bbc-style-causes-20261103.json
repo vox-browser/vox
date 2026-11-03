@@ -1,0 +1,1112 @@
+{
+  "diagnostic_only": true,
+  "no_instruction_credit": true,
+  "dirty_counts": [
+    [
+      "div id= class=",
+      245
+    ],
+    [
+      "svg id= class=Icon-styles__IconStyled-sc-4d91d42a-0 iosMJz",
+      237
+    ],
+    [
+      "path id= class=",
+      236
+    ],
+    [
+      "a id= class=Anchor-styles__AnchorStyled-sc-651d33db-0 hygVWX",
+      138
+    ],
+    [
+      "div id= class=IndexCard-styles__IndexCardStyled-sc-3a0d8802-0 jeApUG",
+      112
+    ],
+    [
+      "img id= class=Image-styles__ImageStyled-sc-8c99a12b-0 cVsHni",
+      89
+    ],
+    [
+      "div id= class=Image-styles__ImageCardStyled-sc-8c99a12b-1 erovmj",
+      89
+    ],
+    [
+      "div id= class=IndexCardHeading-styles__TitleGravityWrapper-sc-c7d910a6-1 dWFLGi",
+      88
+    ],
+    [
+      "div id= class=IndexCardHeading-styles__TitleWrapperStyled-sc-c7d910a6-0 hEhfIe",
+      87
+    ],
+    [
+      "h2 id= class=IndexCardHeading-styles__CardHeadlineStyled-sc-c7d910a6-3 dyeGOh",
+      74
+    ],
+    [
+      "button id= class=Button-styles__ButtonBase-sc-c0f7f974-2 Button-styles__RoundButton-sc-c0f7f974-8 fqPOWH kFiPxM",
+      72
+    ],
+    [
+      "img id= class=Image-styles__ImageStyled-sc-8c99a12b-0 fjCDYB hide-when-no-script",
+      70
+    ],
+    [
+      "span id= class=Button-styles__ButtonText-sc-c0f7f974-1 bLCQBA",
+      50
+    ],
+    [
+      "div id= class=Ipswich-styles__SaveRowWrapper-sc-9e107448-3 sAONU",
+      48
+    ],
+    [
+      "span id= class=Button-styles__ButtonIcon-sc-c0f7f974-0 jBYFRA",
+      48
+    ],
+    [
+      "a id= class=LanguageDropdown-styles__DropDownContentTableItemStyled-sc-bc6bb5-8 izPFGO",
+      45
+    ],
+    [
+      "div id= class=Chester-styles__CardStyled-sc-340eb5f4-0 fwrgVI",
+      36
+    ],
+    [
+      "div id= class=Dundee-styles__ImageWrapperStyled-sc-50abbc98-3 ejTXUZ",
+      28
+    ],
+    [
+      "div id= class=Dundee-styles__CardMediaStyled-sc-50abbc98-4 gZwtmn",
+      28
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-772acff9-0 kYsqtw",
+      28
+    ],
+    [
+      "p id= class=Dundee-styles__DescriptionStyled-sc-50abbc98-0 eUixcX",
+      28
+    ],
+    [
+      "div id= class=IndexCardContentTypeLabel-styles__ContentTypeLabelStyled-sc-a498a926-0 ccrEsB",
+      27
+    ],
+    [
+      "div id= class=Ipswich-styles__IpswichCardStyled-sc-9e107448-4 gjTCVG",
+      24
+    ],
+    [
+      "div id= class=Ipswich-styles__ImageContainerStyled-sc-9e107448-0 cEnYhp",
+      24
+    ],
+    [
+      "div id= class=IndexCardContentTypeLabel-styles__IconWrapper-sc-a498a926-1 drxdcJ",
+      24
+    ],
+    [
+      "h2 id= class=Ipswich-styles__BrandNameStyled-sc-9e107448-1 iiwmSA",
+      24
+    ],
+    [
+      "h3 id= class=Ipswich-styles__EpisodeNameStyled-sc-9e107448-2 bYgNMX",
+      24
+    ],
+    [
+      "div id=popover-wrapper class=Popover-styles__PopoverWrapperStyled-sc-a280de2f-1 drAuGT",
+      24
+    ],
+    [
+      "div id=popover-trigger class=",
+      24
+    ],
+    [
+      "div id= class=MediaProgress-styles__ProgressWrapperStyled-sc-8df1a7da-0 IzhiZ",
+      24
+    ],
+    [
+      "p id= class=MediaProgress-styles__TimeLeftTextStyled-sc-8df1a7da-1 kDpgIk",
+      24
+    ],
+    [
+      "div id= class=SectionTitle-styles__HorizontalWithChevronsStyled-sc-2dfed50c-1 aVCfS",
+      23
+    ],
+    [
+      "div id= class=Dundee-styles__CardStyled-sc-50abbc98-1 elbPvw",
+      23
+    ],
+    [
+      "div id= class=IndexCardMetadata-styles__MetadataStyled-sc-10966952-0 fIfKvi",
+      21
+    ],
+    [
+      "h2 id= class=SectionTitle-styles__SectionTitleStyled-sc-2dfed50c-4 cmguuJ",
+      19
+    ],
+    [
+      "div id= class=SectionTitle-styles__SectionTitleContainerStyled-sc-2dfed50c-2 cdzHai",
+      18
+    ],
+    [
+      "hr id= class=SectionTitle-styles__HorizontalLineStyled-sc-2dfed50c-0 ixeTZL",
+      17
+    ],
+    [
+      "div id= class=SectionTitle-styles__SectionTitleWrapperStyled-sc-2dfed50c-3 gvGpSm",
+      17
+    ],
+    [
+      "li id= class=",
+      16
+    ],
+    [
+      "a id= class=ContentLinks-styles__ContentLinkStyled-sc-9a221ef-2 kqaecZ",
+      16
+    ],
+    [
+      "div id= class=NavigationPanel-styles__NavItemStyled-sc-f752c3ab-5 iCxKCw",
+      15
+    ],
+    [
+      "button id= class=NavigationPanel-styles__NavButtonStyled-sc-f752c3ab-2 kOrWbD",
+      14
+    ],
+    [
+      "span id= class=NavigationPanel-styles__NavButtonTextStyled-sc-f752c3ab-3 iShgNH",
+      13
+    ],
+    [
+      "span id= class=IndexCardMetadata-styles__MetaDataDateStyled-sc-10966952-1 feNzEJ",
+      13
+    ],
+    [
+      "div id= class=IndexCardMetadata-styles__Separator-sc-10966952-3 decXPj",
+      13
+    ],
+    [
+      "span id= class=IndexCardMetadata-styles__MetaDataTagStyled-sc-10966952-2 ewmvhB",
+      13
+    ],
+    [
+      "a id= class=Navigation-styles__MainNavigationLink-sc-f1c1fa10-4 gkFqwf",
+      12
+    ],
+    [
+      "div id= class=Section-styles__SectionStyled-sc-934b69c3-2 kMAHme",
+      12
+    ],
+    [
+      "div id= class=Edinburgh-styles__MediaWrapperStyled-sc-73f6adba-1 gaSSxT",
+      12
+    ],
+    [
+      "div id= class=Edinburgh-styles__MediaStyled-sc-73f6adba-2 hYUDOQ",
+      12
+    ],
+    [
+      "div id= class=Wyoming-styles__WyomingColumnStyled-sc-a5d523a7-0 dEOaks",
+      12
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-772acff9-0 goDMtE",
+      12
+    ],
+    [
+      "li id= class=Navigation-styles__MainNavigationItemStyled-sc-f1c1fa10-3 bMXHds",
+      11
+    ],
+    [
+      "li id= class=LegalLinks-styles__LegalLinksLIStyled-sc-f9fd086a-2 fauBtv",
+      11
+    ],
+    [
+      "a id= class=LegalLinks-styles__LegalLinkItemStyled-sc-f9fd086a-3 iUVxwk",
+      11
+    ],
+    [
+      "div id= class=NavigationPanel-styles__IconWrapperStyled-sc-f752c3ab-1 jjXIVw",
+      10
+    ],
+    [
+      "section id= class=Section-styles__SectionOuterStyled-sc-934b69c3-1 NFunO",
+      9
+    ],
+    [
+      "div id= class=SectionTitle-styles__SectionTitleWrapperStyled-sc-2dfed50c-3 fbMClN",
+      9
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-70d90311-0 eFgmZv",
+      9
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 LlDjp",
+      9
+    ],
+    [
+      "div id= class=IndexCardContentTypeLabel-styles__ContentTypeLabelStyled-sc-a498a926-0 WBNYl",
+      9
+    ],
+    [
+      "div id= class=Texas-styles__EdinburghCardStyled-sc-9261f3e4-2 bnoABX",
+      8
+    ],
+    [
+      "div id= class=Edinburgh-styles__CardStyled-sc-73f6adba-0 dBwqCH",
+      8
+    ],
+    [
+      "div id= class=IndexCardContentTypeLabel-styles__IconWrapper-sc-a498a926-1 iaPeFd",
+      8
+    ],
+    [
+      "div id= class=Edinburgh-styles__TextWrapperStyled-sc-73f6adba-3 dZhPlj",
+      8
+    ],
+    [
+      "h2 id= class=IndexCardHeading-styles__CardHeadlineStyled-sc-c7d910a6-3 MyASI",
+      8
+    ],
+    [
+      "p id= class=Edinburgh-styles__DescriptionStyled-sc-73f6adba-4 cxLrDL",
+      8
+    ],
+    [
+      "span id= class=IndexCardMetadata-styles__MetaDataTagStyled-sc-10966952-2 emIUUI",
+      8
+    ],
+    [
+      "div id= class=AdSlot-styles__AdSlotContainerStyled-sc-4b576bed-0 cIETQw",
+      7
+    ],
+    [
+      "section id= class=Section-layouts-styles__SectionLayoutWrapper-sc-40ef2d4a-0 dJfKQi",
+      6
+    ],
+    [
+      "div id= class=Manchester-styles__TextWrapperStyled-sc-5c1d085b-2 eshOej",
+      6
+    ],
+    [
+      "p id= class=Manchester-styles__DescriptionStyled-sc-5c1d085b-0 coxKqG",
+      6
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-772acff9-0 lFyYQ",
+      6
+    ],
+    [
+      "button id= class=SocialFollowUs-styles__TriangleContainerStyled-sc-2bdeae3a-5 idhcQn",
+      6
+    ],
+    [
+      "button id= class=SectionTitleChevrons-styles__SectionTitleButtonStyled-sc-460c7da3-1 gnYugA",
+      6
+    ],
+    [
+      "section id= class=Container-styles__ContainerStyled-sc-8b855a6c-0 eWVxhX",
+      5
+    ],
+    [
+      "div id= class=IndexCardContentTypeLabel-styles__IconWrapper-sc-a498a926-1 IndexCardHeading-styles__InlineIconWrapper-sc-c7d910a6-2 dnSnSp NFUEj",
+      5
+    ],
+    [
+      "hr id= class=SectionTitle-styles__HorizontalLineStyled-sc-2dfed50c-0 kTQFsZ",
+      5
+    ],
+    [
+      "div id= class=Container-styles__ContainerStyled-sc-8b855a6c-0 tGPCn",
+      5
+    ],
+    [
+      "div id= class=SectionTitle-styles__SectionTitleContainerStyled-sc-2dfed50c-2 eiTQMn",
+      5
+    ],
+    [
+      "svg id= class=Icon-styles__IconStyled-sc-4d91d42a-0 csOpzq",
+      4
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-772acff9-0 gXzXIA",
+      4
+    ],
+    [
+      "div id= class=Dundee-styles__CardStyled-sc-50abbc98-1 jHXbAb",
+      4
+    ],
+    [
+      "div id= class=Manchester-styles__CardStyled-sc-5c1d085b-1 idJNMc",
+      4
+    ],
+    [
+      "div id= class=Edinburgh-styles__CardStyled-sc-73f6adba-0 dJmOvO",
+      4
+    ],
+    [
+      "div id= class=Edinburgh-styles__TextWrapperStyled-sc-73f6adba-3 cgZiKo",
+      4
+    ],
+    [
+      "p id= class=Edinburgh-styles__DescriptionStyled-sc-73f6adba-4 cDfHQF",
+      4
+    ],
+    [
+      "h2 id= class=IndexCardHeading-styles__CardHeadlineStyled-sc-c7d910a6-3 GrFgy",
+      4
+    ],
+    [
+      "input id=:R35tbdm: class=SearchInput-styles__SearchInputStyled-sc-50f6a0bc-1 fiGGev",
+      3
+    ],
+    [
+      "div id= class=IndexCardContentTypeLabel-styles__IconWrapper-sc-a498a926-1 ivfwKz",
+      3
+    ],
+    [
+      "h2 id= class=SectionTitle-styles__SectionTitleStyled-sc-2dfed50c-4 gfjmJE",
+      3
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-70d90311-0 bKikLw",
+      3
+    ],
+    [
+      "div id= class=London-styles__LondonMediaStyled-sc-269f9f6d-3 jqvHMb",
+      3
+    ],
+    [
+      "a id= class=London-styles__LondonMediaAnchorStyled-sc-269f9f6d-4 gVuaGt",
+      3
+    ],
+    [
+      "div id= class=London-styles__LondonAnchorStyled-sc-269f9f6d-0 kRdcYr",
+      3
+    ],
+    [
+      "a id= class=London-styles__LondonTextAreaAnchorStyled-sc-269f9f6d-2 qdrfG",
+      3
+    ],
+    [
+      "div id= class=London-styles__LondonTextAreaStyled-sc-269f9f6d-1 jhVwJw",
+      3
+    ],
+    [
+      "p id= class=London-styles__LondonDescriptionStyled-sc-269f9f6d-5 gZeOt",
+      3
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-772acff9-0 iHMMBw",
+      3
+    ],
+    [
+      "div id= class=Section-styles__SectionChevronContainerStyled-sc-934b69c3-3 jcyvqn",
+      3
+    ],
+    [
+      "button id= class=SectionTitleChevrons-styles__SectionTitleButtonStyled-sc-460c7da3-1 NUaQZ",
+      3
+    ],
+    [
+      "noscript id= class=",
+      2
+    ],
+    [
+      "div id= class=AdSlot-styles__AdSlotContainerStyled-sc-4b576bed-0 eyyVCC",
+      2
+    ],
+    [
+      "svg id= class=",
+      2
+    ],
+    [
+      "div id= class=Header-styles__HeaderButtonsContainerStyled-sc-36071384-6 cpbrKZ",
+      2
+    ],
+    [
+      "button id= class=Button-styles__ButtonBase-sc-c0f7f974-2 Button-styles__GeneralButton-sc-c0f7f974-3 gCqUYN bFiEsi",
+      2
+    ],
+    [
+      "span id= class=",
+      2
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 jxyCyo",
+      2
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 lfqsYB",
+      2
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 iDOSQE",
+      2
+    ],
+    [
+      "div id= class=Indiana-styles__IndianaGridStyled-sc-850b5714-0 hKjThg",
+      2
+    ],
+    [
+      "div id= class=Iowa-styles__SectionStyled-sc-208fc678-0 loYMfG",
+      2
+    ],
+    [
+      "div id= class=Iowa-styles__GridContainerStyled-sc-208fc678-1 hjVxBM",
+      2
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 jbJzqN",
+      2
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 enDfsg",
+      2
+    ],
+    [
+      "div id= class=Manchester-styles__CardStyled-sc-5c1d085b-1 cGPaOi",
+      2
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-70d90311-0 SOrQV",
+      2
+    ],
+    [
+      "div id= class=Windsor-styles__MediaStyled-sc-bfc65b29-1 cAXOyb",
+      2
+    ],
+    [
+      "a id= class=Windsor-styles__WindsorTextAreaAnchorStyled-sc-bfc65b29-5 eVtzmJ",
+      2
+    ],
+    [
+      "div id= class=Windsor-styles__TextWrapperStyled-sc-bfc65b29-3 isDmnA",
+      2
+    ],
+    [
+      "div id= class=Windsor-styles__TitleWrapperStyled-sc-bfc65b29-4",
+      2
+    ],
+    [
+      "div id= class=Windsor-styles__ButtonWrapperStyled-sc-bfc65b29-6 hjxChq",
+      2
+    ],
+    [
+      "nav id= class=",
+      2
+    ],
+    [
+      "p id= class=Paragraph-styles__ParagraphStyled-sc-ffb5f5ba-0 fqhmpl",
+      2
+    ],
+    [
+      "next-route-announcer id= class=",
+      2
+    ],
+    [
+      "div id= class=SectionTitleChevrons-styles__SectionTitleButtonsStyled-sc-460c7da3-0 gNAfFA",
+      2
+    ],
+    [
+      "body id= class=",
+      1
+    ],
+    [
+      "div id=__next class=",
+      1
+    ],
+    [
+      "div id= class=app",
+      1
+    ],
+    [
+      "div id= class=Backdrop-styles__BackdropStyled-sc-9f7d4825-0 gcnTDO",
+      1
+    ],
+    [
+      "div id= class=SkipLink-styles__SkipLinkContainerStyled-sc-3b03ee65-0 cPCHEF",
+      1
+    ],
+    [
+      "a id= class=SkipLink-styles__SkipLinkAnchorStyled-sc-3b03ee65-1 leXfoz",
+      1
+    ],
+    [
+      "div id= class=AdSlot-styles__AdSlotContainerStyled-sc-4b576bed-0 jQxGIx",
+      1
+    ],
+    [
+      "header id=bbc-header class=Header-styles__HeaderStyled-sc-36071384-0 lkxsBq",
+      1
+    ],
+    [
+      "div id= class=Header-styles__HeaderContentStyled-sc-36071384-1 cisUBm",
+      1
+    ],
+    [
+      "div id= class=Header-styles__HeaderMenuContainerStyled-sc-36071384-4 kuhblz hide-when-no-script",
+      1
+    ],
+    [
+      "button id= class=Header-styles__HeaderMenuButtonStyled-sc-36071384-3 hUnMtK",
+      1
+    ],
+    [
+      "div id= class=Header-styles__HeaderLogoContainerStyled-sc-36071384-5 hBrumE",
+      1
+    ],
+    [
+      "div id= class=Header-styles__HeaderLogoStyled-sc-36071384-2 ewqyHk",
+      1
+    ],
+    [
+      "title id=:R13tbdm: class=",
+      1
+    ],
+    [
+      "nav id=main-navigation-container class=Navigation-styles__NavigationContainerStyled-sc-f1c1fa10-9 gUOgcu",
+      1
+    ],
+    [
+      "section id= class=Navigation-styles__NavigationSectionStyled-sc-f1c1fa10-0 hZiVmC",
+      1
+    ],
+    [
+      "nav id= class=Navigation-styles__NavigationWrapper-sc-f1c1fa10-1 kidpOc",
+      1
+    ],
+    [
+      "ul id= class=Navigation-styles__MainNavigationWrapper-sc-f1c1fa10-2 bMdVsj",
+      1
+    ],
+    [
+      "li id= class=Navigation-styles__MainNavigationItemStyled-sc-f1c1fa10-3 bKWmxy",
+      1
+    ],
+    [
+      "a id= class=Navigation-styles__MainNavigationLink-sc-f1c1fa10-4 guUEkx",
+      1
+    ],
+    [
+      "li id= class=Navigation-styles__MainNavigationItemStyled-sc-f1c1fa10-3 iCkEIX",
+      1
+    ],
+    [
+      "div id= class=Backdrop-styles__BackdropStyled-sc-9f7d4825-0 jUHzNV",
+      1
+    ],
+    [
+      "div id= class=Drawer-styles__DrawerBackgroundStyled-sc-211ba7ec-0 bchIRn",
+      1
+    ],
+    [
+      "div id= class=NavigationPanel-styles__DrawerContentStyled-sc-f752c3ab-0 gxmXUB",
+      1
+    ],
+    [
+      "div id= class=NavigationPanel-styles__SearchInputBoxedStyled-sc-f752c3ab-6 dOCkfL",
+      1
+    ],
+    [
+      "div id= class=SearchInput-styles__SearchInputWrapperStyled-sc-50f6a0bc-0 kfokpQ",
+      1
+    ],
+    [
+      "label id= class=",
+      1
+    ],
+    [
+      "span id= class=VisuallyHidden-styles__VisuallyHiddenStyled-sc-69248fc2-0 fWJrIe",
+      1
+    ],
+    [
+      "span id= class=Button-styles__ButtonIcon-sc-c0f7f974-0 lfCTJq",
+      1
+    ],
+    [
+      "button id= class=NavigationPanel-styles__NavButtonStyled-sc-f752c3ab-2 XMAUE",
+      1
+    ],
+    [
+      "main id=bbc-main class=",
+      1
+    ],
+    [
+      "article id= class=IndexPage-styles__IndexPageArticleStyled-sc-1de4b86e-0 dUXUxZ",
+      1
+    ],
+    [
+      "div id=content-setter class=",
+      1
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-70d90311-0 hsuNLN",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 leLHuw",
+      1
+    ],
+    [
+      "div id= class=Westminster-styles__CardWrapperStyled-sc-348bb4b5-4 dmFbl",
+      1
+    ],
+    [
+      "div id= class=Westminster-styles__CardStyled-sc-348bb4b5-2 exhVNd",
+      1
+    ],
+    [
+      "div id= class=Westminster-styles__MediaWrapperStyled-sc-348bb4b5-5 kfLXWx",
+      1
+    ],
+    [
+      "div id= class=Westminster-styles__MediaStyled-sc-348bb4b5-1 hvkhlG",
+      1
+    ],
+    [
+      "div id= class=Westminster-styles__TextWrapperStyled-sc-348bb4b5-6 kqglIV",
+      1
+    ],
+    [
+      "div id= class=IndexCardHeading-styles__TitleWrapperStyled-sc-c7d910a6-0 cZmUuP",
+      1
+    ],
+    [
+      "h2 id= class=IndexCardHeading-styles__CardHeadlineStyled-sc-c7d910a6-3 goCKSV",
+      1
+    ],
+    [
+      "p id= class=Westminster-styles__DescriptionStyled-sc-348bb4b5-0 fEAAPe",
+      1
+    ],
+    [
+      "hr id= class=Westminster-styles__SeparatorStyled-sc-348bb4b5-7 dZVcVS",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 bAYjOH",
+      1
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-70d90311-0 entAKy",
+      1
+    ],
+    [
+      "div id= class=Dundee-styles__CardStyled-sc-50abbc98-1 gODuNp",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 dyGmfI",
+      1
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-70d90311-0 bPPQrx",
+      1
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-70d90311-0 jnqJtt",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 kQqReV",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 gtrepj",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 gREjNz",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 fumRRM",
+      1
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-70d90311-0 eFBYJw",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 eKuWuM",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 jBszif",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 bDjGDc",
+      1
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-772acff9-0 Nevada-styles__NevadaGridStyled-sc-d2820c3c-0 eHlZoR RyuPG",
+      1
+    ],
+    [
+      "section id= class=Section-styles__SectionOuterStyled-sc-934b69c3-1 ggQQvn",
+      1
+    ],
+    [
+      "hr id= class=SectionTitle-styles__HorizontalLineStyled-sc-2dfed50c-0 itGJon",
+      1
+    ],
+    [
+      "h2 id= class=SectionTitle-styles__SectionTitleStyled-sc-2dfed50c-4 iqBOgL",
+      1
+    ],
+    [
+      "div id= class=Texas-styles__SectionStyled-sc-9261f3e4-0 iUtwNb",
+      1
+    ],
+    [
+      "div id= class=Texas-styles__GridContainerStyled-sc-9261f3e4-1 fkFrcB",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 feAlrt",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 kQJeZT",
+      1
+    ],
+    [
+      "div id= class=Container-styles__ContainerStyled-sc-8b855a6c-0 cQEHeo",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 kzZSAp",
+      1
+    ],
+    [
+      "div id= class=IndexCardContentTypeLabel-styles__IconWrapper-sc-a498a926-1 exlEHU",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 dxqJqz",
+      1
+    ],
+    [
+      "div id= class=Windsor-styles__WindsorAnchorStyled-sc-bfc65b29-2 ccTMXw",
+      1
+    ],
+    [
+      "h2 id= class=IndexCardHeading-styles__CardHeadlineStyled-sc-c7d910a6-3 eONSkT",
+      1
+    ],
+    [
+      "div id= class=Windsor-styles__DescriptionStyled-sc-bfc65b29-0 fmJFow",
+      1
+    ],
+    [
+      "span id= class=Button-styles__ButtonBase-sc-c0f7f974-2 Button-styles__GhostButton-sc-c0f7f974-4 gCqUYN htCVlW",
+      1
+    ],
+    [
+      "div id=regional-news-selection-component class=",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 dhNxaN",
+      1
+    ],
+    [
+      "div id= class=GridItem-styles__GridItemStyled-sc-6cc20e4a-0 kksqiE",
+      1
+    ],
+    [
+      "div id= class=Windsor-styles__WindsorAnchorStyled-sc-bfc65b29-2 WtktU",
+      1
+    ],
+    [
+      "div id= class=Windsor-styles__DescriptionStyled-sc-bfc65b29-0 gPakbC",
+      1
+    ],
+    [
+      "span id= class=Button-styles__ButtonBase-sc-c0f7f974-2 Button-styles__GhostButton-sc-c0f7f974-4 gCqUYN eVzqwK",
+      1
+    ],
+    [
+      "div id= class=Grid-styles__GridStyled-sc-772acff9-0 Nevada-styles__NevadaGridStyled-sc-d2820c3c-0 fMeOuJ RyuPG",
+      1
+    ],
+    [
+      "hr id= class=Footer-styles__SeparatorStyled-sc-7046f1ed-2 eCcNac",
+      1
+    ],
+    [
+      "footer id=bbc-footer class=Footer-styles__FooterStyled-sc-7046f1ed-0 gEbLfI",
+      1
+    ],
+    [
+      "div id= class=Footer-styles__LogoSectionStyled-sc-7046f1ed-3 feOrLY",
+      1
+    ],
+    [
+      "title id=:R37tbdm: class=",
+      1
+    ],
+    [
+      "section id= class=ContentLinks-styles__ContentLinksSectionStyled-sc-9a221ef-0 crpOpn",
+      1
+    ],
+    [
+      "ul id= class=ContentLinks-styles__ContentLinksULStyled-sc-9a221ef-1 kMeWnH",
+      1
+    ],
+    [
+      "section id= class=LanguageDropdown-styles__LanguageDropDownSectionStyled-sc-bc6bb5-0 knnpYP",
+      1
+    ],
+    [
+      "div id= class=LanguageDropdown-styles__LanguageDropdownWrapperStyled-sc-bc6bb5-1 cvxMhQ",
+      1
+    ],
+    [
+      "button id= class=LanguageDropdown-styles__DropdownButtonStyled-sc-bc6bb5-2 fuasZG",
+      1
+    ],
+    [
+      "div id= class=LanguageDropdown-styles__DropdownButtonIconWrapperStyled-sc-bc6bb5-3 gcEOSI",
+      1
+    ],
+    [
+      "div id= class=LanguageDropdown-styles__DropdownContentWrapperStyled-sc-bc6bb5-4 gZundq",
+      1
+    ],
+    [
+      "h3 id= class=LanguageDropdown-styles__DropdownContentHeadlineStyled-sc-bc6bb5-5 ddLCrP",
+      1
+    ],
+    [
+      "h4 id= class=LanguageDropdown-styles__DropdownContentSubHeadlineStyled-sc-bc6bb5-6 dSRhcB",
+      1
+    ],
+    [
+      "div id= class=LanguageDropdown-styles__DropdownContentTableStyled-sc-bc6bb5-7 gyHhFP",
+      1
+    ],
+    [
+      "div id= class=SocialFollowUs-styles__SocialFollowUsContainerStyled-sc-2bdeae3a-0 eOJsGb",
+      1
+    ],
+    [
+      "div id= class=SocialFollowUs-styles__SocialFollowUsHeaderStyled-sc-2bdeae3a-1 ckEZCm",
+      1
+    ],
+    [
+      "div id= class=SocialFollowUs-styles__SocialFollowUsFlexContainerStyled-sc-2bdeae3a-2 Itwpr",
+      1
+    ],
+    [
+      "section id= class=LegalLinks-styles__LegalLinksSectionStyled-sc-f9fd086a-0 bhvVdu",
+      1
+    ],
+    [
+      "ul id= class=LegalLinks-styles__LegalLinksULStyled-sc-f9fd086a-1 fwURqS",
+      1
+    ],
+    [
+      "div id= class=Footer-styles__LegalTextParagraphStyled-sc-7046f1ed-1 RmPAY",
+      1
+    ],
+    [
+      "a id= class=LinkUrl-styles__LinkUrlStyled-sc-f4e3b82f-0 eGAhOs",
+      1
+    ],
+    [
+      "b id=read-about-our-approach-to-external-linking. class=TextFragment-styles__TextFragmentStyled-sc-99e7c69b-0 fa-DACi",
+      1
+    ],
+    [
+      "div id=subliminal-banner class=",
+      1
+    ],
+    [
+      "div id= class=Backdrop-styles__BackdropStyled-sc-9f7d4825-0 dya-dBg",
+      1
+    ],
+    [
+      "div id= class=Drawer-styles__DrawerBackgroundStyled-sc-211ba7ec-0 bNHlia",
+      1
+    ],
+    [
+      "div id=content-setter class=CMSCustomComponent-styles__CMSCustomComponentContainer-sc-ba76715a-2 bMmUIK",
+      1
+    ],
+    [
+      "div id= class=SectionTitleChevrons-styles__SectionTitleButtonsStyled-sc-460c7da3-0 eOnSop",
+      1
+    ],
+    [
+      "div id=regional-news-selection-component class=CMSCustomComponent-styles__CMSCustomComponentContainer-sc-ba76715a-2 bMmUIK",
+      1
+    ],
+    [
+      "p id=__next-route-announcer__ class=",
+      1
+    ],
+    [
+      "div id= class=AccountButtons-styles__AccountButtonsDesktopContainerStyled-sc-32916240-8 fqckTt",
+      1
+    ],
+    [
+      "button id= class=Button-styles__ButtonBase-sc-c0f7f974-2 Button-styles__UnboxedButton-sc-c0f7f974-5 gCqUYN jdLCIq",
+      1
+    ],
+    [
+      "div id= class=AccountButtons-styles__AccountButtonsMobileContainerStyled-sc-32916240-9 ixZeYR",
+      1
+    ],
+    [
+      "button id= class=AccountButtons-styles__AccountMobileToggleButtonStyled-sc-32916240-0 vzgip",
+      1
+    ]
+  ],
+  "cause_deltas": [
+    {
+      "line": 62,
+      "preceding": "Vox instructions cumulative: frame_complete 10091252154",
+      "reason": 0,
+      "total": 5041,
+      "delta": 5041
+    },
+    {
+      "line": 86,
+      "preceding": "Vox instructions cumulative: frame_complete 11080438916",
+      "reason": 1,
+      "total": 8,
+      "delta": 8
+    },
+    {
+      "line": 105,
+      "preceding": "Vox instructions cumulative: frame_complete 11603110756",
+      "reason": 1,
+      "total": 16,
+      "delta": 8
+    },
+    {
+      "line": 119,
+      "preceding": "Vox instructions cumulative: frame_complete 11903436072",
+      "reason": 1,
+      "total": 19,
+      "delta": 3
+    },
+    {
+      "line": 2571,
+      "preceding": "Vox instructions cumulative: frame_complete 17963470622",
+      "reason": 0,
+      "total": 7592,
+      "delta": 2551
+    },
+    {
+      "line": 2572,
+      "preceding": "Vox instructions cumulative: frame_complete 17963470622",
+      "reason": 1,
+      "total": 2446,
+      "delta": 2427
+    },
+    {
+      "line": 3047,
+      "preceding": "Vox instructions cumulative: frame_complete 21721741266",
+      "reason": 1,
+      "total": 2889,
+      "delta": 443
+    },
+    {
+      "line": 3048,
+      "preceding": "Vox instructions cumulative: frame_complete 21721741266",
+      "reason": 6,
+      "total": 160,
+      "delta": 160
+    },
+    {
+      "line": 3049,
+      "preceding": "Vox instructions cumulative: frame_complete 21721741266",
+      "reason": 7,
+      "total": 1,
+      "delta": 1
+    },
+    {
+      "line": 3084,
+      "preceding": "Vox instructions cumulative: frame_complete 23178081644",
+      "reason": 6,
+      "total": 394,
+      "delta": 234
+    },
+    {
+      "line": 3085,
+      "preceding": "Vox instructions cumulative: frame_complete 23178081644",
+      "reason": 7,
+      "total": 2,
+      "delta": 1
+    },
+    {
+      "line": 3099,
+      "preceding": "Vox instructions cumulative: frame_complete 23585478165",
+      "reason": 6,
+      "total": 538,
+      "delta": 144
+    },
+    {
+      "line": 3100,
+      "preceding": "Vox instructions cumulative: frame_complete 23585478165",
+      "reason": 7,
+      "total": 4,
+      "delta": 2
+    },
+    {
+      "line": 3122,
+      "preceding": "Vox instructions cumulative: frame_complete 23994100485",
+      "reason": 6,
+      "total": 682,
+      "delta": 144
+    },
+    {
+      "line": 3123,
+      "preceding": "Vox instructions cumulative: frame_complete 23994100485",
+      "reason": 7,
+      "total": 6,
+      "delta": 2
+    },
+    {
+      "line": 3145,
+      "preceding": "Vox instructions cumulative: frame_complete 26057733151",
+      "reason": 6,
+      "total": 1114,
+      "delta": 432
+    },
+    {
+      "line": 3146,
+      "preceding": "Vox instructions cumulative: frame_complete 26057733151",
+      "reason": 7,
+      "total": 8,
+      "delta": 2
+    }
+  ],
+  "caveat": "Reports publish at frame completion,not at the exact instant of each computation. Counters are cumulative and log probes perturb execution.",
+  "driver_guard_exit": 0,
+  "runtime_inputs_stable": true,
+  "raw_root": "Build/bbc-style-causes-20261103",
+  "reasons": {
+    "0": "full document style update",
+    "1": "node style dirty",
+    "2": "parent display changed",
+    "3": "ancestor descendant recompute",
+    "4": "custom property fanout",
+    "5": "if-media",
+    "6": "font-input refresh success",
+    "7": "font-input refresh fallback"
+  },
+  "content_exact": true,
+  "ownership": true,
+  "native_exit": 0,
+  "original_pixels_exact": null,
+  "pixel_check_unavailable": "Original pixel reference and old diff-tool path were removed concurrently before this diagnostic could be independently compared. Its surviving PNG SHA999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671 equals all14Vox/cohort74PNGsthathadalreadybeenverifiedexact; originalPNGbytesarecurrentlymissing.",
+  "surviving_evidence": {
+    "path": "docs/performance/raw/bbc-surviving-style-diagnostic-20261103.tar.gz",
+    "sha256": "9009a9b71d1448c3087c31b1eb65446743f35c70fb097b19cb4ce5bd765f7669",
+    "bytes": 4592837,
+    "verified_files": 413
+  }
+}
