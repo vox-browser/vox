@@ -1,0 +1,670 @@
+{
+  "schema": 1,
+  "date": "2026-11-03",
+  "feature_commit": "025a4a624",
+  "native_yuv_commit": "5f2edeb29",
+  "goal": {
+    "limit_bytes": 500000000,
+    "achieved": false
+  },
+  "production_receipt": "20261103-140008-3c10239e",
+  "executable_sha256": "8f1ee6b09dfe99f13dd8f8ba92add4f6db27db39c29c651f3d81828ab49aeb36",
+  "observations": {
+    "production-65": {
+      "result": {
+        "pid": 55350,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width",
+          "1708",
+          "--window-height",
+          "1065",
+          "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/"
+        ],
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "8f1ee6b09dfe99f13dd8f8ba92add4f6db27db39c29c651f3d81828ab49aeb36",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2ec426f818871c2bde264ed444c55621a58bdcab5004e9e325f062896f1a2737",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a373609a3aad7c013bcaa73114657b9e3043740359e106b230259736d22d82af",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "4eccf0a7fbfc57a5eb3146e84afd02b516cbb2342c01e8f9eb385940a89f3759",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "66a4de15d3f6bb9db6bc8e01d270430753a02af9bcdbc94d86887abeb0bc21de",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/page.py": "f29d7600ebd091ce9da5687e2494aeabddcded3c6efb89cee9ca38130f38970c",
+          "/Users/alex/code/vox2/tools/page_archive.py": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+          "/Users/alex/code/vox2/tools/wikipedia_browser_memory.py": "7f38e8d66feaf79793e9ceb8d89e22efb6d9a9fc8a75ee891d8d7199f2fccb53",
+          "/Users/alex/code/vox2/tools/process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c",
+          "/Users/alex/code/vox2/tools/pikabu_browser_memory.py": "f69915de181eecd665a26256e7b1f17232121782469695755c8f74fafd3e3812",
+          "/Users/alex/code/vox2/tools/measure_browser_instructions.py": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "a987fdf5fc63266a2286dccf433d33eca565adb7542fba3e9518255a93d5673c",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/archive-recovery-v2.json": "30fab3cc3f874d6cc5eaf35e3f908e91396f9331c6adbf15f8cd3fcd98e99cab",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/document.json": "f81d5b02878f04262c6754fa2ba0932020c2c14c1fe3489069200915da938349",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/f134db1400065d159a57f5beb65c9b291aafcddf6115c43b09c3612312c6d43a": "f134db1400065d159a57f5beb65c9b291aafcddf6115c43b09c3612312c6d43a",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/1299ae2476471a01a6ab2907d511b3233fb2b87746cc536e8e1153c982f90caa": "1299ae2476471a01a6ab2907d511b3233fb2b87746cc536e8e1153c982f90caa",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/ba5ed6d1bf1244bfe331a48b9adc95f4537c437e7a712e0846cafccbdf9daf82": "ba5ed6d1bf1244bfe331a48b9adc95f4537c437e7a712e0846cafccbdf9daf82",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/635c789f4db0b7b51f2fb7d6d3981d8efcba28d20c0b9fb3706c3df846a811c5": "635c789f4db0b7b51f2fb7d6d3981d8efcba28d20c0b9fb3706c3df846a811c5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/e8dd3ba85ec61c1ff393affe5b9878b78d87e9f6cbd1214f36272a484d095ae6": "e8dd3ba85ec61c1ff393affe5b9878b78d87e9f6cbd1214f36272a484d095ae6",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/2f9d380cf7fdd5fcf8dfe047f977ad86ee594aa964aaef5438361ccaf420a100": "2f9d380cf7fdd5fcf8dfe047f977ad86ee594aa964aaef5438361ccaf420a100",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/2726f92ed75ce614ff705d8fa6dc63c8454a75ae533cf54d629e735bd583d235": "2726f92ed75ce614ff705d8fa6dc63c8454a75ae533cf54d629e735bd583d235",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/efe971ec339a1ce12fb8ac40bace9a49538d453313b8af965bc9fd98638539b5": "efe971ec339a1ce12fb8ac40bace9a49538d453313b8af965bc9fd98638539b5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/befb1be66d2b5832d961b6aed4c2382bfa8862c9f7618f13358820873f0036b1": "befb1be66d2b5832d961b6aed4c2382bfa8862c9f7618f13358820873f0036b1",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/78f8594416b419c615df809e3ba3ff8ed4b5369681b03733cf19a23d8621d356": "78f8594416b419c615df809e3ba3ff8ed4b5369681b03733cf19a23d8621d356",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/57d18880dd3e28db974abdf435160f70ce2d77ba4d7d9f634ee205c1943af1c5": "57d18880dd3e28db974abdf435160f70ce2d77ba4d7d9f634ee205c1943af1c5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/c8a725d78fc4b1bce109ab1c569995f07b6e1193f0fd5994ca2f23ce50f45253": "c8a725d78fc4b1bce109ab1c569995f07b6e1193f0fd5994ca2f23ce50f45253",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/9f77140cba16e2d24dc62b7953553dfe36e6b7e262b874bea83105470ab7d11d": "9f77140cba16e2d24dc62b7953553dfe36e6b7e262b874bea83105470ab7d11d",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/9e896c4e3e6c9323870129424dbbda9dd2ff8a211bb48d3ba0c2d11b4df7155c": "9e896c4e3e6c9323870129424dbbda9dd2ff8a211bb48d3ba0c2d11b4df7155c",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/11bc831318292392808e355a415bae45b64c8b94a8844aa77b74a06117cedb61": "11bc831318292392808e355a415bae45b64c8b94a8844aa77b74a06117cedb61",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/11362c819c21795b8fc6271025d2d99829ec73c9f1fc5495a7c59bcd377138b5": "11362c819c21795b8fc6271025d2d99829ec73c9f1fc5495a7c59bcd377138b5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/6c85e8559258a34ccd04121ebbf4cde2de609d37a3c47aa89a5ec69faf3c4f3e": "6c85e8559258a34ccd04121ebbf4cde2de609d37a3c47aa89a5ec69faf3c4f3e",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/8d16addfdf7769450dd755d77382c28fcd65da2e3a10c92faeb059cee41e395d": "8d16addfdf7769450dd755d77382c28fcd65da2e3a10c92faeb059cee41e395d",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/75bddaddeea26a28a911c0bbb0a63334c0771257664e840197892e8d25d18f04": "75bddaddeea26a28a911c0bbb0a63334c0771257664e840197892e8d25d18f04",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/48ea8c7a1339dbb17debf3590ab455a8dc4ee76c124870b0fb73374ca80f82c9": "48ea8c7a1339dbb17debf3590ab455a8dc4ee76c124870b0fb73374ca80f82c9",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/e50b5fe50d989095b0e966c3d042b437faacb24d7c0622a9ed131be74af19fea": "e50b5fe50d989095b0e966c3d042b437faacb24d7c0622a9ed131be74af19fea",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/83338b42e6ead92b9292d520191bacc85129abfc46d7f3666ede13e42fd417b0": "83338b42e6ead92b9292d520191bacc85129abfc46d7f3666ede13e42fd417b0",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527": "3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/38ec4697f57d67227cc49eef44b17913ffbc03cc7ddef8b039ebcc5cb9e40c3b": "38ec4697f57d67227cc49eef44b17913ffbc03cc7ddef8b039ebcc5cb9e40c3b"
+        },
+        "identity_changed": false,
+        "fixture_changed": false,
+        "host": {
+          "cpus": 18,
+          "load": [
+            15.919921875,
+            19.11669921875,
+            19.64013671875
+          ],
+          "timestamp": 1793704682.724673
+        },
+        "observed_peak_bytes": 544181008,
+        "peak": {
+          "seconds": 1.0242446250000001,
+          "physical_footprint_bytes": 544181008,
+          "processes": [
+            {
+              "pid": 55353,
+              "start_ticks": 4675832383419,
+              "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+              "physical_footprint_bytes": 29442792,
+              "resident_size_bytes": 53329920,
+              "task_lifetime_peak_bytes": 30130920
+            },
+            {
+              "pid": 55350,
+              "start_ticks": 4675830495870,
+              "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+              "physical_footprint_bytes": 514738216,
+              "resident_size_bytes": 443219968,
+              "task_lifetime_peak_bytes": 521865280
+            }
+          ],
+          "vanished_during_sample": [],
+          "reused_pids_excluded": []
+        },
+        "settled_bytes": 255543336,
+        "browser_exit": 0,
+        "completed_observation": true,
+        "seconds": 65.715199375,
+        "observation_seconds": 65,
+        "sampled_through_audit_peak_bytes": 544181008,
+        "max_sample_gap_seconds": 0.058229124999996884
+      },
+      "audit": {
+        "expected_javascript_diagnostics": [
+          "Error fetching badge indicator data"
+        ],
+        "actual_javascript_diagnostics": [
+          "Error fetching badge indicator data"
+        ],
+        "native_reported_error_count": 0,
+        "counts": {
+          "body": 1,
+          "comments": 49,
+          "images": 2
+        },
+        "passed": true
+      },
+      "observed_task_lifetime_peak_sum_bytes": 551996200,
+      "artifacts": [
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-65/result.json",
+          "sha256": "737f16a4749320b87de4b7ac01fbed9f96db2095d34b1349273d9d495a7b3bbf",
+          "bytes": 9531
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-65/samples.json.gz",
+          "sha256": "62f0471a8829f6b42f8c9a3c6d8432b22d469d8ef60ae068f499bf91aaaa0550",
+          "bytes": 13710
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-65/command.json",
+          "sha256": "c215f82dd5fbfe2a98f93149863b56d1b0ce1eda2c902227321499d0e012bba2",
+          "bytes": 9455
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-65/browser.log",
+          "sha256": "d2b461d6f606ca90a38a5328515c26c6eb0b9985beef2ef7c250c317412a8432",
+          "bytes": 354
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-65/loaded-images.txt",
+          "sha256": "4b262b74ad85c52fb3f046784cb9bf31f038a59f17ecc22e85c8d69bc0b66516",
+          "bytes": 5878
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-65/author-script-audit.json",
+          "sha256": "12f8904b828db0a413a26f9f9db49de7227e6b6e2860718d73f5562074686ad9",
+          "bytes": 297
+        }
+      ]
+    },
+    "production-300": {
+      "result": {
+        "pid": 64160,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width",
+          "1708",
+          "--window-height",
+          "1065",
+          "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/"
+        ],
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "8f1ee6b09dfe99f13dd8f8ba92add4f6db27db39c29c651f3d81828ab49aeb36",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2ec426f818871c2bde264ed444c55621a58bdcab5004e9e325f062896f1a2737",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a373609a3aad7c013bcaa73114657b9e3043740359e106b230259736d22d82af",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "4eccf0a7fbfc57a5eb3146e84afd02b516cbb2342c01e8f9eb385940a89f3759",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "66a4de15d3f6bb9db6bc8e01d270430753a02af9bcdbc94d86887abeb0bc21de",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/page.py": "f29d7600ebd091ce9da5687e2494aeabddcded3c6efb89cee9ca38130f38970c",
+          "/Users/alex/code/vox2/tools/page_archive.py": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+          "/Users/alex/code/vox2/tools/wikipedia_browser_memory.py": "7f38e8d66feaf79793e9ceb8d89e22efb6d9a9fc8a75ee891d8d7199f2fccb53",
+          "/Users/alex/code/vox2/tools/process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c",
+          "/Users/alex/code/vox2/tools/pikabu_browser_memory.py": "f69915de181eecd665a26256e7b1f17232121782469695755c8f74fafd3e3812",
+          "/Users/alex/code/vox2/tools/measure_browser_instructions.py": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "a987fdf5fc63266a2286dccf433d33eca565adb7542fba3e9518255a93d5673c",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/archive-recovery-v2.json": "30fab3cc3f874d6cc5eaf35e3f908e91396f9331c6adbf15f8cd3fcd98e99cab",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/document.json": "f81d5b02878f04262c6754fa2ba0932020c2c14c1fe3489069200915da938349",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/f134db1400065d159a57f5beb65c9b291aafcddf6115c43b09c3612312c6d43a": "f134db1400065d159a57f5beb65c9b291aafcddf6115c43b09c3612312c6d43a",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/1299ae2476471a01a6ab2907d511b3233fb2b87746cc536e8e1153c982f90caa": "1299ae2476471a01a6ab2907d511b3233fb2b87746cc536e8e1153c982f90caa",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/ba5ed6d1bf1244bfe331a48b9adc95f4537c437e7a712e0846cafccbdf9daf82": "ba5ed6d1bf1244bfe331a48b9adc95f4537c437e7a712e0846cafccbdf9daf82",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/635c789f4db0b7b51f2fb7d6d3981d8efcba28d20c0b9fb3706c3df846a811c5": "635c789f4db0b7b51f2fb7d6d3981d8efcba28d20c0b9fb3706c3df846a811c5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/e8dd3ba85ec61c1ff393affe5b9878b78d87e9f6cbd1214f36272a484d095ae6": "e8dd3ba85ec61c1ff393affe5b9878b78d87e9f6cbd1214f36272a484d095ae6",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/2f9d380cf7fdd5fcf8dfe047f977ad86ee594aa964aaef5438361ccaf420a100": "2f9d380cf7fdd5fcf8dfe047f977ad86ee594aa964aaef5438361ccaf420a100",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/2726f92ed75ce614ff705d8fa6dc63c8454a75ae533cf54d629e735bd583d235": "2726f92ed75ce614ff705d8fa6dc63c8454a75ae533cf54d629e735bd583d235",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/efe971ec339a1ce12fb8ac40bace9a49538d453313b8af965bc9fd98638539b5": "efe971ec339a1ce12fb8ac40bace9a49538d453313b8af965bc9fd98638539b5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/befb1be66d2b5832d961b6aed4c2382bfa8862c9f7618f13358820873f0036b1": "befb1be66d2b5832d961b6aed4c2382bfa8862c9f7618f13358820873f0036b1",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/78f8594416b419c615df809e3ba3ff8ed4b5369681b03733cf19a23d8621d356": "78f8594416b419c615df809e3ba3ff8ed4b5369681b03733cf19a23d8621d356",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/57d18880dd3e28db974abdf435160f70ce2d77ba4d7d9f634ee205c1943af1c5": "57d18880dd3e28db974abdf435160f70ce2d77ba4d7d9f634ee205c1943af1c5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/c8a725d78fc4b1bce109ab1c569995f07b6e1193f0fd5994ca2f23ce50f45253": "c8a725d78fc4b1bce109ab1c569995f07b6e1193f0fd5994ca2f23ce50f45253",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/9f77140cba16e2d24dc62b7953553dfe36e6b7e262b874bea83105470ab7d11d": "9f77140cba16e2d24dc62b7953553dfe36e6b7e262b874bea83105470ab7d11d",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/9e896c4e3e6c9323870129424dbbda9dd2ff8a211bb48d3ba0c2d11b4df7155c": "9e896c4e3e6c9323870129424dbbda9dd2ff8a211bb48d3ba0c2d11b4df7155c",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/11bc831318292392808e355a415bae45b64c8b94a8844aa77b74a06117cedb61": "11bc831318292392808e355a415bae45b64c8b94a8844aa77b74a06117cedb61",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/11362c819c21795b8fc6271025d2d99829ec73c9f1fc5495a7c59bcd377138b5": "11362c819c21795b8fc6271025d2d99829ec73c9f1fc5495a7c59bcd377138b5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/6c85e8559258a34ccd04121ebbf4cde2de609d37a3c47aa89a5ec69faf3c4f3e": "6c85e8559258a34ccd04121ebbf4cde2de609d37a3c47aa89a5ec69faf3c4f3e",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/8d16addfdf7769450dd755d77382c28fcd65da2e3a10c92faeb059cee41e395d": "8d16addfdf7769450dd755d77382c28fcd65da2e3a10c92faeb059cee41e395d",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/75bddaddeea26a28a911c0bbb0a63334c0771257664e840197892e8d25d18f04": "75bddaddeea26a28a911c0bbb0a63334c0771257664e840197892e8d25d18f04",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/48ea8c7a1339dbb17debf3590ab455a8dc4ee76c124870b0fb73374ca80f82c9": "48ea8c7a1339dbb17debf3590ab455a8dc4ee76c124870b0fb73374ca80f82c9",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/e50b5fe50d989095b0e966c3d042b437faacb24d7c0622a9ed131be74af19fea": "e50b5fe50d989095b0e966c3d042b437faacb24d7c0622a9ed131be74af19fea",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/83338b42e6ead92b9292d520191bacc85129abfc46d7f3666ede13e42fd417b0": "83338b42e6ead92b9292d520191bacc85129abfc46d7f3666ede13e42fd417b0",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527": "3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/38ec4697f57d67227cc49eef44b17913ffbc03cc7ddef8b039ebcc5cb9e40c3b": "38ec4697f57d67227cc49eef44b17913ffbc03cc7ddef8b039ebcc5cb9e40c3b"
+        },
+        "identity_changed": false,
+        "fixture_changed": false,
+        "host": {
+          "cpus": 18,
+          "load": [
+            8.072265625,
+            14.3505859375,
+            17.5654296875
+          ],
+          "timestamp": 1793704866.69586
+        },
+        "observed_peak_bytes": 550815808,
+        "peak": {
+          "seconds": 280.562468292,
+          "physical_footprint_bytes": 550815808,
+          "processes": [
+            {
+              "pid": 64160,
+              "start_ticks": 4680245782777,
+              "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+              "physical_footprint_bytes": 550815808,
+              "resident_size_bytes": 464142336,
+              "task_lifetime_peak_bytes": 557877336
+            }
+          ],
+          "vanished_during_sample": [
+            64164
+          ],
+          "reused_pids_excluded": []
+        },
+        "settled_bytes": 308660288,
+        "browser_exit": 0,
+        "completed_observation": true,
+        "seconds": 301.143522125,
+        "observation_seconds": 300,
+        "sampled_through_audit_peak_bytes": 581699720,
+        "max_sample_gap_seconds": 0.06564958299998125
+      },
+      "audit": {
+        "expected_javascript_diagnostics": [
+          "Error fetching badge indicator data"
+        ],
+        "actual_javascript_diagnostics": [
+          "Error fetching badge indicator data"
+        ],
+        "native_reported_error_count": 0,
+        "counts": {
+          "body": 1,
+          "comments": 49,
+          "images": 2
+        },
+        "passed": true
+      },
+      "observed_task_lifetime_peak_sum_bytes": 588925760,
+      "artifacts": [
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-300/result.json",
+          "sha256": "b53c1877fda17e5ef9dcb11f9ea2f1aad2b9c68c278a4beb06ec08cefa557011",
+          "bytes": 9242
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-300/samples.json.gz",
+          "sha256": "560382f4fc863f35bae3390522b70403f6fa39737350644ea22829675119ddd6",
+          "bytes": 54048
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-300/command.json",
+          "sha256": "a49ba96ba0b715da2814c34023d7c716fae2fb7e38ef1a818ed8224a8b76fd54",
+          "bytes": 9458
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-300/browser.log",
+          "sha256": "badf1d51ff4f507436f318a8efab4eae702ff63f391d58ece10a0faab93959db",
+          "bytes": 355
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-300/loaded-images.txt",
+          "sha256": "10e96548b3d086249fd948a88c519a9f710e14118ea496088184b8cd435f3052",
+          "bytes": 5878
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-300/author-script-audit.json",
+          "sha256": "12f8904b828db0a413a26f9f9db49de7227e6b6e2860718d73f5562074686ad9",
+          "bytes": 297
+        }
+      ]
+    },
+    "production-path": {
+      "result": {
+        "pid": 61508,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--window-width",
+          "1708",
+          "--window-height",
+          "1065",
+          "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/"
+        ],
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "8f1ee6b09dfe99f13dd8f8ba92add4f6db27db39c29c651f3d81828ab49aeb36",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2ec426f818871c2bde264ed444c55621a58bdcab5004e9e325f062896f1a2737",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a373609a3aad7c013bcaa73114657b9e3043740359e106b230259736d22d82af",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "4eccf0a7fbfc57a5eb3146e84afd02b516cbb2342c01e8f9eb385940a89f3759",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "66a4de15d3f6bb9db6bc8e01d270430753a02af9bcdbc94d86887abeb0bc21de",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/page_path.py": "d539ff3477a3f501a0ee4ec948b9df65aa1542fce7d5afad4387d92b9323a24d",
+          "/Users/alex/code/vox2/tools/page_archive.py": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+          "/Users/alex/code/vox2/tools/wikipedia_browser_memory.py": "7f38e8d66feaf79793e9ceb8d89e22efb6d9a9fc8a75ee891d8d7199f2fccb53",
+          "/Users/alex/code/vox2/tools/process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c",
+          "/Users/alex/code/vox2/tools/pikabu_browser_memory.py": "f69915de181eecd665a26256e7b1f17232121782469695755c8f74fafd3e3812",
+          "/Users/alex/code/vox2/tools/measure_browser_instructions.py": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "a987fdf5fc63266a2286dccf433d33eca565adb7542fba3e9518255a93d5673c",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/archive-recovery-v2.json": "30fab3cc3f874d6cc5eaf35e3f908e91396f9331c6adbf15f8cd3fcd98e99cab",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/document.json": "f81d5b02878f04262c6754fa2ba0932020c2c14c1fe3489069200915da938349",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/f134db1400065d159a57f5beb65c9b291aafcddf6115c43b09c3612312c6d43a": "f134db1400065d159a57f5beb65c9b291aafcddf6115c43b09c3612312c6d43a",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/1299ae2476471a01a6ab2907d511b3233fb2b87746cc536e8e1153c982f90caa": "1299ae2476471a01a6ab2907d511b3233fb2b87746cc536e8e1153c982f90caa",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/ba5ed6d1bf1244bfe331a48b9adc95f4537c437e7a712e0846cafccbdf9daf82": "ba5ed6d1bf1244bfe331a48b9adc95f4537c437e7a712e0846cafccbdf9daf82",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/635c789f4db0b7b51f2fb7d6d3981d8efcba28d20c0b9fb3706c3df846a811c5": "635c789f4db0b7b51f2fb7d6d3981d8efcba28d20c0b9fb3706c3df846a811c5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/e8dd3ba85ec61c1ff393affe5b9878b78d87e9f6cbd1214f36272a484d095ae6": "e8dd3ba85ec61c1ff393affe5b9878b78d87e9f6cbd1214f36272a484d095ae6",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/2f9d380cf7fdd5fcf8dfe047f977ad86ee594aa964aaef5438361ccaf420a100": "2f9d380cf7fdd5fcf8dfe047f977ad86ee594aa964aaef5438361ccaf420a100",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/2726f92ed75ce614ff705d8fa6dc63c8454a75ae533cf54d629e735bd583d235": "2726f92ed75ce614ff705d8fa6dc63c8454a75ae533cf54d629e735bd583d235",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/efe971ec339a1ce12fb8ac40bace9a49538d453313b8af965bc9fd98638539b5": "efe971ec339a1ce12fb8ac40bace9a49538d453313b8af965bc9fd98638539b5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/befb1be66d2b5832d961b6aed4c2382bfa8862c9f7618f13358820873f0036b1": "befb1be66d2b5832d961b6aed4c2382bfa8862c9f7618f13358820873f0036b1",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/78f8594416b419c615df809e3ba3ff8ed4b5369681b03733cf19a23d8621d356": "78f8594416b419c615df809e3ba3ff8ed4b5369681b03733cf19a23d8621d356",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/57d18880dd3e28db974abdf435160f70ce2d77ba4d7d9f634ee205c1943af1c5": "57d18880dd3e28db974abdf435160f70ce2d77ba4d7d9f634ee205c1943af1c5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/c8a725d78fc4b1bce109ab1c569995f07b6e1193f0fd5994ca2f23ce50f45253": "c8a725d78fc4b1bce109ab1c569995f07b6e1193f0fd5994ca2f23ce50f45253",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/9f77140cba16e2d24dc62b7953553dfe36e6b7e262b874bea83105470ab7d11d": "9f77140cba16e2d24dc62b7953553dfe36e6b7e262b874bea83105470ab7d11d",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/9e896c4e3e6c9323870129424dbbda9dd2ff8a211bb48d3ba0c2d11b4df7155c": "9e896c4e3e6c9323870129424dbbda9dd2ff8a211bb48d3ba0c2d11b4df7155c",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/11bc831318292392808e355a415bae45b64c8b94a8844aa77b74a06117cedb61": "11bc831318292392808e355a415bae45b64c8b94a8844aa77b74a06117cedb61",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/11362c819c21795b8fc6271025d2d99829ec73c9f1fc5495a7c59bcd377138b5": "11362c819c21795b8fc6271025d2d99829ec73c9f1fc5495a7c59bcd377138b5",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/6c85e8559258a34ccd04121ebbf4cde2de609d37a3c47aa89a5ec69faf3c4f3e": "6c85e8559258a34ccd04121ebbf4cde2de609d37a3c47aa89a5ec69faf3c4f3e",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/8d16addfdf7769450dd755d77382c28fcd65da2e3a10c92faeb059cee41e395d": "8d16addfdf7769450dd755d77382c28fcd65da2e3a10c92faeb059cee41e395d",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/75bddaddeea26a28a911c0bbb0a63334c0771257664e840197892e8d25d18f04": "75bddaddeea26a28a911c0bbb0a63334c0771257664e840197892e8d25d18f04",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/48ea8c7a1339dbb17debf3590ab455a8dc4ee76c124870b0fb73374ca80f82c9": "48ea8c7a1339dbb17debf3590ab455a8dc4ee76c124870b0fb73374ca80f82c9",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/e50b5fe50d989095b0e966c3d042b437faacb24d7c0622a9ed131be74af19fea": "e50b5fe50d989095b0e966c3d042b437faacb24d7c0622a9ed131be74af19fea",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/83338b42e6ead92b9292d520191bacc85129abfc46d7f3666ede13e42fd417b0": "83338b42e6ead92b9292d520191bacc85129abfc46d7f3666ede13e42fd417b0",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527": "3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/38ec4697f57d67227cc49eef44b17913ffbc03cc7ddef8b039ebcc5cb9e40c3b": "38ec4697f57d67227cc49eef44b17913ffbc03cc7ddef8b039ebcc5cb9e40c3b"
+        },
+        "identity_changed": false,
+        "fixture_changed": false,
+        "host": {
+          "cpus": 18,
+          "load": [
+            9.11376953125,
+            15.70849609375,
+            18.22705078125
+          ],
+          "timestamp": 1793704815.2559721
+        },
+        "observed_peak_bytes": 543230712,
+        "peak": {
+          "seconds": 0.8072125000000001,
+          "physical_footprint_bytes": 543230712,
+          "processes": [
+            {
+              "pid": 61514,
+              "start_ticks": 4679012931620,
+              "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+              "physical_footprint_bytes": 29475560,
+              "resident_size_bytes": 53116928,
+              "task_lifetime_peak_bytes": 30409448
+            },
+            {
+              "pid": 61508,
+              "start_ticks": 4679011229533,
+              "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+              "physical_footprint_bytes": 513755152,
+              "resident_size_bytes": 443449344,
+              "task_lifetime_peak_bytes": 521078824
+            }
+          ],
+          "vanished_during_sample": [],
+          "reused_pids_excluded": []
+        },
+        "settled_bytes": 266898192,
+        "browser_exit": 0,
+        "completed_observation": true,
+        "seconds": 5.893382958,
+        "observation_seconds": 5,
+        "sampled_through_audit_peak_bytes": 543230712,
+        "max_sample_gap_seconds": 0.059914833
+      },
+      "audit": {
+        "expected_javascript_diagnostics": [
+          "Error fetching badge indicator data"
+        ],
+        "actual_javascript_diagnostics": [
+          "Error fetching badge indicator data"
+        ],
+        "native_reported_error_count": 0,
+        "counts": {
+          "body": 1,
+          "comments": 49,
+          "images": 2
+        },
+        "passed": true
+      },
+      "observed_task_lifetime_peak_sum_bytes": 555584248,
+      "artifacts": [
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-path/result.json",
+          "sha256": "ade3e7d88ef890cfd118a90ac23c27d42cb9087baf7dd92c35f993181d6e2ba0",
+          "bytes": 9527
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-path/samples.json.gz",
+          "sha256": "ad240425d527d3ee4240df6ba62ea1e776f54ba08fc000e6712d1cd3e097c379",
+          "bytes": 2684
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-path/command.json",
+          "sha256": "f348897cd54183ef9cecbd0de0688f80bb63b6c0143d97e27a769fe3f6876781",
+          "bytes": 9553
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-path/browser.log",
+          "sha256": "a11c771eb36bc1c2af8ef8a75959120e2d01ad00536fd099dae00a1366572090",
+          "bytes": 7431
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-path/loaded-images.txt",
+          "sha256": "10b37f4b85ff058ee1485d1f36e08c963d58fb4d25ecbd6e3d20c7138b66c080",
+          "bytes": 5878
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-dawn-shared/production-path/author-script-audit.json",
+          "sha256": "12f8904b828db0a413a26f9f9db49de7227e6b6e2860718d73f5562074686ad9",
+          "bytes": 297
+        }
+      ]
+    }
+  },
+  "visual": {
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "8f1ee6b09dfe99f13dd8f8ba92add4f6db27db39c29c651f3d81828ab49aeb36",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2ec426f818871c2bde264ed444c55621a58bdcab5004e9e325f062896f1a2737",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a373609a3aad7c013bcaa73114657b9e3043740359e106b230259736d22d82af",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "4eccf0a7fbfc57a5eb3146e84afd02b516cbb2342c01e8f9eb385940a89f3759",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "66a4de15d3f6bb9db6bc8e01d270430753a02af9bcdbc94d86887abeb0bc21de"
+    },
+    "tools": {
+      "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual_production.py": "e1f45bf8ab796f53e6a4f130527558fd880e321b9baec120d3c311dd523c6a25",
+      "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-graphics/pixel_diff": "c556365125bbc8c96b763e1dd2710aaeb840ec9c618469b9f8ae5d2962b2b071",
+      "/Users/alex/code/vox2/capture_screenshot.sh": "fdf053e6ae1f7ae32a9c44408504387b860784f1b40de9547e3bf73db3fd0d62",
+      "/Users/alex/code/vox2/tools/pixel_diff.v": "3e34f4d1ed211a5476bc54c3483ab074b2ace8c36239d77f15e6f50d990ddfb7",
+      "/Users/alex/code/vox2/tools/pikabu_browser_memory.py": "f69915de181eecd665a26256e7b1f17232121782469695755c8f74fafd3e3812",
+      "/Users/alex/code/vox2/tools/wikipedia_browser_memory.py": "7f38e8d66feaf79793e9ceb8d89e22efb6d9a9fc8a75ee891d8d7199f2fccb53"
+    },
+    "fixtures": {
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html": "00c8237fe47703896d26207dece9fdd802e4ca49b84e6b178f657d8293802f06",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/green-100x100-ref.html": "6bc260f5e1f09493d33fa5c82c2d8c83c2b2a512d92f55867fb0c2ce6830271d",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-gradient-in-defs-removed-repaint.html": "c47e3d4a7e4551948a21b01d7a7f69c1263be58c0d4fde10ee56d13b313dd472",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg-gradient-in-defs-removed-repaint-ref.html": "b87d670748afdc0f417757c008dd2f90d58e949d0df208336eaed44954f88587",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-paint-server-hidden-inherited-style-update.html": "23addb46947da1c8c28de47d7846dc002285530f1ad2bc4d104aeca52d4d337f",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg-paint-server-hidden-inherited-style-update-ref.html": "011bca2acbf970920b4751d338510a538f25d01cd6ce8c3d8a21b2b13deb1b72",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-added.html": "fea79e57b15fb90c126e645975e0534c5e01b1e7d775471ab192de58685cb273",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html": "4008cf44107170a06b3d267c34952b46734d7168f8e8e4bee50a6e8567524233",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-color-animation.html": "2f92a8194f10da00154a7e35b71b73251a9136fb40cfb3619b16a6b422b02850",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html": "46440e1a39e7d5761a6e5fadd2a40fcf7caa9a371c25f388d9f746872a70451d",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-href-chain-update.html": "46bb22d66fbe36ac36ac8c616446427cfe269e403ef4ae5b645ec6f507e70821",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-transform-attribute-update.html": "69e4b9890caa137e389ebc4b8596d6ead1444a14469a6c49430ede2df0e45040",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html": "cd9e530818694384a0f141cc71a7d1705c22394ad25756d20dd1dfd5ddf7db43",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html": "181cafc7b686ded3aa8f4444970461ea27438325a1135fde1459e5badfe1c48a",
+      "/Users/alex/code/vox2/Tests/Browser/Brave/input/chromium-partial-rounded-border.html": "f956ec369637833d6c7a589ffcc08619d63f97fca33e37c29ed2dcf09035ad05",
+      "/Users/alex/code/vox2/Tests/Browser/Brave/expected/chromium-partial-rounded-border.png": "dea601551d29cc12ed910f7478551ebcc1f3d179c78e618a661c383004a18752",
+      "/Users/alex/code/vox2/Tests/Browser/Brave/input/chromium-partial-rounded-border-msaa.html": "d6e3b5d92551a8642dd72d7f98fdea83fa98b95e3b9129adf86b10e8ab8c9df8",
+      "/Users/alex/code/vox2/Tests/Browser/Brave/expected/chromium-partial-rounded-border-msaa.png": "70808e84618f962a523b110f0598dae57254ee0c025928bdeb21eee94554570d"
+    },
+    "cases": [
+      {
+        "case": "svg-image-source-switch-same-size",
+        "pixel_exact": true,
+        "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/svg-image-source-switch-same-size.diff.png\n"
+      },
+      {
+        "case": "svg-gradient-in-defs-removed-repaint",
+        "pixel_exact": true,
+        "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/svg-gradient-in-defs-removed-repaint.diff.png\n"
+      },
+      {
+        "case": "svg-paint-server-hidden-inherited-style-update",
+        "pixel_exact": true,
+        "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/svg-paint-server-hidden-inherited-style-update.diff.png\n"
+      },
+      {
+        "case": "svg/gradient-stop-added",
+        "pixel_exact": true,
+        "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/svg-gradient-stop-added.diff.png\n"
+      },
+      {
+        "case": "svg/gradient-stop-color-animation",
+        "pixel_exact": true,
+        "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/svg-gradient-stop-color-animation.diff.png\n"
+      },
+      {
+        "case": "svg/gradient-stop-move-before",
+        "pixel_exact": true,
+        "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/svg-gradient-stop-move-before.diff.png\n"
+      },
+      {
+        "case": "svg/gradient-href-chain-update",
+        "pixel_exact": true,
+        "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/svg-gradient-href-chain-update.diff.png\n"
+      },
+      {
+        "case": "svg/gradient-transform-attribute-update",
+        "pixel_exact": true,
+        "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/svg-gradient-transform-attribute-update.diff.png\n"
+      },
+      {
+        "case": "svg/paint-server-id-collision",
+        "pixel_exact": true,
+        "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/svg-paint-server-id-collision.diff.png\n"
+      },
+      {
+        "case": "svg/paint-server-html-id-collision",
+        "pixel_exact": true,
+        "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/svg-paint-server-html-id-collision.diff.png\n"
+      },
+      {
+        "case": "chromium-partial-rounded-border",
+        "pixel_exact": true,
+        "diff_output": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/chromium-partial-rounded-border.diff.png\n"
+      },
+      {
+        "case": "chromium-partial-rounded-border-msaa",
+        "pixel_exact": true,
+        "diff_output": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-dawn-shared/visual-production/chromium-partial-rounded-border-msaa.diff.png\n"
+      }
+    ],
+    "artifact": {
+      "path": "Build/reddit-comment-memory-20261103-dawn-shared/visual-production/result.json",
+      "sha256": "ed9852ec254799ab0028bdb47e346cf1f6cb92ed5936ac044aafb959e9e89491",
+      "bytes": 30498
+    }
+  },
+  "path_markers": {
+    "VOX_SHARED_DAWN ": 190,
+    "VOX_SHARED_YUVA ": 1
+  },
+  "provenance": [
+    {
+      "path": "Build/production-build/receipts/20261103-140008-3c10239e/frozen-compile.json",
+      "sha256": "59d9f10a19919ac073958be58e3ff1368640b0e99587f2e26426602e051f90a4",
+      "bytes": 132277
+    },
+    {
+      "path": "Build/production-build/receipts/20261103-140008-3c10239e/inputs-before.json",
+      "sha256": "ea99df4596bd75bd75523db0b27632b2b4b3124c7c0456a7caaeb0de540cb179",
+      "bytes": 258
+    },
+    {
+      "path": "Build/production-build/receipts/20261103-140008-3c10239e/build.log",
+      "sha256": "77d78d129209eacdb8b572a329f2bb148b9a637e830433da36c9be104d4bcefe",
+      "bytes": 21530
+    }
+  ],
+  "live": {
+    "http_status": 403,
+    "artifacts": [
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/live-direct.status",
+        "sha256": "97a58cc66d1cd6b51466af8ed52d6a38053b5572fee09a0ae8859c26b82bdf67",
+        "bytes": 4
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/live-direct.headers",
+        "sha256": "e3df3f88298d7680c8d8d235a69e72f0fea1e0b0dd9653daa27a410512ffbd2b",
+        "bytes": 1131
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/live-direct.body",
+        "sha256": "90c3f23a25e3c0b8617a7b1ed41809ee9a48126a8189154dfb2414741a7319f5",
+        "bytes": 1522
+      }
+    ]
+  },
+  "guards": {
+    "production-65-guard.json": {
+      "command": [
+        "python3",
+        "Build/reddit-comment-memory-20261103-dawn-shared/page.py",
+        "production-65",
+        "--seconds",
+        "65"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 581517312,
+      "elapsed_seconds": 66.003355583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-300-guard.json": {
+      "command": [
+        "python3",
+        "Build/reddit-comment-memory-20261103-dawn-shared/page.py",
+        "production-300",
+        "--seconds",
+        "300"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 603373568,
+      "elapsed_seconds": 301.576386834,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-path-guard.json": {
+      "command": [
+        "python3",
+        "Build/reddit-comment-memory-20261103-dawn-shared/page_path.py",
+        "production-path",
+        "--seconds",
+        "5"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 602669056,
+      "elapsed_seconds": 6.2239524589999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "visual-production-guard.json": {
+      "command": [
+        "python3",
+        "Build/reddit-comment-memory-20261103-dawn-shared/visual_production.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 265568256,
+      "elapsed_seconds": 56.133752417000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "limitations": [
+    "These are stock installed native libraries with fresh normal-scripted page launches. The later cached-view retirement fix ec312e50f is not established in this pinned bundle.",
+    "The 300-second observation is complete and input-stable, but memory continues growing and its launch peak exceeds 500 MB. A five-minute result does not establish a bound for longer browsing.",
+    "A separately guarded diagnostic O0 allocation sampler ran for approximately 22 seconds during the latter part of the 300-second observation. Host CPU/load/timestamps and its guard are retained; no cross-build causal memory percentage is assigned.",
+    "Physical-footprint polling is a lower-bound observation for browser/observed descendants, missing possible short spikes/helpers and excluding external services. Lifetime-peak sums are non-simultaneous envelopes, not upper bounds.",
+    "The endpoint content audit and capture follow the primary interval. Backing scale is not independently sampled in these uninstrumented trials.",
+    "All normal audits retain the same complete/visible/fully-active document, original URL/title, viewport 1708x953, 49 comments, two images, zero native errors and expected badge-fetch diagnostic.",
+    "The path-marker run is instrumented and supplies eligibility only, not memory credit.",
+    "References and tolerances are unchanged. A later completed canonical executable a602bbc5 does not invalidate these pinned, completed observations and receives no results by inference.",
+    "Live access still returns HTTP 403; fixture resources, rendered account-bearing screenshots and raw logs remain private under Build."
+  ]
+}

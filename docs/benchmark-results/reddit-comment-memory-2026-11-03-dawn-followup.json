@@ -1309,7 +1309,7 @@
   },
   "notes": [
     "The main-process graphics ledger is approximately 211 MB at the sampled peak, with approximately 306 MB internal memory; observed filter-helper footprint is additional. These injected runs are diagnostic, not acceptance.",
-    "The bitmap probe records fifteen 3416x2130 frame-bitmap requests and one opacity-canvas request. This is a request count, not simultaneous live/resident allocations. No large opacity result bitmap appears in the >=256x256 sample.",
+    "The bitmap probe records sixteen 3416x2130 frame-bitmap requests and one opacity-canvas request. This is a request count, not simultaneous live/resident allocations. No large opacity result bitmap appears in the >=256x256 sample.",
     "Queue sharing prototypes remain unshipped. The first two attempts do not find the provider; the third explicitly loads the local native library and logs a non-null factory/shared queue. Peak remains above 500 MB and no consistent improvement is established.",
     "Two expanded malloc/mmap interposers abort the browser before navigation, so their tiny sampled memory is invalid. The probes are unshipped and every failed attempt is retained.",
     "The final native bridge AddressSanitizer result is recorded separately in the main Dawn receipt.",

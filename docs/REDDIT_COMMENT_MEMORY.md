@@ -3,9 +3,17 @@
 The requested limit is **500,000,000 bytes** for
 `https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/`.
 The measured production bundles **exceed this limit**. The latest valid
-five-minute observation settles at **329,418,840 B** and peaks at **729,827,464 B**
-on executable `c9ff98ac…`. A later 65-second production observation peaks at
-**683,903,760 B** and settles at **248,580,136 B** on executable `d69e4a67…`,
+five-minute observation settles at **308,660,288 B** and peaks at **550,815,808 B**
+on executable `8f1ee6b0…`, with shared Dawn picture transport installed. A
+65-second observation of the same executable peaks at **544,181,008 B** and
+settles at **255,543,336 B**. Memory still grows while idle. All twelve canonical
+visual comparisons pass on this production bundle. The later cached-view
+retirement fix has focused and explicit-library checks but awaits installed
+production validation.
+
+The earlier five-minute `c9ff98ac…` observation settles at 329,418,840 B and
+peaks at 729,827,464 B. A 65-second production observation peaks at
+683,903,760 B and settles at 248,580,136 B on executable `d69e4a67…`,
 using the cache-recovered fixture described below. A twenty-second observation
 on `98dfbb7c…` peaks at **639,863,520 B** and settles at **236,554,232 B**;
 twelve canonical visual comparisons pass on both builds. An attempted five-minute
@@ -1356,7 +1364,7 @@ artifact hashes under `Build/reddit-comment-memory-20261103-dawn-shared/`.
 Post-fix injected diagnostics observe about 211 MB in the main process's
 graphics ledger and 306 MB internal memory at its sampled peak, with the filter
 helper additional. Internal memory falls toward 237 MB after initial painting.
-A bitmap probe records fifteen 3416 × 2130 frame-bitmap requests and one
+A bitmap probe records sixteen 3416 × 2130 frame-bitmap requests and one
 opacity-canvas request; this is not a count of simultaneously live/resident
 buffers. It finds no large opacity-result bitmap in its sampled size range, so
 tiling that result has no demonstrated benefit for this page.
@@ -1369,3 +1377,64 @@ opacity policy or allocator-probe code is shipped. The
 [diagnostic follow-up receipt](benchmark-results/reddit-comment-memory-2026-11-03-dawn-followup.json)
 retains these attempts and the remaining memory attribution; the shared
 production build is still pending.
+
+## Installed shared-Dawn production validation
+
+Completed executable `8f1ee6b0…`, receipt `20261103-140008-3c10239e`, contains
+the shared-YUV and shared-Dawn implementations. The Dawn dependency sources
+match both authenticated buffer patches. A separate fresh diagnostic records
+190 shared-Dawn allocation markers and one three-plane YUV marker on the real
+replayed page; its memory readings receive no optimization credit.
+
+| Fresh stock-production run | Observed simultaneous peak (B) | Final two-second median (B) |
+| --- | ---: | ---: |
+| 65 seconds | 544,181,008 | 255,543,336 |
+| 300 seconds | 550,815,808 | 308,660,288 |
+
+Both runs retain unchanged executable/library/fixture identities, exit normally
+with successful guards, and pass the complete normal author-script/content
+audit. Auxiliary sums of observed per-task lifetime peaks are non-simultaneous
+envelopes, not coverage bounds. All twelve canonical visual comparisons are
+pixel-exact on the installed libraries with unchanged references and tolerances.
+A separately guarded O0 allocation diagnostic overlaps about 22 seconds of the
+five-minute interval; its timestamps and host contention remain recorded.
+
+The five-minute observation still grows in steps and establishes no longer-term
+bound. Its startup peak remains above 500,000,000 B. A newer completed
+`a602bbc5…` bundle receives no measurements by inference. A fresh direct live
+request returns HTTP 403. The
+[installed-production receipt](benchmark-results/reddit-comment-memory-2026-11-03-dawn-production.json)
+pins both valid runs, path eligibility, visual checks, actual exits and private
+artifact hashes. The later retirement fix below is not validated by these runs.
+
+## Retiring imported allocations despite cached views
+
+Commit `ec312e50f` explicitly destroys an imported Dawn texture after its owner
+ends access. Dawn caches can retain texture views after Skia releases the
+texture; dropping bridge references alone leaves their IOSurfaces allocated.
+Destruction invalidates those stale views and releases their native allocations.
+
+A new regression holds sixteen views of retired 1024 × 1024 textures. The
+pre-fix control fails its 16 MiB retention guard with **67,141,680 B** growth;
+the fixed run reports **zero** growth. All 104 existing exact comparisons and
+the isolated 64 MiB reduction guard still pass, with zero Dawn errors. The same
+checks pass bridge AddressSanitizer and Metal API validation; the latter reports
+196,608 B retirement growth. Archives remain uninstrumented and preserve their
+release ABI, as described above.
+
+Two alternating explicit-library pairs on `8f1ee6b0…` observe control peaks
+547,916,560/549,817,152 B and fixed peaks 545,590,008/546,835,240 B. These small
+page differences do not establish a substantial page-level improvement. All
+normal script/content/identity checks pass. Twelve further canonical candidate
+visual comparisons are pixel-exact. Installed-production validation of this
+follow-up remains pending, and **the 500,000,000 B peak cap remains open**.
+
+A separate allocation sampler built from the completed compiler input samples
+7.2 MB across resettable native replay work over its diagnostic interval. That
+does not support treating replay scratch as the remaining large startup cost.
+The flat O0 executable uses different filter-worker startup and receives no
+browser-memory or performance credit. The
+[view-retirement receipt](benchmark-results/reddit-comment-memory-2026-11-03-imported-view-retirement.json)
+records the expected failing control, final checks, matched page attempts,
+sanitizer scope and native-library identities. Raw evidence remains private
+under `Build/reddit-comment-memory-20261103-dawn-shared/`.
