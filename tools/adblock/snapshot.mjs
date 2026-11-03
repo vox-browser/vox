@@ -1,4 +1,5 @@
 import { packedArray, packedMap, readPackedValue, encodePackedTable } from './lazy_snapshot.mjs';
+import { classicScript } from './classic_script.mjs';
 
 // Preserve uBO's engine selfies, loading large typed arrays as native bytes and
 // parsing metadata with JSON.parse rather than interpreting giant JS literals.
@@ -77,7 +78,8 @@ export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuc
     const metadata = JSON.stringify(encode(snapshot, 'snapshot')).replace(/[\u007F-\uFFFF]/g, character =>
         `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
     let suffixReader = '';
-    for (const [name, value] of [['publicSuffixText',publicSuffixText],['parserSource',parserSource],['builtinScriptletsSource',builtinScriptletsSource]]) {
+    for (const [name, input] of [['publicSuffixText',publicSuffixText],['parserSource',parserSource],['builtinScriptletsSource',builtinScriptletsSource]]) {
+        const value = name.endsWith('Source') && typeof input === 'string' ? classicScript(input) : input;
         if (value === undefined) continue;
         const table = encodePackedTable([value], 1), offset = byteLength;
         chunks.push(table); byteLength += table.length;
