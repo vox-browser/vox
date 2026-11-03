@@ -15,6 +15,7 @@
 #include "native_gradient_visibility.h"
 #include "native_chromium_image_decode_cache.h"
 #include "native_picture_typeface_cache.h"
+#include "native_variable_font_descriptor.h"
 #include "native_graphite_solid_rect.h"
 #include "native_solid_svg_polygons.h"
 #include "native_plain_rect_raster.h"
@@ -1245,6 +1246,8 @@ extern "C" int ladybird_v_skia_register_system_face(char const* key, char const*
             break;
         }
     }
+    if (!selected)
+        selected = native_copy_variable_font_descriptor(descriptors, wanted, axis_tags, axis_count);
     if (wanted)
         CFRelease(wanted);
     if (descriptors)
