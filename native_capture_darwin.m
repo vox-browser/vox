@@ -24,6 +24,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 }
 
 #include "native_layer_presentation_darwin.h"
+#include "native_presented_capture_darwin.h"
 #include "native_scroll_raster_darwin.h"
 #include "native_stationary_raster_darwin.h"
 #include "native_deferred_font_darwin.h"
@@ -774,8 +775,10 @@ void native_cache_browser_snapshot(string path_value) {
 				            bitsPerPixel:32];
 			[bitmap setSize:bounds.size];
 		}
-		native_cache_display_in_bitmap(view, bounds, bitmap);
-		NSBitmapImageRep *encoded_bitmap =
+		NSBitmapImageRep *presented = native_presented_capture_bitmap(view, bounds, bitmap.pixelsWide, bitmap.pixelsHigh);
+		if (presented) bitmap = presented;
+		else native_cache_display_in_bitmap(view, bounds, bitmap);
+		NSBitmapImageRep *encoded_bitmap = presented ?:
 		    [bitmap bitmapImageRepByConvertingToColorSpace:[NSColorSpace sRGBColorSpace]
 		                                  renderingIntent:NSColorRenderingIntentRelativeColorimetric];
 		if (encoded_bitmap == nil) {
@@ -6506,12 +6509,14 @@ static void native_schedule_screenshot(string output_path, BOOL document_only,
 			[NSApp terminate:nil];
 			return;
 		}
-		native_cache_display_in_bitmap(view, bounds, bitmap);
+		NSBitmapImageRep *presented = native_presented_capture_bitmap(view, bounds, pixels_wide, pixels_high);
+		if (presented) bitmap = presented;
+		else native_cache_display_in_bitmap(view, bounds, bitmap);
 		native_capture_instruction_checkpoint("capture_cached");
 		// The backing store follows the display profile (usually Display P3 on modern Macs).
 		// Normalize captures to sRGB so pixel comparisons do not report a page-sized color-space
 		// delta against Ladybird's untagged screenshot output.
-		NSBitmapImageRep *encodedBitmap =
+		NSBitmapImageRep *encodedBitmap = presented ?:
 		    [bitmap bitmapImageRepByConvertingToColorSpace:[NSColorSpace sRGBColorSpace]
 		                                  renderingIntent:NSColorRenderingIntentRelativeColorimetric];
 		if (encodedBitmap == nil) {

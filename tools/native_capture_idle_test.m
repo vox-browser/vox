@@ -5,6 +5,7 @@
 #include <string.h>
 #include "native_layer_presentation_darwin.h"
 #include "native_snapshot_png_darwin.h"
+#include "native_presented_capture_darwin.h"
 
 static unsigned termination_calls;
 @interface CaptureApplication : NSApplication
@@ -97,6 +98,9 @@ static void pump_for(double seconds) {
 int main(int argc, char **argv) {
     assert(argc == 2);
     @autoreleasepool {
+        // This suite exercises the ordinary subtree-capture scheduling path.
+        // native_presented_capture_test.m covers the direct immutable-frame path.
+        setenv("VOX_DISABLE_PRESENTED_CAPTURE", "1", 1);
         [CaptureApplication sharedApplication];
         assert([NSApp isKindOfClass:CaptureApplication.class]);
         assert(NSApp.windows.count == 0);
