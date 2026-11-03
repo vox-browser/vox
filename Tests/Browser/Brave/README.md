@@ -10,6 +10,14 @@ containing `f447b8603`. The installed `f8618e0d…` bundle passes with zero
 differing pixels and stable bundle/fixture identities; see
 [the ChatGPT report](../../../docs/CHATGPT_BRAVE_PARITY.md).
 
+`chromium-sticky-raster-space` keeps a rounded message and a distant vector
+inside the same horizontally translated sticky picture. Two Brave captures
+agree at 1024×768, scale 1. The installed `10781424…` bundle is pixel-exact;
+the retained stages have 27 and then two differing pixels. Run
+`python3 tools/sticky_raster_pixels_test.py`. The planner and native GPU tests
+cover live coordinates, sparse contents and layer-local rounded geometry.
+See [the ChatGPT report](../../../docs/CHATGPT_BRAVE_PARITY.md) for evidence.
+
 The [forum/news catalog](forum-news.json) has 15 entries. The five new guest-page
 archives (TechCrunch, Engadget, The Register, Slate and WIRED) retain full-uBO
 source evidence and original encoded response bodies. Their strict pixel checks

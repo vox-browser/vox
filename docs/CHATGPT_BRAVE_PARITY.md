@@ -1,24 +1,23 @@
 # ChatGPT rendering and startup against Brave
 
-The production build containing the fixed-container, inherited SVG-style and
-fractional-shadow fixes now completes the guest ChatGPT send/reply workflow
-and matches the retained Brave conversation reference exactly at 1024×768,
-scale 1. The check uses the original captured frontend and static assets;
-subsequent backend requests remain live through SOCKS. Native typing preserves
-the exact prompt and Send produces “Vox ready.” with empty error collections.
+The production browser completes the guest ChatGPT send/reply workflow from
+an empty initial cookie jar, using the original archived frontend/static
+resources and live backend requests through SOCKS. The current full scripted
+conversation differs from the matched Brave control at 161 pixels, with
+maximum channel error two. Current live pixel parity remains open.
 
-A newer fresh Brave session differs from that retained reference by 27 pixels,
-all at the blue user-message bubble's rounded edges. Vox still matches the
-retained reference exactly and differs from the newer session at those same 27
-pixels, with maximum channel error two. Replaying the newer homepage in Brave
-reproduces its newer pixels. Current-session pixel parity therefore remains
-open; no reference or tolerance has been changed.
+The full frozen conversation is pixel-exact at 1024×768, scale 1. The strict
+sticky-message/vector regression also now has zero differing pixels, after
+separate fixes for live sticky coordinates and recorded rounded geometry.
+Vox additionally honors macOS Reduce Motion in both CSS and `matchMedia`.
 
-Earlier fully live empty-profile checks, Cloudflare failures and native input
-failures remain documented below. The user authorized fresh sessions on
-2026-11-02. The final continuation records the newly published build and its
-focused conformance checks; earlier sections retain their historical build and
-network conditions.
+Earlier fully live and archived-front-end checks, exact references, Cloudflare
+failures and native input failures remain documented below. Fresh sessions are
+authorized. Imported Brave session cookies produce an unusual-activity backend
+response in two later native attempts; the empty-cookie native attempt receives
+the exact reply without errors. No backend response is seeded for that check.
+The latest continuation preserves all failures and separates functional, frozen
+rendering and live pixel results.
 
 ## Captured workload
 
@@ -2214,3 +2213,132 @@ ordinary sidebar SVG controls also remain exact. These controls do not
 establish a renderer fix for the newer full-page edge; no speculative paint
 policy change is credited. Full current-session parity and broader ChatGPT
 feature coverage remain open.
+
+## Live sticky coordinates and complete message pictures
+
+`b8bb7b560` fixes a generic coordinate-space error exposed by
+`bubble-reduction-6/`. The retained box transform omits the live sticky offset,
+while its paint command and viewport clip include it. The old planner therefore
+clips a visible SVG against untranslated bounds and chooses the message
+picture's origin before the sticky translation. The reduction reproduces the
+same 27 rounded-edge differences as the newer full-page reference.
+
+Sticky ink and its container now use the live scroll-property coordinate space.
+Compatible sparse descendants of the same promoted sticky container retain one
+picture, while intervening overlap barriers and distinct property states still
+separate pictures. The new focused tests pass in all three GC modes; the
+existing raster-layer, fixed-owner, paint-metadata and partial-sticky-bound
+checks also pass. `sticky-raster-focused-3/` and `sticky-raster-bounds-guard/`
+retain the commands and stable inputs. The first test attempts are preserved:
+one selected a serialized color incorrectly, and the next exposed the separate
+sparse-picture issue before its fix.
+
+The durable regression is `chromium-sticky-raster-space`, with
+`tools/sticky_raster_pixels_test.py`. Two fresh Brave captures agree exactly.
+The old production bundle has 27 differing pixels. The first installed fix
+reduces that to two, still failing the strict gate; both attempts remain in
+`sticky-raster-browser-before/` and `sticky-raster-browser-after/`.
+
+## Layer-local rounded geometry
+
+`fd12fa62a` removes the final two reduced-scene differences. Recorded rounded
+rectangles previously subtracted the compositor origin from untranslated
+layout coordinates while leaving an integral sticky translation in their
+matrix. The result has the correct mathematical device position but the wrong
+local geometry for GPU edge rounding. Translation-only integral offsets now
+enter the rectangle and its underlay before the layer origin is subtracted;
+the matrix retains the page offset. Fractional and non-translation matrices
+keep their existing path.
+
+`bubble-geometry-1/` verifies that this equivalent representation alone makes
+the reduced browser scene exact. Separate raster-height and floating-color
+controls leave the two differences unchanged. The native regression compares
+equivalent translations in multisampled vector pictures at scales one and two,
+with underlays and root controls. Three cases fail on the old installed native
+library; all eight cases are exact after the fix. Its first compile failure
+and earlier control lacking a nonconvex path remain retained in
+`sticky-rrect-native-1/` and `sticky-rrect-native-2/`; the effective regression
+is `sticky-rrect-native-3/`.
+
+The related rounded-parts, underlay-color and shadow-color checks pass, including
+864 rounded GPU comparisons and all existing typed-color/reset controls.
+`sticky-rrect-dependencies-2/` verifies 183 actual compiler dependencies and
+runtime inputs remain unchanged across the four native test binaries. The
+preceding dependency run detects a concurrent edit to
+`native_solid_svg_polygons.h` and is retained as unstable. Only the rounded
+geometry hunk is committed from the shared native source file; the unrelated
+SVG optimization remains with its owner.
+
+The installed executable
+`107814245c9defc216e452388949a272894fd5a1b84ef4b8e53531ec7fcdb12f`
+passes the strict browser regression with zero differing pixels.
+`sticky-raster-browser-final/` pins its executable/native resources and the
+unchanged Brave fixture/reference. `conformance-final-painter-1/` passes all
+eleven existing smoke cases and all nine image/SVG mutation reftests with
+stable inputs and identities. No reference or tolerance changes.
+
+## System Reduce Motion
+
+`07169af78` connects macOS's native Reduce Motion preference to the owning
+Page, Document, CSS media evaluation and window media queries. It reuses the
+PageClient's existing motion preference and invalidates attached style/media
+state only when the preference changes. Detached documents retain their
+no-preference default. The native addition reads the operating-system setting;
+application UI policy remains in V.
+
+The host has Reduce Motion enabled. Brave consequently suppresses ChatGPT's
+message-row animation, while the earlier native capture retains its identity
+transform. `reduced-motion-browser-before/` proves the mismatch in both the
+script query and computed CSS color, with empty errors and 786,432 differing
+pixels. `reduced-motion-browser-after/` records matching true queries, matching
+CSS and zero differing pixels on both native and Brave. Inputs and executable
+identities remain stable.
+
+The new Page/media tests pass in default, no-GC and production prealloc modes.
+The existing reduced-transparency checks still pass, and the native integration
+test agrees with both NSWorkspace accessibility preferences.
+`reduced-motion-focused/` and `reduced-motion-native/` retain the guarded checks.
+
+## Fresh session 14 and clean native session 16
+
+`brave-fresh-14/` starts a new private Brave session through SOCKS. It downloads
+the homepage once, verifies all 410 captured response bodies and receives the
+exact live reply without runtime exceptions. The merged archive has 618
+verified original responses. Its PNG is byte-identical to the retained
+`74279544…` reference. The additional replayed `brave-frozen-15/` conversation
+produces the other retained rounded-edge pattern, differing by 27 pixels.
+Normal captures of the same frontend can therefore produce both edge patterns;
+neither reference has been replaced.
+
+`production-current-typing-7/` retains a native attempt whose bundle changes
+and whose backend returns unusual activity. `production-motion-typing-14/`
+fails before browser launch because the prepared merged manifest lacks its
+seal; that preparation error is corrected and retained. The next attempt,
+`production-motion-typing-14-2/`, has stable identities and empty native/script
+errors but receives the same unusual-activity application response. These
+attempts import the captured Brave cookies and receive no functional credit.
+
+`brave-clean-16/` and `production-clean-16/` instead start with empty cookie
+jars against the same original session-14 homepage/static resources. Both
+receive the exact live reply. The native check verifies readiness before
+separate character input and Send after one second, reaches a conversation URL,
+and records empty native/script errors, normal browser/guard exits and stable
+inputs/identities. Its sampled process-tree RSS peak is 2,700,574,720 bytes.
+Backend responses remain live through SOCKS and are never seeded into the
+native resource cache. Cross-browser cookie import is unnecessary for this
+successful native session.
+
+The native live PNG has 161 differing pixels against the matched clean Brave
+control, maximum channel error two: 76 in the user bubble and 85 in the reply
+text. This remains a failing live pixel result. The read-only runtime/layer
+diagnostic is separate from this uninstrumented acceptance attempt.
+
+`brave-frozen-15/frozen.html` preserves the actual post-conversation DOM while
+removing scripts. `frozen-conversation-15-final/` renders it in the installed
+native browser against the same static resources, with no forwarding. It
+matches the captured live Brave document exactly: zero differing pixels and
+zero channel error, correct prompt/reply content, empty error collections and
+stable inputs/identities. This establishes full frozen-page rendering parity;
+it does not replace the live scripted pixel gate. The capture helper's inherited
+session-number label is corrected in `brave-frozen-15/route-provenance-note.json`;
+the route receipt and pinned inputs identify session 14 without changing bytes.
