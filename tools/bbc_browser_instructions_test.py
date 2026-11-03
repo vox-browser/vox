@@ -852,6 +852,25 @@ class BBCInstructionTests(unittest.TestCase):
                 run_trial('control', 'same-app', 'control', args)
         self.assertIs(args.vox_environment, environment)
 
+    def test_dirty_stylesheet_traversal_control_is_isolated_and_restored_after_failure(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_retain_dirty_stylesheet_traversal=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_RETAIN_DIRTY_STYLESHEET_TRAVERSAL='1')),
+                               ('vox', environment), ('brave', environment)])
+        self.assertIs(args.vox_environment, environment)
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
+
     def test_image_attribute_source_parse_control_is_isolated_and_restored_after_failure(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
