@@ -75,6 +75,21 @@ fn (mut app BrowserApp) bookmark_favicon_image(address string) ?&gg.Image {
 	return image
 }
 
+// Encoded bytes of an icon that bookmark_favicon_image already decoded: the
+// retained response body for a remote icon and the decoded data URL for a
+// bundled one. Exporting never fetches. The ordinary image path revalidates a
+// redirected response with a synchronous request, and a request issued inside
+// a temporary thread scratch retires its HTTP/2 stream under the detached
+// timeout watchdog that keeps polling it after the scratch finishes.
+fn (app &BrowserApp) bookmark_favicon_bytes(address string) ?[]u8 {
+	if address.starts_with('http://') || address.starts_with('https://') {
+		resource := app.resource_cache[address] or { return none }
+		if resource.error != '' || resource.adblock_replacement { return none }
+		return resource.body.bytes()
+	}
+	return app.background_image_bytes(address) or { return none }
+}
+
 fn (app &BrowserApp) cached_browser_bookmark_favicons() []int {
 	// Settings snapshots and a changed icon list are temporary. Cache writes
 	// below explicitly enter persistent storage before publishing their bytes.

@@ -36,7 +36,7 @@ fn (app &BrowserApp) browser_bookmark_icon_path(address string, image_id int) st
 	if image_id < 0 { return '' }
 	scratch := platform.begin_thread_scratch('bookmark icon export')
 	defer { scratch.finish() }
-	bytes := app.background_image_bytes(app.cached_browser_bookmark_favicon_url(address)) or { return '' }
+	bytes := app.bookmark_favicon_bytes(app.cached_browser_bookmark_favicon_url(address)) or { return '' }
 	return app.browser_ui_icon_path(image_id, bytes)
 }
 

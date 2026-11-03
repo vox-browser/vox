@@ -141,6 +141,38 @@ fn test_redirected_remote_favicon_decodes_without_resynchronous_fetch() {
 	assert second.bookmark_favicons == first.bookmark_favicons
 }
 
+// Exporting a decoded icon for the UI reads the retained bytes directly. A
+// redirected response must not be revalidated with a blocking request: the
+// export runs inside a temporary scratch, and a request issued there leaves
+// its HTTP/2 timeout watchdog polling retired memory.
+fn test_bookmark_icon_export_uses_retained_bytes_without_refetch() {
+	mut app := bookmark_favicon_app()
+	defer { app.document.finalize() }
+	app.bookmarks.add('https://redirect.example/path', 'Redirect')!
+	app.bookmarks.toggle_visible()!
+	address := 'https://redirect.example/favicon.ico'
+	body := base64.decode(bookmark_favicon_png).bytestr()
+	app.resource_cache[address] = PreloadedResource{
+		url:       address
+		final_url: 'https://cdn.redirect.example/favicon.ico'
+		body:      body
+	}
+	bytes := app.bookmark_favicon_bytes(address) or { panic('retained icon bytes missing') }
+	assert bytes.bytestr() == body
+	assert address !in app.background_resource_pending
+	state := app.browser_chrome_state(800, 600)
+	assert state.bookmark_favicons.len == 1 && state.bookmark_favicons[0] >= 0
+	path := app.browser_bookmark_icon_path('https://redirect.example/path', state.bookmark_favicons[0])
+	assert path.ends_with('.png') && os.is_file(path)
+	bitmap := browser_decode_raster_image_bytes(os.read_bytes(path)!)!
+	assert bitmap.width == 1 && bitmap.height == 1
+	assert address !in app.background_resource_pending
+	missing := app.bookmark_favicon_bytes('https://missing.example/favicon.ico') or { []u8{} }
+	assert missing.len == 0
+	bundled := app.bookmark_favicon_bytes('data:image/png;base64,${bookmark_favicon_png}') or { panic('bundled icon bytes missing') }
+	assert bundled.bytestr() == body
+}
+
 // An errored favicon response is remembered as absent so the chrome neither
 // re-requests it nor retries a synchronous fetch on later frames.
 fn test_errored_remote_favicon_is_remembered_absent_without_refetch() {
