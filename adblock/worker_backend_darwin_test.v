@@ -275,6 +275,14 @@ fn test_worker_self_path_and_bundle_lookup_ignore_injected_dyld_image_order() {
 
 fn test_bundled_worker_runs_the_complete_engine_in_the_selected_child() {
 	_ = release_unused_engine()
+	// This case deliberately corrupts packaged bytes. Diagnostic asset selection
+	// from the surrounding suite must not bypass that package integrity check.
+	asset_override := os.getenv_opt('VOX_ADBLOCK_ENGINE_ASSETS')
+	os.unsetenv('VOX_ADBLOCK_ENGINE_ASSETS')
+	defer {
+		if selected := asset_override { os.setenv('VOX_ADBLOCK_ENGINE_ASSETS', selected, true) }
+		else { os.unsetenv('VOX_ADBLOCK_ENGINE_ASSETS') }
+	}
 	root := os.join_path(os.temp_dir(), 'vox real bundled worker ${os.getpid()} ${time.sys_mono_now()}')
 	directory := os.join_path(root, 'Vox.app', 'Contents', 'MacOS')
 	os.mkdir_all(directory)!
