@@ -9,7 +9,6 @@
 #include "include/core/SkSerialProcs.h"
 #include "native_picture_typeface_cache.h"
 #include "native_picture_image_transport.h"
-#include "native_picture_raster_cache.h"
 #include "include/core/SkSurface.h"
 #include "include/gpu/graphite/Context.h"
 #include "include/gpu/graphite/ContextOptions.h"
@@ -33,7 +32,6 @@
 namespace {
 std::mutex gpu_mutex;
 VoxPictureTypefaceCache typeface_cache;
-VoxPictureRasterCache picture_raster_cache;
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 bool gpu_context_attempted = false;
 std::chrono::steady_clock::time_point gpu_context_last_use;
@@ -167,18 +165,14 @@ private:
 };
 
 sk_sp<SkImage> decode_picture_image(void const* bytes, size_t size,
-    std::optional<SkAlphaType>, void* cacheable)
+    std::optional<SkAlphaType>, void*)
 {
-    auto image = vox_decode_picture_image(bytes, size);
-    if (!image && cacheable) *static_cast<bool*>(cacheable) = false;
-    return image;
+    return vox_decode_picture_image(bytes, size);
 }
 
-sk_sp<SkTypeface> decode_picture_typeface(SkStream& stream, void* cacheable)
+sk_sp<SkTypeface> decode_picture_typeface(SkStream& stream, void*)
 {
-    auto typeface = typeface_cache.decode_stream(stream);
-    if (!typeface && cacheable) *static_cast<bool*>(cacheable) = false;
-    return typeface;
+    return typeface_cache.decode_stream(stream);
 }
 }
 
@@ -198,27 +192,12 @@ int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int heig
     for (int index = 0; index < 9; ++index)
         if (!std::isfinite(matrix[index])) return 0;
     std::lock_guard lock(gpu_mutex);
-    bool cacheable = true;
     SkDeserialProcs procs;
     procs.fImageProc = decode_picture_image;
-    procs.fImageCtx = &cacheable;
     procs.fTypefaceStreamProc = decode_picture_typeface;
-    procs.fTypefaceCtx = &cacheable;
     procs.fAllowSkSL = false;
     auto picture = SkPicture::MakeFromData(bytes, size, &procs);
     if (!picture) return 0;
-    VoxGraphitePictureRegion region {};
-    region.output = {x, y, region_width, region_height, pitch, pixels};
-    region.bytes = bytes; region.size = size;
-    std::copy_n(matrix, 9, region.matrix);
-    // Decode first: missing resources and retired tokens keep their ordinary
-    // decode/fallback behavior rather than replaying pixels from a valid lease.
-    auto cached = !cacheable || std::getenv("VOX_DISABLE_PICTURE_RASTER_CACHE") ? VoxPictureRasterCache::Request {}
-        : picture_raster_cache.prepare(&region, 1, width, height, false);
-    if (cached.hit) {
-        if (std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS")) std::fprintf(stderr, "VOX_PICTURE_RASTER_CACHE hit=1 jobs=1\n");
-        return 1;
-    }
     auto* gpu = context();
     if (!gpu) return 0;
     skgpu::graphite::RecorderOptions options;
@@ -251,7 +230,6 @@ int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int heig
         std::memcpy(pixels + size_t(row) * pitch,
             static_cast<uint8_t const*>(result->data(0)) + size_t(row) * result->rowBytes(0),
             size_t(region_width) * 4);
-    picture_raster_cache.finish(std::move(cached), &region, 1);
     return 1;
 }
 
@@ -282,12 +260,9 @@ static int draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
         if (total > 8 * 1024 * 1024) return 0;
     }
     std::lock_guard lock(gpu_mutex);
-    bool cacheable = true;
     SkDeserialProcs procs;
     procs.fImageProc = decode_picture_image;
-    procs.fImageCtx = &cacheable;
     procs.fTypefaceStreamProc = decode_picture_typeface;
-    procs.fTypefaceCtx = &cacheable;
     procs.fAllowSkSL = false;
     std::vector<sk_sp<SkPicture>> pictures(count);
     size_t encoded_bytes = 0;
@@ -303,12 +278,6 @@ static int draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
         if (encoded_bytes > 64 * 1024 * 1024) return 0;
         pictures[i] = SkPicture::MakeFromData(regions[i].bytes, regions[i].size, &procs);
         if (!pictures[i]) return 0;
-    }
-    auto cached = !cacheable || std::getenv("VOX_DISABLE_PICTURE_RASTER_CACHE") ? VoxPictureRasterCache::Request {}
-        : picture_raster_cache.prepare(regions, count, width, height, has_background);
-    if (cached.hit) {
-        if (std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS")) std::fprintf(stderr, "VOX_PICTURE_RASTER_CACHE hit=1 jobs=%d\n", count);
-        return 1;
     }
     auto* gpu = context();
     if (!gpu) return 0;
@@ -373,7 +342,6 @@ static int draw_picture_regions_pixels(VoxGraphitePictureRegion const* regions,
     }
     if (std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
         std::fprintf(stderr, "VOX_PICTURE_BATCH_GPU jobs=%d image_reuses=%u\n", count, provider->reuse_count());
-    picture_raster_cache.finish(std::move(cached), regions, count);
     return 1;
 }
 
@@ -411,7 +379,6 @@ void vox_graphite_picture_release_unused_graphics_memory()
     if (!pthread_main_np()) return;
     std::lock_guard lock(gpu_mutex);
     if (gpu_context) gpu_context->freeGpuResources();
-    picture_raster_cache.clear();
     typeface_cache.clear();
 }
 
