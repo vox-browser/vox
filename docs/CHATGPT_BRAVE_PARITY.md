@@ -1,32 +1,31 @@
 # ChatGPT rendering and startup against Brave
 
-The verified guest ChatGPT send/reply workflow is pixel-exact against fresh
-Brave at 1024×768, scale 1. Two ordinary live captures on recorded shared builds
-receive the exact reply with empty initial cookie jars, no runtime errors and
-zero differing pixels. The frontend/static bytes come from an unmodified
-homepage downloaded once through SOCKS; backend, identity and telemetry requests
-stay live. Full frozen conversation rendering is also exact.
+The recorded guest homepage and live ChatGPT send/reply workflow are pixel-exact
+against Brave at 1024×768, scale 1. The complete frozen homepage matches its
+unchanged original reference at zero pixels. Ordinary live captures receive the
+exact reply with empty initial native cookie jars, no runtime errors and zero
+differing pixels. Original frontend/static captures use SOCKS and are replayed;
+backend, identity and telemetry requests stay live. Authorized fresh-session
+captures and their exact request counts are recorded separately below.
 
 The latest evidence is under `Build/chatgpt-css-error-lifetime-20261102/`.
-The homepage now loads suggestion cards and their Blob-backed icons; its heading
-also uses Brave's actual variable-font instance. The matched frozen homepage has
-eight differing pixels, maximum channel error five, around the composer. Full
-homepage equality remains open. Its suggestions are randomized, so different
-ordinary card selections cannot establish a whole-page pixel comparison.
+The homepage loads suggestion cards and their Blob-backed icons, uses Brave's
+actual heading font instance, and retains the correct raster bounds and opaque
+compositor continuation around the composer. These changes remove its final
+eight differing pixels. Suggestions are randomized; the homepage comparison
+therefore uses identical original page and image bytes.
 
-The historical ordinary exact conversation builds are `a829ba36…` and
-`317f313a…`. A later complete-archive run succeeds functionally but misses the
-response sprite after a default-credential Fetch bypasses the static byte cache
-and receives a live 403. The cache fix has focused coverage; one subsequent
-ordinary launch hits a layout re-entry assertion. A debugger launch loads the
-sprite and produces an exact conversation but receives no ordinary-run parity
-credit. Further live validation is still required.
+The response sprite now loads through the public immutable cache adapter for
+ordinary default-credential Fetch. Subsequent ordinary live runs obtain real
+replies and exact conversation captures. The earlier missing-sprite result,
+layout re-entry assertion, debugger-only result and service unusual-activity
+response remain in the evidence; they are not silently retried or reclassified.
 
-All eleven screenshot smoke checks and nine exact SVG mutation guards pass on
-`b2c78a1c…`. Earlier failures, identities, references and protocol corrections
-remain below. These are rendering/functionality checks, not performance claims.
-The checks cover the recorded guest workflow and viewport, rather than all
-ChatGPT features.
+All eleven screenshot smoke checks and nine exact SVG mutation guards pass in
+the stable `production-conformance-final-84/` batch on `92387cec…`. Earlier
+failures, identities, references and protocol corrections remain below. These
+checks cover rendering and functionality for the recorded guest workflow and
+viewport; they supply no performance claim.
 
 ## Captured workload
 
@@ -2826,3 +2825,129 @@ allocator claim; their raw results remain intact.
 native rounded-rectangle test. All sixteen comparisons are exact, with 185
 source/library dependencies stable (`fractional-sticky-rrect-final/`). This is
 regression coverage, not a claimed fix for the remaining composer pixels.
+
+## Exact homepage continuation
+
+`aa9bdab1b` delivers native image load/error events as owning-document tasks.
+The compact bridge previously fabricated `load` both when assigning `src` and
+when registering a listener on an initially complete image. A listener that
+revoked its Blob URL could therefore destroy the resource before native loading.
+Image wrappers now use the native EventTarget; queued events also reject a
+superseded request, changed URL/state, adoption or an inactive document.
+The new tests cover HTTPS and file origins, actual trusted events, setter/event
+ordering, revocation, listener removal, `once`, and replacement by an empty
+source. `image-event-task-focused-5/` passes in default, no-GC and verified bounded
+prealloc modes. All five image regressions pass with stable inputs in
+`image-event-task-regressions-3/`. The production Blob PNG/SVG reftest is exact
+against both unchanged Brave and its native HTML reference
+(`native-blob-images-45/`, `production-blob-images-80/`), without reported errors.
+
+`44404a75b` fixes the disabled Send circle's four remaining pixels. Brave's
+recorded draw commands use the same rounded background and stroke as Vox.
+Independent Dawn replay of the complete recorded scene is exact
+(`brave-composer-paint-57/`, `brave-paint-replay-58/`). The scalar leaf's generic
+stroke/miter and antialias padding instead expanded its surface to 40 by 39
+pixels. Its natural enclosing 32 by 33 surface reproduces Brave exactly
+(`circle-descriptor-replay-55/`, `circle-descriptor-replay-59/`). Axis-aligned
+compound rounded strokes now retain those natural bounds. No site, coordinate
+or color selects the correction. The eight independent saveLayer comparisons
+pass at both backing scales and fractional translations. Switching GPU backends,
+paint palettes or the rounded-ring primitive did not supply the fix; those
+failed candidates remain in runs 47–54.
+
+`8c4610547` removes the plus icon's four one-level errors. The native observer
+shows it painted into an empty surface: quarter coverage becomes premultiplied
+`3,3,3,64` before meeting the white composer. Brave keeps the same path and its
+background in one parent picture. A non-composited normal-opacity child had
+incorrectly separated the parent's later paint chunks. The planner now retains
+that parent identity. Native continuation is enabled only after proving a
+complete child scope, supported bounded ink, separation from later parent ink,
+and an opaque prefix covering that later ink and its raster fringe. Coverage
+checks retain rounded corners, transforms and ancestor clips. Only this proved
+continuation paints its prefix inside the GPU picture; independent translucent
+surfaces retain their existing resolve.
+
+`atomic-opacity-layout-focused-4/` and `opaque-effect-gap-focused-final-2/` pass
+in all three memory modes, with stable relevant sources and the bounded prealloc
+allocator verified. The four existing compositor-gap, SVG-layer and text-layer
+regressions pass in `opaque-effect-gap-regressions-1/`; its only changed tracked
+input was the new test file, which none of those four targets compile. This
+over-inclusive input pin is explained in `relevant-source-stable.json` rather
+than discarded. `opaque-effect-native-final/` passes the shared-picture suite
+(including 144 existing comparisons and two new opaque-continuation cases), the
+eight compound-stroke cases, sixteen translation cases and twelve border-clip
+cases, with 187 source/library dependencies stable.
+
+The final focused prealloc browser and explicit candidate native library match
+the **unchanged complete frozen homepage at zero differing pixels and zero
+channel error** (`homepage-opaque-effect-final/`). Every original archived body,
+fixture/reference, executable and native-library identity remains pinned.
+`opaque-effect-pixel-regressions-final/` keeps ten rounded-rendering fixtures
+exact; four additional SVG/opacity fixtures are exact too. Two existing fixtures
+retain 186 and 471 differing pixels. A matched control with both new grouping and
+continuation disabled has byte-identical output, establishing no changed pixels
+for those mismatches (`opaque-effect-disabled-control-81/comparison.json`). The
+device-scale diagnostic also retains an identical existing 8,590-pixel mismatch
+in control and candidate after correcting its viewport/capture-scale protocol
+(`rounded-device-scale-regressions-63/`). None of these references is replaced.
+
+The canonical production executable
+`aca93fa23e0057135e261d3491fd6deee1d0ebef781b2f156aed00f4fd3082c8`
+and native bridge
+`b3d30c2e9625c471c9c8afd6be833247846a65386e96570f88915eb26a2c1acc`
+also match that full unchanged homepage exactly, with empty native/script errors
+and stable identities and all 834 archived response bodies
+(`production-frozen-homepage-80/`). The bundle came from receipt
+`Build/production-build/receipts/20261103-101458-3df5eaea/`; its sealed dirty inputs
+already include this implementation. The later feature commit does not imply
+that an older executable without those inputs validated it.
+
+Live-session evidence remains separate. `production-cached-sprite-43/` is an
+ordinary successful reply and exact comparison against the retained fresh-21
+reference, resolving the earlier ordinary-run validation gap. The re-entry
+assertion in run 38 is retained; no unproved assertion fix is claimed. A later
+ordinary run, `production-image-events-68/`, receives the service's visible
+unusual-activity response. `brave-fresh-70/` captures one authorized fresh browser
+session through SOCKS and obtains a real reply with no runtime exceptions.
+The frontend itself performs two document requests during that session; both
+original response hashes and the request count are retained. Nothing is silently
+described as one network request.
+
+`production-fresh-72/` uses that unmodified fresh frontend, an empty initial native
+cookie jar, native input after audited readiness, the archived static resources,
+and a live encrypted backend through SOCKS. It receives the exact reply and a
+conversation URL, has no reported errors, and matches fresh Brave at zero pixels
+on executable `8952628605d7026f7f5817a8b8149ff3cbdd0249f2402a609e2a6212c571f4d5`.
+The fresh-70 reference differs from retained fresh-21 by 409 response-control
+pixels; both references and their corresponding exact native runs are retained.
+New session data is not a replacement reference for the frozen-homepage claim.
+
+The final ordinary live run, `production-chatgpt-final-82/`, repeats the native
+Send/reply workflow on shared production executable
+`590975bd959b0889ade8b5ba711bb2297bc8423f62f9d810673bcc182881a81c`.
+Readiness, prompt, real reply and conversation URL all pass; native/script errors
+are empty, browser/guard exits are zero and all identities/inputs remain stable.
+Its full viewport matches fresh-70 Brave at **zero differing pixels and zero
+channel error**. `production-frozen-homepage-final-83/` independently matches the
+unchanged frozen homepage exactly on the same executable.
+
+`production-conformance-final-83/` passes every screenshot check, but a shared
+bundle replacement invalidates its identity cohort. That run receives no stable
+batch credit. `production-conformance-final-84/` repeats all eleven existing
+smoke checks and nine SVG mutation guards successfully on
+`92387cec83e3d3b5cf462f7e65b05f8d4978a5c6a8ec23bb2f0bc678692413db`;
+all nine SVG comparisons are exact and every identity/input sample is stable.
+A fresh frozen-homepage capture on the next available completed bundle,
+`6b29971990bdae025e55f58633868c2ef45ee4243ebcba162d2a233a0506c577`,
+is also exact with empty errors and stable inputs
+(`production-frozen-homepage-current-84/`). These individual captures retain
+their own executable and native-library identities.
+
+The final production [homepage assessment](../Build/chatgpt-css-error-lifetime-20261102/production-frozen-homepage-current-84/assessment.json),
+[live conversation comparison](../Build/chatgpt-css-error-lifetime-20261102/production-chatgpt-final-82/pixels.json),
+and [stable screenshot guards](../Build/chatgpt-css-error-lifetime-20261102/production-conformance-final-84/assessment.json)
+link the current outcome to the raw evidence. All earlier failing diagnostics
+and protocol corrections remain available. Obsolete focused-test executables
+were removed during disk pressure after recording their hashes; raw probe pixel
+buffers were gzip-compressed with verified lossless hashes. Commands, logs,
+receipts, accepted PNGs and references are preserved in the same evidence root.
