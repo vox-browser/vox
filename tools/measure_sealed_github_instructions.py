@@ -793,8 +793,8 @@ def main():
     parser.add_argument('--vox-build-protocol', type=Path, required=True)
     parser.add_argument('--vox-javascript-mode', choices=['explicit', 'default-enabled'], default='explicit',
                         help='Use default-enabled only for a verified older build that runs author scripts by default; selects JavaScriptCore explicitly. No launch probing or retries.')
-    parser.add_argument('--vox-chrome-height', type=int, default=112,
-                        help='Verified native toolbar plus status-bar height; document viewport remains 1024x768 and actual PNG/DOM dimensions must pass.')
+    parser.add_argument('--vox-chrome-height', type=int, default=84,
+                        help='Screenshot toolbar plus status-bar height (84 by default; use 112 with a visible bookmark bar). Actual PNG/DOM viewport must remain 1024x768.')
     parser.add_argument('--gc-markers', type=int, choices=[1, 2], default=1)
     parser.add_argument('--chrome-app', type=Path, required=True)
     parser.add_argument('--fixture', type=Path, required=True)
