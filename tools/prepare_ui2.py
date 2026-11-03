@@ -94,6 +94,39 @@ def main():
                 "\t\tnative_control_set_attributed_title(button_view, title, text_hex, size, bold, italic, underline)\n"
                 "\t} else if native_style && box_draws_fill(box) {",
             )
+            # Select the final bezel once. Resetting a flat native button to
+            # rounded and back makes AppKit rebuild its cell on every update.
+            text = text.replace(
+                "\tmacos.msg_void_u64(button_view, 'setBezelStyle:', 1)\n"
+                "\tmacos.msg_void_bool(button_view, 'setShowsBorderOnlyWhileMouseInside:', false)",
+                "\tapply_embedded_button_bezel(button_view, native_style && !box_draws_fill(box))",
+            ).replace(
+                "\t\tmacos.msg_void_u64(button_view, 'setBezelStyle:', 13)",
+                "\t\tif disable_embedded_button_bezel_coalescing {\n"
+                "\t\t\tmacos.msg_void_u64(button_view, 'setBezelStyle:', 13)\n\t\t}",
+            ).replace(
+                "\t\tmacos.msg_void_bool(button_view, 'setShowsBorderOnlyWhileMouseInside:', true)",
+                "\t\tif disable_embedded_button_bezel_coalescing {\n"
+                "\t\t\tmacos.msg_void_bool(button_view, 'setShowsBorderOnlyWhileMouseInside:', true)\n\t\t}",
+            )
+            text = text.replace(
+                "\tnode_kinds          map[string]Kind",
+                "\tnode_visual_inputs map[string]EmbeddedNativeVisualInputs\n"
+                "\tnode_kinds          map[string]Kind",
+            ).replace(
+                "fn render_element(parent NativeView, el Element, key string, mut active map[string]bool) NativeView {\n"
+                "\tactive[key] = true\n\tmut st := state()",
+                "fn render_element(parent NativeView, el Element, key string, mut active map[string]bool) NativeView {\n"
+                "\tactive[key] = true\n\tmut st := state()\n"
+                "\tvisual_changed := embedded_native_visual_changed(mut st, key, el)",
+            ).replace(
+                "\t\tnative_update_element(native, el, declared_text_changed, content_changed)",
+                "\t\tif visual_changed {\n"
+                "\t\t\tnative_update_element(native, el, declared_text_changed, content_changed)\n\t\t}",
+            ).replace(
+                "\t\tst.nodes.delete(key)",
+                "\t\tst.nodes.delete(key)\n\t\tst.node_visual_inputs.delete(key)",
+            )
             write_if_changed(output, text)
         elif entry.name == "ui_macos_objc_darwin.v":
             if output.is_symlink():
@@ -180,7 +213,7 @@ def main():
     adapter.mkdir(exist_ok=True)
     # Remove the previous single-control adapter when refreshing an old stage.
     (adapter / "embedded_textbox_darwin.v").unlink(missing_ok=True)
-    for name in ("embedded_browser_darwin.v", "embedded_elements_custom.c.v", "embedded_input_darwin.v", "embedded_input_darwin.h", "embedded_panel_darwin.v", "embedded_host_linux.v", "embedded_host_linux.h", "button_image.v", "button_image_darwin.v", "button_image_custom.c.v", "vector_path.v", "vector_path_darwin.v", "vector_path_darwin.h", "vector_path_custom.c.v"):
+    for name in ("embedded_browser_darwin.v", "embedded_elements_custom.c.v", "embedded_input_darwin.v", "embedded_input_darwin.h", "embedded_panel_darwin.v", "embedded_host_linux.v", "embedded_host_linux.h", "button_image.v", "button_image_darwin.v", "button_image_custom.c.v", "button_style_darwin.v", "native_visual_inputs_darwin.v", "native_visual_inputs_test.v", "vector_path.v", "vector_path_darwin.v", "vector_path_darwin.h", "vector_path_custom.c.v"):
         write_if_changed(adapter / name, (repo / "tools/ui2" / name).read_text())
     write_if_changed(
         target / "v.mod",
