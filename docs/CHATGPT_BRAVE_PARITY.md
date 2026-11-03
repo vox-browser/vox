@@ -9,7 +9,7 @@ completed shared production bundle.
 Original frontend/static captures use SOCKS and are replayed; earlier ordinary
 conversation checks kept backend, identity and telemetry requests live.
 Fresh-session captures and their request counts are recorded separately below.
-The current production guest Send/reply check also succeeds and matches Brave
+The recorded production guest Send/reply check also succeeds and matches Brave
 at zero pixels across the complete 1024×768 conversation viewport.
 
 An external cleanup removed `Build/chatgpt-css-error-lifetime-20261102/` during
@@ -28,14 +28,18 @@ Both receipts include hashes for committed PNG evidence under `parity/raw/`.
 The scale-2 follow-up remains open: the frozen 1024×768 Retina comparison
 improves from 47,705 to 31,350 differing pixels after device-aware paint
 snapping, then to 15,056 after device-aware font metrics and leading, and to
-8,611 after correcting outer-shadow geometry.
+8,611 after correcting outer-shadow geometry, then to 6,891 after device-aware
+underlines and ink skipping.
 Scale-1 parity remains exact at all three sizes. The
 [Retina receipt](parity/chatgpt-retina-20261103.json) retains both captures,
 identities, checks and rejected diagnostics; the
 [font receipt](parity/chatgpt-retina-fonts-20261103.json) and
-[shadow receipt](parity/chatgpt-retina-shadows-20261103.json) retain the later
-improvements. These are focused source-browser results, without a new
-production or live Retina claim. The shared production build remains busy.
+[shadow receipt](parity/chatgpt-retina-shadows-20261103.json) retain the earlier
+improvements. The [underline receipt](parity/chatgpt-retina-underlines-20261103.json)
+records the current source-browser result and clean worker shutdown. The latest
+completed production bundle repeats the 8,611-pixel frozen Retina baseline;
+it does not contain the underline or normal-exit fixes. The shared build
+remains busy. No new live Retina parity is claimed.
 
 The earlier continuation used `Build/chatgpt-css-error-lifetime-20261102/`.
 That homepage loaded suggestion cards and their Blob-backed icons, used Brave's
@@ -133,6 +137,58 @@ retains those input hashes, the failed batch, earlier invalid diagnostics and
 raw PNG hashes. The latest completed production bundle predates the font and
 shadow fixes; its successor is already building, so no duplicate build was
 queued. Current acceptance remains limited to the focused source browser.
+
+## November 3: device-aware underlines and clean process exit
+
+`b13a865cc` computes solid underline thickness, ascent, gap, explicit offsets
+and vertical snapping on the presenting device grid. The commands return to
+layout coordinates before replay. High-density ink skipping measures the
+glyph's actual aligned paint baseline, uses device-sized stripe insets and
+dilation, and converts glyph intercepts back to layout coordinates. Logical-grid
+painting retains its previous skip-ink path. This follows the rounding and
+stripe construction in Chromium 156's
+[decoration painter](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/third_party/blink/renderer/core/paint/decoration_line_painter.cc)
+and [text painter](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/third_party/blink/renderer/core/paint/text_painter.cc).
+
+The standalone `device-pixel-underlines` fixture improves from 1,682 differing
+pixels to two at 800×600 CSS pixels, scale 2. The remaining two pixels have
+maximum channel error 3 at the small Arial underline's right end. Its Brave
+reference remains unchanged; this is a known visual failure, not an exact pass.
+Three new tests pass under default GC, `-gc none` and bounded
+`-prealloc -gc none`. Existing underline geometry, ancestor decoration, inline
+piece, color and paint-order tests also pass.
+
+The full frozen page improves from 8,611 to 6,891 differing pixels at
+1024×768, scale 2. A directly compiled source browser with the production/UI2
+defines and `-gc none` repeats that result, retains exact scale-1 equality at
+800×600, 1024×768 and 1280×800, and passes the headless startup smoke check.
+Its executable, native libraries, resources and required inputs remain stable
+throughout each accepted capture. The sidebar remains exact; composer edges,
+cookie/footer details and small glyph differences remain open.
+
+Two earlier full-page captures encoded PNGs but left an isolated adblock worker
+alive when the parent exited. Their memory guards returned 125, so those
+launches are rejected. A read-only process trace identifies the worker role.
+`4119d0084` registers transport cleanup once before the first worker spawn, so
+normal exit closes its channels and reaps it synchronously. The existing
+lifeline still handles abrupt parent death. A native regression fails before
+the fix and passes afterward for both implicit exit and prior explicit release,
+including repeated lazy restarts. Existing transport tests pass, including
+protocol faults, partial I/O, deadlines/EINTR, SIGPIPE and child/descriptor
+cleanup. The final source browser contains the cleanup callback and exits
+cleanly for all four full-page captures.
+
+The latest completed production executable is
+`5e3e9612565b03609658ac0fcf7f5a0f144500c193da63f489a8150e3846c118`
+from receipt `20261103-145741-70f4bb98`. It repeats the frozen 8,611-pixel
+Retina baseline with correct document identity, complete readiness and no
+reported script/style errors. Its frozen compiler input includes the font
+precision path and the earlier integer shadow conversion, but neither the
+new underline path nor the exit callback. The shared build is busy, so no
+duplicate build was queued. The
+[underline receipt](parity/chatgpt-retina-underlines-20261103.json) retains that
+production result, source-browser checks, raw PNG hashes, compile failure and
+all failed lifetime attempts. It supplies no live or performance claim.
 
 ## November 3: fractional breakpoints and additional viewports
 

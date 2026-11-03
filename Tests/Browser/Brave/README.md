@@ -957,6 +957,14 @@ and validation results.
 
 `device-layout-inline-precision` checks native scale 2 fractional form-control
 heights, fixed line heights, `ex` widths, middle alignment and soft line breaks.
+`device-pixel-underlines` checks auto and explicit underline thickness,
+fractional offsets, small-font minimum thickness and ink skipping. Inline SVG
+keeps layout in CSS coordinates. Its unchanged Brave reference is a raw
+1600×1200 PNG for an 800×600 CSS viewport, `--windowed --scale 2`. The complete
+comparison improves from 1,682 differing pixels to **two**, maximum channel
+error 3, at the small Arial underline's right end. This remains a known visual
+failure; do not normalize or relax the reference.
+
 `device-pixel-shadows` retains the unchanged raw 1600×1200 Brave reference for
 an 800×600 CSS viewport, `--windowed --scale 2`. It checks fractional outer
 shadow parameters and device-snapped base boxes. The opaque sample matches
