@@ -9111,7 +9111,14 @@ pub fn (style_value StyleValue) subdivide_into_iterations(property PropertyNameA
 	}
 }
 
-pub fn (style_value StyleValue) equals(other StyleValue) bool {
+pub fn (style_value &StyleValue) equals(other &StyleValue) bool {
+	if !retain_style_value_union_comparisons {
+		return scalar_style_values_equal(style_value, other)
+	}
+	return style_values_equal_using_union(*style_value, *other)
+}
+
+fn style_values_equal_using_union(style_value StyleValue, other StyleValue) bool {
 	return match style_value {
 		ImageStyleValue {
 			if other is ImageStyleValue {
