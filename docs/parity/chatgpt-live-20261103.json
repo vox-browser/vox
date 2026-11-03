@@ -1,0 +1,352 @@
+{
+  "version": 1,
+  "feature_commit": "635ceb1b66e51006dae5774206baeb4130cb76c4",
+  "scope": "Observed guest Send/reply workflow and entire 1024x768 document viewport on the same original archived frontend; backend responses remain live. Independent conversation IDs; no signed-in, other-route, performance or universally live-navigation claim.",
+  "evidence_root": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103",
+  "brave_fresh_assessment": {
+    "identity_stable": true,
+    "fresh_document_requests": 2,
+    "response_entries": 821,
+    "captured_frozen": true,
+    "reported_errors": 0,
+    "reply_observed": true,
+    "service_blocked": false
+  },
+  "original_documents": [
+    {
+      "url": "https://chatgpt.com/",
+      "sha256": "28160b788046e9bf09bd74947100c6bcdf708036f3e51bfd388e034875b3cde6",
+      "bytes": 465903,
+      "status": 200
+    },
+    {
+      "url": "https://chatgpt.com/backend-api/sentinel/frame.html?sv=20260810913b",
+      "sha256": "7b5c59bb321989ca281938c99e65f4bfb02c5fbb5e6f2b8f70018ef850a147b8",
+      "bytes": 113,
+      "status": 200
+    }
+  ],
+  "last_original_document_sha256": "28160b788046e9bf09bd74947100c6bcdf708036f3e51bfd388e034875b3cde6",
+  "brave_identity": {
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+  },
+  "native_assessment": {
+    "exit": 0,
+    "identity_stable": true,
+    "inputs_stable": true,
+    "guard_budget": "standard 12 GiB full-application guard",
+    "backend_responses_seeded": false,
+    "initial_native_cookie_jar_empty": true,
+    "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+    "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+    "ready": "complete",
+    "fully_active": true,
+    "reply_observed": true,
+    "native_error_count": 0,
+    "javascript_diagnostic_count": 0,
+    "native_input_started": true,
+    "passed": true,
+    "conversation_route": "/uc/UUID",
+    "conversation_url_sha256": "d049998d68e4f245a008d1e54fa0876bffa8dabea92bb2bcd7360ea98022a49d"
+  },
+  "native_identity": {
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "6e79a2f8cf2e6e6dd02851b8329c32635aa8aa84c4666a4dadda3fa1517cd183",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2ec426f818871c2bde264ed444c55621a58bdcab5004e9e325f062896f1a2737",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a373609a3aad7c013bcaa73114657b9e3043740359e106b230259736d22d82af",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "d1f76ba5ef6eaa0b95dbbaa0b0e3758ec6f931014b0d31ea2a9ca95d11e67f0f",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "66a4de15d3f6bb9db6bc8e01d270430753a02af9bcdbc94d86887abeb0bc21de",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "a987fdf5fc63266a2286dccf433d33eca565adb7542fba3e9518255a93d5673c",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "ac0f8b9bba993f70840b326246b067da95bacb0164f13775bad9cc7496c71d54",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+    "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+    "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+    "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+    "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+    "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+    "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+    "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+    "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+    "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+    "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+    "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+    "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+    "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+    "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+    "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+    "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+    "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+  },
+  "production_receipt": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "6e79a2f8cf2e6e6dd02851b8329c32635aa8aa84c4666a4dadda3fa1517cd183",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-134808-a021d411/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "5e4f02c2c4fb66eacc8fc3d20abca931662b511139c1abe0a97eb8a9c0845861",
+      "dirty": true,
+      "head": "d71d992a48ef6610189d479c00b7108f522ff1cc",
+      "repository_sha256": "c1683eaee6132d29d353d1ef5cd08fcc7c397a9b5dc7fa0a0ee62b884cf6f1e0"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "29116744e3a57d570e1159114c61a2102d2076b7091b936bb3c5d6f16bb37449",
+      "dirty": true,
+      "head": "d71d992a48ef6610189d479c00b7108f522ff1cc",
+      "repository_sha256": "690824f0afeb5aa292260dd199660cfac9d691467ae8c57d68e41933e19ce181"
+    },
+    "request": {
+      "head": "d71d992a48ef6610189d479c00b7108f522ff1cc",
+      "id": "8abb4845e9154d338adc479eb5d94e97"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "5e4f02c2c4fb66eacc8fc3d20abca931662b511139c1abe0a97eb8a9c0845861",
+      "dirty": true,
+      "head": "d71d992a48ef6610189d479c00b7108f522ff1cc",
+      "repository_sha256": "c1683eaee6132d29d353d1ef5cd08fcc7c397a9b5dc7fa0a0ee62b884cf6f1e0"
+    }
+  },
+  "native_guard": {
+    "command": [
+      "python3",
+      "-c",
+      "import os,json,sys;v=json.load(open(sys.argv[1]));os.execve(v['command'][0],v['command'],v['env'])",
+      "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/live-native-clean-20/launch.json"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 4364320768,
+    "elapsed_seconds": 121.810801875,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "brave_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-responsive-20261103/brave-fresh-service-17/run.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1579335680,
+    "elapsed_seconds": 28.770313166999998,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "pixels": {
+    "brave_sha256": "1b35a7492c394330fe9740c93304176c3160d5c77a338df5fd4b7a4e048e608c",
+    "native_sha256": "5c947e4bcd5298af91d86729eef7b0a38dfae9322671c34585dfbb02aaeff395",
+    "dimensions": [
+      1024,
+      768
+    ],
+    "native_dimensions": [
+      1024,
+      768
+    ],
+    "differing_pixels": 0,
+    "max_channel_error": 0,
+    "bounds": null,
+    "scope": "Observed real conversation after matching prompt/reply on the same archived original frontend; backend responses live in both browsers",
+    "rgba_differing_pixels": 0,
+    "rgba_max_channel_error": 0,
+    "brave_alpha_extrema": [
+      255,
+      255
+    ],
+    "native_alpha_extrema": [
+      255,
+      255
+    ]
+  },
+  "frontend_archive_manifest_sha256": "70b8092d627581be221c9047295f4533fbe77704a072edce1f7677f10281fa44",
+  "native_inputs_receipt_sha256": "bd32c2f7fc582b286c128d8f8a922a827dc1cfe1d04d50656f6046f6a2556954",
+  "input_probe": {
+    "source_sha256": "b284e47ca3ec06de00dc6a4acfd9d4dda99984143b8d742ef4835cd651c63028",
+    "binary_sha256": "6773b76d311e151a5fa26f802245073ee05a5265f73f885d5e597fccdcf468a1",
+    "policy": "Read-only readiness audit followed by direct native AppKit mouse/key events and Return. No author-script or DOM patch; screenshot-mode document explicitly active."
+  },
+  "retained_failures": {
+    "focused_three_gib_trial": {
+      "assessment": {
+        "exit": 125,
+        "identity_stable": true,
+        "inputs_stable": true,
+        "backend_responses_seeded": false,
+        "initial_native_cookie_jar_empty": true,
+        "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+        "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+        "ready": "complete",
+        "fully_active": true,
+        "reply_observed": false,
+        "native_error_count": 0,
+        "javascript_diagnostic_count": 0,
+        "native_input_started": true,
+        "passed": false,
+        "conversation_route": "/uc/UUID",
+        "conversation_url_sha256": "5d9354f7cb0eac0c0506ad03735ee6263a1e4ed75aa107e7852a5e26d49ecd3a"
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "-c",
+          "import os,json,sys;v=json.load(open(sys.argv[1]));os.execve(v['command'][0],v['command'],v['env'])",
+          "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/live-native-11/launch.json"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 3229712384,
+        "elapsed_seconds": 70.86647737499999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "older_frontend_empty_cookie_trial": {
+      "assessment": {
+        "exit": 0,
+        "identity_stable": true,
+        "inputs_stable": true,
+        "guard_budget": "standard 12 GiB full-application guard; earlier 3 GiB trial retained separately",
+        "backend_responses_seeded": false,
+        "initial_native_cookie_jar_empty": true,
+        "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+        "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+        "ready": "complete",
+        "fully_active": true,
+        "reply_observed": false,
+        "native_error_count": 0,
+        "javascript_diagnostic_count": 0,
+        "native_input_started": true,
+        "passed": false,
+        "conversation_route": "/uc/UUID",
+        "conversation_url_sha256": "5d9354f7cb0eac0c0506ad03735ee6263a1e4ed75aa107e7852a5e26d49ecd3a"
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "-c",
+          "import os,json,sys;v=json.load(open(sys.argv[1]));os.execve(v['command'][0],v['command'],v['env'])",
+          "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/live-native-full-13/launch.json"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 4183031808,
+        "elapsed_seconds": 122.559720208,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "visible_result": "Service unusual-activity rejection"
+    },
+    "imported_cookie_trial": {
+      "assessment": {
+        "exit": 0,
+        "identity_stable": true,
+        "inputs_stable": true,
+        "guard_budget": "standard 12 GiB full-application guard",
+        "backend_responses_seeded": false,
+        "initial_native_cookie_jar_empty": false,
+        "session_cookie_source": "Matching anonymous fresh Brave session before its input; values retained privately",
+        "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+        "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+        "ready": "complete",
+        "fully_active": true,
+        "reply_observed": false,
+        "native_error_count": 0,
+        "javascript_diagnostic_count": 0,
+        "native_input_started": true,
+        "passed": false,
+        "conversation_route": "/uc/UUID",
+        "conversation_url_sha256": "5d9354f7cb0eac0c0506ad03735ee6263a1e4ed75aa107e7852a5e26d49ecd3a"
+      },
+      "visible_result": "Service unusual-activity rejection"
+    },
+    "brave_control_14": "Harness type error before browser launch; guard retained.",
+    "brave_control_15": "Replay lacked three dynamically selected scripts; no editor and no service acceptance claim.",
+    "brave_control_16": "CDP timeout after dynamically loading assets; remaining children terminated by guard. No service acceptance claim."
+  },
+  "additional_guest_home": {
+    "fresh_assessment": {
+      "identity_stable": true,
+      "fresh_document_requests": 1,
+      "response_entries": 745,
+      "captured_frozen": true,
+      "reported_errors": 0
+    },
+    "documents": [
+      {
+        "url": "https://chatgpt.com/",
+        "sha256": "4b00d6a186506a031dd429977b40965c538eeefcacdfab6940f461e437f54a96",
+        "bytes": 423766,
+        "status": 200
+      }
+    ],
+    "native_frozen_assessment": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "differing_pixels": 0,
+          "max_channel_error": 0,
+          "bounds": null,
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+    },
+    "native_frozen_identity": {
+      "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/layer-origin-final-9/browser": "9fb9e202e5628c0e1859806688d7405f1d26812d0d57dce2d54e53bd813a63e2"
+    },
+    "brave_live_frozen_pixels": 0,
+    "brave_live_sha256": "03be79c6cd3154a2697ce5dd7dd17686ef9edaef4c06969ec04eb4cbe9b5d699",
+    "brave_frozen_sha256": "03be79c6cd3154a2697ce5dd7dd17686ef9edaef4c06969ec04eb4cbe9b5d699"
+  },
+  "durable_pngs": {
+    "docs/parity/raw/chatgpt-live-1024x768-20261103.brave.png": "1b35a7492c394330fe9740c93304176c3160d5c77a338df5fd4b7a4e048e608c",
+    "docs/parity/raw/chatgpt-live-1024x768-20261103.vox.png": "5c947e4bcd5298af91d86729eef7b0a38dfae9322671c34585dfbb02aaeff395"
+  }
+}

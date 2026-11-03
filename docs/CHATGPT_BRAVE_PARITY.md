@@ -9,6 +9,8 @@ completed shared production bundle.
 Original frontend/static captures use SOCKS and are replayed; earlier ordinary
 conversation checks kept backend, identity and telemetry requests live.
 Fresh-session captures and their request counts are recorded separately below.
+The current production guest Send/reply check also succeeds and matches Brave
+at zero pixels across the complete 1024×768 conversation viewport.
 
 An external cleanup removed `Build/chatgpt-css-error-lifetime-20261102/` during
 the follow-up, including the earlier raw receipts, archives and references.
@@ -19,6 +21,9 @@ browser identities are also committed in the
 [responsive parity receipt](parity/chatgpt-responsive-20261103.json).
 The subsequent [fixed-tile receipt](parity/chatgpt-fixed-tiles-20261103.json)
 records the exact three-viewport result and its focused browser identity.
+The [current live receipt](parity/chatgpt-live-20261103.json) records the new
+successful conversation, its production identity and the retained failures.
+Both receipts include hashes for committed PNG evidence under `parity/raw/`.
 
 The earlier continuation used `Build/chatgpt-css-error-lifetime-20261102/`.
 That homepage loaded suggestion cards and their Blob-backed icons, used Brave's
@@ -172,6 +177,57 @@ The exact frozen-page result does not revalidate the current
 live frontend, backend conversation workflow, responsive scripts, signed-in
 sessions or other routes. Earlier live results above remain historical because
 their raw evidence was removed externally.
+
+## November 3: current live guest conversation
+
+`brave-fresh-service-17/` starts a normal fresh anonymous Brave session through
+`socks5h://127.0.0.1:1337`. Its frontend makes two HTTP 200 document requests;
+both original body hashes and request counts are retained. Native and Brave
+execute the unmodified original frontend. The captured styles, scripts, fonts
+and images supply the native static cache; backend responses are excluded.
+
+`live-native-clean-20/` uses production executable `904ce62b…`, an empty initial
+native cookie jar and a private profile. Its initial read-only audit verifies
+complete readiness, an active document and the visible editor's geometry.
+A native AppKit input probe then clicks that editor, types the controlled
+prompt and presses Return after input settling. No author script or DOM state
+is patched. Screenshot mode explicitly keeps the document active; this is a
+functional capture with native input instrumentation, not an uninstrumented
+performance result.
+
+Both browsers receive the real reply `Vox ready.` in independent guest
+conversations. The native URL advances to a conversation route, native/script
+errors are empty, browser/guard exits are zero, and all pinned inputs and
+executable/native-library identities remain stable. After the archived initial
+homepage, backend connections retain native encrypted TLS through SOCKS; no
+conversation or Sentinel response is replayed. The standard 12 GiB application
+guard observes a 4,364,320,768-byte process-tree RSS peak.
+
+The complete 1024×768 native conversation viewport matches the unchanged fresh
+Brave frame at **zero differing pixels and zero channel error**, including all
+four RGBA channels. The alpha channel is opaque in both captures. The
+[Brave PNG](parity/raw/chatgpt-live-1024x768-20261103.brave.png) and
+[production PNG](parity/raw/chatgpt-live-1024x768-20261103.vox.png) are committed
+with their hashes in the live receipt. This verifies the recorded guest
+workflow and viewport; signed-in sessions, other routes and performance remain
+outside this result.
+
+Earlier attempts remain failures. The first 3 GiB application trial is stopped
+by its memory guard before a reply is verified. An older captured guest
+frontend and a later imported-cookie trial receive visible unusual-activity
+rejections. The successful current native run uses a clean cookie jar; no
+cookie import is needed. The initial replayed Brave controls have a harness
+type error, missing dynamically selected scripts, and a CDP timeout respectively;
+none supplies a backend comparison or acceptance claim. The subsequent normal
+fresh Brave session and clean native run establish the current result without
+reclassifying those attempts.
+
+`live-fresh-10/` retains another fresh guest variant, headed “What’s on the
+agenda today?”. Its one HTTP 200 document response has no reported errors.
+Brave's live and frozen captures match exactly, and the focused source browser
+independently matches that frozen page at zero pixels at 1024×768
+(`fresh-live-frozen-vox-12/`). This additional homepage comparison remains
+separate from the production conversation and the three-viewport frozen cohort.
 
 ## Captured workload
 

@@ -605,5 +605,13 @@
       "native_reported_errors": [],
       "url": "file:///Users/alex/code/vox2/Tests/Browser/Ref/fixed-sibling-raster.ref.html"
     }
+  },
+  "durable_pngs": {
+    "docs/parity/raw/chatgpt-frozen-800x600-20261103.brave.png": "d68fb62c0b5b5270a615c3f28c5019348c6c6a823d7bdbd1d02d0706a0a8686c",
+    "docs/parity/raw/chatgpt-frozen-800x600-20261103.vox.png": "fe661cb93ad2c9757b2ac64fd9e11114175ea9e15e2761be6ad3fc628a4a18a1",
+    "docs/parity/raw/chatgpt-frozen-1024x768-20261103.brave.png": "b9e2580821127a1ee490babf2bf3aec18ca87521e96e476ea6cae2bde36101ca",
+    "docs/parity/raw/chatgpt-frozen-1024x768-20261103.vox.png": "4b54635121d6595a7acc8958b7503f9a370ccff39f074459f806bb06f3b14489",
+    "docs/parity/raw/chatgpt-frozen-1280x800-20261103.brave.png": "8d13018ebbf6e375c7de7a84afd17c1102aae5557ddb3ed4acfa8f3fe67d781a",
+    "docs/parity/raw/chatgpt-frozen-1280x800-20261103.vox.png": "40ea1823d0cd09514e49cd75422c8ba637b0082acff6a86e9e650086b377f3fb"
   }
 }
