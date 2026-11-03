@@ -3,7 +3,8 @@
 
 Use --capture to freeze a new guest-page workload; normal runs replay sealed
 fixtures without forwarding network requests. Zero differing RGBA pixels are
-required. Access failures, missing fixtures and unstable references fail.
+required. Access failures, missing fixtures and references that vary within or
+between fresh Brave processes fail.
 """
 import argparse
 import base64
@@ -259,6 +260,35 @@ def capture_site_archive(common, route, output, archive, timeout, cache_policy):
     seal_capture(capture, archive, report)
 
 
+def capture_replay_references(common, route, output, timeout, diff_tool):
+    """Require two fresh processes to agree, including with a prepared cache.
+
+    The oracle creates a new private profile/process per invocation. Both
+    invocations copy the same closed cache template, if supplied; neither
+    inherits decoded images or profile writes from the other. Keep every
+    reference and full-uBO report, even when its pixels disagree.
+    """
+    for name in ['brave', 'brave-repeat']:
+        report = output / (name + '.json')
+        guarded([*common, '--pixel-reference', output / (name + '.png'),
+                 '--output', report, *route], output / name, timeout)
+        check_filters(read_json(report))
+    verdict = compare(output / 'brave.png', output / 'brave-repeat.png',
+                      output / 'reference-replay.diff.png', diff_tool)
+    write_json(output / 'reference-replay.json', verdict)
+    return verdict
+
+
+def pixel_status(native, source, reference_repeat):
+    # Reference variation invalidates acceptance even if the first reference
+    # happens to match both the source and native captures exactly.
+    if not reference_repeat['exact']:
+        return 'reference-replay-mismatch'
+    if not source['exact']:
+        return 'live-to-frozen-mismatch'
+    return 'pass' if native['exact'] else 'pixel-mismatch'
+
+
 def run_case(site, args):
     output = args.output / site['id']
     output.mkdir(parents=True, exist_ok=False)
@@ -301,16 +331,14 @@ def capture_case(site, args, output):
         der = subprocess.check_output(['openssl', 'pkey', '-pubin', '-outform', 'DER'], input=public)
         spki = base64.b64encode(hashlib.sha256(der).digest()).decode()
         reference = output / 'brave.png'
-        report = output / 'brave.json'
         # Both browsers request the same original URLs from the same sealed proxy.
         common[common.index('--url') + 1] = manifest['url']
         cache_policy = getattr(args, 'cache_policy', 'cold')
         write_json(output / 'cache-policy.json', dict(policy=cache_policy, warmup_qualified=False))
         route = ['--proxy-server', replay.ready['proxy'].replace('socks5h:', 'socks5:'), '--replay-spki', spki]
         reference_command = warm_oracle_cache(common, route, output, args.timeout) if cache_policy == 'complete' else common
-        guarded([*reference_command, '--pixel-reference', reference, '--output', report, *route],
-                output / 'brave', args.timeout)
-        check_filters(read_json(report))
+        repeat_verdict = capture_replay_references(reference_command, route, output,
+                                                    args.timeout, args.diff_tool)
         state = read_json(Path(str(reference) + '.json'))
         if digest((archive / 'live.png').read_bytes()) != manifest['live_png_sha256']:
             raise RuntimeError('Live capture changed')
@@ -348,13 +376,12 @@ def capture_case(site, args, output):
         check_filters(read_json(output / 'vox.ubo.json'), document=False)
         verdict = compare(reference, actual, output / 'diff.png', args.diff_tool)
         write_json(output / 'pixels.json', verdict)
-        status = 'pass' if verdict['exact'] and replay_verdict['exact'] else 'pixel-mismatch'
-        if not replay_verdict['exact']:
-            status = 'live-to-frozen-mismatch'
+        status = pixel_status(verdict, replay_verdict, repeat_verdict)
         return dict(status=status,
                     cache_policy=cache_policy,
                     different_pixels=verdict['different_pixels'], artifacts=str(output),
                     live_to_frozen_different_pixels=replay_verdict['different_pixels'],
+                    reference_replay_different_pixels=repeat_verdict['different_pixels'],
                     manifest_sha256=digest((archive / 'manifest.json').read_bytes()))
     finally:
         replay.server.shutdown()

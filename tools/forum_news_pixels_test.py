@@ -5,14 +5,66 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from forum_news_pixels import (CATALOG, VOX_BUNDLED_ADBLOCK_ASSETS, VOX_RUNTIME_ASSETS, brave_identity, capture_site_archive, check_filters, check_native,
+from forum_news_pixels import (CATALOG, VOX_BUNDLED_ADBLOCK_ASSETS, VOX_RUNTIME_ASSETS, brave_identity, capture_replay_references, capture_site_archive, check_filters, check_native,
                                executable_identity,
-                               native_capture_environment, oracle_command, run_case, seal_capture,
+                               native_capture_environment, oracle_command, pixel_status, run_case, seal_capture,
                                warm_native_cache, warm_oracle_cache, write_json)
 from page_archive import digest, load_archive
 
 
 class ForumNewsPixelTests(unittest.TestCase):
+    def test_reference_replays_use_separate_process_commands_with_the_same_cache_template(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            common = ['node', 'oracle', '--profile-template', '/closed-cache', '--extension', '/full-ubo']
+            route = ['--proxy-server', 'socks5://127.0.0.1:1234', '--replay-spki', 'pinned']
+            calls = []
+            def capture(command, prefix, timeout):
+                calls.append(command)
+                name = prefix.name
+                self.assertEqual(timeout, 60)
+                self.assertEqual(command, common + ['--pixel-reference', output/(name+'.png'),
+                                                   '--output', output/(name+'.json'), *route])
+                (output/(name+'.png')).write_bytes(name.encode())
+                write_json(output/(name+'.json'), self.report())
+            expected = dict(exact=False, different_pixels=1)
+            with patch('forum_news_pixels.guarded', side_effect=capture), \
+                    patch('forum_news_pixels.compare', return_value=expected) as compare:
+                self.assertEqual(capture_replay_references(common, route, output, 60, Path('/diff')), expected)
+                compare.assert_called_once_with(output/'brave.png', output/'brave-repeat.png',
+                                                output/'reference-replay.diff.png', Path('/diff'))
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(common[common.index('--profile-template')+1], '/closed-cache')
+            for name in ['brave', 'brave-repeat']:
+                self.assertTrue((output/(name+'.png')).is_file())
+                check_filters(json.loads((output/(name+'.json')).read_text()))
+            self.assertEqual(json.loads((output/'reference-replay.json').read_text()), expected)
+
+    def test_repeated_reference_cannot_qualify_with_invalid_full_ubo_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            def capture(command, prefix, timeout):
+                report = self.report()
+                if prefix.name == 'brave-repeat':
+                    report['cosmetic']['css_matches'] = False
+                write_json(output/(prefix.name+'.json'), report)
+            with patch('forum_news_pixels.guarded', side_effect=capture), \
+                    patch('forum_news_pixels.compare') as compare:
+                with self.assertRaisesRegex(RuntimeError, 'cosmetic'):
+                    capture_replay_references(['oracle'], [], output, 60, Path('/diff'))
+                compare.assert_not_called()
+            self.assertFalse((output/'reference-replay.json').exists())
+            self.assertFalse(json.loads((output/'brave-repeat.json').read_text())['cosmetic']['css_matches'])
+
+    def test_a_matching_first_frame_cannot_hide_reference_variation(self):
+        exact = dict(exact=True, different_pixels=0)
+        different = dict(exact=False, different_pixels=1)
+        self.assertEqual(pixel_status(exact, exact, different), 'reference-replay-mismatch')
+        self.assertEqual(pixel_status(different, different, different), 'reference-replay-mismatch')
+        self.assertEqual(pixel_status(exact, different, exact), 'live-to-frozen-mismatch')
+        self.assertEqual(pixel_status(different, exact, exact), 'pixel-mismatch')
+        self.assertEqual(pixel_status(exact, exact, exact), 'pass')
+
     def browser_inputs(self, root):
         root = root.resolve()
         vox = root / 'Vox.app/Contents/MacOS/Vox'
