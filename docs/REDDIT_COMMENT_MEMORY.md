@@ -5,10 +5,10 @@ The requested limit is **500,000,000 bytes** for
 The measured production bundles **exceed this limit**. The latest valid
 five-minute observation settles at **329,418,840 B** and peaks at **729,827,464 B**
 on executable `c9ff98ac…`. A later 65-second production observation peaks at
-**655,657,696 B** and settles at **245,671,976 B** on executable `0b745ee9…`,
+**683,903,760 B** and settles at **248,580,136 B** on executable `d69e4a67…`,
 using the cache-recovered fixture described below. A twenty-second observation
 on `98dfbb7c…` peaks at **639,863,520 B** and settles at **236,554,232 B**;
-twelve canonical visual comparisons pass on that build. A subsequent five-minute
+twelve canonical visual comparisons pass on both builds. An attempted five-minute
 attempt is rejected because the executable changes during observation.
 The earlier thirteen-case cohort on `590975bd…`
 remains separately recorded.
@@ -1178,3 +1178,60 @@ pins the implementation, test exits, production identities, all accepted and
 rejected observations, failed experiments and private artifact hashes. Raw page
 bytes, screenshots and account-bearing logs remain private under
 `Build/reddit-comment-memory-20261103-dom-wrappers/`.
+
+## Reclaimable HTTP response accumulation
+
+Commit `a32aa1aad` replaces the HTTP/1 receive loop's growing V byte accumulator
+with request-local native storage. Reallocation frees old capacities, and the
+final bytes enter the caller's builder once before the native buffer is freed.
+Publication allocates the exact final capacity when necessary and preserves an
+already sufficient caller buffer. Seeded content and partial bytes on an error
+retain their previous behavior. Callbacks, errors, pooled connections and TLS
+objects keep their ordinary owners; the network operation never enters a
+temporary allocation arena.
+
+An 8 MiB binary response with 4,093-byte input chunks retains **8,402,507 B**
+instead of **33,550,744 B** with the former Builder accumulator, a **74.96%**
+reduction in this focused allocation. Both outputs match every input byte. The
+control covers accumulator growth with matching bytes and chunking, not the
+complete former HTTP implementation or whole-browser physical memory.
+
+Three new cases and nine upstream receive/framing cases pass in both Boehm and
+preallocation modes, including chunked limits, compressed bodies, partial errors,
+callback data and retained responses. The retention assertion runs in preallocation
+mode. The same twelve cases pass AddressSanitizer with leak detection disabled;
+five browser-network progress and filtering/redirect cases also pass under full
+arena poisoning. Eight Python staging/patch tests pass. The current compiler
+accepts a TAP selector without emitting TAP, so an intermediate verifier rejects
+that run despite native exit zero. The final driver verifies all twelve calls in
+retained generated C before executing each binary. Earlier fixture and verifier
+failures remain recorded.
+
+Completed production `d69e4a67…`, receipt `20261103-124638-4d084d66`, contains the
+final publication code in its frozen input. A separate native allocation probe
+records 52 buffer-growth calls, all within the validated
+`VoxHTTPReceiveBuffer.write_ptr` symbol range, with largest requested capacity
+1,048,576 B. It selects the actual Mach-O executable header rather than dyld
+image zero. This proves execution on the replayed thread; its instrumented RAM
+numbers supply no optimization credit.
+
+A fresh, uninstrumented 65-second stock run observes **683,903,760 B** peak and
+**248,580,136 B** final two-second median. The auxiliary sum of observed task
+lifetime peaks is **691,981,096 B**. Input identities stay unchanged, browser and
+guard exit zero, and the normal script/content audit passes: original URL/title,
+complete/visible/fully-active state, 1708 × 953 viewport, 49 comments, two images,
+zero native errors and the same expected badge-fetch diagnostic. All twelve
+canonical visual comparisons are pixel-exact on this executable. This new peak
+exceeds earlier observations; unrelated shared-checkout changes prevent a causal
+cross-build comparison. No whole-page reduction is assigned to the buffer fix.
+Polling remains a lower bound and no display backing scale or new five-minute
+bound is established.
+
+The compiler-root probe now passes the required `-memory-limit 10G` in separate
+tooling commit `d2d677221`. Staged request/helper/header hashes remain identical
+after that tooling change. A fresh direct live request still returns HTTP 403.
+**The 500,000,000 B peak cap and bounded idle growth remain open.** The
+[HTTP buffer receipt](benchmark-results/reddit-comment-memory-2026-11-03-http-buffer.json)
+records exact component counts, registered tests and exits, sanitization,
+production identities, path eligibility, failed attempts and private artifact
+hashes under `Build/reddit-comment-memory-20261103-http-buffer/`.
