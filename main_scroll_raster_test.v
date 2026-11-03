@@ -63,13 +63,21 @@ fn test_scroll_raster_resource_completion_invalidates_pixels_without_rebuilding_
 }
 
 fn test_scroll_raster_excludes_nontranslating_and_independent_content() {
-	for style in ['position:sticky;top:0', 'position:fixed;top:0',
-		'background-attachment:fixed;background-image:linear-gradient(red,blue)', 'filter:blur(2px)',
-		'perspective:100px'] {
+	for style in ['perspective:100px'] {
 		mut document := html.parse_document('<!doctype html><style>body{margin:0}#target{width:40px;height:40px;background:green;${style}}</style><div id="target"><div style="transform:rotateY(30deg)">text</div></div><div style="height:1000px"></div>')
 		mut app := BrowserApp{ document: document }
 		app.relayout(200, 232)
 		assert !layout.viewport_scroll_raster_reusable(document, app.paint_commands, 200, app.viewport_height), style
+		document.finalize()
+	}
+	// Fixed, sticky and scroll-compensated content is admitted: the content
+	// damage diff repaints it on every scrolled frame.
+	for style in ['position:sticky;top:0', 'position:fixed;top:0',
+		'background-attachment:fixed;background-image:linear-gradient(red,blue)'] {
+		mut document := html.parse_document('<!doctype html><style>body{margin:0}#target{width:40px;height:40px;background:green;${style}}</style><div id="target"><div style="transform:rotateY(30deg)">text</div></div><div style="height:1000px"></div>')
+		mut app := BrowserApp{ document: document }
+		app.relayout(200, 232)
+		assert layout.viewport_scroll_raster_reusable(document, app.paint_commands, 200, app.viewport_height), style
 		document.finalize()
 	}
 	mut document := html.parse_document('<!doctype html><div style="height:1000px;background:green"></div>')
@@ -86,12 +94,20 @@ fn test_scroll_raster_excludes_nontranslating_and_independent_content() {
 	for commands in [[begin, ordinary], [ordinary, end], [begin, begin, ordinary, end, end]] {
 		assert !layout.viewport_scroll_raster_reusable(document, commands, 200, 200)
 	}
-	for kind in ['draw_canvas', 'draw_video', 'draw_nested_document', 'begin_css_effect_layer'] {
+	for kind in ['draw_nested_document', 'begin_css_effect_layer', 'apply_backdrop_filter'] {
 		assert !layout.viewport_scroll_raster_reusable(document, [layout.PaintCommand{ ...ordinary, kind: kind }], 200, 200), kind
+	}
+	// Canvases and nested display lists translate; their content changes are
+	// repainted through per-frame keys rather than by rejecting the page.
+	for kind in ['draw_video', 'draw_canvas', 'paint_nested_display_list'] {
+		assert layout.viewport_scroll_raster_reusable(document, [layout.PaintCommand{ ...ordinary, kind: kind }], 200, 200), kind
 	}
 	assert !layout.viewport_scroll_raster_reusable(document, [layout.PaintCommand{ ...ordinary, scrollbar_axis: 'vertical', x: 60 }], 200, 200)
 	bar := layout.PaintCommand{ ...ordinary, scrollbar_axis: 'vertical', x: 190, width: 6 }
-	assert !layout.viewport_scroll_raster_reusable(document, [bar, ordinary], 200, 200)
+	// A bar followed by content belongs to a nested scroller and is content.
+	assert layout.viewport_scroll_raster_reusable(document, [bar, ordinary], 200, 200)
+	assert layout.viewport_scroll_raster_reusable(document, [layout.PaintCommand{ ...ordinary, scrollbar_axis: 'horizontal', y: 40 }, ordinary], 200, 200)
+	assert !layout.viewport_scroll_raster_reusable(document, [layout.PaintCommand{ ...ordinary, kind: 'draw_text', scrollbar_axis: 'horizontal' }, ordinary], 200, 200)
 	assert !layout.viewport_scroll_raster_reusable(document, [begin, bar, end], 200, 200)
 	assert layout.viewport_scroll_raster_reusable(document, [layout.PaintCommand{ ...ordinary, scrollbar_axis: 'vertical', x: 190, width: 6 }], 200, 200)
 }
@@ -130,8 +146,14 @@ fn test_scroll_raster_overlay_tail_preserves_eligibility_order_and_layer_indices
 		// the document prefix. Sorting or rebasing this suffix changes painting.
 		assert actual_indices == expected_indices
 	}
-	// This arrangement must fall back to complete replay before tail replay.
-	assert !layout.viewport_scroll_raster_reusable(document, [vertical, content], 200, 200)
+	// A leading bar is nested content: it stays in the ring and the trailing
+	// run that is replayed after caching is empty.
+	assert layout.viewport_scroll_raster_reusable(document, [vertical, content], 200, 200)
+	assert scroll_raster_scrollbar_start([vertical, content]) == 2
+	nested := scroll_raster_frame_keys([vertical, content], 0, 1, 1024, 768)
+	assert !nested[0].skip_diff && nested[0].has_ink
+	assert scroll_raster_frame_keys([vertical, content], 0, 0.5, 1024, 768)[0].hash != nested[0].hash
+	assert scroll_raster_frame_keys([content, vertical], 0, 1, 1024, 768)[1].skip_diff
 }
 
 fn test_scroll_raster_damage_keeps_exposed_strips_overlay_edges_and_unknown_ink() {
@@ -166,6 +188,11 @@ fn test_scroll_raster_damage_keeps_exposed_strips_overlay_edges_and_unknown_ink(
 	top := layout.PaintCommand{ ...ordinary, y: 1 }
 	assert !damage.skips(&top)
 	assert damage.skips(&ordinary)
+	// Content damage away from the strip replays the commands it touches.
+	damage.rects = [layout.LayoutRect{0, 55, 200, 10}]
+	assert !damage.skips(&ordinary)
+	assert damage.skips(&layout.PaintCommand{ ...ordinary, y: 100 })
+	damage.rects = []
 	damage.reused = false
 	assert !damage.skips(&ordinary)
 }
@@ -256,4 +283,240 @@ fn test_scroll_profile_settles_once_and_keeps_scrolling_during_lazy_loads() {
 	app.begin_scroll_profile_frame()
 	assert app.scroll_profile.active
 	assert app.scroll_y > first
+}
+
+fn blur_filter_begin(radius f64) layout.PaintCommand {
+	return layout.PaintCommand{
+		kind:              'begin_css_filter_layer'
+		visual_layer_data: &layout.PaintVisualLayer{
+			kind:   .css_filter
+			filter: painting.GfxFilter{
+				operations: [painting.GfxFilterOperation{ kind: 'blur', first: radius }]
+			}
+		}
+	}
+}
+
+fn test_scroll_raster_admits_translating_effects_and_media() {
+	mut document := html.parse_document('<!doctype html><div style="height:1000px;background:green"></div>')
+	defer { document.finalize() }
+	mut app := BrowserApp{ document: document }
+	app.relayout(200, 232)
+	ordinary := layout.PaintCommand{ kind: 'fill_rect', width: 30, height: 30 }
+	for kind in ['fill_gradient', 'draw_video', 'draw_svg_image', 'fill_rect_transparent'] {
+		assert layout.viewport_scroll_raster_reusable(document, [layout.PaintCommand{ ...ordinary, kind: kind }], 200, 200), kind
+	}
+	for kind in ['paint_outer_box_shadow', 'paint_inner_box_shadow', 'fill_inset_shadow', 'draw_text_shadow'] {
+		assert layout.viewport_scroll_raster_reusable(document, [layout.PaintCommand{ ...ordinary, kind: kind, blur: 4 }], 200, 200), kind
+	}
+	// Blur outside a shadow leaf still needs complete replay.
+	assert !layout.viewport_scroll_raster_reusable(document, [layout.PaintCommand{ ...ordinary, blur: 4 }], 200, 200)
+	effect_begin := layout.PaintCommand{ kind: 'begin_css_effect_layer' }
+	effect_end := layout.PaintCommand{ kind: 'end_css_effect_layer' }
+	filter_end := layout.PaintCommand{ kind: 'end_css_filter_layer' }
+	text_begin := layout.PaintCommand{ kind: 'begin_background_text_clip', width: 40, height: 20 }
+	text_end := layout.PaintCommand{ kind: 'end_background_text_clip' }
+	grayscale_begin := layout.PaintCommand{
+		kind:              'begin_css_filter_layer'
+		visual_layer_data: &layout.PaintVisualLayer{
+			kind:   .css_filter
+			filter: painting.GfxFilter{ operations: [painting.GfxFilterOperation{ kind: 'grayscale', first: 1 }] }
+		}
+	}
+	assert layout.viewport_scroll_raster_reusable(document, [effect_begin, ordinary, effect_end], 200, 200)
+	assert layout.viewport_scroll_raster_reusable(document, [grayscale_begin, ordinary, filter_end], 200, 200)
+	assert layout.viewport_scroll_raster_reusable(document, [text_begin, layout.PaintCommand{ ...ordinary, kind: 'fill_gradient' }, text_end], 200, 200)
+	assert layout.viewport_scroll_raster_reusable(document, [effect_begin, grayscale_begin, ordinary, filter_end, effect_end], 200, 200)
+	assert layout.viewport_scroll_raster_reusable(document, [blur_filter_begin(10), ordinary, filter_end], 200, 200)
+	for commands in [[effect_begin, ordinary], [ordinary, effect_end], [effect_begin, ordinary, filter_end],
+		[blur_filter_begin(10), effect_begin, ordinary, filter_end, effect_end]] {
+		assert !layout.viewport_scroll_raster_reusable(document, commands, 200, 200)
+	}
+	// A blur layer is rasterized at its device position, so its key never
+	// matches a retained frame and the whole layer is repainted each frame;
+	// a pointwise filter layer keeps a stable key.
+	blur_keys := scroll_raster_frame_keys([blur_filter_begin(10), ordinary, filter_end], 0, 1, 1024, 768)
+	assert scroll_raster_frame_keys([blur_filter_begin(10), ordinary, filter_end], 0, 1, 1024, 768)[0].hash != blur_keys[0].hash
+	gray_keys := scroll_raster_frame_keys([grayscale_begin, ordinary, filter_end], 0, 1, 1024, 768)
+	assert scroll_raster_frame_keys([grayscale_begin, ordinary, filter_end], 0, 1, 1024, 768)[0].hash == gray_keys[0].hash
+	svg_filter := layout.PaintCommand{
+		kind:              'begin_css_filter_layer'
+		visual_layer_data: &layout.PaintVisualLayer{
+			kind:   .css_filter
+			filter: painting.GfxFilter{ nodes: [painting.GfxFilterNode{ id: 1, kind: 'feGaussianBlur' }], root_id: 1 }
+		}
+	}
+	assert !layout.viewport_scroll_raster_reusable(document, [svg_filter, ordinary, filter_end], 200, 200)
+}
+
+fn test_scroll_raster_leaf_ink_bounds_cover_shadows_and_media() {
+	shadow := layout.PaintCommand{ kind: 'paint_outer_box_shadow', x: 50, y: 60, width: 100, height: 40, blur: 5 }
+	assert (layout.scroll_raster_leaf_ink_bounds(&shadow) or { panic('missing shadow ink') }) == layout.LayoutRect{40, 50, 120, 60}
+	inner := layout.PaintCommand{
+		kind:            'paint_inner_box_shadow'
+		width:           300
+		height:          300
+		blur:            9
+		box_shadow_data: &layout.PaintBoxShadowData{ content_rect: layout.LayoutRect{10, 20, 30, 40} }
+	}
+	assert (layout.scroll_raster_leaf_ink_bounds(&inner) or { panic('missing inner ink') }) == layout.LayoutRect{10, 20, 30, 40}
+	video := layout.PaintCommand{ kind: 'draw_video', x: 5, y: 6, width: 7, height: 8 }
+	assert (layout.scroll_raster_leaf_ink_bounds(&video) or { panic('missing video ink') }) == layout.LayoutRect{4, 5, 9, 10}
+	// The viewport scroll folded into the transform moves the ink.
+	scrolled := layout.PaintCommand{ ...shadow, transform: [f64(1), 0, 0, 1, 0, -30]! }
+	assert (layout.scroll_raster_leaf_ink_bounds(&scrolled) or { panic('missing scrolled ink') }) == layout.LayoutRect{40, 20, 120, 60}
+	blur := blur_filter_begin(10)
+	assert (layout.scroll_raster_filter_extent(&blur) or { panic('missing extent') }) == 31
+	assert !layout.scroll_raster_filter_is_pointwise(&blur)
+	grayscale := layout.PaintCommand{
+		kind:              'begin_css_filter_layer'
+		visual_layer_data: &layout.PaintVisualLayer{
+			kind:   .css_filter
+			filter: painting.GfxFilter{ operations: [painting.GfxFilterOperation{ kind: 'grayscale', first: 1 }] }
+		}
+	}
+	assert layout.scroll_raster_filter_is_pointwise(&grayscale)
+}
+
+fn test_scroll_raster_frame_keys_ignore_viewport_translation_and_track_content() {
+	base := layout.PaintCommand{ kind: 'fill_rect', x: 30, y: 60, width: 20, height: 20, color: 'red' }
+	moved := layout.PaintCommand{ ...base, transform: [f64(1), 0, 0, 1, 0, -10]! }
+	keys_a := scroll_raster_frame_keys([base], 0, 1, 1024, 768)
+	keys_b := scroll_raster_frame_keys([moved], 10, 1, 1024, 768)
+	assert keys_a[0].hash == keys_b[0].hash
+	assert keys_a[0].has_ink && keys_a[0].ink == layout.LayoutRect{30, 60, 20, 20}
+	assert keys_b[0].ink == layout.LayoutRect{30, 50, 20, 20}
+	assert scroll_raster_frame_keys([layout.PaintCommand{ ...base, color: 'blue' }], 0, 1, 1024, 768)[0].hash != keys_a[0].hash
+	assert scroll_raster_frame_keys([layout.PaintCommand{ ...base, opacity: 0.5 }], 0, 1, 1024, 768)[0].hash != keys_a[0].hash
+	assert scroll_raster_frame_keys([layout.PaintCommand{ ...base, transform: [f64(2), 0, 0, 1, 0, 0]! }], 0, 1, 1024, 768)[0].hash != keys_a[0].hash
+	// A scroll offset the transform does not reflect is a content move.
+	assert scroll_raster_frame_keys([base], 10, 1, 1024, 768)[0].hash != keys_a[0].hash
+	// Groups carry their complete extent, filters inflate it, ends close them.
+	commands := [
+		layout.PaintCommand{ kind: 'begin_css_effect_layer' },
+		base,
+		layout.PaintCommand{ ...base, x: 100, y: 100 },
+		layout.PaintCommand{ kind: 'end_css_effect_layer' },
+		blur_filter_begin(10),
+		layout.PaintCommand{ ...base, x: 150, y: 150 },
+		layout.PaintCommand{ kind: 'end_css_filter_layer' },
+		layout.PaintCommand{ ...base, scrollbar_axis: 'vertical' },
+	]
+	keys := scroll_raster_frame_keys(commands, 0, 1, 1024, 768)
+	assert keys[0].group_end == 3
+	assert keys[0].has_ink && keys[0].ink == layout.LayoutRect{30, 60, 90, 60}
+	assert keys[4].group_end == 6
+	assert keys[4].has_ink && keys[4].ink == layout.LayoutRect{119, 119, 82, 82}
+	// Group ends write nothing; they stay bounded (empty ink) so an entering
+	// group reconciles through its begin's extent.
+	assert keys[3].has_ink && keys[3].ink.width == 0 && keys[3].ink.height == 0
+	assert keys[6].has_ink && keys[6].ink.width == 0 && keys[6].ink.height == 0
+	assert keys[7].skip_diff
+}
+
+fn test_scroll_raster_keys_follow_video_frame_generation() {
+	mut source := painting.VideoFrameSource.create()
+	mut frame := painting.MediaVideoFrame.from_bitmap(&dom.Bitmap_{ width: 2, height: 2, pitch: 8, data: []u8{len: 16} })
+	source.update(frame)
+	video := layout.PaintCommand{ kind: 'draw_video', width: 2, height: 2, video_frame_source: source }
+	before := scroll_raster_frame_keys([video], 0, 1, 1024, 768)[0].hash
+	assert scroll_raster_frame_keys([video], 0, 1, 1024, 768)[0].hash == before
+	frame.generation++
+	assert scroll_raster_frame_keys([video], 0, 1, 1024, 768)[0].hash != before
+}
+
+fn test_scroll_raster_content_damage_covers_only_changed_commands() {
+	base := layout.PaintCommand{ kind: 'fill_rect', x: 30, y: 60, width: 20, height: 20, color: 'red' }
+	other := layout.PaintCommand{ ...base, x: 120, y: 20, color: 'green' }
+	previous := ScrollRasterKeyFrame{
+		valid:    true
+		document: 7
+		width:    200
+		height:   200
+		keys:     scroll_raster_frame_keys([base, other], 0, 1, 1024, 768)
+	}
+	scrolled := [f64(1), 0, 0, 1, 0, -10]!
+	mut stats := ScrollRasterDiffStats{}
+	unchanged := scroll_raster_frame_keys([layout.PaintCommand{ ...base, transform: scrolled },
+		layout.PaintCommand{ ...other, transform: scrolled }], 10, 1, 1024, 768)
+	none_changed := scroll_raster_content_damage(&previous, unchanged, 7, 10, 200, 200, mut stats) or {
+		panic('unchanged frames must reconcile')
+	}
+	assert none_changed.len == 0
+	assert stats.changed == 0
+	changed := scroll_raster_frame_keys([layout.PaintCommand{ ...base, transform: scrolled, color: 'blue' },
+		layout.PaintCommand{ ...other, transform: scrolled }], 10, 1, 1024, 768)
+	rects := scroll_raster_content_damage(&previous, changed, 7, 10, 200, 200, mut stats) or {
+		panic('one change must reconcile')
+	}
+	// Old and new ink of the changed command, both in current viewport space,
+	// with the raster fringe snapped outward to whole pixels.
+	assert rects.len == 2
+	for rect in rects {
+		assert rect == layout.LayoutRect{27, 47, 26, 26}
+	}
+	assert stats.changed == 2
+	// Entries entering below the viewport add no visible damage.
+	entering := scroll_raster_frame_keys([layout.PaintCommand{ ...base, transform: scrolled },
+		layout.PaintCommand{ ...other, transform: scrolled },
+		layout.PaintCommand{ ...base, y: 400, transform: scrolled }], 10, 1, 1024, 768)
+	assert (scroll_raster_content_damage(&previous, entering, 7, 10, 200, 200, mut stats) or {
+		panic('entering content must reconcile')
+	}).len == 0
+	// Reordered content, unbounded changes, other documents and absent
+	// frames all need complete replay.
+	reordered := scroll_raster_frame_keys([layout.PaintCommand{ ...other, transform: scrolled },
+		layout.PaintCommand{ ...base, transform: scrolled }], 10, 1, 1024, 768)
+	assert scroll_raster_content_damage(&previous, reordered, 7, 10, 200, 200, mut stats) == none
+	assert stats.fallback == 'paint-order-changed'
+	unbounded := scroll_raster_frame_keys([layout.PaintCommand{ ...base, transform: scrolled },
+		layout.PaintCommand{ ...other, transform: scrolled },
+		layout.PaintCommand{ kind: 'draw_text', text: 'late' }], 10, 1, 1024, 768)
+	assert scroll_raster_content_damage(&previous, unbounded, 7, 10, 200, 200, mut stats) == none
+	assert scroll_raster_content_damage(&previous, unchanged, 8, 10, 200, 200, mut stats) == none
+	invalid := ScrollRasterKeyFrame{}
+	assert scroll_raster_content_damage(&invalid, unchanged, 7, 10, 200, 200, mut stats) == none
+	// Fixed content keeps its viewport position while the ring shifts, so an
+	// unchanged fixed command is damaged at both its vacated and current place.
+	fixed := layout.PaintCommand{ kind: 'fill_rect', x: 20, y: 100, width: 40, height: 10, fixed_to_viewport: true }
+	fixed_previous := ScrollRasterKeyFrame{ valid: true, document: 7, width: 200, height: 200, keys: scroll_raster_frame_keys([fixed], 0, 1, 1024, 768) }
+	fixed_rects := scroll_raster_content_damage(&fixed_previous, scroll_raster_frame_keys([fixed], 10, 1, 1024, 768), 7, 10, 200, 200, mut stats) or {
+		panic('fixed content must reconcile')
+	}
+	assert fixed_rects.len == 2
+	assert layout.LayoutRect{17, 87, 46, 16} in fixed_rects
+	assert layout.LayoutRect{17, 97, 46, 16} in fixed_rects
+	// Without a scroll change the same fixed command needs no repaint.
+	assert (scroll_raster_content_damage(&fixed_previous, scroll_raster_frame_keys([fixed], 0, 1, 1024, 768), 7, 0, 200, 200, mut stats) or {
+		panic('stationary fixed content must reconcile')
+	}).len == 0
+}
+
+fn test_scroll_raster_skip_plan_handles_groups_and_filters() {
+	leaf := layout.PaintCommand{ kind: 'fill_rect', x: 10, width: 50, height: 20 }
+	commands := [
+		layout.PaintCommand{ ...leaf, y: 10 },
+		layout.PaintCommand{ kind: 'begin_css_effect_layer' },
+		layout.PaintCommand{ ...leaf, y: 50 },
+		layout.PaintCommand{ ...leaf, y: 150 },
+		layout.PaintCommand{ kind: 'end_css_effect_layer' },
+		blur_filter_begin(5),
+		layout.PaintCommand{ ...leaf, y: 100 },
+		layout.PaintCommand{ kind: 'end_css_filter_layer' },
+		layout.PaintCommand{ ...leaf, y: 185 },
+	]
+	keys := scroll_raster_frame_keys(commands, 0, 1, 1024, 768)
+	strip := scroll_raster_strip_region(10, 200, 200)
+	assert strip == [layout.LayoutRect{0, 190, 200, 10}]
+	assert plan_scroll_raster_skips(commands, keys, strip, false) == [true, true, true, true, true, true, true, true, false]
+	// Damage touching one effect child replays the boundaries and that child.
+	assert plan_scroll_raster_skips(commands, keys, [layout.LayoutRect{0, 45, 200, 10}], false) == [true, false, false, true, false, true, true, true, true]
+	// A blur filter whose extent touches the damage replays all of its contents.
+	assert plan_scroll_raster_skips(commands, keys, [layout.LayoutRect{0, 130, 200, 5}], false) == [true, false, true, true, false, false, false, false, true]
+	underlay := [layout.PaintCommand{ ...leaf, y: 10, underlays_next: true }]
+	assert !plan_scroll_raster_skips(underlay, scroll_raster_frame_keys(underlay, 0, 1, 1024, 768), strip, false)[0]
+	image := [layout.PaintCommand{ ...leaf, kind: 'draw_replaced_image', y: 10 }]
+	assert !plan_scroll_raster_skips(image, scroll_raster_frame_keys(image, 0, 1, 1024, 768), strip, true)[0]
+	assert scroll_raster_strip_region(0, 200, 200).len == 0
+	assert scroll_raster_strip_region(-10, 200, 200) == [layout.LayoutRect{0, 0, 200, 10}]
 }

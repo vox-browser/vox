@@ -1,0 +1,44 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Scroll raster content damage fixture</title>
+<style>
+  html, body { margin: 0; }
+  body { background: #0f1724; color: #e6edf3; font: 16px/1.4 -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  .hero { height: 320px; background: linear-gradient(135deg, #1b2a4a, #3a1f5d 60%, #0f1724); position: relative; overflow: hidden; }
+  .blob { position: absolute; left: 540px; top: 40px; width: 360px; height: 360px; border-radius: 50%;
+          background: radial-gradient(circle at 40% 40%, #5aa9ff, #2b58a6 60%, transparent 70%); filter: blur(30px); }
+  .badge { position: fixed; right: 24px; top: 96px; padding: 8px 14px; border-radius: 999px; background: #91c4ff; color: #0d1723; font-weight: 700; z-index: 10; }
+  .title { position: relative; padding: 48px 32px 0; font-size: 44px; font-weight: 800; }
+  .title .glow { background: linear-gradient(90deg, #91c4ff, #ffffff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .cards { display: flex; gap: 24px; padding: 32px; }
+  .card { flex: 1; min-height: 220px; border-radius: 16px; padding: 20px; background: linear-gradient(180deg, #16243b, #101a2b);
+          border: 1px solid #2a3a55; box-shadow: 0 20px 50px #0009, inset 0 1px #ffffff14; }
+  .card h2 { margin: 0 0 12px; font-size: 20px; }
+  .faded { opacity: 0.6; }
+  .row { display: flex; gap: 16px; padding: 0 32px 32px; }
+  .tile { width: 180px; height: 120px; border-radius: 12px; background: linear-gradient(160deg, #ff8a5c, #ff4d6d); box-shadow: 0 15px 40px #0008; }
+  .tile.gray { filter: grayscale(1); }
+  .text { padding: 0 32px 32px; max-width: 760px; }
+  .spacer { height: 1600px; background: repeating-linear-gradient(180deg, #0f1724 0 120px, #111c2e 120px 240px); }
+</style>
+<div class="badge">Fixed badge</div>
+<div class="hero">
+  <div class="blob"></div>
+  <div class="title">The <span class="glow">fast</span>, simple language</div>
+</div>
+<div class="cards">
+  <div class="card"><h2>Shadowed card</h2><p>Gradient background, outer and inset shadows, rounded border.</p></div>
+  <div class="card faded"><h2>Opacity group</h2><p>Composited through a CSS effect layer.</p></div>
+  <div class="card"><h2>Third card</h2><p>More translating content with shadows.</p></div>
+</div>
+<div class="row">
+  <div class="tile"></div>
+  <div class="tile gray"></div>
+  <div class="tile"></div>
+</div>
+<div class="text">
+  <p>Paragraph one of ordinary text content that scrolls with the document and sits below the decorated region.</p>
+  <p>Paragraph two continues the text so that line boxes and glyph runs enter and leave the viewport while scrolling.</p>
+  <p>Paragraph three completes the sample. The fixed badge above must stay put while everything else moves.</p>
+</div>
+<div class="spacer"></div>

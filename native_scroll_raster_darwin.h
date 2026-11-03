@@ -64,13 +64,25 @@ static void native_scroll_raster_copy_rows(VoxScrollRaster *cache,
     }
 }
 
+#define VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS 48
+
 // Called on the fresh, unpainted RGBA document canvas. Bitmap row zero is the
 // top of the window; Quartz user coordinates have their origin at the bottom.
 // Keep the original canvas dimensions and raster origins for intersecting
 // leaves, clipping only their final output to the damaged strips.
+//
+// `damage` holds `damage_count` viewport-space CSS rectangles (x, top, width,
+// height) whose content changed since the retained frame; they are clipped and
+// repainted together with the exposed strip. `allow_reuse` means the caller has
+// reconciled the retained frame's content into those rectangles (including
+// across a changed revision), so the retained pixels outside them are current.
+// Without it the frame is painted completely and stored: a revision match
+// alone no longer implies reuse, because content that does not translate with
+// the viewport is only repainted through that reconciliation.
 static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     double scroll, double page_top, double width, double height, int eligible,
-    double *scroll_delta) {
+    double *scroll_delta, const double *damage, int damage_count,
+    int allow_reuse) {
     VoxScrollRaster *cache = &native_scroll_raster;
     CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
     if (!eligible || getenv("VOX_DISABLE_SCROLL_RASTER_REUSE") || !context) {
@@ -115,7 +127,10 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     const char *disable_damage = getenv("VOX_DISABLE_SCROLL_RASTER_DAMAGE_OPTIMIZATIONS");
     int damage_optimized = !(disable_damage && *disable_damage);
     double delta = (scroll - cache->scroll) * scale;
-    int reuse = cache->valid && cache->owner == owner && cache->revision == revision
+    if (damage_count < 0 || damage_count > VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS
+        || (damage_count > 0 && !damage))
+        allow_reuse = 0, damage_count = 0;
+    int reuse = cache->valid && allow_reuse && cache->owner == owner
         && cache->width == w && cache->height == h && cache->top == top
         && cache->canvas_width == canvas_width && cache->canvas_height == canvas_height
         && cache->scale == scale && isfinite(delta) && fabs(delta) < h
@@ -186,8 +201,25 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     // document pixels. A single exposed strip keeps leaf raster bounds small.
     double strip = fabs(*scroll_delta);
     double bottom = canvas_height / scale - page_top - height;
-    CGContextClipToRect(context, CGRectMake(0,
-        *scroll_delta < 0 ? bottom + height - strip : bottom, width, strip));
+    CGRect clips[VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS + 1];
+    size_t clip_count = 0;
+    clips[clip_count++] = CGRectMake(0,
+        *scroll_delta < 0 ? bottom + height - strip : bottom, width, strip);
+    for (int index = 0; index < damage_count; ++index) {
+        const double *rect = damage + index * 4;
+        if (!isfinite(rect[0]) || !isfinite(rect[1]) || !isfinite(rect[2]) || !isfinite(rect[3]))
+            continue;
+        double left = fmax(0, rect[0]), right = fmin(width, rect[0] + rect[2]);
+        double top_edge = fmax(0, rect[1]), bottom_edge = fmin(height, rect[1] + rect[3]);
+        if (right <= left || bottom_edge <= top_edge) continue;
+        // Changed content anywhere in the viewport rewrites rows outside the
+        // exposed strip; store the complete viewport back into the ring.
+        cache->dirty_first = 0;
+        cache->dirty_rows = h;
+        clips[clip_count++] = CGRectMake(left, bottom + height - bottom_edge,
+            right - left, bottom_edge - top_edge);
+    }
+    CGContextClipToRects(context, clips, clip_count);
     return 1;
 }
 

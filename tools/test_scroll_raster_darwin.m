@@ -58,7 +58,7 @@ static void test_independent_image_pixels_are_not_reused(void) {
     native_discard_scroll_raster();
     double delta = 0;
     for (int frame = 0; frame < 3; ++frame) {
-        assert(!native_begin_scroll_raster(1, 1, frame, 0, 32, 32, 1, &delta));
+        assert(!native_begin_scroll_raster(1, 1, frame, 0, 32, 32, 1, &delta, NULL, 0, 1));
         native_scroll_raster_independent_content();
         native_end_scroll_raster();
         assert(!native_scroll_raster.valid);
@@ -125,8 +125,14 @@ static void frame(int width, int height, int top, int scale, double scroll,
         white(actual, width + canvas_extra_width, canvas_height);
     double delta = 0;
     double previous_scroll = native_scroll_raster.scroll;
+    // The browser allows reuse only when its content diff reconciles the
+    // retained frame; unchanged content at an unchanged revision reconciles.
+    static uint64_t last_revision, last_owner;
+    int allow_reuse = native_scroll_raster.valid && last_revision == revision
+        && last_owner == owner;
+    last_revision = revision; last_owner = owner;
     assert(native_begin_scroll_raster(owner, revision, scroll, top, width, height,
-        eligible, &delta) == expected_reuse);
+        eligible, &delta, NULL, 0, allow_reuse) == expected_reuse);
     if (native_scroll_raster.active) {
         size_t stored_rows = native_scroll_raster.damage_optimized && expected_reuse
             ? (size_t)llround(fabs(scroll - previous_scroll) * scale) : height * scale;
@@ -147,6 +153,86 @@ static void frame(int width, int height, int top, int scale, double scroll,
     [NSGraphicsContext restoreGraphicsState];
     CGContextRelease(actual);
     CGContextRelease(expected);
+}
+
+// A solid patch stands in for content that changed in place (a new video
+// frame, a script-driven transform) while the rest of the viewport did not.
+static void patch(CGContextRef context, int height, int top, double x, double y,
+    double w, double h, int scale) {
+    double canvas_height = CGBitmapContextGetHeight(context) / (double)scale;
+    double bottom = canvas_height - top - height;
+    CGContextSetRGBFillColor(context, 0.1, 0.9, 0.3, 1);
+    CGContextFillRect(context, CGRectMake(x, bottom + height - (y + h), w, h));
+    CGContextFlush(context);
+}
+
+static void compare_and_release(CGContextRef actual, CGContextRef expected) {
+    assert(CGBitmapContextGetBytesPerRow(actual) == CGBitmapContextGetBytesPerRow(expected));
+    assert(memcmp(CGBitmapContextGetData(actual), CGBitmapContextGetData(expected),
+        CGBitmapContextGetBytesPerRow(actual) * CGBitmapContextGetHeight(actual)) == 0);
+    [NSGraphicsContext restoreGraphicsState];
+    CGContextRelease(actual);
+    CGContextRelease(expected);
+}
+
+// A changed content revision reconciled into damage rectangles repaints only
+// those rectangles, the retained patch then scrolls with the document, and a
+// revision change without reconciliation still forces complete replay.
+static void test_damage_rects_repaint_only_changed_content(int scale) {
+    int width = 161, height = 121, top = 9;
+    int canvas_height = height + top + 13;
+    native_discard_scroll_raster();
+    frame(width, height, top, scale, 100, 3, 1, 1, 0, 0);
+    double rect[4] = {40, 30, 50, 20};
+    CGContextRef actual = canvas(width, canvas_height, scale);
+    CGContextRef expected = canvas(width, canvas_height, scale);
+    [NSGraphicsContext saveGraphicsState];
+    [NSGraphicsContext setCurrentContext:
+        [NSGraphicsContext graphicsContextWithCGContext:actual flipped:NO]];
+    double delta = 1;
+    assert(native_begin_scroll_raster(3, 2, 100, top, width, height, 1, &delta, rect, 1, 1) == 1);
+    assert(delta == 0);
+    assert(native_scroll_raster.dirty_first == 0);
+    assert(native_scroll_raster.dirty_rows == (size_t)(height * scale));
+    white(actual, width, canvas_height);
+    paint(actual, width, height, top, 100, scale);
+    patch(actual, height, top, 40, 30, 50, 20, scale);
+    // Writes outside the damage rectangle must be clipped away.
+    patch(actual, height, top, 0, 0, 10, 10, scale);
+    native_end_scroll_raster();
+    overlays(actual, width, height, top, 100, scale, 0.5);
+    white(expected, width, canvas_height);
+    paint(expected, width, height, top, 100, scale);
+    patch(expected, height, top, 40, 30, 50, 20, scale);
+    overlays(expected, width, height, top, 100, scale, 0.5);
+    compare_and_release(actual, expected);
+
+    actual = canvas(width, canvas_height, scale);
+    expected = canvas(width, canvas_height, scale);
+    [NSGraphicsContext saveGraphicsState];
+    [NSGraphicsContext setCurrentContext:
+        [NSGraphicsContext graphicsContextWithCGContext:actual flipped:NO]];
+    assert(native_begin_scroll_raster(3, 2, 107, top, width, height, 1, &delta, NULL, 0, 1) == 1);
+    assert(delta == 7);
+    white(actual, width, canvas_height);
+    paint(actual, width, height, top, 107, scale);
+    native_end_scroll_raster();
+    overlays(actual, width, height, top, 107, scale, 0.5);
+    white(expected, width, canvas_height);
+    paint(expected, width, height, top, 107, scale);
+    patch(expected, height, top, 40, 23, 50, 20, scale);
+    overlays(expected, width, height, top, 107, scale, 0.5);
+    compare_and_release(actual, expected);
+
+    actual = canvas(width, canvas_height, scale);
+    [NSGraphicsContext saveGraphicsState];
+    [NSGraphicsContext setCurrentContext:
+        [NSGraphicsContext graphicsContextWithCGContext:actual flipped:NO]];
+    assert(native_begin_scroll_raster(3, 3, 114, top, width, height, 1, &delta, NULL, 0, 0) == 0);
+    native_end_scroll_raster();
+    [NSGraphicsContext restoreGraphicsState];
+    CGContextRelease(actual);
+    native_discard_scroll_raster();
 }
 
 int main(void) {
@@ -209,12 +295,14 @@ int main(void) {
             [NSGraphicsContext graphicsContextWithCGContext:translated flipped:NO]];
         CGContextTranslateCTM(translated, 1, 0);
         double delta = 0;
-        assert(!native_begin_scroll_raster(2, 2, 406.25, 9, 161, 121, 1, &delta));
+        assert(!native_begin_scroll_raster(2, 2, 406.25, 9, 161, 121, 1, &delta, NULL, 0, 1));
         assert(!native_scroll_raster.pixels);
         [NSGraphicsContext restoreGraphicsState];
         CGContextRelease(translated);
         native_discard_scroll_raster();
         test_independent_image_pixels_are_not_reused();
+        for (int scale = 1; scale <= 2; ++scale)
+            test_damage_rects_repaint_only_changed_content(scale);
         test_redraw_survives_layer_display();
         puts("Scroll raster: exact pixels across scroll direction, overlay fades, revision, navigation, resize, density and fallback");
     }

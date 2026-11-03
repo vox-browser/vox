@@ -437,6 +437,12 @@ mut:
 	paint_tree_storage                  voidptr = unsafe { nil }
 	paint_commands                      []layout.PaintCommand
 	chromium_raster_plan                layout.ChromiumRasterLayerPlan
+	// Content identities of the frame whose pixels the scroll raster retains.
+	scroll_raster_keys                  ScrollRasterKeyFrame
+	// Whether the last frame's content qualified for viewport scroll reuse, and
+	// whether this replay attempt defers leaf rasters into layer pictures.
+	scroll_raster_content_eligible      bool
+	scroll_raster_frame_deferred        bool
 	native_gradient_storage             NativeGradientStorage
 	chromium_msaa_storage               ChromiumMSAAStorage
 	chromium_raster_tiles               [][]i32
@@ -4114,7 +4120,16 @@ fn (mut app BrowserApp) scroll_by(delta f64, window_height int) {
 }
 
 fn (mut app BrowserApp) set_scroll_y(requested f64, window_height int) {
-	used := clamp(requested, 0.0, app.maximum_scroll(window_height))
+	mut used := clamp(requested, 0.0, app.maximum_scroll(window_height))
+	// Chromium snaps the root scroller's offset to physical pixels. Precise
+	// wheel input otherwise accumulates fractional device offsets, which no
+	// retained viewport raster can shift by whole rows.
+	if app.document != unsafe { nil } {
+		ratio := app.document.display_device_pixel_ratio()
+		if ratio > 0 && !math.is_nan(ratio) && !math.is_inf(ratio, 0) {
+			used = clamp(math.round(used * ratio) / ratio, 0.0, used)
+		}
+	}
 	if used != app.scroll_y { app.overlay_scrollbar_activity() }
 	app.scroll_y = used
 	if app.document != unsafe { nil } {
@@ -7385,8 +7400,13 @@ fn (mut app BrowserApp) draw() {
 			app.portable_shadow_image_index = 0
 			$if macos {
 				if app.ctx.native_rendering {
+					// Deferred layer pictures publish after the scroll raster ring
+					// stores the frame; keep leaf rasters immediate while the
+					// content qualifies for viewport scroll reuse.
 					enabled := replay_attempt == 0 && app.document != unsafe { nil }
 						&& app.document.font_rendering_policy() == .chromium
+						&& !app.scroll_raster_content_eligible
+					app.scroll_raster_frame_deferred = enabled
 					C.native_begin_deferred_layer_frame(i32(enabled))
 				}
 			}
@@ -7450,8 +7470,9 @@ fn (mut app BrowserApp) draw() {
 				if culling.skip(command, 0, f64(page_y), f64(window.width), f64(window.height)) {
 					continue
 				}
-				if scroll_damage.separate_scrollbars && command.scrollbar_axis != '' { continue }
-				if scroll_damage.skips(command) { continue }
+				if scroll_damage.separate_scrollbars && command.scrollbar_axis != ''
+					&& command_index >= scroll_damage.scrollbar_start { continue }
+				if scroll_damage.skips_index(app.paint_commands, command_index) { continue }
 				$if macos {
 					if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len {
 						next_layer := app.chromium_raster_plan.command_layers[command_index]

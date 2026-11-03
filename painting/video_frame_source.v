@@ -41,6 +41,10 @@ pub:
 	decoded_color_space dom.DecodedImageColorSpace = .srgb
 	yuv_data    ?MediaVideoYUVData
 	rgba_bitmap ?&dom.Bitmap_
+pub mut:
+	// Advances whenever this frame's pixel storage is rewritten in place, so
+	// retained-paint consumers can identify new pixels behind a reused object.
+	generation u64
 }
 
 pub fn MediaVideoFrame.from_bitmap(bitmap &dom.Bitmap_) &MediaVideoFrame {

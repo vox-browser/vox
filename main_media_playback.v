@@ -77,23 +77,30 @@ fn (player &BrowserMediaPlayback) ranges() []html.MediaBufferedRange {
 fn (mut player BrowserMediaPlayback) update_frame(pixels &u8, width int, height int) {
 	// Reuse the pixel storage between frames, including in the prealloc build.
 	// The document is invalidated below before retained painting reads it again.
-	if frame := player.frame {
+	mut previous_generation := u64(0)
+	if mut frame := player.frame {
+		previous_generation = frame.generation
 		if mut bitmap := frame.rgba_bitmap {
 			if bitmap.width == width && bitmap.height == height {
 				unsafe { vmemcpy(bitmap.data.data, pixels, bitmap.data.len) }
+				// New pixels behind the same frame object: retained-paint
+				// consumers identify them by this counter.
+				frame.generation++
 				return
 			}
 		}
 	}
 	mut bytes := []u8{len: width * height * 4}
 	unsafe { vmemcpy(bytes.data, pixels, bytes.len) }
-	player.frame = painting.MediaVideoFrame.from_bitmap(&dom.Bitmap_{
+	mut created := painting.MediaVideoFrame.from_bitmap(&dom.Bitmap_{
 		width:                    width
 		height:                   height
 		pitch:                    width * 4
 		data:                     bytes
 		native_rows_are_top_down: true
 	})
+	created.generation = previous_generation + 1
+	player.frame = created
 }
 
 fn (mut app BrowserApp) install_media_playback(element &dom.Element) {

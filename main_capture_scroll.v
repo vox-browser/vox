@@ -2,6 +2,11 @@ module main
 
 import os
 
+// Diagnostic: reach the capture offset in CSS-pixel steps, one per frame, so
+// the viewport scroll raster reuse path paints the intermediate frames. With
+// VOX_CAPTURE_INITIAL_VIEWPORT=1 the capture itself waits for the final step.
+const screenshot_scroll_step = os.getenv('VOX_SCREENSHOT_SCROLL_STEP').f64()
+
 fn (app &BrowserApp) screenshot_initial_viewport_pending() bool {
 	return os.getenv('VOX_CAPTURE_INITIAL_VIEWPORT') == '1'
 		&& app.screenshot_scroll_y > 0 && !app.screenshot_scroll_applied
@@ -35,6 +40,11 @@ fn (mut app BrowserApp) apply_screenshot_scroll_if_ready(window_height int) {
 	// Its first frame starts nearby lazy-image requests; wait for those and
 	// fonts before moving them out of range. Ordinary jump captures stay eager.
 	if app.screenshot_initial_viewport_pending() && !app.screenshot_initial_viewport_ready {
+		return
+	}
+	if screenshot_scroll_step > 0
+		&& app.scroll_y + screenshot_scroll_step < f64(app.screenshot_scroll_y) {
+		app.set_scroll_y(app.scroll_y + screenshot_scroll_step, window_height)
 		return
 	}
 	app.screenshot_scroll_applied = true
