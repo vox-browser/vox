@@ -4586,3 +4586,63 @@ identity records, logs, PNGs, fixed-reference comparisons and raw counters are
 retained in the linked ledger and archive. The previous broad batch remains
 487/490 per memory mode, with the same three recorded failures; there is no
 full-pass or cadence reset. BBC remains outside the optimized catalog.
+
+
+## Pending pruning and fixed rendering policy (2026-11-03)
+
+The whole-browser profile leads to a smaller stylesheet-invalidation search:
+an already wholly dirty subtree needs no additional primary or pseudo-element
+marking before the normal invalidation drain. Trailing universal combinators
+retain traversal because they can affect siblings or table columns outside the
+subtree. Commits `d9fd1df79` / `f88a9fbf0` implement the path and its matched
+control. All **48 focused cases × two arms × three memory modes = 288
+executions** pass. The first test fixture bypassed the DOM invalidation drain;
+its three failed candidate jobs remain retained. The corrected fixture uses
+`Document.update_style()` with a browsing context and keeps the original color
+and invalidation assertions.
+
+Fresh canonical production proves the pruning path executes on BBC before
+encoded PNG, and both arms pass full content and normal native exits. However,
+both produce the same PNG that differs from the established reference by
+**45,346 pixels**. Cohort 78 is held. A normalized comparison of generated C
+traces this to separate Retina correctness work (`ae71352ba`, later
+`178c506e9`), which snaps HTML paint and rounds inline font metrics on the
+presenting device grid. Image pixels and audit rectangles stay unchanged;
+some text moves by one physical pixel. Disabling the new preload work or
+identical-input cache does not restore the old reference. These are diagnostic
+observations, not optimization credit. One attempted density switch did not
+exist; that result is retained and supplies no density-path evidence.
+
+For continued frozen-page comparisons, **`--retain-logical-paint-snapping`**
+explicitly retains the original logical-grid paint and inline font metrics in
+**both Vox arms**. The original references remain unchanged. Document DPR,
+1024×768 viewport, native capture scale 2, selected fonts and author scripts
+stay fixed. Default Vox rendering continues to use the presenting device grid.
+Compatibility commits `103715a68`, `f70238e2f` and `dbbd95ab4` earn no instruction
+credit. Any later result using this option must disclose that rendering policy;
+it cannot establish a result for the new default Retina path. All **36 current
+focused executions** pass: default/archived layout 5/2 cases and font metrics
+4/1 cases, across three memory modes. Original device-grid cases run only in
+their declared default arm; their assertions remain unchanged.
+
+A second candidate normalizes the unused stored numeric height in closed,
+text-only inline measurement when height is indefinite. It retains width,
+availability, constraints, definiteness, font/style and input-ownership checks.
+Commits `57010b2cd` / `9b20023fa` pass **six cases × two arms × three memory
+modes = 36 executions**. It still requires a separate production BBC
+eligibility witness before any matched cohort or attribution. The latest full
+instruction-tool selection passes **263 tests**; earlier 248/261-test selections
+and their actual exits are retained.
+
+The JavaScript evaluation follow-up rejects another speculative lead:
+1,993 internal evaluations before PNG consume only 21,504,380 recorded
+own-thread CPU nanoseconds in total. API durations include synchronous host
+callbacks and can overlap during reentry, so this is not exclusive engine CPU
+or an instruction estimate. No evaluation-cache optimization is attributed.
+
+See the [pruning/policy/key ledger](performance/bbc-pruning-policy-checks-20261103.json)
+and [authenticated raw checks and diagnostics](performance/raw/bbc-pruning-policy-checks-20261103.tar.gz).
+At this checkpoint, cohort 77 remains the latest instruction result and the
+10% target is unmet. Native checks and cohorts 78/79 await a completed canonical
+bundle with their required code and fixed rendering policy. No catalog entry,
+robust instruction saving, full broad pass or cadence reset is claimed.
