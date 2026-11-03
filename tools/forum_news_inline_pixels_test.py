@@ -13,6 +13,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_ratio_only_svg_images_transfer_the_quantized_automatic_height(self):
+        self.compare_fixture('engadget-svg-auto-image', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_three_sided_category_borders_preserve_touching_corner_clips(self):
         self.compare_fixture('engadget-category-borders', width=1024, height=768,
                              settle_seconds=5)
