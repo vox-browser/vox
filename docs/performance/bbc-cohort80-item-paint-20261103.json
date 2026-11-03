@@ -23,7 +23,7 @@
     "limitations": "Native1ms sampling begins just after browser PID discovery and ends with observed process lifetime; covers work after encodedPNG too. Requested15seconds is not actual sample coverage. Blocked stacks and host contention retained; stack weights are not instruction counts or exclusive CPU durations. No optimization attribution.",
     "finding": "Repeated loading-state checks call descendant_navigables and scan the DOM/registry. A separate registry-negative proof is under focused validation."
   },
-  "status": "Target unmet; valid cohort79 has a small variable median point reduction, no robust optimization credit",
+  "status": "Target unmet; valid cohort80 has a variable median point reduction, no robust optimization credit",
   "target_met": false,
   "catalog_entry_added": false,
   "history": {
