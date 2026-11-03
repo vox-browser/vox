@@ -1552,5 +1552,11 @@
     "Cohort74 retains all21attempts: four pairwise wins and three regressions. Three Brave helper-ownership failures invalidate acceptance.",
     "No live-site fix, isolated rendering-time or scrolling-FPS claim.",
     "Existing per-engine references are stable but cross-browser pixels differ by77.8428%."
-  ]
+  ],
+  "later_raw_artifact_availability": {
+    "removed_by_concurrent_build_cleanup": true,
+    "raw_root_currently_available": false,
+    "committed_statistics_and_verification_records_preserved": true,
+    "notice": "Historical verification was performed before cleanup. Some linked raw artifacts are now missing; this record does not imply they remain independently reproducible. See bbc-initial-resource-viewport-20261103.json for recovery status."
+  }
 }

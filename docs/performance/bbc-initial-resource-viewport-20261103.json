@@ -1,0 +1,535 @@
+{
+  "status": "Viewport ordering fix committed; BBC 10% goal unmet; acceptance inputs missing",
+  "feature": "Set the actual initial CSS viewport before device-layout eligibility can query computed display styles. Preserve dimensions, zoom, density and the old-order control. This also prevents stale 800x600 viewport provenance at page zoom when media-query matches do not change.",
+  "commits": {
+    "engine": "d2ee07c63",
+    "control": "79d1b09b4"
+  },
+  "target_met": false,
+  "catalog_entry_added": false,
+  "acceptance_cohort_launched": false,
+  "history_cohorts": 74,
+  "history_browser_attempts": 1681,
+  "focused": {
+    "new_cases": 3,
+    "existing_device_layout_cases": 4,
+    "policies": 2,
+    "memory_modes": 3,
+    "executions": 42,
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "preparations": {
+      "v1": {
+        "results": [
+          {
+            "name": "default-compile",
+            "exit": 0
+          },
+          {
+            "name": "default-candidate",
+            "exit": 1
+          },
+          {
+            "name": "none-compile",
+            "exit": 0
+          },
+          {
+            "name": "none-candidate",
+            "exit": 1
+          },
+          {
+            "name": "prealloc-compile",
+            "exit": 0
+          },
+          {
+            "name": "prealloc-candidate",
+            "exit": 1
+          }
+        ],
+        "cause": "Synthetic html.parse_document fixture lacked active browsing context; update_style returned before computing complete target styles. Native navigation has the owning context. No engine change made for this failure."
+      },
+      "v2": {
+        "results": [
+          {
+            "name": "default-compile",
+            "exit": 0
+          },
+          {
+            "name": "default-candidate",
+            "exit": 0
+          },
+          {
+            "name": "default-control",
+            "exit": 1
+          },
+          {
+            "name": "none-compile",
+            "exit": 0
+          },
+          {
+            "name": "none-candidate",
+            "exit": 0
+          },
+          {
+            "name": "none-control",
+            "exit": 1
+          },
+          {
+            "name": "prealloc-compile",
+            "exit": 0
+          },
+          {
+            "name": "prealloc-candidate",
+            "exit": 0
+          },
+          {
+            "name": "prealloc-control",
+            "exit": 1
+          }
+        ],
+        "cause": "Candidate passes all cases; control preserves default800x600 style provenance in zoom case without media match change. Test incorrectly required the control to have corrected provenance. Revised case asserts the historical intermediate result and separately forces a full-style oracle."
+      }
+    }
+  },
+  "tool_tests": {
+    "cases": 223,
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*browser_instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 77791232,
+      "elapsed_seconds": 4.59983625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "production_proof": {
+    "executable_sha256": "406aaa0e2a9130580d16bfcadc8ee08c8b0fa05f59cd9f0ec2ee18383b342808",
+    "production_receipt": "Build/production-build/receipts/20261103-110455-30b1ed31",
+    "generated_source": "Build/production-build/receipts/20261103-110455-30b1ed31/frozen-compiler-inputs/0-Vox.c.i",
+    "helper_definition_sha256": "b05711ef410d443d8ea298bd1e941e773411ac442711d680f02ebd010c5c494c",
+    "helper_present": true,
+    "control_sync_before_viewport": true,
+    "candidate_sync_after_viewport": true,
+    "caller_uses_helper": true,
+    "caller_has_no_separate_earlier_sync": true,
+    "engine_source_sha256": "d686abe012b45f33e7e0145fa2856cf06dabfccb8f768b286efd8d7d4ac37f63",
+    "raw_byte_equality_claim": false,
+    "limitations": "Structural audit of anchored generated production definitions,plus focused/native execution. Does not establish an original-replay browser hit or a performance saving."
+  },
+  "native": {
+    "identities_unchanged": true,
+    "identity": {
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+        "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+        "bytes": 150024
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+        "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+        "bytes": 69928
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+        "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+        "bytes": 102592
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+        "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e",
+        "bytes": 5150944
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+        "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91",
+        "bytes": 882592
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+        "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+        "bytes": 181544
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+        "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+        "bytes": 335064
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+        "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+        "bytes": 768872
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+        "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+        "bytes": 33371048
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+        "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+        "bytes": 2158624
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+        "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912",
+        "bytes": 218040
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+        "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2",
+        "bytes": 202328
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+        "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366",
+        "bytes": 369272
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+        "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d",
+        "bytes": 64496
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+        "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+        "bytes": 245016
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+        "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+        "bytes": 5744128
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+        "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd",
+        "bytes": 981792
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+        "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+        "bytes": 106528
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+        "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91",
+        "bytes": 798160
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+        "sha256": "406aaa0e2a9130580d16bfcadc8ee08c8b0fa05f59cd9f0ec2ee18383b342808",
+        "bytes": 30352144
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+        "sha256": "5854522365d6d46dbe6d1eff338e8f3914bed10b0afc6eeedaea47005ad0c6de",
+        "bytes": 292976
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+        "sha256": "50d6dfb5d1e51cae458b9d0ed86324eab4ab8eda32b6ae2c30a1169493556347",
+        "bytes": 634544
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+        "sha256": "e0fea5d0e405d9fb3930f077881b08f1972bb0cf406b31d9bf7f9ba160e9bb9a",
+        "bytes": 4400656
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+        "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d",
+        "bytes": 13037232
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+        "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "bytes": 2192096
+      },
+      "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+        "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927",
+        "bytes": 150128
+      },
+      "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+        "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962",
+        "bytes": 70128
+      },
+      "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+        "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7",
+        "bytes": 661248
+      },
+      "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+        "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58",
+        "bytes": 212080
+      },
+      "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+        "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959",
+        "bytes": 1362736
+      },
+      "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+        "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+        "bytes": 125264
+      },
+      "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+        "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1",
+        "bytes": 1427648
+      },
+      "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+        "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618",
+        "bytes": 33833472
+      },
+      "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+        "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7",
+        "bytes": 1885104
+      },
+      "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+        "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2",
+        "bytes": 191344
+      },
+      "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+        "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd",
+        "bytes": 574096
+      }
+    },
+    "original_results": [
+      {
+        "name": "headless",
+        "exit": 0
+      },
+      {
+        "name": "smoke",
+        "exit": 1
+      },
+      {
+        "name": "svg",
+        "exit": 0
+      }
+    ],
+    "composite_smoke_cases_pass": 11,
+    "initial_smoke_cases_pass": 9,
+    "saved_png_followup": {
+      "rows": [
+        {
+          "case": "selection-moves-between-subtrees",
+          "exit": 0,
+          "different_pixels": 0,
+          "expected_sha256": "b7809acda3d96c7df4a4cde26ff811794acecbabf6da5ad14943f5f8b969f3e3",
+          "actual_sha256": "b7809acda3d96c7df4a4cde26ff811794acecbabf6da5ad14943f5f8b969f3e3",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "Build/bbc-initial-resource-viewport-20261103/native-validation/selection-moves-between-subtrees-saved-pixels.lock",
+            "--report",
+            "Build/bbc-initial-resource-viewport-20261103/native-validation/selection-moves-between-subtrees-saved-pixels.guard.json",
+            "--",
+            "Build/pixel-tools/pixel_diff",
+            "Build/bbc-initial-resource-viewport-20261103/native-validation/smoke/selection-moves-between-subtrees.expected.png",
+            "Build/bbc-initial-resource-viewport-20261103/native-validation/smoke/selection-moves-between-subtrees.actual.png",
+            "Build/bbc-initial-resource-viewport-20261103/native-validation/selection-moves-between-subtrees-saved-pixels.diff.png"
+          ]
+        },
+        {
+          "case": "empty-caret-with-placeholder",
+          "exit": 0,
+          "different_pixels": 0,
+          "expected_sha256": "0f11fd1fca7761993fb49fb1839dfa8b1682e0b00a506c68e362474382cd6776",
+          "actual_sha256": "0f11fd1fca7761993fb49fb1839dfa8b1682e0b00a506c68e362474382cd6776",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "Build/bbc-initial-resource-viewport-20261103/native-validation/empty-caret-with-placeholder-saved-pixels.lock",
+            "--report",
+            "Build/bbc-initial-resource-viewport-20261103/native-validation/empty-caret-with-placeholder-saved-pixels.guard.json",
+            "--",
+            "Build/pixel-tools/pixel_diff",
+            "Build/bbc-initial-resource-viewport-20261103/native-validation/smoke/empty-caret-with-placeholder.expected.png",
+            "Build/bbc-initial-resource-viewport-20261103/native-validation/smoke/empty-caret-with-placeholder.actual.png",
+            "Build/bbc-initial-resource-viewport-20261103/native-validation/empty-caret-with-placeholder-saved-pixels.diff.png"
+          ]
+        }
+      ],
+      "initial_driver_exit": 1,
+      "reason": "Initial native captures completed. Two subsequent diff compilations failed on unavailableSDKheaders. Only their retained PNG comparisons are resumed with a separately verified canonical diff binary; successful native captures and9passingcasesarenotrepeated.",
+      "diff_tool_verification": {
+        "source_sha256": "3e34f4d1ed211a5476bc54c3483ab074b2ace8c36239d77f15e6f50d990ddfb7",
+        "new_path": "Build/pixel-tools/pixel_diff",
+        "new_sha256": "f340c01cfa7a91f03313608183160f2ecf7070edaee34ddacd47d7a5d83d9a91",
+        "rows": [
+          {
+            "tool": "existing",
+            "case": "exact",
+            "expected": 0,
+            "actual": 0,
+            "exit": 0,
+            "tool_sha256": "8db192ce38a09bb396d69664aa967d7fd0d82125c80e6d297dcfeae3a2f6496a"
+          },
+          {
+            "tool": "existing",
+            "case": "one-pixel",
+            "expected": 1,
+            "actual": 1,
+            "exit": 0,
+            "tool_sha256": "8db192ce38a09bb396d69664aa967d7fd0d82125c80e6d297dcfeae3a2f6496a"
+          },
+          {
+            "tool": "current",
+            "case": "exact",
+            "expected": 0,
+            "actual": 0,
+            "exit": 0,
+            "tool_sha256": "f340c01cfa7a91f03313608183160f2ecf7070edaee34ddacd47d7a5d83d9a91"
+          },
+          {
+            "tool": "current",
+            "case": "one-pixel",
+            "expected": 1,
+            "actual": 1,
+            "exit": 0,
+            "tool_sha256": "f340c01cfa7a91f03313608183160f2ecf7070edaee34ddacd47d7a5d83d9a91"
+          }
+        ],
+        "limitations": "Old BBC reference and legacy HN diff binary were removed by concurrent cleanup. These generated2x2RGBAfixtures authenticate zero/one-pixel behavior against an existing legacy binary; they do not restore or replace the frozen BBC acceptance references."
+      }
+    },
+    "svg_cases": [
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-href-chain-update.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-transform-attribute-update.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-offset-update.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/pattern-attribute-update.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html",
+      "svg-image-source-switch-same-size"
+    ],
+    "svg_cases_pass": 8,
+    "headless_pass": true,
+    "whole_initial_smoke_driver_pass": false,
+    "notes": "All native captures succeeded on pinned 406aaa. Two diff compilations failed on SDK headers; their byte-identical saved actual/expected PNGs were later compared with a separately verified canonical pixel tool. The successful nine cases and native captures were not repeated; the original whole-driver exit remains 1."
+  },
+  "diagnostics": {
+    "first_compile_exit": 0,
+    "first_requested_scope": "run_initial_viewport_style_probe",
+    "first_scope_enabled": false,
+    "scope_audit": "The anchored generated C definition lacks profiler enable; no profiling call counts are claimed.",
+    "corrected_scope": "main__run_initial_viewport_style_probe",
+    "second_compile_exit": 1,
+    "second_failure": "mbedtls C compilation could not find SDK _types/_uint8_t.h; the headers were present at later read-only checks.",
+    "third_compile_exit": null,
+    "third_guard_exit": null,
+    "third_failure": "The corrected-scope retry emits four C errors accessing StyleValue.values_ in uncommitted scalar-font work. Final controller/guard receipts are missing after turn interruption. No successful profile is credited.",
+    "style_count_diagnostic": {
+      "diagnostic_only": true,
+      "bbc_instruction_credit": false,
+      "profile_scope_enabled": false,
+      "profiling_call_counts_not_claimed": true,
+      "rows": [
+        {
+          "arm": "control",
+          "exit": 0,
+          "style_computations": 5059,
+          "styled_elements": 2550,
+          "property_and_flag_signature": "6418e7fb9156ee28ae5add00cf8995008496fd4ab733065afc58797f0751545a"
+        },
+        {
+          "arm": "candidate",
+          "exit": 0,
+          "style_computations": 2550,
+          "styled_elements": 2550,
+          "property_and_flag_signature": "6418e7fb9156ee28ae5add00cf8995008496fd4ab733065afc58797f0751545a"
+        }
+      ],
+      "stable_inputs": true,
+      "limitations": "Previously compiled C-O1 V-profile binary has its intended function scope disabled because of a missing main__ scope prefix. Only explicit style counters and signatures over all stored longhand css_text/inherited/important fields are used. Conditional instrumentation remains. Recovered exact frozen HTML, without resource replay, scripts, window setup or PNG. No instruction, timing or acceptance credit."
+    },
+    "earlier_successful_v_profile": "The parent-hash key diagnostic in the committed parent-hash ledger remains a historical completed V-profile record; its Build raw files were removed concurrently."
+  },
+  "artifact_availability": {
+    "event": "Concurrent Build cleanup removed the historical BBC archive, fixed references and completed benchmark/raw profiler directories around 11:04\u201311:12 local on 2026-11-03. This task did not perform those removals.",
+    "required_inputs": {
+      "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/clock-archive/manifest.json": {
+        "bytes": 1317878,
+        "sha256": "9cda96a31bbd4681bc9519279bedfe3a31d7c395da487e94ed7173d3928dda38"
+      },
+      "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-brave/document.png": {
+        "bytes": 1110192,
+        "sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3"
+      },
+      "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-vox/document.png": {
+        "bytes": 2337874,
+        "sha256": "0be0c59ee70bf89a77fc1c0243cea0211099025e8efe8548fd707bb8336e2d01"
+      }
+    },
+    "distinct_archive_bodies": 590,
+    "exact_bodies_found": 108,
+    "missing_bodies": 482,
+    "original_manifest_available": false,
+    "original_references_available": false,
+    "recovered_html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+    "surviving_png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+    "surviving_png_prior_zero_diff_certificate": "This exact SHA equals all 14 Vox/control PNGs in committed cohort 74. Their original-reference comparisons were verified before cleanup. Original reference bytes are not restored or silently replaced.",
+    "local_snapshots_found": false,
+    "raw_counts_in_committed_ledgers": true,
+    "surviving_evidence_archive": "docs/performance/raw/bbc-surviving-style-diagnostic-20261103.tar.gz",
+    "acceptance_continuation_requires": "Restore the original sealed 595-response archive and fixed references from backup, or explicitly establish a new documented frozen BBC workload/control/reference baseline with no historical optimization credit."
+  },
+  "broad": {
+    "new_bbc_instruction_credit": 0,
+    "new_broad_run": false,
+    "reason": "No matched original-workload browser reduction has been measured for this change. The prior 490-case default/no-GC batch has three known failures and no cadence reset."
+  },
+  "raw_root": "Build/bbc-initial-resource-viewport-20261103",
+  "limitations": [
+    "The static recovered-HTML diagnostic has no scripts, resources, window or capture and earns no instruction, timing or acceptance credit.",
+    "Matching css_text/inherited/important signatures do not establish complete graph identity or unchanged browser pixels.",
+    "Latest independently valid original cohort 73 remains far above the 10% goal; cohort 74 is invalid and no cohort 75 has launched.",
+    "Frozen original inputs cannot be silently replaced or references regenerated for instruction credit."
+  ],
+  "durable_raw_evidence": {
+    "path": "docs/performance/raw/bbc-initial-resource-viewport-20261103.tar.gz",
+    "sha256": "22fbedd8d77353d678bac60df09f4d287cce6f987051b04d5097242e2c07cbd3",
+    "bytes": 529832,
+    "files": 203,
+    "all_files_round_trip_verified": true,
+    "guard": {
+      "command": [
+        "python3",
+        "Build/bbc-initial-resource-viewport-20261103/archive-evidence.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 15777792,
+      "elapsed_seconds": 0.44791495800000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  }
+}

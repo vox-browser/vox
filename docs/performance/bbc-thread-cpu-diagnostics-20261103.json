@@ -3520,5 +3520,11 @@
     "CPU deltas weighted onto an interval-end stack are leads, not exclusive function costs; inclusive stacks overlap and native/JIT frames can be unresolved.",
     "Probe initialization, suspension and JSC witness perturb the workload and supply no performance credit.",
     "Original2second settlement,original reference,original author scripts; these are frozen-replay diagnostics,not live-site proof."
-  ]
+  ],
+  "later_raw_artifact_availability": {
+    "removed_by_concurrent_build_cleanup": true,
+    "raw_root_currently_available": false,
+    "committed_statistics_and_verification_records_preserved": true,
+    "notice": "Historical verification was performed before cleanup. Some linked raw artifacts are now missing; this record does not imply they remain independently reproducible. See bbc-initial-resource-viewport-20261103.json for recovery status."
+  }
 }

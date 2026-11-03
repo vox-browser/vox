@@ -4290,3 +4290,64 @@ and repeated layout/style paths are investigation leads. Sampling can miss
 short-lived threads, an interval-end stack can differ from the work in that
 interval, and inclusive stacks overlap. Probe overhead and unresolved native/JIT
 frames prevent CPU percentages, exclusive function costs or instruction credit.
+
+
+### Initial viewport ordering and missing historical inputs (2026-11-03)
+
+`d2ee07c63` installs the actual initial CSS viewport before device-layout
+eligibility queries computed display styles. Previously those queries could
+compute the document at its default 800×600 viewport, then discard that work
+after setting the actual size. At 2× page zoom without a media-query match
+change, the old order can even retain default-viewport style provenance until
+another restyle. The matched control `79d1b09b4` preserves that old order.
+
+All **42 focused executions** pass: three new cases plus four existing device
+layout cases, both ordering policies and all three memory modes. All **223
+selected instruction-tool tests** pass. The pinned production bundle contains
+the helper and its caller, confirmed by anchored generated-C inspection. Fresh
+headless startup and all eight original SVG guards pass with stable executable
+and native-library identities. Nine smoke comparisons pass initially; two diff
+compilations fail on unavailable SDK headers. Their already captured expected
+and actual PNGs are byte-identical and pass resumed comparisons with a separately
+verified canonical diff binary. This is an eleven-case composite validation;
+the initial smoke controller's actual exit remains 1.
+
+A separate diagnostic on the recovered original 642,096-byte HTML records
+**5,059 → 2,550 style computations**, eliminating **2,509 duplicate computations**.
+Both arms have 2,550 styled elements and identical signatures over all stored
+longhand `css_text` values plus inherited/important flags. This excludes author
+scripts, resource replay, native window setup and PNG capture, and earns **no
+BBC instruction credit**. Its V-generated profile instrumentation has the
+intended scope disabled because the first selector omitted the language-level
+`main__` prefix; only explicit style counters/signatures are used. Corrected
+profile attempts retain an SDK-header compile failure and a later C-generation
+failure in concurrent scalar-font work. Missing final receipts remain unknown,
+not successful profile exits. The earlier completed parent-hash `v -profile`
+results remain historical evidence.
+
+Concurrent cleanup removed the original sealed **595-response BBC homepage
+archive**, both fixed reference PNGs, the historical HN pixel-diff binary and
+completed BBC benchmark/profile directories. This task did not remove them.
+Committed ledgers preserve exact raw instruction counts and the independent
+checks completed before cleanup, but missing linked Build artifacts are no
+longer available for reinspection. A hash search recovers **108 of 590 distinct
+response bodies**, including the exact original HTML; the complete manifest and
+remaining bodies are unavailable, and no local APFS snapshots were found.
+The retained diagnostic PNG has the exact SHA of all fourteen independently
+verified Vox/control captures in cohort 74. That certificate does not restore
+the original reference bytes or the Brave reference.
+
+A [committed compressed recovery archive](performance/raw/bbc-surviving-style-diagnostic-20261103.tar.gz)
+preserves the surviving raw diagnostic, image, identities and 96 cached bodies.
+The separately reconstructed diff tool agrees with a retained older binary on
+known exact and one-pixel fixtures; this does not replace missing BBC references.
+The [viewport ledger](performance/bbc-initial-resource-viewport-20261103.json)
+records focused/native checks, preparations, diagnostics and recovery hashes.
+Its [committed raw evidence](performance/raw/bbc-initial-resource-viewport-20261103.tar.gz)
+retains the actual logs, commands, guards, focused fixtures and native PNGs, with
+all archived files authenticated by SHA-256 after a round trip.
+No cohort 75 has launched: history remains **74 cohorts / 1,681 attempts** and
+the **10% target remains open**, without a BBC homepage catalog entry. Continuing
+the same acceptance workload requires restoring its sealed archive and fixed
+references; a fresh BBC acquisition would need an explicitly documented new
+control/reference baseline and no historical optimization credit.
