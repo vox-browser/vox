@@ -135,7 +135,8 @@ fn computed_page_semantic_values_equal(first &ComputedPropertyPage, second &Comp
 
 fn (mut pool ComputedPropertyPageInterner) intern_semantic_page(page &ComputedPropertyPage) &ComputedPropertyPage {
 	key := computed_page_semantic_hash(page)
-	for previous in pool.semantic_pages[key] {
+	mut pages := pool.semantic_pages[key] or { []&ComputedPropertyPage{} }
+	for previous in pages {
 		if computed_page_semantic_values_equal(previous, page) {
 			if semantic_property_page_diagnostics {
 				pool.semantic_hits++
@@ -144,8 +145,9 @@ fn (mut pool ComputedPropertyPageInterner) intern_semantic_page(page &ComputedPr
 			return previous
 		}
 	}
-	if pool.semantic_pages.len < computed_property_page_pool_limit && pool.semantic_pages[key].len < 8 {
-		pool.semantic_pages[key] << unsafe { page }
+	if pool.semantic_pages.len < computed_property_page_pool_limit && pages.len < 8 {
+		pages << unsafe { page }
+		pool.semantic_pages[key] = pages
 	}
 	return page
 }

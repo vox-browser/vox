@@ -129,19 +129,22 @@ fn (mut candidate InitialLayoutSnapshot) publish(mut style ComputedProperties) {
 		shareable := idle_layout_snapshot_is_shareable(cache)
 		key := initial_layout_snapshot_key(cache)
 		mut published := unsafe { &ComputedLayoutCache(nil) }
+		mut bucket := []&ComputedLayoutCache{}
 		if shareable {
-			for previous in candidate.pool.buckets[key] {
+			bucket = candidate.pool.buckets[key] or { []&ComputedLayoutCache{} }
+			for previous in bucket {
 				if idle_layout_snapshots_equal(previous, cache) { published = previous; break }
 			}
 		}
 		if published == unsafe { nil } {
 			published = &ComputedLayoutCache{...cache}
 			// Bound collision work for pages with many different geometries.
-			if shareable && candidate.pool.buckets[key].len < 256 {
+			if shareable && bucket.len < 256 {
 				published.owner_identity = 0
 				published.owner_serial = 0
 				published.resolution_provenance = unsafe { nil }
-				candidate.pool.buckets[key] << published
+				bucket << published
+				candidate.pool.buckets[key] = bucket
 			}
 		}
 		style.computed_layout_cache_ = published

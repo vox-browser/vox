@@ -165,7 +165,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 	for child in typed.children() {
 		if !retained_flow_anonymous_layout_is_ordinary(child) { return false }
 	}
-	styled := typed.as_node_with_style() or { return false }
+	if typed.as_node_with_style() == none { return false }
 	if !retained_flow_style_matches(typed, computed)
 		|| typed.display() != computed.display() {
 		return false

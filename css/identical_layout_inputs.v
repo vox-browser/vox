@@ -143,7 +143,8 @@ fn (first &IdenticalLayoutInputs) matches(second &IdenticalLayoutInputs) bool {
 fn consume_identical_layout_inputs(style &ComputedProperties, document &dom.Document) bool {
 	key, inputs := identical_layout_inputs(style, document) or { return false }
 	pool := css_style_computer_for(document).initial_layout_snapshots_
-	for saved in pool.identical_inputs[key] {
+	saved_inputs := pool.identical_inputs[key] or { return false }
+	for saved in saved_inputs {
 		if !saved.matches(&inputs) || saved.cache == unsafe { nil } { continue }
 		mut target := unsafe { &ComputedProperties(style) }
 		if target.mutation_revision() == 0 { return false }
@@ -173,6 +174,8 @@ fn retain_identical_layout_inputs(style &ComputedProperties, document &dom.Docum
 	cache := style.computed_layout_cache()
 	if cache.writable_owner_identity != 0 || cache.rare_data_writable_ { return }
 	mut pool := css_style_computer_for(document).initial_layout_snapshots_
-	if pool.identical_inputs.len >= 4096 || pool.identical_inputs[key].len >= 8 { return }
-	pool.identical_inputs[key] << IdenticalLayoutInputs{...inputs, cache:cache, line_height:style.computed_values_line_height_}
+	mut saved := pool.identical_inputs[key] or { []IdenticalLayoutInputs{} }
+	if pool.identical_inputs.len >= 4096 || saved.len >= 8 { return }
+	saved << IdenticalLayoutInputs{...inputs, cache:cache, line_height:style.computed_values_line_height_}
+	pool.identical_inputs[key] = saved
 }
