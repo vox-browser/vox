@@ -492,7 +492,8 @@
     "The private CPU shape probe records only picture execution for the rounded fixture and retains its 64-pixel mismatch. It does not validate a native shape path or justify a CPU-default policy.",
     "The initial viewport fix prevents a second geometry generation in its focused fixture; compiler/shared-build contention and intervening changes preclude an isolated whole-browser percentage.",
     "The new recovered fixture has a different manifest from the deleted original, all 24 previously served body hashes verified, 23 resource header sets retained, and the main-frame Content-Type fallback from canonical from-cache capture. It is a new cohort, with no full original header-envelope equivalence or cross-fixture causal percentage claim.",
-    "An external cleanup removed earlier private rendering artifacts. The observation wrapper was restored byte-identically against its published SHA256; no deleted historical raw artifact was reconstructed or given new validation credit."
+    "An external cleanup removed earlier private rendering artifacts. The observation wrapper was restored byte-identically against its published SHA256; no deleted historical raw artifact was reconstructed or given new validation credit.",
+    "Capture PNG dimensions do not establish native display backing scale. The recovered-cohort backing scale was not independently sampled, and no matched performance percentage or passing cap acceptance is claimed."
   ],
   "artifacts": [
     {
@@ -1984,6 +1985,37 @@
       "path": "Build/reddit-comment-memory-20261103-graphics/visual_followup.py",
       "bytes": 3378,
       "sha256": "6d2f31e3c40e0fda16934f1bc1c9205444672f76b82c220ab8d610920bfaadc0"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/continuation-capture-resolution-correction.json",
+      "bytes": 1029,
+      "sha256": "10b742a4279299fef8dcf220a62819dbd439b6ff08ee82f74623a93a90e3164b"
     }
-  ]
+  ],
+  "capture_resolution_correction": {
+    "supersedes": "Build/reddit-comment-memory-20261103-graphics/continuation-capture-scale.json",
+    "original_sha256": "fb3505ecd05b0220feba4ae7b8661db7edc29308066a2905afd8feeda16ccde2",
+    "reason": "The PNG-width/requested-window-width ratio records capture resolution, not display backing scale. The earlier raw annotation must not be used to infer backing scale. Memory observations are unchanged.",
+    "actual_display_backing_scale_independently_sampled": false,
+    "captures": [
+      {
+        "observation": "stock-viewport-recovered",
+        "png_width": 1708,
+        "png_height": 1065,
+        "document_width_points": 1708,
+        "document_height_points": 953,
+        "png_width_to_requested_window_width_ratio": 1.0,
+        "backing_scale": null
+      },
+      {
+        "observation": "pool-viewport-recovered",
+        "png_width": 1708,
+        "png_height": 1065,
+        "document_width_points": 1708,
+        "document_height_points": 953,
+        "png_width_to_requested_window_width_ratio": 1.0,
+        "backing_scale": null
+      }
+    ]
+  }
 }

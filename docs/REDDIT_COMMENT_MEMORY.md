@@ -1080,6 +1080,10 @@ recovered fixture observes **661,572,368 B** peak and **239,831,104 B** final
 two-second median. The separate sum of per-task kernel lifetime peaks is
 **667,110,184 B**; the largest sampling gap is 55.67 ms. Identities remain
 unchanged, the content/script audit passes, and browser/guard exits are zero.
+The new cohort does not independently sample display backing scale: an initial
+raw annotation inferred it from the PNG/requested-width ratio, which only
+records capture resolution. The receipt retains and corrects that annotation;
+the memory observations are unchanged.
 The private GPU override on the same executable still observes
 **545,360,680 B** peak, **242,550,824 B** settled and a separate
 **553,700,160 B** lifetime-peak envelope. It remains unshipped and fails the cap.
