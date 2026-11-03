@@ -30,7 +30,8 @@ improves from 47,705 to 31,350 differing pixels after device-aware paint
 snapping, then to 15,056 after device-aware font metrics and leading, and to
 8,611 after correcting outer-shadow geometry, then to 6,891 after device-aware
 underlines and ink skipping, then to 3,615 after device-sized shadow overlap and
-rounded background clipping.
+rounded background clipping, then to 2,117 after retaining device precision
+in visual clip contexts.
 Scale-1 parity remains exact at all three sizes. The
 [Retina receipt](parity/chatgpt-retina-20261103.json) retains both captures,
 identities, checks and rejected diagnostics; the
@@ -39,8 +40,11 @@ identities, checks and rejected diagnostics; the
 improvements. The [underline receipt](parity/chatgpt-retina-underlines-20261103.json)
 records the earlier source-browser result and clean worker shutdown. The
 [border clipping receipt](parity/chatgpt-retina-border-clips-20261103.json) records
-the current 3,615-pixel result on both the focused browser and the latest
-completed shared production bundle, including actual loaded native images.
+the 3,615-pixel result on both the focused browser and the completed shared
+production bundle, including actual loaded native images. The subsequent
+[device-clip receipt](parity/chatgpt-retina-device-clips-20261103.json) records
+the current 2,117-pixel focused result; shared production validation of that
+last clip change remains pending.
 No new live Retina parity is claimed.
 
 The earlier continuation used `Build/chatgpt-css-error-lifetime-20261102/`.
@@ -61,6 +65,41 @@ reported passing in the stable `production-conformance-final-84/` batch on `9238
 failures, identities, references and protocol corrections remain below. These
 checks cover rendering and functionality for the recorded guest workflow and
 viewport; they supply no performance claim.
+
+## November 3: visual clips retain the presenting device grid
+
+`5633212b3` stores snapped clip rectangles and radii as integer device geometry
+with an explicit scale back into surrounding layout coordinates. Replay,
+effect bounds, viewport culling and hit testing use the same conversion. A
+display-density change now rebuilds retained layout contexts, preventing stale
+clips after moving between displays. The ordinary scale-1 path keeps its
+integer geometry.
+
+The frozen Retina page improves from 3,615 to **2,117 differing pixels**. This
+removes exactly the 1,498-pixel stray shadow row at the cookie panel's lower
+clip edge. The unchanged Brave reference and maximum channel error 61 are
+retained. All three scale-1 viewports remain exact. The standalone
+[overflow/CSS clip fixture](../Tests/Browser/Brave/input/device-pixel-overflow-clips.html)
+improves from 761 differing pixels to zero at 800×600 CSS pixels, scale 2.
+The [receipt](parity/chatgpt-retina-device-clips-20261103.json) includes its
+committed PNGs, fixture hash, actual native-image paths and all failed attempts.
+
+New clip/replay and hit-testing checks pass with default GC, no GC and bounded
+preallocation. Existing scrolling, allocation, effect-bound, context-memo and
+fused-replay checks pass. Nine SVG mutation reftests remain pixel-exact,
+including same-size image-source replacement, ID collisions, moved gradient
+stops, hidden paint-server style, gradient chains and pattern updates. The
+focused browser passes startup smoke with stable executable and native inputs.
+
+The private source browser required serial compilation (`VJOBS=2`) after the
+parallel compiler reached its 10 GiB limit. The serial compile peaks below
+6.2 GiB without changing either memory limit or compiler frontend. The shared
+production bundle was reused for its native companions; a separate production
+build was not queued. Its earlier 3,615-pixel result does not validate this newer
+clip code. A current diagnostic bypass of the existing SVG device-layout
+guard still produces 1,611,472 differing pixels; the bypass was removed and
+the guard remains enabled. Full Retina text/control parity and a new live
+Retina check remain open.
 
 ## November 3: device-sized shadow overlap and rounded inner fills
 

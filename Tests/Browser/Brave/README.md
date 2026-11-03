@@ -1177,3 +1177,9 @@ browser regression and `python3 tools/test_chromium_screen_blend.py` for the
 ASan/UBSan comparison against independent GPU pictures. See
 [vlang rendering](../../../docs/VLANG_BRAVE_RENDERING.md) for the sponsor
 viewport's gains, remaining edge regressions and preserved negative controls.
+
+The `device-pixel-overflow-clips.html` fixture covers fractional overflow and
+CSS `clip` edges in CSS-coordinate layout. At 800×600 CSS pixels and scale 2,
+the device-clip source browser matches Brave at zero pixels. The
+[device-clip receipt](../../../docs/parity/chatgpt-retina-device-clips-20261103.json)
+retains the unchanged reference, control failure, native identities and checks.
