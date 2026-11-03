@@ -35,9 +35,14 @@ test('default matching stays parser-free and custom filters load the original pa
     }
     assert.equal(typeof defaults.context.voxAdblockParser, 'undefined');
     defaults.context.voxDocumentFilters('https://news.ycombinator.com/', ['.title','.content','#hnmain']);
+    assert.notEqual(defaults.context.voxAdblockURLLoaded,true);
+    assert.notEqual(defaults.context.voxAdblockRegexAnalyzerLoaded,true);
     defaults.context.voxAdblockInitialize('||metrics.example^$script\n##.advert');
     assert.equal(typeof defaults.context.voxAdblockParser.AstFilterParser, 'function');
+    assert.equal(defaults.context.voxAdblockRegexAnalyzerLoaded,true);
     assert.equal(defaults.check({url:'https://metrics.example/ad.js',source_url:'https://news.ycombinator.com/',request_type:'script'}).blocked,true);
+    assert.equal(vm.runInContext('new URL("/asset","https://example.test/").href',defaults.context),'https://example.test/asset');
+    assert.equal(defaults.context.voxAdblockURLLoaded,true);
 });
 
 test('the full builtin module stays unloaded until requested and retains every entry', async () => {

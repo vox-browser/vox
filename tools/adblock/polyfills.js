@@ -1,6 +1,6 @@
 // JavaScriptCore's C API has ECMAScript builtins, without browser Web APIs.
 // These standard Web API shims are isolated from all page JavaScript contexts.
-import 'core-js/web/url.js';
+import './url.js';
 import 'core-js/actual/atob.js';
 import 'core-js/actual/btoa.js';
 import 'fast-text-encoding';

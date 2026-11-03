@@ -3,13 +3,24 @@ import { classicScript } from './classic_script.mjs';
 
 // Preserve uBO's engine selfies, loading large typed arrays as native bytes and
 // parsing metadata with JSON.parse rather than interpreting giant JS literals.
-export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuckets = false, publicSuffixText, parserSource, builtinScriptletsSource, resourceCatalog } = {}) {
+export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuckets = false, lazyNetworkReferences = false, publicSuffixText, parserSource, builtinScriptletsSource, resourceCatalog, urlSource, regexSource } = {}) {
     const chunks = [], views = [], fixups = [];
     let byteLength = 0;
     const active = new Set();
     let hasPackedTables = false;
+    let hasPackedReferences = false;
     const primitive = value => value === null || ['string', 'boolean'].includes(typeof value)
         || typeof value === 'number' && Number.isFinite(value) && !Object.is(value, -0);
+    const jsonValue = (value, ancestors = new Set()) => {
+        if (primitive(value)) return true;
+        if (!value || typeof value !== 'object' || ancestors.has(value)
+            || !Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype
+                && Object.getPrototypeOf(value) !== null) return false;
+        ancestors.add(value);
+        const valid = Object.values(value).every(item => jsonValue(item, ancestors));
+        ancestors.delete(value);
+        return valid;
+    };
     function encode(value, path) {
         if (value === undefined) { fixups.push(`${path}=void 0;`); return null; }
         if (typeof value === 'number' && (!Number.isFinite(value) || Object.is(value, -0))) {
@@ -20,6 +31,42 @@ export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuc
         if (active.has(value)) throw new TypeError(`Cyclic filter snapshot at ${path}`);
         active.add(value);
         let result;
+        if (lazyNetworkReferences && path === 'snapshot["network"]["filterRefs"]'
+            && Array.isArray(value) && value.every(item => item instanceof RegExp || jsonValue(item))) {
+            const references = value.map(item => item instanceof RegExp
+                ? [1, item.source, item.flags] : [0, item]);
+            const table = encodePackedTable(references, 1), offset = byteLength;
+            chunks.push(table); byteLength += table.length;
+            fixups.push(`${path}=packedArray(clone(Uint8Array,${offset},${table.length}),(bytes,index)=>{const value=read(bytes,index);return value[0]===1?new RegExp(value[1],value[2]):value[1];},globalThis.voxAdblockEagerSnapshotTables===true);ownedReferences.add(${path});`);
+            hasPackedTables = hasPackedReferences = true;
+            active.delete(value);
+            return null;
+        }
+        // The outer category map previously constructed every inner Map even
+        // though one request uses only a few categories. Store each inner
+        // primitive table separately and decode it only when its category is
+        // queried. The normal map factories materialize before mutations or
+        // iteration and preserve already-returned, possibly mutated inner maps.
+        const networkBuckets = lazyNetworkBuckets && path === 'snapshot["network"]["bitsToBucket"]'
+            && value instanceof Map && [...value].every(([key, bucket]) =>
+                Number.isSafeInteger(key) && key >= 0 && bucket instanceof Map
+                && [...bucket].every(([token, item]) => Number.isSafeInteger(token)
+                    && token >= 0 && primitive(item)));
+        if (networkBuckets) {
+            const descriptors = new Map();
+            for (const [key, bucket] of value) {
+                const table = encodePackedTable(bucket, 3), offset = byteLength;
+                chunks.push(table); byteLength += table.length;
+                descriptors.set(key, [offset, table.length]);
+            }
+            const table = encodePackedTable(descriptors, 3), offset = byteLength;
+            chunks.push(table); byteLength += table.length;
+            const eager = 'globalThis.voxAdblockEagerSnapshotTables===true';
+            fixups.push(`${path}=packedMap(clone(Uint8Array,${offset},${table.length}),read,${eager},([offset,length])=>packedMap(clone(Uint8Array,offset,length),read,${eager}));`);
+            hasPackedTables = true;
+            active.delete(value);
+            return null;
+        }
         // uBO assigns these immutable lookup tables directly during restoration.
         // Queries need a handful of entries; mutation/iteration materializes all
         // original entries. Other snapshot records keep the existing codec.
@@ -78,7 +125,7 @@ export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuc
     const metadata = JSON.stringify(encode(snapshot, 'snapshot')).replace(/[\u007F-\uFFFF]/g, character =>
         `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
     let suffixReader = '';
-    for (const [name, input] of [['publicSuffixText',publicSuffixText],['parserSource',parserSource],['builtinScriptletsSource',builtinScriptletsSource]]) {
+    for (const [name, input] of [['publicSuffixText',publicSuffixText],['parserSource',parserSource],['builtinScriptletsSource',builtinScriptletsSource],['urlSource',urlSource],['regexSource',regexSource]]) {
         const value = name.endsWith('Source') && typeof input === 'string' ? classicScript(input) : input;
         if (value === undefined) continue;
         const table = encodePackedTable([value], 1), offset = byteLength;
@@ -95,7 +142,11 @@ export function encodeSnapshot(snapshot, { lazyCosmetics = false, lazyNetworkBuc
         suffixReader += `resources(){const bytes=globalThis.voxAdblockSnapshotBytes,packedMap=${packedMap},read=globalThis.voxAdblockReadPackedValue||(${readPackedValue});return {${tables.join(',')}};},`;
     }
     const readers = hasPackedTables ? `const packedArray=${packedArray},packedMap=${packedMap},read=globalThis.voxAdblockReadPackedValue||(${readPackedValue});` : '';
-    const source = `export default {${suffixReader}restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');const clone=(Type,offset,length)=>{const view=new Type(bytes.buffer,bytes.byteOffset+offset,length);return typeof globalThis.voxAdblockCloneSnapshotView==='function'?globalThis.voxAdblockCloneSnapshotView(view):new Type(view);};${readers}let snapshot=globalThis.voxAdblockReadSnapshotMetadata();${fixups.join('')}return snapshot;}};\n`;
+    // Only a newly restored private reference array can be transferred to uBO.
+    // Ordinary fromSelfie callers retain the original copy semantics. Taking
+    // ownership once prevents two engines from adopting the same mutable array.
+    const ownership = hasPackedReferences ? `const ownedReferences=new WeakSet();globalThis.voxAdblockTakeFilterReferences=value=>{if(!ownedReferences.delete(value))return;return value;};` : '';
+    const source = `${ownership}export default {${suffixReader}restore(){const bytes=globalThis.voxAdblockSnapshotBytes;if(!(bytes instanceof Uint8Array)||bytes.byteLength!==${byteLength})throw new Error('Invalid bundled uBlock Origin snapshot bytes');const clone=(Type,offset,length)=>{const view=new Type(bytes.buffer,bytes.byteOffset+offset,length);return typeof globalThis.voxAdblockCloneSnapshotView==='function'?globalThis.voxAdblockCloneSnapshotView(view):new Type(view);};${readers}let snapshot=globalThis.voxAdblockReadSnapshotMetadata();${fixups.join('')}return snapshot;}};\n`;
     return { source, metadata, binary: Buffer.concat(chunks), layout: { byte_length: byteLength, views } };
 }
 

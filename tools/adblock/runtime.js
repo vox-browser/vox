@@ -14,8 +14,16 @@ import { checkResponseHeaders } from './response_headers.js';
 import { snapshotResources } from './resources.js';
 
 const environment = ['ublock', 'chromium', 'user_stylesheet'];
+globalThis.voxAdblockLoadRegexAnalyzer = () => {
+    if (!globalThis.Regex) (0, eval)(defaultData.regexSource());
+    globalThis.voxAdblockRegexAnalyzerLoaded = true;
+    return globalThis.Regex.Analyzer;
+};
 globalThis.voxAdblockLoadParser = () => {
-    if (!globalThis.voxAdblockParser) (0, eval)(defaultData.parserSource());
+    if (!globalThis.voxAdblockParser) {
+        globalThis.voxAdblockLoadRegexAnalyzer();
+        (0, eval)(defaultData.parserSource());
+    }
     return globalThis.voxAdblockParser;
 };
 globalThis.voxAdblockLoadResources = () => {

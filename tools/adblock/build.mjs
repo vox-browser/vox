@@ -10,6 +10,7 @@ import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
 import { encodeSnapshot, encodeNativeSnapshot } from './snapshot.mjs';
 import { parserStub } from './lazy_parser.mjs';
 import { resourcesStub } from './lazy_resources.mjs';
+import { urlStub } from './lazy_url.mjs';
 import * as parserExports from '../../adblock/vendor/ublock/js/static-filtering-parser.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
@@ -27,6 +28,21 @@ const options = {
     bundle: true, platform: 'browser', format: 'iife', target: 'safari16.4',
     define: { global: 'globalThis' }, minify: true, legalComments: 'eof', loader: { '.dat': 'text' }, metafile: true,
     plugins: [{ name: 'standalone-ublock-background', setup(b) {
+        b.onLoad({filter: /\/tools\/adblock\/url\.js$/}, () => lazyParser ? {
+            contents: urlStub(), loader:'js', resolveDir:here,
+        } : undefined);
+        b.onLoad({filter: /\/lib\/regexanalyzer\/regex\.js$/}, () => lazyParser ? {
+            contents: '', loader:'js',
+        } : undefined);
+        b.onLoad({filter: /\/js\/regex-analyzer\.js$/}, async args => {
+            if (!lazyParser) return;
+            const source = await fs.readFile(args.path, 'utf8');
+            const anchor = 'const RegexAnalyzer = globalThis.Regex && globalThis.Regex.Analyzer || null;';
+            if (source.split(anchor).length !== 2) throw new Error('Unexpected regex analyzer binding');
+            return {contents: source.replace(anchor,
+                'const RegexAnalyzer = (...args) => globalThis.voxAdblockLoadRegexAnalyzer()(...args);'),
+                loader:'js', resolveDir:path.dirname(args.path)};
+        });
         // The indexed catalog supplies ordinary redirect/scriptlet queries.
         // Keep the vendor's asynchronous full-catalog API, but parse its
         // original module only if a caller actually requests that API.
@@ -74,6 +90,19 @@ ${copy}        }
                 if (source.split(anchor).length !== 2) throw new Error(`Unexpected uBO tokenizer source: ${args.path}`);
                 source = source.replace(anchor, anchor + "        this._urlIn = ''; this._urlOut = ''; this._tokenized = false;\n");
             }
+            if (lazyParser) {
+                const declaration = 'const filterRefs = [ null ];';
+                const copy = '    for ( let i = 0, n = selfie.length; i < n; i++ ) {\n        filterRefs[i] = selfie[i];\n    }';
+                if (source.split(declaration).length !== 2 || source.split(copy).length !== 2)
+                    throw new Error('Unexpected uBO filter reference restoration');
+                source = source.replace(declaration, 'let filterRefs = [ null ];')
+                    .replace(copy, `    const owned = globalThis.voxAdblockTakeFilterReferences?.(selfie);
+    if (owned !== undefined) {
+        filterRefs = owned;
+    } else {
+${copy}
+    }`);
+            }
             return { contents: source, loader: 'js', resolveDir: path.dirname(args.path) };
         });
         b.onResolve({filter: /\/(background|logger)\.js$/}, args => {
@@ -103,7 +132,12 @@ const scriptletBundle = await build({entryPoints:[path.join(root,'adblock/vendor
     minify:true,legalComments:'eof',write:false});
 const builtinScriptletsSource = scriptletBundle.outputFiles[0].text;
 const resourceCatalog = context.voxAdblockResourceSnapshot();
-const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, lazyNetworkBuckets: true, publicSuffixText, parserSource, builtinScriptletsSource, resourceCatalog });
+const urlBundle = await build({entryPoints:[path.join(here,'url.js')],
+    bundle:true,platform:'browser',format:'iife',target:'safari16.4',
+    minify:true,legalComments:'eof',write:false});
+const urlSource = urlBundle.outputFiles[0].text;
+const regexSource = await fs.readFile(path.join(root,'adblock/vendor/ublock/lib/regexanalyzer/regex.js'),'utf8');
+const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, lazyNetworkBuckets: true, lazyNetworkReferences: true, publicSuffixText, parserSource, builtinScriptletsSource, resourceCatalog, urlSource, regexSource });
 await fs.writeFile(path.join(here, 'generated-defaults.js'), snapshot.source);
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.bin'), encodeNativeSnapshot(snapshot.binary));
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.json.gz'), gzipSync(snapshot.metadata, {level: 9, mtime: 0}));

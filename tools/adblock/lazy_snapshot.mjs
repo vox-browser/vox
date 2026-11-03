@@ -43,7 +43,7 @@ export function packedArray(bytes, read, eager = false) {
     return proxy;
 }
 
-export function packedMap(bytes, read, eager = false) {
+export function packedMap(bytes, read, eager = false, decode = value => value) {
     const count = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true);
     let pending = true;
     const cache = new Map(), missing = new Set();
@@ -51,7 +51,7 @@ export function packedMap(bytes, read, eager = false) {
         if (!pending) return;
         for (let index = 0; index < count; ++index) {
             const [key, value] = read(bytes, index, true);
-            Map.prototype.set.call(target, key, value);
+            Map.prototype.set.call(target, key, cache.has(key) ? cache.get(key) : decode(value));
         }
         pending = false;
         bytes = null;
@@ -62,8 +62,8 @@ export function packedMap(bytes, read, eager = false) {
         if (missing.has(key)) return undefined;
         const value = read(bytes, key);
         if (value === undefined) { if (missing.size < 256) missing.add(key); }
-        else cache.set(key, value);
-        return value;
+        else { const decoded = decode(value); cache.set(key, decoded); return decoded; }
+        return undefined;
     };
     class LookupMap extends Map {
         get size() { return pending ? count : super.size; }
