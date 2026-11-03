@@ -153,6 +153,12 @@ fn (mut app BrowserApp) start_page_preload(loaded LoadedPage, add_history bool) 
 	// Discovery owns a detached context. Creating it with the displayed page's
 	// context would deactivate that document before its replacement is ready.
 	_ = prepare_markup_render_heap(loaded.markup, scripting_enabled)
+	if scripting_enabled && !disable_tokenized_navigation_preloads {
+		if discovery := tokenized_navigation_preloads(loaded) {
+			app.start_tokenized_page_preload(loaded, add_history, discovery)
+			return
+		}
+	}
 	mut document := parse_page_preload_document(loaded, scripting_enabled)
 	base_url := document.base_url().serialize()
 	urls := document_preload_resource_urls(document, base_url)
