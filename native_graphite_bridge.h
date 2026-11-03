@@ -118,6 +118,10 @@ void vox_graphite_picture_release_unused_graphics_memory(void);
 int vox_graphite_release_idle_graphics_memory(void);
 void vox_graphite_finish_frame(void);
 int vox_graphite_picture_release_idle_graphics_memory(void);
+// Owner-thread calls only, after synchronous raster work returns. Retain CPU
+// results while retiring an inactive backend before its peer allocates a context.
+int vox_graphite_retire_graphics_context(void);
+int vox_graphite_picture_retire_graphics_context(void);
 int vox_graphite_draw_picture_pixels(uint8_t *pixels, int width, int height,
     int pitch, const void *bytes, size_t size, const float *matrix);
 // Render on the original target, then transfer only the requested device-pixel

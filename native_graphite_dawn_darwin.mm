@@ -1,6 +1,7 @@
 // Chromium's Dawn/Metal raster context. Serialized pictures and plain pixels
 // cross the boundary; this library owns its revision-pinned Skia and Dawn ABI.
 #include "native_graphite_bridge.h"
+#include "native_graphite_context_lifetime.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkImage.h"
@@ -39,6 +40,8 @@ skgpu::graphite::Context* context()
 {
     gpu_context_last_use = std::chrono::steady_clock::now();
     if (!gpu_context_attempted) {
+        vox_retire_other_graphite_context("@rpath/libVoxGraphite.dylib",
+            "vox_graphite_retire_graphics_context");
         gpu_context_attempted = true;
         gpu_context = [] {
         static std::unique_ptr<dawn::native::Instance> instance;
@@ -359,6 +362,24 @@ int vox_graphite_draw_picture_regions_with_backdrop_pixels(VoxGraphitePictureReg
     return draw_picture_regions_pixels(regions, count, width, height, true);
 }
 
+static int retire_graphics_context_locked()
+{
+    if (!gpu_context) return 0;
+    gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    gpu_context->checkAsyncWorkCompletion();
+    gpu_context.reset();
+    gpu_context_attempted = false;
+    return 1;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_picture_retire_graphics_context()
+{
+    if (!pthread_main_np()) return 0;
+    std::lock_guard lock(gpu_mutex);
+    return retire_graphics_context_locked();
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_picture_release_idle_graphics_memory()
 {
@@ -366,11 +387,7 @@ int vox_graphite_picture_release_idle_graphics_memory()
     std::lock_guard lock(gpu_mutex);
     if (!gpu_context) return 0;
     if (std::chrono::steady_clock::now() - gpu_context_last_use < std::chrono::seconds(2)) return -1;
-    gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
-    gpu_context->checkAsyncWorkCompletion();
-    gpu_context.reset();
-    gpu_context_attempted = false;
-    return 1;
+    return retire_graphics_context_locked();
 }
 
 extern "C" __attribute__((visibility("default")))

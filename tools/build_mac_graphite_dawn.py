@@ -139,6 +139,7 @@ group("tint") {{ public_configs = [":dawn_api_config"] }}
                 '-Wl,-exported_symbol,_vox_graphite_draw_picture_regions_with_backdrop_pixels',
                 '-Wl,-exported_symbol,_vox_graphite_picture_release_unused_graphics_memory',
                 '-Wl,-exported_symbol,_vox_graphite_picture_release_idle_graphics_memory',
+                '-Wl,-exported_symbol,_vox_graphite_picture_retire_graphics_context',
                 '-Wl,-install_name,@rpath/libVoxGraphiteDawn.dylib', '-o', str(args.output)]
     subprocess.run(command, check=True)
 

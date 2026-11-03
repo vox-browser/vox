@@ -174,6 +174,7 @@ def main():
         "-Wl,-exported_symbol,_vox_graphite_convert_icc_rgba",
         "-Wl,-exported_symbol,_vox_graphite_release_unused_graphics_memory",
         "-Wl,-exported_symbol,_vox_graphite_release_idle_graphics_memory",
+        "-Wl,-exported_symbol,_vox_graphite_retire_graphics_context",
         "-Wl,-exported_symbol,_vox_graphite_finish_frame",
         "-Wl,-install_name,@rpath/libVoxGraphite.dylib", "-o", str(args.output)], check=True)
     print(f"Built isolated Skia Metal backend: {args.output}")

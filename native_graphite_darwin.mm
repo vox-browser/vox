@@ -1,6 +1,7 @@
 #import <Metal/Metal.h>
 #include "native_frame_metal_queue.h"
 #include "native_graphite_bridge.h"
+#include "native_graphite_context_lifetime.h"
 #include "native_chromium_image_decode_cache.h"
 #include "native_graphite_raster_cache.h"
 #include "native_graphite_image_upload_cache.h"
@@ -148,6 +149,8 @@ skgpu::graphite::Context* context()
 {
     gpu_context_last_use = std::chrono::steady_clock::now();
     if (!gpu_context_attempted) {
+        vox_retire_other_graphite_context("@rpath/libVoxGraphiteDawn.dylib",
+            "vox_graphite_picture_retire_graphics_context");
         gpu_context_attempted = true;
         gpu_context = [] {
         skgpu::graphite::MtlBackendContext backend;
@@ -233,13 +236,9 @@ void vox_graphite_finish_frame()
         gpu_context_last_use = std::chrono::steady_clock::now();
 }
 
-extern "C" __attribute__((visibility("default")))
-int vox_graphite_release_idle_graphics_memory()
+static int retire_graphics_context_locked()
 {
-    if (!pthread_main_np()) return 0;
-    std::lock_guard lock(gpu_mutex);
     if (!gpu_context) return 0;
-    if (std::chrono::steady_clock::now() - gpu_context_last_use < std::chrono::seconds(2)) return -1;
     // CPU raster results remain reusable after the unused upload/context die.
     image_upload_cache.clear();
     gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
@@ -249,6 +248,24 @@ int vox_graphite_release_idle_graphics_memory()
     gpu_frame_queue = nil;
     gpu_context_attempted = false;
     return 1;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_retire_graphics_context()
+{
+    if (!pthread_main_np()) return 0;
+    std::lock_guard lock(gpu_mutex);
+    return retire_graphics_context_locked();
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_release_idle_graphics_memory()
+{
+    if (!pthread_main_np()) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if (!gpu_context) return 0;
+    if (std::chrono::steady_clock::now() - gpu_context_last_use < std::chrono::seconds(2)) return -1;
+    return retire_graphics_context_locked();
 }
 
 extern "C" __attribute__((visibility("default")))
