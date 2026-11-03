@@ -15,6 +15,7 @@ mut:
 	// conservative density-projection mask before the page can be read again.
 	device_layout_candidates_ u64
 	device_layout_generation_ u64 = 1
+	semantic_hash_ u64
 }
 
 // Record copies share this owner, preserving the raw array's existing aliases.
@@ -92,6 +93,8 @@ fn (mut store ComputedPropertyStore) copy_writable_page(source &ComputedProperty
 struct ComputedPropertyPageInterner {
 mut:
 	pages map[u64]&ComputedPropertyPage
+	semantic_pages map[u64][]&ComputedPropertyPage
+	semantic_hits int
 }
 
 __global computed_empty_property_page &ComputedPropertyPage
@@ -189,10 +192,11 @@ fn (mut pool ComputedPropertyPageInterner) intern(page &ComputedPropertyPage, ha
 	if previous := pool.pages[hash] {
 		return if computed_property_pages_equal(previous, page) { previous } else { page }
 	}
-	if pool.pages.len < computed_property_page_pool_limit {
-		pool.pages[hash] = unsafe { page }
+	canonical := if disable_semantic_property_pages { page } else { pool.intern_semantic_page(page) }
+	if voidptr(canonical) == voidptr(page) && pool.pages.len < computed_property_page_pool_limit {
+		pool.pages[hash] = unsafe { canonical }
 	}
-	return page
+	return canonical
 }
 
 fn (computer &StyleComputer) publish_computed_property_pages(style &ComputedProperties) {

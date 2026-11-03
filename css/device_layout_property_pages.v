@@ -98,6 +98,7 @@ fn (computer &StyleComputer) retain_device_layout_page(source &ComputedPropertyP
 
 fn (mut page ComputedPropertyPage) invalidate_device_layout_candidates() {
 	stdatomic.store_u64(&page.device_layout_candidates_, 0)
+	stdatomic.store_u64(&page.semantic_hash_, 0)
 	// Recycling can reuse a page's address. Saturation disables memoization
 	// rather than making an old cached result eligible again.
 	if page.device_layout_generation_ != 0 {
