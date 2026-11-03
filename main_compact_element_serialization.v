@@ -6,24 +6,38 @@ import platform
 import strings
 import x.json2
 
-// Collection replies can hydrate thousands of wrappers at startup. Only the
-// bridge keys, native models and final JSON string outlive serialization. Do
-// not retain a complete graph of temporary maps for every collection member.
+// Collection replies can hydrate thousands of wrappers at startup. Bridge keys
+// and native models keep their document ownership; response bytes need only
+// survive the host's string copy. Do not retain per-member JSON graphs.
 fn (mut binding CompactElementQueryBinding) encode_element_states(elements []&dom.Element) string {
+	return binding.encode_element_states_with_envelope(elements, '', '')
+}
+
+fn (mut binding CompactElementQueryBinding) encode_element_states_with_envelope(elements []&dom.Element,
+	prefix string, suffix string) string {
 	$if prealloc {
 		if binding.document.native_storage() != unsafe { nil } {
+			mut reply := platform.ThreadScratchScope{}
+			if binding.temporary_reply_enabled {
+				reply = platform.begin_thread_scratch('compact collection reply')
+				binding.reply_workspace = reply
+			}
+			defer { reply.leave() }
 			mut output := strings.new_builder(elements.len * 32 + 2)
+			output.write_string(prefix)
 			output.write_u8(`[`)
 			for index, element in elements {
 				if index > 0 { output.write_u8(`,`) }
 				// These writes can grow retained identity maps. Keep them outside
 				// the per-element workspace, as well as lazy control-model creation.
+				mut retained := platform.enter_retained_allocations()
 				key := binding.element_key(element)
 				materialized := binding.materialized[key]
 				if !materialized {
 					binding.materialized[key] = true
 					prepare_compact_element_serialization(element)
 				}
+				retained.finish()
 				work := platform.begin_thread_scratch('compact collection element')
 				state := if materialized {
 					json2.Any({
@@ -38,12 +52,13 @@ fn (mut binding CompactElementQueryBinding) encode_element_states(elements []&do
 				work.finish()
 			}
 			output.write_u8(`]`)
+			output.write_string(suffix)
 			return output.str()
 		}
 	}
 	mut states := []json2.Any{cap: elements.len}
 	for element in elements { states << binding.element_state(element) }
-	return json2.encode(states)
+	return prefix + json2.encode(states) + suffix
 }
 
 fn prepare_compact_element_serialization(element &dom.Element) {

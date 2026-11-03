@@ -24,6 +24,8 @@ mut:
 	css_rule_lists map[string]&css.CSSRuleList
 	radio_lists map[string]&html.RadioNodeList
 	next_key int
+	temporary_reply_enabled bool
+	reply_workspace platform.ThreadScratchScope
 }
 
 fn install_compact_element_content_binding_with_policy(document &dom.Document, mut runtime browserjs.Runtime, policy CompactInitialElementPolicy) ! {
@@ -68,10 +70,27 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 			else { return error('Invalid element content property') }
 		}
 	})!
-	runtime.define_host_function('__ladybirdElementQuery', fn [binding] (input string) !string {
+	runtime.define_temporary_host_function('__ladybirdElementQuery', fn [binding] (input string) !browserjs.HostFunctionReply {
 		mut mutable_binding := unsafe { &CompactElementQueryBinding(binding) }
-		return mutable_binding.query(input)
+		return mutable_binding.query_with_temporary_reply(input)
 	})!
+}
+
+fn (mut binding CompactElementQueryBinding) query_with_temporary_reply(input string) !browserjs.HostFunctionReply {
+	previous_enabled := binding.temporary_reply_enabled
+	previous_workspace := binding.reply_workspace
+	binding.temporary_reply_enabled = binding.document.native_storage() != unsafe { nil }
+	binding.reply_workspace = platform.ThreadScratchScope{}
+	defer {
+		binding.temporary_reply_enabled = previous_enabled
+		binding.reply_workspace = previous_workspace
+	}
+	value := binding.query(input) or {
+		message := err.msg().clone()
+		binding.reply_workspace.finish()
+		return error(message)
+	}
+	return browserjs.HostFunctionReply{value: value, workspace: binding.reply_workspace}
 }
 
 fn (mut binding CompactElementQueryBinding) node_for_key(key string) ?&dom.Node {

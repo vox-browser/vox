@@ -35,8 +35,8 @@ fn (mut binding CompactElementQueryBinding) tag_collection_query(root &dom.Node,
 	}
 	mut parent := unsafe { &dom.ParentNode(root) }
 	collection := parent.get_elements_by_tag_name(name)
-	elements := binding.encode_element_states(collection.collect_matching_elements())
-	return '{"version":${json2.encode(version)},"owner":${json2.encode(owner)},"elements":${elements}}'
+	prefix := '{"version":${json2.encode(version)},"owner":${json2.encode(owner)},"elements":'
+	return binding.encode_element_states_with_envelope(collection.collect_matching_elements(), prefix, '}')
 }
 
 fn compact_tag_collection_bootstrap() string {

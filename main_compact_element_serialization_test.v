@@ -113,3 +113,54 @@ if(named.length!==1||named[0]!==first)throw new Error("class collection identity
 '], runtime, mut messages)
 	assert messages == []string{}
 }
+
+fn collection_reply_retention_trial(temporary bool) !(i64, i64) {
+	mut document := dom.Document.create(dom.URL{value: 'https://serialization.test/replies'})
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	html.parse_html_from_a_string(document, '<!doctype html><main>' +
+		'<i data-label="λ😀">item</i>'.repeat(256) +
+		'<input value="retained"><textarea>text area</textarea><svg><rect/></svg></main>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		owner.finish()
+		document.finalize()
+		document.release_native_storage()
+	}
+	elements := css.query_selector_all(document.as_node(), 'i,input,textarea,rect')
+	mut binding := serialization_test_binding(document, elements)
+	if temporary {
+		runtime.define_temporary_host_function('query', fn [mut binding] (input string) !browserjs.HostFunctionReply {
+			return binding.query_with_temporary_reply(input)
+		})!
+	} else {
+		runtime.define_host_function('query', fn [mut binding] (input string) !string { return binding.query(input) })!
+	}
+	request := r'{"key":"","action":"querySelectorAll","selector":"i,input,textarea,rect"}'
+	source := 'query(${json2.encode(request)})'
+	runtime.evaluate('var firstReply=${source};')!
+	reply_length := runtime.evaluate('${source}.length;')!.i64()
+	storage := document.native_storage()
+	before := if storage != unsafe { nil } { storage.arena.usage().used } else { i64(0) }
+	for _ in 0 .. 24 { runtime.evaluate('${source};0;')! }
+	growth := if storage != unsafe { nil } { storage.arena.usage().used - before } else { i64(0) }
+	assert runtime.evaluate('JSON.parse(firstReply).length;')! == '259'
+	assert runtime.evaluate('JSON.parse(firstReply)[256].value;')! == 'retained'
+	assert runtime.evaluate('JSON.parse(firstReply)[257].value;')! == 'text area'
+	assert runtime.evaluate('JSON.parse(firstReply)[258].namespaceURI;')! == 'http://www.w3.org/2000/svg'
+	mut input := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[256]) })
+	input.set_value('after λ😀')!
+	assert input.value() == 'after λ😀'
+	return growth, reply_length
+}
+
+fn test_native_collection_reply_bytes_retire_after_the_javascript_copy() {
+	control, control_length := collection_reply_retention_trial(false)!
+	candidate, reply_length := collection_reply_retention_trial(true)!
+	assert reply_length == control_length
+	$if prealloc {
+		assert candidate + 24 * reply_length < control, '${candidate} candidate versus ${control} control bytes'
+		println('Collection reply loop: candidate=${candidate} control=${control} reply_length=${reply_length}')
+	}
+}

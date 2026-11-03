@@ -26,8 +26,9 @@ fn javascript_core_host_function(context voidptr, function voidptr, _ voidptr, c
 	mut argument := C.vox_jsc_JSValueMakeUndefined(context)
 	if count > 0 { argument = unsafe { arguments[0] } }
 	input := js_string_to_v(context, argument) or { return host_function_error(context, err.msg(), exception) }
-	output := record.callback(input) or { return host_function_error(context, err.msg(), exception) }
-	string_value := js_source_string(output)
+	output := record.invoke(input) or { return host_function_error(context, err.msg(), exception) }
+	defer { output.finish() }
+	string_value := js_source_string(output.value)
 	defer { C.JSStringRelease(string_value) }
 	return C.vox_jsc_JSValueMakeString(context, string_value)
 }
