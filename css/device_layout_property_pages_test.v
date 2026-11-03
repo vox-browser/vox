@@ -85,18 +85,21 @@ fn test_projection_page_masks_do_not_hide_animations_or_transition_precedence() 
 	animated := projection_page_value('7px', .width)
 	source.set_animated_property(.width, animated, .no, .no)
 	projected := computed_style_in_layout_coordinates(source, document)
-	// Projection writes the selected value to the raw store and preserves the
-	// source animation overlay. Inspect the raw result to exercise the fallback
-	// scan even though the source page's zero width has no candidate bit.
+	// The selected animation is a scaled layout snapshot, even though the
+	// source page's zero width has no candidate bit. Its CSS overlay stays on
+	// the source and cannot override the physical snapshot a second time.
 	assert projected.property(.width, .no)?.css_text == '14px'
-	assert voidptr(projected.property(.width, .yes)?) == voidptr(animated)
+	assert projected.property(.width, .yes)?.css_text == '14px'
+	assert !projected.has_animated_properties()
+	assert voidptr(source.property(.width, .yes)?) == voidptr(animated)
 	assert source.property(.width, .no)?.css_text == '0px'
 	source.set_property(.width, projection_page_value('0px', .width), .no, .yes)
 	assert computed_style_in_layout_coordinates(source, document).length_percentage_to_px(.width, 1600)? == 0
 	source.set_animated_property(.width, animated, .yes, .no)
 	transitioned := computed_style_in_layout_coordinates(source, document)
 	assert transitioned.property(.width, .no)?.css_text == '14px'
-	assert voidptr(transitioned.property(.width, .yes)?) == voidptr(animated)
+	assert transitioned.property(.width, .yes)?.css_text == '14px'
+	assert !transitioned.has_animated_properties()
 	source.remove_animated_property(.width)
 	assert computed_style_in_layout_coordinates(source, document).length_percentage_to_px(.width, 1600)? == 0
 }
@@ -151,4 +154,57 @@ fn test_projection_page_recycling_clears_and_recomputes_cached_masks() {
 	allocations.finish()
 	document.finalize()
 	document.release_native_storage()
+}
+
+fn test_density_snapshot_scales_selected_animation_values_without_overriding_them_again() {
+	mut document, mut source := projection_page_test_style()
+	defer { document.finalize() }
+	width := projection_page_value('calc(260px)', .width)
+	opacity := projection_page_value('.5', .opacity)
+	source.set_animated_property(.width, width, .no, .yes)
+	source.set_animated_property(.opacity, opacity, .no, .no)
+	document.set_layout_coordinate_scale(2)
+	first := computed_style_in_layout_coordinates(source, document)
+	assert first.length_percentage_to_px(.width, 1600)? == 520
+	assert !first.has_animated_properties()
+	assert first.is_property_inherited(.width)
+	assert first.property(.opacity, .yes)?.css_text == opacity.css_text
+	assert first.property(.width, .yes)?.css_text == first.property(.width, .no)?.css_text
+	assert source.has_animated_properties()
+	assert voidptr(source.property(.width, .yes)?) == voidptr(width)
+	assert source.property(.width, .no)?.css_text == '0px'
+
+	source.set_animated_property(.width, projection_page_value('100px', .width), .no, .no)
+	second := computed_style_in_layout_coordinates(source, document)
+	assert second.length_percentage_to_px(.width, 1600)? == 200
+	assert first.length_percentage_to_px(.width, 1600)? == 520
+	assert !second.is_property_inherited(.width)
+	assert source.property(.width, .yes)?.css_text == '100px'
+}
+
+fn test_density_animation_snapshot_keeps_important_and_transition_precedence() {
+	mut document, mut source := projection_page_test_style()
+	defer { document.finalize() }
+	source.set_property(.width, projection_page_value('10px', .width), .no, .yes)
+	source.set_property(.opacity, projection_page_value('.25', .opacity), .no, .yes)
+	source.set_animated_property(.width, projection_page_value('30px', .width), .no, .no)
+	source.set_animated_property(.opacity, projection_page_value('.75', .opacity), .no, .no)
+	source.set_animated_property(.transform,
+		projection_page_value('translate(3px,4px)', .transform), .no, .no)
+	document.set_layout_coordinate_scale(2)
+	first := computed_style_in_layout_coordinates(source, document)
+	assert first.length_percentage_to_px(.width, 1600)? == 20
+	assert first.property(.opacity, .yes)?.css_text == source.property(.opacity, .no)?.css_text
+	assert first.property(.transform, .yes)?.css_text == 'translate(6px, 8px)'
+	assert source.property(.transform, .yes)?.css_text == 'translate(3px, 4px)'
+
+	source.set_animated_property(.width, projection_page_value('30px', .width), .yes, .no)
+	source.set_animated_property(.opacity, projection_page_value('.75', .opacity), .yes, .no)
+	second := computed_style_in_layout_coordinates(source, document)
+	assert second.length_percentage_to_px(.width, 1600)? == 60
+	assert second.property(.opacity, .yes)?.css_text == source.property(.opacity, .yes)?.css_text
+	assert source.is_animated_property_result_of_transition(.width)
+	assert !second.has_animated_properties()
+	assert !second.is_animated_property_result_of_transition(.width)
+	assert first.length_percentage_to_px(.width, 1600)? == 20
 }

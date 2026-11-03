@@ -311,6 +311,11 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 		layout_cache_owner_serial_:     0
 		computed_values_resolved_:      false
 		font_input_refresh_safe_:       false
+		// This is a layout snapshot of the already selected cascade values.
+		// CSS-coordinate animation overlays must not replace its scaled values.
+		animated_property_storage_:     unsafe { nil }
+		animated_property_inherited_:   [computed_property_flag_byte_count]u8{}
+		animated_property_result_of_transition_: [computed_property_flag_byte_count]u8{}
 		root_font_size_px_:             source.root_font_size_px_ * factor
 		root_line_height_px_:           source.root_line_height_px_ * factor
 		viewport_rect_:                 CSSPixelRect.new(source.viewport_rect_.left_value() * factor,
@@ -321,6 +326,17 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 			?CSSPixels(height.scaled(factor))
 		} else {
 			none
+		}
+	}
+	if source.has_animated_properties() {
+		for property_id, value in source.animated_property_storage_.values {
+			if source.is_property_important(property_id)
+				&& !source.is_animated_property_result_of_transition(property_id) { continue }
+			// Materialize dimensionless samples too: colors and opacity do not
+			// need scaling, but still replace their underlying static values.
+			target.set_property_without_modifying_flags(property_id, value)
+			target.set_property_inherited(property_id,
+				if source.is_animated_property_inherited(property_id) { .yes } else { .no })
 		}
 	}
 	font_page := (int(PropertyID.font_size) - int(first_longhand_property_id())) / computed_property_page_size
