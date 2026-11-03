@@ -1319,6 +1319,13 @@ physical-footprint growth of 349,520,136/349,159,688 B for controls versus
 209,518,880/209,518,904 B for shared transport: **139,640,784 B** minimum
 observed component reduction. This post-draw metric is not browser peak RAM.
 
+The same 104 comparisons also pass with AddressSanitizer on the bridge/test
+translation unit and leak detection disabled. The pinned archives remain
+uninstrumented. An initial incompatible attempt crashes before pixel checks:
+Skia's ASAN `SkTArray` adds a member that changes private-record layouts. The
+valid check preserves those archives' release layouts through a forced include;
+it does not establish sanitizer coverage inside Skia or Dawn.
+
 Four alternating 20-second page observations use the same completed executable
 `6e79a2f8…`, receipt `20261103-134808-a021d411`, with pinned explicit native
 library overrides. Controls use the former implementation/original Skia archive;

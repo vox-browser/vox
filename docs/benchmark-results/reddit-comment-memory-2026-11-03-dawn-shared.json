@@ -2309,5 +2309,41 @@
     "The context still uses the existing idle-only handoff to avoid thrashing interleaved native and Dawn drawing.",
     "Live Reddit access remains blocked in previous fresh HTTP 403 checks; these results establish frozen-page behavior only.",
     "Page bytes, screenshots and account-bearing raw logs remain private under Build."
-  ]
+  ],
+  "bridge_address_sanitizer": {
+    "cases": 104,
+    "exit": 0,
+    "leak_detection": false,
+    "scope": "Bridge and test translation unit instrumented; pinned Skia/Dawn archives uninstrumented. Forced include keeps non-ASAN Skia private layouts; SkTArray ASAN adds an ABI-changing fPoisoned member.",
+    "initial_attempt": {
+      "exit": 134,
+      "reason": "ASAN changes Skia private record layouts while linking a release non-ASAN archive. Crash in inline private-record access, before GPU pixel checks; not a valid sanitizer configuration."
+    },
+    "artifacts": [
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/asan.log",
+        "sha256": "3a385a60ff3820d630c208cabd5e22fadb32d0f99af490dbe7535acfb2672e46"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/asan-guard.json",
+        "sha256": "2d28f6cb7f002f4512425e4ae784eb1f8135f2d0b0cbde2c91df4d5b3787cc36"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/asan-release-abi.h",
+        "sha256": "a416b4c2ece855e3f177dd58afc29b06b95c6fe2f1b3dd255263bfeed867a27b"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/asan2-command.json",
+        "sha256": "236e68bcf60cfcffaca46a34704d15092cd15a4aa240638c2d46cbed06ccffc6"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/asan2.log",
+        "sha256": "8b8656e98dad0c1a77df0e1a063579f75d7c6de8fe5823c6cf1c88536228cd06"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/asan2-guard.json",
+        "sha256": "a34606d043ce89d9d1e1b46290fbb0cb207c3451baec7c5bfde37dd20a72185e"
+      }
+    ]
+  }
 }
