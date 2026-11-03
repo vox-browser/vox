@@ -307,15 +307,16 @@ fn computed_longhand_reuse_value_is_simple(value &dom.StyleValue) bool {
 }
 
 // CSS-wide initial/unset values use the same defaults as an absent declaration.
-// Explicit inheritance is safe only for properties whose parent inputs the key
-// already snapshots. Non-inherited parent values deliberately remain excluded.
+// Explicit inheritance keeps a snapshot of each selected parent input,
+// including a separately guarded value for non-inherited properties.
 fn computed_longhand_reuse_property_is_simple(id PropertyID, value &dom.StyleValue) bool {
 	if computed_longhand_extensions_enabled() && value.css_value_handle != unsafe { nil } {
 		typed := unsafe { &TypedStyleValueBox(value.css_value_handle) }
 		if typed.value is KeywordStyleValue {
 			keyword := typed.value.keyword_
 			if keyword in [.initial, .unset] { return true }
-			if keyword == .inherit { return computed_interpolation_is_inherited_property(id) }
+			if keyword == .inherit { return computed_interpolation_is_inherited_property(id)
+				|| !disable_explicit_parent_longhand_inputs }
 		}
 	}
 	return computed_longhand_reuse_value_is_simple(value)
@@ -484,7 +485,7 @@ struct ComputedLonghandCascadeKey {
 	hash u64
 }
 
-fn computed_longhand_cascade_key(cascaded &CascadedProperties) ?ComputedLonghandCascadeKey {
+fn computed_longhand_cascade_key(cascaded &CascadedProperties, parent &ComputedProperties) ?ComputedLonghandCascadeKey {
 	mut count := 0
 	mut hash := u64(0)
 	for id, _ in cascaded.entry_heads_ {
@@ -494,6 +495,11 @@ fn computed_longhand_cascade_key(cascaded &CascadedProperties) ?ComputedLonghand
 		if !computed_longhand_reuse_property_is_simple(id, property.value) {
 			record_diagnostic_longhand_rejection(id, property.value)
 			return none
+		}
+		if longhand_has_explicit_noninherited_parent(property) {
+			if parent == unsafe { nil } { return none }
+			parent_hash := explicit_parent_longhand_hash(parent, id) or { return none }
+			hash ^= ((parent_hash ^ (u64(id) * u64(0x517cc1b727220a95))) * u64(0x100000001b3))
 		}
 		value_hash := computed_longhand_reuse_value_hash(property.value) or { return none }
 		hash ^= ((value_hash ^ (u64(id) * u64(0x9e3779b97f4a7c15))) * u64(0x100000001b3))
@@ -514,14 +520,14 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 	}
 	mut cascade_key := ComputedLonghandCascadeKey{}
 	if !disable_longhand_eligibility_first {
-		cascade_key = computed_longhand_cascade_key(cascaded) or {
+		cascade_key = computed_longhand_cascade_key(cascaded, parent) or {
 			report_longhand_eligibility_rejection()
 			return none
 		}
 	}
 	mut hash := s.inherited_longhand_hash_hint(parent, element) or { return none }
 	if disable_longhand_eligibility_first {
-		cascade_key = computed_longhand_cascade_key(cascaded) or { return none }
+		cascade_key = computed_longhand_cascade_key(cascaded, parent) or { return none }
 	}
 	// Own contributions are XOR-combined, preserving the original key exactly.
 	hash ^= cascade_key.hash
@@ -592,6 +598,7 @@ fn (s &StyleComputer) restore_computed_longhands(key &ComputedLonghandReuseKey,
 	properties.font_input_refresh_safe_ = cached.font_input_refresh_safe_
 	properties.font_input_depends_on_font_size_ = cached.font_input_depends_on_font_size_
 	report_longhand_shape_restore(entry.inputs)
+	report_explicit_parent_longhand_inputs(entry.parent_inputs)
 	if computed_longhand_constant_diagnostics && !computed_longhand_constant_reported
 		&& computed_longhand_constants_enabled() {
 		for input in entry.inputs {
@@ -673,6 +680,14 @@ fn (s &StyleComputer) remember_computed_longhands(key ComputedLonghandReuseKey,
 			snapshot:     computed_longhand_reuse_snapshot(value)
 			semantic:     computed_longhand_reuse_value_hash(value) != none
 		}
+	}
+	// Only explicit declarations can add non-inherited parent dependencies.
+	// Do not query the cascade once for every absent longhand property.
+	for id, _ in cascaded.entry_heads_ {
+		if !computed_interpolation_is_longhand_property(id) { continue }
+		property := cascaded.style_property(id) or { continue }
+		if !longhand_has_explicit_noninherited_parent(property) { continue }
+		parent_inputs << explicit_parent_longhand_snapshot(key.parent, id) or { return }
 	}
 	snapshot := &ComputedProperties{ ...computed, property_store_: computed.clone_raw_property_store() }
 	owner.longhand_reuse_cache_.entries[key.hash] = &ComputedLonghandReuseEntry{

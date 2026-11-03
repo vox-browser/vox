@@ -228,8 +228,9 @@ fn test_longhand_reuse_wide_defaults_match_uncached_values_and_flags() {
 		longhand_reuse_assert_oracle(actual, computer, element, mut cascaded)
 	}
 	mut inherited_width := longhand_reuse_cascade(dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.inherit))))
-	assert computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none),
-		inherited_width, parent_style, false) == none
+	key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none),
+		inherited_width, parent_style, false)
+	assert (key == none) == disable_explicit_parent_longhand_inputs
 }
 
 fn test_longhand_reuse_border_slices_match_oracle_and_guard_all_mutable_sides() {
