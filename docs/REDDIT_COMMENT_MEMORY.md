@@ -2,9 +2,9 @@
 
 The requested limit is **500,000,000 bytes** for
 `https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/`.
-The measured production bundles **exceed this limit**. The latest valid
-five-minute frozen-page observation settles at **367,577,224 B** and peaks at
-**766,380,168 B**, during a later refresh. Committed fixes reduce collection/query
+The measured production bundles **exceed this limit**. The transport continuation
+below records newer five-minute observations and their pinned builds.
+Committed fixes reduce collection/query
 transport, retained paint copies and native raster storage. Focused checks and
 native screenshot guards pass; the complete memory cap and live-site validation
 remain open. The rendering continuation below records the measured build and
@@ -513,3 +513,114 @@ records exact counts, every failed/rejected attempt, hashes, commands, guard
 exits and private raw artifacts under
 `Build/reddit-comment-memory-20261103-rendering/`. Prior receipts and results
 are preserved.
+
+## Transport and cosmetic-filter continuation
+
+Five further fixes preserve the ordinary scripted workload:
+
+- `42920db38` retires temporary JavaScript host-input conversion and borrows the
+  pending mutation snapshot until its query request finishes. Primitive string
+  conversion uses disposable storage; object coercion and its reentrant native
+  effects execute with ordinary ownership. Ordinary host callbacks keep their
+  existing string ownership.
+- `8de0d0d4c` retires asynchronous finalizer text after native replay. JavaScript
+  evaluation and object-to-string hooks stay outside temporary storage. Replay
+  containers retire after use, while DOM/control values, diagnostics and
+  navigation strings keep the document owner.
+- `4d01bdfef` decommits empty spare pages and unused suffix pages of layout
+  arenas on idle scripted tabs. Live layout, retained scenes, hit testing and
+  script-visible state survive. `VOX_KEEP_SCRIPTED_LAYOUT_PAGES=1` restores the
+  previous scripted-tab skip for diagnostic controls.
+- `fed50c6f9` retires the JSON parser's index and intermediate values when
+  decoding cosmetic/scriptlet replies. Its returned strings and arrays remain
+  caller-owned. The decoder's type metadata initializes at startup, before a
+  worker or disposable parser can publish it from a short-lived owner. Invalid
+  replies preserve the codec's concrete error type and message.
+- `2987d848b` lets stylesheet refreshes reuse immutable, process-owned CSS from
+  the bounded document-filter memo. Refreshes no longer copy unused scriptlets,
+  procedural selectors and filter lists. Full filter lookups still return
+  independent arrays. Cached CSS counts against the existing 2 MiB memo budget;
+  disabled filtering, token/URL distinctions and the memo-disable control retain
+  their behavior.
+
+| Focused allocation workload | Previous retained bytes | New retained bytes |
+| --- | ---: | ---: |
+| 32 large temporary host string inputs | 3,934,314 | 693 |
+| 32 large asynchronous string results | 3,934,153 | 504 |
+| Asynchronous mutation snapshot replay | 504,745 | 7,961 |
+| Large cosmetic/scriptlet reply decode | 1,385,242 | 172,281 |
+| 32 CSS-only refreshes of a cached reply | 5,512,186 | 2,976 |
+
+These are retained allocations in focused fixtures, not browser RAM percentages.
+The query request also retains only 528 B across 16 large borrowed snapshots.
+The host, query, evaluated-text, mutation-replay, filter-decoder and CSS-memo
+cases pass in prealloc, arena-poisoned prealloc and Boehm modes. Fourteen existing
+asynchronous paint cases pass normally and with poisoning. Six browser idle
+cleanup cases and two layout-page cases preserve live owners, later script
+mutations and refill; `mincore` verifies spare-page decommit. Seven existing
+filter-memo cases and two browser stylesheet identity/enablement cases pass,
+including poisoned runs. The raw receipts retain actual test and guard exits.
+
+An instrumented allocation stack on production executable `317f313a…` identifies
+**16,777,216 B** of arena growth in the old filter-reply decoder during
+`poll_javascript_tasks → relayout → refresh_browser_adblock →
+install_browser_adblock_styles → document_filters → json2 decoder_for_text`.
+That trace supplies allocation attribution, not an unprofiled RAM saving. The
+first instrumentation attempt aborts in dyld TLS initialization before browser
+startup; a separately built hook using atomic recursion state completes. Only
+nonzero retained-owner arena readings are interpreted; zero readings outside
+that owner do not prove zero memory use.
+
+A private Metal picture backend preserves its exercised mixed-typeface scene,
+then observes a 765,021,016 B peak and 318,195,872 B endpoint over 65 seconds.
+Its executable differs from the baseline, so it earns no matched comparison
+credit and does not ship. Twelve forced JavaScriptCore collections free at most
+32,768 B directly per call; that diagnostic also changes bundle identity and
+earns no whole-page comparison credit. No new GC or graphics policy ships.
+
+The scripted-layout-page control sequence retains all four attempts. The first
+three complete with stable identities and normal author scripts:
+
+| Trial, 65 seconds | Final two-second median (B) | Observed peak (B) |
+| --- | ---: | ---: |
+| Control 1 | 304,367,704 | 733,694,808 |
+| Candidate 1 | 302,270,552 | 727,796,496 |
+| Control 2 | 304,629,848 | 739,101,456 |
+
+Candidate 2 reports a 183,846,856 B endpoint, but its bundle changes and the
+script helper fails with `Cannot determine the adblock helper executable (2)`.
+**That low-memory run is rejected.** The original outer cohort guard receipt
+is empty after a supervisor interruption, so there is no outer-exit credit or
+complete-cohort optimization claim. Individual trial receipts and the original
+three-row summary remain preserved.
+
+A valid stock-production five-minute observation containing the first two
+transport fixes, executable `a630da28…`, settles at **357,107,848 B** and peaks at
+**756,533,384 B at 280.66 seconds**. Its identities remain unchanged, browser and
+guard exits are zero, author scripts run, and the complete 1708 × 953 document
+retains 49 comments and two images. It predates the scripted layout-page trim
+and both filter fixes; differences from other shared builds are descriptive.
+Nine SVG/equal-text native comparisons on the subsequent `317f313a…` bundle are
+pixel-exact.
+
+A newer valid five-minute production observation, executable `82859cf5…`,
+contains the first four fixes above. It settles at **347,261,064 B** and peaks
+at **748,947,568 B**. Frozen compiler input contains the temporary filter decoder
+but predates CSS reuse. Browser/guard exits are zero, all pinned identities
+remain unchanged, and the original URL/title, complete visible document,
+49 comments, two images and expected author-script diagnostic pass their audit.
+The longest sampling gap is 63.83 ms. This is a stock-production observation;
+other shared changes prevent attributing its entire difference to these fixes.
+All thirteen native comparisons on this same build are pixel-exact: the nine
+SVG/equal-text cases, two SVG paint-server ID-collision cases and two existing
+Brave rounded-border goldens. Runtime and reference hashes remain unchanged,
+and the visual guard exits zero. These launches follow the memory observation.
+
+Direct live access still returns HTTP 403. The **500,000,000 B peak cap remains
+open**, including startup and later refreshes. Raw commands, all failed setup
+attempts, frozen compiler inputs, native diagnostics, guard exits, samples and
+content audits remain in private `Build/reddit-comment-memory-20261103-input/`.
+Completed generated C test inputs were losslessly gzip-compressed to recover
+workspace disk space; a manifest retains both original and compressed hashes.
+No executable or app bundle was copied. The [transport receipt](benchmark-results/reddit-comment-memory-2026-11-03-transport.json)
+links the exact artifacts and preserves earlier evidence.
