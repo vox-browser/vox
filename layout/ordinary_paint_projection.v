@@ -21,6 +21,8 @@ struct OrdinaryPaintBoxProjection {
 	font_policy       dom.FontRenderingPolicy
 	geometry          OrdinaryPaintBoxGeometry
 	has_children      bool
+	flex_item         bool
+	grid_item         bool
 	paint             RetainedBlockPaintBox
 }
 
@@ -40,7 +42,8 @@ fn ordinary_paint_projection_eligible(node &Node, used &UsedValues) bool {
 		|| node.is_in_ua_internal_shadow_tree() || node.is_replaced_box()
 		|| node.is_floating() || node.is_positioned() || node.is_list_item_box()
 		|| node.is_list_item_marker_box() || node.is_fieldset_box()
-		|| node.is_flex_item() || node.is_grid_item_ || used.has_scrollable_overflow()
+		|| (retain_uncached_item_paint && (node.is_flex_item() || node.is_grid_item_))
+		|| used.has_scrollable_overflow()
 		|| used.svg_rendering_disabled() || node.computed_values().has_animated_properties()
 		|| (!node.display().is_flow_inside() && !node.display().is_flow_root_inside()) {
 		return false
@@ -93,10 +96,12 @@ fn fill_ordinary_paint_box(node &Node, state &LayoutState,
 	if snapshot != unsafe { nil } && voidptr(snapshot.style) == voidptr(computed)
 		&& snapshot.revision == revision && snapshot.geometry == geometry
 		&& snapshot.has_children == node.has_children()
+		&& snapshot.flex_item == node.is_flex_item() && snapshot.grid_item == node.is_grid_item_
 		&& snapshot.style_environment == node.document().style_environment_version()
 		&& snapshot.font_generation == font_generation
 		&& snapshot.font_policy == node.document().font_rendering_policy() {
 		if rebase_retained_paint_box_into(&snapshot.paint, node, used, state, position, mut output) {
+			if node.is_flex_item() || node.is_grid_item_ { report_item_paint_projection(node) }
 			return
 		}
 	}
@@ -117,6 +122,8 @@ fn fill_ordinary_paint_box(node &Node, state &LayoutState,
 			font_policy:       node.document().font_rendering_policy()
 			geometry:          geometry
 			has_children:      node.has_children()
+			flex_item:         node.is_flex_item()
+			grid_item:         node.is_grid_item_
 			paint:             RetainedBlockPaintBox{ box: template, origin: position }
 		}
 	}
