@@ -383,9 +383,6 @@ fn invalidate_elements_matching_style_sheet_invalidation(root &dom.Node, result 
 fn invalidate_matching_style_sheet_subtree(node &dom.Node, result &StyleSheetInvalidationSet,
 	has_primary_set bool, primary_dom_set dom.StyleInvalidationSet, shadow_host ?&dom.Element,
 	rule_shadow_root ?&dom.ShadowRoot) {
-	if style_sheet_invalidation_subtree_is_covered(node, result) {
-		return
-	}
 	if element := node.as_element() {
 		if has_primary_set && !element.needs_style_update()
 			&& element.includes_properties_from_invalidation_set(primary_dom_set) {
