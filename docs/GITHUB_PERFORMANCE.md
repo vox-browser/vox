@@ -20332,3 +20332,70 @@ Full hydration, remaining API prerequisites and Chrome parity remain open.
 
 See [the structured audit](performance/github-document-domain-20261103.json)
 and [durable checks, commands, logs and captures](performance/raw/github-document-domain-20261103.tar.gz).
+
+## Native meta identity and live name collections, November 3, 2026
+
+Two separately committed API slices advance the recorded GitHub script path.
+`169881f0f4fa6fe8b37c6be967e97c44c5a0bfa5` exposes HTMLMetaElement identity
+through the existing HTML constructor hierarchy. Parsed, created, prefixed,
+cloned, detached-document and shadow-tree meta wrappers retain their real native
+owners; registered customized built-in construction is covered. Existing name
+and content reflection is preserved. Additional metadata IDL attribute work
+remains outside this identity slice.
+
+`a35b49215f558206a873cd9f702a01bed3c9ccb9` binds
+Document.getElementsByName to the existing native LiveNodeList. Each facade
+uses the shared NodeList interface and stable native element wrappers. Its reads
+first flush pending compact writes through the existing query transport, keeping
+console output for its normal consumer, then consult the native collection.
+Checks cover mutation, reordering, native insertion, adoption/readoption,
+namespace and shadow boundaries, case-sensitive values, conversion order and
+original thrown values, iteration, and lifetime after scratch reset.
+
+The [HTML Standard](https://html.spec.whatwg.org/multipage/dom.html#dom-document-getelementsbyname)
+includes HTML elements with a present name attribute equal to the argument,
+including explicit empty names. The native port's existing empty-name behavior
+is preserved. The pinned upstream implementation excludes empty attribute
+values; an interim fixture followed that exclusion before the standard was
+checked. All three final configurations were rerun with the correct expectation.
+The earlier passing revision and the initial compile failure from using the
+wrong native attribute method remain retained.
+
+Each feature's two focused cases pass in Boehm, GC-disabled and preallocation
+C-O0 builds: four cases and twelve final executions, all with actual compiler,
+runtime and guard exits zero. One production build was requested for both slices
+because the completed bundle lacked the bindings and no worker was running at
+the initial availability check. Shared receipt `20261103-210537-7dec507b`
+completes with executable SHA-256
+`ee58ec9512c83e3984d0f757ca3b577e0fa72fdfe32148298bc0dd5e01b32582`.
+Twelve relevant generated-C functions, including referenced native callbacks,
+match the tested preallocation build exactly after resolving string constants.
+This is a source audit of those functions, not whole-program isolation.
+
+A fresh private-profile window passes the combined public API assertions over
+loopback HTTP at an exact 640×480 document viewport. Its browser, controller and
+3 GiB guard exit zero; the retained capture has no JavaScript diagnostics or
+reported native exceptions. The private profile contains only the fixture
+navigation setting and does not alter the user's profile. The GUI is preserved.
+
+The separately predeclared ordinary N=1 GitHub observation retains the unchanged
+193-response archive, strict 33-row/66-link/21-image contract and exact 1024×768
+viewport. Browser/controller/12 GiB guard exit zero. The PNG is byte-identical to
+the previous capture, SHA-256
+`65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`.
+Main-task retired instructions are **12,859,801,169** at the legacy paint marker
+and **39,697,525,554** at native submission. These overlapping scopes remain
+separate; this unpaired diagnostic earns zero performance credit and resets no
+broad baseline.
+
+The ordinary capture reports four unarchived CSS module 404s and one undescribed
+native exception. A separate diagnostic with describe_native_errors enabled
+exits zero in the browser/controller/12 GiB guard and reports no native
+exceptions. Its fresh instrumented result does not identify the ordinary run's
+exception. Both results remain intact; the supplemental run neither extends nor
+replaces the fixed ordinary observation and supplies no instruction credit.
+Full hydration, remaining custom-element upgrade/lifecycle execution and Chrome
+parity remain open.
+
+See [the structured audit](performance/github-meta-name-20261103.json) and
+[durable commands, checks, source audits and captures](performance/raw/github-meta-name-20261103.tar.gz).
