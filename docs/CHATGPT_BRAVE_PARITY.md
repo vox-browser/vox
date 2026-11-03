@@ -29,17 +29,19 @@ The scale-2 follow-up remains open: the frozen 1024×768 Retina comparison
 improves from 47,705 to 31,350 differing pixels after device-aware paint
 snapping, then to 15,056 after device-aware font metrics and leading, and to
 8,611 after correcting outer-shadow geometry, then to 6,891 after device-aware
-underlines and ink skipping.
+underlines and ink skipping, then to 3,615 after device-sized shadow overlap and
+rounded background clipping.
 Scale-1 parity remains exact at all three sizes. The
 [Retina receipt](parity/chatgpt-retina-20261103.json) retains both captures,
 identities, checks and rejected diagnostics; the
 [font receipt](parity/chatgpt-retina-fonts-20261103.json) and
 [shadow receipt](parity/chatgpt-retina-shadows-20261103.json) retain the earlier
 improvements. The [underline receipt](parity/chatgpt-retina-underlines-20261103.json)
-records the current source-browser result and clean worker shutdown. The latest
-completed production bundle repeats the 8,611-pixel frozen Retina baseline;
-it does not contain the underline or normal-exit fixes. The shared build
-remains busy. No new live Retina parity is claimed.
+records the earlier source-browser result and clean worker shutdown. The
+[border clipping receipt](parity/chatgpt-retina-border-clips-20261103.json) records
+the current 3,615-pixel result on both the focused browser and the latest
+completed shared production bundle, including actual loaded native images.
+No new live Retina parity is claimed.
 
 The earlier continuation used `Build/chatgpt-css-error-lifetime-20261102/`.
 That homepage loaded suggestion cards and their Blob-backed icons, used Brave's
@@ -59,6 +61,38 @@ reported passing in the stable `production-conformance-final-84/` batch on `9238
 failures, identities, references and protocol corrections remain below. These
 checks cover rendering and functionality for the recorded guest workflow and
 viewport; they supply no performance claim.
+
+## November 3: device-sized shadow overlap and rounded inner fills
+
+`215c99afb` follows Chromium 156's one-device-pixel shadow cutout inset,
+expressed in the current layout coordinates. Padding/content backgrounds keep
+their concentric inner rounded shape inside the shared translucent border
+layer. Their fill no longer expands to the outer border. Intervening paint
+retains its existing order.
+
+The unchanged full Retina reference now has **3,615 differing pixels**, maximum
+channel error 61, on both the focused source browser and completed production
+`b56e1d0bc1e4b8143a08f8dc092d079d51f82a821da567876b11c753f61b5da7`
+(receipt `20261103-161539-5aa6750c`). The production captures at scale 1 remain
+exact at 800×600, 1024×768 and 1280×800; startup smoke passes. All accepted
+runs have stable pinned inputs, complete documents and empty error arrays.
+
+The expanded native regression has 48 exact GPU comparisons spanning display
+scale, recording mode, border alpha and background inset. New V checks pass
+with default GC, no GC and bounded preallocation. Existing border/bleed checks
+also pass after correcting two stale test expectations/setups. The minimal
+composer still differs at 4,296 pixels, each by at most one channel value; this
+is a retained visual failure. Text, controls and cookie/footer details remain
+open in the full Retina page.
+
+Loader auditing discovered that earlier focused executables could resolve
+`Build/v` native caches before the canonical bundle or candidate renderer.
+Those earlier pixel results remain recorded, but their pinned canonical library
+hashes do not establish complete native-image identity. The new source captures
+explicitly select the candidate bridge and completed production companions, and
+both new source and production captures log the actual loaded native paths.
+The [receipt](parity/chatgpt-retina-border-clips-20261103.json) retains failed
+attempts, the corrected identity scope, guard results and committed PNG hashes.
 
 ## November 3: device-pixel snapping with CSS-coordinate layout
 
