@@ -39,6 +39,9 @@ fn device_layout_font(font PlatformFont, factor f64, pixel_size f64) PlatformFon
 			none
 		}
 		metrics_font_:        unsafe { nil }
+		shaping_ptem_: if font.font_rendering_policy == .chromium {
+			?f32(font.shaping_ptem_ or { font.pixel_size_override_ or { font.point_size / 0.75 } })
+		} else { font.shaping_ptem_ }
 	}
 	if factor != 1 && font.font_rendering_policy == .chromium {
 		original := font.font_for_rendering()
@@ -53,6 +56,7 @@ fn device_layout_font(font PlatformFont, factor f64, pixel_size f64) PlatformFon
 					projected.metrics_font_ = &platform.Font{
 						family: native.family
 						point_size: native.point_size
+						shaping_ptem: native.shaping_ptem
 						weight: native.weight
 						italic: native.italic
 						source_path: native.source_path
@@ -96,6 +100,9 @@ fn device_layout_font_matches_projection(source &PlatformFont, projected &Platfo
 	return voidptr(source.typeface) == voidptr(projected.typeface)
 		&& projected.point_size == f32(f64(source.point_size) * factor)
 		&& projected.pixel_size_override_ == expected_pixel_size
+		&& projected.shaping_ptem_ == if source.font_rendering_policy == .chromium {
+			?f32(source.shaping_ptem_ or { source.pixel_size_override_ or { source.point_size / 0.75 } })
+		} else { source.shaping_ptem_ }
 		&& source.variations.weight == projected.variations.weight
 		&& source.variations.width == projected.variations.width
 		&& source.variations.opsz == projected.variations.opsz

@@ -55,6 +55,9 @@ pub struct Font {
 pub:
 	family     string
 	point_size f32
+	// HarfBuzz's AAT tracking lookup uses the specified CSS size even when
+	// glyph coordinates and the physical font size have been scaled.
+	shaping_ptem ?f32
 	weight     int = 400
 	italic     bool
 	// A decoded @font-face source. System fonts leave this empty and resolve
@@ -158,6 +161,7 @@ pub:
 // Gfx::FontHandle equality does upstream.
 pub fn (font &Font) has_same_identity(other &Font) bool {
 	if font.point_size != other.point_size || font.weight != other.weight || font.italic != other.italic
+		|| font.tracking_size() != other.tracking_size()
 		|| font.is_invisible != other.is_invisible
 		|| font.font_rendering_policy != other.font_rendering_policy {
 		return false
@@ -174,6 +178,14 @@ pub fn (font &Font) has_same_identity(other &Font) bool {
 		return false
 	}
 	return font.family.to_lower() == other.family.to_lower()
+}
+
+@[inline]
+pub fn (font &Font) tracking_size() f32 {
+	if size := font.shaping_ptem {
+		if size > 0 && !math.is_nan(size) && !math.is_inf(size, 0) { return size }
+	}
+	return font.point_size
 }
 
 fn font_u16_at(bytes []u8, offset int) ?u16 {

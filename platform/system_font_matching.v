@@ -208,7 +208,7 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 	}
 	work := begin_thread_scratch('System fallback font query')
 	defer { work.finish() }
-	key := '${code_point}|${language}|${base.family}|${base.weight}|${base.italic}|${base.point_size}|${base.font_synthesis_disabled}'
+	key := '${code_point}|${language}|${base.family}|${base.weight}|${base.italic}|${base.point_size}|${base.font_synthesis_disabled}' + if base.tracking_size() != base.point_size { '|ptem:${base.tracking_size()}' } else { '' }
 	if font := platform_system_fallbacks[key] {
 		return font
 	}
@@ -225,6 +225,7 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 		candidate := &Font{
 			family:                family
 			point_size:            base.point_size
+			shaping_ptem:          base.shaping_ptem
 			weight:                base.weight
 			italic:                base.italic
 			font_synthesis_disabled: base.font_synthesis_disabled
@@ -242,6 +243,7 @@ pub fn system_fallback_font(code_point u32, language string, base &Font) ?&Font 
 				result = &Font{
 					family:                '${face.path}#${face.face_index}'
 					point_size:            base.point_size
+					shaping_ptem:          base.shaping_ptem
 					weight:                base.weight
 					italic:                base.italic
 					font_synthesis_disabled: base.font_synthesis_disabled
@@ -273,7 +275,7 @@ fn canonical_system_fallback_font(font &Font) &Font {
 	} else {
 		font.family
 	}
-	key := '${face_key}|${font.point_size}|${font.weight}|${font.italic}|${font.font_rendering_policy}|${font.font_synthesis_disabled}'
+	key := '${face_key}|${font.point_size}|${font.weight}|${font.italic}|${font.font_rendering_policy}|${font.font_synthesis_disabled}' + if font.tracking_size() != font.point_size { '|ptem:${font.tracking_size()}' } else { '' }
 	if existing := platform_system_fallback_faces[key] {
 		return existing
 	}
@@ -289,6 +291,7 @@ fn canonical_system_fallback_font(font &Font) &Font {
 	owned := &Font{
 		family:                font.family.clone()
 		point_size:            font.point_size
+		shaping_ptem:          font.shaping_ptem
 		weight:                font.weight
 		italic:                font.italic
 		font_synthesis_disabled: font.font_synthesis_disabled

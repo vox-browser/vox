@@ -3503,6 +3503,7 @@ mut:
 	metrics_font_ &platform.Font = unsafe { nil }
 	native_variations_ FontVariationSettings
 	pixel_size_override_ ?f32
+	shaping_ptem_ ?f32
 }
 
 // CSS metrics queries must reuse the native handle: its decoded face and
@@ -3526,6 +3527,7 @@ pub fn (font &PlatformFont) font_for_rendering() &platform.Font {
 	native_font := &platform.Font{
 		family: font.typeface.family_name.clone()
 		point_size: font.pixel_size_override_ or { font.point_size / 0.75 }
+		shaping_ptem: font.shaping_ptem_
 		weight: int(font.variations.weight)
 		italic: font.italic
 		font_synthesis_disabled: font.font_synthesis_disabled
@@ -3543,6 +3545,7 @@ pub fn (font &PlatformFont) font_for_rendering() &platform.Font {
 fn (font &PlatformFont) matches_native_font(cached &platform.Font) bool {
 	return cached != unsafe { nil } && cached.family == font.typeface.family_name
 		&& cached.point_size == (font.pixel_size_override_ or { font.point_size / 0.75 })
+		&& cached.shaping_ptem == font.shaping_ptem_
 		&& cached.weight == int(font.variations.weight)
 		&& cached.italic == font.italic
 		&& cached.font_synthesis_disabled == font.font_synthesis_disabled
@@ -3586,6 +3589,7 @@ fn owned_platform_font(font &PlatformFont) PlatformFont {
 		italic: font.italic
 		font_synthesis_disabled: font.font_synthesis_disabled
 		pixel_size_override_: font.pixel_size_override_
+		shaping_ptem_: font.shaping_ptem_
 		// An input mutation replaces the clone's cache on its next lookup; the
 		// immutable old handle remains valid for previously retained fragments.
 		metrics_font_: if font.matches_native_font(font.metrics_font_) { font.metrics_font_ } else { unsafe { &platform.Font(nil) } }
@@ -3796,7 +3800,7 @@ fn (mut list FontCascadeList) resolve_pending_faces(code_point u32, through_font
 }
 
 fn platform_font_cache_key(font &PlatformFont) string {
-	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}|${font.font_rendering_policy}|${font.pixel_size_override_}|${font.italic}|${font.font_synthesis_disabled}'
+	return '${font.typeface.family_name}|${font.typeface.source_path}|${font.typeface.weight_}|${font.typeface.width_}|${font.typeface.slope_}|${font.point_size}|${font.variations.weight}|${font.variations.width}|${font.variations.opsz}|${font.font_rendering_policy}|${font.pixel_size_override_}|${font.italic}|${font.font_synthesis_disabled}' + if size := font.shaping_ptem_ { '|ptem:${size}' } else { '' }
 }
 
 fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bool) &PlatformFont {
@@ -3818,6 +3822,7 @@ fn (list &FontCascadeList) font_with_visibility(font &PlatformFont, invisible bo
 		italic: font.italic
 		font_synthesis_disabled: font.font_synthesis_disabled
 		pixel_size_override_: font.pixel_size_override_
+		shaping_ptem_: font.shaping_ptem_
 	}
 	mut storage := mutable_list.ensure_invisible_font_storage()
 	storage.values[key] = variant

@@ -85,6 +85,7 @@ mut:
 	face             voidptr
 	scale            int
 	point_size       f32
+	ptem             f32
 	variations       []FontVariationAxis
 	font             voidptr
 	coretext_hyphens bool
@@ -431,6 +432,12 @@ $if test {
 }
 
 fn scaled_harfbuzz_font_with_policy(face voidptr, point_size f32, resolution f32, variations []FontVariationAxis, coretext_hyphens bool) ?voidptr {
+	return scaled_harfbuzz_font_with_tracking(face, point_size, resolution, variations,
+		coretext_hyphens, point_size)
+}
+
+fn scaled_harfbuzz_font_with_tracking(face voidptr, point_size f32, resolution f32,
+	variations []FontVariationAxis, coretext_hyphens bool, ptem f32) ?voidptr {
 	scale := scale_for_harfbuzz(point_size, resolution)
 	mut available := -1
 	for index, cached in harfbuzz_scaled_fonts {
@@ -439,6 +446,7 @@ fn scaled_harfbuzz_font_with_policy(face voidptr, point_size f32, resolution f32
 			continue
 		}
 		if cached.face == face && cached.scale == scale && cached.point_size == point_size
+			&& cached.ptem == ptem
 			&& cached.variations == variations && cached.coretext_hyphens == coretext_hyphens {
 			return cached.font
 		}
@@ -451,7 +459,7 @@ fn scaled_harfbuzz_font_with_policy(face voidptr, point_size f32, resolution f32
 	}
 	C.hb_ot_font_set_funcs(font)
 	C.hb_font_set_scale(font, scale, scale)
-	C.hb_font_set_ptem(font, point_size)
+	C.hb_font_set_ptem(font, ptem)
 	if variations.len > 0 {
 		// FontVariationAxis has hb_variation_t's {tag, value} layout.
 		C.hb_font_set_variations(font, variations.data, u32(variations.len))
@@ -476,6 +484,7 @@ fn scaled_harfbuzz_font_with_policy(face voidptr, point_size f32, resolution f32
 		face:             face
 		scale:            scale
 		point_size:       point_size
+		ptem:             ptem
 		variations:       axes
 		font:             font
 		coretext_hyphens: coretext_hyphens
@@ -891,11 +900,12 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 		face = document_harfbuzz_face(font)?
 	}
 	resolution := f64(font.shaping_resolution())
-	hb_font := scaled_harfbuzz_font_with_policy(face, font.point_size, f32(resolution), if uses_emoji {
+	hb_font := scaled_harfbuzz_font_with_tracking(face, font.point_size, f32(resolution), if uses_emoji {
 		[]FontVariationAxis{}
 	} else {
 		font.variations()
-	}, !uses_emoji && font.font_rendering_policy == .chromium && system_font_matching_supported())?
+	}, !uses_emoji && font.font_rendering_policy == .chromium && system_font_matching_supported(),
+		font.tracking_size())?
 	buffer := C.hb_buffer_create()
 	if buffer == unsafe { nil } {
 		return none

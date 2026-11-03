@@ -107,6 +107,7 @@ fn glyph_run_face_font(font &Font, face GlyphRunFace) &Font {
 			return &Font{
 				family:      'emoji'
 				point_size:  font.point_size
+				shaping_ptem: font.shaping_ptem
 				weight:      font.weight
 				source_path: path
 			}
