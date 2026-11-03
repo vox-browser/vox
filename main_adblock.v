@@ -126,5 +126,8 @@ fn refresh_browser_adblock(document &dom.Document, runtime &browserjs.Runtime, m
 			}
 		}
 	}
+	// Consent widgets can arrive in delayed callbacks or be shown again by
+	// scripts. Apply the independent cookie policy after replay, before layout.
+	apply_cookie_banner_policy(document)
 	install_browser_adblock_styles(document, procedural_css) or { messages << 'Adblock styles: ${err.msg()}' }
 }
