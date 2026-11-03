@@ -70,7 +70,7 @@ fn test_equal_text_reuses_geometry_and_preserves_new_text_identity_and_ranges() 
 	new_display := document.record_display_list()?
 	assert new_display.dump() == previous_commands
 	current := document_layout_result(document)?
-	assert equal_text_run_id(&current.paint_tree, old_layout.real_layout_handle())? == i64(fresh.unique_id())
+	assert equal_text_run_id(&current.paint_tree, old_layout.real_layout_handle())? == i64(old_layout.real_layout_handle())
 	records := observer.take_records()
 	assert records.len == 2
 	assert voidptr(records[0].removed_nodes[0]) == voidptr(old)
@@ -195,4 +195,77 @@ fn test_equal_text_preserves_synthetic_control_owners_and_unrelated_split_text()
 	editor.remove(false)
 	document.update_layout(.debugging)
 	assert document.layout_engine_handle() != before
+}
+
+fn test_equal_text_keeps_paint_payloads_and_resolves_the_fresh_dom_owner() {
+	$if !prealloc { return }
+	mut document := equal_text_document('time')!
+	defer { retire_equal_text_document(mut document) }
+	mut stamp := document.get_element_by_id('stamp')?.as_node()
+	old := stamp.first_child()?
+	mirror := old.unsafe_layout_node()?
+	old_list := document.record_display_list()?
+	scene := retain_display_list_scene(old_list)
+	defer { release_display_list_scene(scene) }
+	old_dump := old_list.dump()
+	mut result := document_layout_result(document)?
+	storage := result.paint_tree_storage
+	old_lines := result.paint_tree.lines.data
+	old_phase := result.paint_phase_commands.data
+	old_commands := result.paint_phase_commands.map(it.data)
+	for _ in 0 .. 32 {
+		stamp.set_text_content('')!
+		stamp.set_text_content('2 days ago')!
+		document.update_layout(.debugging)
+		assert voidptr(document_layout_result(document)?) == voidptr(result)
+		assert voidptr(result.paint_tree_storage) == voidptr(storage)
+		assert result.paint_tree.lines.data == old_lines
+		fresh := stamp.first_child()?
+		assert voidptr(fresh) != voidptr(old)
+		assert voidptr(mirror.dom_node_?) == voidptr(fresh)
+		new_list := document.record_display_list()?
+		assert new_list.dump() == old_dump
+		assert old_list.dump() == old_dump
+		assert result.paint_phase_commands.data == old_phase
+		for index, bucket in result.paint_phase_commands {
+			assert bucket.data == old_commands[index]
+		}
+		mut range := document.create_range()
+		range.set_start(fresh, 1)!
+		range.set_end(fresh, 4)!
+		rects := range.get_client_rects().rects
+		assert rects.len > 0
+		rect := rects[0]
+		hit := viewport_hit_test(voidptr(result), rect.x + rect.width / 2,
+			rect.y + rect.height / 2, .exact)?
+		assert voidptr(hit.node) == voidptr(fresh)
+	}
+}
+
+fn test_equal_text_replacement_retires_selected_paint_and_accepts_a_new_range() {
+	$if !prealloc { return }
+	mut document := equal_text_document('span')!
+	defer { retire_equal_text_document(mut document) }
+	mut stamp := document.get_element_by_id('stamp')?.as_node()
+	old := stamp.first_child()?
+	mut selection := document.get_selection()?
+	selection.add_range(dom.Range.create_from_boundary_points(old, 1, old, 4))
+	selected := record_retained_display_list(mut document)?
+	selected_dump := selected.dump()
+	selected_commands := display_list_commands(selected)
+	selected_snapshot := selected_commands.clone()
+	mut result := document_layout_result(document)?
+	owner := result.paint_tree_storage
+	stamp.set_text_content('')!
+	stamp.set_text_content('2 days ago')!
+	document.update_layout(.debugging)
+	fresh := stamp.first_child()?
+	assert selection.is_collapsed()
+	assert voidptr(result.paint_tree_storage) == voidptr(owner)
+	unselected := document.record_display_list()?
+	assert unselected.dump() != selected_dump
+	assert retained_paint_payload_equal(selected_commands, selected_snapshot)
+	selection.remove_all_ranges()
+	selection.add_range(dom.Range.create_from_boundary_points(fresh, 1, fresh, 4))
+	assert document.record_display_list()?.dump() == selected_dump
 }

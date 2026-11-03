@@ -141,7 +141,7 @@ pub:
 	italic         bool
 	mono           bool
 	font_smoothing css.FontSmoothing
-	// Words from the same DOM text node can be shaped and painted as one run when CSS uses natural
+	// Words from the same layout text node can be shaped and painted as one run when CSS uses natural
 	// letter/word spacing, so the renderer uses the font's glyph advances across the whole run.
 	text_run_id           i64
 	shape_as_run          bool

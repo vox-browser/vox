@@ -4741,8 +4741,11 @@ fn painted_owner_element(node &Node) ?&dom.Element {
 }
 
 fn text_run_identity(node &Node) i64 {
-	dom_node := node.dom_node() or { return 0 }
-	return i64(dom_node.unique_id())
+	// This key only groups fragments of the same shaped layout run. The DOM
+	// owner is looked up through layout_handle for selection and hit testing.
+	// An equal-text DOM replacement can keep its layout node and paint data.
+	if node.dom_node() == none { return 0 }
+	return i64(voidptr(node))
 }
 
 fn selection_style_has_styling(style TextSelectionStyle) bool {

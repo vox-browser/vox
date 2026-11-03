@@ -239,11 +239,9 @@ fn (mut result DocumentLayoutResult) reuse_native_equal_text(width f64, height f
 		fresh.set_layout_node(mirror)
 		if mirror.paintables_.len > 0 { fresh.set_paintable(mirror.paintables_[0]) }
 	}
-	// Projection rebasing derives text-run IDs from their current DOM owner.
-	// Keep the immutable templates and publish the refreshed metadata into the
-	// native paint-tree pool, rather than retaining new templates per refresh.
-	result.paint_tree_needs_style_update = true
-	result.paint_style_update_requires_full_refresh = true
+	// Paint-run keys follow the retained layout node; hit testing and selection
+	// read its new DOM owner. Rebinding needs no new projection or phase payloads.
+	// Preserve any independently pending paint update (for example an image load).
 	result.root.for_each_in_inclusive_subtree(fn (node &Node) dom.TraversalDecision {
 		mut current := unsafe { &Node(node) }
 		current.reset_needs_layout_update()
