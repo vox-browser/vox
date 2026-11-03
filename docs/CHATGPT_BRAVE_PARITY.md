@@ -3461,3 +3461,55 @@ allocator modes; four existing fixed/raster suites pass. See the
 [anchor-group receipt](parity/chatgpt-retina-fixed-anchor-groups-20261103.json).
 The latest completed production capture independently verifies the preceding
 21-pixel stage; it is not validation of the later anchor fix.
+
+
+## Retina reply composer after a fresh guest session (2026-11-03)
+
+`6ce1e2391` fixes the compositor continuation used after the translucent send
+button. The saved prefix contains physical pixels, while its parent picture
+records CSS coordinates. Drawing the prefix without the inverse display scale
+magnified it at Retina density and replaced the composer border, shadows and
+right-hand controls with unrelated background pixels. The recorder now projects
+that immutable prefix back into CSS space before the remaining paint runs.
+
+The unchanged successful-reply DOM from `fresh-retina-85/` improves from
+**259,848 differing physical pixels to three**, with maximum channel error 1.
+The viewport is 1024×768 CSS pixels at scale 2. The original frozen homepage
+remains at one differing pixel. The new [reference](parity/raw/chatgpt-retina-reply-brave.png),
+[native capture](parity/raw/chatgpt-retina-reply-composer-fixed.png) and
+[receipt](parity/chatgpt-retina-reply-composer-20261103.json) retain the exact
+pixels and identities. Neither reference nor tolerance changes.
+
+The patterned-prefix regression forces a configured GPU raster grid and proves
+that a non-root picture has recorded content before publication. The complete
+shared-layer suite passes, including scale 1 and scale 2 continuations; restoring
+only the old scaling fails at scale 2 (`opaque-prefix-control-121/`). The 16
+large-layer cases, 44 deferred-layer scenes and all nine Retina SVG mutation
+comparisons pass with stable inputs. Earlier test attempts remain retained:
+110/112 had a colored-reference BGRA/RGBA mismatch; 114/115 omitted the raster
+grid and therefore validated fallback pixels rather than publication. Those
+attempts supply no proof of the corrected path.
+
+`native-live-fixed-117/` also completes a real native Send/reply through SOCKS,
+with matching anonymous guest cookies, a conversation URL, no service block and
+zero native/script errors. Only static responses are seeded; backend responses
+are live encrypted traffic. Its selection/hover state differs from the Brave
+capture, so its 7,302-pixel live comparison is not pixel-parity acceptance.
+The frozen reply comparison isolates rendering independently of that state.
+
+The authorized fresh Brave session in `fresh-retina-85/` makes two homepage
+requests as its frontend reloads. Its 48 recorder body-retrieval errors concern
+duplicates whose bodies were also captured freshly; runtime exceptions are zero.
+The empty-cookie native attempt 86 receives the service's unusual-activity page;
+the matching-session attempt 88 and fixed-renderer attempt 117 obtain replies.
+Private session data and document contents remain under `Build/`.
+
+The previously rejected overlap experiment is removed and retained only as a
+patch under `abandoned-overlap-90/`. A production bundle that had captured its
+intermediate dirty state is not credited: the later stable normal-loader
+`production-current-73/` restores the one-pixel homepage result, and
+`production-scale1-87/` retains exact comparisons at all three scale-1 sizes.
+The new continuation fix is validated with the completed canonical executable
+and an explicitly loaded native library compiled from canonical source; the
+freshly requested shared production build still needs its own validation.
+Literal Retina pixel equality and broader live feature parity remain open.
