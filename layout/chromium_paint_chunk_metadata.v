@@ -133,6 +133,10 @@ fn chromium_metadata_state(box &BlockBox, result &DocumentLayoutResult,
 	}
 	mut state := scratch.properties[context]
 	state.fixed_to_viewport = box.fixed_to_viewport
+	// Hit-test-only chunks must share their fixed container's paint identity.
+	// Otherwise their overlapping bounds split each descendant from the
+	// background it needs during premultiplied rasterization.
+	state.fixed_raster_owner = chromium_fixed_raster_owner(box)
 	mut ancestor := context
 	for ancestor > 0 && ancestor < result.visual_context_tree.nodes.len {
 		if u64(ancestor) in scratch.compositor_bounds {
