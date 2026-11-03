@@ -73,7 +73,7 @@ fn chromium_compositor_gap_ink(command &layout.PaintCommand) ?layout.LayoutRect 
 fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 	plan layout.ChromiumRasterLayerPlan, parent int, start int, end int,
 	viewport layout.LayoutRect) bool {
-	if !plan.has_paint_metadata || parent <= 0 || parent >= plan.layers.len
+	if parent <= 0 || parent >= plan.layers.len
 		|| plan.command_layers.len != commands.len || start < 0 || end <= start
 		|| end > commands.len || viewport.width <= 0 || viewport.height <= 0 {
 		return false
@@ -81,6 +81,8 @@ fn chromium_compositor_gap_can_flush_parent(commands []layout.PaintCommand,
 	for value in [viewport.x, viewport.y, viewport.width, viewport.height] {
 		if math.is_nan(value) || math.is_inf(value, 0) { return false }
 	}
+	if chromium_opaque_compositor_effect_gap(commands,plan,parent,start,end) { return true }
+	if !plan.has_paint_metadata { return false }
 	if chromium_opaque_compositor_mask_gap(commands, plan, parent, start, end) { return true }
 	mut before := layout.LayoutRect{}
 	mut after := layout.LayoutRect{}

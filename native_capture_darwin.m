@@ -1186,6 +1186,18 @@ void native_begin_css_effect_layer(float opacity, int blend_mode) {
 	native_begin_tracked_transparency_layer(context, NULL);
 }
 
+void native_set_chromium_opaque_layer_continuation(int enabled) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	typedef void (*Set)(int);
+	static Set set;
+	static dispatch_once_t once;
+	dispatch_once(&once, ^{
+		set = (Set)dlsym(RTLD_DEFAULT, "ladybird_v_skia_set_opaque_layer_continuation");
+	});
+	if (set) set(enabled);
+#endif
+}
+
 void native_end_css_effect_layer(void) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	// Replay while the isolated canvas is still alive, before group opacity.

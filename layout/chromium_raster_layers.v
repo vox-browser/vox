@@ -50,6 +50,9 @@ mut:
 	effect_scope         u64
 	legacy_effect        bool
 	atomic_mask          bool
+	// A non-composited normal-opacity scope is a saveLayer inside its parent's
+	// picture, rather than an independent compositor overlap barrier.
+	atomic_opacity       bool
 	fixed_to_viewport    bool
 	// Separate fixed containers own separate paint-offset transforms. A shared
 	// boolean alone lets a sibling's paths change this container's MSAA coverage.
@@ -216,7 +219,7 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 				&& (plan.layers[index].unbounded_sticky_overlap || chunk.unbounded_sticky_overlap)
 			animation_overlap := states[index].effect_scope != chunk.state.effect_scope
 				&& (plan.layers[index].unbounded_transform_overlap || chunk.unbounded_transform_overlap)
-			if !states[index].atomic_mask
+			if !states[index].atomic_mask && !states[index].atomic_opacity
 				&& (sticky_overlap || animation_overlap || chromium_layer_bounds_overlap(plan.layers[index].bounds, chunk.bounds)) {
 				separated_by_overlap = true
 				break
@@ -686,6 +689,11 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				// raster. They are not compositor overlap barriers for that
 				// parent's subsequent metadata or decoration commands.
 				state.atomic_mask = legacy_effect && commands[first].kind == 'begin_svg_mask_layer'
+				if effect := commands[first].visual_layer_data {
+					state.atomic_opacity = legacy_effect && commands[first].kind == 'begin_css_effect_layer'
+						&& effect.kind == .css_effect && effect.blend_mode == .normal
+						&& effect.filter == none && effect.opacity > 0 && effect.opacity < 1
+				}
 				state.fixed_to_viewport = command.fixed_to_viewport
 				state.fixed_raster_owner = if state.fixed_to_viewport {
 					chromium_fixed_raster_owner(box)

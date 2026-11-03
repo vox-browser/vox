@@ -29,6 +29,12 @@ bool s_shared_root_enabled = false;
 bool s_shared_layer_enabled = false;
 bool s_speculative_layer_enabled = false;
 bool s_shared_layer_backdrop = false;
+bool s_opaque_layer_continuation = false;
+
+extern "C" void ladybird_v_skia_set_opaque_layer_continuation(int enabled)
+{
+    s_opaque_layer_continuation = enabled != 0;
+}
 int s_shared_viewport_width = 0, s_shared_viewport_height = 0;
 bool s_deferred_layer_frame_enabled = false;
 bool s_deferred_layer_frame_failed = false;
@@ -196,7 +202,23 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
         }
         group->recorder = std::make_unique<SkPictureRecorder>();
         auto* canvas = group->recorder->beginRecording(SkRect::MakeWH(width, height));
-        // A compositor picture starts transparent, even over an opaque
+        bool opaque_continuation = std::exchange(s_opaque_layer_continuation, false);
+        if (opaque_continuation && !group->backdrop.empty()) {
+            // V proved this is an opaque continuation of the same parent
+            // picture. Blend later coverage against that prefix in the GPU,
+            // without another transparent 8-bit resolve in between.
+            auto info = SkImageInfo::Make(group->backdrop_width,
+                group->backdrop.size() / group->backdrop_width, kBGRA_8888_SkColorType,
+                kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+            auto image = SkImages::RasterFromPixmapCopy(SkPixmap(info,
+                group->backdrop.data(), size_t(group->backdrop_width) * 4));
+            if (image) {
+                canvas->drawImage(image, 0, 0);
+                group->backdrop.clear();
+                group->backdrop_width = 0;
+            }
+        }
+        // An independent compositor picture starts transparent, even over an opaque
         // destination. Its combined premultiplied ink is rounded before the
         // picture meets that prefix. Keep the prefix for publication below;
         // painting it into the picture changes overlapping shadow coverage.
@@ -660,6 +682,7 @@ extern "C" void ladybird_v_skia_set_shared_recording(int enabled, int width, int
     s_shared_layer_enabled = false;
     s_speculative_layer_enabled = false;
     s_shared_layer_backdrop = false;
+    s_opaque_layer_continuation = false;
     s_shared_root_enabled = enabled && width > 0 && height > 0;
     s_shared_viewport_width = width;
     s_shared_viewport_height = height;
@@ -726,6 +749,7 @@ extern "C" void ladybird_v_skia_add_shared_rounded_clip(CGContextRef destination
 
 extern "C" void ladybird_v_skia_set_layer_shared_recording(int enabled)
 {
+    if (!enabled) s_opaque_layer_continuation = false;
     s_shared_layer_enabled = enabled != 0;
     s_speculative_layer_enabled = false;
     if (s_raster_layer_is_root && root_speculative_picture_enabled()

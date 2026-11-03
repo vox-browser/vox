@@ -2,6 +2,8 @@ module main
 
 import layout
 
+fn C.native_set_chromium_opaque_layer_continuation(i32)
+
 // Scrolling, fixed and sticky text rasters are transparent before the compositor
 // blends them over their parent. Painting glyphs directly over that parent's pixels skips
 // the intermediate premultiplied rounding. Keep this slice contiguous and
@@ -63,8 +65,11 @@ fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int, command_inde
 		}
 		// New slices start transparent. An opaque continuation can instead
 		// retain the native parent's prefix in its GPU picture.
-		resume := recorded && chromium_compositor_opaque_mask_resume(app.paint_commands,
+		opaque_effect := recorded && chromium_compositor_opaque_effect_resume(app.paint_commands,
 			app.chromium_raster_plan, index, command_index)
+		resume := opaque_effect || (recorded && chromium_compositor_opaque_mask_resume(app.paint_commands,
+			app.chromium_raster_plan, index, command_index))
+		C.native_set_chromium_opaque_layer_continuation(i32(opaque_effect))
 		C.native_set_chromium_layer_shared_recording(i32(resume))
 		C.native_begin_css_effect_layer(1, 0)
 		C.native_set_chromium_layer_shared_recording(i32(recorded))

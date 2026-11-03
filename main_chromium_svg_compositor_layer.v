@@ -122,6 +122,8 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 				if owner < 0 { continue }
 				rect := viewport or { return false }
 				if !plan.has_paint_metadata {
+					if chromium_opaque_compositor_effect_gap(commands,plan,index,
+						previous + 1,command_index) { break }
 					return chromium_svg_compositor_layer_declined(index, gap, 'interleaved layer needs paint metadata', commands[gap].kind)
 				}
 				if owner == index || owner >= plan.layers.len {

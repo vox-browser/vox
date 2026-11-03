@@ -3,6 +3,57 @@ module layout
 import html
 import platform
 
+fn test_non_composited_opacity_keeps_its_parent_paint_chunks_together() {
+	parent := ChromiumRasterPropertyState{sticky_frame:1}
+	for non_composited in [false, true] {
+		plan := chromium_layerize_chunks([
+			ChromiumRasterChunk{state:parent,bounds:LayoutRect{0,0,800,600},command_index:0},
+			ChromiumRasterChunk{state:ChromiumRasterPropertyState{sticky_frame:1,
+				legacy_effect:true,effect_scope:81,atomic_opacity:non_composited},
+				bounds:LayoutRect{0,0,800,600},command_index:1},
+			ChromiumRasterChunk{state:parent,bounds:LayoutRect{20,40,24,24},command_index:2},
+		], 3, 1)
+		assert (plan.command_layers[0] == plan.command_layers[2]) == non_composited
+		assert plan.command_layers[1] != plan.command_layers[0]
+		assert plan.layers[plan.command_layers[1]].legacy_raster
+	}
+}
+
+fn test_scroll_picture_retains_siblings_around_an_unpromoted_css_opacity_scope() {
+	mut document := html.parse_document('<!doctype html><style>
+		body{margin:0}#scroll{width:700px;height:500px;overflow:auto}
+		#content{position:relative;height:1400px;background:#f1f2f3}
+		#effect{position:absolute;left:600px;top:60px;width:44px;height:44px;
+			opacity:.5;background:red;border:1px solid red;border-radius:50%}
+		svg{position:absolute;left:20px;top:60px;width:24px;height:24px}
+	</style><div id="scroll"><div id="content"><div id="effect"></div>
+	<svg viewBox="0 0 24 24"><path d="M4 4L20 20H4L20 4Z" fill="#0d0d0d"/></svg>
+	</div></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 800, 600)
+	commands := display_list_commands(document.record_display_list() or { panic('missing paint') })
+	mut plan := ChromiumRasterLayerPlan{}
+	update_chromium_raster_layer_plan_for_viewport(document, commands, 1,
+		LayoutRect{0,0,800,600}, mut plan)
+	mut background := -1
+	mut vector := -1
+	mut effect := -1
+	for index, command in commands {
+		if command.kind == 'fill_rect' && command.color == 'rgb(241 242 243)' {
+			background = plan.command_layers[index]
+		}
+		if command.kind == 'draw_svg_path' { vector = plan.command_layers[index] }
+		if layer := command.visual_layer_data {
+			if command.kind == 'begin_css_effect_layer' && layer.opacity == .5 {
+				effect = plan.command_layers[index]
+			}
+		}
+	}
+	assert background > 0 && vector == background
+	assert effect > 0 && effect != background && plan.layers[effect].legacy_raster
+}
+
 fn sticky_promotion_text_owner(source string) (ChromiumRasterLayerPlan, int) {
 	mut document := html.parse_document(source)
 	defer { document.finalize() }

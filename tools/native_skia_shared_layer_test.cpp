@@ -223,8 +223,54 @@ static void shadow_overflow(int scale, bool switch_layer)
     CGContextRelease(destination); CGContextRelease(control);
 }
 
-// Split compositor pictures must sample the parent before fallback painting,
-// then round each picture's SrcOver independently, including translucent parents.
+// A proved opaque continuation keeps coverage and its prefix in one GPU draw.
+static void opaque_continuation(int scale)
+{
+    constexpr int width = 96, height = 80;
+    int pw = width * scale, ph = height * scale;
+    std::vector<uint8_t> actual(size_t(pw) * ph * 4, 255), expected(actual.size());
+    auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context = CGBitmapContextCreate(actual.data(), pw, ph, 8, pw * 4,
+        space, CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(space); assert(context);
+    CGContextScaleCTM(context, scale, scale);
+    ladybird_v_skia_set_shared_recording(0, width, height);
+    ladybird_v_skia_set_raster_layer(0, 0, 0);
+    ladybird_v_skia_set_raster_layer_size(width, height);
+    ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
+    ladybird_v_skia_set_layer_shared_recording(1);
+    ladybird_v_skia_set_opaque_layer_continuation(1);
+    float data[5 * 12] {};
+    data[1] = 8.25f; data[2] = 12.5f;
+    data[12] = 1; data[13] = 40.25f; data[14] = 44.5f;
+    data[24] = 1; data[25] = 8.25f; data[26] = 44.5f;
+    data[36] = 1; data[37] = 40.25f; data[38] = 12.5f; data[48] = 5;
+    assert(ladybird_v_skia_draw_svg_path(context, data, 5, 0,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, width, height,
+        13, 13, 13, 255, 1, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, nullptr, 0, 0, 1));
+    ladybird_v_skia_finish_shared_recording();
+    CGContextFlush(context);
+
+    SkPictureRecorder recorder;
+    auto* canvas = recorder.beginRecording(SkRect::MakeWH(pw, ph));
+    canvas->clear(SK_ColorWHITE); canvas->scale(scale, scale);
+    SkPathBuilder path;
+    path.moveTo(8.25f, 12.5f).lineTo(40.25f, 44.5f)
+        .lineTo(8.25f, 44.5f).lineTo(40.25f, 12.5f).close();
+    SkPaint paint; paint.setAntiAlias(true); paint.setColor(SkColorSetRGB(13, 13, 13));
+    canvas->drawPath(path.detach(), paint);
+    auto bytes = recorder.finishRecordingAsPicture()->serialize();
+    float matrix[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+    assert(shared_picture_draw()(expected.data(), pw, ph, pw * 4,
+        bytes->data(), bytes->size(), matrix));
+    assert(actual == expected);
+    CGContextRelease(context);
+    ladybird_v_skia_set_layer_shared_recording(0);
+    ladybird_v_skia_set_raster_layer(0, 0, 1);
+}
+
+// Independent pictures retain their original premultiplied resolve, including
+// translucent parents and the ordinary backdrop hint.
 static void backdrop_layers(int scale, int alpha, bool switch_layer, bool backdrop_hint)
 {
     constexpr int width = 96, height = 80;
@@ -483,6 +529,7 @@ int main()
     for (bool batch : {false, true}) for (bool linear : {false, true})
         gradient_layer(scale, kind, stroke, batch, linear);
     for (int scale : {1, 2}) {
+        opaque_continuation(scale);
         for (int scroll : {0, 151}) {
             tiled_layer(scale, scroll);
             tiled_layer(scale, scroll, true);
