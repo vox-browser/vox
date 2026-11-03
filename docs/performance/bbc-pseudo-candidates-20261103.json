@@ -1,0 +1,1896 @@
+{
+  "experiment": "R14 first version of per-element pseudo candidate batching",
+  "status": "retained initial version; adaptive early-exit follow-up in progress",
+  "acceptance": false,
+  "bbc_instruction_credit": 0,
+  "history": {
+    "cohorts": 64,
+    "browser_attempts": 1510
+  },
+  "scope": "Exclusive resource-coalition creation through encoded document PNG availability; fresh process, empty private profile/cache, sealed HTTPS responses via one local SOCKS/TLS replay without forwarding, original author JavaScript enabled. Vox ends before PNG file write; Brave includes CDP PNG delivery and target/window setup. Readiness polling and two seconds of settlement are included; semantic audits and teardown follow the endpoint. Exited helpers and explicitly allowed coalition-owned services are included. GPU execution, observer/replay and outside services are excluded. The fixture records any shared JavaScript wall-clock override; monotonic timers remain real. OS filesystem/shader caches are retained. Per-engine references test stability; cross-browser pixel differences are reported separately.",
+  "engine_commit": "63efb717f",
+  "tool_commit": "9427fbbf3",
+  "evidence_root": "Build/bbc-pseudo-candidates-20261103",
+  "partial_cohort63": {
+    "cohort": 63,
+    "complete": false,
+    "cohort_valid": false,
+    "accepted": false,
+    "browser_attempts": 8,
+    "completed_triples": 2,
+    "history_cohorts": 63,
+    "history_attempts": 1489,
+    "reason": "Shared bundle publication replaced executable, worker and code signature during pair3 Vox; driver rejected changed pinned inputs and stopped.",
+    "rows": [
+      {
+        "pair": 1,
+        "arm": "brave",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "interval": {
+          "lower": 15336821557,
+          "upper": 15338343539
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            7.759765625,
+            6.43212890625,
+            9.16259765625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            8.01904296875,
+            6.5078125,
+            9.17333984375
+          ]
+        },
+        "raw_sha256": "8574ec03e84533822dab7e3f6d89d7b1a137a95de4f2e02f24a076f2db59dcbd",
+        "content_verified": true,
+        "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+        "different_pixels": 0,
+        "post_trial_identity_verified": true,
+        "identity_failure": null,
+        "memory_guard_adopted": true,
+        "ownership": true,
+        "instrumentation_absent": true
+      },
+      {
+        "pair": 1,
+        "arm": "control",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "interval": {
+          "lower": 30128949856,
+          "upper": 30128949856
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            7.09228515625,
+            6.26025390625,
+            9.13525390625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            7.56494140625,
+            6.3720703125,
+            9.15771484375
+          ]
+        },
+        "raw_sha256": "0790202012c471d107ec54818ee521f5e7cb1e7967eac98970c784f46e153a22",
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "different_pixels": 0,
+        "post_trial_identity_verified": true,
+        "identity_failure": null,
+        "memory_guard_adopted": true,
+        "ownership": true,
+        "instrumentation_absent": true
+      },
+      {
+        "pair": 1,
+        "arm": "vox",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "interval": {
+          "lower": 29197688543,
+          "upper": 29197688543
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            7.56494140625,
+            6.3720703125,
+            9.15771484375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            7.759765625,
+            6.43212890625,
+            9.16259765625
+          ]
+        },
+        "raw_sha256": "ee7a690bef65ea0e6c9e9fa72533aa09204d3691a44e8fabab97b7ce726d9a5e",
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "different_pixels": 0,
+        "post_trial_identity_verified": true,
+        "identity_failure": null,
+        "memory_guard_adopted": true,
+        "ownership": true,
+        "instrumentation_absent": true
+      },
+      {
+        "pair": 2,
+        "arm": "brave",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "interval": {
+          "lower": 15205385675,
+          "upper": 15207827910
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            8.01904296875,
+            6.5078125,
+            9.17333984375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            7.85693359375,
+            6.4990234375,
+            9.154296875
+          ]
+        },
+        "raw_sha256": "d6c0afac9e4ad13714e2c6fd024ce9b99646bcdecfeb3db871940a14901095ba",
+        "content_verified": true,
+        "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+        "different_pixels": 0,
+        "post_trial_identity_verified": true,
+        "identity_failure": null,
+        "memory_guard_adopted": true,
+        "ownership": true,
+        "instrumentation_absent": true
+      },
+      {
+        "pair": 2,
+        "arm": "control",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "interval": {
+          "lower": 30146533847,
+          "upper": 30146533847
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            8.0283203125,
+            6.55712890625,
+            9.1591796875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            8.318359375,
+            6.66943359375,
+            9.16845703125
+          ]
+        },
+        "raw_sha256": "4641495e9ebb3a027a89939e3dc8fd3188304bc6ca62d5e6794cf73d4518ec38",
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "different_pixels": 0,
+        "post_trial_identity_verified": true,
+        "identity_failure": null,
+        "memory_guard_adopted": true,
+        "ownership": true,
+        "instrumentation_absent": true
+      },
+      {
+        "pair": 2,
+        "arm": "vox",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "interval": {
+          "lower": 29776241116,
+          "upper": 29776241116
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            7.85693359375,
+            6.4990234375,
+            9.154296875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            8.0283203125,
+            6.55712890625,
+            9.1591796875
+          ]
+        },
+        "raw_sha256": "761240aefc7920f78665de97a3379876f59af40dba92e6652bf281b88e861998",
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "different_pixels": 0,
+        "post_trial_identity_verified": true,
+        "identity_failure": null,
+        "memory_guard_adopted": true,
+        "ownership": true,
+        "instrumentation_absent": true
+      },
+      {
+        "pair": 3,
+        "arm": "control",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "interval": {
+          "lower": 29484070037,
+          "upper": 29484070037
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            8.318359375,
+            6.66943359375,
+            9.16845703125
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            8.21240234375,
+            6.6748046875,
+            9.1552734375
+          ]
+        },
+        "raw_sha256": "9e66fd051c435fd07b78d7c7522af09ea4df8b11c6117a55787a03e78a3987e3",
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "different_pixels": 0,
+        "post_trial_identity_verified": true,
+        "identity_failure": null,
+        "memory_guard_adopted": true,
+        "ownership": true,
+        "instrumentation_absent": true
+      },
+      {
+        "pair": 3,
+        "arm": "vox",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "interval": {
+          "lower": 29843104819,
+          "upper": 29843104819
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            8.21240234375,
+            6.6748046875,
+            9.1552734375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            8.8359375,
+            6.82958984375,
+            9.1953125
+          ]
+        },
+        "raw_sha256": "f96879706a4d6728ee906e94f8b0700677d927828a8db5628cf1c3da419be41a",
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "different_pixels": 0,
+        "post_trial_identity_verified": false,
+        "identity_failure": {
+          "changed_inputs": [
+            {
+              "expected": {
+                "bytes": 30219696,
+                "sha256": "3168441b4104efbbfd9dfdddafddaf91137b531b01f05e291387ca2c387b8954"
+              },
+              "observed": {
+                "bytes": 30220448,
+                "sha256": "82859cf536e9944f307152e3ee4c62e930fb4a28651b5e057e524d3714127c8c"
+              },
+              "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox"
+            },
+            {
+              "expected": {
+                "bytes": 610048,
+                "sha256": "8b99506dd56236d66c2ace4a5d8faecc40a6f5af18260b1943908d6111a0aae1"
+              },
+              "observed": {
+                "bytes": 610208,
+                "sha256": "0b435dbb8f89482ba224d0f143d2cfb55d014e766252d2365826755dff0c4959"
+              },
+              "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker"
+            },
+            {
+              "expected": {
+                "bytes": 4602,
+                "sha256": "b1a048ea9e58fccb1c6878ae994deaf3c3fb044e11f6ae5dc0a60b33f3b50293"
+              },
+              "observed": {
+                "bytes": 4602,
+                "sha256": "2f8ea7588abc191450f6f04dc906f6305530bce79842c962e4d5c51e2ab0988e"
+              },
+              "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/_CodeSignature/CodeResources"
+            }
+          ],
+          "invalidates_cohort": true
+        },
+        "memory_guard_adopted": true,
+        "ownership": true,
+        "instrumentation_absent": true
+      }
+    ],
+    "guard_summary": {
+      "child_exit_code": 1,
+      "adoption_error": null,
+      "observed_peak_rss_bytes": 1346666496,
+      "elapsed_seconds": 50.408538625000006
+    },
+    "cli_preparation": {
+      "driver_exit": 2,
+      "browser_attempts": 0,
+      "reason": "Incorrect orchestration-only control flag; all command/log/guard receipts preserved under pseudo-candidates-cli-preparation prefix."
+    }
+  },
+  "complete_cohort64": {
+    "cohort": 64,
+    "attempts": 21,
+    "history_cohorts": 64,
+    "history_cohort_attempts": 1510,
+    "accepted": false,
+    "cohort_valid": false,
+    "counts": {
+      "control": [
+        28946454696,
+        29900393237,
+        29171754477,
+        29402545156,
+        28626473444,
+        29648349017,
+        29188738481
+      ],
+      "vox": [
+        29151808791,
+        30677202646,
+        30023959079,
+        28608912382,
+        30051839588,
+        28860105532,
+        29123361212
+      ],
+      "brave": [
+        15051001420,
+        15106687881,
+        15128183050,
+        15122037094,
+        14877841578,
+        14915003690,
+        15057693466
+      ]
+    },
+    "medians": {
+      "control": 29188738481,
+      "vox": 29151808791,
+      "brave": 15057693466
+    },
+    "matched": {
+      "pairs": 7,
+      "candidate_median": 29151808791,
+      "control_median": 29188738481,
+      "median_reduction": 36929690,
+      "paired_reductions": [
+        -205354095,
+        -776809409,
+        -852204602,
+        793632774,
+        -1425366144,
+        788243485,
+        65377269
+      ],
+      "wins": 3,
+      "losses": 4
+    },
+    "numeric_gate": {
+      "left": 306772026460,
+      "right": 133900574202,
+      "passes": false,
+      "ratio": 2.061939057837708
+    },
+    "rows": [
+      {
+        "pair": 1,
+        "arm": "control",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 28946454696,
+          "upper": 28946454696
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 60952,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            8.76416015625,
+            7.9638671875,
+            8.9921875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            8.86279296875,
+            7.99755859375,
+            8.998046875
+          ]
+        },
+        "raw_sha256": "cc07358a482a44ec92651b6a6173e8d80419e7de90539dc2255609946b7a2f80",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 1,
+        "arm": "vox",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 29151808791,
+          "upper": 29151808791
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-vox/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 61248,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            8.86279296875,
+            7.99755859375,
+            8.998046875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.03369140625,
+            8.04736328125,
+            9.009765625
+          ]
+        },
+        "raw_sha256": "04f0d996678ac1bfda4f5fe849f75fd7b31b30de47122ca5ff9f0c17a41f90bd",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-vox/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 1,
+        "arm": "brave",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 15051001420,
+          "upper": 15066161877
+        },
+        "error": null,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:60969 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-brave/profile --ignore-certificate-errors-spki-list=WjjCeeux1LP6+6SJ6MPGv6RNnBoO4cMFuzDMuf/SULU=",
+          "parent": 1,
+          "pid": 61541,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.03369140625,
+            8.04736328125,
+            9.009765625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.35107421875,
+            8.12939453125,
+            9.03271484375
+          ]
+        },
+        "raw_sha256": "33587e6dc2822f07d137af43f2149dabac7dcc482c67ecde1471d80d397e1210",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-brave/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-brave/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 2,
+        "arm": "control",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 29900393237,
+          "upper": 29900393237
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-2-control/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 62230,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            10.17041015625,
+            8.36767578125,
+            9.1015625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            10.47705078125,
+            8.4609375,
+            9.1298828125
+          ]
+        },
+        "raw_sha256": "c5553bb13aeb7fdfe9c39cb9044a15775dd850bbdec3baa0901f6539ce32372c",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-2-control/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 2,
+        "arm": "vox",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 30677202646,
+          "upper": 30677202646
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-2-vox/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 61919,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.48291015625,
+            8.1767578125,
+            9.0439453125
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            10.17041015625,
+            8.36767578125,
+            9.1015625
+          ]
+        },
+        "raw_sha256": "e44e61c876d2064d5017733fbbb08339584d5dbf7ebc3979e54739364a70a9f9",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-2-vox/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 2,
+        "arm": "brave",
+        "driver_exit": 1,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 15106687881,
+          "upper": 15123194364
+        },
+        "error": "Captured document differs from its unchanged pixel reference",
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:60969 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-2-brave/profile --ignore-certificate-errors-spki-list=WjjCeeux1LP6+6SJ6MPGv6RNnBoO4cMFuzDMuf/SULU=",
+          "parent": 1,
+          "pid": 61709,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.35107421875,
+            8.12939453125,
+            9.03271484375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            9.48291015625,
+            8.1767578125,
+            9.0439453125
+          ]
+        },
+        "raw_sha256": "f7c980b44d2dbd56940581776562a0fda908e6d9f3851922fab0a22728d3d1ba",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "2b24aa397ae57a97a9d00a720aeb8940c793b5a7213ae8fbf681038a7be350de",
+        "pixel_check": {
+          "different_pixels": 304064,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-2-brave/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-2-brave/input-identity-after.json",
+        "complete": false
+      },
+      {
+        "pair": 3,
+        "arm": "control",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 29171754477,
+          "upper": 29171754477
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-3-control/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 62561,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            10.47705078125,
+            8.4609375,
+            9.1298828125
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.1591796875,
+            8.6357421875,
+            9.1875
+          ]
+        },
+        "raw_sha256": "d353b59b83f2db200a6e4599c956d96c9471a4b7f8d4d44d78ea5de17dd0e321",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-3-control/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 3,
+        "arm": "vox",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 30023959079,
+          "upper": 30023959079
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-3-vox/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 62895,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.38623046875,
+            8.724609375,
+            9.21533203125
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.19482421875,
+            8.72900390625,
+            9.2138671875
+          ]
+        },
+        "raw_sha256": "e333f4cd09191d5b70bfcf71d0628a98d4c6309151b99bb1a6cd9069d6c972bb",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-3-vox/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 3,
+        "arm": "brave",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 15128183050,
+          "upper": 15130568902
+        },
+        "error": null,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:60969 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-3-brave/profile --ignore-certificate-errors-spki-list=WjjCeeux1LP6+6SJ6MPGv6RNnBoO4cMFuzDMuf/SULU=",
+          "parent": 1,
+          "pid": 63225,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.19482421875,
+            8.72900390625,
+            9.2138671875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.09912109375,
+            8.75,
+            9.21826171875
+          ]
+        },
+        "raw_sha256": "c3ebc41364950d74cf2f49c67e7c146c0bf0969f0e7c7c8e25abccdb6f78f245",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-brave/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-3-brave/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 4,
+        "arm": "control",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 29402545156,
+          "upper": 29402545156
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-4-control/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 64032,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.064453125,
+            8.859375,
+            9.2490234375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.13916015625,
+            8.9111328125,
+            9.26513671875
+          ]
+        },
+        "raw_sha256": "dd04bb5139ef188fcb5f668aa81cbe8a9f1331fcc6c21979ac039ff78410facf",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-4-control/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 4,
+        "arm": "vox",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 28608912382,
+          "upper": 28608912382
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-4-vox/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 63661,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.2509765625,
+            8.8203125,
+            9.240234375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.0703125,
+            8.8232421875,
+            9.23876953125
+          ]
+        },
+        "raw_sha256": "a75b85e1ea1ad7ad4543ef7aab7485effa97ff48842300fc96d29c4a2e7d1db8",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-4-vox/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 4,
+        "arm": "brave",
+        "driver_exit": 1,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 15122037094,
+          "upper": 15122859314
+        },
+        "error": "Captured document differs from its unchanged pixel reference",
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:60969 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-4-brave/profile --ignore-certificate-errors-spki-list=WjjCeeux1LP6+6SJ6MPGv6RNnBoO4cMFuzDMuf/SULU=",
+          "parent": 1,
+          "pid": 63473,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.09912109375,
+            8.75,
+            9.21826171875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.2509765625,
+            8.8203125,
+            9.240234375
+          ]
+        },
+        "raw_sha256": "b6ddf7c5a0aff3a5c337e437d9a769bb0994a9305aa5cc06d5b4601db98444c9",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "2b24aa397ae57a97a9d00a720aeb8940c793b5a7213ae8fbf681038a7be350de",
+        "pixel_check": {
+          "different_pixels": 304064,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-2-brave/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-4-brave/input-identity-after.json",
+        "complete": false
+      },
+      {
+        "pair": 5,
+        "arm": "control",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 28626473444,
+          "upper": 28626473444
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-5-control/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 64426,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.13916015625,
+            8.9111328125,
+            9.26513671875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.2880859375,
+            8.97900390625,
+            9.28662109375
+          ]
+        },
+        "raw_sha256": "25fc07aca2da3be58e453507187e81801d7209cdea8060f86fbe96a76ac6796b",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-5-control/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 5,
+        "arm": "vox",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 30051839588,
+          "upper": 30051839588
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-5-vox/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 64756,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.2880859375,
+            8.97900390625,
+            9.28662109375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.4580078125,
+            9.09375,
+            9.32373046875
+          ]
+        },
+        "raw_sha256": "357f45d16abe0eb64d7526e7daf4ddc790985ddf2145defdbe95c95e9dafcac9",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-5-vox/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 5,
+        "arm": "brave",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 14877841578,
+          "upper": 14915247916
+        },
+        "error": null,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:60969 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-5-brave/profile --ignore-certificate-errors-spki-list=WjjCeeux1LP6+6SJ6MPGv6RNnBoO4cMFuzDMuf/SULU=",
+          "parent": 1,
+          "pid": 65050,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.4580078125,
+            9.09375,
+            9.32373046875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.3408203125,
+            9.1083984375,
+            9.32763671875
+          ]
+        },
+        "raw_sha256": "ecd27ec4d55191c50826b3cf9125016cab6a7de8bca2a9e61d0260c4c686bea2",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-brave/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-5-brave/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 6,
+        "arm": "control",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 29648349017,
+          "upper": 29648349017
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-6-control/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 65759,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.515625,
+            9.2197265625,
+            9.3642578125
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.73681640625,
+            9.34326171875,
+            9.40625
+          ]
+        },
+        "raw_sha256": "801d3dcecd8ae1e8882497ca55783528822ac5d4dcf4976b03eaab5adb21dcde",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-6-control/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 6,
+        "arm": "vox",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 28860105532,
+          "upper": 28860105532
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-6-vox/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 65410,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.4736328125,
+            9.1728515625,
+            9.34912109375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.515625,
+            9.2197265625,
+            9.3642578125
+          ]
+        },
+        "raw_sha256": "f9010564412a4685b42673283f8536bc9257add659c2b89f0c2916ffe86d8fe2",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-6-vox/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 6,
+        "arm": "brave",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 14915003690,
+          "upper": 14923816606
+        },
+        "error": null,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:60969 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-6-brave/profile --ignore-certificate-errors-spki-list=WjjCeeux1LP6+6SJ6MPGv6RNnBoO4cMFuzDMuf/SULU=",
+          "parent": 1,
+          "pid": 65226,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.3408203125,
+            9.1083984375,
+            9.32763671875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.4736328125,
+            9.1728515625,
+            9.34912109375
+          ]
+        },
+        "raw_sha256": "103064ded39ebf1a0eb7aa61fd7fabacb66674b038047f824092983d901a1782",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-brave/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-6-brave/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 7,
+        "arm": "control",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 29188738481,
+          "upper": 29188738481
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-7-control/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 66046,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.73681640625,
+            9.34326171875,
+            9.40625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.837890625,
+            9.40380859375,
+            9.42724609375
+          ]
+        },
+        "raw_sha256": "5d77bc7a7fd39f7919b9438a555c9b6d6fc32adb7dc5f675388c5a1f9a69851c",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-7-control/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 7,
+        "arm": "vox",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 29123361212,
+          "upper": 29123361212
+        },
+        "error": null,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --js-engine javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-7-vox/document.png https://www.bbc.com/",
+          "parent": 1,
+          "pid": 66341,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.837890625,
+            9.40380859375,
+            9.42724609375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            11.9306640625,
+            9.46337890625,
+            9.44775390625
+          ]
+        },
+        "raw_sha256": "6aa7500d43528d869a869b5b79807457d920b6adaba1bb18e3d04cc10fd16dd2",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-control/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-7-vox/input-identity-after.json",
+        "complete": true
+      },
+      {
+        "pair": 7,
+        "arm": "brave",
+        "driver_exit": 0,
+        "native_exit": 0,
+        "cleanup_exit": null,
+        "interval": {
+          "lower": 15057693466,
+          "upper": 15066604036
+        },
+        "error": null,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:60969 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-7-brave/profile --ignore-certificate-errors-spki-list=WjjCeeux1LP6+6SJ6MPGv6RNnBoO4cMFuzDMuf/SULU=",
+          "parent": 1,
+          "pid": 66669,
+          "uid": 501
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            11.85595703125,
+            9.48876953125,
+            9.45654296875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            12.02734375,
+            9.5634765625,
+            9.48291015625
+          ]
+        },
+        "raw_sha256": "b95cc8a34b5638b0d856a691316657fa6cc4ab4eb4bbde8e48898910b5843ef2",
+        "memory_guard_adopted": true,
+        "content_verified": true,
+        "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+        "pixel_check": {
+          "different_pixels": 0,
+          "receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-1-brave/independent-diff-v2.log"
+        },
+        "ownership": true,
+        "instrumentation_absent": true,
+        "post_trial_identity_verified": true,
+        "post_trial_identity_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-20261103/pseudo-candidates-v2-matched-cohort/pair-7-brave/input-identity-after.json",
+        "complete": true
+      }
+    ],
+    "input_files_verified": 1637,
+    "changed_inputs": [],
+    "guard_summary": {
+      "child_exit_code": 1,
+      "adoption_error": null,
+      "observed_peak_rss_bytes": 1416167424,
+      "elapsed_seconds": 139.446980625,
+      "limit_bytes": 12884901888
+    },
+    "audited_unix": 1793677413.7615502
+  },
+  "paired_median_control_minus_candidate": -205354095,
+  "paired_mean_control_minus_candidate": -230354388.85714287,
+  "failed_reference_checks": [
+    {
+      "pair": 2,
+      "arm": "brave",
+      "pixels": 304064
+    },
+    {
+      "pair": 4,
+      "arm": "brave",
+      "pixels": 304064
+    }
+  ],
+  "standalone": {
+    "diagnostic_only": true,
+    "bbc_instruction_credit": false,
+    "acceptance": false,
+    "executable_sha256": "6082d2202ea2be1990f376ba786cf603cfea81aedb953da286ad4a5eac6f3d08",
+    "html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+    "rows": [
+      {
+        "pair": 0,
+        "arm": "witness",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 343684928,
+        "first_layout": 2676345353,
+        "mutation": 97287,
+        "second_layout": 1181980285,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "pseudo_batch": true
+        }
+      },
+      {
+        "pair": 1,
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 339079515,
+        "first_layout": 2680297194,
+        "mutation": 98584,
+        "second_layout": 1193537764,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "pseudo_batch": false
+        }
+      },
+      {
+        "pair": 1,
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 338200500,
+        "first_layout": 2672418799,
+        "mutation": 96579,
+        "second_layout": 1181697453,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "pseudo_batch": false
+        }
+      },
+      {
+        "pair": 2,
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 339543828,
+        "first_layout": 2669954886,
+        "mutation": 99305,
+        "second_layout": 1182994824,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "pseudo_batch": false
+        }
+      },
+      {
+        "pair": 2,
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 338724852,
+        "first_layout": 2682275900,
+        "mutation": 98105,
+        "second_layout": 1197195589,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "pseudo_batch": false
+        }
+      }
+    ],
+    "limitations": "Standalone C-O3 no-GC engine, frozen BBC HTML without scripts or resource replay, viewport1024x768/layout scale1. First layout and second update after appending a zero-size body child use process deltas. Includes synchronous native style/layout but no browser startup/window/PNG. Dumps and scalar geometry do not establish pixel equality or full-browser savings. Witness has diagnostic logging and supplies no timing credit."
+  },
+  "v_profile": {
+    "diagnostic_only": true,
+    "instrumentation": "V -profile - -profile-no-inline with explicit CSS scope entries",
+    "bbc_instruction_credit": false,
+    "executable_sha256": "3fdd6d6b26082bd52dc94abbe8cfba3bc2acd179784ee8afe3dcd521095ce107",
+    "html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+    "rows": [
+      {
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "profiled_rows": 33,
+        "selected": {
+          "css__PseudoCandidateBatch__has_candidate": {
+            "calls": 20040,
+            "inclusive_ms": 82.152,
+            "self_ms": 0.656,
+            "mean_ns": 4099.0,
+            "name": "css__PseudoCandidateBatch__has_candidate"
+          },
+          "css__RuleCache__has_candidate_rule_for_pseudo_element": {
+            "calls": 59096,
+            "inclusive_ms": 77.164,
+            "self_ms": 17.682,
+            "mean_ns": 1306.0,
+            "name": "css__RuleCache__has_candidate_rule_for_pseudo_element"
+          },
+          "css__RuleCache__originating_element_pseudo_candidates": {
+            "name": "css__RuleCache__originating_element_pseudo_candidates",
+            "calls": 0,
+            "instrumented_entry_in_generated_C": true,
+            "scope_limited_zero": true
+          },
+          "css__pseudo_candidate_bucket_mask": {
+            "name": "css__pseudo_candidate_bucket_mask",
+            "calls": 0,
+            "instrumented_entry_in_generated_C": true,
+            "scope_limited_zero": true
+          },
+          "css__rule_cache_bucket_has_pseudo_element": {
+            "calls": 107100,
+            "inclusive_ms": 27.169,
+            "self_ms": 20.025,
+            "mean_ns": 254.0,
+            "name": "css__rule_cache_bucket_has_pseudo_element"
+          },
+          "css__RuleBucketIterator__next": {
+            "name": "css__RuleBucketIterator__next",
+            "calls": 0,
+            "instrumented_entry_in_generated_C": true,
+            "scope_limited_zero": true
+          }
+        },
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0"
+      },
+      {
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "profiled_rows": 37,
+        "selected": {
+          "css__PseudoCandidateBatch__has_candidate": {
+            "calls": 20040,
+            "inclusive_ms": 32.189,
+            "self_ms": 0.521,
+            "mean_ns": 1606.0,
+            "name": "css__PseudoCandidateBatch__has_candidate"
+          },
+          "css__RuleCache__has_candidate_rule_for_pseudo_element": {
+            "name": "css__RuleCache__has_candidate_rule_for_pseudo_element",
+            "calls": 0,
+            "instrumented_entry_in_generated_C": true,
+            "scope_limited_zero": true
+          },
+          "css__RuleCache__originating_element_pseudo_candidates": {
+            "calls": 16506,
+            "inclusive_ms": 30.372,
+            "self_ms": 4.029,
+            "mean_ns": 1840.0,
+            "name": "css__RuleCache__originating_element_pseudo_candidates"
+          },
+          "css__pseudo_candidate_bucket_mask": {
+            "calls": 29677,
+            "inclusive_ms": 7.364,
+            "self_ms": 5.443,
+            "mean_ns": 248.0,
+            "name": "css__pseudo_candidate_bucket_mask"
+          },
+          "css__rule_cache_bucket_has_pseudo_element": {
+            "calls": 60522,
+            "inclusive_ms": 1.462,
+            "self_ms": 1.161,
+            "mean_ns": 24.0,
+            "name": "css__rule_cache_bucket_has_pseudo_element"
+          },
+          "css__RuleBucketIterator__next": {
+            "calls": 46183,
+            "inclusive_ms": 16.75,
+            "self_ms": 5.707,
+            "mean_ns": 363.0,
+            "name": "css__RuleBucketIterator__next"
+          }
+        },
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0"
+      }
+    ],
+    "limitations": "Instrumented frozen HTML, no scripts/resources/window/startup comparison/PNG; times and instruction snapshots are diagnostic only. The PseudoCandidateBatch.has_candidate entry explicitly enables profiling. All tracked callee entries are instrumented; missing rows mean zero calls only within that selected scope, not globally. C-O1 diagnostic flags differ from the unprofiled C-O3 binary. Child timings overlap."
+  },
+  "diagnostics": [
+    {
+      "label": "candidate",
+      "driver_guard_exit": 0,
+      "diagnostic_only": true,
+      "no_instruction_credit": true,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "ownership": true,
+      "fast_path": true,
+      "jsc": [
+        "JSC_PROBE pid=40167 contexts=1 groups=1 evaluations=2067"
+      ],
+      "path_before_capture": true
+    },
+    {
+      "label": "control",
+      "driver_guard_exit": 0,
+      "diagnostic_only": true,
+      "no_instruction_credit": true,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "ownership": true,
+      "fast_path": false,
+      "jsc": [
+        "JSC_PROBE pid=40563 contexts=1 groups=1 evaluations=1986"
+      ],
+      "path_before_capture": true
+    }
+  ],
+  "diagnostic_build": {
+    "latest_receipt": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "3168441b4104efbbfd9dfdddafddaf91137b531b01f05e291387ca2c387b8954",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-061731-b799d512/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "d4376cddba82d57d6a95b9bf2f06375c2b448ae021b03ace519ca848e4b0cf43",
+        "dirty": true,
+        "head": "4834b4c3a82f084c457473680054666b0a62d0a0",
+        "repository_sha256": "3005acc0be7f1be18d89d766458332e06158c6c21eee8945a2df85457f8984fa"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "d4376cddba82d57d6a95b9bf2f06375c2b448ae021b03ace519ca848e4b0cf43",
+        "dirty": true,
+        "head": "ecd6b5026f0b131082a303e6872602ef32c22fd7",
+        "repository_sha256": "55eedfc1bc4e9672cc75eb39d5363a68a9ce2a1c489d00fd2c10baaf653ae973"
+      },
+      "request": {
+        "head": "4834b4c3a82f084c457473680054666b0a62d0a0",
+        "id": "0eb238b57431446991d9b13ddc299d7e"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "d4376cddba82d57d6a95b9bf2f06375c2b448ae021b03ace519ca848e4b0cf43",
+        "dirty": true,
+        "head": "4834b4c3a82f084c457473680054666b0a62d0a0",
+        "repository_sha256": "2508dc7d0b2e37045437ffca3a48cc5679fed2ede0148d4b988fb7daf44492f6"
+      }
+    },
+    "function": "css__RuleCache__originating_element_pseudo_candidates",
+    "identical": true,
+    "production_sha256": "907f9116dd208c1f7fb2374b8d22b2b21741d3f0e3e611d84af8f7404e412239",
+    "standalone_sha256": "907f9116dd208c1f7fb2374b8d22b2b21741d3f0e3e611d84af8f7404e412239"
+  },
+  "qualifications": [
+    "The successful production diagnostic used executable 3168441b4104efbbfd9dfdddafddaf91137b531b01f05e291387ca2c387b8954 (receipt 20261103-061731-b799d512).",
+    "Cohort63 stops on shared bundle publication; all eight attempts are retained.",
+    "Cohort64 uses the new pinned build and is distinct from the diagnostic build. It supplies no accepted BBC improvement.",
+    "Difference of marginal medians is a 36,929,690 reduction, while paired median and mean regress. Host/process variation is larger than this marginal difference.",
+    "The retained-code footprint still needs the adaptive early-exit follow-up: first-version union construction can do more work than the original positive-query early return."
+  ],
+  "checks": {
+    "focused_cases": 18,
+    "policies": 2,
+    "memory_modes": 3,
+    "executions": 108,
+    "focused_results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "tool_tests": 241,
+    "broad_cases_per_mode": 490,
+    "broad_executions": 980,
+    "broad_passed_per_mode": 487,
+    "known_failures": [
+      "text-control baseline 13.5 versus 13",
+      "Chromium toggle baseline 16 versus 15",
+      "trailing collapsed margin 40 versus 60"
+    ],
+    "all_broad_cases_entered": true,
+    "changed_owned_inputs": [],
+    "full_broad_pass": false,
+    "cadence_reset": false,
+    "native_results": [
+      {
+        "name": "headless",
+        "exit": 0
+      },
+      {
+        "name": "smoke",
+        "exit": 0
+      },
+      {
+        "name": "svg",
+        "exit": 0
+      }
+    ],
+    "native_stable_bundle_validation": false,
+    "native_changed_inputs": [
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker"
+    ],
+    "native_qualification": "All 20 checks exit zero, but shared publication changes pinned runtime identities. Rejected as stable-bundle validation; no R13 native rollback claim yet."
+  },
+  "preparations": [
+    "One CLI preparation exits two on an incorrect orchestration flag, before launching any browser; all receipts retained, browser attempts zero.",
+    "First focused compile preparations used an invalid optional error binding and immutable test scopes; retained.",
+    "Prealloc allocation assertion initially measured a dynamic array created by the test loop. A fixed array removes that test-owned allocation; final three-mode enabled/disabled checks pass."
+  ],
+  "limitations": [
+    "Original BBC scripts and fixed page resources retained. Known bootstrap CORS and rendering limitations remain.",
+    "Per-engine pixel stability is separate from cross-browser equality.",
+    "No target achievement, catalog entry or full-browser optimization credit; no broad cadence reset."
+  ],
+  "standalone_first_layout": {
+    "counts": {
+      "control": [
+        2680297194,
+        2682275900
+      ],
+      "candidate": [
+        2672418799,
+        2669954886
+      ]
+    },
+    "medians": {
+      "control": 2681286547.0,
+      "candidate": 2671186842.5
+    },
+    "control_minus_candidate": 10099704.5
+  },
+  "standalone_second_layout": {
+    "counts": {
+      "control": [
+        1193537764,
+        1197195589
+      ],
+      "candidate": [
+        1181697453,
+        1182994824
+      ]
+    },
+    "medians": {
+      "control": 1195366676.5,
+      "candidate": 1182346138.5
+    },
+    "control_minus_candidate": 13020538.0
+  },
+  "cohort64_build": {
+    "executable": {
+      "bytes": 30220448,
+      "sha256": "82859cf536e9944f307152e3ee4c62e930fb4a28651b5e057e524d3714127c8c"
+    },
+    "production_receipt": "20261103-062721-16f243e9",
+    "native_and_browser_inputs": {
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": {
+        "bytes": 272390656,
+        "sha256": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+      },
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": {
+        "bytes": 272390656,
+        "sha256": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+      },
+      "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": {
+        "bytes": 72544,
+        "sha256": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5"
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+        "bytes": 30220448,
+        "sha256": "82859cf536e9944f307152e3ee4c62e930fb4a28651b5e057e524d3714127c8c"
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+        "bytes": 610208,
+        "sha256": "0b435dbb8f89482ba224d0f143d2cfb55d014e766252d2365826755dff0c4959"
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+        "bytes": 613008,
+        "sha256": "7551d29db20a2a4647d4d5fd38e9ab91785dc002168b0eb36b3a8f3c43082663"
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+        "bytes": 4398880,
+        "sha256": "c56a4b2f3dc1c2cbc2415fd6925c65c4dbe3d4c84a4ba7e455752ebc2a029f09"
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+        "bytes": 13037232,
+        "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d"
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+        "bytes": 2192096,
+        "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+      }
+    }
+  }
+}

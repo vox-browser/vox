@@ -3892,3 +3892,73 @@ round-trips to its recorded original hash; the manifest is
 measurements, logs, PNGs and durable ledgers remain unchanged. BBC is not added
 to the homepage instruction table; the frozen workload and known limitations
 remain unchanged.
+
+
+## Pseudo candidate batching, first version: cohorts 63–64 (2026-11-03)
+
+**The target remains unmet; no BBC improvement is accepted.** Cohort63 stops
+when shared publication replaces the executable, worker and code signature
+during Vox3. It retains all **eight attempts**, including that rejected trial,
+and both complete triples. All eight captures pass content, original pixels,
+normal exit and ownership; seven retain successful post-trial identity receipts,
+and the eighth records the changed inputs. A separate erroneous CLI invocation
+exits two before any browser starts and is retained as preparation, with zero
+browser attempts. A new cohort is pinned to the newly completed bundle rather
+than combining changed-build samples.
+
+Cohort64 completes all **seven alternating triples / 21 attempts**, bringing
+history to **64 cohorts / 1,510 browser attempts**. All 21 native exits, content,
+exclusive ownership and post-trial identity receipts pass. All 1,637 input files
+independently rehash unchanged. The original Vox/control pixels pass in all
+fourteen attempts; Brave2 and Brave4 fail their original references.
+
+| Statistic | Vox candidate | Vox control | Brave lower bound |
+| --- | ---: | ---: | ---: |
+| Median launch-to-PNG instructions | 29,151,808,791 | 29,188,738,481 | 15,057,693,466 |
+
+The marginal median is lower by **36,929,690 (0.1265%)**, but only three matched
+pairs improve and four regress. The paired median regresses by **205,354,095**,
+and the paired mean also regresses. Variation is larger than the marginal
+difference; this supplies no full-browser optimization credit. The conservative
+Brave gate fails **306,772,026,460 > 133,900,574,202**, ratio **2.0619390578**,
+and the two Brave pixel failures independently invalidate acceptance. The
+[tracked ledger](performance/bbc-pseudo-candidates-20261103.json) preserves
+all exact vectors, brackets, failed preparations, identities, raw commands and
+host/adoption telemetry under `Build/bbc-pseudo-candidates-20261103/`. No sample
+is retried or excluded to improve these statistics.
+
+Engine **63efb717f**, with control **9427fbbf3**, builds one scalar candidate
+union per element across consecutive rejected pseudo queries. A positive query
+expires it before cascade or font work can run callbacks. It retains originating
+and dedicated bucket semantics, including origins, layers, namespaces and shadow
+scopes. The first implementation still builds a complete union when the first
+query can return true cheaply; an adaptive early-exit follow-up is in progress.
+This first-version evidence must not be attributed to that later implementation.
+
+A separate `v -profile -profile-no-inline` C-O1 diagnostic sees 20,040 selected
+queries in both arms. The control performs **59,096** direct RuleCache queries;
+the candidate builds **16,506** unions. Its original bucket-predicate calls drop
+from **107,100 to 60,522**, with **29,677** mask-bucket scans. These scope-limited
+counts and instrumented timings are diagnostic only. The C-O3/no-GC standalone
+frozen-HTML test has an actual reuse witness, unchanged 2,855 nodes / 902 lines /
+extent 55,212,771 and the original paint dump. Two alternating pairs save
+**10,099,704.5** first-layout and **13,020,538** second-layout median instructions.
+It excludes author scripts, replayed resources, startup, native window and PNG
+and earns no BBC credit.
+
+Successful production diagnostics use **20261103-061731-b799d512**, executable
+`3168441b4104efbbfd9dfdddafddaf91137b531b01f05e291387ca2c387b8954`,
+with complete content, exact pixels, normal exit and ownership. The actual reuse
+marker appears only in the candidate between navigation and encoded PNG; JSC
+executes **2,067 / 1,986** evaluations in one context. Cohort64 uses **20261103-062721-16f243e9**, executable
+`82859cf536e9944f307152e3ee4c62e930fb4a28651b5e057e524d3714127c8c`,
+after the cohort63 publication; it is distinguished from the diagnostic build. No diagnostic probe is loaded in either unprofiled cohort.
+
+All **18 focused cases** pass both policies in three memory modes (**108
+executions**); **241 tool tests** pass. The broad run enters **490 cases per
+default/no-GC mode**, with **487 passing and the same three baseline failures**
+in each, with unchanged owned inputs. It is not a full pass or cadence reset.
+Headless, eleven smoke and eight SVG checks all exit zero, but shared publication
+changes runtime hashes during validation; that stable-bundle claim is rejected.
+R13's native rollback validation remains pending. BBC remains outside the
+homepage instruction table, with the same workload and limitations.
