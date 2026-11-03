@@ -9,10 +9,12 @@ struct CompactElementQueryRequest {
 	key string
 	snapshot ?string
 	log_count int
+	workspace platform.ThreadScratchScope
 }
 
-// The decoded JSON graph is transport storage. Only these owned strings may
-// reach DOM mutations or bridge identity maps after the decoder retires.
+// Identity and operation strings can reach persistent DOM records. The pending
+// snapshot is transport consumed synchronously by replay, so borrow it until
+// the query finishes instead of retaining another document-sized string.
 fn decode_compact_element_query_request(input string) !CompactElementQueryRequest {
 	mut work := platform.begin_thread_scratch('compact query request')
 	request := json2.decode[map[string]json2.Any](input) or {
@@ -31,9 +33,9 @@ fn decode_compact_element_query_request(input string) !CompactElementQueryReques
 		selector: if value := selector { ?string(value.clone()) } else { none }
 		action: if value := action { ?string(value.clone()) } else { none }
 		key: key.clone()
-		snapshot: if value := snapshot { ?string(value.clone()) } else { none }
+		snapshot: snapshot
 		log_count: log_count
+		workspace: work
 	}
-	work.finish()
 	return result
 }

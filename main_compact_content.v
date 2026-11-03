@@ -168,6 +168,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		allocation_scope.finish()
 	}
 	request := decode_compact_element_query_request(input)!
+	defer { request.workspace.finish() }
 	if snapshot := request.snapshot {
 		mut messages := []string{}
 		mut elements := map[string]&dom.Element{}

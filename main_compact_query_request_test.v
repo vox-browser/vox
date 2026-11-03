@@ -21,6 +21,7 @@ fn test_compact_query_request_retires_json_graphs_and_owns_replayed_strings() {
 	control.leave(entry)
 	before := platform.thread_arena_usage().used
 	request := decode_compact_element_query_request(input)!
+	defer { request.workspace.finish() }
 	growth := platform.thread_arena_usage().used - before
 	$if prealloc {
 		assert growth * 10 < control.usage().used, '${growth} retained versus ${control.usage().used} control bytes'
@@ -36,6 +37,7 @@ fn test_compact_query_request_retires_json_graphs_and_owns_replayed_strings() {
 	assert request.snapshot? == '{"elements":{},"operations":[]}'
 	assert request.log_count == 3
 	missing := decode_compact_element_query_request('{"selector":false,"action":null,"key":42,"logCount":"bad"}')!
+	defer { missing.workspace.finish() }
 	assert missing.selector == none
 	assert missing.action == none
 	assert missing.key == ''
@@ -44,6 +46,37 @@ fn test_compact_query_request_retires_json_graphs_and_owns_replayed_strings() {
 		assert false
 	} else {
 		assert err.msg().len > 0
+	}
+}
+
+fn test_compact_query_snapshot_bytes_retire_with_the_request_workspace() {
+	input := json2.encode({
+		'action': json2.Any('querySelectorAll')
+		'selector': json2.Any('span')
+		'key': json2.Any('__query_42')
+		'snapshot': json2.Any('{"elements":{},"operations":[],"log":["' + 'λ😀'.repeat(16384) + '"]}')
+	})
+	mut owner := platform.new_retained_arena('query snapshot transport retention')
+	mut entered := owner.enter()
+	defer {
+		entered.finish()
+		owner.release()
+	}
+	before := owner.arena.usage().used
+	for _ in 0 .. 16 {
+		request := decode_compact_element_query_request(input)!
+		assert request.selector? == 'span'
+		assert request.snapshot?.len > 64 * 1024
+		assert request.snapshot?.contains('"operations":[]')
+		request.workspace.finish()
+		// Identity and selector text keep their independent allocation owner.
+		assert request.key == '__query_42'
+		assert request.selector? == 'span'
+	}
+	growth := owner.arena.usage().used - before
+	$if prealloc {
+		assert growth < 4096, '${growth} bytes retained by 16 large snapshot requests'
+		println('Compact query snapshot transport: retained=${growth} bytes')
 	}
 }
 

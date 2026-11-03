@@ -9,8 +9,9 @@ pub type HostFunction = fn (input string) !string
 pub type TemporaryHostFunction = fn (input string) !HostFunctionReply
 
 // Native string conversion copies the reply before retiring its workspace.
-// Callbacks must leave the workspace before returning, and retain any DOM or
-// host state they publish independently of these transport bytes.
+// Callbacks borrow their input until the reply is copied; clone any input text
+// they retain. They must leave the reply workspace before returning, and own
+// any DOM or host state independently of these transport bytes.
 // A callback which throws retires its workspace before propagating the error.
 pub struct HostFunctionReply {
 pub:

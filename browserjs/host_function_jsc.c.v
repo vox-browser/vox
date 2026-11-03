@@ -1,5 +1,6 @@
 module browserjs
 
+import platform
 
 #include "host_function_darwin.h"
 
@@ -25,7 +26,21 @@ fn javascript_core_host_function(context voidptr, function voidptr, _ voidptr, c
 	record := unsafe { &HostFunctionRecord(C.JSObjectGetPrivate(function)) }
 	mut argument := C.vox_jsc_JSValueMakeUndefined(context)
 	if count > 0 { argument = unsafe { arguments[0] } }
-	input := js_string_to_v(context, argument) or { return host_function_error(context, err.msg(), exception) }
+	// Temporary hosts consume transport text synchronously. Ordinary hosts can
+	// retain their input, and object-to-string conversion can reenter native
+	// bindings, so both keep the caller's allocation owner.
+	mut input_work := platform.ThreadScratchScope{}
+	if record.temporary_callback != unsafe { nil } && C.JSValueIsString(context, argument) {
+		input_work = platform.begin_thread_scratch('temporary host input')
+	}
+	defer { input_work.finish() }
+	input := js_string_to_v(context, argument) or {
+		input_work.leave()
+		return host_function_error(context, err.msg(), exception)
+	}
+	// Host-published state belongs to the caller; only the conversion bytes
+	// remain in this detached workspace through the final JavaScript copy.
+	input_work.leave()
 	output := record.invoke(input) or { return host_function_error(context, err.msg(), exception) }
 	defer { output.finish() }
 	string_value := js_source_string(output.value)
