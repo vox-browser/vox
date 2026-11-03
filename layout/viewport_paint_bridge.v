@@ -968,12 +968,15 @@ fn paintable_box_point_to_css_pixels(point painting.Point, device_pixels_per_css
 	}
 }
 
+// Coordinate and hit-test queries borrow the retained tree for the duration of
+// the call. Passing its descriptor by value heap-promotes it when invoking the
+// tree's reference-receiver methods, retaining a copy for every tested box.
 // Direct translation of PaintableBox::transform_point_to_local(). The active
 // bridge currently records its accumulated visual tree at one device pixel per
 // CSS pixel, but retaining the scale conversion here preserves the source API
 // and prevents callers from growing their own affine/scroll/clip shortcuts.
 fn paintable_box_transform_point_to_local(box &BlockBox, screen_position painting.Point,
-	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
+	device_pixels_per_css_pixel f64, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) ?painting.Point {
 	if box.accumulated_visual_context_index == 0 {
 		return screen_position
@@ -988,7 +991,7 @@ fn paintable_box_transform_point_to_local(box &BlockBox, screen_position paintin
 // the box's own scroll frame are deliberately included only in this variant.
 fn paintable_box_transform_point_to_local_for_descendants(box &BlockBox,
 	screen_position painting.Point, device_pixels_per_css_pixel f64,
-	tree painting.AccumulatedVisualContextTree,
+	tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) ?painting.Point {
 	if box.accumulated_visual_context_for_descendants_idx == 0 {
 		return screen_position
@@ -1002,7 +1005,7 @@ fn paintable_box_transform_point_to_local_for_descendants(box &BlockBox,
 
 // Direct translation of PaintableBox::transform_rect_to_viewport().
 fn paintable_box_transform_rect_to_viewport(box &BlockBox, rect LayoutRect,
-	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
+	device_pixels_per_css_pixel f64, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) LayoutRect {
 	return transform_rect_to_viewport_in_layout_coordinates(box.accumulated_visual_context_index,
 		rect, device_pixels_per_css_pixel, box_layout_coordinate_scale(box), tree, snapshot)
@@ -1010,7 +1013,7 @@ fn paintable_box_transform_rect_to_viewport(box &BlockBox, rect LayoutRect,
 
 fn transform_rect_to_viewport_in_layout_coordinates(context_index int, rect LayoutRect,
 	device_pixels_per_css_pixel f64, layout_coordinate_scale f64,
-	tree painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot) LayoutRect {
+	tree &painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot) LayoutRect {
 	if context_index == 0 {
 		return rect
 	}
@@ -1044,7 +1047,7 @@ fn transform_rect_to_viewport_in_layout_coordinates(context_index int, rect Layo
 // Direct translation of PaintableBox::inverse_transform_point(). Scroll and
 // clip nodes are ignored by AccumulatedVisualContextTree, as they are upstream.
 fn paintable_box_inverse_transform_point(box &BlockBox, screen_position painting.Point,
-	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree) painting.Point {
+	device_pixels_per_css_pixel f64, tree &painting.AccumulatedVisualContextTree) painting.Point {
 	if box.accumulated_visual_context_index == 0 {
 		return screen_position
 	}
@@ -1056,7 +1059,7 @@ fn paintable_box_inverse_transform_point(box &BlockBox, screen_position painting
 // Direct translation of PaintableBox::transform_to_local_coordinates().
 fn paintable_box_transform_to_local_coordinates(box &BlockBox,
 	screen_position painting.Point, device_pixels_per_css_pixel f64,
-	tree painting.AccumulatedVisualContextTree,
+	tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) painting.Point {
 	return paintable_box_transform_point_to_local(box, screen_position, device_pixels_per_css_pixel, tree, snapshot) or { screen_position }
 }
@@ -1190,7 +1193,7 @@ fn viewport_text_range_rects(target voidptr, text_node &dom.Node, state dom.Sele
 
 fn collect_text_range_rects(box &BlockBox, text_node &dom.Node,
 	state painting.SelectionState, start_offset int, end_offset int,
-	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
+	device_pixels_per_css_pixel f64, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot, mut rects []dom.DOMRect) {
 	for line in box.lines {
 		for fragment in line.fragments {
@@ -3741,7 +3744,7 @@ fn compatibility_dispatch_resize_handle_pointer_event(mut result DocumentLayoutR
 fn compatibility_dispatch_scrollbar_pointer_event(mut result DocumentLayoutResult,
 	mut box BlockBox,
 	kind CompatibilityChromeWidgetKind, event_type string, button int,
-	visual_viewport_position painting.Point, tree painting.AccumulatedVisualContextTree,
+	visual_viewport_position painting.Point, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot, metrics painting.ChromeMetrics) painting.MouseAction {
 	if kind == .resize_handle {
 		return compatibility_dispatch_resize_handle_pointer_event(mut result, &box, event_type, button, visual_viewport_position)
@@ -3865,7 +3868,7 @@ fn compatibility_hit_test_result_for_node(node &dom.Node, index_in_node int,
 
 fn compatibility_caret_rect_for_fragment(box &BlockBox,
 	fragment painting.PaintableFragment, index_in_node int,
-	tree painting.AccumulatedVisualContextTree,
+	tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) dom.CSSPixelRect_ {
 	mut rect := fragment.range_rect(.start_and_end, index_in_node, index_in_node)
 	context_index := box.accumulated_visual_context_for_descendants_idx
@@ -3921,7 +3924,7 @@ fn compatibility_uses_paintable_with_lines_hit_test(box &BlockBox) bool {
 // Direct translation of PaintableBox::hit_test_chrome(). Resize chrome wins
 // over horizontal and then vertical scrollbars in their overlapping corners.
 fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
-	tree painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot,
+	tree &painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot,
 	metrics painting.ChromeMetrics) ?dom.HitTestResult {
 	uses_lines_hit_test := compatibility_uses_paintable_with_lines_hit_test(box)
 	if !box.visible || (!uses_lines_hit_test && !box.pointer_events_enabled) {
@@ -3977,7 +3980,7 @@ fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
 // ordinary child/fragment walk and gives an empty editing host an exact cursor
 // position at DOM offset zero.
 fn compatibility_empty_editable_hit_test(box &BlockBox, x f64, y f64,
-	type_ dom.HitTestType, tree painting.AccumulatedVisualContextTree,
+	type_ dom.HitTestType, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) ?dom.HitTestResult {
 	if !box.paintable_with_lines || box.lines.any(it.fragments.len > 0) || box.children.len > 0
 		|| type_ != .text_cursor || !box.visible || !box.pointer_events_enabled
@@ -4007,7 +4010,7 @@ fn compatibility_text_cursor_common_ancestor_parent(document &dom.Document) ?&do
 // geometry is already absolute in the containing block's descendant visual
 // space, including its scroll offset.
 fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64,
-	y f64, type_ dom.HitTestType, tree painting.AccumulatedVisualContextTree,
+	y f64, type_ dom.HitTestType, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot, mut hit_test_state CompatibilityHitTestState) bool {
 	if !compatibility_uses_paintable_with_lines_hit_test(box) || !box.visible
 		|| !box.pointer_events_enabled {
@@ -4142,7 +4145,7 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 }
 
 fn compatibility_box_contains_hit_test_point(box &BlockBox, x f64, y f64,
-	stacking_context_root bool, tree painting.AccumulatedVisualContextTree,
+	stacking_context_root bool, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) bool {
 	local_point := paintable_box_transform_point_to_local(box, painting.Point{x, y}, 1.0, tree, snapshot) or { return false }
 	if !box.svg_path_bounding_box_contains_hit_test_point(local_point) {

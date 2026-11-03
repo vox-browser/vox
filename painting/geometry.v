@@ -286,12 +286,13 @@ pub fn (transform Affine) map_rect(rect Rect) Rect {
 		transform.map_point(Point{rect.right(), rect.top()}),
 		transform.map_point(Point{rect.right(), rect.bottom()}),
 		transform.map_point(Point{rect.left(), rect.bottom()}),
-	]
+	]!
 	mut min_x := points[0].x
 	mut max_x := points[0].x
 	mut min_y := points[0].y
 	mut max_y := points[0].y
-	for point in points[1..] {
+	for index in 1 .. points.len {
+		point := points[index]
 		min_x = math.min(min_x, point.x)
 		max_x = math.max(max_x, point.x)
 		min_y = math.min(min_y, point.y)
