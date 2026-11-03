@@ -1,6 +1,7 @@
 module css
 
 import platform
+import os
 
 // The user-agent (default) stylesheet, embedded verbatim from Ladybird's CSS/Default.css.
 const user_agent_stylesheet_source = platform.embedded_text($embed_file('ua_default.css'))
@@ -66,7 +67,8 @@ pub fn user_agent_default_style_sheet(url string) ?&CSSStyleSheet {
 fn parse_shared_user_agent_stylesheet(source string) &CSSStyleSheet {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	mut sheet := parse_css_stylesheet_with_params(ParsingParams{is_ua_style_sheet: .yes}, source, none)
+	mut sheet := parse_css_stylesheet_in_workspace(ParsingParams{is_ua_style_sheet: .yes},
+		source, none, none, os.getenv('VOX_EAGER_USER_AGENT_DECLARATIONS') == '')
 	sheet.process_lifetime = true
 	return sheet
 }
