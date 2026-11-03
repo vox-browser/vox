@@ -38,6 +38,8 @@ fn test_cached_scripts_require_public_fresh_immutable_response_and_actual_proven
 	}
 	request.cache_mode = .default
 	request.destination = none
+	assert browser_cached_script_response(request) != none
+	request.destination = .image
 	assert browser_cached_script_response(request) == none
 	request.destination = .worker
 	assert browser_cached_script_response(request) != none
@@ -132,6 +134,40 @@ fn test_credentialless_fetch_reuses_only_fresh_public_unvaried_responses() {
 	}
 }
 
+fn test_fetch_with_credentials_reuses_public_immutable_assets_without_explicit_cookie_headers() {
+	previous := os.getenv_opt('LADYBIRD_CACHE_DIR')
+	cache := os.join_path(os.temp_dir(), 'vox-immutable-fetch-cache-${os.getpid()}-${time.sys_mono_now()}')
+	os.setenv('LADYBIRD_CACHE_DIR', cache, true)
+	defer {
+		if value := previous { os.setenv('LADYBIRD_CACHE_DIR',value,true) } else { os.unsetenv('LADYBIRD_CACHE_DIR') }
+		os.rmdir_all(cache) or {}
+	}
+	address := 'https://immutable-cache.example/icons.svg'
+	mut headers := script_cache_test_headers()
+	headers[0] = adblock.ResponseHeader{name:'Content-Type',value:'image/svg+xml'}
+	cache_resource_response_headers_with_status(address,address,'<svg/>',headers,200)
+	mut request := fetch.Request.create()
+	request.set_url(dom.URL{value:address})
+	for credentials in [fetch.CredentialsMode.same_origin,.include] {
+		request.credentials_mode = credentials
+		assert browser_cached_script_response(request)?.body?.bytes().bytestr() == '<svg/>'
+		for name in ['Cookie','Authorization','Range'] {
+			request.header_list.append(http.Header{name:name,value:'test'})
+			assert browser_cached_script_response(request) == none
+			request.header_list = http.HeaderList.create()
+		}
+	}
+	for extra in [adblock.ResponseHeader{name:'Vary',value:'Cookie'},adblock.ResponseHeader{name:'Set-Cookie',value:'key=value'}] {
+		mut changed := headers.clone()
+		changed << extra
+		cache_resource_response_headers_with_status(address,address,'<svg/>',changed,200)
+		assert browser_cached_script_response(request) == none
+	}
+	headers[1] = adblock.ResponseHeader{name:'Cache-Control',value:'public, max-age=31536000'}
+	cache_resource_response_headers_with_status(address,address,'<svg/>',headers,200)
+	assert browser_cached_script_response(request) == none
+}
+
 fn test_cached_native_script_fetch_is_deferred_and_keeps_cors_and_filtering() {
 	previous := os.getenv_opt('LADYBIRD_CACHE_DIR')
 	cache := os.join_path(os.temp_dir(), 'vox-script-fetch-${os.getpid()}-${time.sys_mono_now()}')
@@ -142,7 +178,7 @@ fn test_cached_native_script_fetch_is_deferred_and_keeps_cors_and_filtering() {
 		if value := previous { os.setenv('LADYBIRD_CACHE_DIR',value,true) } else { os.unsetenv('LADYBIRD_CACHE_DIR') }
 		os.rmdir_all(cache) or {}
 	}
-	for index, address in ['https://module-cache.example/allowed.js','https://module-cache.example/denied.js','https://www.google-analytics.com/analytics.js','https://catalog-cache.example/allowed.json','https://catalog-cache.example/denied.json'] {
+	for index, address in ['https://module-cache.example/allowed.js','https://module-cache.example/denied.js','https://www.google-analytics.com/analytics.js','https://catalog-cache.example/allowed.json','https://catalog-cache.example/denied.json','https://owner-module-cache.example/icons.svg'] {
 		mut document := html.parse_document_with_url('<!doctype html>',dom.URL{value:'https://owner-module-cache.example/'})
 		document.set_origin(document.url.origin())
 		_ := html.WindowModel.create_top_level(document,none,'cached-script')!
@@ -150,10 +186,11 @@ fn test_cached_native_script_fetch_is_deferred_and_keeps_cors_and_filtering() {
 		mut loop := settings.responsible_event_loop()
 		mut connection := requestserver.CurlConnection.create()!
 		mut headers := script_cache_test_headers()
-		if index >= 3 {
+		if index in [3,4] {
 			headers[0] = adblock.ResponseHeader{name:'Content-Type',value:'application/json'}
 			headers[1] = adblock.ResponseHeader{name:'Cache-Control',value:'public, max-age=604800'}
 		}
+		if index == 5 { headers[0] = adblock.ResponseHeader{name:'Content-Type',value:'image/svg+xml'} }
 		if index !in [1,4] { headers << adblock.ResponseHeader{name:'Access-Control-Allow-Origin',value:'*'} }
 		cache_resource_response_headers_with_status(address,address,'export const answer=42;',headers,200)
 		mut request := fetch.Request.create()
@@ -161,7 +198,7 @@ fn test_cached_native_script_fetch_is_deferred_and_keeps_cors_and_filtering() {
 		request.set_client(settings)
 		request.destination = if index >= 3 { ?fetch.Destination(none) } else { .script }
 		request.mode = .cors
-		request.credentials_mode = .omit
+		request.credentials_mode = if index == 5 { .same_origin } else { .omit }
 		probe := &ScriptCacheFetchProbe{}
 		_ := fetch.fetch(request,fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{
 			process_response_consume_body: fn [probe] (response &fetch.Response, body fetch.BodyBytes) {
@@ -176,7 +213,7 @@ fn test_cached_native_script_fetch_is_deferred_and_keeps_cors_and_filtering() {
 		deadline := time.sys_mono_now()+4*time.second
 		loop.spin_until(fn [probe,deadline] () bool { return probe.finished || time.sys_mono_now() >= deadline })
 		assert probe.finished
-		if index in [0,3] {
+		if index in [0,3,5] {
 			assert !probe.error
 			assert probe.body == 'export const answer=42;'
 		} else if index in [1,4] {

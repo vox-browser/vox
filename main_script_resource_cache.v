@@ -11,14 +11,15 @@ fn install_browser_script_resource_cache() {
 }
 
 // Reuse explicitly public, fresh responses. Scripts additionally require an
-// immutable declaration; ordinary Fetch entries require omitted credentials.
+// immutable declaration; credentialed Fetch entries require one as well.
 // Credential-specific variants and revalidation modes keep their network path.
 fn browser_cached_script_response(request &fetch.Request) ?&fetch.Response {
 	script := request.destination_is_script_like()
-	anonymous_fetch := request.destination == none && request.credentials_mode == .omit
-	if request.method != 'GET' || (!script && !anonymous_fetch)
+	ordinary_fetch := request.destination == none
+	require_immutable := script || request.credentials_mode != .omit
+	if request.method != 'GET' || (!script && !ordinary_fetch)
 		|| request.cache_mode != .default || request.header_list.contains('Authorization')
-		|| (anonymous_fetch && request.header_list.contains('Cookie'))
+		|| (ordinary_fetch && request.header_list.contains('Cookie'))
 		|| request.header_list.contains('Range')
 		|| request.current_url().scheme() !in ['http', 'https'] { return none }
 	if control := request.header_list.get('Cache-Control') {
@@ -38,7 +39,7 @@ fn browser_cached_script_response(request &fetch.Request) ?&fetch.Response {
 		for header in headers { fields.append(http.Header{name: header.name, value: header.value}) }
 		control := fields.get('Cache-Control') or { continue }
 		if !http.contains_cache_control_directive(control, 'public')
-			|| (script && !http.contains_cache_control_directive(control, 'immutable'))
+			|| (require_immutable && !http.contains_cache_control_directive(control, 'immutable'))
 			|| http.contains_cache_control_directive(control, 'private')
 			|| http.contains_cache_control_directive(control, 'no-store')
 			|| http.contains_cache_control_directive(control, 'no-cache')
