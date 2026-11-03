@@ -298,6 +298,10 @@ fn mark_style_sheet_invalidation_element(element &dom.Element) {
 }
 
 fn style_sheet_element_matches_anchor_rule(element &dom.Element, anchor_set InvalidationSet, anchor_selector ?Selector, style_sheet_for_rule ?&CSSStyleSheet, shadow_host ?&dom.Element, rule_shadow_root ?&dom.ShadowRoot) bool {
+	// The converted property vector and selector context are synchronous probes.
+	// Invalidation marking happens in the caller after this workspace retires.
+	scratch := platform.begin_thread_scratch('stylesheet anchor match')
+	defer { scratch.finish() }
 	if !element.includes_properties_from_invalidation_set(invalidation_set_to_dom(anchor_set)) {
 		return false
 	}

@@ -2,6 +2,7 @@ module css
 
 import dom
 import os
+import platform
 
 const disable_static_user_style_filter = os.getenv('VOX_DISABLE_STATIC_USER_STYLE_FILTER') != ''
 const static_user_style_filter_diagnostics = os.getenv('VOX_STATIC_USER_STYLE_FILTER_DIAGNOSTICS') != ''
@@ -66,6 +67,8 @@ mut:
 }
 
 fn static_user_style_subject_matches(element &dom.Element, cache &RuleCache) bool {
+	scratch := platform.begin_thread_scratch('static user style subject match')
+	defer { scratch.finish() }
 	mut buckets := rule_bucket_iterator(cache, dom.AbstractElement.new(element, none))
 	for {
 		bucket := buckets.next() or { return false }

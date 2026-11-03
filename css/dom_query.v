@@ -78,6 +78,16 @@ fn dom_selector_query_matches(target voidptr, selector_text string, element &dom
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	selectors := state.parse(selector_text) or { return false }
 	if result := independent_element_matches(element, selectors) { return result }
+	return general_query_matches(element, selectors, scoping_root)
+}
+
+// Parse/cache ownership is established by the caller before entering this
+// workspace. A one-shot query publishes only its boolean; relational matching
+// contexts and :has() memoization do not belong to the document's lifetime.
+fn general_query_matches(element &dom.Element, selectors SelectorList,
+	scoping_root ?&dom.ParentNode) bool {
+	scratch := platform.begin_thread_scratch('general element match')
+	defer { scratch.finish() }
 	for selector in selectors.selectors {
 		mut context := MatchContext{has_result_cache: unsafe { nil }}
 		if matches(selector, element, none, mut context, none, scoping_root, .normal, none) {
@@ -154,12 +164,7 @@ fn document_query_selector_list(document &dom.Document, selector_text string) ?S
 
 fn element_matches_any(element &dom.Element, selectors SelectorList) bool {
 	if result := independent_element_matches(element, selectors) { return result }
-	for selector in selectors.selectors {
-		if selector_matches(selector, element) {
-			return true
-		}
-	}
-	return false
+	return general_query_matches(element, selectors, none)
 }
 
 // https://dom.spec.whatwg.org/#dom-element-matches
