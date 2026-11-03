@@ -11,7 +11,12 @@ pub fn (mut d Document) set_display_device_pixel_ratio(value f64) {
 	d.bump_style_environment_version()
 	d.set_needs_media_query_evaluation()
 	d.set_needs_full_style_update(true)
-	d.request_frame()
+	// Retained HTML paint geometry also depends on this density when layout
+	// remains in CSS coordinates (for example, a document with inline SVG).
+	if paintable := d.unsafe_paintable() {
+		paintable.invalidate_all_paint_caches()
+	}
+	d.set_needs_repaint()
 }
 
 // The compact paint bridge still uses Page's coordinate conversion ratio.

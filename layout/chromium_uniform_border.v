@@ -33,6 +33,13 @@ fn chromium_background_under_opaque_border(rect LayoutRect, radii BoxRadii,
 fn append_chromium_uniform_border(mut commands []PaintCommand, border BoxEdges,
 	colors BoxColors, styles BoxBorderStyles, radii BoxRadii, rect painting.IntRect,
 	opacity f64) bool {
+	return append_chromium_uniform_border_rect(mut commands, border, colors, styles, radii,
+		LayoutRect{f64(rect.x), f64(rect.y), f64(rect.width), f64(rect.height)}, opacity)
+}
+
+fn append_chromium_uniform_border_rect(mut commands []PaintCommand, border BoxEdges,
+	colors BoxColors, styles BoxBorderStyles, radii BoxRadii, rect LayoutRect,
+	opacity f64) bool {
 	w := border.top
 	if w <= 0 || border.right != w || border.bottom != w || border.left != w
 		|| colors.top != colors.right || colors.top != colors.bottom || colors.top != colors.left

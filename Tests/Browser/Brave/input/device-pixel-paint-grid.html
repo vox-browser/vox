@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Device pixel paint grid with CSS coordinate layout</title>
+<style>
+html, body { margin: 0; background: white }
+body { font: 14px/20.578125px Arial }
+.box { position: absolute; width: 140.5px; height: 40.5px; background: rgb(1 2 3) }
+.first { left: 20.25px; top: 20.25px }
+.second { left: 20.75px; top: 80.75px }
+.text { position: absolute; left: 20px; top: 140.25px; width: 500px }
+.border { left: 220.25px; top: 20.25px; box-sizing: border-box;
+  border: 1px solid #123; border-radius: 9px }
+.border.second { left: 220.75px; top: 80.75px; border-color: #7898 }
+</style>
+<div class="box first"></div>
+<div class="box second"></div>
+<div class="box border"></div>
+<div class="box border second"></div>
+<div class="text">Fractional line top<br>Next fractional line</div>
+<!-- Inline SVG keeps HTML layout in CSS coordinates at high display density. -->
+<svg width="1" height="1"></svg>

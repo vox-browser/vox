@@ -2149,7 +2149,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		background_border_rect := if box.canvas().paints_canvas_background && box.canvas().canvas_width > 0 && box.canvas().canvas_height > 0 {
 			rect_union(border_rect, LayoutRect{box.canvas().canvas_x, box.canvas().canvas_y, box.canvas().canvas_width, box.canvas().canvas_height})
 		} else if box.snaps_background_rect {
-			pixel_snapped_layout_rect(border_rect)
+			pixel_snapped_layout_rect_at_scale(border_rect, chromium_paint_pixel_scale(box.layout_handle))
 		} else {
 			border_rect
 		}
@@ -2591,7 +2591,9 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					}
 				}
 			} else if !append_chromium_partial_border(mut commands, box, border_colors,
-				box_radii, border_rect, opacity) {
+				box_radii, border_rect, opacity)
+				&& !append_chromium_device_uniform_border(mut commands, box, border_colors,
+					box_radii, border_rect, opacity) {
 				append_translated_border_commands(mut commands, box.border, border_colors, box.border_styles, box_radii, border_left, border_top, border_width, border_height, opacity, box.snaps_background_rect)
 			}
 		}
@@ -3590,10 +3592,11 @@ fn text_fragment_paint_top(fragment TextFragment) f64 {
 	if fragment.paintable_fragment.orientation == .horizontal {
 		if run := fragment.paintable_fragment.glyph_run {
 			if run.font().font_rendering_policy == .chromium {
+				scale := chromium_paint_pixel_scale(fragment.layout_handle)
 				if top := fragment.paint_line_top {
-					return fragment.y + math.floor(top + 0.5) - top
+					return fragment.y + math.floor(top * scale + 0.5) / scale - top
 				}
-				return math.floor(fragment.y + 0.5)
+				return math.floor(fragment.y * scale + 0.5) / scale
 			}
 		}
 	}
