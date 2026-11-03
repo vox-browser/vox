@@ -1378,10 +1378,6 @@ fn collect_grid_track_sizing_placements(mut state LayoutState, _ &Node, placemen
 }
 
 fn grid_track_sizing_placements(mut state LayoutState, container &Node, placements []GridItemPlacement, column_lines [][]css.GridLineName, row_lines [][]css.GridLineName, columns bool, parent_gap CSSPixels) []GridItemPlacement {
-	if ordinary_grid_sizing_placements(placements, columns) {
-		report_grid_placement_reuse(container, placements.len)
-		return placements
-	}
 	mut result := []GridItemPlacement{}
 	collect_grid_track_sizing_placements(mut state, container, placements, column_lines, row_lines,
 		columns, parent_gap, 0, mut result)
