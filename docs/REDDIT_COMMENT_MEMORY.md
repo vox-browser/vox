@@ -2,10 +2,13 @@
 
 The requested limit is **500,000,000 bytes** for
 `https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/`.
-The measured production bundles **exceed this limit**. Committed fixes reduce
-collection/query transport allocation, reuse unchanged timestamp geometry and
-reclaim reset native arena pages at idle. Focused checks and native screenshot
-guards pass; startup peaks and complete longer-run acceptance remain open.
+The measured production bundles **exceed this limit**. The latest valid
+five-minute frozen-page observation settles at **367,577,224 B** and peaks at
+**766,380,168 B**, during a later refresh. Committed fixes reduce collection/query
+transport, retained paint copies and native raster storage. Focused checks and
+native screenshot guards pass; the complete memory cap and live-site validation
+remain open. The rendering continuation below records the measured build and
+rejects an earlier low-memory run that blocked author scripts.
 
 ## Reproduction
 
@@ -374,3 +377,139 @@ direct request in this continuation again returns HTTP 403. The
 links private raw evidence under
 `Build/reddit-comment-memory-20261103-continuation/` without committing cached
 account-bearing page data.
+
+## Rendering storage continuation
+
+Five more memory fixes are committed. These component results do not establish
+an attributed whole-browser percentage or the requested peak cap:
+
+- `3c5d0fe1b` retires the inactive GPU backend before its peer creates a context
+  on the owning main thread. It preserves reusable CPU pixels and independent
+  worker ownership; no Skia objects cross the library boundary. Twelve
+  alternating GPU cases retain exact pixels with and without the handoff.
+- `46d05ebc1` uses a decoration's original backdrop as its rollback checkpoint,
+  transferring the allocation when cropping instead of copying it at begin.
+  The 184 existing decoration scenes and four additional storage/rollback
+  cases pass. At this viewport and backing scale, the removed initial
+  viewport copy alone occupied 26,043,584 B.
+- `a5b146097` reserves decoration rollback rows from conservative transformed
+  ink bounds. Unknown or invalid bounds preserve the full-viewport fallback;
+  final Chromium GPU tile geometry stays unchanged. Three focused cases pass
+  normally and with arena poisoning, covering small ink, transforms, viewport
+  clipping and fallback.
+- `b5577df71` stores an immutable stationary frame as one CGImage, avoiding an
+  eager duplicate byte backing. It preserves the ordinary byte-copy path,
+  provider-copy fallback and allocation-failure repaint. Native checks pass
+  in snapshot and forced-copy modes, including padded rows, scales 1/2,
+  invalidation, independent content and representation transitions. The
+  removed full-canvas byte duplicate occupied 29,104,320 B here.
+- `82b1dd7dd` retires temporary vectors for independent element matching while
+  retaining cached selector parsing outside that workspace. Relational and
+  control-dependent selectors preserve their ordinary lifetime. Two cases
+  pass with preallocation, poisoning and Boehm; 512 callback matches retain
+  **0 B**, versus **57,354 B** in the former path. The five-minute production
+  bundle below does not contain this last fix; a subsequent 65-second
+  production observation includes it.
+
+A separate allocation-stack diagnostic identifies full-canvas stationary,
+scroll and effect-layer buffers, plus the decoration checkpoint. It loads the
+author scripts successfully, but uses allocation instrumentation and a private
+native-library override; it supplies allocation locations, not optimization
+acceptance. Isolated GPU diagnostics also show roughly 320 MB charged footprint
+after drawing and reading back one rounded rectangle despite less than 5 MB
+of device-reported resource allocation. Metal queue depths 1/2/64 do not remove
+the large first-draw charge. Deferring the static-buffer submission until the
+first draw still reaches 319,423,160 B in an isolated process. Neither queue nor
+submission policy changes ship. Additional allocator pressure relief trims at
+most about 2 MB per call and likewise supplies no production-policy change.
+
+The GPU handoff uses an alternating, unprofiled 65-second control/candidate
+cohort with private GPU libraries and production executable
+`759a9af066d214540c1c06b70796a1658b1ed1a1ea14abf53c67662825085f31`.
+Each launch keeps its executable, libraries, tools and frozen resources
+unchanged; controls disable only the new handoff. Normal author scripts run,
+browser/guard exits are zero, and no native windowed visual checks overlap.
+The 18-core host is busy, with load averages varying roughly 17–35 and some
+focused compilations overlapping the observations. The counts are retained
+without attributing all variation to this change.
+
+| Trial | Final two-second median (B) | Launch-to-end peak (B) | Peak after 10 s (B) |
+| --- | ---: | ---: | ---: |
+| Control 1 | 341,379,184 | 906,070,920 | 800,753,824 |
+| Candidate 1 | 339,380,336 | 805,358,496 | 778,324,104 |
+| Control 2 | 340,986,016 | 909,888,464 | 785,549,472 |
+| Candidate 2 | 340,199,584 | 817,695,696 | 764,692,688 |
+
+The focused GPU tests and nine native SVG/equal-text comparisons are
+pixel-exact with those libraries. Full-window thread screenshots differ in
+clock-driven timestamp text and the browser's RAM footer (562 and 177 pixels
+in the two pairs); they are not whole-page pixel-equivalence acceptance.
+
+### Rejected script-blocking result
+
+An initial five-minute production run appears to settle at **227,985,376 B**,
+but its packaged adblock helper fails to evaluate a deferred regex module
+containing `export default` as a classic script. All seven external author
+scripts are consequently blocked. Its **677,186,272 B** peak, normal exits and
+stable executable identity do not make it a valid comparison. That entire
+memory result and the similarly affected pressure diagnostic are rejected.
+
+Commit `1a2ca208c` validates classic-script snapshot sources and lowers standalone
+module payloads to a classic IIFE at build time. The pinned regex module still
+publishes its intended global. All 33 adblock Node tests and the packaged
+JavaScriptCore worker check pass after regenerating the assets. With corrected
+assets explicitly selected, a fresh 65-second production observation runs the
+page scripts, settles at **339,544,224 B** and peaks at **772,574,088 B**. This is
+an asset-override observation, with stable identities and zero browser/guard
+exits; it is not a stock-bundle acceptance claim. Only the existing badge-fetch
+JavaScript diagnostic remains.
+
+### Verified production observation
+
+The subsequent completed stock production executable is SHA-256
+`1486289b5013a3b9919e590097cb85620c4a3b0855e8046311fc742e39cb8d22`,
+from receipt `20261103-051125-e8810077`. Frozen compiler input confirms the
+bounded decoration checkpoint and image-only stationary-frame storage. Its
+packaged filter assets match the corrected assets, and its two GPU libraries
+export the context-retirement entry points. No library, asset or allocator
+override is used in this observation.
+
+A fresh original-origin HTTPS replay completes **300 seconds** with normal
+author scripts, unchanged runtime/tool/fixture identities and zero
+browser/guard exits. The document is complete, visible and fully active at
+**1708 × 953**, with 49 comments, two images, zero native errors and only the
+existing badge-fetch diagnostic. It settles at **367,577,224 B** and reaches
+**766,380,168 B at 280.63 seconds**. Thus this is a later-refresh peak as well
+as a launch-to-end maximum. The maximum sampling gap is 67.21 ms. External
+system services and short-lived/unobserved tasks remain excluded, so the
+sampled result is a lower bound, distinct from the RSS safety guard.
+
+Nine native SVG/equal-text comparisons are pixel-exact on that measured build.
+While verification continues, the shared builder publishes executable
+`5775fb14cc09615bf2d0038c2584e5a444ef67311d90159ca8ac588b9f1b8e8c`,
+from receipt `20261103-052152-d626bb42`. Frozen input confirms all five fixes,
+including independent element matching. A fresh **65-second** stock replay
+with normal author scripts settles at **312,936,536 B** and peaks at
+**752,601,968 B**. Identities stay unchanged, the complete document audit passes
+and browser/guard exits are zero. Intervening shared layout changes are present
+too; no whole-page percentage is attributed to element matching. This shorter
+run does not establish five-minute behavior of the latest build.
+
+Both SVG paint-server ID-collision comparisons are pixel-exact on this newer
+bundle. The asymmetric rounded-border and MSAA rounded-border fixtures also
+remain exact against the unchanged Brave references with Chromium rendering
+policy. Their first attempt incorrectly selected LibWeb test-font policy and
+failed; it remains retained without pass credit. Visual checks follow the
+five-minute observation and precede the newer 65-second observation. All use
+fresh processes with unchanged pinned input identities.
+
+**The 500,000,000 B peak target remains unmet.** The five-minute run's endpoint
+is below it, but its later refresh is above it. A fresh direct request still
+returns HTTP 403, so these frozen-page results do not establish a live-site
+fix. Longer interactive checks and a five-minute observation of the newest
+bundle remain pending. The
+[rendering receipt](benchmark-results/reddit-comment-memory-2026-11-03-rendering.json)
+records exact counts, every failed/rejected attempt, hashes, commands, guard
+exits and private raw artifacts under
+`Build/reddit-comment-memory-20261103-rendering/`. Prior receipts and results
+are preserved.
