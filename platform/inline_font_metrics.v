@@ -13,7 +13,9 @@ pub fn (font &Font) inline_metrics() FontPixelMetrics {
 pub fn (font &Font) inline_metrics_at_scale(device_scale f64) FontPixelMetrics {
 	metrics := font.pixel_metrics()
 	if font.font_rendering_policy != .chromium { return metrics }
-	scale := if device_scale > 0 && !math.is_inf(device_scale, 0) && !math.is_nan(device_scale) {
+	if retain_logical_inline_font_grid { report_archived_inline_font_grid() }
+	scale := if !retain_logical_inline_font_grid && device_scale > 0
+		&& !math.is_inf(device_scale, 0) && !math.is_nan(device_scale) {
 		device_scale
 	} else { 1.0 }
 	// Blink's zero-sized font contributes no strut. SkFont's one-pixel
