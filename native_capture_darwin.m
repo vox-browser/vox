@@ -2,6 +2,7 @@
 #include <Cocoa/Cocoa.h>
 #include "native_snapshot_png_darwin.h"
 #include "native_allocator_policy_darwin.h"
+#include "native_glyph_flags.h"
 #include "native_test_window_darwin.h"
 #include "native_media_preferences_darwin.h"
 #include <CoreImage/CoreImage.h>
@@ -1315,7 +1316,7 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 		if (components != NULL && CGColorGetNumberOfComponents(color) == 4) {
             int flags = font_smoothing
                 | (((font_smoothing & 16) && context == native_font_compositing_context
-                    && native_font_compositing_transparency_depth == 0) ? 32 : 0);
+                    && native_font_compositing_transparency_depth == 0) ? (32 | VOX_GLYPH_PRIVATE_BITMAP) : 0);
             uint8_t red = (uint8_t)lrint(components[0] * 255.0);
             uint8_t green = (uint8_t)lrint(components[1] * 255.0);
             uint8_t blue = (uint8_t)lrint(components[2] * 255.0);

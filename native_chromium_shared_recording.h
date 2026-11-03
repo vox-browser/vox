@@ -136,6 +136,13 @@ struct SharedClipState {
 // including while an offscreen mask or compositor layer is being painted.
 std::unordered_map<CGContextRef, SharedClipState> s_shared_clips;
 
+bool glyph_bitmap_clip_is_rectangular(CGContextRef context)
+{
+    auto found = s_shared_clips.find(context);
+    return found == s_shared_clips.end()
+        || (!found->second.unsupported && found->second.clips.empty());
+}
+
 #include "native_chromium_speculative_recording.h"
 
 decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw()

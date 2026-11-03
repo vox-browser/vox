@@ -3,6 +3,7 @@
 // this file only turns the retained glyph IDs into the final antialiased pixels.
 
 #include "native_allocator_policy_darwin.h"
+#include "native_glyph_flags.h"
 #include "native_raster_buffer_pool.h"
 #include "native_raster_snapshot.h"
 #include "native_immutable_rgba_image.h"
@@ -573,6 +574,9 @@ CGImageRef create_pixel_image(CGContextRef destination, std::vector<uint32_t>&& 
     if (provider) owned.release();
     return image_from_provider(provider, width, height, rgba);
 }
+
+#include "native_glyph_bitmap_copy.h"
+bool glyph_bitmap_clip_is_rectangular(CGContextRef);
 
 void capture_native_rounded_image(CGContextRef, CGImageRef, CGRect, bool);
 
@@ -1395,6 +1399,8 @@ static bool append_cpu_mask_positions(std::vector<uint8_t>& key, SkFont const& f
 
 static bool apply_unrounded_glyph_color(SkPaint&);
 
+#include "native_glyph_bitmap_surface.h"
+
 static int draw_retained_glyph_run(CGContextRef destination,
     char const* font_path, int face_index, uint16_t const* glyphs, double const* packed_positions, int glyph_count,
     float font_size, int font_weight, int emoji_face, float baseline_x,
@@ -1510,6 +1516,22 @@ static int draw_retained_glyph_run(CGContextRef destination,
         ? read_backdrop(destination, region, destination_scale, raster_width, raster_height) : Backdrop {};
     bool has_background = backdrop.pixels != nullptr;
     auto draw_matrix = raster_matrix(matrix, region, raster_scale_x, raster_scale_y);
+    auto destination_rect = CGRectMake(static_cast<float>(region.left),
+        canvas_height - static_cast<float>(region.bottom),
+        static_cast<float>(region.width()), static_cast<float>(region.height()));
+    SkSurfaceProps direct_coverage(0, kUnknown_SkPixelGeometry, 0.0f,
+        (font_smoothing & 15) == 2 ? 1.0f : 0.0f);
+    if (has_background && !has_float_color && !emoji_face && blur == 0
+        && (font_smoothing & VOX_GLYPH_PRIVATE_BITMAP)
+        && !std::getenv("VOX_DISABLE_DIRECT_GLYPH_SURFACE")
+        && glyph_bitmap_clip_is_rectangular(destination)
+        && draw_glyph_bitmap_surface(destination, raster_width, raster_height,
+            destination_rect, draw_matrix, blob.get(), blob_x, blob_y, paint,
+            chromium ? &direct_coverage : nullptr)) {
+        if (std::getenv("VOX_DIRECT_GLYPH_SURFACE_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_DIRECT_GLYPH_SURFACE width=%d height=%d\n", raster_width, raster_height);
+        return 1;
+    }
     GlyphRasterCache::Request cached;
     if (glyph_count <= 4096 && pixel_count <= 32768) {
         std::vector<uint8_t> key;
@@ -1539,9 +1561,6 @@ static int draw_retained_glyph_run(CGContextRef destination,
         }
         cached = s_glyph_raster_cache.prepare(std::move(key), raster_width, raster_height, backdrop.pixels, backdrop.pitch);
     }
-    auto destination_rect = CGRectMake(static_cast<float>(region.left),
-        canvas_height - static_cast<float>(region.bottom),
-        static_cast<float>(region.width()), static_cast<float>(region.height()));
     if (cached.image) {
         return composite_image(destination, cached.image, destination_rect, has_background);
     }
@@ -1612,8 +1631,18 @@ static int draw_retained_glyph_run(CGContextRef destination,
     if (has_float_color && !surface->readPixels(image_info, pixels.data(), row_bytes, 0, 0))
         return 0;
     surface.reset();
+    bool const direct_copy = has_background && !has_float_color && blur == 0
+        && ((font_smoothing & VOX_GLYPH_PRIVATE_BITMAP) || std::getenv("VOX_DIRECT_GLYPH_COPY_PROBE"))
+        && !std::getenv("VOX_DISABLE_DIRECT_GLYPH_COPY")
+        && glyph_bitmap_clip_is_rectangular(destination)
+        && copy_glyph_bitmap(destination, pixels.data(), raster_width, raster_height, destination_rect);
     auto image = create_pixel_image(destination, std::move(pixels), raster_width, raster_height);
-    int result = composite_image(destination, image, destination_rect, has_background);
+    int result = direct_copy ? 1 : composite_image(destination, image, destination_rect, has_background);
+    if (direct_copy) {
+        if (image) capture_native_rounded_image(destination, image, destination_rect, true);
+        if (std::getenv("VOX_DIRECT_GLYPH_COPY_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_DIRECT_GLYPH_COPY width=%d height=%d\n", raster_width, raster_height);
+    }
     s_glyph_raster_cache.finish(std::move(cached), image);
     if (image) CGImageRelease(image);
 
