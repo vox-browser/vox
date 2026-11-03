@@ -11,6 +11,9 @@ pub fn (mut d Document) set_display_device_pixel_ratio(value f64) {
 	d.bump_style_environment_version()
 	d.set_needs_media_query_evaluation()
 	d.set_needs_full_style_update(true)
+	// Device-snapped clip contexts and inline font metrics are retained with
+	// the layout tree, so repainting alone cannot refresh a display change.
+	d.set_needs_full_layout_tree_update(true)
 	// Retained HTML paint geometry also depends on this density when layout
 	// remains in CSS coordinates (for example, a document with inline SVG).
 	if paintable := d.unsafe_paintable() {

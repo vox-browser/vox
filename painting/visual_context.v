@@ -1,6 +1,7 @@
 module painting
 
 import css
+import math
 
 pub struct ScrollVisualData {
 pub:
@@ -19,10 +20,30 @@ pub struct ClipVisualData {
 pub:
 	rect         IntRect
 	corner_radii CornerRadii
+	// The integer rectangle and radii may be snapped in device coordinates
+	// while their surrounding visual contexts still use layout coordinates.
+	device_pixel_scale f64 = 1.0
 }
 
 pub fn (clip ClipVisualData) contains(point IntPoint) bool {
-	return clip.corner_radii.contains(point, clip.rect)
+	return clip.contains_layout_point(Point{point.x, point.y})
+}
+
+pub fn (clip ClipVisualData) pixel_scale() f64 {
+	return if clip.device_pixel_scale > 0 && !math.is_inf(clip.device_pixel_scale, 0)
+		&& !math.is_nan(clip.device_pixel_scale) { clip.device_pixel_scale } else { 1.0 }
+}
+
+pub fn (clip ClipVisualData) layout_rect() Rect {
+	scale := clip.pixel_scale()
+	return Rect{clip.rect.x / scale, clip.rect.y / scale,
+		clip.rect.width / scale, clip.rect.height / scale}
+}
+
+pub fn (clip ClipVisualData) contains_layout_point(point Point) bool {
+	scale := clip.pixel_scale()
+	if scale != 1 && !clip.layout_rect().contains(point) { return false }
+	return clip.corner_radii.contains(IntPoint{int(point.x * scale), int(point.y * scale)}, clip.rect)
 }
 
 pub struct TransformVisualData {
@@ -569,7 +590,7 @@ fn (tree &AccumulatedVisualContextTree) transform_point_for_hit_test_through_nod
 			inverse_map_about_origin(point, node.data.matrix, node.data.origin)
 		}
 		ClipVisualData {
-			if !node.data.contains(IntPoint{int(point.x), int(point.y)}) {
+			if !node.data.contains_layout_point(point) {
 				return none
 			}
 			point

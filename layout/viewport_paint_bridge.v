@@ -848,9 +848,7 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 		}
 	}
 	if css_clip := box.clips().css_clip {
-		own_state = tree.append(painting.ClipVisualData{
-			rect: compatibility_rounded_int_rect(*css_clip)
-		}, own_state)
+		own_state = tree.append(compatibility_clip_visual_data(box, *css_clip, BoxRadii{}), own_state)
 	}
 	if clip_path := box.clips().clip_path {
 		own_state = tree.append(*clip_path, own_state)
@@ -932,10 +930,8 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 		}
 	}
 	if clip := box.overflow_clip {
-		descendants_state = tree.append(painting.ClipVisualData{
-			rect: compatibility_rounded_int_rect(clip.rect)
-			corner_radii: compatibility_corner_radii(clip.corner_radii)
-		}, descendants_state)
+		descendants_state = tree.append(compatibility_clip_visual_data(box, clip.rect,
+			clip.corner_radii), descendants_state)
 	}
 	if box.own_scroll_frame_index > 0
 		&& box.own_scroll_frame_index != box.sticky_scroll_frame_index {
@@ -1912,15 +1908,10 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 			flattened.matrix_4x4 = flattened.matrix_4x4.multiply(css.translation_matrix_4x4(-offset.x, -offset.y, 0))
 		}
 		painting.ClipVisualData {
-			local_clip := LayoutRect{
-				x: node.data.rect.x
-				y: node.data.rect.y
-				width: node.data.rect.width
-				height: node.data.rect.height
-			}
+			local_clip := compatibility_clip_layout_rect(node.data)
 			flattened.clips << PaintClip{
 				rect: local_clip
-				corner_radii: compatibility_box_radii(node.data.corner_radii)
+				corner_radii: compatibility_clip_layout_radii(node.data)
 				transform: flattened.transform
 			}
 			clip := compatibility_affine_map_rect(flattened.transform, local_clip)
@@ -2160,7 +2151,7 @@ fn compatibility_visual_context_clip(tree &painting.AccumulatedVisualContextTree
 				-offset.y))
 		}
 		painting.ClipVisualData {
-			local_clip = LayoutRect{node.data.rect.x, node.data.rect.y, node.data.rect.width, node.data.rect.height}
+			local_clip = compatibility_clip_layout_rect(node.data)
 		}
 		painting.ClipPathVisualData {
 			local_clip = LayoutRect{node.data.bounding_rect.x, node.data.bounding_rect.y, node.data.bounding_rect.width, node.data.bounding_rect.height}
