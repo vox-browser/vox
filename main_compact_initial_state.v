@@ -98,8 +98,13 @@ fn javascript_initial_element_state(element &dom.Element, bridge_key string, ele
 
 fn javascript_initial_state_with_policy(document &dom.Document, current_url string, scripts []string, policy CompactInitialElementPolicy) map[string]json2.Any {
 	root := unsafe { &dom.Node(document) }
-	mut elements := map[string]json2.Any{}
 	all_elements := css.query_selector_all(root, '*')
+	return javascript_initial_state_for_elements(document, current_url, scripts, policy, all_elements)
+}
+
+fn javascript_initial_state_for_elements(document &dom.Document, current_url string, scripts []string,
+	policy CompactInitialElementPolicy, all_elements []&dom.Element) map[string]json2.Any {
+	mut elements := map[string]json2.Any{}
 	mut element_keys := map[voidptr]string{}
 	for element_index, element in all_elements {
 		element_keys[voidptr(element)] = '__element_${element_index}'

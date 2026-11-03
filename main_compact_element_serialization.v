@@ -69,5 +69,7 @@ fn prepare_compact_element_serialization(element &dom.Element) {
 		_ = html.html_text_area_element_model_for_dom_element(unsafe { &dom.HTMLTextAreaElement(element) })
 	} else if element.local_name() == 'video' {
 		_ = html.html_video_element_model_for_dom_element(unsafe { &dom.HTMLVideoElement(element) })
+	} else if element.local_name() == 'img' {
+		_ = html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
 	}
 }
