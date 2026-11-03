@@ -2,8 +2,9 @@
 
 The requested limit is **500,000,000 bytes** for
 `https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/`.
-The measured production bundles **exceed this limit**. The transport continuation
-below records newer five-minute observations and their pinned builds.
+The measured production bundles **exceed this limit**. The latest valid
+five-minute observation settles at **338,348,192 B** and peaks at **750,554,016 B**.
+The transport continuation below records its pinned build and focused checks.
 Committed fixes reduce collection/query
 transport, retained paint copies and native raster storage. Focused checks and
 native screenshot guards pass; the complete memory cap and live-site validation
@@ -516,7 +517,7 @@ are preserved.
 
 ## Transport and cosmetic-filter continuation
 
-Five further fixes preserve the ordinary scripted workload:
+Six further fixes preserve the ordinary scripted workload:
 
 - `42920db38` retires temporary JavaScript host-input conversion and borrows the
   pending mutation snapshot until its query request finishes. Primitive string
@@ -542,6 +543,14 @@ Five further fixes preserve the ordinary scripted workload:
   independent arrays. Cached CSS counts against the existing 2 MiB memo budget;
   disabled filtering, token/URL distinctions and the memo-disable control retain
   their behavior.
+- `75b4dc084` retires the composed source used to compare an unchanged
+  stylesheet. Actual replacements receive owned source bytes before stylesheet
+  parsing or publication; existing user and procedural rules retain their
+  behavior. Across 32 unchanged refreshes of a 172,250 B sheet, the focused
+  fixture retains 6,648 B. This case passes in prealloc, poisoned prealloc and
+  Boehm modes, including reading a replacement after its workspace retires.
+  The two existing identity/enablement cases pass again normally and poisoned.
+  The completed production observations below predate this final fix.
 
 | Focused allocation workload | Previous retained bytes | New retained bytes |
 | --- | ---: | ---: |
@@ -615,6 +624,16 @@ All thirteen native comparisons on this same build are pixel-exact: the nine
 SVG/equal-text cases, two SVG paint-server ID-collision cases and two existing
 Brave rounded-border goldens. Runtime and reference hashes remain unchanged,
 and the visual guard exits zero. These launches follow the memory observation.
+
+The next completed production build, executable `49cfad20…`, contains the first
+five fixes. Its valid five-minute observation settles at **338,348,192 B** and
+peaks at **750,554,016 B**. Browser/guard exits are zero, pinned identities remain
+unchanged, and the content/author-script audits pass with the same viewport,
+49 comments and two images. The longest sampling gap is 62.38 ms. All thirteen
+native comparisons pass pixel-exact afterward on this build as well, with
+unchanged references and runtime identity. Clock-driven timestamp changes and
+other shared changes prevent assigning its full endpoint difference to CSS
+reuse. The repeated graphics spike still exceeds the requested cap.
 
 Direct live access still returns HTTP 403. The **500,000,000 B peak cap remains
 open**, including startup and later refreshes. Raw commands, all failed setup
