@@ -3631,6 +3631,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	}
 	layout.enable_native_paint_tree_storage(app.document)
 	layout.enable_native_static_svg_backgrounds(app.document)
+	app.prime_initial_computed_background_resources(f64(viewport_width) / app.page_zoom, f64(viewport_height) / app.page_zoom)
 	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width) / app.page_zoom, f64(viewport_height) / app.page_zoom)
 	previous_storage := app.paint_tree_storage
 	app.paint_tree_storage = layout.retain_document_paint_tree(app.document)
@@ -3887,11 +3888,13 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	}
 	app.install_browser_history_listeners()
 	app.record_browser_visit(loaded)
+	app.finish_initial_ready_image_requests()
 	app.prepare_initial_document_layout(if app.viewport_width > 0 { app.viewport_width } else { initial_width }, if app.viewport_height > 0 {
 		app.viewport_height + app.chrome_height()
 	} else {
 		initial_height
 	})
+	app.finish_initial_ready_background_requests()
 	checkpoint = debug_timing_checkpoint('relayout', checkpoint)
 	// Script-inserted images laid out near the viewport, whose bytes the disk
 	// cache holds, are completed before the first paint. One whose size cannot

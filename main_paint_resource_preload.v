@@ -1,6 +1,8 @@
 module main
 
 import layout
+import css
+import dom
 import os
 
 const disable_paint_resource_prefetch = os.getenv('VOX_DISABLE_PAINT_RESOURCE_PREFETCH') != ''
@@ -33,5 +35,45 @@ fn (mut app BrowserApp) prime_document_paint_resources() {
 	}
 	if paint_resource_prefetch_diagnostics && app.background_resource_pending.len > before {
 		eprintln('VOX_PAINT_RESOURCE_PREFETCH requests=${app.background_resource_pending.len - before}')
+	}
+}
+
+const disable_initial_background_preload = os.getenv('VOX_DISABLE_INITIAL_BACKGROUND_PRELOAD') != ''
+const initial_background_preload_diagnostics = os.getenv('VOX_INITIAL_BACKGROUND_PRELOAD_DIAGNOSTICS') != ''
+const initial_background_preload_limit = 4
+
+struct InitialBackgroundPreloads {
+mut:
+	urls []string
+	seen map[string]bool
+}
+
+fn collect_initial_background_preloads(node &dom.Node, mut found InitialBackgroundPreloads) {
+	if found.urls.len >= initial_background_preload_limit { return }
+	if element := node.as_element() {
+		style := css.computed_properties_for_element(element) or { return }
+		if style.display().is_none() { return }
+		if !style.display().is_contents() && style.visibility() == .visible {
+			for address in style.background_resource_urls() {
+				if address in found.seen { continue }
+				found.seen[address] = true
+				found.urls << address
+				if found.urls.len == initial_background_preload_limit { return }
+			}
+		}
+	}
+	for child in node.children { collect_initial_background_preloads(child, mut found) }
+}
+
+fn (mut app BrowserApp) prime_initial_computed_background_resources(width f64, height f64) {
+	if disable_initial_background_preload || app.ctx == unsafe { nil } || !app.ctx.native_rendering
+		|| app.document == unsafe { nil } || app.document.layout_root != unsafe { nil } { return }
+	layout.prepare_initial_resource_styles(app.document, width, height)
+	mut found := InitialBackgroundPreloads{}
+	collect_initial_background_preloads(app.document.as_node(), mut found)
+	before := app.background_resource_pending.len
+	for address in found.urls { app.request_background_resource(address) }
+	if initial_background_preload_diagnostics {
+		eprintln('VOX_INITIAL_BACKGROUND_PRELOAD requests=${app.background_resource_pending.len - before}')
 	}
 }
