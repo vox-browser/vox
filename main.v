@@ -7463,6 +7463,10 @@ fn (mut app BrowserApp) draw() {
 						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
 					if shared_svg_end > command_index { continue }
 				}
+				if command.kind in ['fill_rect', 'fill_rounded_rect'] {
+					shared_svg_end = app.draw_chromium_rounded_image_pair(command_index, page_y, window.height)
+					if shared_svg_end > command_index { continue }
+				}
 				if command.kind == 'begin_css_effect_layer' {
 					shared_svg_end = app.draw_chromium_svg_opacity_group(app.paint_commands,
 						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
