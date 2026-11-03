@@ -1,6 +1,8 @@
 #ifndef VOX_NATIVE_SVG_MASK_OPACITY_DARWIN_H
 #define VOX_NATIVE_SVG_MASK_OPACITY_DARWIN_H
 
+#include "native_sparse_opacity_ink_darwin.h"
+
 #include "native_opacity_group_darwin.h"
 #include "native_opacity_canvas_pool_darwin.h"
 #include "native_bitmap_snapshot_darwin.h"
@@ -51,7 +53,7 @@ static void native_end_svg_mask_bitmap_opacity(VoxSVGMaskOpacityBitmap *group)
     size_t parent_pitch = CGBitmapContextGetBytesPerRow(parent);
     const uint8_t *backdrop = (const uint8_t *)CGBitmapContextGetData(parent);
     int left, top, right, bottom;
-    if (group->opacity > 0 && native_opacity_layer_ink_bounds(group->canvas.pixels, pitch,
+    if (group->opacity > 0 && native_opacity_canvas_ink_bounds(group->canvas, pitch,
             0, 0, (int)width, (int)height, &left, &top, &right, &bottom)) {
         size_t ink_width = (size_t)(right - left), ink_height = (size_t)(bottom - top);
         CGContextRef result = CGBitmapContextCreate(NULL, ink_width, ink_height, 8,

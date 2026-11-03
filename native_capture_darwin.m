@@ -1105,7 +1105,8 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 	size_t parent_pitch = CGBitmapContextGetBytesPerRow(group->parent);
 	const uint8_t *backdrop = CGBitmapContextGetData(group->parent);
 	int left, top, right, bottom;
-	if (native_opacity_layer_ink_bounds(group->pixels, layer_pitch, group->left, group->top,
+	if (native_opacity_canvas_ink_bounds((VoxOpacityCanvas){group->context, group->pixels},
+		layer_pitch, group->left, group->top,
 			group->right, group->bottom, &left, &top, &right, &bottom)) {
 		size_t ink_width = (size_t)(right - left), ink_height = (size_t)(bottom - top);
 		CGColorSpaceRef color_space = CGBitmapContextGetColorSpace(group->parent);
