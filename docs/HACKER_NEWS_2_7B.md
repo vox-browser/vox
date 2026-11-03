@@ -117,7 +117,7 @@ attributes about 17.6M to factory parsing, 14.7M to first-call preparation,
 19.6M to WebGL initialization, and 17.4M to Window/final bootstrap setup.
 Those are instrumented diagnostic counts, without optimization credit.
 
-The latest complete cohort, `crc-production-matched`, uses executable
+The preceding complete cohort, `crc-production-matched`, uses executable
 `c9ff98ac0d59e91e9a378147d8a62e1130780f2902e994c5bd038cd3c7af68d6`,
 receipt `20261103-091717-6b3a184e`. A bounded Apple Silicon CRC implementation
 preserves the complete IEEE checksum and incremental/null-buffer behavior,
@@ -129,17 +129,40 @@ gate. The third arm combines one GC marker with synchronous collection and
 measures 2,790,856,430 median / 2,808,756,103 maximum, with one pair regression.
 That setting is not retained in source; its runtime tradeoffs still need review.
 
-Pending source experiments defer the separate WebCrypto OpenSSL library until
-its first operation, avoid arena switches for CSS cascade updates that cannot
-allocate, and compute absolute font sizes without resolving parent-face metrics.
-The WebCrypto table resolves the exact typed API and returns ordinary operation
+The subsequent `crypto-font-arena-matched` cohort uses executable
+`8952628605d7026f7f5817a8b8149ff3cbdd0249f2402a609e2a6212c571f4d5`,
+receipt `20261103-093652-b9f00af8`. All 28 captures pass every original gate.
+Seven default launches measure **2,771,570,435 median / 2,814,519,462 maximum**.
+Control, lazy-WebCrypto-only, and arena-update medians are 2,800,670,315;
+2,781,037,085; and 2,779,956,520. Deferring WebCrypto saves **19,633,230**
+between medians (six improving pairs, one regression); arena updates save
+1,080,565 (six improving pairs, one regression). The final absolute-font-size
+step saves 8,386,085 between medians but regresses in four pairs, including
+34.6M and 10.5M increases. Its gain remains uncertain. The default maximum
+still exceeds the requested ceiling by 114,519,462.
+
+The WebCrypto table resolves all 145 typed symbols and returns ordinary operation
 failures after a missing or incomplete library. A component diagnostic observes
-18.2M instructions loading that library; this is not whole-page credit. The first
-production link exposes seven omitted ECDSA names. The generator is corrected,
-and a compile-only shared-library check now references all 38 native adapters
-without linking OpenSSL, proving no direct native imports remain. Compilation
-checks pass, with the authored regression suites still deferred and production
-eligibility/performance measurements pending for these source changes.
+18.2M instructions loading that library. The initial links expose seven omitted
+ECDSA names; the corrected generator passes a compile-only shared-library check
+referencing all 38 native adapters without linking OpenSSL. In the later
+`webcrypto-loading-path` diagnostic, eager launches load `libcrypto.4.dylib` and
+report `ready=1`; lazy launches do neither. All four diagnostic captures are
+exact. Library-loading logs add overhead, so those counts earn no performance
+credit. The authored functional and memory-safety suites remain deferred.
+
+The latest completed build, executable
+`46147ed291e0edb492574449f5f44ca72a5dd94a5b7fa69672b4058c576fb083`,
+receipt `20261103-094946-b5a443b3`, also contains a full literal-cascade cache.
+Separate diagnostics confirm its path executes with exact pixels. Seven
+`cascade-matched` pairs pass all fourteen original correctness audits but
+measure **2,785,972,164 control → 2,792,384,585 default medians**, a **6,412,421
+regression**. Four pairs regress; default maximum is 2,816,743,866. This cache
+and its unrun tests are removed from source, with the patch preserved in
+`Build/hn-2700-20261103/rejected-cascade-result/`. That bundle cannot validate
+the restored source. New delayed-startup sampling captures remain separate
+instrumented diagnostics; they identify semantic page equality as another
+candidate, without establishing an instruction saving.
 
 JSC collection pilots retain every launch. A single-marker setting is promising
 in two alternating pilots, but the seven-pair cohort has helper-ownership failures

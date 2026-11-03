@@ -46,16 +46,18 @@ separately from the historical paired Vox/Brave row above.
 | --- | ---: | ---: | ---: | --- | --- |
 | Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | 3.2B reached; **2.7B target open** | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
 
-The ongoing 2.7B work has a complete production benchmark at **2,804,458,189
-median**, **2,812,566,441 maximum**, with exact pixels and all content, PNG,
+The ongoing 2.7B work has a complete production benchmark at **2,771,570,435
+median**, **2,814,519,462 maximum**, with exact pixels and all content, PNG,
 identity, ownership and exit audits passing in seven fresh default launches.
-Ready image completion saves about 61.2M between matched medians; an expanded
-CSS cache regresses and has been removed. Private bitmap text rasterization
-saves 10.5M in its matched cohort; hardware checksums save another 5.4M in a
-production comparison. These changes are in the measured bundle. Earlier regressions and invalid cohorts remain
-recorded. Regression suites are deferred until the requested goal is reached, so the fully validated
-row above remains unchanged. See the [progress report](docs/HACKER_NEWS_2_7B.md)
-and [all retained attempts](docs/performance/hn-2700-progress-20261103.json).
+That bundle defers the separate WebCrypto library, avoids allocating CSS arena
+switches, and computes absolute font sizes without parent metrics. The WebCrypto
+step saves 19.6M between matched medians; the font step has four pair regressions,
+so its smaller median gain remains uncertain. A later whole-cascade cache raises
+the matched median by 6.4M and has been removed. Earlier regressions and invalid
+cohorts remain recorded. Regression suites are deferred until the requested goal
+is reached, so the fully validated row above remains unchanged. See the
+[progress report](docs/HACKER_NEWS_2_7B.md) and
+[all retained attempts](docs/performance/hn-2700-progress-20261103.json).
 
 **Old Reddit /r/worldnews, Linux Vox follow-up (2026-11-02):** typeface reuse
 reduced median **Cachegrind guest instruction references (Ir)** from
