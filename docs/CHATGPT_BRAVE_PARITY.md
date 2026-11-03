@@ -7,16 +7,26 @@ zero differing pixels. The frontend/static bytes come from an unmodified
 homepage downloaded once through SOCKS; backend, identity and telemetry requests
 stay live. Full frozen conversation rendering is also exact.
 
-The current verified executable is `317f313a…`, with successful focused checks
-and all eleven screenshot smoke checks plus nine exact SVG mutation guards.
 The latest evidence is under `Build/chatgpt-css-error-lifetime-20261102/`.
-Earlier failures, build changes, reference images and protocol corrections are
-retained below. These are rendering/functionality checks, not performance claims.
+The homepage now loads suggestion cards and their Blob-backed icons; its heading
+also uses Brave's actual variable-font instance. The matched frozen homepage has
+eight differing pixels, maximum channel error five, around the composer. Full
+homepage equality remains open. Its suggestions are randomized, so different
+ordinary card selections cannot establish a whole-page pixel comparison.
 
-Initial homepage suggestion cards still need separate investigation: the fresh
-Brave page shows suggestions while the native page displays a handled error.
-The exact conversation captures do not establish parity for that pre-submit
-state or for untested ChatGPT features.
+The historical ordinary exact conversation builds are `a829ba36…` and
+`317f313a…`. A later complete-archive run succeeds functionally but misses the
+response sprite after a default-credential Fetch bypasses the static byte cache
+and receives a live 403. The cache fix has focused coverage; one subsequent
+ordinary launch hits a layout re-entry assertion. A debugger launch loads the
+sprite and produces an exact conversation but receives no ordinary-run parity
+credit. Further live validation is still required.
+
+All eleven screenshot smoke checks and nine exact SVG mutation guards pass on
+`b2c78a1c…`. Earlier failures, identities, references and protocol corrections
+remain below. These are rendering/functionality checks, not performance claims.
+The checks cover the recorded guest workflow and viewport, rather than all
+ChatGPT features.
 
 ## Captured workload
 
@@ -2714,3 +2724,105 @@ preceding `conformance-fresh-21/` also passes on `a630da28…`.
 
 Homepage suggestion data/error handling remains a separate open item; no
 pre-submit homepage equality is inferred from the exact conversation.
+
+
+## Homepage resources, Blob images and font replay continuation
+
+`f7c0a21a3` permits fresh, explicitly public responses for credentialless Fetch
+without requiring `immutable`; scripts retain that additional requirement.
+The native request still passes Fetch security, CORS and adblock checks. The
+regional discovery catalogue is public with a seven-day freshness lifetime,
+not immutable. Its original JSON and all ten referenced PNGs are now present in
+`complete-static-archive-25/` (834 verified responses). Missing original assets
+were downloaded once through normal Brave and SOCKS, with no fabricated module
+or image bytes. `popover-archive-22/` and `discovery-assets-archive-25/` retain
+those fetches. Dynamic identity, telemetry and backend responses remain excluded
+from the native static cache.
+
+The complete static archive resolves the earlier discovery-feed error. An
+initial private assessment incorrectly searched the body's aggregate text,
+which includes hidden templates and bootstrap code, for a visible error. The
+corrected check uses the visible error node's exact text and viewport rectangle.
+`production-homepage-blob-baseline-27/` has three loaded, 192-pixel Blob images,
+no visible error and no native/script errors. Its `paint_decoded` flags are
+false because that observer reads the shell's background-image cache, while
+these HTML images paint retained decoded data. The first assessment's extra
+requirement on that flag is retained as a protocol error; the PNG visibly shows
+the icons. `run_homepage_28.py` records this distinction.
+
+`95e27c99d` routes image Blob URLs through the actual owning document's Fetch
+client, including its policy container, origin and storage partition. Serialized
+URLs are parsed with the native Blob-entry hook; existing parsed snapshots are
+retained. MIME-selected SVG decoding works without a filename suffix. The tests
+cover JavaScript-created PNGs, cross-origin adoption, revocation and SVG MIME
+selection. Default and no-GC modes pass in `blob-images-focused-10/`; the corrected
+production allocator passes in `blob-images-focused-final/` with identical own
+sources. Additional event-timing/revocation coverage is tracked separately.
+
+`10a91bb75` preserves the system font's CSS optical instance during device-layout
+scaling. `f103c2a9b` then resolves CoreText's generated variable-instance names
+against a compatible base descriptor and reapplies every supplied axis. The
+native trace proves the exact heading instance previously failed registration:
+`.SFNS-Regular_wdth_opsz140000_GRAD_wght1F40000`, optical size 20 and weight 500.
+That failure silently fell back to regular weight. The focused CoreText test
+verifies descriptor identity, axis coordinates and rejection of unknown faces
+or unsupported axes. `frozen-homepage-font-fixed-27/` confirms the heading's
+1,584 differing pixels are gone on production `b2c78a1c…`.
+
+`brave-homepage-26/frozen.html` materializes each live Blob image's original bytes
+as a data URI in the serialized clone only. The live page is untouched; the PNG
+before and after serialization is exact. All three embedded hashes match the
+original archived PNGs. A fresh Brave capture of that clone also matches the
+unchanged original homepage at zero pixels. The native capture differs by only
+eight pixels: four around the plus path and four around the disabled Send circle.
+`frozen-homepage-svg-control-32/` still has those eight pixels with the optional
+SVG polygon/triangle/coverage caches disabled. Removing the two controls'
+isolation in a diagnostic clone leaves Brave unchanged and still leaves the
+native difference, so isolation alone is not established as the cause.
+
+`1d11642dd` fixes another independently reproduced problem: `atob` removes
+forgiving-base64 padding before passing data to V's decoder, which requires
+complete four-character groups. Previously even `atob("aGVsbG8=")` returned an
+empty string in the production browser. The fix restores decoder padding after
+validation and projects binding inputs through actual UTF-16, preserving
+`InvalidCharacterError` for lone surrogates. The source and native binding tests
+pass in default, no-GC and correctly staged prealloc modes
+(`forgiving-base64-focused-final/`, `forgiving-base64-binding-final/`). The old
+binding test also reused a top-level `let rejected` across evaluations; its
+counter now has a distinct name so the later assertions execute.
+
+`4c2b74fb1` extends public immutable cache reuse to default-credential Fetch.
+`live-conversation-fetch-trace-30/` proves the missing response controls' sprite
+request received a live 403, despite its exact original bytes and explicitly
+public, fresh and immutable headers being archived. The unmodified loader uses
+plain `fetch(url)`. Explicit Cookie/Authorization/Range headers, private or varied
+responses, revalidation modes and missing provenance still bypass this adapter;
+credentialed non-immutable Fetch responses remain ineligible. All five focused
+cases pass in three modes (`immutable-fetch-cache-focused-1/`), including actual
+native deferred delivery with CORS and filtering.
+
+`production-cached-sprite-38/` reaches readiness and native Send, then fails
+`Document.update_layout`'s re-entry invariant; this is retained as a failing
+ordinary run. The assertion is not suppressed. `layout-reentrance-trace-39/`
+does not reproduce it under LLDB: the real reply succeeds, all 48 sprite symbols
+are present, errors are empty and the unchanged conversation reference is exact.
+The debugger exits nonzero because its final backtrace command finds an already
+exited browser. This diagnostic supplies no ordinary-run parity credit.
+`production-cached-sprite-41/` is also invalidated by a shared bundle update and
+does not receive the expected reply. Its failed result is retained.
+
+The prealloc runner protocol needed correction. Selecting the staged compiler
+from the repository working directory still selected its baked-in original
+builtin library; an actual PNG decode exposed the unbounded `v_realloc(nil,n)`.
+Production builds already compile from the staged compiler directory. Corrected
+focused runners now do likewise, use absolute input paths, and require the
+bounded realloc helper in each binary. `prealloc-correction-regressions/`
+repeats the keyframe substitution, compact scroll Promise, native Promise realm,
+optical font and public Fetch cache tests successfully with this verified
+allocator. Earlier tests labeled patched prealloc are superseded for that
+allocator claim; their raw results remain intact.
+
+`4be7e30cb` adds eight fractional-translation/half-pixel cases to the existing
+native rounded-rectangle test. All sixteen comparisons are exact, with 185
+source/library dependencies stable (`fractional-sticky-rrect-final/`). This is
+regression coverage, not a claimed fix for the remaining composer pixels.
