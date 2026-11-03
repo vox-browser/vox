@@ -2411,7 +2411,10 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
  defer { record_diagnostic_instruction_scope(13, diagnostic_matches_start) }
 
 	mut matching_rules := []ScopedMatchingRule{}
-	mut repeated_rule_matches := map[u64]RepeatedRuleMatch{}
+	mut repeated_rule_matches := RepeatedRuleMatchMemo{}
+	if disable_lazy_repeated_rule_memo {
+		repeated_rule_matches.entries = map[u64]RepeatedRuleMatch{}
+	}
 	for scoped_rule_to_run in rules_to_run {
 		// NOTE: When matching an element that is itself a shadow host against a
 		// rule from outside its own shadow root, we must not use the element as

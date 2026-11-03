@@ -109,9 +109,44 @@ fn test_repeated_match_sheet_identity_keeps_default_namespace_decisions_separate
 	selector := selector_from_text('div')
 	mut graph := unsafe { &SelectorData(selector.data_) }
 	graph.repeated_rule_parse = true
-	mut memo := map[u64]RepeatedRuleMatch{}
+	mut memo := RepeatedRuleMatchMemo{}
 	mut first_context := MatchContext{style_sheet_for_rule:first}
 	mut second_context := MatchContext{style_sheet_for_rule:second}
 	assert match_repeated_rule_selector(selector, element, none, mut first_context, mut memo, unsafe { nil })
 	assert !match_repeated_rule_selector(selector, element, none, mut second_context, mut memo, unsafe { nil })
+	if mut entries := memo.entries {
+		assert entries.len == 1
+		stored := entries[u64(voidptr(selector.data_))] or { panic('retained memo entry') }
+		assert !stored.matched
+		assert voidptr(stored.sheet or { panic('retained sheet') }) == voidptr(second)
+	} else {
+		assert false, 'Repeated selectors must retain the initialized memo'
+	}
+}
+
+fn test_repeated_match_memo_keeps_entries_and_metadata_after_growth() {
+	mut document, target, _, _ := repeated_rule_fixture()
+	defer { document.release_native_storage() }
+	document.set_hovered_node(target.as_node())
+	mut selectors := []Selector{}
+	for index in 0 .. 128 {
+		selector := selector_from_text(':is(.story,.unused${index}):hover')
+		mut graph := unsafe { &SelectorData(selector.data_) }
+		graph.repeated_rule_parse = true
+		selectors << selector
+	}
+	mut memo := RepeatedRuleMatchMemo{}
+	for _ in 0 .. 2 {
+		for selector in selectors {
+			mut context := MatchContext{}
+			assert match_repeated_rule_selector(selector, target, none, mut context, mut memo, unsafe { nil })
+			assert context.attempted_pseudo_class_matches.get(.hover)
+		}
+		gc_collect()
+		if entries := memo.entries {
+			assert entries.len == 128
+		} else {
+			assert false, 'Repeated selector entries must survive map growth'
+		}
+	}
 }
