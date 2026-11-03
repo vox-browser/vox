@@ -244,3 +244,133 @@ The [continuation receipt](benchmark-results/reddit-comment-memory-2026-11-03.js
 retains the raw commands, identities, sampling gaps, focused checks, rejected
 experiments and outstanding work under private
 `Build/reddit-comment-memory-20261103/`. The earlier receipt remains unchanged.
+
+
+## Further continuation: retained paint and replies
+
+Commit `05916442f` borrows text fragments during command recording instead of
+making a wide heap copy each time the color bridge takes their address. The
+512-fragment check retains 147,443 B of payload; the discarded record copies
+alone previously required 647,168 B. Two cases pass with preallocation,
+poisoning and Boehm, including whitespace joining and RTL geometry. Existing
+phase-storage/snapshot checks pass normally and with poisoning.
+
+Commit `a45bdaef0` keeps the paint projection when the complete unchanged-text
+validation succeeds. Fragment grouping now uses the retained layout Text node;
+selection, range geometry and hit testing still resolve its fresh DOM owner.
+Independent pending paint updates remain intact. Eight focused cases pass
+normally and with poisoning, including stable phase payloads, fresh-node hit
+results and selection repainting. The 50-refresh fixture retains 423,535 B
+versus 5,661,652 B with ordinary layout. On the archived thread, a separate
+12-refresh diagnostic lowers the layout-stage document allocations from about
+1,745,209 B to 204,081 B per unchanged seven-timestamp refresh. This is a component
+allocation result, not a percentage reduction in whole-browser RAM.
+
+Production executable `903ed05bc3aa460f6015fc465e3873a77d70fa601306c7bb46f18fd34aa95aeb`
+contains both changes, verified in frozen compiler input. A fresh unprofiled
+300-second original-origin replay records **385,779,872 B** at its final
+two-second median and **895,290,296 B** at its simultaneous observed peak.
+Browser and guard exit zero; runtime, observer and fixture identities remain
+unchanged. The endpoint is complete, visible and fully active, with 49 comments,
+two images, zero native errors and the existing JavaScript diagnostic. The
+observed viewport is **1708 × 953**, reflecting intervening shared browser-chrome
+changes; it differs from the earlier 1708 × 941 protocol. These are new
+observations, without an attributed whole-page percentage. Nine native
+comparisons are pixel-exact on this bundle: the eight SVG guards and the
+asynchronous equal-text/control fixture. The preceding 300-second attempt
+finishes at 392,546,488 B but changes bundle identity and is rejected.
+
+Commit `243f30862` additionally retires native collection-response buffers after
+the script engine copies their strings. The temporary-reply interface also
+copies correctly in LibJS, while native mutations, element keys, materialization
+flags and lazy control models retain their document lifetime. Tag-collection
+metadata and its array share the same temporary response. Four collection cases
+and two string-lifetime cases pass with preallocation, poisoning and Boehm.
+The 24-query control retains 581,748 B versus 196,605 B with temporary replies.
+A separate poisoned replay of the exact thread and its author scripts passes
+12 replacement cycles. Production executable
+`7b24528621023b8aac571be271b3e31edc63766ea2028b397085f067c8ebf6b1`
+contains this change and passes all nine native pixel comparisons. A fresh
+300-second replay finishes at **405,915,760 B** and peaks at **909,183,952 B**;
+identities remain stable and browser/guard exits are zero. This higher footprint
+than the preceding cohort is retained, with no attributed whole-page saving.
+Native visual checks ran concurrently during the beginning of this observation;
+its startup and endpoint scopes otherwise follow the protocol above.
+
+Commit `6c4a24e00` retires the JSON containers decoded for a compact query's
+pending mutation snapshot. Replay still runs in document storage; string values
+installed in DOM/control records and logs are copied before the decoder retires.
+The attribute-write boundary owns map-key names too. Two cases pass with
+preallocation, poisoning and Boehm, including created SVG elements, qualified
+namespaced attributes, stable wrapper identity and Unicode strings used after
+retirement. The decoder stress control retains **508,875 B**, versus **8,008 B**
+with the workspace. The archived seven-timestamp diagnostic lowers script-stage
+document allocation from 281,631 B to 105,887 B per refresh and passes all 12
+cycles normally and with poisoning. Production executable
+`d9ac8f02f93515ca33b5fee082d265e8cb794741c44d1fac6a201e8811bc7481`
+contains this change in frozen input and passes all nine native pixel guards.
+Its first longer observation exits normally after 225 seconds without the
+scheduled audit/capture, for an unknown reason; it is incomplete and rejected.
+The next attempt completes 300 seconds at 377,636,976 B, but changes bundle
+identity and is also rejected. A subsequent 90-second attempt also changes
+identity and is rejected. The following **90-second** observation, on executable
+`ac089f6e9ee05ca73fad9393a5bf7b5cf4f2a5f676cb280da0763b113a7bde59`,
+is complete with unchanged identities and zero browser/guard exits. It settles
+at **349,948,016 B** and peaks at **905,120,696 B**. Its peak after the first ten
+seconds is **804,849,848 B at 40.50 seconds**. The viewport remains 1708 × 953
+with 49 comments and two images; the document is complete, visible and fully
+active with zero native errors. This shorter observation supplies no five-minute
+acceptance for the snapshot fix. Two SVG paint-server ID-collision reftests also
+remain pixel-exact on this bundle. They overlap the final part of this observation;
+the first 40 seconds have no concurrent visual checks.
+
+The investigation also tested an IOSurface readback prototype, the existing
+Boehm mode and an opaque-text CPU raster prototype. None demonstrated the
+requested whole-page startup cap; no allocator or graphics-policy change ships
+from these experiments. The text prototype passes its forced-GPU pixel controls
+but still observes an approximately 893 MB page peak, because rounded decoration
+recording initializes the GPU as well. Its source changes were reverted. An
+instrumented stack confirms that first picture use in
+`draw_chromium_rounded_background_pair`; diagnostic traces do not supply memory
+optimization credit. Early setup/compile failures and the rejected prototypes
+remain retained in the raw evidence.
+
+A final picture-cache experiment (`791aad04e`, reverted by `5b24f8c69`) retains
+at most 8 MiB of exact picture inputs and outputs across idle GPU retirement.
+Ownership/limit checks and 24 GPU replay cases pass, including a separate shared
+image-token retirement check. Diagnostic traces show cache hits on the archived
+thread, but change bundle/source identities and receive no performance credit.
+Two subsequent unprofiled alternating control/candidate pairs keep every input
+identity unchanged. Each observation runs for **65 seconds**, using executable
+`a1157f457afdfb4266c3743f9c0fbe6f4f64257fbc93b4ff827dc7318790db9a`
+with a private native-library override
+`55cfbf13567ce0e8ece6dd0b8d42c407e6c947ad8bd1bfcae47bf60377ff3477`.
+Controls disable only the new cache. These are experimental-library observations,
+not validation of a published production cache. Browser and guard exits are zero;
+no visual checks overlap these four observations. The 18-core host's recorded
+load varies across trials, and other sessions continue working.
+
+| Trial | Settled footprint (B) | Launch peak (B) | Peak after 10 s (B) |
+| --- | ---: | ---: | ---: |
+| Control 1 | 339,544,200 | 904,743,888 | 792,889,504 |
+| Candidate 1 | 339,806,320 | 907,676,552 | 802,162,848 |
+| Control 2 | 340,297,840 | 890,309,560 | 810,338,488 |
+| Candidate 2 | 341,592,152 | 888,867,696 | 791,005,272 |
+
+The experiment does not demonstrate a whole-page memory improvement or the
+requested cap. It is reverted rather than retaining extra cache storage without
+a demonstrated workload benefit. Its source commit, revert, failed setup/check
+attempts, successful focused controls and every observation remain recorded.
+
+**The complete 500 MB limit remains unmet.** Successful five-minute endpoints
+are below it, but both startup and later refresh spikes exceed it. The valid
+paint-reuse cohort reaches **839,141,584 B at 180.45 seconds** after excluding the
+first ten seconds; the temporary-reply cohort reaches **849,742,056 B at 280.54
+seconds**. GPU-context recreation during later painting therefore remains a
+problem as well as startup. Residual refresh allocations also remain.
+Longer and interactive validation, and live-site validation remain open. A fresh
+direct request in this continuation again returns HTTP 403. The
+[further-continuation receipt](benchmark-results/reddit-comment-memory-2026-11-03-continuation.json)
+links private raw evidence under
+`Build/reddit-comment-memory-20261103-continuation/` without committing cached
+account-bearing page data.
