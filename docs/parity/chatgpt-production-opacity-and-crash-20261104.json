@@ -1,0 +1,478 @@
+{
+  "date": "2026-11-04",
+  "rendering_implementation_commit": "e4359ac35",
+  "production_build_receipt": "20261103-233616-8b529a6d",
+  "production_executable_sha256": "de8cc0044d2999eed4ccf359f787ce99a30d4fa25206ecaa68c4094a659d0530",
+  "native_library_sha256": "ac159d1312f19876627c6fa13cc21ab17bb4569258be6d40828365e38a179316",
+  "production_frozen_reply": {
+    "results": [
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 2,
+        "png_size": [
+          2048,
+          1536
+        ],
+        "differing_pixels": 1,
+        "max_channel_error": 1,
+        "bounds": [
+          2013,
+          1142,
+          2014,
+          1143
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+  },
+  "production_reply_png_sha256": "1a80ccd77dfe707bd694c1bf266143179d02a1c349d8a35d2b961b2b63600831",
+  "production_frozen_homepage": {
+    "results": [
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 2,
+        "png_size": [
+          2048,
+          1536
+        ],
+        "differing_pixels": 1,
+        "max_channel_error": 1,
+        "bounds": [
+          2013,
+          1229,
+          2014,
+          1230
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+  },
+  "production_scale_one_homepage": {
+    "results": [
+      {
+        "viewport": [
+          800,
+          600
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 1,
+        "png_size": [
+          800,
+          600
+        ],
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 1,
+        "png_size": [
+          1024,
+          768
+        ],
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1280,
+          800
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 1,
+        "png_size": [
+          1280,
+          800
+        ],
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+  },
+  "scope_label_correction": "169/170 inherit a stale reply description from their harness template. Their pinned frozen.html, archive and Brave reference identities establish the older homepage workload. This report corrects that description; raw harnesses and PNGs remain retained.",
+  "production_input_crash": {
+    "exit": 139,
+    "identity_stable": true,
+    "inputs_stable": true,
+    "guard_budget": "standard 12 GiB full-application guard",
+    "backend_responses_seeded": false,
+    "initial_native_cookie_jar_empty": false,
+    "session_cookie_source": "Matching anonymous Brave session captured before input; values remain private",
+    "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+    "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+    "ready": "complete",
+    "fully_active": true,
+    "reply_observed": false,
+    "native_error_count": 0,
+    "javascript_diagnostic_count": 0,
+    "native_input_started": true,
+    "service_blocked": false,
+    "passed": false,
+    "expected_native_loaded": true
+  },
+  "fault_probe": {
+    "directory": "Build/chatgpt-responsive-20261103/retina-borders-24/production-fault-172",
+    "result": {
+      "exit": 139,
+      "identity_stable": true,
+      "inputs_stable": true,
+      "guard_budget": "standard 12 GiB full-application guard",
+      "backend_responses_seeded": false,
+      "initial_native_cookie_jar_empty": false,
+      "session_cookie_source": "Matching anonymous Brave session captured before input; values remain private",
+      "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+      "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+      "ready": "complete",
+      "fully_active": true,
+      "reply_observed": false,
+      "native_error_count": 0,
+      "javascript_diagnostic_count": 0,
+      "native_input_started": true,
+      "service_blocked": false,
+      "passed": false,
+      "expected_native_loaded": true
+    },
+    "decoded_instruction": "LengthPercentage equality +0x218: ldrb w10, [x10, x9], in the calculation context range-map deleted-entry scan",
+    "qualification": "Image zero is an injected dylib (Mach-O type 6); its base is rejected. PC normalization is inferred from the repeated idle_layout_snapshots_equal return frame (+812) and verified against production disassembly. The bad table pointer resembles overwritten string storage. This establishes the failing map read, not a general stack-allocation cause.",
+    "symbolic_fault": {
+      "pc_absolute": "0x1047f88f4",
+      "lr_absolute": "0x10518ab78",
+      "slide_inferred_from_known_return_offset": "0x43b0000",
+      "pc_unslid": "0x1004488f4",
+      "note": "Image zero is a diagnostic dylib, so its reported base is rejected. Slide is inferred from the repeated idle-layout return frame; disassembly must verify this relation."
+    }
+  },
+  "old_production_timeout": {
+    "exit": 125,
+    "identity_stable": true,
+    "inputs_stable": true,
+    "guard_budget": "standard 12 GiB full-application guard",
+    "backend_responses_seeded": false,
+    "initial_native_cookie_jar_empty": false,
+    "session_cookie_source": "Matching anonymous Brave session captured before input; values remain private",
+    "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+    "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+    "ready": "complete",
+    "fully_active": true,
+    "reply_observed": false,
+    "native_error_count": 0,
+    "javascript_diagnostic_count": 0,
+    "native_input_started": true,
+    "service_blocked": false,
+    "passed": false,
+    "expected_native_loaded": true
+  },
+  "old_production_timeout_guard": {
+    "reason": "timeout",
+    "child_exit_code": -9,
+    "observed_peak_rss_bytes": 8562343936,
+    "elapsed_seconds": 182.395120083
+  },
+  "old_production_debugger_reply": {
+    "assessment": {
+      "exit": 1,
+      "identity_stable": true,
+      "inputs_stable": true,
+      "guard_budget": "standard 12 GiB full-application guard",
+      "backend_responses_seeded": false,
+      "initial_native_cookie_jar_empty": false,
+      "session_cookie_source": "Matching anonymous Brave session captured before input; values remain private",
+      "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+      "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+      "ready": "complete",
+      "fully_active": true,
+      "reply_observed": true,
+      "native_error_count": 0,
+      "javascript_diagnostic_count": 0,
+      "native_input_started": true,
+      "service_blocked": false,
+      "passed": false,
+      "expected_native_loaded": true,
+      "pixels": {
+        "size": [
+          2048,
+          1536
+        ],
+        "reference_size": [
+          2048,
+          1536
+        ],
+        "expected_size": [
+          2048,
+          1536
+        ],
+        "differing_pixels": 7302,
+        "max_channel_error": 74,
+        "bounds": [
+          552,
+          394,
+          2014,
+          1450
+        ]
+      }
+    },
+    "browser_exit": 0,
+    "debugger_outer_exit": 1,
+    "qualification": "Browser obtained a reply and exited zero. Subsequent batch inspection commands against the exited target produce debugger exit 1. This instrumented result does not resolve the normal-run crash."
+  },
+  "interrupted_diagnostic": {
+    "assessment": {
+      "exit": 143,
+      "identity_stable": true,
+      "inputs_stable": true,
+      "guard_budget": "standard 12 GiB full-application guard",
+      "backend_responses_seeded": false,
+      "initial_native_cookie_jar_empty": false,
+      "session_cookie_source": "Matching anonymous Brave session captured before input; values remain private",
+      "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+      "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+      "ready": "complete",
+      "fully_active": true,
+      "reply_observed": false,
+      "native_error_count": 0,
+      "javascript_diagnostic_count": 0,
+      "native_input_started": true,
+      "service_blocked": false,
+      "passed": false,
+      "expected_native_loaded": true
+    },
+    "termination": {
+      "reason": "Manually interrupted following mistaken assumption about replacement timing; its recorded identity already matched the new production bundle and remained stable",
+      "terminated_pids": [
+        96961,
+        94895
+      ],
+      "original_reason": "Production bundle and native inputs replaced during diagnostic; invalidate and terminate rather than compare mixed identities",
+      "sampling_qualification": "Sample selected a child Vox helper (parent was the browser); it cannot diagnose the main-thread stall"
+    }
+  },
+  "main_thread_sample": {
+    "directory": "Build/chatgpt-responsive-20261103/retina-borders-24/production-main-sample-168",
+    "assessment": {
+      "exit": 0,
+      "pid_identity_stable": true
+    },
+    "scope": "Instrumented main-thread sample during native character insertion; synchronous script geometry reads enter document layout. Diagnostic only; no performance acceptance."
+  },
+  "rejected_raster_experiment": {
+    "home": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            2048,
+            1536
+          ],
+          "differing_pixels": 41,
+          "max_channel_error": 1,
+          "bounds": [
+            48,
+            1229,
+            2014,
+            1488
+          ],
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Frozen homepage rendering only. No live functionality claim."
+    },
+    "reply": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            2048,
+            1536
+          ],
+          "differing_pixels": 41,
+          "max_channel_error": 1,
+          "bounds": [
+            48,
+            1142,
+            2014,
+            1488
+          ],
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+    },
+    "qualification": "Promoting recordings from current backend MSAA state regresses to 41 pixels. No canonical implementation changes are adopted."
+  },
+  "one_cell_owner_diagnostic": {
+    "home": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            2048,
+            1536
+          ],
+          "differing_pixels": 1,
+          "max_channel_error": 1,
+          "bounds": [
+            2013,
+            1229,
+            2014,
+            1230
+          ],
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Frozen homepage rendering only. No live functionality claim."
+    },
+    "reply": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            2048,
+            1536
+          ],
+          "differing_pixels": 1,
+          "max_channel_error": 1,
+          "bounds": [
+            2013,
+            1142,
+            2014,
+            1143
+          ],
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+    },
+    "qualification": "Promotion guard does not activate; unchanged one-pixel results cannot establish a missing pass mode."
+  },
+  "guard_regression_baseline": {
+    "directory": "Build/chatgpt-responsive-20261103/retina-borders-24/calculated-snapshot-before-175",
+    "results": [
+      {
+        "mode": "default",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "default",
+        "stage": "runtime",
+        "exit": 1
+      }
+    ],
+    "qualification": "Both explicit shareability assertions fail on the unfixed source. The earlier 174 crash is a test initialization error, retained without defect credit. The 176 compile failure is an option-unwrapping issue in reflected code; validation of the concrete Size helper is ongoing."
+  },
+  "claims": {
+    "retina_pixel_equality": false,
+    "production_live_crash_resolved": false,
+    "performance_acceptance": false
+  },
+  "private_raw_root": "Build/chatgpt-responsive-20261103/retina-borders-24"
+}

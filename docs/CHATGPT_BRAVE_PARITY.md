@@ -3571,3 +3571,40 @@ response; it does not exercise a successful reply. Both failures are retained.
 The unsafe-looking empty-map comparison is an investigation lead; no speculative
 CSS change is included in the paint-offset fix. Production crash resolution,
 literal Retina equality and broader live functionality remain open.
+
+
+## November 4: production integration and input crash
+
+Production receipt `20261103-233616-8b529a6d`, executable SHA-256
+`de8cc0044d2999eed4ccf359f787ce99a30d4fa25206ecaa68c4094a659d0530`,
+reproduces the one-pixel Retina reply and homepage with its normal loader.
+All three scale-one homepage sizes remain exact. The
+[production capture](parity/raw/chatgpt-retina-reply-production-opacity.png)
+and [receipt](parity/chatgpt-production-opacity-and-crash-20261104.json)
+pin its actual native libraries and unchanged references. The homepage drivers
+inherit a stale reply scope label; their fixture/reference hashes establish the
+homepage workload, as the new receipt explicitly records.
+
+Native input still crashes in this production build (`production-live-opacity-167/`,
+exit 139). A signal-register diagnostic independently reproduces it (`production-fault-172/`)
+and identifies the calculation context range-map deleted-entry read in
+`LengthPercentage` equality. The injected image-zero base is rejected; the
+repeated caller return address and disassembly establish the instruction.
+The invalid table pointer resembles overwritten string storage. Earlier claims
+that this alone establishes a stack allocation or a nil map are unsupported.
+A scalar-snapshot eligibility regression fails against the existing code;
+the calculated-dimension guard and its validation are still in progress.
+
+The older production build's ordinary attempt 164 times out under its memory
+guard. Debugger attempt 156 gets a reply and exits normally in the browser;
+post-exit debugger commands make the outer harness exit 1. The interrupted
+sample 165 already used the new bundle and had stable inputs: its termination
+followed a mistaken assumption about replacement timing. Its selected helper
+sample cannot diagnose the main thread. The separate main-thread sample 168
+shows synchronous script geometry queries entering layout during input.
+These diagnostics do not supply performance or live-parity acceptance.
+
+The broader raster-pass experiment 158 regresses both frozen pages from one
+to 41 differing pixels and remains private. Restricting its owner-based variant
+to one-cell pictures never activates the promotion, so its unchanged one-pixel
+result is inconclusive. No raster experiment is included in the implementation.
