@@ -66,6 +66,29 @@ failures, identities, references and protocol corrections remain below. These
 checks cover rendering and functionality for the recorded guest workflow and
 viewport; they supply no performance claim.
 
+## November 3: animation samples in device-layout snapshots
+
+`b25c31a88` materializes the selected animation/transition values into the
+layout snapshot before scaling. The source keeps its CSS animation overlay;
+that overlay can no longer replace a snapshot's physical values a second time.
+Dimensionless samples such as opacity remain selected, and important-property,
+transition and inheritance precedence are preserved. Older snapshots retain
+their own values after later samples change.
+
+The [standalone fixture](../Tests/Browser/Brave/input/device-layout-animation-snapshot.html)
+improves from 20,800 differing pixels to zero at 800×600 CSS pixels, scale 2,
+with device layout explicitly enabled. The focused checks pass under all three
+allocator modes; existing style/page reuse, animation storage/lifetime and
+invalidation checks pass too. The [receipt](parity/chatgpt-retina-animation-projection-20261103.json)
+retains the original failure, reference PNGs and actual native-library paths.
+
+The ordinary archived ChatGPT path stays at 2,117 differing Retina pixels.
+An opt-in diagnostic of the unsupported SVG device-layout path improves from
+1,611,472 to 89,586 differing pixels, confirming the scaling defect but still
+failing the full reference. The temporary bypass was removed. The normal
+eligibility guard remains enabled while font tracking and other differences
+are investigated; this diagnostic earns no default-page or performance credit.
+
 ## November 3: visual clips retain the presenting device grid
 
 `5633212b3` stores snapped clip rectangles and radii as integer device geometry
