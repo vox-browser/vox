@@ -3782,3 +3782,36 @@ later completed **`20261103-040720-a4b16a6c`** bundle
 passes all those checks with unchanged runtime identities. It contains the
 same feature and confirms that the earlier viewport/grid-placement experiments
 are absent; it is distinguished from the cohort executable.
+
+
+## Rejected deferred CSS resolution sharing (2026-11-03)
+
+**The target remains unmet; history stays at 61 cohorts / 1,460 attempts.**
+The R12 prototype reused an immutable resolved layout cache only when a no-op
+style replacement was actually consumed and all original inputs still matched.
+It retained fresh raw/mutation storage, rejected changed font/context/animation
+inputs, and did not form chains of unused predecessor styles.
+
+A separate production-compiler `v -profile -profile-no-inline` diagnostic
+confirms **4,850 control / 4,570 candidate** full property resolutions, with
+1,695 candidate reuse checks. Its instrumented timings supply no performance
+credit. The final unprofiled C-O3/no-GC frozen-HTML probe retains two alternating
+pairs: second-layout medians are **1,205,417,606.5 control /
+1,205,328,499.5 candidate**, saving only **89,107** instructions. First layout
+regresses by **2,574,527**. An earlier eager prototype also regressed. All
+probes preserve 2,855 nodes, 902 lines, extent 55,212,771 and the original
+paint-dump hash. This standalone scope excludes scripts, resources, browser
+startup, window setup and PNG; it earns no BBC instruction credit.
+
+All 32 focused cases pass both policies in default, no-GC and production-bounded
+preallocated modes (**192 executions**). Successful final checks explicitly
+use the pinned production compiler after the current compiler rejected an
+unrelated concurrent sum-reference expression. Preparation failures, including
+a test-only inline optional-argument lowering crash, are retained. The entire
+prototype is removed; **84 restoration executions** pass across those three
+memory modes, and its source hooks are absent. No native bundle restoration
+claim is made because shared publication could contain transient experiment
+code. No acceptance cohort, broad cadence reset or catalog entry results.
+Exact counts, compiler identities, commands, profiles, rejected source and
+checks are retained in the [tracked ledger](performance/bbc-noop-geometry-20261103.json)
+and `Build/bbc-noop-geometry-20261103/`.

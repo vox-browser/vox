@@ -1,0 +1,386 @@
+{
+  "experiment": "R12 deferred no-op resolved-style cache sharing",
+  "status": "rejected and removed; BBC target remains unmet",
+  "acceptance": false,
+  "bbc_instruction_credit": 0,
+  "new_browser_cohorts": 0,
+  "history": {
+    "cohorts": 61,
+    "attempts": 1460
+  },
+  "evidence_root": "Build/bbc-noop-geometry-20261103",
+  "scope": "Standalone C-O3 no-GC engine, frozen BBC HTML without scripts or resource replay, viewport1024x768/layout scale1. First layout and second update after appending a zero-size body child use process deltas. Includes synchronous native style/layout but no browser startup/window/PNG. Dumps and scalar geometry do not establish pixel equality or full-browser savings. Witness has diagnostic logging and supplies no timing credit.",
+  "unprofiled": {
+    "diagnostic_only": true,
+    "bbc_instruction_credit": false,
+    "acceptance": false,
+    "executable_sha256": "117bd1219d4e441ba0ef4299045f7ea5ceac7b864a1c8947b997c9837cdb2379",
+    "html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+    "rows": [
+      {
+        "pair": 0,
+        "arm": "witness",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 348469890,
+        "first_layout": 2682094178,
+        "mutation": 98022,
+        "second_layout": 1206273347,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "noop_geometry": true
+        }
+      },
+      {
+        "pair": 1,
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 342155432,
+        "first_layout": 2679498496,
+        "mutation": 105827,
+        "second_layout": 1208085440,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "noop_geometry": false
+        }
+      },
+      {
+        "pair": 1,
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 343372956,
+        "first_layout": 2670298707,
+        "mutation": 108158,
+        "second_layout": 1206804861,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "noop_geometry": false
+        }
+      },
+      {
+        "pair": 2,
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 344695240,
+        "first_layout": 2674262120,
+        "mutation": 101450,
+        "second_layout": 1203852138,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "noop_geometry": false
+        }
+      },
+      {
+        "pair": 2,
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 346271265,
+        "first_layout": 2659913277,
+        "mutation": 99455,
+        "second_layout": 1202749773,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "noop_geometry": false
+        }
+      }
+    ],
+    "limitations": "Standalone C-O3 no-GC engine, frozen BBC HTML without scripts or resource replay, viewport1024x768/layout scale1. First layout and second update after appending a zero-size body child use process deltas. Includes synchronous native style/layout but no browser startup/window/PNG. Dumps and scalar geometry do not establish pixel equality or full-browser savings. Witness has diagnostic logging and supplies no timing credit."
+  },
+  "profile": {
+    "diagnostic_only": true,
+    "instrumentation": "V -profile - -profile-no-inline with explicit CSS scope entries",
+    "bbc_instruction_credit": false,
+    "executable_sha256": "9f4c366661fda576aad2e97a4bd664dd891223274c98f5e57f13998cc1ac4e0a",
+    "html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+    "rows": [
+      {
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "profiled_rows": 708,
+        "selected": {
+          "css__resolve_computed_values": {
+            "calls": 4850,
+            "inclusive_ms": 440.674,
+            "self_ms": 35.63,
+            "mean_ns": 90861.0,
+            "name": "css__resolve_computed_values"
+          },
+          "css__reuse_noop_resolved_style": {
+            "name": "css__reuse_noop_resolved_style",
+            "calls": 0,
+            "selected_entry_in_generated_C": true
+          }
+        },
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0"
+      },
+      {
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "profiled_rows": 779,
+        "selected": {
+          "css__resolve_computed_values": {
+            "calls": 4570,
+            "inclusive_ms": 387.644,
+            "self_ms": 32.735,
+            "mean_ns": 84824.0,
+            "name": "css__resolve_computed_values"
+          },
+          "css__reuse_noop_resolved_style": {
+            "calls": 1695,
+            "inclusive_ms": 4.92,
+            "self_ms": 0.187,
+            "mean_ns": 2903.0,
+            "name": "css__reuse_noop_resolved_style"
+          }
+        },
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0"
+      }
+    ],
+    "limitations": "Instrumented frozen HTML, no scripts/resources/window/startup comparison/PNG; times and instruction snapshots are diagnostic only. Both selected free-function bodies explicitly enable profiling; missing selected-entry row means zero calls. Child timings overlap."
+  },
+  "compiler": {
+    "path": "/Users/alex/code/v-downstream-ci-20261102/v",
+    "sha256": "917b3654bf7225de51abb5aef587e4d580d2ee9e23263b0f9d0ff94cc7b4d3c9",
+    "reason": "Explicit production compiler, compatibility check passed; current /Users/alex/code/v/v rejects a concurrently added unrelated sum-reference expression. No source workaround or automatic fallback."
+  },
+  "focused_checks": {
+    "cases": 32,
+    "policies": 2,
+    "memory_modes": [
+      "default",
+      "none",
+      "production-bounded prealloc"
+    ],
+    "executions": 192,
+    "results": [
+      [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ],
+      [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ]
+    ]
+  },
+  "restoration": {
+    "cases": 28,
+    "memory_modes": 3,
+    "executions": 84,
+    "results": [
+      [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-run",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-run",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-run",
+          "exit": 0
+        }
+      ],
+      [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-run",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-run",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-run",
+          "exit": 0
+        }
+      ]
+    ],
+    "hooks_absent": true,
+    "native_bundle_validation": "not claimed; shared production publication may have included transient uncommitted experiment code"
+  },
+  "retained_failures": [
+    "Initial eager sharing regressed second-layout median by 1,643,562.5 instructions.",
+    "Preparation compile failures and one test-only optional argument lowering crash are retained. Binding the parsed optional to a local fixed the test.",
+    "Raw current compiler rejects foreign device_layout_scale_only.v; successful checks use explicit production compiler."
+  ],
+  "removed_source": [
+    "rejected-source/",
+    "rejected-integration.patch",
+    "final-source-inputs.json"
+  ],
+  "limitations": [
+    "Frozen HTML standalone probe has no scripts, resource replay, browser startup, window or PNG; no page performance claim.",
+    "V instrumented timings are diagnostic only.",
+    "No broad cadence reset, acceptance cohort, or OPTIMIZED_SITES.md instruction entry."
+  ],
+  "first_layout": {
+    "counts": {
+      "control": [
+        2679498496,
+        2659913277
+      ],
+      "candidate": [
+        2670298707,
+        2674262120
+      ]
+    },
+    "medians": {
+      "control": 2669705886.5,
+      "candidate": 2672280413.5
+    },
+    "control_minus_candidate": -2574527.0
+  },
+  "second_layout": {
+    "counts": {
+      "control": [
+        1208085440,
+        1202749773
+      ],
+      "candidate": [
+        1206804861,
+        1203852138
+      ]
+    },
+    "medians": {
+      "control": 1205417606.5,
+      "candidate": 1205328499.5
+    },
+    "control_minus_candidate": 89107.0
+  }
+}
