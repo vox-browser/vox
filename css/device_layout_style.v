@@ -278,7 +278,17 @@ fn device_layout_value_needs_projection(property_id PropertyID, value &StyleValu
 // units; its fonts keep the source face, optical axes and shaping features.
 pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 	document &dom.Document) &ComputedProperties {
-	scale := document.layout_coordinate_scale()
+	mut scale := document.layout_coordinate_scale()
+	if scale != 1 {
+		if element := source.subject_element_ {
+			// The outer SVG viewport participates in HTML box layout. Its
+			// descendants keep SVG user units; the viewport CTM scales their
+			// lengths, fonts and strokes when painting.
+			if element.is_svg_element() && !is_outermost_svg_element_for_css_box_layout(element) {
+				scale = 1
+			}
+		}
+	}
 	current_scale := source.layout_coordinate_scale()
 	if scale == current_scale { return unsafe { source } }
 	mut allocations := document.enter_native_storage()
