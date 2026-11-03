@@ -16,6 +16,15 @@ static void native_deferred_font_configure(VoxDeferredFont *state, NSString *pat
     state->attempted = NO;
 }
 
+// An explicit configuration request may refresh the bytes at the same path.
+// Keep the previous face available until that replacement opens successfully.
+static BOOL native_deferred_font_configure_refresh(VoxDeferredFont *state, NSString *path) {
+    if (!path.length || ![[NSFileManager defaultManager] fileExistsAtPath:path]) return NO;
+    state->path = [path copy];
+    state->attempted = NO;
+    return YES;
+}
+
 static CGFontRef native_deferred_font_resolve(VoxDeferredFont *state,
     void (*did_load)(const char *)) {
     if (state->attempted || !state->path) return state->font;

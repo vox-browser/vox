@@ -24,9 +24,17 @@ int main(void) {
         native_deferred_font_configure(&font, @__FILE__);
         assert(!font.attempted);
         assert(native_deferred_font_resolve(&font, loaded) == second && loads == 2);
-        assert(native_deferred_font_resolve(&font, loaded) == second && loads == 2);
+        assert(!native_deferred_font_configure_refresh(&font, @"/vox-font-does-not-exist"));
+        assert(font.attempted && native_deferred_font_resolve(&font, loaded) == second && loads == 2);
+        assert(native_deferred_font_configure_refresh(&font, georgia));
+        assert(!font.attempted && font.font == second && loads == 2);
+        assert(native_deferred_font_resolve(&font, loaded) && loads == 3);
+        assert(native_deferred_font_configure_refresh(&font, georgia));
+        assert(!font.attempted);
+        assert(native_deferred_font_resolve(&font, loaded) && loads == 4);
+        assert(native_deferred_font_resolve(&font, loaded) && loads == 4);
         native_deferred_font_clear(&font);
         assert(!font.font && !font.path && !font.attempted);
-        puts("PASS deferred font opening, first-use loading, reuse, reconfiguration, failed-file fallback and cleanup");
+        puts("PASS deferred font opening, first-use loading, reuse, explicit same-path refresh, failed-file fallback and cleanup");
     }
 }

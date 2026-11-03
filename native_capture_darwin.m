@@ -373,12 +373,21 @@ void native_configure_browser_drawables(void) {
 }
 
 static NSString *native_document_font_name;
-static CGFontRef native_document_glyph_font;
-static CGFontRef native_document_bold_glyph_font;
+static VoxDeferredFont native_regular_document_font;
+static VoxDeferredFont native_bold_document_font;
 static VoxDeferredFont native_emoji_font;
+static void native_load_regular_document_font(const char *path);
+static void native_load_bold_document_font(const char *path);
+
+static CGFontRef native_document_graphics_font(int weight) {
+	CGFontRef font = weight >= 600
+		? native_deferred_font_resolve(&native_bold_document_font, native_load_bold_document_font) : NULL;
+	return font ?: native_deferred_font_resolve(&native_regular_document_font, native_load_regular_document_font);
+}
 
 static NSFont *native_document_font(float size, int bold, int italic, int monospace) {
 	NSFont *font = nil;
+	if (!monospace) (void)native_document_graphics_font(400);
 	if (monospace) {
 		font = [NSFont fontWithName:@"Menlo" size:MAX(size - 5.0, 1.0)];
 	} else if (native_document_font_name != nil) {
@@ -400,24 +409,12 @@ static NSFont *native_document_font(float size, int bold, int italic, int monosp
 	return font;
 }
 
-void native_configure_document_font(string path_value) {
-	NSString *path = native_capture_string(path_value);
+static void native_load_regular_document_font(const char *path) {
+	if (getenv("VOX_DOCUMENT_FONT_DIAGNOSTICS")) fprintf(stderr, "VOX_DOCUMENT_FONT regular loaded %s\n", path);
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_configure_font([path fileSystemRepresentation], 0);
+	ladybird_v_skia_configure_font(path, 0);
 #endif
-	CGDataProviderRef provider = CGDataProviderCreateWithFilename([path fileSystemRepresentation]);
-	if (provider == NULL) {
-		return;
-	}
-	CGFontRef font = CGFontCreateWithDataProvider(provider);
-	CGDataProviderRelease(provider);
-	if (font == NULL) {
-		return;
-	}
-	if (native_document_glyph_font != NULL) {
-		CGFontRelease(native_document_glyph_font);
-	}
-	native_document_glyph_font = CGFontRetain(font);
+	CGFontRef font = native_regular_document_font.font;
 	CFErrorRef registration_error = NULL;
 	CTFontManagerRegisterGraphicsFont(font, &registration_error);
 	if (registration_error != NULL) {
@@ -428,27 +425,34 @@ void native_configure_document_font(string path_value) {
 		native_document_font_name = [(__bridge NSString *)postscript_name copy];
 		CFRelease(postscript_name);
 	}
-	CGFontRelease(font);
+}
+
+static void native_load_bold_document_font(const char *path) {
+	if (getenv("VOX_DOCUMENT_FONT_DIAGNOSTICS")) fprintf(stderr, "VOX_DOCUMENT_FONT bold loaded %s\n", path);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_configure_font(path, 1);
+#else
+	(void)path;
+#endif
+}
+
+static void native_configure_fallback_document_font(VoxDeferredFont *state,
+	NSString *path, void (*did_load)(const char *)) {
+	// Explicit configuration can refresh bytes at the same path. Keep the old
+	// face until a replacement opens successfully, as the eager path did.
+	if (!native_deferred_font_configure_refresh(state, path)) return;
+	if (getenv("VOX_DOCUMENT_FONT_DIAGNOSTICS")) fprintf(stderr, "VOX_DOCUMENT_FONT configured %s\n", path.fileSystemRepresentation);
+	if (getenv("VOX_EAGER_DOCUMENT_FONT")) (void)native_deferred_font_resolve(state, did_load);
+}
+
+void native_configure_document_font(string path_value) {
+	native_configure_fallback_document_font(&native_regular_document_font,
+		native_capture_string(path_value), native_load_regular_document_font);
 }
 
 void native_configure_document_bold_font(string path_value) {
-	NSString *path = native_capture_string(path_value);
-#ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_configure_font([path fileSystemRepresentation], 1);
-#endif
-	CGDataProviderRef provider = CGDataProviderCreateWithFilename([path fileSystemRepresentation]);
-	if (provider == NULL) {
-		return;
-	}
-	CGFontRef font = CGFontCreateWithDataProvider(provider);
-	CGDataProviderRelease(provider);
-	if (font == NULL) {
-		return;
-	}
-	if (native_document_bold_glyph_font != NULL) {
-		CGFontRelease(native_document_bold_glyph_font);
-	}
-	native_document_bold_glyph_font = font;
+	native_configure_fallback_document_font(&native_bold_document_font,
+		native_capture_string(path_value), native_load_bold_document_font);
 }
 
 void native_configure_emoji_font(string path_value) {
@@ -1286,11 +1290,7 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 	}
 	CGFontRef graphics_font = emoji_face
 		? native_deferred_font_resolve(&native_emoji_font, native_load_skia_emoji_font)
-		: (font_weight >= 600 && native_document_bold_glyph_font != NULL
-			? native_document_bold_glyph_font : native_document_glyph_font);
-	if (graphics_font == NULL) {
-		return 0;
-	}
+		: (!font_path || !*font_path ? native_document_graphics_font(font_weight) : NULL);
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	if ((!shadow_only && blur <= 0.0f) || (shadow_only && blur >= 0.0f && (font_smoothing & 16))) {
 		const CGFloat *components = CGColorGetComponents(color);
@@ -1315,6 +1315,10 @@ static int native_draw_retained_glyph_run(CGContextRef context,
         }
 	}
 #endif
+	// Explicit-face Skia replay uses its own font bytes. Open the configured
+	// CoreGraphics fallback only when that replay could not draw the run.
+	if (!graphics_font && !emoji_face) graphics_font = native_document_graphics_font(font_weight);
+	if (!graphics_font) return 0;
 	CTFontRef font = CTFontCreateWithGraphicsFont(graphics_font,
 		MAX(font_size, 0.0f), NULL, NULL);
 	if (font == NULL) {
