@@ -31,6 +31,7 @@ struct InlineMeasurementLayout {
 	font_generation u64
 	font_policy dom.FontRenderingPolicy
 	style_environment u64
+	initial_height CSSPixels
 	lines []LineBox
 	inline_end ?StaticPositionRect
 	result InlineFormattingResult
@@ -38,14 +39,17 @@ struct InlineMeasurementLayout {
 
 fn inline_measurement_key(used &UsedValues, mode LayoutMode, space AvailableSpace,
 	width_only bool) InlineMeasurementKey {
+	definite_height := used.has_definite_height()
 	return InlineMeasurementKey{
 		mode: mode
 		width_only: width_only
 		space: space
 		width: used.content_width()
-		height: used.content_height()
+		height: if !retain_inline_measurement_indefinite_height && !definite_height {
+			CSSPixels.from_raw(0)
+		} else { used.content_height() }
 		definite_width: used.has_definite_width()
-		definite_height: used.has_definite_height()
+		definite_height: definite_height
 		width_constraint: used.width_constraint
 		height_constraint: used.height_constraint
 	}
@@ -114,6 +118,9 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 			&& cached.font_policy == root.document().font_rendering_policy()
 			&& cached.style_environment == root.document().style_environment_version()
 			&& inline_measurement_inputs_are_current(cached.inputs) {
+			if !key.definite_height && cached.initial_height != used.content_height() {
+				report_indefinite_inline_measurement_height(root)
+			}
 			used.borrow_retained_line_boxes(cached.lines)
 			if !width_only {
 				if position := cached.inline_end { used.set_inline_end_static_position_rect(position) }
@@ -151,6 +158,7 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 		font_generation: css.css_style_computer_for(root.document()).font_computer().environment_generation()
 		font_policy: root.document().font_rendering_policy()
 		style_environment: root.document().style_environment_version()
+		initial_height: used.content_height()
 		lines: own_inline_layout_lines(used.line_boxes)
 		inline_end: used.inline_end_static_position_rect()
 		result: result
