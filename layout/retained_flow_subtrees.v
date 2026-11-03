@@ -25,8 +25,6 @@ fn collect_retained_flow_validation_inputs(node &Node, root bool,
 	style := node.computed_values()
 	revision := style.mutation_revision()
 	if revision == 0 { return false }
-	flow_image := if node.is_replaced_element() { retained_flow_image_input(node) } else { none }
-	if node.is_replaced_element() && flow_image == none { return false }
 	inputs << RetainedInlineInput{
 		node: node
 		style: style
@@ -35,7 +33,6 @@ fn collect_retained_flow_validation_inputs(node &Node, root bool,
 		parent_id: if root { u64(0) } else if parent := node.parent() { u64(voidptr(parent)) } else { 0 }
 		sibling_index: node.index_in_parent_
 		text: if text := node.as_text_node() { text.text_for_rendering() } else { '' }
-		flow_image: flow_image
 	}
 	for child in node.children() {
 		if !collect_retained_flow_validation_inputs(child, false, mut inputs) { return false }
@@ -68,7 +65,7 @@ fn retained_flow_validation_is_current(cache &RetainedFlowValidationCache) bool 
 }
 
 // TreeBuilder's DOM invalidation flags identify the branches which need new
-// boxes. Keep ordinary flow, checked images and block grid/flex branches outside
+// boxes. Keep ordinary flow and text-only block grid/flex branches outside
 // those mutations, including text shaping caches and live DOM layout boundaries.
 // Formatting and geometry
 // still run against a fresh LayoutState for the whole resulting tree.
@@ -110,7 +107,6 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 		report_retained_flow_item(root)
 		report_retained_formatting_tree(root)
 		report_retained_flow_style_reuse(root, root.flow_validation_cache_.elements)
-		report_retained_flow_image_reuse(root, root.flow_validation_cache_.inputs)
 		return RetainedFlowSubtree{root: root, elements: root.flow_validation_cache_.elements}
 	}
 	mut elements := []&dom.Element{}
@@ -122,7 +118,6 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 			inputs: inputs
 			elements: elements
 		}
-		report_retained_flow_image_reuse(root, inputs)
 	}
 	report_retained_flow_item(root)
 	report_retained_formatting_tree(root)
@@ -149,9 +144,8 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 	}
 	if !element.is_html_element() || element.shadow_root() != none
 		|| element.rendered_in_top_layer() || computed.content_visibility() != .visible
-		|| (computed.position() !in [.static_, .relative]
-			&& !(element.as_node().is_html_image_element() && computed.position() == .absolute))
-		|| element.local_name() !in ['div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'p', 'span', 'a', 'strong', 'b', 'em', 'i', 's', 'del', 'small', 'code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'time', 'br', 'form', 'img'] {
+		|| computed.position() !in [.static_, .relative]
+		|| element.local_name() !in ['div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'p', 'span', 'a', 'strong', 'b', 'em', 'i', 's', 'del', 'small', 'code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'time', 'br', 'form'] {
 		return false
 	}
 	if value := computed.typed_property_value(.content) {
@@ -167,8 +161,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 	}
 	if !retained_flow_layout_node_is_ordinary(typed) { return false }
 	expects_inline_node := computed.display().is_inline_outside() && computed.display().is_flow_inside()
-	if !typed.is_break_node() && !typed.is_image_box()
-		&& typed.is_inline_node() != expects_inline_node { return false }
+	if !typed.is_break_node() && typed.is_inline_node() != expects_inline_node { return false }
 	for child in typed.children() {
 		if !retained_flow_anonymous_layout_is_ordinary(child) { return false }
 	}
@@ -202,9 +195,8 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 
 fn retained_flow_layout_node_is_ordinary(node &Node) bool {
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
-		|| (node.is_replaced_element() && retained_flow_image_input(node) == none)
-		|| node.is_svg_box() || node.is_list_item_box()
-		|| (node.is_absolutely_positioned() && !node.is_image_box()) {
+		|| node.is_replaced_element() || node.is_svg_box() || node.is_list_item_box()
+		|| node.is_absolutely_positioned() {
 		return false
 	}
 	if node.is_flex_item() || node.is_grid_item_ {
