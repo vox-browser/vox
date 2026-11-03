@@ -39,6 +39,13 @@ provide no new Brave ratio, isolated rendering time or scrolling-fps claim.
 See the [report](docs/HACKER_NEWS_3_2B.md) and
 [pinned evidence](docs/performance/hn-3200-progress-20261103.json).
 
+**Hacker News, current Vox results:** the latest verified follow-up is listed
+separately from the historical paired Vox/Brave row above.
+
+| Workload | Trials | Vox median instructions | Vox maximum instructions | Status | Evidence |
+| --- | ---: | ---: | ---: | --- | --- |
+| Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | 3.2B reached; **2.7B target open** | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
+
 **Old Reddit /r/worldnews, Linux Vox follow-up (2026-11-02):** typeface reuse
 reduced median **Cachegrind guest instruction references (Ir)** from
 **7,181,198,185** to **5,794,954,378**, a **19.30%** reduction. The conservative
