@@ -4605,40 +4605,23 @@ fn append_chromium_unchecked_toggle(mut commands []PaintCommand, rect painting.I
 // snaps its top to the pixel grid and floors its thickness. Only the inline
 // ends remain fractional and antialiased.
 fn append_chromium_solid_underline(mut commands []PaintCommand, fragment TextFragment, font_ascent f64, color string, opacity f64) {
-	specified_thickness := if fragment.decoration_thickness_set {
-		math.round(fragment.decoration_thickness)
-	} else {
-		fragment.font_size / 10.0
-	}
-	thickness := math.max(specified_thickness, 1.0)
-	gap := if fragment.text_underline_offset_auto {
-		math.max(1.0, math.ceil(thickness / 2.0))
-	} else {
-		0.0
-	}
-	offset := if fragment.text_underline_offset_auto {
-		0.0
-	} else {
-		math.round(fragment.text_underline_offset)
-	}
-	line_offset := math.round(font_ascent) + gap + offset
-	top := math.floor(fragment.y + line_offset + 0.5)
-	height := math.max(math.floor(thickness), 1.0)
+	geometry := chromium_underline_geometry(fragment, font_ascent,
+		chromium_paint_pixel_scale(fragment.layout_handle))
 	if fragment.width <= 0 {
 		return
 	}
 	commands << PaintCommand{
 		kind:             'fill_rect'
 		x:                fragment.x
-		y:                top
+		y:                geometry.top
 		width:            fragment.width
-		height:           height
+		height:           geometry.height
 		color:            color
 		opacity:          opacity
 		antialiased_rect: true
 		srgb_color_data:  chromium_decoration_srgb_color(&fragment, color)
-		clip_outs:        chromium_skip_ink_clips(fragment, font_ascent, line_offset, thickness,
-			top, height)
+		clip_outs:        chromium_skip_ink_clips(fragment, font_ascent, geometry.line_offset,
+			geometry.thickness, geometry.top, geometry.height)
 	}
 }
 
@@ -4655,6 +4638,10 @@ fn chromium_skip_ink_stripe_upper(line_offset f64, font_ascent f64, fragment_y f
 }
 
 fn chromium_skip_ink_clips(fragment TextFragment, font_ascent f64, line_offset f64, thickness f64, top f64, height f64) []f64 {
+	scale := chromium_paint_pixel_scale(fragment.layout_handle)
+	if scale != 1 {
+		return chromium_device_skip_ink_clips(fragment, font_ascent, line_offset, thickness, scale)
+	}
 	if !fragment.decoration_skip_ink {
 		return []f64{}
 	}

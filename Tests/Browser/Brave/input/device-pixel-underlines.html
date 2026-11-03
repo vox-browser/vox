@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Device-pixel underline geometry and ink skipping</title>
+<style>
+html, body { margin: 0; background: white; color: #123 }
+.sample { position: absolute; left: 20.25px; width: 700px;
+  font: 14px/20.578125px system-ui; text-decoration: underline }
+.auto { top: 20.25px }
+.explicit { top: 80.75px; text-decoration-thickness: 1.25px;
+  text-underline-offset: 1.25px; text-decoration-skip-ink: none }
+.small { top: 140.25px; font: 9px/13px Arial; text-decoration-skip-ink: none }
+.skip { top: 200.75px; font: 17px/24px system-ui }
+</style>
+<div class="sample auto">Typography gjpqy</div>
+<div class="sample explicit">Fractional thickness and offset</div>
+<div class="sample small">A small underline</div>
+<div class="sample skip">Privacy policy typography</div>
+<svg width="1" height="1"></svg>
