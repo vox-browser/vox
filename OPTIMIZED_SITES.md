@@ -347,13 +347,13 @@ scrolling and whole-site behavior outside that claim.
 | [Lobsters](https://lobste.rs/) | Strict frozen-viewport pass, 0 pixels | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
 | [Slashdot](https://slashdot.org/) | Strict frozen-viewport pass, 0 pixels | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
 | [Stack Overflow](https://stackoverflow.com/questions) | Deferred in this pixel-parity session | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
-| [BBC News](https://www.bbc.com/news) | Strict cold-cache pass, 0 pixels in two independent runs | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
+| [BBC News](https://www.bbc.com/news) | Strict cold-cache pass, 0 pixels; fixed-metadata regression repaired | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
 | [CNN](https://edition.cnn.com/) | Vox/frozen Brave 0 pixels; saved-source fidelity still fails | [Source/media limits](docs/ADBLOCK_POPULAR_SITES.md) |
 | [The Guardian](https://www.theguardian.com/international) | Strict frozen-viewport pass, 0 pixels | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
 | [The Verge](https://www.theverge.com/) | Strict frozen-viewport pass, 0 pixels | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
 | [Pikabu](https://pikabu.ru/) | Deferred in this pixel-parity session | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
 | [TechCrunch](https://techcrunch.com/) | Open: 34,710 native pixels; source fidelity passes | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
-| [Engadget](https://www.engadget.com/) | Active: 1,510 native / 90,850 saved-source pixels; category-label regression now exact | [Engadget checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
+| [Engadget](https://www.engadget.com/) | Active: 1,246 native / 90,850 saved-source pixels; SVG-sizing and fixed-metadata regressions exact | [Engadget checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
 | [The Register](https://www.theregister.com/) | Open: initial native gap 6,786; source gap 110,180 pixels | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
 | [Slate](https://slate.com/) | Open: initial native gap 221,448; source gap 19,064 pixels | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
 | [WIRED](https://www.wired.com/) | Open: frozen reference changes between captures | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |

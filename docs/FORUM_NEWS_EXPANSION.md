@@ -383,6 +383,131 @@ This establishes the reduced label fix, not full Engadget parity or a complete
 source-fidelity gaps remain nonzero. No site archive, reference tolerance or
 acceptance gate changed.
 
+## SVG sizing and fixed-container metadata (2026-11-03)
+
+Commit `f67e708d3` transfers a ratio-only SVG image's quantized used height back
+to its automatic width. Engadget's cyclic percentage-height logo now uses
+134.921875×27.984375 CSS pixels, matching Brave. Explicit widths, definite
+height chains and raster natural dimensions retain their existing behavior.
+The nine selected layout cases pass with default GC and GC disabled; two
+independent full-uBO references agree. The reduced browser regression improves
+from **66 pixels to zero**. On executable
+`2f0771f27b0993071f274965a240eded0393e899c482fd89b00cdee84454be2f`,
+all five focused browser tests/captures are exact. The whole Engadget viewport
+still has 1,509 native differences and 90,850 source-fidelity differences.
+[Sizing checks and production receipt](../Build/engadget-parity-20261103/verification.json)
+retain both successful focused checks and the failing whole-site result.
+
+That shared build also exposes a BBC preservation regression: 1,301 one-byte
+differences in its cookie-banner text, with source fidelity still exact. The
+earlier zero-pixel BBC runs remain valid for their pinned builds. A reducer
+identifies the trigger: adding an independent scroller enables hit-test
+metadata whose fixed-container identity differs from its painted commands.
+That splits fixed backgrounds from their descendants into transparent rasters.
+The new layout tests fail on the original code, including a background/text
+layer split, and pass after commit `d6403778e` preserves the raster owner.
+All 15 selected cases in three files pass with default GC and GC disabled;
+existing sibling-fixed-container separation remains covered.
+
+Two independent full-uBO acquisitions agree on the new fixed-header/banner
+reference, including exact saved-source/frozen replay. Its old browser failure
+is **1,722 pixels**. Production executable
+`d9ac8f02f93515ca33b5fee082d265e8cb794741c44d1fac6a201e8811bc7481`
+passes all eight focused browser tests/captures at zero pixels. BBC is restored
+to strict zero, Hacker News remains strict zero, and Engadget improves to
+**1,246 native differences**, retaining the 90,850 source-fidelity failure.
+The newsletter border and other header icons are exact; 614 logo pixels and
+632 photograph pixels remain. These shared-build totals do not isolate every
+intervening session's changes. The complete browser identities stay unchanged
+through the focused checks and the three-site batch:
+[production validation](../Build/engadget-parity-20261103/fixed-published-validation/summary.json),
+[layout checks and reference agreement](../Build/engadget-parity-20261103/fixed-verification.json).
+The catalog now registers 103 browser tests; this is not a new whole-suite pass.
+
+Acquisition experiments leave the registered Engadget archive unchanged. A
+fresh complete-cache capture using a prepared full-uBO profile still differs
+from its frozen replay at **221 pixels**. Its native difference is 967 pixels
+on a different live feed, so that count cannot be attributed to these renderer
+fixes. An earlier attempt fails the full-uBO observed/oracle decision gate, and
+adding two animation-frame waits before capture worsens source fidelity to
+5,367 pixels. Both failures are retained; no canonical capture protocol or
+acceptance threshold was relaxed:
+[fresh candidate](../Build/engadget-parity-20261103/fresh-prepared/summary.json),
+[failed filtering attempt](../Build/engadget-parity-20261103/fresh-complete.log),
+[rejected extra-wait experiment](../Build/engadget-parity-20261103/paint-wait-candidate/summary.json).
+
+The remaining logo is byte-identical to the reduced fixed-header fixture's old
+failure. Captured menu masks interrupt the header's recording, and the opaque
+continuation check rejects every fixed command. Commit `20b3b9951` permits a
+continuation when the parent and complete mask use the same viewport coordinate
+space, retaining the existing opaque-coverage, separation and scope checks.
+Four focused main-module cases pass with both GC modes; the new case also
+rejects a coordinate-space mismatch in painted commands. The first
+two candidate compiles fail during concurrent CSS regeneration and are retained;
+the successful default-GC and GC-disabled compiles execute their tests separately.
+Two qualified full-uBO references agree exactly, and the old browser differs
+at **614 logo pixels**. This adds the 104th browser test. Its first production
+check still fails at 614 pixels on executable
+`a1157f457afdfb4266c3743f9c0fbe6f4f64257fbc93b4ff827dc7318790db9a`;
+the other eight focused tests, BBC and Hacker News pass. The actual lowered
+closing mask marker carries scope identity without the opening command's fixed
+flag. Follow-up `805520666` preserves scope validation while omitting that
+non-geometric closing flag. Five main-module cases now pass with both GC modes,
+including the real default closing marker and mixed-space rejection.
+[The intermediate checks](../Build/engadget-parity-20261103/fixed-mask-verification.json)
+retain that failing production result.
+
+Executable `759a9af066d214540c1c06b70796a1658b1ed1a1ea14abf53c67662825085f31`
+contains the follow-up. All nine focused tests/captures and 96 installed-native
+clipping comparisons pass. The complete browser suite also passes: **104 tests,
+110 captures, zero differing pixels**, with unchanged executable/native-library
+and fixture/reference identities throughout. The first broad attempt exhausts
+disk space and cannot finish its test report; it supplies no acceptance result.
+Its failure is retained. Completed test executables were compressed with byte
+hash verification, and regenerable component-download caches in four closed
+test output profiles were removed. Captures, logs, sealed archives, the prepared
+input profile and build receipts remain available. The later run completes
+normally under the memory guard:
+[follow-up verification](../Build/engadget-parity-20261103/mask-closing-verification.json),
+[104-test receipt](../Build/engadget-parity-20261103/final-inline-suite-rerun/summary.json),
+[interrupted run](../Build/engadget-parity-20261103/final-inline-suite3.log).
+
+Full Engadget still has **1,246 native / 90,850 source-fidelity pixels** on this
+build; BBC and Hacker News remain strict-zero. The reduced 614-pixel regression
+is repaired, while the publisher's complete extracted header still reproduces
+614 logo pixels with exact source fidelity. That separate header diagnostic
+preserves the original DOM, CSS, fonts and SVG response bytes:
+[publisher header](../Build/engadget-parity-20261103/full-header2/summary.json).
+Suppressing its pseudo-element masks still leaves 614 pixels, while the
+authored fixed-header control with cyclic automatic logo sizing is exact:
+[mask suppression control](../Build/engadget-parity-20261103/full-header-no-masks/summary.json),
+[automatic-size header control](../Build/engadget-parity-20261103/fixed-header-auto/summary.json).
+Neither diagnostic changes the registered archive. No whole-site parity is claimed.
+
+A proposed native SVG backdrop shortcut was removed after the unchanged
+clipping control failed, despite its new 48-case probe passing. A non-root
+raster flag alone does not identify a private compositor destination. One shared
+build captured that discarded experiment; its zero-pixel diagnostic is
+[rejected](../Build/engadget-parity-20261103/fixed-mask-ref4/qualification.json).
+The replacement executable
+`ac089f6e9ee05ca73fad9393a5bf7b5cf4f2a5f676cb280da0763b113a7bde59`
+passes all 96 installed-native SVG clipping comparisons with unchanged identity:
+[restored production control](../Build/engadget-parity-20261103/svg-installed-control2.identity.json).
+The restored source's clipping and color controls also pass with sanitizers.
+No native shortcut or changed pixel tolerance remains.
+
+The photograph diagnosis remains separate. A qualified draw-argument trace
+preserves Engadget's 1,246-pixel result and captures the original ICC-tagged
+WebP's decoded RGBA bytes. In the natural-size control's 92,700 interior pixels,
+those decoded bytes match Vox exactly but differ from Brave at **467 one-byte
+pixels**. That locates a remaining error before image sampling. Reconstructing
+the source color space through Skia worsens that comparison to 1,392 pixels;
+no converter change is retained. The earlier recursive interposition attempt
+crashes and provides no accepted PNG:
+[qualified trace](../Build/engadget-parity-20261103/image-trace3/sites/summary.json),
+[decoded-pixel comparison](../Build/engadget-parity-20261103/decoded-icc-probe.json),
+[rejected conversion probes](../Build/engadget-parity-20261103/icc-probe-comparison.json).
+
 ## Run
 
 ```sh
