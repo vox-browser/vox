@@ -824,3 +824,86 @@ All runs keep direct live HTTPS, automatic author scripts, private empty profile
 A separate native stack diagnostic samples the actual input epoch from approximately 0.073 to 5.933 seconds, with browser, driver, sampler and guard exits zero. Of 2,662 main-thread samples, the per-category unions contain 1,378 in shared-picture finish, 959 in retained-tile draw, 347 in snapshot encoding, 238 in typeface decode and 356 in GPU submission. Categories overlap and must not be summed. Raw occurrence totals (including 656 snapshot-encoding occurrences and 255 snapshot-replay occurrences) are preserved separately; nested occurrences are removed in `sample-analysis-union.json`. No sample count establishes measured time or retired-instruction savings.
 
 Tool commit `c3110eb69` allows an explicitly selected picture backend while requiring its exact loaded path, bytes and file identity; other graphics backends remain bundle-local. The successful fresh font diagnostic verifies this selection. Its earlier attempt is invalidated by a shared bundle replacement and retained. This tooling provides no engine credit. No focused correctness/regression tests were run by this continuation; independent shared production startup gates do not establish opt-in pixel correctness. No instruction credit or broad-check cadence reset is claimed.
+
+
+## Metal device handoff regression recovery (2026-11-03)
+
+**The live 60 FPS goal remains open, but a same-day regression that collapsed
+vlang.io scrolling to ~1 FPS is fixed.** A CPU sample of live scrolling on the
+installed bundle showed the main thread spending the frame inside
+`native_draw_outer_box_shadow_corners_srgb` →
+`vox_graphite_draw_shadow_pixels` → `context()` →
+`vox_graphite_picture_retire_graphics_context` →
+`DawnSharedContext::~DawnSharedContext()` →
+`dawn::native::metal::Device::~Device()` →
+`AsyncWorkerThreadPool::~AsyncWorkerThreadPool()` → `std::thread::join()` →
+`__ulock_wait`. The shadow raster backend (`libVoxGraphite`) and the
+picture/gradient backend (`libVoxGraphiteDawn`) each unconditionally retired the
+other's Graphite context the first time they allocated their own, from
+`3c5d0fe1b` ("Retire inactive raster backends before allocating their peer
+context"). vlang.io interleaves outer box shadows with CSS gradients and
+speculative pictures, so every switch between the two backends within one frame
+destroyed and recreated a Metal device; the Dawn device destructor joins its
+async worker-thread pool, blocking the main thread for hundreds of milliseconds
+per handoff. Dawn picture drawing itself was a negligible fraction of the
+samples, so the whole cost was device create/teardown, not useful rendering.
+
+`ad002ac57` retires the peer backend only once it has been idle (the existing
+two-second idle-release path, `vox_graphite_*release_idle_graphics_memory`)
+instead of on every switch. During interleaved rendering both contexts stay
+resident, so the handoff stops firing after the first frame; a genuinely unused
+backend is still reclaimed when idle. Pixel output is unchanged.
+`VOX_DISABLE_GRAPHICS_CONTEXT_HANDOFF` still bypasses the handoff entirely and
+reproduces the same recovered throughput.
+
+The matched before/after measurements use the same workload: live direct
+`https://vlang.io/`, automatic author scripts, a fresh empty private
+profile/cache per launch, matching-title readiness plus 30 s settle, a
+1024×768 document viewport with 112 px chrome at backing scale 2, and 600
+precise delta-2 native wheel events requested at 60 Hz, reversed every 60
+events. Throughput spans the entire actual first-to-last input window. The
+fixed binary is pinned at SHA256
+`e312662c8ba206b831597d128a3e21b39519e642f20f86f3d52b7d6662815f4e`. Raw
+receipts, summaries, the CPU samples, and guard exits are retained in
+`Build/vlang-fps-20261103/`.
+
+| Trial | Backend handoff | Scroll FPS | Input Hz | Pubs / inputs | Median / p95 / max interval (ms) | Over 16.67 ms |
+| --- | --- | ---: | ---: | --- | --- | ---: |
+| control-1 | unconditional (prior bundle) | 1.062 | 15.9 | 42 / 600 | 857.4 / 1030.1 / — | 100% |
+| control-2 | unconditional (prior bundle) | 1.141 | 15.9 | 44 / 600 | 873.5 / 1030.0 / — | 100% |
+| default-1 | idle-gated (`ad002ac57`) | 8.890 | 52.7 | 102 / 600 | 109.4 / 127.7 / 131.7 | 100% |
+| default-2 | idle-gated (`ad002ac57`) | 7.912 | 51.5 | 93 / 600 | 122.2 / 146.1 / 157.9 | 100% |
+| default-3 | idle-gated (`ad002ac57`) | 8.114 | 50.6 | 99 / 600 | 117.4 / 146.0 / 221.2 | 100% |
+
+One-minute host load was ~3.5 on 18 logical CPUs for the fixed trials. Two
+`VOX_DISABLE_GRAPHICS_CONTEXT_HANDOFF=1` control trials on the fixed binary
+measured 8.849 and 9.386 FPS, confirming the idle-gated default matches a fully
+disabled handoff during active scrolling. Median scroll publication rises from
+~1.06-1.18 to ~7.9-8.9 FPS and the median frame interval falls from ~850 ms to
+~110 ms; input delivery recovers from ~16 Hz to ~51 Hz. These are Cocoa layer
+publications, not physical display scanout.
+
+Every measured interval still exceeds the 16.67 ms budget. A fresh CPU sample of
+the fixed binary shows the remaining per-frame cost is the paint itself: each
+outer box shadow draws on the GPU and then reads the result back synchronously
+(`vox_shared_readback` → `Context::submit` → `-[MTLCommandBuffer
+waitUntilCompleted]` → `__psynch_cvwait`), interleaved with clipped CSS gradient
+tiles and SVG paths. vlang.io's shadows, gradients and blur disqualify it from
+the viewport scroll-raster shift-and-strip reuse, and the shadow raster cache is
+keyed on the scroll-translated device matrix, so it misses on every scrolled
+frame. Removing those synchronous GPU round-trips (shadow/gradient raster reuse
+across scrolled frames, or asynchronous readback) is the remaining work toward
+60 FPS and matches the open paint-architecture items recorded above.
+
+A separate chrome regression was also removed. The bookmark bar favicons were
+resolved every frame through the ordinary document image path, whose redirect
+revalidation (`filter_preloaded_resource`) re-issued a synchronous network fetch
+from the frame callback for any bookmark whose `/favicon.ico` redirects. In
+restricted mode the bar lists 18 optimized sites and only four have bundled
+icons, so the other remote favicons could each stall a frame on a TLS handshake.
+Bookmark favicons now resolve through a dedicated non-blocking path: a remote
+icon is requested once in the background, decoded from the retained response
+when it arrives, and remembered as absent after an error, so later frames are a
+map lookup. This mainly helps real profiles whose bookmark bar contains
+redirecting favicons; the empty-profile acceptance workload above does not
+isolate it.
