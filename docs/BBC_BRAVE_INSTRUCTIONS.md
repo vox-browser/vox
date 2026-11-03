@@ -4491,3 +4491,48 @@ include audit/teardown work and supply only leads, with no timing or instruction
 credit. The raw source, commands, logs and initial overflow-limited attempt are
 retained. The subsequent retained-scalar length change has focused checks and a
 separate V profile; production BBC acceptance is still pending.
+
+
+### Retained scalar layout lengths (2026-11-03)
+
+The new path reads absolute-length and percentage payloads directly after the
+ordinary animated/important-property lookup, preserving both rounding policies,
+percentage-basis quantization and the original relative/calculated/untyped
+fallback. It retains no value across calls. The [implementation and focused
+checks](performance/bbc-borrowed-layout-lengths-20261103.json) are committed, with
+an isolated copying control for subsequent matched trials.
+
+All **120 focused executions** pass: 20 cases, two arms, three memory modes.
+All **248 instruction-tool tests** pass. The corrected scoped `v -profile`
+run enters its root once per arm; 140 public length resolutions use 280 copied
+value conversions in the control versus 140 in the candidate, with the latter
+140 belonging to the unchanged semantic oracle. Generated C confirms direct
+scalar reads. This is diagnostic call evidence, not production timing or BBC
+instruction credit. Initial missing-CoreGraphics harness links and an implicit
+embed_file profile-import failure remain recorded separately.
+
+The observed 111,082,315-instruction marginal-median point in cohort 76 exceeds
+the 5,000,000 broad-check cadence, despite its mixed pairs and lack of robust
+speedup credit. A fresh broad batch enters all **490 selected cases per memory
+mode**; **487 pass and three previously recorded tests fail** in both default
+and no-GC modes. Current failures are text-input baseline 13.5 versus 13,
+radio baseline 16 versus 15, and trailing collapsed margin height 40 versus 60.
+Selected test and owned implementation hashes remain unchanged. The actual
+failing exits are preserved; this supplies **no full pass or cadence reset**.
+
+A refined copy diagnostic on the earlier completed bundle verifies its stop at
+encoded PNG, reports zero table overflow and validates the array-push call site
+before parent attribution. Its fixed pixels remain exact. Rule-candidate
+collection is a further lead; copy counts do not measure instruction cost.
+The previous unbounded-end diagnostics remain retained with their limitations.
+
+Production validation remains blocked: the latest completed bundle lacks the
+new path. Several shared builds fail on concurrent raster-layout changes or
+changed preprocessing inputs. Build `20261103-130858-726a288c` is terminated by
+the unchanged **12 GiB** memory guard at **12,904,431,616 bytes observed RSS**
+(actual compiler child signal -9; build exit 125). A bounded ten-minute watch
+exits 2 without launching another browser. **Cohort 77 is prepared but has not
+launched**, so history stays at 76 cohorts / 1,723 attempts. No instruction
+saving is attributed to the new path and no BBC catalog entry is added.
+See the [focused/profile/broad/build ledger](performance/bbc-borrowed-layout-lengths-20261103.json)
+and [authenticated raw receipts](performance/raw/bbc-borrowed-layout-lengths-20261103.tar.gz).
