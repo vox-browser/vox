@@ -41,6 +41,9 @@ fn retained_layout_values_match(previous &dom.StyleValue, current &dom.StyleValu
 		KeywordStyleValue {
 			if b.value is KeywordStyleValue { a.value.keyword_ == b.value.keyword_ } else { false }
 		}
+		DisplayStyleValue {
+			if b.value is DisplayStyleValue { a.value.display_ == b.value.display_ } else { false }
+		}
 		LengthStyleValue {
 			if b.value is LengthStyleValue { a.value.length_ == b.value.length_ } else { false }
 		}

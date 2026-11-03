@@ -17,7 +17,7 @@ fn test_retained_layout_style_requires_every_raw_value_and_flag_to_match() {
 	_ = resolve_computed_values_for_document(previous, document)
 	identical := retained_style_copy(previous)
 	assert previous.has_identical_retained_layout_inputs(identical, document)
-	for id in [PropertyID.color, .font_size, .font_weight, .font_width, .letter_spacing, .word_spacing,
+	for id in [PropertyID.display, .color, .font_size, .font_weight, .font_width, .letter_spacing, .word_spacing,
 		.fill] {
 		mut scalar_copy := retained_style_copy(previous)
 		value := previous.property(id, .no)?
@@ -68,6 +68,11 @@ fn test_retained_layout_style_rejects_changed_context_fonts_animations_and_unkno
 }
 
 fn test_retained_layout_scalar_comparison_keeps_units_types_and_resource_identity() {
+	block := parse_css_value(ParsingParams{}, 'block', .display)?
+	copy_block := parse_css_value(ParsingParams{}, 'block', .display)?
+	inline_block := parse_css_value(ParsingParams{}, 'inline-block', .display)?
+	assert retained_layout_values_match(block, copy_block)
+	assert !retained_layout_values_match(block, inline_block)
 	px := dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(10))))
 	em := dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.new(10, .em))))
 	copy_px := dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(10))))
