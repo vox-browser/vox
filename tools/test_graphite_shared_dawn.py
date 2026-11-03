@@ -98,6 +98,7 @@ def main():
     artifacts = {p: hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in [str(binary), *objects]}
     run('functional', [str(binary)], runtime=True, diagnostics=True)
     assert 'VOX_SHARED_DAWN ' in (out / 'functional.log').read_text()
+    assert 'Dawn error:' not in (out / 'functional.log').read_text()
     memory = []
     for index, mode in enumerate(['control', 'shared', 'control', 'shared']):
         name = f'memory-{index}-{mode}'

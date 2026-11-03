@@ -23,6 +23,10 @@ public:
             wgpu::SharedTextureMemoryEndAccessState state;
             memory_.EndAccess(texture_, &state);
         }
+        // Skia's release callback retires our imported allocation. Dawn bind
+        // group caches may still retain views; dropping references alone would
+        // keep their IOSurfaces alive until the entire context is destroyed.
+        if (texture_) texture_.Destroy();
         if (surface_) CFRelease(surface_);
     }
     static std::shared_ptr<VoxDawnSharedPixels> Make(skgpu::graphite::Recorder* recorder,

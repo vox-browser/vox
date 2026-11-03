@@ -1,6 +1,7 @@
 #include "../native_graphite_dawn_darwin.mm"
 #include "include/core/SkPictureRecorder.h"
 #include "include/effects/SkGradient.h"
+#include "src/gpu/graphite/dawn/DawnGraphiteUtils.h"
 #include <cassert>
 #include <mach/mach.h>
 
@@ -109,6 +110,31 @@ static std::vector<uint8_t> upload(bool shared, SkColorType type, bool mipmaps, 
     return pixels;
 }
 
+static void check_retired_texture_views() {
+    unsetenv("VOX_DISABLE_SHARED_DAWN_PIXELS");
+    auto recorder = context()->makeRecorder();
+    auto info = SkImageInfo::MakeN32Premul(1024, 1024, SkColorSpace::MakeSRGB());
+    std::vector<uint8_t> source(info.computeMinByteSize(), 0x9a);
+    std::vector<wgpu::TextureView> views;
+    task_vm_info_data_t before {}, after {}; mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    assert(task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&before, &count) == KERN_SUCCESS);
+    for (int i = 0; i < 16; ++i) {
+        auto owner = VoxDawnSharedPixels::Make(recorder.get(), info); assert(owner);
+        assert(owner->copy(SkIRect::MakeSize(info.dimensions()), source.data(), info.minRowBytes(), true));
+        assert(owner->begin(true));
+        wgpu::Texture texture(skgpu::graphite::BackendTextures::GetDawnTexturePtr(owner->backend()));
+        views.push_back(texture.CreateView()); assert(views.back());
+        // Dawn/Skia caches can retain views after their image or target retires.
+        // The bridge owns the imported allocation, not those stale cache keys.
+        owner.reset();
+    }
+    count = TASK_VM_INFO_COUNT;
+    assert(task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&after, &count) == KERN_SUCCESS);
+    int64_t growth = int64_t(after.phys_footprint) - int64_t(before.phys_footprint);
+    std::fprintf(stderr, "Retired IOSurfaces with 16 cached views: %lld bytes growth\n", (long long)growth);
+    assert(growth < 16 * 1024 * 1024);
+}
+
 int main(int argc, char** argv) { @autoreleasepool {
     if (argc > 1) {
         bool shared = std::strcmp(argv[1], "shared") == 0;
@@ -160,5 +186,6 @@ int main(int argc, char** argv) { @autoreleasepool {
             ++cases;
         }
     }
+    check_retired_texture_views();
     std::printf("%u exact Dawn shared surface/image/region/backdrop comparisons pass\n", cases);
 } }
