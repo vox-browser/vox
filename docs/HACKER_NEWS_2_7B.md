@@ -5,6 +5,37 @@ requires seven complete fresh default-production trials with both median and
 maximum observed coalition instructions at or below that ceiling. The earlier
 [3.2B result](HACKER_NEWS_3_2B.md) remains independently recorded.
 
+The resumed session's fresh default cohort (`current-default`, executable
+`406aaa0e2a9130580d16bfcadc8ee08c8b0fa05f59cd9f0ec2ee18383b342808`,
+receipt `20261103-110455-30b1ed31`) measures **2,773,701,537 median /
+2,794,997,061 maximum**. Its seven counts are 2,782,153,587; 2,794,997,061;
+2,767,817,025; 2,751,259,111; 2,773,701,537; 2,777,617,960; 2,772,592,607.
+Every original pixel/content/identity/ownership/exit gate passes, and guard PID
+adoption succeeds. Regression suites remain deferred. The target remains open.
+
+Shared Build cleanup removed the earlier `Build/hn-2700-20261103` directory and
+historical Vox metadata-reference PNG before this resumed session's inspection.
+The committed ledger below retains earlier counts and identities, but its
+missing raw artifacts cannot currently be independently rechecked. Fresh raw
+evidence is under `Build/hn-2700-resume-20261103`, with a new
+[durable ledger](performance/hn-2700-resume-20261103.json). The original archived
+page bytes, author scripts, capture scope and pixel reference are unchanged.
+For metadata stability only, new captures are compared against the first fresh
+exact control PNG (`advance-path2/pair-1-control/document.png`); this establishes
+matched current profile/density/chunk equality, without claiming recovery of the
+historical metadata reference.
+
+A fresh native glyph-advance cache prototype is rejected. It preserves exact
+output in all fourteen matched captures but measures 2,793,316,549 control versus
+2,790,389,005 candidate medians, a saving of only 2,927,544 instructions. Four
+pairs regress. Both arms use the same executable and pinned private native bridge;
+this diagnostic earns no default-production target credit. Source and authored,
+unexecuted checks are preserved in the fresh evidence directory, and the cache
+is removed from production source. A separate delayed-startup sampling run
+supplies diagnostic stacks only. Scalar font-property computation and plain
+font-family list restoration now avoid unnecessary length-metric setup in source;
+compilation passes, but production measurement and deferred suites are pending.
+
 The scope and correctness gates remain unchanged: exclusive browser coalition
 creation through encoded document PNG availability; archived homepage and all
 five resources with original scripts; fresh private profiles/caches; 1024×768

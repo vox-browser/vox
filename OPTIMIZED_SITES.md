@@ -46,16 +46,17 @@ separately from the historical paired Vox/Brave row above.
 | --- | ---: | ---: | ---: | --- | --- |
 | Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | 3.2B reached; **2.7B target open** | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
 
-The ongoing 2.7B work has a complete production benchmark at **2,771,570,435
-median**, **2,814,519,462 maximum**, with exact pixels and all content, PNG,
-identity, ownership and exit audits passing in seven fresh default launches.
-That bundle defers the separate WebCrypto library, avoids allocating CSS arena
-switches, and computes absolute font sizes without parent metrics. The WebCrypto
-step saves 19.6M between matched medians; the font step has four pair regressions,
-so its smaller median gain remains uncertain. A later whole-cascade cache raises
-the matched median by 6.4M and has been removed. Earlier regressions and invalid
-cohorts remain recorded. Regression suites are deferred until the requested goal
-is reached, so the fully validated row above remains unchanged. See the
+The ongoing 2.7B work has a fresh complete default-production benchmark at
+**2,773,701,537 median / 2,794,997,061 maximum** (2026-11-03). All seven launches
+retain exact original pixels, 30 stories, identity, ownership and normal exits.
+PNG profile/density/metadata remain stable against a newly pinned control PNG;
+the historical Vox PNG and earlier raw `Build/hn-2700-20261103` directory are
+unavailable after shared Build cleanup. The committed historical ledger remains,
+but those missing artifacts cannot be independently rechecked. A bounded glyph
+width cache saves only 2.9M between matched medians with four pair regressions
+and has been removed. The **2.7B target remains open**. Regression suites remain
+deferred by the user's instruction, so the fully validated row above stays
+unchanged. See the [fresh evidence](docs/performance/hn-2700-resume-20261103.json),
 [progress report](docs/HACKER_NEWS_2_7B.md) and
 [all retained attempts](docs/performance/hn-2700-progress-20261103.json).
 
