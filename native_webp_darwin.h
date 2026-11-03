@@ -3,6 +3,7 @@
 
 #include <dlfcn.h>
 #include <limits.h>
+#include "native_image_color_profile.h"
 
 typedef int (*VoxWebPGetInfo)(const uint8_t *, size_t, int *, int *);
 typedef uint8_t *(*VoxWebPDecodeRGBAInto)(const uint8_t *, size_t, uint8_t *, size_t, int);
@@ -129,9 +130,11 @@ static uint8_t *native_decode_webp_rgba(const uint8_t *bytes, size_t length,
 static void native_free_webp_pixels(uint8_t *pixels) { free(pixels); }
 
 static uint8_t *native_decode_chromium_webp_rgba(const uint8_t *bytes, size_t length,
-    int *width, int *height, int *pitch)
+    int *width, int *height, int *pitch, float *color_profile)
 {
     *width = *height = *pitch = 0;
+    if (!color_profile) return NULL;
+    memset(color_profile, 0, sizeof(float) * VOX_IMAGE_COLOR_PROFILE_VALUES);
     if (!bytes || length < 21 || memcmp(bytes, "RIFF", 4)
         || memcmp(bytes + 8, "WEBPVP8X", 8) || !(bytes[20] & 32) || (bytes[20] & 2))
         return NULL;
@@ -145,12 +148,12 @@ static uint8_t *native_decode_chromium_webp_rgba(const uint8_t *bytes, size_t le
         offset += 8 + (size_t)size + (size & 1);
     }
     if (!icc || !icc_size || icc_size > INT_MAX) return NULL;
-    typedef int (*VoxConvertIcc)(uint8_t*, int, const uint8_t*, int);
+    typedef int (*VoxConvertIcc)(uint8_t*, int, const uint8_t*, int, float*);
     static VoxConvertIcc convert;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
         void *library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
-        if (library) convert = (VoxConvertIcc)dlsym(library, "vox_graphite_convert_icc_rgba");
+        if (library) convert = (VoxConvertIcc)dlsym(library, "vox_graphite_prepare_webp_icc_rgba");
     });
     native_load_webp_decoder();
     int w = 0, h = 0;
@@ -160,7 +163,7 @@ static uint8_t *native_decode_chromium_webp_rgba(const uint8_t *bytes, size_t le
     uint8_t *pixels = malloc(size);
     if (!pixels) return NULL;
     if (!decode_rgba(bytes, length, pixels, size, w * 4)
-        || !convert(pixels, w * h, icc, (int)icc_size)) { free(pixels); return NULL; }
+        || !convert(pixels, w * h, icc, (int)icc_size, color_profile)) { free(pixels); return NULL; }
     *width = w; *height = h; *pitch = w * 4;
     return pixels;
 }

@@ -200,7 +200,7 @@ def main():
         "-Wl,-exported_symbol,_vox_graphite_draw_svg_image_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_svg_image_region_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_svg_pattern_pixels",
-        "-Wl,-exported_symbol,_vox_graphite_convert_icc_rgba",
+        "-Wl,-exported_symbol,_vox_graphite_prepare_webp_icc_rgba",
         "-Wl,-exported_symbol,_vox_graphite_release_unused_graphics_memory",
         "-Wl,-exported_symbol,_vox_graphite_release_idle_graphics_memory",
         "-Wl,-exported_symbol,_vox_graphite_retire_graphics_context",

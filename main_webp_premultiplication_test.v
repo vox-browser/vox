@@ -47,3 +47,16 @@ fn test_chromium_webp_paint_truncates_alpha_without_changing_decoder_pixels() {
 		}
 	}
 }
+
+fn test_chromium_tagged_webp_keeps_publisher_source_colors_for_gpu_upload() {
+	$if macos {
+		bytes := os.read_bytes(os.join_path(@DIR,
+			'Tests/Browser/Brave/sites/engadget/bodies/d0abc28efd5dff5763262ebf44cd2245e65c9b890600d0b57a6a6488a9c26dca'))!
+		if bitmap := chromium_tagged_webp_paint_bitmap(bytes) {
+			assert bitmap.width == 428 && bitmap.height == 241 && bitmap.pitch == 1712
+			// The opaque source pixels survive the decode; the browser pixel
+			// regression checks color conversion after native GPU upload.
+			assert bitmap.data[..12] == [u8(95), 107, 121, 255, 94, 105, 120, 255, 96, 108, 122, 255]
+		}
+	}
+}

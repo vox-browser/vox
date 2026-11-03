@@ -82,6 +82,27 @@ typedef struct {
 
 static NSMutableDictionary<NSValue *, NSData *> *native_png_color_profiles;
 
+// A decoded WebP can supply a numerical ICC profile directly. Clear both old
+// tag kinds before associating the new immutable buffer, including untagged
+// fallback pixels whose address may have belonged to an earlier image.
+void native_tag_decoded_image_color_profile(const void *pixels, int width, int height,
+    const float *profile)
+{
+    if (!pixels) return;
+    native_tag_png_icc_profile(pixels, width, height, nil);
+    VoxTaggedImageColorProfile tagged = { width, height };
+    @synchronized ([NSValue class]) {
+        NSValue *key = [NSValue valueWithPointer:pixels];
+        if (!profile || profile[0] != -1 || width <= 0 || height <= 0) {
+            [native_png_color_profiles removeObjectForKey:key];
+            return;
+        }
+        memcpy(tagged.profile.values, profile, sizeof(tagged.profile.values));
+        if (!native_png_color_profiles) native_png_color_profiles = [NSMutableDictionary dictionary];
+        native_png_color_profiles[key] = [NSData dataWithBytes:&tagged length:sizeof(tagged)];
+    }
+}
+
 // Associate a decoded raster with the color profile of its encoded PNG, or
 // clear a stale association for a reused buffer when the image is untagged or
 // tagging is disabled. Lookups also match the dimensions, so a buffer later

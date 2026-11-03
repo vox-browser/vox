@@ -15,6 +15,7 @@
 #include "include/core/SkColorSpace.h"
 #include "modules/skcms/skcms.h"
 #include "native_skia_image_color_space.h"
+#include "native_webp_color_profile.h"
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkMaskFilter.h"
 #include "include/core/SkPaint.h"
@@ -174,26 +175,11 @@ skgpu::graphite::Context* context()
     return gpu_context.get();
 }
 
-// Chromium performs WebP ICC conversion while pixels are still straight,
-// then premultiplies in the destination's encoded sRGB space.
 extern "C" __attribute__((visibility("default")))
-int vox_graphite_convert_icc_rgba(uint8_t* pixels, int count,
-    uint8_t const* profile, int profile_size)
+int vox_graphite_prepare_webp_icc_rgba(uint8_t* pixels, int count,
+    uint8_t const* profile, int profile_size, float* color_profile)
 {
-    if (!pixels || count <= 0 || !profile || profile_size <= 0) return 0;
-    skcms_ICCProfile source;
-    if (!skcms_Parse(profile, profile_size, &source)) return 0;
-    // An sRGB tag does not require a decode-time transform in Chromium. Its
-    // WebP decoder still selects MODE_rgbA, whose multiplication truncates.
-    if (skcms_ApproximatelyEqualProfiles(&source, skcms_sRGB_profile())) {
-        for (int i = 0; i < count; ++i)
-            for (int channel = 0; channel < 3; ++channel)
-                pixels[i * 4 + channel] = pixels[i * 4 + channel] * pixels[i * 4 + 3] / 255;
-        return 1;
-    }
-    return skcms_Transform(pixels, skcms_PixelFormat_RGBA_8888, skcms_AlphaFormat_Unpremul,
-        &source, pixels, skcms_PixelFormat_RGBA_8888, skcms_AlphaFormat_PremulAsEncoded,
-        skcms_sRGB_profile(), count);
+    return vox_prepare_webp_icc_rgba(pixels, count, profile, profile_size, color_profile);
 }
 
 SkRRect rounded_rect(float const* data)

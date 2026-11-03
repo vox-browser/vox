@@ -75,6 +75,21 @@ int main(int argc, char **argv) {
         assert(conversions == before_failure + 2);
         native_tag_image_color_profile(pixels, 2, 2, NULL, 0, 0);
         assert(!native_image_icc_profile(pixels, 2, 2));
+        // A decoded WebP tag replaces cached PNG conversion metadata, and
+        // dimensions and retagging keep reused pixel addresses independent.
+        native_tag_image_color_profile(pixels, 2, 2, png.bytes, png.length, 1);
+        assert(native_image_icc_source(pixels, 2, 2, &cached_profile));
+        native_tag_decoded_image_color_profile(pixels, 2, 2, cached_profile.values);
+        assert(!native_image_icc_profile(pixels, 2, 2));
+        assert(native_png_icc_cached_bytes == 0 && native_png_icc_lru.count == 0);
+        assert(native_image_color_profile(pixels, 2, 2, &profile));
+        assert(profile.values[0] == -1 && profile.values[16] == 0.75f);
+        assert(!native_image_color_profile(pixels, 4, 1, &profile));
+        native_tag_decoded_image_color_profile(pixels, 2, 2, NULL);
+        assert(!native_image_color_profile(pixels, 2, 2, &profile));
+        native_tag_decoded_image_color_profile(pixels, 2, 2, cached_profile.values);
+        native_tag_image_color_profile(pixels, 2, 2, NULL, 0, 0);
+        assert(!native_image_color_profile(pixels, 2, 2, &profile));
         uint8_t many[129][16] = {{0}};
         for (int index = 0; index < 129; ++index) {
             native_tag_image_color_profile(many[index], 2, 2, png.bytes, png.length, 1);
