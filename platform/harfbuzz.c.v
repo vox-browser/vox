@@ -10,14 +10,33 @@ import os
 // Browser shaping must match current HarfBuzz behavior (for example AAT 'trak'
 // tracking in fonts without GPOS). Ladybird's vcpkg tree ships an older
 // libharfbuzz whose -L path can precede pkg-config's, so link the installed
-// library by path on macOS.
+// library by path on macOS. The same installed static archive lets the linker
+// omit unused GLib integration, while keeping all reachable shaping backends.
+// Keep an explicit dynamic-link control for build comparisons.
 $if macos {
 	$if arm64 {
 		#flag -I/opt/homebrew/opt/harfbuzz/include/harfbuzz
-		#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.0.dylib
+		$if vox_dynamic_harfbuzz ? {
+			#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.0.dylib
+		} $else {
+			#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.a
+			#flag /opt/homebrew/opt/freetype/lib/libfreetype.6.dylib
+			#flag /opt/homebrew/opt/graphite2/lib/libgraphite2.3.dylib
+		}
 	} $else {
 		#flag -I/usr/local/opt/harfbuzz/include/harfbuzz
-		#flag /usr/local/opt/harfbuzz/lib/libharfbuzz.0.dylib
+		$if vox_dynamic_harfbuzz ? {
+			#flag /usr/local/opt/harfbuzz/lib/libharfbuzz.0.dylib
+		} $else {
+			#flag /usr/local/opt/harfbuzz/lib/libharfbuzz.a
+			#flag /usr/local/opt/freetype/lib/libfreetype.6.dylib
+			#flag /usr/local/opt/graphite2/lib/libgraphite2.3.dylib
+		}
+	}
+	$if !vox_dynamic_harfbuzz ? {
+		#flag -framework CoreFoundation
+		#flag -framework CoreGraphics
+		#flag -framework CoreText
 	}
 } $else {
 	#pkgconfig harfbuzz
