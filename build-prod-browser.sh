@@ -170,7 +170,7 @@ if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/includ
     bridge_library="$build_dir/libLadybirdVSkiaText.dylib"
     snapshot_deflate=$(python3 "$repo_dir/tools/build_snapshot_deflate.py")
     cp "$snapshot_deflate/libdeflate-1.24/COPYING" "$resources_dir/libdeflate-LICENSE.txt"
-    clang++ -std=c++20 -O2 -fno-rtti -fPIC -dynamiclib -x objective-c++ \
+    clang++ -std=c++20 -O3 -fno-rtti -fPIC -dynamiclib -x objective-c++ \
 		-I"$skia_root/include/skia" -I"$skia_root/include" \
 		-DLADYBIRD_V_HAS_SNAPSHOT_DEFLATE -I"$snapshot_deflate/libdeflate-1.24" \
 		"$repo_dir/native_skia_text_darwin.cpp" \
@@ -261,7 +261,9 @@ if [ "$gc_mode" = prealloc ]; then
     # Optimize the generated engine translation unit without changing V's
     # runtime checks or floating-point semantics. Matched CNN controls retain
     # the same native inputs; -O3 removes additional layout/cascade overhead.
-    extra_cflags="$extra_cflags -O3"
+    # The generated translation unit contains many small style/layout adapters.
+    # Inline across those adapters without relaxing checks or FP semantics.
+    extra_cflags="$extra_cflags -O3 -mllvm -inline-threshold=1500"
 elif [ "$gc_mode" != none ]; then
     set -- "$@" -gc "$gc_mode"
     if [ "$(uname -m)" = arm64 ] && [ "$(getconf PAGESIZE)" = 16384 ]; then
