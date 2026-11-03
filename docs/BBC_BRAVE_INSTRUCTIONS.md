@@ -1,31 +1,29 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Cohort 80 completes seven alternating control/Vox/Brave
+`OPTIMIZED_SITES.md`.** Cohort 81 completes seven alternating control/Vox/Brave
 triples on the 609-response frozen 2026-11-03 homepage. All 21 captures pass
 unchanged pixels, full content, normal native exits, ownership and pinned-input
-checks. Vox's launch-through-encoded-PNG median is **29,874,408,766** instructions;
-Brave's lower-bound median is **17,734,725,330**. The strict integer gate fails:
-`314075995300 > 158985928512`, conservative ratio **1.7779460007283894**.
+checks. Vox's launch-through-encoded-PNG median is **30,345,423,496** instructions;
+Brave's lower-bound median is **17,780,185,581**. The strict integer gate fails:
+`314877987530 > 158910923367`, conservative ratio **1.7833273054648286**.
 Both Vox arms explicitly retain the historical logical-grid paint and inline
 font metrics; this is not a result for the newer default Retina rendering.
 
-Flex/grid paint reuse is eligible on BBC, with candidate-only cache hits
-witnessed before encoded PNG in a separate diagnostic. Same-binary control
-median is **30,068,054,902**: a **193,646,136 (0.644%)** marginal median reduction,
-three paired improvements and four regressions. The conservative control ratio
-**1.086957174914251** fails; no robust saving is credited.
-See the [cohort/paint ledger](performance/bbc-cohort80-item-paint-20261103.json)
-and [authenticated raw receipts](performance/raw/bbc-cohort80-item-paint-20261103.tar.gz).
+The registry-negative descendant-navigable early-out executes on BBC, with
+candidate-only use witnessed before encoded PNG in a separate diagnostic.
+Same-binary control median is **30,494,552,948**: a **149,129,452 (0.489%)**
+marginal median reduction, three paired improvements and four regressions.
+The conservative control ratio **1.0745909454751965** fails; no robust saving
+is credited. See the [cohort/registry ledger](performance/bbc-cohort81-descendant-registry-20261103.json)
+and [authenticated raw receipts](performance/raw/bbc-cohort81-descendant-registry-20261103.tar.gz).
 
-Prior cohort 79 has 21 valid captures, with Vox/control/Brave medians
-29,619,357,801 / 29,660,785,436 / 17,817,074,138. Its eligible indefinite-height
-key has a small variable point reduction and no robust saving credit; see the
-[key ledger](performance/bbc-cohort79-inline-height-20261103.json).
-Prior cohort 78's stylesheet pruning regresses and is removed; see the
+Prior cohorts 80 and 79 also have 21 valid captures each, but their variable
+paint-cache and indefinite-height-key point reductions establish no robust
+saving. Their [paint ledger](performance/bbc-cohort80-item-paint-20261103.json)
+and [key ledger](performance/bbc-cohort79-inline-height-20261103.json) retain
+all counts. Cohort 78's pruning regression and removal remain in the
 [rollback ledger](performance/bbc-cohort78-rollback-20261103.json).
-Prior cohort 77 retains Brave pair 6's changed pixels in the
-[profile ledger](performance/bbc-whole-profile-cohort77-20261103.json).
 
 This is a **new workload**, with 609 sealed responses and 91 headlines. The
 original 595-response fixture remains lost. Moving to this page establishes no
@@ -45,7 +43,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **80 cohorts / 1,800 attempted browser trials**, excluding separately
+History is **81 cohorts / 1,821 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 ## Historical results on the earlier fixture
@@ -4752,3 +4750,33 @@ used a non-HTML namespace and failed before traversal in both arms; it is
 retained, and the corrected fixture explicitly creates HTML elements.
 Production BBC eligibility and cohort 81 remain pending; no registry saving or
 BBC catalog entry is claimed.
+
+
+## Registry cohort and main-thread profile correction (2026-11-03)
+
+The pending registry experiment completes as cohort 81 on production
+`6638f91b535e23667fcccd363a01067e334d109827c104d804c51cf2f05d574a`.
+Separate fresh diagnostics witness the registry-negative proof for BBC only in
+the candidate, before encoded PNG. Both arms keep original pixels and full
+content; the independently hashed JavaScriptCore hook verifies 72 exact unique
+external author scripts per arm, each executed once without a reported exception.
+All 21 unprofiled trials pass their audits. The target and conservative matched
+control gates still fail, so no robust instruction saving is attributed.
+
+All 490 broad cases enter in both default and no-GC modes after the 149.1M
+marginal median point reduction, with the same three failures in each. Selected
+input hashes remain unchanged. The 30 focused registry executions, earlier
+namespace-fixture failures and initial compile errors remain retained. Their
+exact test sources are recovered and verified against each run's recorded SHA256.
+There is no full broad pass or cadence reset.
+
+The next diagnostic isolates the V profiler's scope-enable gate by thread.
+Current V already makes its measured-child-time accumulator thread-local, but
+its shared scope gate can admit background calls while a main-thread root runs.
+The diagnostic changes only that generated C flag to thread-local, initially
+false, and selects `main__main` after V's startup reset. It continues to use V's
+elapsed timers, including waits and work after PNG; it cannot establish exclusive
+CPU times or instruction gains. The first compile used the earlier production
+recipe's incompatible staged allocator and failed before launch. It is retained;
+the corrected build uses the latest completed production recipe. Its page run
+and profile analysis are pending. BBC remains outside the catalog.
