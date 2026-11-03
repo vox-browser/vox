@@ -191,8 +191,6 @@ def run_trial(engine, app, folder, args):
         if engine == 'control':
             if getattr(args, 'control_retain_image_attribute_source_parse', False):
                 args.vox_environment['VOX_RETAIN_IMAGE_ATTRIBUTE_SOURCE_PARSE'] = '1'
-            if getattr(args, 'control_retain_separate_pseudo_queries', False):
-                args.vox_environment['VOX_RETAIN_SEPARATE_PSEUDO_QUERIES'] = '1'
             if getattr(args, 'control_retain_flow_style_identities', False):
                 args.vox_environment['VOX_RETAIN_FLOW_STYLE_IDENTITIES'] = '1'
             if getattr(args, 'control_retain_ancestor_rehash', False):
@@ -306,8 +304,6 @@ def parse_args(argv=None):
     parser.add_argument('--control-vox-app', type=Path, help='Also run a pinned Vox control before each candidate/Brave pair')
     parser.add_argument('--control-retain-image-attribute-source-parse', action='store_true',
                         help='Parse image attributes before reading available requests in the matched control')
-    parser.add_argument('--control-retain-separate-pseudo-queries', action='store_true',
-                        help='Scan pseudo candidate buckets independently in the matched control')
     parser.add_argument('--control-retain-flow-style-identities', action='store_true',
                         help='Reject replacement style objects during retained-tree validation in the control')
     parser.add_argument('--control-retain-ancestor-rehash', action='store_true',
@@ -422,7 +418,7 @@ def parse_args(argv=None):
             parser.error('JSC baseline warmup must be a positive signed 32-bit integer')
     if args.control_jsc_baseline_warmup is not None and not args.control_vox_app:
         parser.error('The JSC baseline control needs --control-vox-app')
-    if any((args.control_retain_image_attribute_source_parse, args.control_retain_separate_pseudo_queries, args.control_retain_flow_style_identities, args.control_retain_ancestor_rehash, args.control_disable_retained_formatting_trees, args.control_retain_property_edge_resolution, args.control_disable_retained_simple_svg, args.control_retain_definite_intrinsic_measurement, args.control_retain_selector_substring_scan, args.control_retain_redundant_sheet_removal, args.control_retain_full_font_input_scan, args.control_disable_early_text_font_requests, args.control_retain_selector_rule_font_sync, args.control_retain_empty_procedural_styles, args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
+    if any((args.control_retain_image_attribute_source_parse, args.control_retain_flow_style_identities, args.control_retain_ancestor_rehash, args.control_disable_retained_formatting_trees, args.control_retain_property_edge_resolution, args.control_disable_retained_simple_svg, args.control_retain_definite_intrinsic_measurement, args.control_retain_selector_substring_scan, args.control_retain_redundant_sheet_removal, args.control_retain_full_font_input_scan, args.control_disable_early_text_font_requests, args.control_retain_selector_rule_font_sync, args.control_retain_empty_procedural_styles, args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
             args.control_disable_grid_width_only, args.control_disable_stationary_raster,
             args.control_disable_client_geometry_index,
             args.control_disable_tracked_persistent_shortcut, args.control_disable_attribute_case_buckets,
@@ -524,7 +520,6 @@ def main():
         control_disable_retained_formatting_trees=args.control_disable_retained_formatting_trees,
         control_retain_flow_style_identities=args.control_retain_flow_style_identities,
         control_retain_image_attribute_source_parse=args.control_retain_image_attribute_source_parse,
-        control_retain_separate_pseudo_queries=args.control_retain_separate_pseudo_queries,
         control_retain_ancestor_rehash=args.control_retain_ancestor_rehash,
         control_retain_property_edge_resolution=args.control_retain_property_edge_resolution,
         control_retain_definite_intrinsic_measurement=args.control_retain_definite_intrinsic_measurement,
