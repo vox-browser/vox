@@ -11,9 +11,11 @@
 // positions. Convex analytic primitives, fractional clips, curves, blending
 // and ambiguous sample boundaries retain the original GPU renderer. Output is
 // transactional: even a late eligibility failure leaves the backdrop intact.
+// The direct path renderer may opt into triangles, including exact subpixel
+// edge ties. Ordinary SVG picture batches keep their convex analytic fallback.
 inline bool vox_draw_solid_svg_polygons(VoxGraphitePixelRegion const& view,
     VoxGraphitePath const* paths, int count, float const* parent,
-    float const* viewport, float const* device_clip)
+    float const* viewport, float const* device_clip, bool allow_triangles = false)
 {
     if (!view.pixels || view.x < 0 || view.y < 0 || view.x > 4096 || view.y > 4096
         || view.width <= 0 || view.height <= 0
@@ -37,7 +39,7 @@ inline bool vox_draw_solid_svg_polygons(VoxGraphitePixelRegion const& view,
     clip[0] = std::max(clip[0], device_clip[0]); clip[1] = std::max(clip[1], device_clip[1]);
     clip[2] = std::min(clip[2], device_clip[2]); clip[3] = std::min(clip[3], device_clip[3]);
     struct Point { double x, y; };
-    struct Polygon { std::vector<Point> points, snapped; uint32_t color; bool even_odd; };
+    struct Polygon { std::vector<Point> points, snapped; uint32_t color; bool even_odd; bool exact_triangle_edges = false; };
     std::vector<Polygon> polygons;
     for (int index = 0; index < count; ++index) {
         auto const& source = paths[index];
@@ -77,22 +79,35 @@ inline bool vox_draw_solid_svg_polygons(VoxGraphitePixelRegion const& view,
         }
         // Non-convex paths select stencil MSAA; convex paths can instead use
         // analytic coverage even in an MSAA render pass.
-        if (!(positive && negative) && !rectangle) return false;
+        if (!(positive && negative) && !rectangle && !(allow_triangles && polygon.points.size() == 3)) return false;
+        polygon.exact_triangle_edges = allow_triangles && polygon.points.size() == 3;
+        for (size_t i = 0; i < polygon.points.size(); ++i)
+            polygon.exact_triangle_edges &= polygon.points[i].x == polygon.snapped[i].x
+                && polygon.points[i].y == polygon.snapped[i].y;
         polygons.push_back(std::move(polygon));
     }
-    auto inside = [](std::vector<Point> const& points, double x, double y, bool even_odd, bool& safe) {
+    auto inside = [](std::vector<Point> const& points, double x, double y, bool even_odd, bool exact_edges, bool& safe) {
         int winding = 0;
+        bool boundary = false, boundary_inside = true;
+        double orientation = exact_edges ? (points[1].x - points[0].x) * (points[2].y - points[0].y)
+            - (points[1].y - points[0].y) * (points[2].x - points[0].x) : 0;
         for (size_t i = 0; i < points.size(); ++i) {
             auto a = points[i], b = points[(i + 1) % points.size()];
             double dx = b.x - a.x, dy = b.y - a.y;
             double cross = dx * (y - a.y) - dy * (x - a.x);
             if (x >= std::min(a.x, b.x) - .001 && x <= std::max(a.x, b.x) + .001
                 && y >= std::min(a.y, b.y) - .001 && y <= std::max(a.y, b.y) + .001
-                && cross * cross < (dx * dx + dy * dy) * .000001) safe = false;
+                && cross * cross < (dx * dx + dy * dy) * .000001) {
+                if (exact_edges && orientation != 0 && cross == 0) {
+                    boundary = true;
+                    double ex = orientation > 0 ? dx : -dx, ey = orientation > 0 ? dy : -dy;
+                    boundary_inside &= ey < 0 || (ey == 0 && ex > 0);
+                } else safe = false;
+            }
             if (a.y <= y && b.y > y && cross > 0) ++winding;
             else if (a.y > y && b.y <= y && cross < 0) --winding;
         }
-        return even_odd ? winding % 2 != 0 : winding != 0;
+        return boundary ? boundary_inside : even_odd ? winding % 2 != 0 : winding != 0;
     };
     std::vector<uint8_t> output(size_t(view.width) * view.height * 4);
     constexpr double samples[4][2] {{.375, .125}, {.875, .375}, {.125, .625}, {.625, .875}};
@@ -109,8 +124,8 @@ inline bool vox_draw_solid_svg_polygons(VoxGraphitePixelRegion const& view,
                     bool safe = true;
                     // Keep full-precision and subpixel-grid classifications
                     // equal, with a safety band at both sets of edges.
-                    bool covered = inside(polygon.points, x, y, polygon.even_odd, safe);
-                    bool snapped = inside(polygon.snapped, x, y, polygon.even_odd, safe);
+                    bool covered = inside(polygon.points, x, y, polygon.even_odd, polygon.exact_triangle_edges, safe);
+                    bool snapped = inside(polygon.snapped, x, y, polygon.even_odd, polygon.exact_triangle_edges, safe);
                     if (!safe || covered != snapped) return false;
                     if (covered) color = polygon.color;
                 }

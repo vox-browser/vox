@@ -5231,6 +5231,28 @@ extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destinatio
             .miter_limit = miter_limit
         };
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
+        if (std::getenv("VOX_SOLID_SVG_TRIANGLES_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_TRIANGLE_CANDIDATE background=%d opaque=%d fill=%d stroke=%d size=%d,%d segments=%d alpha=%d\n",
+                has_background, opaque_backdrop, has_fill, strokes, raster_width, raster_height, segment_count, fill_alpha);
+        if (!std::getenv("VOX_DISABLE_SOLID_SVG_TRIANGLES") && has_background
+            && has_fill && !strokes && raster_width <= 128 && raster_height <= 128
+            && solid_svg_has_standard_samples()) {
+            descriptor.red = fill_red; descriptor.green = fill_green;
+            descriptor.blue = fill_blue; descriptor.alpha = fill_alpha;
+            descriptor.has_float_color = fill_components != nullptr;
+            if (fill_components) std::copy(fill_components, fill_components + 4, descriptor.float_color);
+            float identity[] {1,0,0,0,1,0,0,0,1};
+            float viewport[] {0,0,float(raster_width),float(raster_height)};
+            float clip[] {0,0,float(raster_width),float(raster_height)};
+            VoxGraphitePixelRegion view {0,0,raster_width,raster_height,raster_width * 4,
+                reinterpret_cast<uint8_t*>(pixels.data())};
+            if (vox_draw_solid_svg_polygons(view, &descriptor, 1, identity, viewport, clip, true)) {
+                if (std::getenv("VOX_SOLID_SVG_TRIANGLES_DIAGNOSTICS"))
+                    std::fprintf(stderr, "VOX_SOLID_SVG_TRIANGLE size=%d,%d\n", raster_width, raster_height);
+                return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
+                    region.left, canvas_height - region.bottom, region.width(), region.height(), true);
+            }
+        }
         auto draw = graphite_path_draw();
         bool drawn = draw != nullptr;
         if (drawn && has_fill) {
