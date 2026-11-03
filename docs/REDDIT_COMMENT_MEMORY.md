@@ -5,6 +5,10 @@ The requested limit is **500,000,000 bytes** for
 The measured production bundles **exceed this limit**. The latest valid
 five-minute observation settles at **338,348,192 B** and peaks at **750,554,016 B**.
 The transport continuation below records its pinned build and focused checks.
+A later private CPU-rendering experiment observes a 405,834,632 B five-minute
+peak, but is not shipped and fails two exact rounded-border comparisons.
+The peak investigation below records that distinction and corrects an earlier
+private-backend screenshot attribution error.
 Committed fixes reduce collection/query
 transport, retained paint copies and native raster storage. Focused checks and
 native screenshot guards pass; the complete memory cap and live-site validation
@@ -643,3 +647,108 @@ Completed generated C test inputs were losslessly gzip-compressed to recover
 workspace disk space; a manifest retains both original and compressed hashes.
 No executable or app bundle was copied. The [transport receipt](benchmark-results/reddit-comment-memory-2026-11-03-transport.json)
 links the exact artifacts and preserves earlier evidence.
+
+
+## Initial host metadata and peak investigation
+
+Commit `95715459e` retires the initial compact host's temporary metadata maps,
+bridge-key survey, video survey and encoded JSON after JavaScriptCore copies
+the transport. Selector caches and lazy input, textarea, image and video models
+retain their owning document lifetime. For 256 named elements, identical
+229,635-byte JSON retains **8,631 B** instead of **7,045,771 B**. This is a
+component allocation result, not a browser RAM percentage. All three focused
+cases pass in prealloc, poisoned prealloc and Boehm configurations; four existing
+collection cases also pass normally and with arena poisoning. The native case
+initializes the complete host and exercises controls, SVG namespaces, lazy
+parents and mutation replay after the transport workspace is poisoned.
+
+Completed production executable `ada886d0…`, receipt
+`20261103-070539-bea0fd2d`, contains the temporary stylesheet comparison and
+initial-state transport fixes in its frozen compiler input. An earlier
+five-minute observation of `103ca442…` finishes with normal author scripts and
+zero browser/guard exits, but the bundle changes during observation: its
+754,764,560 B peak and 345,639,024 B endpoint are **rejected as acceptance**.
+No valid later stock-production five-minute observation supersedes the
+750,554,016 B result at the top of this report.
+
+Instrumented diagnostics retain their own identities and are excluded from
+unprofiled optimization credit. A background mapping probe observes 38 large
+anonymous mappings with 15,974,400 B captured residency at its last snapshot;
+its recursion guard can miss concurrent mappings and it excludes allocations
+below 1 MiB. Those observations do not establish a bound on all worker memory.
+Asynchronous `vmmap` snapshots locate approximately 166 MiB dirty untagged
+storage, including V arenas, 52 MiB WebKit malloc and 25–53 MiB large malloc.
+Snapshot completion is later than its trigger, and a file named `idle-vmmap`
+was taken around eight seconds: it does not establish a graphics-idle state.
+An isolated rounded-rectangle test of Graphite's avoid-depth option preserves
+its pixel hash, but uses 320,602,808 B at submission versus the control's
+320,357,048 B. Neither that option nor a worker ownership policy is shipped.
+
+A private pair of native libraries disables the Metal leaf context and
+rasterizes serialized pictures with Skia CPU surfaces. The app bundle is
+unchanged. A separate direct-launch diagnostic records dyld loading both
+private libraries and actual CPU picture/leaf calls. With those diagnostic
+markers disabled, a fresh `ada886d0…` process observes:
+
+| Private CPU prototype, 300 seconds | Bytes |
+| --- | ---: |
+| Simultaneous observed peak from fresh launch | 405,834,632 |
+| Observed peak after ten seconds | 403,409,008 |
+| Final two-second median | 339,036,200 |
+
+The longest sampling gap is 71.23 ms. Browser and guard exits are zero, pinned
+executable/library/fixture identities remain unchanged, and the endpoint audit
+retains normal author scripts, the original URL/title, a complete visible and
+fully active 1708 × 953 document at backing scale two, 49 comments and two
+images. The existing badge-fetch diagnostic remains; there are zero native
+errors. Memory is sampled browser/observed-descendant physical footprint,
+including startup and later refreshes, before the endpoint audit and PNG.
+The separate safety guard measures aggregate RSS. Short spikes, short-lived
+helpers and external services may be omitted by sampling. Filesystem/font/shader
+caches are retained. No native visual checks overlap the observation; host load
+and overlapping focused compiler work are recorded. This is one unprofiled
+five-minute observation on a private renderer, not a matched stock-production
+cohort, scrolling result or verified permanent bound. The trace still grows
+while idle. Direct live Reddit validation remains blocked by HTTP 403.
+
+### Correction to private-backend visual attribution
+
+The first thirteen allegedly private CPU comparisons passed only
+`DYLD_LIBRARY_PATH` through `sh capture_screenshot.sh`. macOS removes that
+variable when launching the protected shell, so those captures actually use
+the **stock renderer**. Library hashes recorded by the wrapper do not prove
+that a library was loaded. The original thirteen zero-difference results remain
+preserved and receive no private-CPU correctness credit. Earlier private
+context/Metal-picture screenshot wrappers using that same mechanism have the
+same limitation. Their direct `dlopen` functional checks and direct Python
+browser memory observations are unaffected. Later explicitly stock-production
+SVG/rounded-border comparisons remain valid under their recorded identities.
+
+Commit `8b2af2b62` fixes the canonical screenshot tool's explicit override with
+`SCREENSHOT_GRAPHICS_LIBRARY_DIR`: the shell resolves it and exports
+`DYLD_LIBRARY_PATH` itself. Optional `SCREENSHOT_BROWSER_LOG_DIR` preserves
+browser logs. A stock rounded-border capture remains pixel-exact without CPU
+markers. An explicitly overridden capture logs CPU picture execution and
+reveals 64 differing edge pixels, maximum channel error 42. A subsequent full
+private-CPU check on executable `d5414c4a…` records the actual backend in retained
+browser logs: all eleven SVG, same-size image, text and paint-server ID cases
+are exact, while **both existing rounded-border goldens differ by 64 of
+786,432 pixels each**. The exact-visual guard correctly exits one. References
+and tolerances are unchanged; the default diff tool's fuzzy exit zero is not
+treated as pixel equality.
+
+The CPU path is a reviewable experiment, with source patches, compiler input
+hashes, libraries, commands, captures and actual guard exits retained under
+`Build/reddit-comment-memory-20261103-peak/`. No CPU-default or CPU-opt-in
+renderer policy has shipped. A verified caller trace on the replayed thread
+includes image, SVG-path, rounded-part and general-shape draws, so routing only
+trivial rectangles through software is not demonstrated to solve this page.
+The first caller-probe attempt resolved a symlink into the older private CPU
+directory and captured no caller markers; it receives no attribution credit.
+The thirteen focused visual cases also do not establish whole-page CPU/GPU
+pixel equality on Reddit. The default production peak cap, persistent idle
+growth, longer navigation/interactive checks and live-site validation remain
+open. The [peak investigation receipt](benchmark-results/reddit-comment-memory-2026-11-03-peak.json)
+retains the exact identities, failed attempts, raw artifact hashes and focused
+checks. Completed generated C inputs were losslessly compressed; their
+manifest records original and compressed hashes.
