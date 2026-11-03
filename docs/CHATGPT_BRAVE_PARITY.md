@@ -1,23 +1,22 @@
 # ChatGPT rendering and startup against Brave
 
-The production browser completes the guest ChatGPT send/reply workflow from
-an empty initial cookie jar, using the original archived frontend/static
-resources and live backend requests through SOCKS. The current full scripted
-conversation differs from the matched Brave control at 161 pixels, with
-maximum channel error two. Current live pixel parity remains open.
+The verified guest ChatGPT send/reply workflow is pixel-exact against fresh
+Brave at 1024×768, scale 1. Two ordinary live captures on recorded shared builds
+receive the exact reply with empty initial cookie jars, no runtime errors and
+zero differing pixels. The frontend/static bytes come from an unmodified
+homepage downloaded once through SOCKS; backend, identity and telemetry requests
+stay live. Full frozen conversation rendering is also exact.
 
-The full frozen conversation is pixel-exact at 1024×768, scale 1. The strict
-sticky-message/vector regression also now has zero differing pixels, after
-separate fixes for live sticky coordinates and recorded rounded geometry.
-Vox additionally honors macOS Reduce Motion in both CSS and `matchMedia`.
+The current verified executable is `317f313a…`, with successful focused checks
+and all eleven screenshot smoke checks plus nine exact SVG mutation guards.
+The latest evidence is under `Build/chatgpt-css-error-lifetime-20261102/`.
+Earlier failures, build changes, reference images and protocol corrections are
+retained below. These are rendering/functionality checks, not performance claims.
 
-Earlier fully live and archived-front-end checks, exact references, Cloudflare
-failures and native input failures remain documented below. Fresh sessions are
-authorized. Imported Brave session cookies produce an unusual-activity backend
-response in two later native attempts; the empty-cookie native attempt receives
-the exact reply without errors. No backend response is seeded for that check.
-The latest continuation preserves all failures and separates functional, frozen
-rendering and live pixel results.
+Initial homepage suggestion cards still need separate investigation: the fresh
+Brave page shows suggestions while the native page displays a handled error.
+The exact conversation captures do not establish parity for that pre-submit
+state or for untested ChatGPT features.
 
 ## Captured workload
 
@@ -2441,3 +2440,277 @@ SCREENSHOT_REUSE_PRODUCTION=1 VOX_CAPTURE_DOCUMENT_ACTIVE=1 \
 Run it through the required memory guard. `scrollend-canonical-reftest-1/`
 retains a successful invocation on `ea0fd8ca…`: zero differing pixels, normal
 guard/browser exits and stable input/executable identities.
+
+## CSS attachment ranges and anonymous scroll clocks
+
+`3a68a1719` implements `animation-range`, `animation-range-start` and
+`animation-range-end` parsing, declaration expansion and reconstruction,
+coordinated lists, named range defaults, calculated lengths and computed
+viewport units. The `animation` shorthand resets the two range longhands;
+non-initial reset-only values prevent shorthand serialization. New generated
+metadata is merged without removing earlier translation compatibility entries.
+The existing generator has unrelated drift, retained in `range-metadata-merge-1/`.
+
+The four range tests pass in default, no-GC and patched production prealloc
+modes with stable source hashes (`range-focused-final/`). Existing scroll-clock,
+text-box, backface, color-interpolation and font-synthesis checks pass in the
+guarded regression/recovery directories. `range-regressions-1/` retains the
+broader metadata suite's opacity extrapolation failure: it returns `1.4` where
+the test expects `1`. `range-metadata-baseline-1/` reproduces the identical
+failure with the attachment-range changes temporarily removed from the
+canonical source, then restores those changes. That broader suite is not
+reported as passing. Intermediate compile failures caused by concurrent
+device-layout edits are retained as well.
+
+`5ede19adf` resolves anonymous `scroll(root|nearest|self <axis>)` clocks from
+the native retained scroll boxes. Sampling reads committed layout without
+recursively requesting layout. It handles physical/logical axes, reverse
+origins, inactive or removed sources, and length/percentage/calc attachment
+ranges. Finite range length supplies the iteration duration; wall-clock time
+does not advance these animations. Active auto-duration effects retain their
+compositor property identity. Named view ranges and named timeline lookup
+remain separate incomplete runtime features.
+
+The six real-layout scroll-clock tests pass in default, no-GC and patched
+production prealloc modes (`scroll-source-focused-final/`). They cover root,
+nearest and self sources, reverse scrolling, RTL, calculated ranges,
+auto-duration compositor identity, zero overflow and removed targets. Existing
+scroll sampling, compositor identity and animation invalidation tests pass in
+`scroll-source-regressions-1/`; the recorded source hashes remain stable.
+
+`e0af4f9b2` adds explicit horizontal scroll positions to the Brave capture tool,
+including RTL negative offsets and observed-position validation. Its thirteen
+tests pass under the memory guard. The first scene comparison exposed the
+tool's prior unconditional horizontal reset to zero; that result is retained
+in `scroll-source-browser-1/`. Attempt 2 requests the not-yet-implemented CLI
+flag, and attempt 3 captures Brave at the correct offset while the older Vox
+bundle still leaves the animation at its initial position. These attempts
+receive no parity credit.
+
+`scroll-source-browser-4/` launches fresh native and Brave processes at matching
+800 by 600 document viewports and horizontal offset 200. The native executable
+`759a9af0…` and Brave both render the root-inline, auto-duration, viewport-range
+translation exactly like the static reference: zero differing pixels and zero
+channel error. Native errors are empty, all exits are zero and input/executable
+identities remain stable. `range-oracle-native-1/` compares 36 actual CSSOM
+specified/computed declaration cases with `range-oracle-brave-2/`; every value
+matches and both error collections are empty. These are focused browser checks,
+not a replacement for the full live ChatGPT pixel comparison.
+
+## Native scrolling methods in the compact JavaScript facade
+
+`ebe8fa1a6` exposes `scroll`, `scrollTo` and `scrollBy` on Window and Element,
+delegating to the existing native CSSOM View algorithms. The original modern
+ChatGPT sidebar module calls `window.scrollTo`; enabling its layout without
+this binding would leave a runtime gap. The bindings preserve omitted axes,
+normalize non-finite offsets, flush queued styles before scrolling, validate
+receivers before argument conversion and convert dictionary members in WebIDL
+order. Root/body forwarding now preserves explicit instant/smooth behavior
+instead of replacing it with auto. A subsequent direct Brave audit finds that
+the comparison browser returns Promises for all six methods; receiver and
+conversion failures reject rather than throw. The initial offset bindings'
+undefined return therefore requires a native completion-Promise bridge.
+
+Both focused tests pass in default, no-GC and patched production prealloc modes
+with stable source hashes (`scroll-methods-focused-2/`). Existing compact scroll
+metrics/timer, compact Document and native smooth-scroll/promise tests all pass
+in `scroll-methods-regressions-1/`. The first compile attempt runs out of disk
+space while writing Clang objects; it is retained in `scroll-methods-focused-1/`.
+Space recovers before the successful retry. No authored files or historical
+capture evidence are removed.
+
+`capability-range-1/` confirms that Vox and Brave now both accept the exact
+timeline/range queries used by the frontend and expose all three scroll-end
+properties. Both report reduced motion, select the same green media-query
+style and render that probe at zero differing pixels, with empty errors and
+stable inputs/executables. The installed root-inline animation scene already
+matches Brave; the updated regression inputs additionally use the new Window
+and Element methods so their production integration can be checked together.
+
+
+## Scroll completion values and keyframe variable substitution
+
+`953aa85eb` connects all six compact scrolling methods to their actual native
+scroll-operation Promises. A completed call fulfills with the ordinary object
+`{interrupted:false}`. Replacement and owner teardown fulfill the displaced
+operation with `{interrupted:true}`; reusing the same destination preserves the
+geometry animation while interrupting the prior invocation. Receiver and
+conversion failures reject with the original JavaScript value. The binding
+uses the owning realm's WebIDL capability and microtask path. It does not
+substitute a timer or an immediately fulfilled Promise for smooth completion.
+
+The four compact API cases pass in default, no-GC and patched production
+prealloc modes, with unchanged source hashes (`scroll-promises-focused-final/`).
+They cover native offsets, IDL conversion/rejection identity, delayed smooth
+completion and interruption. `scroll-promises-native-1/` passes the native
+operation regression with actual microtask checkpoints. Earlier compile and
+runtime failures remain retained in the numbered Promise diagnostic directories.
+The final correction routes the native operation key as a raw query result;
+otherwise it incorrectly enters the DOM element facade lookup.
+
+`scroll-promises-oracle-native-1/` exercises a fresh production process on
+executable `86688ea5…`. All six specified API results exactly match the direct
+Brave audit in `scroll-methods-brave-oracle-3/`, including function metadata,
+Promise branding, fulfillment object and invalid receivers. Native/script
+errors are empty, browser/guard exits are zero and identities/inputs are stable.
+
+Enabling real attachment ranges also enables the modern sidebar layout. The
+live workflow in `production-range-scroll-19/` still reaches the exact reply
+with no native or script errors, but differs at **143,784 pixels**, maximum
+channel error 242. `frozen-range-scroll-1/` reproduces the identical error with
+scripts removed and all static resources replayed. Animated width and logical
+inset contain unresolved `var()` expressions, leaving the main box at its auto
+width instead of the requested viewport-minus-sidebar width. This supersedes
+the earlier fallback-shell 161-pixel result as the active layout diagnosis.
+
+`a22f9f7f1` substitutes the target's custom properties before computing sampled
+keyframe values, then maps logical properties to their physical axes. It
+preserves the immutable specified keyframes. Its focused test passes in all
+three memory modes (`keyframe-vars-focused-2/`), and three existing animation
+storage/dependency checks pass (`keyframe-vars-regressions-1/`). The permanent
+`scroll-driven-keyframe-substitution` browser reftest matches the static
+reference in both Vox and Brave at zero differing pixels, with stable identities
+and empty errors (`keyframe-vars-browser-1/`).
+
+`frozen-keyframe-vars-1/` restores the sidebar geometry but retains 21,483 text
+pixel differences on executable `5775fb14…`. Its sealed compiler input contains
+a transient shared glyph-copy flag collision: `32 | 64` sets the existing
+synthetic-italic bit. The simple normal/bold/italic probe reproduces the error
+while computed CSS still reports normal. Disabling the file-font manager does
+not fix it. These failed diagnostics remain preserved. The next shared build
+contains the corrected `32 | 256`; this investigation adds no separate font-fix
+commit or optimization credit.
+
+`frozen-keyframe-vars-2/` repeats the original frozen conversation on executable
+`86688ea5bc02f03050ee70997f07d8ecc1f4c33af08e1c4acf7024bdd2085bf4`,
+receipt `Build/production-build/receipts/20261103-053009-1922e187/`. It matches
+unchanged `brave-frozen-15/after.png` **pixel-for-pixel**, with zero channel error,
+normal browser/guard exits, stable executable/native-library/input identities,
+and empty native/script errors. This is a frozen-page result; live functionality
+and current reference parity require their separate checks.
+
+
+## Fresh session and native Promise reaction context
+
+`production-keyframe-scroll-20/` loads, reaches audited readiness and submits the
+prompt without script/native errors on `86688ea5…`, but the service responds
+with unusual activity. Browser/guard exits are zero and inputs/identities stay
+stable; the reply and conversation-URL checks fail. This failed live run
+receives no rendering or functional acceptance credit.
+
+The authorized refresh in `brave-fresh-21/` uses a fresh empty Brave profile
+through SOCKS, downloads the homepage **once**, captures 402 responses, and
+receives the exact reply without runtime exceptions. Its PNG is byte-identical
+to retained `brave-frozen-15/after.png` (`1b35a749…`). The verified merged archive
+contains 825 original responses; the session-21 entries take precedence over
+older immutable resources. Earlier references remain untouched. Native replay
+continues to exclude all backend response seeding and starts with no cookies.
+
+`production-fresh-21/` fails archive validation before launching: its merge
+manifest initially omits the sealing timestamp. The corrected manifest is used
+by `production-fresh-21-b/`, which exits 1 during startup on `86688ea5…` at the
+HTML current-principal-realm assertion. This is an engine failure rather than
+another service rejection. No visual or workflow acceptance is claimed for it.
+
+The retained debugger attempts culminate in `fresh-context-trace-3/` on
+`dc6b9b95…`. A network completion resolves a JSC Promise through
+`Runtime.call_engine_function`; JSC drains Promise reactions inside
+`JSObjectCallAsFunction` while the HTML execution-context stack is empty. The
+reaction calls `URL.createObjectURL`, whose actual native Blob URL algorithm
+requires the current settings object. This directly explains the assertion.
+The earlier debugger attempts stop at process exec or miss the panic symbol;
+they provide no successful stack-trace evidence.
+
+
+`f094236f3` keeps the owning HTML script realm active across the actual JSC
+function call, including its internal Promise-reaction drain and exceptional
+return. The focused regression settles both fulfilled and rejected Promises
+from native code while no outer script is active. Their reactions create and
+revoke real Blob URLs, observe the correct current settings and active VM
+context, and defer queued HTML microtasks until the engine call returns. The
+realm and VM are empty after each operation. The test passes in default,
+no-GC and patched production prealloc modes with stable sources
+(`promise-realm-focused-1/`). The sealed production function is retained in
+`promise-realm-production-source.json`; installed-browser validation is tracked
+separately from this source proof.
+
+
+All thirteen existing cases in `script_environment_binding_test`,
+`url_object_blob_host_test` and `main_compact_scroll_methods_test` also pass with
+this fix and stable sources (`promise-realm-regressions-1/`). They preserve
+cross-realm ownership, Blob URL store/revocation behavior and native scroll
+Promise completion.
+
+A cache-policy audit narrows an earlier harness claim: conversation, sentinel,
+`backend-api` and `backend-anon` responses were excluded, but account-picker and
+telemetry JSON entries were copied into earlier caches. The final fresh-session
+harness explicitly excludes `/api/`, `/ces/`, `/backend-` and non-static JSON.
+Only the manifest and immutable discovery-catalog JSON remain eligible alongside
+scripts, styles, fonts and images. `static-cache-policy-correction.json` records
+the initial driver hash and retained source. This is a protocol correction,
+not engine optimization credit; earlier failed attempts remain failed.
+
+
+The fixed production executable is
+`a630da28c1145951ae253eb93bd642cd510488241e460420f98f738241d51e03`,
+from `Build/production-build/receipts/20261103-055307-8634efa2/`.
+`production-fresh-21-c/` reaches audited startup readiness without native or
+script errors, confirming the prior principal-realm crash no longer occurs.
+However, its input probe still clicks the earlier homepage's hard-coded
+379.5px composer position. The fresh native and Brave layouts both put the
+editor at y=504, center 516. Typing reaches the autofocused editor, but the
+old Send click misses, leaving the prompt unsent. The workflow check correctly
+fails; this is retained as a failed input protocol, not a backend rejection.
+
+The final position probe reads the already recorded `VOX_TYPE_DOCUMENT_Y`,
+validates it as a finite number and uses that position for both focus and Send.
+It sends the same individual native AppKit key events and clicks Send one
+second after typing. Its source/binary are pinned in the final run's inputs;
+`ready-input-position.guard.json` retains its bounded compile. No page script,
+DOM state or application event handler is patched by the probe.
+
+
+`production-fresh-21-d/` validates the corrected native input protocol on
+`a630da28…`: audited readiness, exact prompt/reply and conversation URL, empty
+native/script errors, zero browser/guard exits and stable inputs/identities.
+Its strict live comparison still fails at 313 pixels (maximum channel error
+159): 286 are the two missing response SVG controls; 27 are bubble-edge pixels
+with maximum error two. This failure is retained.
+
+`frozen-promise-realm-21/` remains exact. The separate read-only style diagnostic
+in `live-svg-diagnostic-21/` obtains an exact PNG on `a829ba36…`, but its SVG
+inspection encounters an unavailable `outerHTML` accessor and it also requests
+a diagnostic redraw. Its zero-pixel result receives **no ordinary-run parity
+credit**. The initial probe source/binary and failed observation are retained.
+
+`production-fresh-21-e/` is the subsequent ordinary run on
+`a829ba36cf2cc23395ab6633d73038bae08f24b93ca9180583971b86ebcca6c4`
+(receipt `Build/production-build/receipts/20261103-060046-aaf568a2/`). It uses
+only native input, with no style inspection or diagnostic redraw. The live
+prompt/reply and conversation checks pass, errors are empty, all exits are
+zero, and executable/native-library/input identities stay stable. Its full
+1024×768 conversation matches unchanged fresh-21 Brave **at zero differing
+pixels and zero channel error**. This result is pinned to that shared build;
+the preceding SVG-control difference is not attributed to an unproven engine
+path or to the style probe.
+
+The requested repeat and latest visual guards initially fail their executable
+identity precondition because another shared bundle publishes before launch
+(`production-fresh-21-f/`, `conformance-fresh-21-latest/`). No browser is
+launched and no acceptance is claimed for those attempts. The current-bundle
+checks are recorded separately.
+
+
+`production-fresh-21-g/` repeats the ordinary live workflow on current executable
+`317f313a4b621eb2662df8e6d557f71e11dae3ddaf8dd80fe240990d60350012`
+(receipt `Build/production-build/receipts/20261103-060729-291a6a00/`). It again
+passes readiness, exact prompt/reply and conversation-URL checks, with empty
+native/script errors and stable identities/inputs. Browser and guard exit zero.
+Its full conversation has **zero differing pixels and zero channel error**
+against the unchanged fresh-21 Brave reference. `conformance-fresh-21-current/`
+passes all eleven existing smoke checks and all nine SVG mutation reftests;
+every SVG comparison is exact and all identities/inputs remain stable. The
+preceding `conformance-fresh-21/` also passes on `a630da28…`.
+
+Homepage suggestion data/error handling remains a separate open item; no
+pre-submit homepage equality is inferred from the exact conversation.
