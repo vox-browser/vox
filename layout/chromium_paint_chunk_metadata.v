@@ -11,12 +11,14 @@ struct ChromiumPaintMetadata {
 	state   ChromiumRasterPropertyState
 	bounds  LayoutRect
 	client  u64
+	fixed_container bool
 }
 
 enum ChromiumPaintMetadataMode {
 	none
 	clipping
 	geometry
+	fixed_bounds
 }
 
 // Chromium expands a vertical root scrollport by 4000 pixels and retains its
@@ -137,6 +139,7 @@ fn chromium_metadata_state(box &BlockBox, result &DocumentLayoutResult,
 	// Otherwise their overlapping bounds split each descendant from the
 	// background it needs during premultiplied rasterization.
 	state.fixed_raster_owner = chromium_fixed_raster_owner(box)
+	state.fixed_raster_group = scratch.fixed_raster_groups[state.fixed_raster_owner]
 	mut ancestor := context
 	for ancestor > 0 && ancestor < result.visual_context_tree.nodes.len {
 		if u64(ancestor) in scratch.compositor_bounds {
@@ -164,7 +167,7 @@ fn chromium_hit_test_border_rect(box &BlockBox) LayoutRect {
 }
 
 fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []PaintCommand,
-	cull LayoutRect, mut scratch ChromiumRasterPlanScratch) ChromiumPaintMetadataMode {
+	cull ?LayoutRect, mut scratch ChromiumRasterPlanScratch) ChromiumPaintMetadataMode {
 	scratch.paint_metadata.clear()
 	count := result.paint_order.len * compatibility_paint_phase_count
 	scratch.paint_phase_firsts.clear()
@@ -180,6 +183,7 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 	}
 	mut cursor := commands.len
 	mut has_scroll_marker := false
+	mut has_fixed_metadata := false
 	for index := result.paint_steps.len - 1; index >= 0; index-- {
 		step := result.paint_steps[index]
 		if step.entry_index < 0 || step.entry_index >= result.paint_order.len { continue }
@@ -197,10 +201,11 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 		bounds := compatibility_affine_map_rect(box.paint_transform, rect)
 		context, state := chromium_metadata_state(box, result, &scratch)
 		if context < 0 || state.requires_root_raster { continue }
-		if !state.fixed_to_viewport && state.sticky_frame == 0
-			&& !chromium_layer_bounds_overlap(bounds, cull) {
-			continue
+		if interest := cull {
+			if !state.fixed_to_viewport && state.sticky_frame == 0
+				&& !chromium_layer_bounds_overlap(bounds, interest) { continue }
 		}
+		has_fixed_metadata = has_fixed_metadata || state.fixed_to_viewport
 		if scratch.composited_scrolls[box.own_scroll_frame_index] {
 			padding := box.compatibility_absolute_padding_rect()
 			marker := compatibility_affine_map_rect(box.paint_transform,
@@ -216,10 +221,17 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 		}
 		// Reverse traversal puts the ordinary background metadata first when
 		// the vector is restored to paint order below.
+		mut fixed_container := false
+		if box.fixed_to_viewport && box.layout_handle != unsafe { nil } {
+			fixed_container = unsafe { &Node(box.layout_handle) }.is_fixed_position()
+		}
 		scratch.paint_metadata << ChromiumPaintMetadata{after, context, state, bounds,
-			chromium_paint_client(box)}
+			chromium_paint_client(box), fixed_container}
 	}
 	scratch.paint_metadata.reverse_in_place()
+	// An unculled plan retains its established scrolling/image policy. Only
+	// fixed-container geometry is added when root culling cannot be projected.
+	if cull == none { return if has_fixed_metadata { .fixed_bounds } else { .none } }
 	// A rounded image's ancestor can contribute a metadata-only chunk before
 	// its overflow clip. It still determines the picture's common clip state,
 	// even when the document has no independently scrolling contents.
@@ -229,7 +241,7 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 			if command.clip_list.items.any(it.corner_radii != BoxRadii{}) { return .clipping }
 		}
 	}
-	return if has_scroll_marker { .geometry } else { .none }
+	return if has_scroll_marker { .geometry } else if has_fixed_metadata { .fixed_bounds } else { .none }
 }
 
 // Keep each paint client's hit-test and drawing bounds together. Combining
@@ -286,7 +298,7 @@ fn chromium_single_svg_content(node &Node) ?&Node {
 	return none
 }
 
-fn chromium_append_paint_chunk(bounds LayoutRect, state ChromiumRasterPropertyState,
+fn chromium_append_paint_chunk(bounds LayoutRect, recorded LayoutRect, state ChromiumRasterPropertyState,
 	context int, client u64, mut scratch ChromiumRasterPlanScratch) int {
 	if context >= 0 && context == scratch.paint_chunk_context && state.scroll_hit_test == 0
 		&& client != 0 && client == scratch.paint_chunk_client
@@ -297,6 +309,8 @@ fn chromium_append_paint_chunk(bounds LayoutRect, state ChromiumRasterPropertySt
 		scratch.paint_chunks[index] = ChromiumRasterChunk{
 			...last
 			bounds: chromium_layer_bounds_union(last.bounds, bounds)
+			recorded_bounds: chromium_layer_bounds_union(last.recorded_bounds, recorded)
+			draws_content: last.draws_content || (recorded.width > 0 && recorded.height > 0)
 		}
 		return index
 	}
@@ -304,6 +318,8 @@ fn chromium_append_paint_chunk(bounds LayoutRect, state ChromiumRasterPropertySt
 	scratch.paint_chunks << ChromiumRasterChunk{
 		state:         state
 		bounds:        bounds
+		recorded_bounds: recorded
+		draws_content: recorded.width > 0 && recorded.height > 0
 		command_index: index
 		command_end:   index + 1
 	}
@@ -341,7 +357,8 @@ fn chromium_chunk_context(chunk ChromiumRasterChunk, result &DocumentLayoutResul
 	return context, if multiple_clients { u64(0) } else { client }
 }
 
-fn chromium_paint_chunk_is_interested(chunk ChromiumRasterChunk, cull LayoutRect) bool {
+fn chromium_paint_chunk_is_interested(chunk ChromiumRasterChunk, cull ?LayoutRect) bool {
+	if cull == none { return true }
 	return chunk.state.fixed_to_viewport || chunk.state.sticky_frame > 0 || chunk.unbounded_transform_overlap
 		|| chromium_layer_bounds_overlap(chunk.bounds, cull)
 }
@@ -360,7 +377,7 @@ fn chromium_paint_chunk_has_pending_image(chunk ChromiumRasterChunk, commands []
 }
 
 fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
-	commands []PaintCommand, cull LayoutRect, scale f64,
+	commands []PaintCommand, cull ?LayoutRect, scale f64,
 	mut scratch ChromiumRasterPlanScratch, mut plan ChromiumRasterLayerPlan) {
 	scratch.paint_visible_effects.clear()
 	for chunk in scratch.chunks {
@@ -392,6 +409,10 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 		chromium_layerize_chunks_into(scratch.chunks, commands.len, scale, mut plan, mut scratch.layer_states)
 		return
 	}
+	if metadata_mode == .fixed_bounds {
+		chromium_layerize_fixed_container_metadata(commands.len, mut scratch, mut plan, scale)
+		return
+	}
 	plan.has_paint_metadata = metadata_mode == .geometry
 	scratch.paint_chunks.clear()
 	scratch.paint_chunk_contexts.clear()
@@ -403,7 +424,7 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 		for metadata_index < scratch.paint_metadata.len
 			&& scratch.paint_metadata[metadata_index].at <= chunk.command_index {
 			metadata := scratch.paint_metadata[metadata_index]
-			chromium_append_paint_chunk(metadata.bounds, metadata.state, metadata.context, metadata.client,
+			chromium_append_paint_chunk(metadata.bounds, LayoutRect{}, metadata.state, metadata.context, metadata.client,
 				mut scratch)
 			metadata_index++
 		}
@@ -413,7 +434,9 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 			scratch.command_chunk_groups << -1
 		} else {
 			context, client := chromium_chunk_context(chunk, result, commands)
-			group := chromium_append_paint_chunk(chunk.bounds, chunk.state, context, client,
+			recorded := if !chunk.draws_content { LayoutRect{} } else if chunk.recorded_bounds.width > 0
+				&& chunk.recorded_bounds.height > 0 { chunk.recorded_bounds } else { chunk.bounds }
+			group := chromium_append_paint_chunk(chunk.bounds, recorded, chunk.state, context, client,
 				mut scratch)
 			if chunk.unbounded_sticky_overlap {
 				last := scratch.paint_chunks[group]
@@ -433,7 +456,7 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 	}
 	for metadata_index < scratch.paint_metadata.len {
 		metadata := scratch.paint_metadata[metadata_index]
-		chromium_append_paint_chunk(metadata.bounds, metadata.state, metadata.context, metadata.client,
+		chromium_append_paint_chunk(metadata.bounds, LayoutRect{}, metadata.state, metadata.context, metadata.client,
 			mut scratch)
 		metadata_index++
 	}

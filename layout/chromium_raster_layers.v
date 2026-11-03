@@ -25,6 +25,8 @@ pub mut:
 	// picture. Its ordinary border-box paint remains in the parent layer.
 	scroll_background_command int = -1
 mut:
+	recorded_bounds LayoutRect
+	fixed_bounds_extended bool
 	unbounded_sticky_overlap bool
 	unbounded_transform_overlap bool
 }
@@ -54,9 +56,12 @@ mut:
 	// picture, rather than an independent compositor overlap barrier.
 	atomic_opacity       bool
 	fixed_to_viewport    bool
-	// Separate fixed containers own separate paint-offset transforms. A shared
-	// boolean alone lets a sibling's paths change this container's MSAA coverage.
+	// Drawing commands keep their fixed container's paint-offset identity.
+	// Compatible hit-test-only geometry may extend its complete picture bounds.
 	fixed_raster_owner   u64
+	// Matching viewport anchors can share a fixed translation; opposite
+	// anchors depend differently on changes to the viewport bounds.
+	fixed_raster_group   int
 	requires_root_raster bool
 	scrollbar            bool
 	scroll_hit_test      int
@@ -67,6 +72,8 @@ struct ChromiumRasterChunk {
 	bounds        LayoutRect
 	command_index int
 	command_end   int
+	draws_content bool = true
+	recorded_bounds LayoutRect
 	unbounded_sticky_overlap bool
 	unbounded_transform_overlap bool
 }
@@ -84,6 +91,7 @@ mut:
 	sticky_bounds      map[int]LayoutRect
 	sticky_scroll_parents map[int]int
 	fixed_bounds       map[u64]LayoutRect
+	fixed_raster_groups map[u64]int
 	compositor_bounds  map[u64]LayoutRect
 	compositor_fixed_raster_owners map[u64]u64
 	compositor_unbounded_animations map[u64]bool
@@ -151,6 +159,8 @@ fn chromium_layer_bounds_overlap(a LayoutRect, b LayoutRect) bool {
 fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
 	for index in 0 .. plan.layer_storage.len {
 		plan.layer_storage[index].bounds = LayoutRect{}
+		plan.layer_storage[index].recorded_bounds = LayoutRect{}
+		plan.layer_storage[index].fixed_bounds_extended = false
 		plan.layer_storage[index].legacy_raster = false
 		plan.layer_storage[index].scroll_contents = false
 		plan.layer_storage[index].composited_contents = false
@@ -206,7 +216,9 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 			// extent. Sparse descendants within that same property state must
 			// not acquire independent transparent pictures just for empty ink.
 			shared_sticky := chunk.state.sticky_frame > 0 && !chunk.state.legacy_effect
-			if states[index] == chunk.state && (shared_sticky || extra_area <= 10000 * device_scale * device_scale) {
+			if (states[index] == chunk.state || (!chunk.draws_content
+				&& chromium_raster_states_mergeable(states[index], chunk.state)))
+				&& (shared_sticky || extra_area <= 10000 * device_scale * device_scale) {
 				merged = index
 				break
 			}
@@ -235,7 +247,20 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 			|| chunk.unbounded_sticky_overlap
 		plan.layers[merged].unbounded_transform_overlap = plan.layers[merged].unbounded_transform_overlap
 			|| chunk.unbounded_transform_overlap
-		plan.layers[merged].bounds = chromium_layer_bounds_union(plan.layers[merged].bounds, chunk.bounds)
+		merged_bounds := chromium_layer_bounds_union(plan.layers[merged].bounds, chunk.bounds)
+		if !chunk.draws_content && states[merged].fixed_raster_owner != chunk.state.fixed_raster_owner
+			&& merged_bounds != plan.layers[merged].bounds {
+			plan.layers[merged].fixed_bounds_extended = true
+		}
+		plan.layers[merged].bounds = merged_bounds
+		if chunk.draws_content {
+			recorded := if chunk.recorded_bounds.width > 0 && chunk.recorded_bounds.height > 0 {
+				chunk.recorded_bounds
+			} else { chunk.bounds }
+			plan.layers[merged].recorded_bounds = chromium_layer_bounds_union(
+				plan.layers[merged].recorded_bounds, recorded)
+		}
+		if chunk.command_index < 0 { continue }
 		end := if chunk.command_end > chunk.command_index {
 			chunk.command_end
 		} else {
@@ -470,6 +495,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	scratch.sticky_bounds.clear()
 	scratch.sticky_scroll_parents.clear()
 	scratch.fixed_bounds.clear()
+	scratch.fixed_raster_groups.clear()
 	scratch.compositor_bounds.clear()
 	scratch.compositor_fixed_raster_owners.clear()
 	scratch.compositor_unbounded_animations.clear()
@@ -507,6 +533,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			if node.is_fixed_position() {
 				scratch.fixed_bounds[u64(voidptr(node))] = compatibility_affine_map_rect(box.paint_transform,
 					box.border_box())
+				scratch.fixed_raster_groups[u64(voidptr(node))] = chromium_fixed_raster_group(box, node)
 			}
 		}
 	}
@@ -600,12 +627,14 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				state.fixed_raster_owner = if state.fixed_to_viewport {
 					scratch.compositor_fixed_raster_owners[effect_scope]
 				} else { u64(0) }
+				state.fixed_raster_group = scratch.fixed_raster_groups[state.fixed_raster_owner]
 				scratch.compositor_scopes << effect_scope
 				// Even an empty will-change layer is an overlap barrier. Keep
 				// its container extent on this marker, not on every later chunk.
 				scratch.chunks << ChromiumRasterChunk{
 					state:         state
 					bounds:        compositor_bounds
+					draws_content: false
 					command_index: first
 					command_end:   end
 					unbounded_transform_overlap: scratch.compositor_unbounded_animations[effect_scope]
@@ -649,6 +678,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			}
 		}
 		mut bounds := compositor_bounds
+		mut recorded_bounds := LayoutRect{}
 		mut state := ChromiumRasterPropertyState{}
 		mut has_state := false
 		mut unbounded_sticky_overlap := false
@@ -698,6 +728,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				state.fixed_raster_owner = if state.fixed_to_viewport {
 					chromium_fixed_raster_owner(box)
 				} else { u64(0) }
+				state.fixed_raster_group = scratch.fixed_raster_groups[state.fixed_raster_owner]
 				// Scrollbars retain their own raster identity; appending one
 				// must not turn preceding overlap text into a mixed paint run.
 				state.scrollbar = command.scrollbar_axis != ''
@@ -706,6 +737,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 			if state.sticky_frame > 0 && !state.legacy_effect && !command.has_clip {
 				unbounded_sticky_overlap = true
 			}
+			mut command_bounds := LayoutRect{}
 			if state.sticky_frame > 0 {
 				// Replay includes the current sticky translation; the retained
 				// box transform contains only author transforms. Use replay's
@@ -716,12 +748,12 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 					transform[4] += viewport.x
 					transform[5] += viewport.y
 				}
-				bounds = chromium_layer_bounds_union(bounds,
-					chromium_raster_chunk_bounds_in_space(box, command, viewport.y, transform))
+				command_bounds = chromium_raster_chunk_bounds_in_space(box, command, viewport.y, transform)
 			} else {
-				bounds = chromium_layer_bounds_union(bounds,
-					chromium_raster_chunk_bounds_with_root_scroll(box, command, root_scroll_y))
+				command_bounds = chromium_raster_chunk_bounds_with_root_scroll(box, command, root_scroll_y)
 			}
+			bounds = chromium_layer_bounds_union(bounds, command_bounds)
+			recorded_bounds = chromium_layer_bounds_union(recorded_bounds, command_bounds)
 			// A fixed container establishes its compositor layer even when only
 			// a small descendant paints. Keep the container's empty space in the
 			// raster extent; tightening it to that descendant changes GPU coverage.
@@ -743,6 +775,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				bounds:        bounds
 				command_index: first
 				command_end:   end
+				recorded_bounds: recorded_bounds
 				unbounded_sticky_overlap: unbounded_sticky_overlap
 				unbounded_transform_overlap: scratch.compositor_unbounded_animations[effect_scope]
 			}
@@ -753,8 +786,8 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 		chromium_root_raster_plan_into(commands.len, mut plan)
 		return
 	}
-	if rect := cull {
-		chromium_layerize_visible_paint_chunks(result, commands, rect, device_scale, mut scratch, mut plan)
+	if cull != none || scratch.fixed_bounds.len > 0 {
+		chromium_layerize_visible_paint_chunks(result, commands, cull, device_scale, mut scratch, mut plan)
 	} else {
 		chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
 	}
@@ -774,6 +807,14 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 				plan.layers[layer_index].bounds = chromium_recorded_tiling_rect(rect,
 					plan.layers[layer_index].bounds, device_scale)
 			}
+		}
+		if state.effect_scope == 0 && !state.legacy_effect && state.fixed_to_viewport
+			&& state.scroll_frame == 0 && state.sticky_frame == 0
+			&& plan.layers[layer_index].fixed_bounds_extended {
+			// A merged hit-test-only container changes the layer's coordinate
+			// space without extending the drawing operations recorded into it.
+			plan.layers[layer_index].bounds = chromium_recorded_tiling_rect(
+				plan.layers[layer_index].bounds, plan.layers[layer_index].recorded_bounds, device_scale)
 		}
 		if state.effect_scope != 0 && !state.legacy_effect {
 			// Compositor rasters enclose fractional geometry, independently of
