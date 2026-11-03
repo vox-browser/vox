@@ -403,6 +403,8 @@ def parse_args(argv=None):
                         help='Prefer tag buckets over required attributes in the pinned Vox control')
     parser.add_argument('--retain-incremental-webp-paint-policy', action='store_true',
                         help='Reproduce the historical WebP paint policy in both Vox arms; no decoder optimization credit')
+    parser.add_argument('--retain-logical-paint-snapping', action='store_true',
+                        help='Retain the fixed references\' historical logical-pixel snapping in both Vox arms; no policy-change credit')
     parser.add_argument('--control-disable-shared-node-properties', action='store_true',
                         help='Create separate text/comment/fragment property accessors in the pinned Vox control')
     parser.add_argument('--control-disable-shared-element-geometry', action='store_true',
@@ -498,6 +500,16 @@ def evaluate_cohort(pairs, has_control=False):
     return summary
 
 
+def replay_vox_environment(args, ready):
+    environment = dict(VOX_PROXY=ready['proxy'], SSL_CERT_FILE=ready['ca'],
+                       VOX_BLOCK_COOKIE_BANNERS='0')
+    if args.retain_incremental_webp_paint_policy:
+        environment['VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY'] = '1'
+    if args.retain_logical_paint_snapping:
+        environment['VOX_RETAIN_LOGICAL_PAINT_SNAPPING'] = '1'
+    return environment
+
+
 def main():
     args = parse_args()
     expected = fixture_expectations(args.archive)
@@ -562,6 +574,9 @@ def main():
             control=jsc_baseline_environment(args.control_jsc_baseline_warmup)),
         retain_incremental_webp_paint_policy=args.retain_incremental_webp_paint_policy,
         webp_policy_credit='None: explicit historical workload compatibility only',
+        retain_logical_paint_snapping=args.retain_logical_paint_snapping,
+        paint_snapping_policy='historical logical pixels' if args.retain_logical_paint_snapping else 'default presenting device grid',
+        paint_snapping_policy_credit='None: both Vox arms retain the declared policy; references unchanged',
         control_disable_retained_simple_svg=args.control_disable_retained_simple_svg,
         control_disable_retained_formatting_trees=args.control_disable_retained_formatting_trees,
         control_retain_flow_style_identities=args.control_retain_flow_style_identities,
@@ -627,10 +642,7 @@ def main():
         der = subprocess.check_output(['openssl', 'pkey', '-pubin', '-outform', 'der'], input=public)
         spki = base64.b64encode(hashlib.sha256(der).digest()).decode()
         args.url = URL
-        args.vox_environment = dict(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
-                                    VOX_BLOCK_COOKIE_BANNERS='0')
-        if args.retain_incremental_webp_paint_policy:
-            args.vox_environment['VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY'] = '1'
+        args.vox_environment = replay_vox_environment(args, replay.ready)
         args.brave_proxy_argument = '--proxy-server=' + replay.ready['proxy'].replace('socks5h:', 'socks5:')
         args.brave_arguments = ['--ignore-certificate-errors-spki-list=' + spki]
         for index in range(1 if args.capture_reference else args.repeat):

@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from bbc_browser_instructions import URL, audit_instruction_logging, evaluate_cohort, jsc_baseline_environment, parse_args, trial_order, run_trial, validate_document, verify_benchmark_inputs
+from bbc_browser_instructions import URL, audit_instruction_logging, evaluate_cohort, jsc_baseline_environment, parse_args, replay_vox_environment, trial_order, run_trial, validate_document, verify_benchmark_inputs
 from types import SimpleNamespace
 from unittest.mock import patch
 from hacker_news_browser_instructions import evaluate_pairs
@@ -25,6 +25,31 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_historical_rendering_policies_are_explicit_and_common_to_both_vox_arms(self):
+        ready = dict(proxy='socks5h://fixture', ca='/fixture/ca.pem')
+        for logical in (False, True):
+            for webp in (False, True):
+                args = SimpleNamespace(retain_logical_paint_snapping=logical,
+                                       retain_incremental_webp_paint_policy=webp,
+                                       control_disable_grid_width_only=False,
+                                       control_retain_dirty_stylesheet_traversal=True)
+                environment = replay_vox_environment(args, ready)
+                self.assertEqual(environment.get('VOX_RETAIN_LOGICAL_PAINT_SNAPPING'),
+                                 '1' if logical else None)
+                self.assertEqual(environment.get('VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY'),
+                                 '1' if webp else None)
+                args.vox_environment = environment
+                seen = []
+                def observe(engine, app, folder, options):
+                    seen.append(dict(options.vox_environment))
+                    return {'exit': 0}
+                with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+                    for engine in ('control', 'vox'):
+                        run_trial(engine, 'same-app', engine, args)
+                self.assertEqual(seen, [dict(environment, VOX_RETAIN_DIRTY_STYLESHEET_TRAVERSAL='1'),
+                                        environment])
+                self.assertIs(args.vox_environment, environment)
+
     def test_input_preservation_is_optional_and_requires_independent_storage(self):
         argv = ['--archive', 'archive', '--output', 'Build/result',
                 '--memory-guard-registry', 'pids.json', '--capture-reference']
