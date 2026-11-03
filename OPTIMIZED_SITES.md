@@ -46,13 +46,13 @@ separately from the historical paired Vox/Brave row above.
 | --- | ---: | ---: | ---: | --- | --- |
 | Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | 3.2B reached; **2.7B target open** | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
 
-The ongoing 2.7B work has a complete production benchmark at **2,834,461,737
-median**, **2,852,355,429 maximum**, with exact pixels and all content, PNG,
+The ongoing 2.7B work has a complete production benchmark at **2,804,458,189
+median**, **2,812,566,441 maximum**, with exact pixels and all content, PNG,
 identity, ownership and exit audits passing in seven fresh default launches.
 Ready image completion saves about 61.2M between matched medians; an expanded
-CSS cache regresses and has been removed. A further private native-bridge
-comparison saves 10.5M with exact pixels in all seven pairs, but still needs a
-default production build. Earlier regressions and invalid cohorts remain
+CSS cache regresses and has been removed. Private bitmap text rasterization
+saves 10.5M in its matched cohort; hardware checksums save another 5.4M in a
+production comparison. These changes are in the measured bundle. Earlier regressions and invalid cohorts remain
 recorded. Regression suites are deferred until the requested goal is reached, so the fully validated
 row above remains unchanged. See the [progress report](docs/HACKER_NEWS_2_7B.md)
 and [all retained attempts](docs/performance/hn-2700-progress-20261103.json).

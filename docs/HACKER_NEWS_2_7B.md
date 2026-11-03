@@ -79,7 +79,7 @@ rejected longhand-cache inputs (`vertical-align: inherit`, inherited border
 colors, `font-weight: bolder`, background images and font-relative margins).
 The source now consumes only already-buffered initial image completions before
 first geometry. A diagnostic confirms two ready responses and exact pixels.
-The latest complete cohort, `ready-inherit-matched3`, uses executable
+The preceding complete cohort, `ready-inherit-matched3`, uses executable
 `f5d3441370685d8d032fffe76deeb5c727aff0b0c46c2f85637b09084c4d1fad`,
 receipt `20261103-084947-ca92c271`. Its seven default trials measure
 **2,834,461,737 median / 2,852,355,429 maximum**, with all 21 captures passing
@@ -103,8 +103,43 @@ confirms 215 eligible draws. Seven `glyph-surface-bgra-matched` pairs on the
 same executable with a pinned private native bridge measure
 **2,832,080,113 → 2,821,580,780** medians; candidate maximum is 2,825,335,713.
 Every pair improves and all fourteen captures pass the unchanged gates. Its
-authored coverage/ownership tests are deferred, and this diagnostic bridge
-result does not validate the final default production build or reach 2.7B.
+authored coverage/ownership tests are deferred. The later production cohort
+below contains this change, and the 2.7B target remains open.
+
+The `startup-candidates-matched` cohort uses executable
+`e9deac23254d41499763f0436838ba75fe4e8d1671932b38b19fb79cce68dac5`,
+receipt `20261103-090239-9d1c7c6d`. All 21 captures pass the original gates;
+its seven default launches measure **2,807,099,437 median / 2,818,971,939 maximum**.
+Injected checksum and eager-bootstrap arms are slower than this uninjected
+default. Their injected-library startup costs prevent isolated attribution.
+The bootstrap experiment remains diagnostic only. A separate phase probe
+attributes about 17.6M to factory parsing, 14.7M to first-call preparation,
+19.6M to WebGL initialization, and 17.4M to Window/final bootstrap setup.
+Those are instrumented diagnostic counts, without optimization credit.
+
+The latest complete cohort, `crc-production-matched`, uses executable
+`c9ff98ac0d59e91e9a378147d8a62e1130780f2902e994c5bd038cd3c7af68d6`,
+receipt `20261103-091717-6b3a184e`. A bounded Apple Silicon CRC implementation
+preserves the complete IEEE checksum and incremental/null-buffer behavior,
+retaining zlib for other targets or the explicit control. The seven default
+launches measure **2,804,458,189 median / 2,812,566,441 maximum**. The same-build
+zlib control measures 2,809,859,668 median: a **5,401,479** difference, with
+six pairs improving and one regressing. All 21 captures pass every original
+gate. The third arm combines one GC marker with synchronous collection and
+measures 2,790,856,430 median / 2,808,756,103 maximum, with one pair regression.
+That setting is not retained in source; its runtime tradeoffs still need review.
+
+Pending source experiments defer the separate WebCrypto OpenSSL library until
+its first operation, avoid arena switches for CSS cascade updates that cannot
+allocate, and compute absolute font sizes without resolving parent-face metrics.
+The WebCrypto table resolves the exact typed API and returns ordinary operation
+failures after a missing or incomplete library. A component diagnostic observes
+18.2M instructions loading that library; this is not whole-page credit. The first
+production link exposes seven omitted ECDSA names. The generator is corrected,
+and a compile-only shared-library check now references all 38 native adapters
+without linking OpenSSL, proving no direct native imports remain. Compilation
+checks pass, with the authored regression suites still deferred and production
+eligibility/performance measurements pending for these source changes.
 
 JSC collection pilots retain every launch. A single-marker setting is promising
 in two alternating pilots, but the seven-pair cohort has helper-ownership failures

@@ -1,5 +1,5 @@
 {
-  "updated_utc": "2026-11-03T06:02:38.124203+00:00",
+  "updated_utc": "2026-11-03T06:38:58.664987+00:00",
   "target": 2700000000,
   "target_reached": false,
   "test_suites": "Deferred by explicit user instruction until the instruction target is reached. Benchmark correctness audits remain enabled.",
@@ -3554,6 +3554,377 @@
       ]
     },
     {
+      "name": "bootstrap-phases-path",
+      "raw_rows": "Build/hn-2700-20261103/bootstrap-phases-path/rows.json",
+      "raw_rows_sha256": "bec6565df14adb83de4eec86991453711db93ebb9c3bc79bd0a7a509c2faa7c5",
+      "raw_summary": {
+        "counts": {
+          "diagnostic": [
+            2874588608,
+            2871993485
+          ]
+        },
+        "maxima": {
+          "diagnostic": 2874588608
+        },
+        "medians": {
+          "diagnostic": 2873291046.5
+        },
+        "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+        "target_met": {
+          "diagnostic": false
+        },
+        "valid": true
+      },
+      "inputs_sha256": "0225d96dc60b88cff5fc7fb0091f7f0658185837e11522b57faef8cba55bb41d",
+      "pinned_files": {
+        "/System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService": {
+          "bytes": 389760,
+          "sha256": "b3cd7c6c6c5091f71e57cdc674b0915bc89b1321593c37507b541d58561d02c3"
+        },
+        "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService": {
+          "bytes": 220272,
+          "sha256": "5827a890d1fe8dcd7e6fd26e5157f1268fdf9e58c08c48c4616bd0a719fc7031"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "bytes": 150024,
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "bytes": 69928,
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "bytes": 102592,
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "bytes": 5150944,
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "bytes": 882592,
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "bytes": 181544,
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "bytes": 335064,
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "bytes": 768872,
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "bytes": 33371048,
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "bytes": 2158624,
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "bytes": 218040,
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "bytes": 202328,
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "bytes": 369272,
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "bytes": 64496,
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "bytes": 245016,
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "bytes": 5744128,
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "bytes": 981792,
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "bytes": 106528,
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "bytes": 798160,
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/bootstrap-phases.dylib": {
+          "bytes": 35096,
+          "sha256": "01cfbceff7ade9cfe40edebe3339afa4b8df5249952b047a4ed3fa7d5710a054"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/run-native-v2.py": {
+          "bytes": 5234,
+          "sha256": "3f21f61d90c65d323b8121741fc21249ff42f104c3ae719b10cc483b1554111d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": {
+          "bytes": 1052,
+          "sha256": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 30308592,
+          "sha256": "e9deac23254d41499763f0436838ba75fe4e8d1671932b38b19fb79cce68dac5"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 292976,
+          "sha256": "c56b6d3a1492d3aff87454f947627bbad2d9099166aece8eec922c62e456131c"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 615728,
+          "sha256": "e433ab6a7d4d8a34e0c878f9f2f870f5674e255948231c30ad072f773704ba21"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "bytes": 4398880,
+          "sha256": "d5cde2bb3d9476637093091206216bd74a21a893646af74e6bae117aaacfd76f"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "bytes": 13037232,
+          "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "bytes": 2192096,
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": {
+          "bytes": 62313,
+          "sha256": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": {
+          "bytes": 50851,
+          "sha256": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/expected/hacker-news-home-instructions.png": {
+          "bytes": 435812,
+          "sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363": {
+          "bytes": 43,
+          "sha256": "2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0": {
+          "bytes": 5217,
+          "sha256": "2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8": {
+          "bytes": 131,
+          "sha256": "3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53": {
+          "bytes": 34803,
+          "sha256": "d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5": {
+          "bytes": 7418,
+          "sha256": "de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff": {
+          "bytes": 315,
+          "sha256": "e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/manifest.json": {
+          "bytes": 11878,
+          "sha256": "e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0"
+        },
+        "/Users/alex/code/vox2/tools/capture_brave_reference.py": {
+          "bytes": 17162,
+          "sha256": "e001eaeb77e6e954ba20a4b53e0162cb533246ce2e236f111f12b9b1ff04a319"
+        },
+        "/Users/alex/code/vox2/tools/check_pixel_equality.py": {
+          "bytes": 2012,
+          "sha256": "45bfa1838328c1b7d165364fce76afc09af4850dfcd22afed62db14b43891b6b"
+        },
+        "/Users/alex/code/vox2/tools/coalition_instruction_counts.py": {
+          "bytes": 6468,
+          "sha256": "6dfe26ca64384a8e0bd4606c6e1e5170d57bb9fc04246c5ecd20c715421c9bc0"
+        },
+        "/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py": {
+          "bytes": 49268,
+          "sha256": "be3b90a66ff671d5dabe114c16ca586317d0d1b250e7d427caa655cb600beab8"
+        },
+        "/Users/alex/code/vox2/tools/linux_instruction_counts.py": {
+          "bytes": 18012,
+          "sha256": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227"
+        },
+        "/Users/alex/code/vox2/tools/measure_browser_instructions.py": {
+          "bytes": 43318,
+          "sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e"
+        },
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": {
+          "bytes": 24935,
+          "sha256": "10adec0600ce137a705182aa52a6cb9c324805764d27a1cf6d273a1637e1afb9"
+        },
+        "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": {
+          "bytes": 48663,
+          "sha256": "087c623f738b0a192373c48bdf0ca05a54aaf005f4aef102f2d6ab21a9e4895d"
+        },
+        "/Users/alex/code/vox2/tools/page_archive.py": {
+          "bytes": 16133,
+          "sha256": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c"
+        },
+        "/Users/alex/code/vox2/tools/pikabu_browser_instructions.py": {
+          "bytes": 28165,
+          "sha256": "f33238a06cb0ad38d6c4391248286dd451c034584c7c19a79d6aca71038cc8fe"
+        },
+        "/Users/alex/code/vox2/tools/probe_frozen_github_chrome.py": {
+          "bytes": 10170,
+          "sha256": "d6652e8d6e980768c68b622d7049a607abe7a186bf2992d82a723a3fafeb729b"
+        },
+        "/Users/alex/code/vox2/tools/process_instruction_counts.py": {
+          "bytes": 10735,
+          "sha256": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+        },
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": {
+          "bytes": 8493,
+          "sha256": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "/Users/alex/code/vox2/tools/seal_github_instruction_fixture.py": {
+          "bytes": 16214,
+          "sha256": "d0d8cdd7f788e6e90ba47b7e7b9d41f77111a18110a8a572f9a4ead089ac9070"
+        },
+        "/Users/alex/code/vox2/tools/test_native_snapshot_png.py": {
+          "bytes": 7106,
+          "sha256": "7f64b603a3af2579859b0ecc08a9cc62cd91de0e68ee94008ce2bbb800b4217d"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libEGL.dylib": {
+          "bytes": 111312,
+          "sha256": "aea6167b43c3e7597c857ea8cdbbaa913d80a89eb140dabb8e6360af01d5ddef"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libGLESv2.dylib": {
+          "bytes": 9454608,
+          "sha256": "6ae0bf6748fdf0484766bc0116599f9a9ac5bc907a5b5479f808d35568e357d6"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "bytes": 150128,
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "bytes": 70128,
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962"
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "bytes": 661248,
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7"
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "bytes": 212080,
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58"
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "bytes": 1362736,
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959"
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "bytes": 1427648,
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "bytes": 33833472,
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "bytes": 1885104,
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7"
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "bytes": 191344,
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2"
+        },
+        "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": {
+          "bytes": 4813232,
+          "sha256": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d"
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "bytes": 574096,
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd"
+        }
+      },
+      "executable_sha256": "e9deac23254d41499763f0436838ba75fe4e8d1671932b38b19fb79cce68dac5",
+      "production_receipt": {
+        "path": "Build/production-build/receipts/20261103-090239-9d1c7c6d/result.json",
+        "sha256": "f36793a7d0a13f1c5e204cb78bc49fb9a1fa495e2eaddc9ae63a0149d9c8bf3a",
+        "inputs": {
+          "build_inputs_sha256": "d7a6eb7d46e2b8f8aca789022283091c9c47bcfaa0c686af92bf04c7667b9e60",
+          "dirty": true,
+          "head": "52fe6615607b5a366bbfe38b44ff833c34370d0d",
+          "repository_sha256": "339da4c9a661d29af0e8500235a89ce3928f3a05f9011a6aba87f2a2d66acb38"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "d7a6eb7d46e2b8f8aca789022283091c9c47bcfaa0c686af92bf04c7667b9e60",
+          "dirty": true,
+          "head": "2dd94407ce5ceb3b290ba49c7b37ce9eb16b35e4",
+          "repository_sha256": "339da4c9a661d29af0e8500235a89ce3928f3a05f9011a6aba87f2a2d66acb38"
+        },
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-090239-9d1c7c6d/frozen-compile.json"
+      },
+      "trials": [
+        {
+          "pair": 1,
+          "variant": "diagnostic",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2874588608,
+            "upper": 2874588608
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "diagnostic",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2871993485,
+            "upper": 2871993485
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        }
+      ]
+    },
+    {
       "name": "button-style-pilot",
       "raw_rows": "Build/hn-2700-20261103/button-style-pilot/rows.json",
       "raw_rows_sha256": "6f2252e09eb51cf3ac848ba5221f49c70e6dd5c8ffa49826f11b47d70767ffda",
@@ -5277,6 +5648,1710 @@
       ]
     },
     {
+      "name": "crc-arm-path",
+      "raw_rows": "Build/hn-2700-20261103/crc-arm-path/rows.json",
+      "raw_rows_sha256": "4b18c89d34abf4799ed985d146380a8cfc1ca00393777632f9cbe84fffcd10da",
+      "raw_summary": {
+        "counts": {
+          "control": [
+            2854690255,
+            2830723983
+          ],
+          "fast": [
+            2840700607,
+            2828125763
+          ]
+        },
+        "maxima": {
+          "control": 2854690255,
+          "fast": 2840700607
+        },
+        "medians": {
+          "control": 2842707119.0,
+          "fast": 2834413185.0
+        },
+        "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+        "target_met": {
+          "control": false,
+          "fast": false
+        },
+        "valid": true
+      },
+      "inputs_sha256": "1b9f72b768b1f0c027ade3a915c3173558287651ff814952e212e12295ad7aae",
+      "pinned_files": {
+        "/System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService": {
+          "bytes": 389760,
+          "sha256": "b3cd7c6c6c5091f71e57cdc674b0915bc89b1321593c37507b541d58561d02c3"
+        },
+        "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService": {
+          "bytes": 220272,
+          "sha256": "5827a890d1fe8dcd7e6fd26e5157f1268fdf9e58c08c48c4616bd0a719fc7031"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "bytes": 150024,
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "bytes": 69928,
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "bytes": 102592,
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "bytes": 5150944,
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "bytes": 882592,
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "bytes": 181544,
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "bytes": 335064,
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "bytes": 768872,
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "bytes": 33371048,
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "bytes": 2158624,
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "bytes": 218040,
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "bytes": 202328,
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "bytes": 369272,
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "bytes": 64496,
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "bytes": 245016,
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "bytes": 5744128,
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "bytes": 981792,
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "bytes": 106528,
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "bytes": 798160,
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/crc-arm-option.dylib": {
+          "bytes": 33912,
+          "sha256": "11faa4ef331357bb6dce5d80a604a0c154d31c46a49cd89a86e0d4db2a49fe5b"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/run-native-v2.py": {
+          "bytes": 5234,
+          "sha256": "3f21f61d90c65d323b8121741fc21249ff42f104c3ae719b10cc483b1554111d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": {
+          "bytes": 1052,
+          "sha256": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 30308592,
+          "sha256": "e9deac23254d41499763f0436838ba75fe4e8d1671932b38b19fb79cce68dac5"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 292976,
+          "sha256": "c56b6d3a1492d3aff87454f947627bbad2d9099166aece8eec922c62e456131c"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 615728,
+          "sha256": "e433ab6a7d4d8a34e0c878f9f2f870f5674e255948231c30ad072f773704ba21"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "bytes": 4398880,
+          "sha256": "d5cde2bb3d9476637093091206216bd74a21a893646af74e6bae117aaacfd76f"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "bytes": 13037232,
+          "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "bytes": 2192096,
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": {
+          "bytes": 62313,
+          "sha256": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": {
+          "bytes": 50851,
+          "sha256": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/expected/hacker-news-home-instructions.png": {
+          "bytes": 435812,
+          "sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363": {
+          "bytes": 43,
+          "sha256": "2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0": {
+          "bytes": 5217,
+          "sha256": "2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8": {
+          "bytes": 131,
+          "sha256": "3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53": {
+          "bytes": 34803,
+          "sha256": "d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5": {
+          "bytes": 7418,
+          "sha256": "de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff": {
+          "bytes": 315,
+          "sha256": "e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/manifest.json": {
+          "bytes": 11878,
+          "sha256": "e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0"
+        },
+        "/Users/alex/code/vox2/tools/capture_brave_reference.py": {
+          "bytes": 17162,
+          "sha256": "e001eaeb77e6e954ba20a4b53e0162cb533246ce2e236f111f12b9b1ff04a319"
+        },
+        "/Users/alex/code/vox2/tools/check_pixel_equality.py": {
+          "bytes": 2012,
+          "sha256": "45bfa1838328c1b7d165364fce76afc09af4850dfcd22afed62db14b43891b6b"
+        },
+        "/Users/alex/code/vox2/tools/coalition_instruction_counts.py": {
+          "bytes": 6468,
+          "sha256": "6dfe26ca64384a8e0bd4606c6e1e5170d57bb9fc04246c5ecd20c715421c9bc0"
+        },
+        "/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py": {
+          "bytes": 49268,
+          "sha256": "be3b90a66ff671d5dabe114c16ca586317d0d1b250e7d427caa655cb600beab8"
+        },
+        "/Users/alex/code/vox2/tools/linux_instruction_counts.py": {
+          "bytes": 18012,
+          "sha256": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227"
+        },
+        "/Users/alex/code/vox2/tools/measure_browser_instructions.py": {
+          "bytes": 43318,
+          "sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e"
+        },
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": {
+          "bytes": 24935,
+          "sha256": "10adec0600ce137a705182aa52a6cb9c324805764d27a1cf6d273a1637e1afb9"
+        },
+        "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": {
+          "bytes": 48663,
+          "sha256": "087c623f738b0a192373c48bdf0ca05a54aaf005f4aef102f2d6ab21a9e4895d"
+        },
+        "/Users/alex/code/vox2/tools/page_archive.py": {
+          "bytes": 16133,
+          "sha256": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c"
+        },
+        "/Users/alex/code/vox2/tools/pikabu_browser_instructions.py": {
+          "bytes": 28165,
+          "sha256": "f33238a06cb0ad38d6c4391248286dd451c034584c7c19a79d6aca71038cc8fe"
+        },
+        "/Users/alex/code/vox2/tools/probe_frozen_github_chrome.py": {
+          "bytes": 10170,
+          "sha256": "d6652e8d6e980768c68b622d7049a607abe7a186bf2992d82a723a3fafeb729b"
+        },
+        "/Users/alex/code/vox2/tools/process_instruction_counts.py": {
+          "bytes": 10735,
+          "sha256": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+        },
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": {
+          "bytes": 8493,
+          "sha256": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "/Users/alex/code/vox2/tools/seal_github_instruction_fixture.py": {
+          "bytes": 16214,
+          "sha256": "d0d8cdd7f788e6e90ba47b7e7b9d41f77111a18110a8a572f9a4ead089ac9070"
+        },
+        "/Users/alex/code/vox2/tools/test_native_snapshot_png.py": {
+          "bytes": 7106,
+          "sha256": "7f64b603a3af2579859b0ecc08a9cc62cd91de0e68ee94008ce2bbb800b4217d"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libEGL.dylib": {
+          "bytes": 111312,
+          "sha256": "aea6167b43c3e7597c857ea8cdbbaa913d80a89eb140dabb8e6360af01d5ddef"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libGLESv2.dylib": {
+          "bytes": 9454608,
+          "sha256": "6ae0bf6748fdf0484766bc0116599f9a9ac5bc907a5b5479f808d35568e357d6"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "bytes": 150128,
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "bytes": 70128,
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962"
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "bytes": 661248,
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7"
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "bytes": 212080,
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58"
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "bytes": 1362736,
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959"
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "bytes": 1427648,
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "bytes": 33833472,
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "bytes": 1885104,
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7"
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "bytes": 191344,
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2"
+        },
+        "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": {
+          "bytes": 4813232,
+          "sha256": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d"
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "bytes": 574096,
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd"
+        }
+      },
+      "executable_sha256": "e9deac23254d41499763f0436838ba75fe4e8d1671932b38b19fb79cce68dac5",
+      "production_receipt": {
+        "path": "Build/production-build/receipts/20261103-090239-9d1c7c6d/result.json",
+        "sha256": "f36793a7d0a13f1c5e204cb78bc49fb9a1fa495e2eaddc9ae63a0149d9c8bf3a",
+        "inputs": {
+          "build_inputs_sha256": "d7a6eb7d46e2b8f8aca789022283091c9c47bcfaa0c686af92bf04c7667b9e60",
+          "dirty": true,
+          "head": "52fe6615607b5a366bbfe38b44ff833c34370d0d",
+          "repository_sha256": "339da4c9a661d29af0e8500235a89ce3928f3a05f9011a6aba87f2a2d66acb38"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "d7a6eb7d46e2b8f8aca789022283091c9c47bcfaa0c686af92bf04c7667b9e60",
+          "dirty": true,
+          "head": "2dd94407ce5ceb3b290ba49c7b37ce9eb16b35e4",
+          "repository_sha256": "339da4c9a661d29af0e8500235a89ce3928f3a05f9011a6aba87f2a2d66acb38"
+        },
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-090239-9d1c7c6d/frozen-compile.json"
+      },
+      "trials": [
+        {
+          "pair": 1,
+          "variant": "control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2854690255,
+            "upper": 2854690255
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 1,
+          "variant": "fast",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2840700607,
+            "upper": 2840700607
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "fast",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2828125763,
+            "upper": 2828125763
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2830723983,
+            "upper": 2830723983
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        }
+      ]
+    },
+    {
+      "name": "crc-path3",
+      "raw_rows": "Build/hn-2700-20261103/crc-path3/rows.json",
+      "raw_rows_sha256": "6d1930c5ff931984b22c9f4d053b6d16e26a978db2329926b231336879ab39bb",
+      "raw_summary": {
+        "counts": {
+          "control": [
+            2871024606,
+            2838032343
+          ],
+          "fast": [
+            2835301588,
+            2832551487
+          ]
+        },
+        "maxima": {
+          "control": 2871024606,
+          "fast": 2835301588
+        },
+        "medians": {
+          "control": 2854528474.5,
+          "fast": 2833926537.5
+        },
+        "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+        "target_met": {
+          "control": false,
+          "fast": false
+        },
+        "valid": true
+      },
+      "inputs_sha256": "645e1379e40c70e0d8fe7846119b7ffd402bed9988f580d7668618825680e671",
+      "pinned_files": {
+        "/System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService": {
+          "bytes": 389760,
+          "sha256": "b3cd7c6c6c5091f71e57cdc674b0915bc89b1321593c37507b541d58561d02c3"
+        },
+        "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService": {
+          "bytes": 220272,
+          "sha256": "5827a890d1fe8dcd7e6fd26e5157f1268fdf9e58c08c48c4616bd0a719fc7031"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "bytes": 150024,
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "bytes": 69928,
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "bytes": 102592,
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "bytes": 5150944,
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "bytes": 882592,
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "bytes": 181544,
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "bytes": 335064,
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "bytes": 768872,
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "bytes": 33371048,
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "bytes": 2158624,
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "bytes": 218040,
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "bytes": 202328,
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "bytes": 369272,
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "bytes": 64496,
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "bytes": 245016,
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "bytes": 5744128,
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "bytes": 981792,
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "bytes": 106528,
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "bytes": 798160,
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/crc-checksum-option.dylib": {
+          "bytes": 50888,
+          "sha256": "c20d068ed635135b847d4b52df9b438998e8c5977dc3c238a96d5335a3a4861b"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/run-native-v2.py": {
+          "bytes": 5234,
+          "sha256": "3f21f61d90c65d323b8121741fc21249ff42f104c3ae719b10cc483b1554111d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": {
+          "bytes": 1052,
+          "sha256": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 30308896,
+          "sha256": "eb85a597c30c6fcce7f134592bb74c1bbf5e0328340eb59b52d344134ce0ddbe"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 292976,
+          "sha256": "c56b6d3a1492d3aff87454f947627bbad2d9099166aece8eec922c62e456131c"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 615312,
+          "sha256": "6a0805b0f98d62acf30b44e898505fb9847f88365c5efa8349e0349433c34694"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "bytes": 4398880,
+          "sha256": "d5cde2bb3d9476637093091206216bd74a21a893646af74e6bae117aaacfd76f"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "bytes": 13037232,
+          "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "bytes": 2192096,
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": {
+          "bytes": 62313,
+          "sha256": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": {
+          "bytes": 50851,
+          "sha256": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/expected/hacker-news-home-instructions.png": {
+          "bytes": 435812,
+          "sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363": {
+          "bytes": 43,
+          "sha256": "2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0": {
+          "bytes": 5217,
+          "sha256": "2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8": {
+          "bytes": 131,
+          "sha256": "3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53": {
+          "bytes": 34803,
+          "sha256": "d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5": {
+          "bytes": 7418,
+          "sha256": "de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff": {
+          "bytes": 315,
+          "sha256": "e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/manifest.json": {
+          "bytes": 11878,
+          "sha256": "e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0"
+        },
+        "/Users/alex/code/vox2/tools/capture_brave_reference.py": {
+          "bytes": 17162,
+          "sha256": "e001eaeb77e6e954ba20a4b53e0162cb533246ce2e236f111f12b9b1ff04a319"
+        },
+        "/Users/alex/code/vox2/tools/check_pixel_equality.py": {
+          "bytes": 2012,
+          "sha256": "45bfa1838328c1b7d165364fce76afc09af4850dfcd22afed62db14b43891b6b"
+        },
+        "/Users/alex/code/vox2/tools/coalition_instruction_counts.py": {
+          "bytes": 6468,
+          "sha256": "6dfe26ca64384a8e0bd4606c6e1e5170d57bb9fc04246c5ecd20c715421c9bc0"
+        },
+        "/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py": {
+          "bytes": 49268,
+          "sha256": "be3b90a66ff671d5dabe114c16ca586317d0d1b250e7d427caa655cb600beab8"
+        },
+        "/Users/alex/code/vox2/tools/linux_instruction_counts.py": {
+          "bytes": 18012,
+          "sha256": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227"
+        },
+        "/Users/alex/code/vox2/tools/measure_browser_instructions.py": {
+          "bytes": 43318,
+          "sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e"
+        },
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": {
+          "bytes": 24935,
+          "sha256": "10adec0600ce137a705182aa52a6cb9c324805764d27a1cf6d273a1637e1afb9"
+        },
+        "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": {
+          "bytes": 48663,
+          "sha256": "087c623f738b0a192373c48bdf0ca05a54aaf005f4aef102f2d6ab21a9e4895d"
+        },
+        "/Users/alex/code/vox2/tools/page_archive.py": {
+          "bytes": 16133,
+          "sha256": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c"
+        },
+        "/Users/alex/code/vox2/tools/pikabu_browser_instructions.py": {
+          "bytes": 28165,
+          "sha256": "f33238a06cb0ad38d6c4391248286dd451c034584c7c19a79d6aca71038cc8fe"
+        },
+        "/Users/alex/code/vox2/tools/probe_frozen_github_chrome.py": {
+          "bytes": 10170,
+          "sha256": "d6652e8d6e980768c68b622d7049a607abe7a186bf2992d82a723a3fafeb729b"
+        },
+        "/Users/alex/code/vox2/tools/process_instruction_counts.py": {
+          "bytes": 10735,
+          "sha256": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+        },
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": {
+          "bytes": 8493,
+          "sha256": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "/Users/alex/code/vox2/tools/seal_github_instruction_fixture.py": {
+          "bytes": 16214,
+          "sha256": "d0d8cdd7f788e6e90ba47b7e7b9d41f77111a18110a8a572f9a4ead089ac9070"
+        },
+        "/Users/alex/code/vox2/tools/test_native_snapshot_png.py": {
+          "bytes": 7106,
+          "sha256": "7f64b603a3af2579859b0ecc08a9cc62cd91de0e68ee94008ce2bbb800b4217d"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libEGL.dylib": {
+          "bytes": 111312,
+          "sha256": "aea6167b43c3e7597c857ea8cdbbaa913d80a89eb140dabb8e6360af01d5ddef"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libGLESv2.dylib": {
+          "bytes": 9454608,
+          "sha256": "6ae0bf6748fdf0484766bc0116599f9a9ac5bc907a5b5479f808d35568e357d6"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "bytes": 150128,
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "bytes": 70128,
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962"
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "bytes": 661248,
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7"
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "bytes": 212080,
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58"
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "bytes": 1362736,
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959"
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "bytes": 1427648,
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "bytes": 33833472,
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "bytes": 1885104,
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7"
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "bytes": 191344,
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2"
+        },
+        "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": {
+          "bytes": 4813232,
+          "sha256": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d"
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "bytes": 574096,
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd"
+        }
+      },
+      "executable_sha256": "eb85a597c30c6fcce7f134592bb74c1bbf5e0328340eb59b52d344134ce0ddbe",
+      "production_receipt": {
+        "path": "Build/production-build/receipts/20261103-085631-047a24f1/result.json",
+        "sha256": "1ed19d99141c8a064638e258cc83a67ea7e885bb8b8392a3e9df4ac9af3fcd6c",
+        "inputs": {
+          "build_inputs_sha256": "6ecf8560a6592426c9e81d1e86463f6d376beada55dd31a4560438ede64dce4a",
+          "dirty": true,
+          "head": "a4bfdeede5db8f558649646a5c505f1623a53d31",
+          "repository_sha256": "afdaf28eee7f96a594e5b9efab054019e273e76968b58f0de3c1e4d915fe684a"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "6ecf8560a6592426c9e81d1e86463f6d376beada55dd31a4560438ede64dce4a",
+          "dirty": true,
+          "head": "5fc8829e099dd9e2c1ca1acde0b987f9ae6f39d3",
+          "repository_sha256": "afdaf28eee7f96a594e5b9efab054019e273e76968b58f0de3c1e4d915fe684a"
+        },
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-085631-047a24f1/frozen-compile.json"
+      },
+      "trials": [
+        {
+          "pair": 1,
+          "variant": "control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2871024606,
+            "upper": 2871024606
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 1,
+          "variant": "fast",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2835301588,
+            "upper": 2835301588
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "fast",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2832551487,
+            "upper": 2832551487
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2838032343,
+            "upper": 2838032343
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        }
+      ]
+    },
+    {
+      "name": "crc-production-matched",
+      "raw_rows": "Build/hn-2700-20261103/crc-production-matched/rows.json",
+      "raw_rows_sha256": "67e6409a7b76181087a5ce7cfaf32dac9bb1578043a10301841a1f34920d4e06",
+      "raw_summary": {
+        "counts": {
+          "crc-control": [
+            2827960734,
+            2807084734,
+            2809859668,
+            2815239463,
+            2808463493,
+            2807119762,
+            2814155365
+          ],
+          "default": [
+            2805703061,
+            2801994679,
+            2812566441,
+            2803339655,
+            2804458189,
+            2807051512,
+            2801183984
+          ],
+          "single-sync-gc": [
+            2808756103,
+            2790856430,
+            2790423959,
+            2789390887,
+            2801759177,
+            2803457220,
+            2790397954
+          ]
+        },
+        "maxima": {
+          "crc-control": 2827960734,
+          "default": 2812566441,
+          "single-sync-gc": 2808756103
+        },
+        "medians": {
+          "crc-control": 2809859668,
+          "default": 2804458189,
+          "single-sync-gc": 2790856430
+        },
+        "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+        "target_met": {
+          "crc-control": false,
+          "default": false,
+          "single-sync-gc": false
+        },
+        "valid": true
+      },
+      "inputs_sha256": "31d44a920788b1f68567e8d85bd6f1cd5caaaa720d33fec027104f9a101fa72a",
+      "pinned_files": {
+        "/System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService": {
+          "bytes": 389760,
+          "sha256": "b3cd7c6c6c5091f71e57cdc674b0915bc89b1321593c37507b541d58561d02c3"
+        },
+        "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService": {
+          "bytes": 220272,
+          "sha256": "5827a890d1fe8dcd7e6fd26e5157f1268fdf9e58c08c48c4616bd0a719fc7031"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "bytes": 150024,
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "bytes": 69928,
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "bytes": 102592,
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "bytes": 5150944,
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "bytes": 882592,
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "bytes": 181544,
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "bytes": 335064,
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "bytes": 768872,
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "bytes": 33371048,
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "bytes": 2158624,
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "bytes": 218040,
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "bytes": 202328,
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "bytes": 369272,
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "bytes": 64496,
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "bytes": 245016,
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "bytes": 5744128,
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "bytes": 981792,
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "bytes": 106528,
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "bytes": 798160,
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/run-native-v2.py": {
+          "bytes": 5234,
+          "sha256": "3f21f61d90c65d323b8121741fc21249ff42f104c3ae719b10cc483b1554111d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": {
+          "bytes": 1052,
+          "sha256": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 30308592,
+          "sha256": "c9ff98ac0d59e91e9a378147d8a62e1130780f2902e994c5bd038cd3c7af68d6"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 292976,
+          "sha256": "5194a7faa870e81f247574a441609c83ac8f49bf021db68a8b02f842c3acdba0"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 615728,
+          "sha256": "e433ab6a7d4d8a34e0c878f9f2f870f5674e255948231c30ad072f773704ba21"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "bytes": 4400608,
+          "sha256": "07ee6729bc6c46ef5bdb1b40f8fe28f33349a866aa7cf9c316d62032cb47d2d2"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "bytes": 13037232,
+          "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "bytes": 2192096,
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": {
+          "bytes": 62313,
+          "sha256": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": {
+          "bytes": 50851,
+          "sha256": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/expected/hacker-news-home-instructions.png": {
+          "bytes": 435812,
+          "sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363": {
+          "bytes": 43,
+          "sha256": "2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0": {
+          "bytes": 5217,
+          "sha256": "2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8": {
+          "bytes": 131,
+          "sha256": "3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53": {
+          "bytes": 34803,
+          "sha256": "d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5": {
+          "bytes": 7418,
+          "sha256": "de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff": {
+          "bytes": 315,
+          "sha256": "e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/manifest.json": {
+          "bytes": 11878,
+          "sha256": "e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0"
+        },
+        "/Users/alex/code/vox2/tools/capture_brave_reference.py": {
+          "bytes": 17162,
+          "sha256": "e001eaeb77e6e954ba20a4b53e0162cb533246ce2e236f111f12b9b1ff04a319"
+        },
+        "/Users/alex/code/vox2/tools/check_pixel_equality.py": {
+          "bytes": 2012,
+          "sha256": "45bfa1838328c1b7d165364fce76afc09af4850dfcd22afed62db14b43891b6b"
+        },
+        "/Users/alex/code/vox2/tools/coalition_instruction_counts.py": {
+          "bytes": 6468,
+          "sha256": "6dfe26ca64384a8e0bd4606c6e1e5170d57bb9fc04246c5ecd20c715421c9bc0"
+        },
+        "/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py": {
+          "bytes": 49268,
+          "sha256": "be3b90a66ff671d5dabe114c16ca586317d0d1b250e7d427caa655cb600beab8"
+        },
+        "/Users/alex/code/vox2/tools/linux_instruction_counts.py": {
+          "bytes": 18012,
+          "sha256": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227"
+        },
+        "/Users/alex/code/vox2/tools/measure_browser_instructions.py": {
+          "bytes": 43318,
+          "sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e"
+        },
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": {
+          "bytes": 24935,
+          "sha256": "10adec0600ce137a705182aa52a6cb9c324805764d27a1cf6d273a1637e1afb9"
+        },
+        "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": {
+          "bytes": 48663,
+          "sha256": "087c623f738b0a192373c48bdf0ca05a54aaf005f4aef102f2d6ab21a9e4895d"
+        },
+        "/Users/alex/code/vox2/tools/page_archive.py": {
+          "bytes": 16133,
+          "sha256": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c"
+        },
+        "/Users/alex/code/vox2/tools/pikabu_browser_instructions.py": {
+          "bytes": 28165,
+          "sha256": "f33238a06cb0ad38d6c4391248286dd451c034584c7c19a79d6aca71038cc8fe"
+        },
+        "/Users/alex/code/vox2/tools/probe_frozen_github_chrome.py": {
+          "bytes": 10170,
+          "sha256": "d6652e8d6e980768c68b622d7049a607abe7a186bf2992d82a723a3fafeb729b"
+        },
+        "/Users/alex/code/vox2/tools/process_instruction_counts.py": {
+          "bytes": 10735,
+          "sha256": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+        },
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": {
+          "bytes": 8493,
+          "sha256": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "/Users/alex/code/vox2/tools/seal_github_instruction_fixture.py": {
+          "bytes": 16214,
+          "sha256": "d0d8cdd7f788e6e90ba47b7e7b9d41f77111a18110a8a572f9a4ead089ac9070"
+        },
+        "/Users/alex/code/vox2/tools/test_native_snapshot_png.py": {
+          "bytes": 7106,
+          "sha256": "7f64b603a3af2579859b0ecc08a9cc62cd91de0e68ee94008ce2bbb800b4217d"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libEGL.dylib": {
+          "bytes": 111312,
+          "sha256": "aea6167b43c3e7597c857ea8cdbbaa913d80a89eb140dabb8e6360af01d5ddef"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libGLESv2.dylib": {
+          "bytes": 9454608,
+          "sha256": "6ae0bf6748fdf0484766bc0116599f9a9ac5bc907a5b5479f808d35568e357d6"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "bytes": 150128,
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "bytes": 70128,
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962"
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "bytes": 661248,
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7"
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "bytes": 212080,
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58"
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "bytes": 1362736,
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959"
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "bytes": 1427648,
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "bytes": 33833472,
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "bytes": 1885104,
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7"
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "bytes": 191344,
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2"
+        },
+        "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": {
+          "bytes": 4813232,
+          "sha256": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d"
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "bytes": 574096,
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd"
+        }
+      },
+      "executable_sha256": "c9ff98ac0d59e91e9a378147d8a62e1130780f2902e994c5bd038cd3c7af68d6",
+      "production_receipt": {
+        "path": "Build/production-build/receipts/20261103-091717-6b3a184e/result.json",
+        "sha256": "7cd4504556c4730f9dbaac21929bf66e25bada98177c783878cacccc1a17b4f3",
+        "inputs": {
+          "build_inputs_sha256": "00510c808be705a22b81616491bb8b70dce2a4d0157a8ade25ed7b3baaff994f",
+          "dirty": true,
+          "head": "7319dd632002cad48f1369772bd9a1022652caf4",
+          "repository_sha256": "00fc266d301506cf44d5e587004fcc2a85ac63a79fcf88fea7735fbfb8a4b1be"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "00510c808be705a22b81616491bb8b70dce2a4d0157a8ade25ed7b3baaff994f",
+          "dirty": true,
+          "head": "7319dd632002cad48f1369772bd9a1022652caf4",
+          "repository_sha256": "00fc266d301506cf44d5e587004fcc2a85ac63a79fcf88fea7735fbfb8a4b1be"
+        },
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-091717-6b3a184e/frozen-compile.json"
+      },
+      "trials": [
+        {
+          "pair": 1,
+          "variant": "crc-control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2827960734,
+            "upper": 2827960734
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 1,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2805703061,
+            "upper": 2805703061
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 1,
+          "variant": "single-sync-gc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2808756103,
+            "upper": 2808756103
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "single-sync-gc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2790856430,
+            "upper": 2790856430
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2801994679,
+            "upper": 2801994679
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "crc-control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2807084734,
+            "upper": 2807084734
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 3,
+          "variant": "crc-control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2809859668,
+            "upper": 2809859668
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 3,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2812566441,
+            "upper": 2812566441
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 3,
+          "variant": "single-sync-gc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2790423959,
+            "upper": 2790423959
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 4,
+          "variant": "single-sync-gc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2789390887,
+            "upper": 2789390887
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 4,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2803339655,
+            "upper": 2803339655
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 4,
+          "variant": "crc-control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2815239463,
+            "upper": 2815239463
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 5,
+          "variant": "crc-control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2808463493,
+            "upper": 2808463493
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 5,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2804458189,
+            "upper": 2804458189
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 5,
+          "variant": "single-sync-gc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2801759177,
+            "upper": 2801759177
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 6,
+          "variant": "single-sync-gc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2803457220,
+            "upper": 2803457220
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 6,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2807051512,
+            "upper": 2807051512
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 6,
+          "variant": "crc-control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2807119762,
+            "upper": 2807119762
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 7,
+          "variant": "crc-control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2814155365,
+            "upper": 2814155365
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 7,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2801183984,
+            "upper": 2801183984
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 7,
+          "variant": "single-sync-gc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2790397954,
+            "upper": 2790397954
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        }
+      ]
+    },
+    {
       "name": "css-phases",
       "raw_rows": "Build/hn-2700-20261103/css-phases/rows.json",
       "raw_rows_sha256": "aed902028af01c315f8fbded79ca8ebb8427a6877f99f008668a8754daf5cd01",
@@ -6928,6 +9003,771 @@
           "interval": {
             "lower": 3050710415,
             "upper": 3050710415
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        }
+      ]
+    },
+    {
+      "name": "eager-bootstrap-path",
+      "raw_rows": "Build/hn-2700-20261103/eager-bootstrap-path/rows.json",
+      "raw_rows_sha256": "5cf5d5de0c70d4ab41c4279648df6e63c017497b003170514a8b626a37b2fc46",
+      "raw_summary": {
+        "counts": {
+          "eager": [
+            2855069000,
+            2881909220
+          ]
+        },
+        "maxima": {
+          "eager": 2881909220
+        },
+        "medians": {
+          "eager": 2868489110.0
+        },
+        "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+        "target_met": {
+          "eager": false
+        },
+        "valid": true
+      },
+      "inputs_sha256": "db975b6f19d14786baf3f4624a2d6583dbb91ccbb23f3baaa1edff9ff0738d8a",
+      "pinned_files": {
+        "/System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService": {
+          "bytes": 389760,
+          "sha256": "b3cd7c6c6c5091f71e57cdc674b0915bc89b1321593c37507b541d58561d02c3"
+        },
+        "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService": {
+          "bytes": 220272,
+          "sha256": "5827a890d1fe8dcd7e6fd26e5157f1268fdf9e58c08c48c4616bd0a719fc7031"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "bytes": 150024,
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "bytes": 69928,
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "bytes": 102592,
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "bytes": 5150944,
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "bytes": 882592,
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "bytes": 181544,
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "bytes": 335064,
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "bytes": 768872,
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "bytes": 33371048,
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "bytes": 2158624,
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "bytes": 218040,
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "bytes": 202328,
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "bytes": 369272,
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "bytes": 64496,
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "bytes": 245016,
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "bytes": 5744128,
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "bytes": 981792,
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "bytes": 106528,
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "bytes": 798160,
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/eager-bootstrap.dylib": {
+          "bytes": 51080,
+          "sha256": "dde3934a63b185e292e89cf0f1934011bece747c6503fad761870c368aba442b"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/run-native-v2.py": {
+          "bytes": 5234,
+          "sha256": "3f21f61d90c65d323b8121741fc21249ff42f104c3ae719b10cc483b1554111d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": {
+          "bytes": 1052,
+          "sha256": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 30308896,
+          "sha256": "eb85a597c30c6fcce7f134592bb74c1bbf5e0328340eb59b52d344134ce0ddbe"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 292976,
+          "sha256": "c56b6d3a1492d3aff87454f947627bbad2d9099166aece8eec922c62e456131c"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 615312,
+          "sha256": "6a0805b0f98d62acf30b44e898505fb9847f88365c5efa8349e0349433c34694"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "bytes": 4398880,
+          "sha256": "d5cde2bb3d9476637093091206216bd74a21a893646af74e6bae117aaacfd76f"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "bytes": 13037232,
+          "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "bytes": 2192096,
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": {
+          "bytes": 62313,
+          "sha256": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": {
+          "bytes": 50851,
+          "sha256": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/expected/hacker-news-home-instructions.png": {
+          "bytes": 435812,
+          "sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363": {
+          "bytes": 43,
+          "sha256": "2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0": {
+          "bytes": 5217,
+          "sha256": "2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8": {
+          "bytes": 131,
+          "sha256": "3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53": {
+          "bytes": 34803,
+          "sha256": "d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5": {
+          "bytes": 7418,
+          "sha256": "de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff": {
+          "bytes": 315,
+          "sha256": "e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/manifest.json": {
+          "bytes": 11878,
+          "sha256": "e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0"
+        },
+        "/Users/alex/code/vox2/tools/capture_brave_reference.py": {
+          "bytes": 17162,
+          "sha256": "e001eaeb77e6e954ba20a4b53e0162cb533246ce2e236f111f12b9b1ff04a319"
+        },
+        "/Users/alex/code/vox2/tools/check_pixel_equality.py": {
+          "bytes": 2012,
+          "sha256": "45bfa1838328c1b7d165364fce76afc09af4850dfcd22afed62db14b43891b6b"
+        },
+        "/Users/alex/code/vox2/tools/coalition_instruction_counts.py": {
+          "bytes": 6468,
+          "sha256": "6dfe26ca64384a8e0bd4606c6e1e5170d57bb9fc04246c5ecd20c715421c9bc0"
+        },
+        "/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py": {
+          "bytes": 49268,
+          "sha256": "be3b90a66ff671d5dabe114c16ca586317d0d1b250e7d427caa655cb600beab8"
+        },
+        "/Users/alex/code/vox2/tools/linux_instruction_counts.py": {
+          "bytes": 18012,
+          "sha256": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227"
+        },
+        "/Users/alex/code/vox2/tools/measure_browser_instructions.py": {
+          "bytes": 43318,
+          "sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e"
+        },
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": {
+          "bytes": 24935,
+          "sha256": "10adec0600ce137a705182aa52a6cb9c324805764d27a1cf6d273a1637e1afb9"
+        },
+        "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": {
+          "bytes": 48663,
+          "sha256": "087c623f738b0a192373c48bdf0ca05a54aaf005f4aef102f2d6ab21a9e4895d"
+        },
+        "/Users/alex/code/vox2/tools/page_archive.py": {
+          "bytes": 16133,
+          "sha256": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c"
+        },
+        "/Users/alex/code/vox2/tools/pikabu_browser_instructions.py": {
+          "bytes": 28165,
+          "sha256": "f33238a06cb0ad38d6c4391248286dd451c034584c7c19a79d6aca71038cc8fe"
+        },
+        "/Users/alex/code/vox2/tools/probe_frozen_github_chrome.py": {
+          "bytes": 10170,
+          "sha256": "d6652e8d6e980768c68b622d7049a607abe7a186bf2992d82a723a3fafeb729b"
+        },
+        "/Users/alex/code/vox2/tools/process_instruction_counts.py": {
+          "bytes": 10735,
+          "sha256": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+        },
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": {
+          "bytes": 8493,
+          "sha256": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "/Users/alex/code/vox2/tools/seal_github_instruction_fixture.py": {
+          "bytes": 16214,
+          "sha256": "d0d8cdd7f788e6e90ba47b7e7b9d41f77111a18110a8a572f9a4ead089ac9070"
+        },
+        "/Users/alex/code/vox2/tools/test_native_snapshot_png.py": {
+          "bytes": 7106,
+          "sha256": "7f64b603a3af2579859b0ecc08a9cc62cd91de0e68ee94008ce2bbb800b4217d"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libEGL.dylib": {
+          "bytes": 111312,
+          "sha256": "aea6167b43c3e7597c857ea8cdbbaa913d80a89eb140dabb8e6360af01d5ddef"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libGLESv2.dylib": {
+          "bytes": 9454608,
+          "sha256": "6ae0bf6748fdf0484766bc0116599f9a9ac5bc907a5b5479f808d35568e357d6"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "bytes": 150128,
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "bytes": 70128,
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962"
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "bytes": 661248,
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7"
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "bytes": 212080,
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58"
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "bytes": 1362736,
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959"
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "bytes": 1427648,
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "bytes": 33833472,
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "bytes": 1885104,
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7"
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "bytes": 191344,
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2"
+        },
+        "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": {
+          "bytes": 4813232,
+          "sha256": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d"
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "bytes": 574096,
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd"
+        }
+      },
+      "executable_sha256": "eb85a597c30c6fcce7f134592bb74c1bbf5e0328340eb59b52d344134ce0ddbe",
+      "production_receipt": {
+        "path": "Build/production-build/receipts/20261103-085631-047a24f1/result.json",
+        "sha256": "1ed19d99141c8a064638e258cc83a67ea7e885bb8b8392a3e9df4ac9af3fcd6c",
+        "inputs": {
+          "build_inputs_sha256": "6ecf8560a6592426c9e81d1e86463f6d376beada55dd31a4560438ede64dce4a",
+          "dirty": true,
+          "head": "a4bfdeede5db8f558649646a5c505f1623a53d31",
+          "repository_sha256": "afdaf28eee7f96a594e5b9efab054019e273e76968b58f0de3c1e4d915fe684a"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "6ecf8560a6592426c9e81d1e86463f6d376beada55dd31a4560438ede64dce4a",
+          "dirty": true,
+          "head": "5fc8829e099dd9e2c1ca1acde0b987f9ae6f39d3",
+          "repository_sha256": "afdaf28eee7f96a594e5b9efab054019e273e76968b58f0de3c1e4d915fe684a"
+        },
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-085631-047a24f1/frozen-compile.json"
+      },
+      "trials": [
+        {
+          "pair": 1,
+          "variant": "eager",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2855069000,
+            "upper": 2855069000
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "eager",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2881909220,
+            "upper": 2881909220
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        }
+      ]
+    },
+    {
+      "name": "eager-bootstrap-pilot",
+      "raw_rows": "Build/hn-2700-20261103/eager-bootstrap-pilot/rows.json",
+      "raw_rows_sha256": "4b37ddc0d16b2ac6685b130dc036a7bc2eb3744b47f7f118adec269b4356556e",
+      "raw_summary": {
+        "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+        "valid": false
+      },
+      "inputs_sha256": "35eea3f3224dd031ab0974dc86aa8b62e41dfd6cc0e1dfe696536fa115d2d491",
+      "pinned_files": {
+        "/System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService": {
+          "bytes": 389760,
+          "sha256": "b3cd7c6c6c5091f71e57cdc674b0915bc89b1321593c37507b541d58561d02c3"
+        },
+        "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService": {
+          "bytes": 220272,
+          "sha256": "5827a890d1fe8dcd7e6fd26e5157f1268fdf9e58c08c48c4616bd0a719fc7031"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "bytes": 150024,
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "bytes": 69928,
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "bytes": 102592,
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "bytes": 5150944,
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "bytes": 882592,
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "bytes": 181544,
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "bytes": 335064,
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "bytes": 768872,
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "bytes": 33371048,
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "bytes": 2158624,
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "bytes": 218040,
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "bytes": 202328,
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "bytes": 369272,
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "bytes": 64496,
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "bytes": 245016,
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "bytes": 5744128,
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "bytes": 981792,
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "bytes": 106528,
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "bytes": 798160,
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/eager-bootstrap.dylib": {
+          "bytes": 51080,
+          "sha256": "dde3934a63b185e292e89cf0f1934011bece747c6503fad761870c368aba442b"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/run-native-v2.py": {
+          "bytes": 5234,
+          "sha256": "3f21f61d90c65d323b8121741fc21249ff42f104c3ae719b10cc483b1554111d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": {
+          "bytes": 1052,
+          "sha256": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 30308896,
+          "sha256": "eb85a597c30c6fcce7f134592bb74c1bbf5e0328340eb59b52d344134ce0ddbe"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 292976,
+          "sha256": "c56b6d3a1492d3aff87454f947627bbad2d9099166aece8eec922c62e456131c"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 615312,
+          "sha256": "6a0805b0f98d62acf30b44e898505fb9847f88365c5efa8349e0349433c34694"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "bytes": 4398880,
+          "sha256": "d5cde2bb3d9476637093091206216bd74a21a893646af74e6bae117aaacfd76f"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "bytes": 13037232,
+          "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "bytes": 2192096,
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": {
+          "bytes": 62313,
+          "sha256": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": {
+          "bytes": 50851,
+          "sha256": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/expected/hacker-news-home-instructions.png": {
+          "bytes": 435812,
+          "sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363": {
+          "bytes": 43,
+          "sha256": "2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0": {
+          "bytes": 5217,
+          "sha256": "2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8": {
+          "bytes": 131,
+          "sha256": "3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53": {
+          "bytes": 34803,
+          "sha256": "d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5": {
+          "bytes": 7418,
+          "sha256": "de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff": {
+          "bytes": 315,
+          "sha256": "e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/manifest.json": {
+          "bytes": 11878,
+          "sha256": "e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0"
+        },
+        "/Users/alex/code/vox2/tools/capture_brave_reference.py": {
+          "bytes": 17162,
+          "sha256": "e001eaeb77e6e954ba20a4b53e0162cb533246ce2e236f111f12b9b1ff04a319"
+        },
+        "/Users/alex/code/vox2/tools/check_pixel_equality.py": {
+          "bytes": 2012,
+          "sha256": "45bfa1838328c1b7d165364fce76afc09af4850dfcd22afed62db14b43891b6b"
+        },
+        "/Users/alex/code/vox2/tools/coalition_instruction_counts.py": {
+          "bytes": 6468,
+          "sha256": "6dfe26ca64384a8e0bd4606c6e1e5170d57bb9fc04246c5ecd20c715421c9bc0"
+        },
+        "/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py": {
+          "bytes": 49268,
+          "sha256": "be3b90a66ff671d5dabe114c16ca586317d0d1b250e7d427caa655cb600beab8"
+        },
+        "/Users/alex/code/vox2/tools/linux_instruction_counts.py": {
+          "bytes": 18012,
+          "sha256": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227"
+        },
+        "/Users/alex/code/vox2/tools/measure_browser_instructions.py": {
+          "bytes": 43318,
+          "sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e"
+        },
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": {
+          "bytes": 24935,
+          "sha256": "10adec0600ce137a705182aa52a6cb9c324805764d27a1cf6d273a1637e1afb9"
+        },
+        "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": {
+          "bytes": 48663,
+          "sha256": "087c623f738b0a192373c48bdf0ca05a54aaf005f4aef102f2d6ab21a9e4895d"
+        },
+        "/Users/alex/code/vox2/tools/page_archive.py": {
+          "bytes": 16133,
+          "sha256": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c"
+        },
+        "/Users/alex/code/vox2/tools/pikabu_browser_instructions.py": {
+          "bytes": 28165,
+          "sha256": "f33238a06cb0ad38d6c4391248286dd451c034584c7c19a79d6aca71038cc8fe"
+        },
+        "/Users/alex/code/vox2/tools/probe_frozen_github_chrome.py": {
+          "bytes": 10170,
+          "sha256": "d6652e8d6e980768c68b622d7049a607abe7a186bf2992d82a723a3fafeb729b"
+        },
+        "/Users/alex/code/vox2/tools/process_instruction_counts.py": {
+          "bytes": 10735,
+          "sha256": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+        },
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": {
+          "bytes": 8493,
+          "sha256": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "/Users/alex/code/vox2/tools/seal_github_instruction_fixture.py": {
+          "bytes": 16214,
+          "sha256": "d0d8cdd7f788e6e90ba47b7e7b9d41f77111a18110a8a572f9a4ead089ac9070"
+        },
+        "/Users/alex/code/vox2/tools/test_native_snapshot_png.py": {
+          "bytes": 7106,
+          "sha256": "7f64b603a3af2579859b0ecc08a9cc62cd91de0e68ee94008ce2bbb800b4217d"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libEGL.dylib": {
+          "bytes": 111312,
+          "sha256": "aea6167b43c3e7597c857ea8cdbbaa913d80a89eb140dabb8e6360af01d5ddef"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libGLESv2.dylib": {
+          "bytes": 9454608,
+          "sha256": "6ae0bf6748fdf0484766bc0116599f9a9ac5bc907a5b5479f808d35568e357d6"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "bytes": 150128,
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "bytes": 70128,
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962"
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "bytes": 661248,
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7"
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "bytes": 212080,
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58"
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "bytes": 1362736,
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959"
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "bytes": 1427648,
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "bytes": 33833472,
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "bytes": 1885104,
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7"
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "bytes": 191344,
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2"
+        },
+        "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": {
+          "bytes": 4813232,
+          "sha256": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d"
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "bytes": 574096,
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd"
+        }
+      },
+      "executable_sha256": "eb85a597c30c6fcce7f134592bb74c1bbf5e0328340eb59b52d344134ce0ddbe",
+      "production_receipt": {
+        "path": "Build/production-build/receipts/20261103-085631-047a24f1/result.json",
+        "sha256": "1ed19d99141c8a064638e258cc83a67ea7e885bb8b8392a3e9df4ac9af3fcd6c",
+        "inputs": {
+          "build_inputs_sha256": "6ecf8560a6592426c9e81d1e86463f6d376beada55dd31a4560438ede64dce4a",
+          "dirty": true,
+          "head": "a4bfdeede5db8f558649646a5c505f1623a53d31",
+          "repository_sha256": "afdaf28eee7f96a594e5b9efab054019e273e76968b58f0de3c1e4d915fe684a"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "6ecf8560a6592426c9e81d1e86463f6d376beada55dd31a4560438ede64dce4a",
+          "dirty": true,
+          "head": "5fc8829e099dd9e2c1ca1acde0b987f9ae6f39d3",
+          "repository_sha256": "afdaf28eee7f96a594e5b9efab054019e273e76968b58f0de3c1e4d915fe684a"
+        },
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-085631-047a24f1/frozen-compile.json"
+      },
+      "trials": [
+        {
+          "pair": 1,
+          "variant": "control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2861704491,
+            "upper": 2861704491
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 1,
+          "variant": "eager",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2849131637,
+            "upper": 2849131637
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "eager",
+          "exit": 1,
+          "error": "A private browser helper is outside its resource coalition",
+          "interval": null,
+          "main_instructions": null,
+          "pixels_exact": null,
+          "content_exact": null,
+          "kernel_exit_status": null,
+          "ownership_passed": null,
+          "png_conformance": null,
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "control",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2855142682,
+            "upper": 2855142682
           },
           "main_instructions": null,
           "pixels_exact": true,
@@ -27995,6 +30835,866 @@
       ]
     },
     {
+      "name": "startup-candidates-matched",
+      "raw_rows": "Build/hn-2700-20261103/startup-candidates-matched/rows.json",
+      "raw_rows_sha256": "a050080976e7cef4d13421ed5aaad1a9b8eea7203deee8604aa759ae60ecd4ea",
+      "raw_summary": {
+        "counts": {
+          "crc": [
+            2823045665,
+            2830160007,
+            2825530122,
+            2826519731,
+            2829900865,
+            2822725131,
+            2822337735
+          ],
+          "default": [
+            2810305692,
+            2803537717,
+            2818971939,
+            2807099437,
+            2811621587,
+            2805376130,
+            2802138825
+          ],
+          "eager": [
+            2852176529,
+            2838790308,
+            2836077908,
+            2839779324,
+            2839138864,
+            2844457796,
+            2838661934
+          ]
+        },
+        "maxima": {
+          "crc": 2830160007,
+          "default": 2818971939,
+          "eager": 2852176529
+        },
+        "medians": {
+          "crc": 2825530122,
+          "default": 2807099437,
+          "eager": 2839138864
+        },
+        "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+        "target_met": {
+          "crc": false,
+          "default": false,
+          "eager": false
+        },
+        "valid": true
+      },
+      "inputs_sha256": "d97edf7d89871f998215bfc41e1123d9ded2a876282efc97085dc8b434d7bdef",
+      "pinned_files": {
+        "/System/Library/Frameworks/Metal.framework/Versions/A/XPCServices/MTLCompilerService.xpc/Contents/MacOS/MTLCompilerService": {
+          "bytes": 389760,
+          "sha256": "b3cd7c6c6c5091f71e57cdc674b0915bc89b1321593c37507b541d58561d02c3"
+        },
+        "/System/Library/PrivateFrameworks/CascadeSets.framework/Versions/A/XPCServices/SetStoreUpdateService.xpc/Contents/MacOS/SetStoreUpdateService": {
+          "bytes": 220272,
+          "sha256": "5827a890d1fe8dcd7e6fd26e5157f1268fdf9e58c08c48c4616bd0a719fc7031"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "bytes": 150024,
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "bytes": 69928,
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "bytes": 102592,
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "bytes": 5150944,
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "bytes": 882592,
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "bytes": 181544,
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "bytes": 335064,
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "bytes": 768872,
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "bytes": 33371048,
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "bytes": 2158624,
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "bytes": 218040,
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "bytes": 202328,
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "bytes": 369272,
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "bytes": 64496,
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "bytes": 245016,
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "bytes": 5744128,
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "bytes": 981792,
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "bytes": 106528,
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "bytes": 798160,
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/crc-arm-option.dylib": {
+          "bytes": 33912,
+          "sha256": "11faa4ef331357bb6dce5d80a604a0c154d31c46a49cd89a86e0d4db2a49fe5b"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/eager-bootstrap.dylib": {
+          "bytes": 51080,
+          "sha256": "dde3934a63b185e292e89cf0f1934011bece747c6503fad761870c368aba442b"
+        },
+        "/Users/alex/code/vox2/Build/hn-2700-20261103/run-native-v2.py": {
+          "bytes": 5234,
+          "sha256": "3f21f61d90c65d323b8121741fc21249ff42f104c3ae719b10cc483b1554111d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Info.plist": {
+          "bytes": 1052,
+          "sha256": "d2b0425744614330ee50ba4f92aed0f06783510dd7416ba2b1e0a45cf7c4a9b9"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "bytes": 30308592,
+          "sha256": "e9deac23254d41499763f0436838ba75fe4e8d1671932b38b19fb79cce68dac5"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "bytes": 292976,
+          "sha256": "c56b6d3a1492d3aff87454f947627bbad2d9099166aece8eec922c62e456131c"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "bytes": 615728,
+          "sha256": "e433ab6a7d4d8a34e0c878f9f2f870f5674e255948231c30ad072f773704ba21"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "bytes": 4398880,
+          "sha256": "d5cde2bb3d9476637093091206216bd74a21a893646af74e6bae117aaacfd76f"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "bytes": 13037232,
+          "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "bytes": 2192096,
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": {
+          "bytes": 62313,
+          "sha256": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899"
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": {
+          "bytes": 50851,
+          "sha256": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/expected/hacker-news-home-instructions.png": {
+          "bytes": 435812,
+          "sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363": {
+          "bytes": 43,
+          "sha256": "2dfe28cbdb83f01c940de6a88ab86200154fd772d568035ac568664e52068363"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0": {
+          "bytes": 5217,
+          "sha256": "2e38ff883bd36dc4cc26f129f19169b0357cf32059988c926a4f73e5bfaa37f0"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8": {
+          "bytes": 131,
+          "sha256": "3e155f895282e786a1a3c540eba727b4f04865eccbdad5dac17b3c2e184a5bd8"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53": {
+          "bytes": 34803,
+          "sha256": "d5e63157ceadf74ed71d03dcce668588521fb18cf7479acf27c6c74344b2fc53"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5": {
+          "bytes": 7418,
+          "sha256": "de4722818cb6e7859a4287ba956bf04973a63ca97318f6d4c4f44d55e7d454b5"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/bodies/e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff": {
+          "bytes": 315,
+          "sha256": "e1b6622b6ea15f1f48dfda6e720265cd426981d2a7ae1f9d7ddeb8409897c6ff"
+        },
+        "/Users/alex/code/vox2/Tests/Browser/Brave/hn-home-instructions/manifest.json": {
+          "bytes": 11878,
+          "sha256": "e1425162ca7c3373275914a5e7373f4a6a240ae4ce05d3160cf7039371c63ce0"
+        },
+        "/Users/alex/code/vox2/tools/capture_brave_reference.py": {
+          "bytes": 17162,
+          "sha256": "e001eaeb77e6e954ba20a4b53e0162cb533246ce2e236f111f12b9b1ff04a319"
+        },
+        "/Users/alex/code/vox2/tools/check_pixel_equality.py": {
+          "bytes": 2012,
+          "sha256": "45bfa1838328c1b7d165364fce76afc09af4850dfcd22afed62db14b43891b6b"
+        },
+        "/Users/alex/code/vox2/tools/coalition_instruction_counts.py": {
+          "bytes": 6468,
+          "sha256": "6dfe26ca64384a8e0bd4606c6e1e5170d57bb9fc04246c5ecd20c715421c9bc0"
+        },
+        "/Users/alex/code/vox2/tools/hacker_news_browser_instructions.py": {
+          "bytes": 49268,
+          "sha256": "be3b90a66ff671d5dabe114c16ca586317d0d1b250e7d427caa655cb600beab8"
+        },
+        "/Users/alex/code/vox2/tools/linux_instruction_counts.py": {
+          "bytes": 18012,
+          "sha256": "7fdb36fccc8043cb2ddc0ec3bb190970c93fc4bfd6e9bef0811b5b1db3f19227"
+        },
+        "/Users/alex/code/vox2/tools/measure_browser_instructions.py": {
+          "bytes": 43318,
+          "sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e"
+        },
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": {
+          "bytes": 24935,
+          "sha256": "10adec0600ce137a705182aa52a6cb9c324805764d27a1cf6d273a1637e1afb9"
+        },
+        "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": {
+          "bytes": 48663,
+          "sha256": "087c623f738b0a192373c48bdf0ca05a54aaf005f4aef102f2d6ab21a9e4895d"
+        },
+        "/Users/alex/code/vox2/tools/page_archive.py": {
+          "bytes": 16133,
+          "sha256": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c"
+        },
+        "/Users/alex/code/vox2/tools/pikabu_browser_instructions.py": {
+          "bytes": 28165,
+          "sha256": "f33238a06cb0ad38d6c4391248286dd451c034584c7c19a79d6aca71038cc8fe"
+        },
+        "/Users/alex/code/vox2/tools/probe_frozen_github_chrome.py": {
+          "bytes": 10170,
+          "sha256": "d6652e8d6e980768c68b622d7049a607abe7a186bf2992d82a723a3fafeb729b"
+        },
+        "/Users/alex/code/vox2/tools/process_instruction_counts.py": {
+          "bytes": 10735,
+          "sha256": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c"
+        },
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": {
+          "bytes": 8493,
+          "sha256": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+        },
+        "/Users/alex/code/vox2/tools/seal_github_instruction_fixture.py": {
+          "bytes": 16214,
+          "sha256": "d0d8cdd7f788e6e90ba47b7e7b9d41f77111a18110a8a572f9a4ead089ac9070"
+        },
+        "/Users/alex/code/vox2/tools/test_native_snapshot_png.py": {
+          "bytes": 7106,
+          "sha256": "7f64b603a3af2579859b0ecc08a9cc62cd91de0e68ee94008ce2bbb800b4217d"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libEGL.dylib": {
+          "bytes": 111312,
+          "sha256": "aea6167b43c3e7597c857ea8cdbbaa913d80a89eb140dabb8e6360af01d5ddef"
+        },
+        "/opt/homebrew/Cellar/angle/1.0.16/lib/libGLESv2.dylib": {
+          "bytes": 9454608,
+          "sha256": "6ae0bf6748fdf0484766bc0116599f9a9ac5bc907a5b5479f808d35568e357d6"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "bytes": 150128,
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927"
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "bytes": 70128,
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962"
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "bytes": 661248,
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7"
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "bytes": 212080,
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58"
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "bytes": 1362736,
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959"
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "bytes": 1427648,
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "bytes": 33833472,
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618"
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "bytes": 1885104,
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7"
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "bytes": 191344,
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2"
+        },
+        "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": {
+          "bytes": 4813232,
+          "sha256": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d"
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "bytes": 574096,
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd"
+        }
+      },
+      "executable_sha256": "e9deac23254d41499763f0436838ba75fe4e8d1671932b38b19fb79cce68dac5",
+      "production_receipt": {
+        "path": "Build/production-build/receipts/20261103-090239-9d1c7c6d/result.json",
+        "sha256": "f36793a7d0a13f1c5e204cb78bc49fb9a1fa495e2eaddc9ae63a0149d9c8bf3a",
+        "inputs": {
+          "build_inputs_sha256": "d7a6eb7d46e2b8f8aca789022283091c9c47bcfaa0c686af92bf04c7667b9e60",
+          "dirty": true,
+          "head": "52fe6615607b5a366bbfe38b44ff833c34370d0d",
+          "repository_sha256": "339da4c9a661d29af0e8500235a89ce3928f3a05f9011a6aba87f2a2d66acb38"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "d7a6eb7d46e2b8f8aca789022283091c9c47bcfaa0c686af92bf04c7667b9e60",
+          "dirty": true,
+          "head": "2dd94407ce5ceb3b290ba49c7b37ce9eb16b35e4",
+          "repository_sha256": "339da4c9a661d29af0e8500235a89ce3928f3a05f9011a6aba87f2a2d66acb38"
+        },
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-090239-9d1c7c6d/frozen-compile.json"
+      },
+      "trials": [
+        {
+          "pair": 1,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2810305692,
+            "upper": 2810305692
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 1,
+          "variant": "crc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2823045665,
+            "upper": 2823045665
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 1,
+          "variant": "eager",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2852176529,
+            "upper": 2852176529
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "eager",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2838790308,
+            "upper": 2838790308
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "crc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2830160007,
+            "upper": 2830160007
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 2,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2803537717,
+            "upper": 2803537717
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 3,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2818971939,
+            "upper": 2818971939
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 3,
+          "variant": "crc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2825530122,
+            "upper": 2825530122
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 3,
+          "variant": "eager",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2836077908,
+            "upper": 2836077908
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 4,
+          "variant": "eager",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2839779324,
+            "upper": 2839779324
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 4,
+          "variant": "crc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2826519731,
+            "upper": 2826519731
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 4,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2807099437,
+            "upper": 2807099437
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 5,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2811621587,
+            "upper": 2811621587
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 5,
+          "variant": "crc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2829900865,
+            "upper": 2829900865
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 5,
+          "variant": "eager",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2839138864,
+            "upper": 2839138864
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 6,
+          "variant": "eager",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2844457796,
+            "upper": 2844457796
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 6,
+          "variant": "crc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2822725131,
+            "upper": 2822725131
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 6,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2805376130,
+            "upper": 2805376130
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 7,
+          "variant": "default",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2802138825,
+            "upper": 2802138825
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 7,
+          "variant": "crc",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2822337735,
+            "upper": 2822337735
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        },
+        {
+          "pair": 7,
+          "variant": "eager",
+          "exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 2838661934,
+            "upper": 2838661934
+          },
+          "main_instructions": null,
+          "pixels_exact": true,
+          "content_exact": true,
+          "kernel_exit_status": 0,
+          "ownership_passed": true,
+          "png_conformance": {
+            "density_exact": true,
+            "metadata_exact": true,
+            "passed": true,
+            "pixels_exact": true,
+            "profile_exact": true,
+            "unfiltered_rows": true
+          },
+          "unchanged": null
+        }
+      ]
+    },
+    {
       "name": "style-update-path",
       "raw_rows": "Build/hn-2700-20261103/style-update-path/rows.json",
       "raw_rows_sha256": "a1b31e661241d30e2cf54bd53983972af5798a8a7891e2a801bb4875b50aa74c",
@@ -31236,6 +34936,26 @@
   ],
   "guards": [
     {
+      "path": "Build/hn-2700-absolute-font-size-typecheck.json",
+      "sha256": "5886d1514c4c53af78a33637b54a054b03fb4123561ecd76d1d8ab4106ce7f13",
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-shared",
+        "-check",
+        "css"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 1573847040,
+      "elapsed": 4.012817167000001,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
       "path": "Build/hn-2700-allocator-pilot.json",
       "sha256": "b2055dc0cb2603112c2883eb43933b27c4f7b754fd8a94e4b8d92c029143df0e",
       "command": [
@@ -31398,6 +35118,44 @@
       "adoption_error": null
     },
     {
+      "path": "Build/hn-2700-bootstrap-phases-build.json",
+      "sha256": "4f032c601b501c1c61d8975888ad7988aed0baaa9e4ff052f807c555670190b3",
+      "command": [
+        "clang",
+        "-O2",
+        "-dynamiclib",
+        "-framework",
+        "JavaScriptCore",
+        "Build/hn-2700-20261103/bootstrap-phases.c",
+        "-o",
+        "Build/hn-2700-20261103/bootstrap-phases.dylib"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 3604480,
+      "elapsed": 0.16081941700000002,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-bootstrap-phases-path.json",
+      "sha256": "6cb6da94077193995906fb749fef05de16a78959e9332d7d15db94bdf7c195f5",
+      "command": [
+        "python3",
+        "Build/hn-2700-20261103/run-native-v2.py",
+        "bootstrap-phases-path",
+        "2"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 12884901888,
+      "peak_rss": 351748096,
+      "elapsed": 7.911981917,
+      "adopted_processes": 4,
+      "adoption_error": null
+    },
+    {
       "path": "Build/hn-2700-button-style-build.json",
       "sha256": "de114a3a8fdbfe3321a84566c52e3f8eb105d8e937ed155df58709732be5b195",
       "command": [
@@ -31434,6 +35192,46 @@
       "peak_rss": 432324608,
       "elapsed": 16.579827417,
       "adopted_processes": 8,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-cascade-entry-typecheck.json",
+      "sha256": "bce32e86577110aceaeb0de5938b159727fdcbb73ee3e31a70e788bc1a584fd9",
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-shared",
+        "-check",
+        "css"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 1553465344,
+      "elapsed": 3.59545175,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-cascade-recycled-entry-typecheck.json",
+      "sha256": "1b1cc91666d14d81ae4ad92042a57a08a272b30b6eafe05dc4e2239667efe3e2",
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-shared",
+        "-check",
+        "css"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 1535295488,
+      "elapsed": 3.8296445,
+      "adopted_processes": 0,
       "adoption_error": null
     },
     {
@@ -31732,6 +35530,251 @@
       "adoption_error": null
     },
     {
+      "path": "Build/hn-2700-crc-arm-build.json",
+      "sha256": "48d58c8ade9a9c7626e7e14cc4aef7ef9d8f21ebca85c1bfed768ed8a3bdb467",
+      "command": [
+        "clang",
+        "-O2",
+        "-dynamiclib",
+        "Build/hn-2700-20261103/crc-arm-option.c",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+        "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+        "-o",
+        "Build/hn-2700-20261103/crc-arm-option.dylib"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 3260416,
+      "elapsed": 0.171545917,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crc-arm-path.json",
+      "sha256": "026de1e82d28d4aa59433ec764ecac2ea85e09303a2341e5c774020a9baa0703",
+      "command": [
+        "python3",
+        "Build/hn-2700-20261103/run-native-v2.py",
+        "crc-arm-path",
+        "2"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 12884901888,
+      "peak_rss": 375701504,
+      "elapsed": 13.907033292000001,
+      "adopted_processes": 8,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crc-option-build.json",
+      "sha256": "4665c330eaabff772a65f694c848c3fc5e0f44e6acce52314940de585e23810a",
+      "command": [
+        "clang",
+        "-O2",
+        "-dynamiclib",
+        "-I/Users/alex/code/vox2/Build/deps/libdeflate-1.24/libdeflate-1.24",
+        "Build/hn-2700-20261103/crc-checksum-option.c",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+        "Build/deps/libdeflate-1.24/snapshot-build/libdeflate.a",
+        "-o",
+        "Build/hn-2700-20261103/crc-checksum-option.dylib"
+      ],
+      "reason": "completed",
+      "child_exit": 1,
+      "limit": 3221225472,
+      "peak_rss": 3342336,
+      "elapsed": 0.1692375,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crc-option-build2.json",
+      "sha256": "15247ae657757c37cf1a5a80bd544301fbdc29ba09087c887e9edc201c456e4c",
+      "command": [
+        "clang",
+        "-O2",
+        "-dynamiclib",
+        "-I/Users/alex/code/vox2/Build/deps/libdeflate-1.24/libdeflate-1.24",
+        "Build/hn-2700-20261103/crc-checksum-option.c",
+        "Build/deps/libdeflate-1.24/libdeflate-1.24/lib/crc32.c",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+        "Build/deps/libdeflate-1.24/snapshot-build/libdeflate.a",
+        "-o",
+        "Build/hn-2700-20261103/crc-checksum-option.dylib"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 3555328,
+      "elapsed": 0.17106412499999998,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crc-option-build3.json",
+      "sha256": "ba8a439b192f3b02acf2738495a7c5896fb269cb5f0e3b2075f330d840655ff6",
+      "command": [
+        "clang",
+        "-O2",
+        "-dynamiclib",
+        "-I/Users/alex/code/vox2/Build/deps/libdeflate-1.24/libdeflate-1.24",
+        "Build/hn-2700-20261103/crc-checksum-option.c",
+        "Build/deps/libdeflate-1.24/libdeflate-1.24/lib/crc32.c",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+        "Build/deps/libdeflate-1.24/snapshot-build/libdeflate.a",
+        "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+        "-o",
+        "Build/hn-2700-20261103/crc-checksum-option.dylib"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 16007168,
+      "elapsed": 0.171705208,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crc-path.json",
+      "sha256": "c753166861076f328a59ba58591e919f7eb7798604b27ea270c908db6ab7a4f3",
+      "command": [
+        "python3",
+        "Build/hn-2700-20261103/run-native-v2.py",
+        "crc-path",
+        "2"
+      ],
+      "reason": "completed",
+      "child_exit": 1,
+      "limit": 12884901888,
+      "peak_rss": 27525120,
+      "elapsed": 0.7701181669999999,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crc-path2.json",
+      "sha256": "e90bc221076f2c20a2d8f3b8f6395d304615d594ef0a064dad739e0ba3e28a29",
+      "command": [
+        "python3",
+        "Build/hn-2700-20261103/run-native-v2.py",
+        "crc-path2",
+        "2"
+      ],
+      "reason": "completed",
+      "child_exit": 1,
+      "limit": 12884901888,
+      "peak_rss": 29523968,
+      "elapsed": 0.773818459,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crc-path3.json",
+      "sha256": "fac1db9d2393d2b26cb544f0a6b18a3fec435f2603749fbd0e0beb1395554e80",
+      "command": [
+        "python3",
+        "Build/hn-2700-20261103/run-native-v2.py",
+        "crc-path3",
+        "2"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 12884901888,
+      "peak_rss": 394330112,
+      "elapsed": 13.927938875,
+      "adopted_processes": 8,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crc-production-matched.json",
+      "sha256": "681de701502509a0ebbe413062506b578df7456f09000678216cec86a8ca4873",
+      "command": [
+        "python3",
+        "Build/hn-2700-20261103/run-native-v2.py",
+        "crc-production-matched",
+        "7"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 12884901888,
+      "peak_rss": 449298432,
+      "elapsed": 67.092202,
+      "adopted_processes": 42,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crypto-headers-compile.json",
+      "sha256": "b4fa427b4c6b8d5bcb7d1191896017a4ca32936193ddd9e533d86dbf56690bab",
+      "command": [
+        "clang",
+        "-fsyntax-only",
+        "-I/opt/homebrew/opt/openssl@4/include",
+        "Build/hn-2700-20261103/crypto-headers.c"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 3407872,
+      "elapsed": 0.165121334,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crypto-link-coverage-build.json",
+      "sha256": "9abbceb1c67fbb0698ad9d2ea15e77d10790dd4d471bf922c5253a8dac2dc33e",
+      "command": [
+        "clang",
+        "-O2",
+        "-dynamiclib",
+        "-I/opt/homebrew/opt/openssl@4/include",
+        "Build/hn-2700-20261103/crypto-link-coverage.c",
+        "-o",
+        "Build/hn-2700-20261103/crypto-link-coverage.dylib"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 67469312,
+      "elapsed": 0.28543470800000004,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crypto-load-build.json",
+      "sha256": "6341cc9b07672a3a4130f1fb5511c590620789125d1070e19e744346515f1720",
+      "command": [
+        "clang",
+        "-O2",
+        "Build/hn-2700-20261103/crypto-load-cost.c",
+        "-o",
+        "Build/hn-2700-20261103/crypto-load-cost"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 3555328,
+      "elapsed": 0.16259,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-crypto-load-cost.json",
+      "sha256": "b6d8328aaa954815627850008238649624c8b9a0d8b7366073f953e390341a11",
+      "command": [
+        "Build/hn-2700-20261103/crypto-load-cost",
+        "/opt/homebrew/opt/openssl@4/lib/libcrypto.4.dylib"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 32768,
+      "elapsed": 0.627270083,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
       "path": "Build/hn-2700-css-diagnostic-compile-v2.json",
       "sha256": "e19c2c2d40b686d1cd2f02cff57eebbae1c11a156e66b948f928cf90acc11678",
       "command": [
@@ -31933,6 +35976,61 @@
       "peak_rss": 553418752,
       "elapsed": 4.455605458,
       "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-eager-bootstrap-build.json",
+      "sha256": "1de77a852a2a8b511be1aa592784830d491df5eea51fc89ebeca5934e7eee355",
+      "command": [
+        "clang",
+        "-O2",
+        "-dynamiclib",
+        "-framework",
+        "JavaScriptCore",
+        "Build/hn-2700-20261103/eager-bootstrap.c",
+        "-o",
+        "Build/hn-2700-20261103/eager-bootstrap.dylib"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 3571712,
+      "elapsed": 0.197592917,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-eager-bootstrap-path.json",
+      "sha256": "5e2ca40667162add4be41a009ab5e16e7207fa01045345442821f7bcf8f452c9",
+      "command": [
+        "python3",
+        "Build/hn-2700-20261103/run-native-v2.py",
+        "eager-bootstrap-path",
+        "2"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 12884901888,
+      "peak_rss": 379076608,
+      "elapsed": 8.434450834,
+      "adopted_processes": 4,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-eager-bootstrap-pilot.json",
+      "sha256": "f4c3d5ed30e7b136565bbb6b784f237d1acb2adc914900555939f21e98748bef",
+      "command": [
+        "python3",
+        "Build/hn-2700-20261103/run-native-v2.py",
+        "eager-bootstrap-pilot",
+        "2"
+      ],
+      "reason": "completed",
+      "child_exit": 1,
+      "limit": 12884901888,
+      "peak_rss": 408797184,
+      "elapsed": 11.269653250000001,
+      "adopted_processes": 7,
       "adoption_error": null
     },
     {
@@ -32945,6 +37043,48 @@
       "adoption_error": null
     },
     {
+      "path": "Build/hn-2700-map-slot-compile.json",
+      "sha256": "6833037dc9689c28a7b0fd3ad833af4bd4cbab161114549d2d378c26a71f2e5f",
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-gc",
+        "none",
+        "-o",
+        "Build/hn-2700-20261103/map-slot-diagnostic.c",
+        "Build/hn-2700-20261103/map-slot-diagnostic.v"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 85917696,
+      "elapsed": 0.283576208,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
+      "path": "Build/hn-2700-map-slot-compile2.json",
+      "sha256": "713ede4e8263939b31d53d22dec7fc7f84fb708c739af8bdaa5fd23cd6a62e83",
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-gc",
+        "none",
+        "-o",
+        "Build/hn-2700-20261103/map-slot-diagnostic.c",
+        "Build/hn-2700-20261103/map-slot-diagnostic.v"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 86409216,
+      "elapsed": 0.281802,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
       "path": "Build/hn-2700-member-costs-path.json",
       "sha256": "4600c099cc7ca9dfa10252a3b5f99c544032603db6b1d527b3a528b05c9ae15d",
       "command": [
@@ -33695,6 +37835,23 @@
       "adoption_error": null
     },
     {
+      "path": "Build/hn-2700-startup-candidates-matched.json",
+      "sha256": "5969ab303df32a66cc447b29831cb250a1643d4e058c088b8da6eecf53437eed",
+      "command": [
+        "python3",
+        "Build/hn-2700-20261103/run-native-v2.py",
+        "startup-candidates-matched",
+        "7"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 12884901888,
+      "peak_rss": 461602816,
+      "elapsed": 66.757213084,
+      "adopted_processes": 42,
+      "adoption_error": null
+    },
+    {
       "path": "Build/hn-2700-startup-phases-build.json",
       "sha256": "0bac4f5e8fcf6ce6913bdb644ab1926fe5a48311e8b6ee9979cb9f8bc6d68e5d",
       "command": [
@@ -33995,6 +38152,26 @@
       "adoption_error": null
     },
     {
+      "path": "Build/hn-2700-webcrypto-typecheck.json",
+      "sha256": "b32989731b887d170384ea126097025de72c7079d8495c6b4f7fc3001e8e0a2f",
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-shared",
+        "-check",
+        "webcrypto"
+      ],
+      "reason": "completed",
+      "child_exit": 0,
+      "limit": 3221225472,
+      "peak_rss": 351027200,
+      "elapsed": 0.879915125,
+      "adopted_processes": 0,
+      "adoption_error": null
+    },
+    {
       "path": "Build/hn-2700-webgl-lazy-pilot.json",
       "sha256": "fb2ef2abe198d0ad97ba3b8a452c99e3587f5bf831c4a2a0404a0bd43ca7a5e1",
       "command": [
@@ -34083,6 +38260,8 @@
     "compiler-css-diagnostic",
     "compiler-css-diagnostic-v2",
     "compressor-pilot",
+    "crc-path",
+    "crc-path2",
     "direct-glyph-copy",
     "direct-glyph-surface",
     "direct-glyph-surface-bgra",
