@@ -1,0 +1,355 @@
+{
+  "date": "2026-11-03",
+  "implementation_commits": [
+    "876446e0b",
+    "9f8dd0c89"
+  ],
+  "scope": "Default screenshot layout now uses requested display density for HTML and inline SVG. Original frozen guest page only; no live, functional Retina or performance acceptance.",
+  "source": {
+    "identity": {
+      "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/source-33/browser": "9257f9decfb10d6109c1fdc3b517dd4c14d856f122b85cfc1937a234cc671e46"
+    },
+    "build": {
+      "exit": 0,
+      "stable": true,
+      "changed": [],
+      "inputs": {
+        "/Users/alex/code/vox2/main.v": "3e378c3e47089b57ed60bc044628d6ef99792f14ac1b8098a7b3a779c657c4f8",
+        "/Users/alex/code/vox2/main_device_layout.v": "69e949b8a7b54e452cb9a97a6638dd18fc16462bc45a455bbf9cba4a9de81958",
+        "/Users/alex/code/vox2/css/device_layout_style.v": "99b4d8c3c2c20368c9d8f160218f5ce43c56d332d41663067bcc1abbc8500824",
+        "/Users/alex/code/vox2/css/font_face_values.v": "b73958563c204f70811d90c7bc412ca35c4c04d4b5010f1c975b10c33a2a17d0",
+        "/Users/alex/code/vox2/platform/font_plugin.v": "462bbdf09679834f68a358086303e7f3437fd2450fc5801587fa43676bc80b8e",
+        "/Users/alex/code/vox2/layout/chromium_raster_layers.v": "f8ab92ec4d0d911ce10d9e37323f881080fbc239ff69d87282f2799f735d7bd4",
+        "/Users/alex/code/vox2/native_skia_text_darwin.cpp": "2363a8270d3ae047916c0e42d53af87a91d6a362bfd76522424371c5d2ba8338"
+      }
+    },
+    "guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+        "-no-parallel",
+        "-b",
+        "c",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-d",
+        "vox_production",
+        "-d",
+        "vox_ui2",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-cc",
+        "clang",
+        "-nocache",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-skip-running",
+        "-cflags",
+        "-DLADYBIRD_V_HAS_SKIA_TEXT",
+        "-ldflags",
+        "-L/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27 -lLadybirdVSkiaText -Wl,-rpath,/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27 -Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -lc++",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/source-33/browser",
+        "/Users/alex/code/vox2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 6586056704,
+      "elapsed_seconds": 71.324828708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "loaded_libraries": [
+      "dyld[25400]: <5EBBAC50-E121-3BB1-8E7C-052660A5741A> /Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27/libLadybirdVSkiaText.dylib",
+      "dyld[25400]: <5EBBAC50-E121-3BB1-8E7C-052660A5741A> /Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27/libLadybirdVSkiaText.dylib",
+      "dyld[25400]: <1B54AA0D-55F9-38AA-8C6A-14B3006BC322> /Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+      "dyld[25400]: <A124A2D3-DBB6-39C1-A639-1E8201FE9651> /Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib"
+    ],
+    "native_library": {
+      "restored": true,
+      "library_sha256": "4d3149a74e836a82551b330b15a85e0376069ecdd2079b80024611f1fbfc35a6"
+    },
+    "native_patch": {
+      "before": "            local_matrix.preTranslate(s_raster_origin_x, s_raster_origin_y);\n            canvas->setMatrix(local_matrix);\n            local_rect.offset(-s_raster_origin_x, -s_raster_origin_y);\n            if (has_underlay) local_underlay.offset(-s_raster_origin_x, -s_raster_origin_y);",
+      "after": "            double local_origin_x = s_raster_origin_x, local_origin_y = s_raster_origin_y;\n            if (transform_a > 0 && transform_a == transform_d && transform_b == 0 && transform_c == 0) {\n                local_origin_x /= transform_a;\n                local_origin_y /= transform_d;\n                if (transform_a != 1 && transform_e == std::trunc(transform_e)\n                    && transform_f == std::trunc(transform_f)) {\n                    local_rect.offset(transform_e / transform_a, transform_f / transform_d);\n                    if (has_underlay) local_underlay.offset(transform_e / transform_a, transform_f / transform_d);\n                    local_matrix = SkMatrix::MakeAll(transform_a, 0, page_x, 0, transform_d, page_y - scroll_y, 0, 0, 1);\n                }\n            }\n            local_matrix.preTranslate(local_origin_x, local_origin_y);\n            canvas->setMatrix(local_matrix);\n            local_rect.offset(-local_origin_x, -local_origin_y);\n            if (has_underlay) local_underlay.offset(-local_origin_x, -local_origin_y);"
+    },
+    "diagnostic_flags": "No SVG eligibility or screenshot native-layout overrides."
+  },
+  "retina": {
+    "before": {
+      "differing_pixels": 2117,
+      "receipt": "chatgpt-retina-tracking-20261103.json"
+    },
+    "after": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            2048,
+            1536
+          ],
+          "differing_pixels": 21,
+          "max_channel_error": 4,
+          "bounds": [
+            1144,
+            906,
+            2014,
+            1230
+          ],
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+    }
+  },
+  "scale_one": {
+    "results": [
+      {
+        "viewport": [
+          800,
+          600
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 1,
+        "png_size": [
+          800,
+          600
+        ],
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 1,
+        "png_size": [
+          1024,
+          768
+        ],
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1280,
+          800
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 1,
+        "png_size": [
+          1280,
+          800
+        ],
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+  },
+  "svg_mutations": {
+    "results": [
+      {
+        "name": "svg-image-source-switch-same-size",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-0/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-1/actual.png"
+      },
+      {
+        "name": "svg-gradient-in-defs-removed-repaint",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-2/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-3/actual.png"
+      },
+      {
+        "name": "svg-paint-server-hidden-inherited-style-update",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-4/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-5/actual.png"
+      },
+      {
+        "name": "svg/gradient-transform-attribute-update",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-6/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-7/actual.png"
+      },
+      {
+        "name": "svg/pattern-attribute-update",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-8/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-7/actual.png"
+      },
+      {
+        "name": "svg/gradient-stop-move-before",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-9/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-7/actual.png"
+      },
+      {
+        "name": "svg/paint-server-id-collision",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-10/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-7/actual.png"
+      },
+      {
+        "name": "svg/paint-server-html-id-collision",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-11/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-7/actual.png"
+      },
+      {
+        "name": "svg/gradient-href-chain-update",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-12/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/capture-7/actual.png"
+      }
+    ],
+    "inputs_stable": true,
+    "expected_cases": 9,
+    "captures": 13
+  },
+  "focused": {
+    "layout_policy": [
+      {
+        "mode": "default",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "default",
+        "stage": "runtime",
+        "exit": 0
+      },
+      {
+        "mode": "none",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "none",
+        "stage": "runtime",
+        "exit": 0
+      },
+      {
+        "mode": "prealloc",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "prealloc",
+        "stage": "runtime",
+        "exit": 0
+      }
+    ],
+    "layout_policy_stability": {
+      "stable": true,
+      "after": {
+        "main_device_layout.v": "69e949b8a7b54e452cb9a97a6638dd18fc16462bc45a455bbf9cba4a9de81958",
+        "main_device_layout_test.v": "3866293a45a343440805143ae8032e97e16d22e351e1ccd21465638f26c56943"
+      }
+    },
+    "native_space": {
+      "results": [
+        {
+          "name": "control",
+          "exit": 0
+        },
+        {
+          "name": "candidate",
+          "exit": 0
+        }
+      ],
+      "stable": true,
+      "inputs": {
+        "native_skia_text_darwin.cpp": "2363a8270d3ae047916c0e42d53af87a91d6a362bfd76522424371c5d2ba8338",
+        "tools/native_skia_device_rrect_space_test.cpp": "d68bdea63fa0084d66e6361c62dd7077a9d8fdd6ca652d5d90eaad5b76157554"
+      }
+    },
+    "native_regressions": {
+      "results": [
+        {
+          "name": "uniform_border_clip_layer",
+          "exit": 0
+        },
+        {
+          "name": "sticky_rrect_space",
+          "exit": 0
+        }
+      ],
+      "stable": true,
+      "inputs": {
+        "native_skia_text_darwin.cpp": "2b5465a3248dbb1a7e7b9d97e9f8c57575355a2869d91522adeace8b74a491ee",
+        "native_rounded_single_border.h": "896b3142b29eafcbc75a17ab47afcec3aec52dd29b03f17c4459aa428ed7efd3"
+      }
+    }
+  },
+  "evidence_files": {
+    "Build/chatgpt-responsive-20261103/retina-borders-24/default-svg-device-33/inputs.json": "6bffab65506b0ae8345e045b70b4f0aa0394eade4db67f5b8e92f266f55c6c07",
+    "Build/chatgpt-responsive-20261103/retina-borders-24/default-svg-scale1-35/inputs.json": "56333ad509af39b98c8cc1640f4995f0762dda522aa7d592ca8a8ae854f4867d",
+    "Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-default-35/inputs-before.json": "63aa9b7b8a3187069967701da901b902e2785464530b507a947aa06676569ec3",
+    "docs/parity/raw/chatgpt-retina-default-svg-device.png": "64c11870ea5d064692b43231043311e13927ba2083d86e611008d3053db0d1c1"
+  },
+  "limitations": [
+    "21 Retina pixels still differ: 20 rounded-border pixels with maximum channel error 4, and one shadow pixel with error 1.",
+    "Production validation of this policy is pending a completed shared bundle containing the changes.",
+    "Session-bearing frozen HTML remains private in Build. References and tolerance are unchanged."
+  ]
+}
