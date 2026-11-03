@@ -573,6 +573,7 @@ fn layout_absolutely_positioned_descendants(mut state LayoutState, root &Node) {
 	if root.is_absolutely_positioned() {
 		layout_absolutely_positioned_box(mut state, root)
 	}
+	align_block_contents(mut state, root)
 	for child in root.children() {
 		layout_absolutely_positioned_descendants(mut state, child)
 	}

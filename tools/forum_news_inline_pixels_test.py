@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_register_header_uses_block_content_alignment(self):
+        self.compare_fixture('block-content-alignment', width=1024, height=768)
+
     def test_large_logical_compositor_layers_publish_their_bounded_viewport(self):
         self.compare_fixture('compositor-large-logical-layer', width=1024, height=768,
                              settle_seconds=5)
