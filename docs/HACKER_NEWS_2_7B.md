@@ -5,6 +5,68 @@ requires seven complete fresh default-production trials with both median and
 maximum observed coalition instructions at or below that ceiling. The earlier
 [3.2B result](HACKER_NEWS_3_2B.md) remains independently recorded.
 
+The latest complete default-production benchmark (`font-final-matched`,
+executable `7b96605d1ea4d26f7fa565202e6a7b5976a2ddf0064f2aa2ee2dafd346ca6fd9`,
+receipt `20261103-123257-90afe652`) measures **2,743,357,004 median /
+2,747,482,367 maximum**. All 21 captures in its three-arm comparison pass
+pixels, content, PNG stability, ownership, input identity and normal-exit audits.
+Its control and key-only medians are 2,732,051,974 and 2,730,827,883. A bounded
+font-key string cache saves only 1,224,091 between medians; adding parent font
+reuse regresses by 12,529,121. Both prototypes and their authored, unexecuted
+tests have been removed and retained under `rejected-font-caches/`. The last
+default launch overlaps the first HarfBuzz loading diagnostic; this contention
+is retained and prevents clean attribution of that last pair. The full cohort
+misses the target regardless. The restored source needs a fresh default cohort.
+
+An earlier default cohort (`current-default2`, executable
+`98dfbb7c3afab2edc29657540910b8f66d2b3454d98ef9598def8383f442400b`,
+receipt `20261103-120605-b5e5859e`) measures **2,732,796,959 median /
+2,761,467,363 maximum**. All seven launches pass their original pixel/content/
+identity/ownership/exit gates and the current metadata-stability reference.
+This bundle includes two subsequently rejected experiments: absolute font-size
+keywords and deferring an unused capture bitmap allocation. The later complete
+`capture-keywords-matched2` triples measure 2,728,184,571 control,
+2,729,885,374 keyword-only and 2,734,342,675 default medians. The two additions
+regress by 1,700,803 and 4,457,301 respectively, with four and five pair
+regressions. Both are removed. The preceding interrupted cohort is invalid
+because the shared executable changes during pair five; all 13 attempts remain.
+
+Scalar font computation has a complete seven-pair comparison:
+**2,786,028,007 → 2,781,226,985** medians, six improving pairs and one regression.
+The separate `scalar-font-path` diagnostic confirms the ordinary font algorithm
+runs without length-metric setup, with exact output. An initial V sum-type guard
+generated invalid C and failed production builds `112240`, `112823` and
+`112936`; the guard now uses an explicit match and the later production build
+compiles. Those failures remain recorded.
+
+Separately packed numeric network-filter buckets measure
+**2,790,114,724 → 2,783,043,167** medians, five improving pairs and two
+regressions. All fourteen captures are exact. A native diagnostic observes
+zero packed category reads after initialization and 34 after the archived
+requests; all rules and bucket ordering remain available. Private-helper GC
+markers measure **2,804,006,798 → 2,797,206,773** medians in an injected diagnostic,
+with five improving pairs and two regressions. The private helper reports one
+marker, retains concurrent collection and every JIT tier, and preserves explicit
+caller overrides. The synchronous-collection arm supplies no retained setting.
+The packaged helper also links successfully without ICU/Brotli/font libraries,
+using system zlib; no helper runtime suite has been run. These focused changes
+remain pending the deferred regression checks.
+
+A further host-class sharing pilot saves only 1.89M between two-pair medians
+with one regression and is rejected. Warm-up settings of 2,500 and 40,000 add
+32.71M and 2.07M in their two-pair pilots, so the existing 10,000 setting remains.
+A diagnostic relinks the same installed HarfBuzz 15.0.0 static archive and
+retains the reachable OpenType/CoreText/Graphite shaping code. Exact captures
+and loader diagnostics show GLib/gettext/PCRE2 remain unloaded. The first
+seven-pair cohort fails ownership during concurrent BBC captures. The second
+stops after twelve captures because the canonical Hacker News driver changes;
+its proposed independent-capture ownership handling is a concurrent edit and
+must be assessed separately. Neither cohort earns performance credit. Production
+source now selects the same-version archive with its original explicit FreeType
+and Graphite dependencies; the shared build is pending. No new font suite runs.
+The raw first loader diagnostic overlaps the final font-cache trial and is
+instrumented; its counts supply no performance credit.
+
 The resumed session's fresh default cohort (`current-default`, executable
 `406aaa0e2a9130580d16bfcadc8ee08c8b0fa05f59cd9f0ec2ee18383b342808`,
 receipt `20261103-110455-30b1ed31`) measures **2,773,701,537 median /
@@ -33,8 +95,8 @@ this diagnostic earns no default-production target credit. Source and authored,
 unexecuted checks are preserved in the fresh evidence directory, and the cache
 is removed from production source. A separate delayed-startup sampling run
 supplies diagnostic stacks only. Scalar font-property computation and plain
-font-family list restoration now avoid unnecessary length-metric setup in source;
-compilation passes, but production measurement and deferred suites are pending.
+font-family list restoration avoid unnecessary length-metric setup. Their fresh
+matched result is recorded above; regression suites remain deferred.
 
 The scope and correctness gates remain unchanged: exclusive browser coalition
 creation through encoded document PNG availability; archived homepage and all

@@ -46,17 +46,19 @@ separately from the historical paired Vox/Brave row above.
 | --- | ---: | ---: | ---: | --- | --- |
 | Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | 3.2B reached; **2.7B target open** | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
 
-The ongoing 2.7B work has a fresh complete default-production benchmark at
-**2,773,701,537 median / 2,794,997,061 maximum** (2026-11-03). All seven launches
-retain exact original pixels, 30 stories, identity, ownership and normal exits.
-PNG profile/density/metadata remain stable against a newly pinned control PNG;
-the historical Vox PNG and earlier raw `Build/hn-2700-20261103` directory are
-unavailable after shared Build cleanup. The committed historical ledger remains,
-but those missing artifacts cannot be independently rechecked. A bounded glyph
-width cache saves only 2.9M between matched medians with four pair regressions
-and has been removed. The **2.7B target remains open**. Regression suites remain
-deferred by the user's instruction, so the fully validated row above stays
-unchanged. See the [fresh evidence](docs/performance/hn-2700-resume-20261103.json),
+The ongoing 2.7B work's latest complete default-production benchmark is
+**2,743,357,004 median / 2,747,482,367 maximum** (2026-11-03). All seven default
+launches retain exact original pixels, 30 stories, identity, ownership and normal
+exits. Its font-cache prototypes were removed after the matched controls showed
+little gain and a regression; restored-source validation remains pending. The
+last launch overlaps a loading diagnostic, which is recorded as contention.
+The earlier default cohort measured 2,732,796,959 / 2,761,467,363 and includes
+two later-rejected capture/font-keyword experiments. PNG profile/density/metadata
+are stable against a newly pinned control PNG; the historical Vox PNG and earlier
+raw directory are unavailable after shared Build cleanup. The **2.7B target
+remains open**, and regression suites remain deferred by the user's instruction.
+The fully validated row above stays unchanged. See the
+[fresh evidence](docs/performance/hn-2700-resume-20261103.json),
 [progress report](docs/HACKER_NEWS_2_7B.md) and
 [all retained attempts](docs/performance/hn-2700-progress-20261103.json).
 
