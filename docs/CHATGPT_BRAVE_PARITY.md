@@ -2342,3 +2342,37 @@ stable inputs/identities. This establishes full frozen-page rendering parity;
 it does not replace the live scripted pixel gate. The capture helper's inherited
 session-number label is corrected in `brave-frozen-15/route-provenance-note.json`;
 the route receipt and pinned inputs identify session 14 without changing bytes.
+
+## Remaining live layout capability gates
+
+`production-bubble-diagnostic-2/` repeats the successful native conversation
+from an empty initial cookie jar. Its read-only style query leaves the same
+161-pixel difference. The query confirms reduced motion is true and the message
+row has no animation or transform; the earlier animation-state hypothesis is
+therefore not the remaining cause. The helper's inherited cookie label is
+corrected in `cookie-provenance-note.json`; its pinned source constructs an
+empty initial jar.
+
+The native application selects ChatGPT's fallback shell. Its offscreen root
+and grid are 1024 pixels wide; Brave's scroll-driven shell is 1224 pixels wide.
+Both still place the visible main box at `(260, 61)` with width 764.
+`capability-browser-1/` compares actual browser queries: both parse
+`animation-timeline: scroll(root inline)`, but Vox rejects
+`animation-range: 0px 50vw` and lacks Document/Element `onscrollend` properties.
+Brave exposes all three. The original application combines the range query and
+Document property check when choosing the shell, explaining the different
+classes and compositor structure.
+
+`brave-fallback-17/` is a causal diagnostic: it makes only Brave's script-level
+animation-range feature query return false before loading the unchanged
+frontend. The live reply still succeeds, and its root becomes 1024 pixels
+wide. This reduces its difference from the native live image to 37 pixels,
+while it differs from ordinary Brave at 174 pixels. It supplies no acceptance
+credit and replaces no reference. The unchanged ordinary live gate remains
+161 differing pixels.
+
+Further work requires the missing CSS range and DOM handler bindings, with
+actual parsing/storage and event behavior. Source resolution and active
+scroll-animation ranges remain incomplete in the translated runtime; a positive
+feature probe alone cannot establish those behaviors. The current frozen and
+reduced-scene exact results remain distinct from full live parity.
