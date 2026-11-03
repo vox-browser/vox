@@ -1,21 +1,13 @@
 module main
 
 import css
-import dom
 
 fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[string]PreloadedResource {
-	app.sync_layout_coordinate_scale()
+	app.prepare_initial_resource_viewport()
 	mut cached := app.resource_cache.clone()
 	for resource_url, resource in app.navigation_preloaded_resources {
 		cached[resource_url] = resource
 	}
-	// Script and procedural-filter style reads may perform the first layout
-	// during startup. Give them the same viewport as the eventual native frame.
-	viewport_height := if app.viewport_height > 0 { app.viewport_height } else { initial_height - app.chrome_height() }
-	app.document.set_viewport_rect(dom.Rect{
-		width: f64(if app.viewport_width > 0 { app.viewport_width } else { initial_width }) / app.page_zoom
-		height: f64(viewport_height) / app.page_zoom
-	})
 	// Script-enabled documents retain the existing capacity hint; HTML/CSS-only
 	// documents let their managed heap grow with actual live state.
 	_ = prepare_document_render_heap(app.document)
