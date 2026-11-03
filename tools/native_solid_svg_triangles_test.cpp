@@ -44,11 +44,29 @@ int main()
             return 1;
         }
         ++accepted;
+        // Force a hit for the same coverage with a new paint and backdrop.
+        // Its output must still equal the original GPU draw, including padding
+        // and a transactional rejection at the final destination pixel.
+        path.red ^= 0x55; path.green ^= 0xa3; path.blue ^= 0x71;
+        for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x)
+            actual[y * width + x] = 0xff000000u | ((x * 31 + y * 7) % 256) << 16
+                | ((x * 3 + y * 29) % 256) << 8 | ((x * 17 + y * 11) % 256);
+        expected = actual;
+        assert(vox_draw_solid_svg_polygons(view, &path, 1, identity, viewport, clip, true));
+        assert(draw(reinterpret_cast<uint8_t*>(expected.data()), width, height, width * 4, 1, &path));
+        assert(actual == expected);
+        assert(vox_solid_svg_coverage::entries().size() <= 32);
+        actual.back() &= 0x00ffffff;
+        auto transparent = actual;
+        assert(!vox_draw_solid_svg_polygons(view, &path, 1, identity, viewport, clip, true));
+        assert(actual == transparent);
         auto original = actual;
         path.alpha = 254;
         assert(!vox_draw_solid_svg_polygons(view, &path, 1, identity, viewport, clip, true));
         assert(actual == original);
     }
     assert(accepted && rejected);
+    vox_solid_svg_coverage::clear();
+    assert(vox_solid_svg_coverage::entries().empty());
     std::printf("PASS %u exact direct GPU triangle comparisons, %u transactional ambiguous-edge fallbacks\n", accepted, rejected);
 }

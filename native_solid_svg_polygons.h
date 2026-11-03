@@ -5,7 +5,18 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <cstdlib>
 #include <vector>
+
+namespace vox_solid_svg_coverage {
+struct Entry { std::vector<uint8_t> key, samples; };
+inline std::vector<Entry>& entries()
+{
+    static thread_local std::vector<Entry> cache;
+    return cache;
+}
+inline void clear() { std::vector<Entry>().swap(entries()); }
+}
 
 // Resolve a small opaque polygon batch at the four standard Metal sample
 // positions. Convex analytic primitives, fractional clips, curves, blending
@@ -109,6 +120,42 @@ inline bool vox_draw_solid_svg_polygons(VoxGraphitePixelRegion const& view,
         }
         return boundary ? boundary_inside : even_odd ? winding % 2 != 0 : winding != 0;
     };
+    // A single opaque polygon's geometric coverage is independent of its
+    // paint and backdrop. Reuse only the exact, previously validated geometry,
+    // including clip, sampling origin and both full/snapped edge coordinates.
+    bool const cacheable = polygons.size() == 1
+        && !std::getenv("VOX_DISABLE_SOLID_SVG_COVERAGE_CACHE");
+    std::vector<uint8_t> coverage_key, coverage;
+    auto append_key = [&](auto const& value) {
+        auto* bytes = reinterpret_cast<uint8_t const*>(&value);
+        coverage_key.insert(coverage_key.end(), bytes, bytes + sizeof(value));
+    };
+    auto& cache = vox_solid_svg_coverage::entries();
+    if (cacheable) {
+        append_key(view.x); append_key(view.y); append_key(view.width); append_key(view.height);
+        append_key(clip);
+        auto const& polygon = polygons.front();
+        append_key(polygon.even_odd); append_key(polygon.exact_triangle_edges);
+        for (auto const& point : polygon.points) { append_key(point.x); append_key(point.y); }
+        for (auto const& point : polygon.snapped) { append_key(point.x); append_key(point.y); }
+        for (auto const& entry : cache) {
+            if (entry.key != coverage_key) continue;
+            // Validate the whole backdrop before publishing any bytes.
+            for (int row = 0; row < view.height; ++row)
+                for (int column = 0; column < view.width; ++column)
+                    if (view.pixels[size_t(row) * view.pitch + column * 4 + 3] != 255) return false;
+            uint32_t color = polygon.color;
+            for (int row = 0; row < view.height; ++row) for (int column = 0; column < view.width; ++column) {
+                auto* pixel = view.pixels + size_t(row) * view.pitch + column * 4;
+                unsigned covered = entry.samples[size_t(row) * view.width + column];
+                for (int channel = 0; channel < 4; ++channel)
+                    pixel[channel] = (pixel[channel] * (4 - covered)
+                        + ((color >> (channel * 8)) & 255) * covered + 2) / 4;
+            }
+            return true;
+        }
+        coverage.resize(size_t(view.width) * view.height);
+    }
     std::vector<uint8_t> output(size_t(view.width) * view.height * 4);
     constexpr double samples[4][2] {{.375, .125}, {.875, .375}, {.125, .625}, {.625, .875}};
     for (int row = 0; row < view.height; ++row) for (int column = 0; column < view.width; ++column) {
@@ -127,7 +174,10 @@ inline bool vox_draw_solid_svg_polygons(VoxGraphitePixelRegion const& view,
                     bool covered = inside(polygon.points, x, y, polygon.even_odd, polygon.exact_triangle_edges, safe);
                     bool snapped = inside(polygon.snapped, x, y, polygon.even_odd, polygon.exact_triangle_edges, safe);
                     if (!safe || covered != snapped) return false;
-                    if (covered) color = polygon.color;
+                    if (covered) {
+                        color = polygon.color;
+                        if (cacheable) ++coverage[size_t(row) * view.width + column];
+                    }
                 }
             }
             for (int channel = 0; channel < 4; ++channel) sums[channel] += (color >> (channel * 8)) & 255;
@@ -137,5 +187,9 @@ inline bool vox_draw_solid_svg_polygons(VoxGraphitePixelRegion const& view,
     }
     for (int row = 0; row < view.height; ++row)
         std::memcpy(view.pixels + size_t(row) * view.pitch, output.data() + size_t(row) * view.width * 4, size_t(view.width) * 4);
+    if (cacheable) {
+        if (cache.size() >= 32) cache.erase(cache.begin());
+        cache.push_back({std::move(coverage_key), std::move(coverage)});
+    }
     return true;
 }
