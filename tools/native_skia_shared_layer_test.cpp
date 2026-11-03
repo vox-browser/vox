@@ -229,6 +229,15 @@ static void opaque_continuation(int scale)
     constexpr int width = 96, height = 80;
     int pw = width * scale, ph = height * scale;
     std::vector<uint8_t> actual(size_t(pw) * ph * 4, 255), expected(actual.size());
+    // A uniform backdrop hides an incorrect CSS/device projection. Keep
+    // every row and column identifiable across the continuation's snapshot.
+    for (int y = 0; y < ph; ++y) for (int x = 0; x < pw; ++x) {
+        auto offset = (size_t(y) * pw + x) * 4;
+        actual[offset] = uint8_t(64 + x % 128);
+        actual[offset + 1] = uint8_t(64 + y % 128);
+        actual[offset + 2] = uint8_t(64 + (x + y) % 128);
+    }
+    auto prefix = actual;
     auto space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     auto context = CGBitmapContextCreate(actual.data(), pw, ph, 8, pw * 4,
         space, CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
@@ -237,7 +246,8 @@ static void opaque_continuation(int scale)
     ladybird_v_skia_set_shared_recording(0, width, height);
     ladybird_v_skia_set_raster_layer(0, 0, 0);
     ladybird_v_skia_set_raster_layer_size(width, height);
-    ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
+    int cell = 0;
+    ladybird_v_skia_set_msaa_grid(&cell, 1, pw + 2, ph + 2, 1);
     ladybird_v_skia_set_layer_shared_recording(1);
     ladybird_v_skia_set_opaque_layer_continuation(1);
     float data[5 * 12] {};
@@ -248,21 +258,41 @@ static void opaque_continuation(int scale)
     assert(ladybird_v_skia_draw_svg_path(context, data, 5, 0,
         1, 0, 0, 1, 0, 0, 0, 0, 0, width, height,
         13, 13, 13, 255, 1, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, nullptr, 0, 0, 1));
+    assert(s_shared_root_recording && !s_shared_root_recording->root
+        && s_shared_root_recording->columns == 1
+        && !s_shared_root_recording->replay_bounds.empty());
     ladybird_v_skia_finish_shared_recording();
     CGContextFlush(context);
 
     SkPictureRecorder recorder;
     auto* canvas = recorder.beginRecording(SkRect::MakeWH(pw, ph));
-    canvas->clear(SK_ColorWHITE); canvas->scale(scale, scale);
+    auto image = SkImages::RasterFromPixmapCopy(SkPixmap(
+        SkImageInfo::Make(pw, ph, kRGBA_8888_SkColorType,
+            kPremul_SkAlphaType, SkColorSpace::MakeSRGB()), prefix.data(), pw * 4));
+    assert(image);
+    canvas->drawImage(image, 0, 0);
+    canvas->scale(scale, scale);
     SkPathBuilder path;
     path.moveTo(8.25f, 12.5f).lineTo(40.25f, 44.5f)
         .lineTo(8.25f, 44.5f).lineTo(40.25f, 12.5f).close();
     SkPaint paint; paint.setAntiAlias(true); paint.setColor(SkColorSetRGB(13, 13, 13));
     canvas->drawPath(path.detach(), paint);
-    auto bytes = recorder.finishRecordingAsPicture()->serialize();
+    SkSerialProcs procs;
+    procs.fImageProc = serialize_shared_picture_image;
+    auto bytes = recorder.finishRecordingAsPicture()->serialize(&procs);
     float matrix[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
-    assert(shared_picture_draw()(expected.data(), pw, ph, pw * 4,
+    // Match the complete raster tile, including its physical guard pixels.
+    std::vector<uint8_t> tile(size_t(pw + 2) * (ph + 2) * 4);
+    assert(shared_picture_draw()(tile.data(), pw + 2, ph + 2, (pw + 2) * 4,
         bytes->data(), bytes->size(), matrix));
+    for (int y = 0; y < ph; ++y)
+        std::copy_n(tile.data() + size_t(y) * (pw + 2) * 4, pw * 4,
+            expected.data() + size_t(y) * pw * 4);
+    // The GPU reference returns BGRA; the CGContext's owned bytes are RGBA.
+    for (size_t i = 0; i < expected.size(); i += 4)
+        std::swap(expected[i], expected[i + 2]);
+    if (actual != expected)
+        std::cerr << "Opaque continuation prefix differs at scale=" << scale << '\n';
     assert(actual == expected);
     CGContextRelease(context);
     ladybird_v_skia_set_layer_shared_recording(0);

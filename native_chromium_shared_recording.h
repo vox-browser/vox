@@ -220,7 +220,12 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
             auto image = SkImages::RasterFromPixmapCopy(SkPixmap(info,
                 group->backdrop.data(), size_t(group->backdrop_width) * 4));
             if (image) {
+                // The snapshot owns physical pixels; this picture records
+                // CSS coordinates. Preserve its device-pixel grid at HiDPI.
+                canvas->save();
+                canvas->scale(1.f / group->scale, 1.f / group->scale);
                 canvas->drawImage(image, 0, 0);
+                canvas->restore();
                 group->backdrop.clear();
                 group->backdrop_width = 0;
             }
