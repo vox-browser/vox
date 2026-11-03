@@ -47,6 +47,44 @@ fn chromium_rounded_background_pair_end(commands []layout.PaintCommand, layers [
 	return if rounded { index + 2 } else { index }
 }
 
+// Reserve only rows these leaves can touch. Native recording still uses the
+// full raster grid, and adds its usual two-pixel fringe before the final ink
+// crop. Unknown bounds preserve the existing full-viewport transaction.
+fn chromium_rounded_pair_recording_bounds(commands []layout.PaintCommand, start int, end int,
+    page_y f64, viewport_width f64, viewport_height f64) ?layout.LayoutRect {
+    if start < 0 || end <= start || end > commands.len || viewport_width <= 4
+        || viewport_height <= 4 { return none }
+    for value in [page_y, viewport_width, viewport_height] {
+        if math.is_nan(value) || math.is_inf(value, 0) { return none }
+    }
+    mut left := math.inf(1)
+    mut top := math.inf(1)
+    mut right := math.inf(-1)
+    mut bottom := math.inf(-1)
+    for i in start .. end {
+        if math.is_nan(commands[i].stroke_width) || math.is_inf(commands[i].stroke_width, 0) {
+            return none
+        }
+        ink := chromium_partial_gap_ink(unsafe { &commands[i] }) or { return none }
+        left = math.min(left, ink.x)
+        top = math.min(top, ink.y)
+        right = math.max(right, ink.x + ink.width)
+        bottom = math.max(bottom, ink.y + ink.height)
+    }
+    // Commands already include their viewport scroll transform. Only browser
+    // chrome shifts the final canvas rows. The extra pixel covers float32
+    // native geometry rounding within paint_leaf_native_ink_bounds' guard.
+    left = math.max(2.0, left - 1)
+    top = math.max(page_y + 2, page_y + top - 1)
+    right = math.min(viewport_width - 2, right + 1)
+    bottom = math.min(page_y + viewport_height - 2, page_y + bottom + 1)
+    for value in [left, top, right, bottom] {
+        if math.is_nan(value) || math.is_inf(value, 0) { return none }
+    }
+    if right <= left || bottom <= top { return none }
+    return layout.LayoutRect{x: left, y: top, width: right - left, height: bottom - top}
+}
+
 fn (mut app BrowserApp) draw_chromium_rounded_background_pair(index int, page_y f32, window_height int) int {
 	$if macos {
 		if !app.ctx.native_rendering || app.page_zoom != 1 || app.document == unsafe { nil }
@@ -56,8 +94,13 @@ fn (mut app BrowserApp) draw_chromium_rounded_background_pair(index int, page_y 
 			app.chromium_raster_plan.command_layers, index)
 		if end == index { return index }
 		app.flush_rounded_rect_underlay(0, page_y, window_height)
-		if C.native_begin_deferred_inset_decorations(2, page_y + 2,
-			f32(app.viewport_width - 4), f32(app.viewport_height - 4),
+        bounds := chromium_rounded_pair_recording_bounds(app.paint_commands, index, end,
+            page_y, app.viewport_width, app.viewport_height) or {
+            layout.LayoutRect{x: 2, y: page_y + 2,
+                width: app.viewport_width - 4, height: app.viewport_height - 4}
+        }
+		if C.native_begin_deferred_inset_decorations(f32(bounds.x), f32(bounds.y),
+			f32(bounds.width), f32(bounds.height),
 			f32(app.ctx.width), f32(app.ctx.height), page_y, 0) == 0 { return index }
 		for i in index .. end {
 			if app.chromium_raster_plan.command_layers[i] < 0 { continue }
