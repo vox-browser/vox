@@ -20476,3 +20476,95 @@ open.
 
 See [the structured audit](performance/github-error-information-20261103.json)
 and [retained commands, failures, logs and captures](performance/raw/github-error-information-20261103.tar.gz).
+
+## Current-build style attribution, November 3, 2026
+
+A separately declared N=1 runtime-reason diagnostic uses completed production
+receipt `20261103-215423-6222148b` without rebuilding the bundle. With
+`VOX_DIAGNOSTIC_STYLE_REASONS=1` and
+`VOX_DIAGNOSTIC_LONGHAND_INPUTS=1`, its browser/controller/12 GiB guard exit zero,
+the strict 33-row/66-link/21-image archive contract passes, and the document is
+exactly 1024×768. The PNG retains SHA-256
+`65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`.
+Final cause counters record 16,010 full-document element recomputations, 447
+explicitly dirty elements, 15 parent-display changes, 146 descendant requests and
+35 custom-property-dependent updates. No font-refresh guard rejection was
+recorded. These are cumulative cause counts, not instruction costs or a count of
+completed full passes. The 33 first rejected longhand property/type combinations
+include several `rem` inputs; logging the first rejection does not establish how
+many cascades could be reused after extending any one type.
+
+The separate fixed N=1 attribution executable starts from this build's frozen
+preprocessed C and verifies all 131 sealed compiler inputs. Twelve reversible
+function edits enable 13 existing CSS scope counters, publish their totals and
+record caller addresses for full-style requests. Undoing the edits restores the
+original preprocessed C byte hash exactly. Native C-O3 and its inline threshold
+remain unchanged; only source/output and expired staging-library paths are
+adjusted, with the canonical native library independently pinned. The standalone
+executable uses the adblock self-worker/embedded-resource fallback, unlike
+packaged production startup. It is diagnostic and cannot establish a whole-page
+optimization comparison. No app bundle or source tree is copied, no production
+build is requested, and the running GUI browser stays untouched.
+
+Two preparation assertions and a dependent-launch failure occurred before any
+compiler/browser started. The first native compile exits one because inserted
+logging used the unexpanded `stderr` macro in preprocessed input. Its raw command,
+log, guard and failed input recipe remain retained; corrected logging uses the
+already-declared platform `__stderrp`. No completed browser primary is replayed.
+
+Compilation, signing, strict signature verification and the guarded startup
+check all exit zero. The single attribution browser, controller and 12 GiB guard
+also exit zero, with the exact strict content contract and the same 1024×768 PNG.
+The executable SHA-256 and all native runtime pins are retained in the structured
+report. No counter failure is recorded. ASLR-adjusted return addresses resolve
+against this exact executable's symbol ranges. Eleven requests resolve inside
+`Node.invalidate_style` and eight inside `BrowserApp.poll_background_resources`;
+other callers include parsing, metadata, layout bootstrap, user stylesheet and
+adopted-sheet paths. These are requests, possibly coalesced, across documents;
+containing function symbols after inlining are not a full source stack or a count
+of completed full-document passes.
+
+The latest published inclusive counters before the two markers are:
+
+| CSS scope | Before legacy paint | Before native submission |
+| --- | ---: | ---: |
+| Style computation | 11,771,875,752 | 98,792,115,841 |
+| Rule collection | 6,586,743,158 | 54,122,273,312 |
+| Candidate collection prefix | 2,192,364,129 | 17,979,842,751 |
+| Property computation | 1,299,840,874 | 8,336,340,346 |
+| Longhand cache key | 69,378,416 | 605,595,935 |
+| Invalidation comparison | 2,131,687 | 680,187,603 |
+
+These totals overlap. In particular, the candidate prefix shares the rule
+collector's start snapshot; it is not an isolated bucket-lookup measurement.
+Replacing start probes within selected functions also activates the selector
+match start, whose end record remains disabled. All that observer overhead stays
+in the raw totals. The enclosing task markers are 23,060,411,796 at legacy paint
+and 176,390,416,516 at native submission, belonging only to this instrumented
+standalone process. They are not compared with the ordinary production process
+as an optimization result.
+
+A separate fixed C-O3 calibration runs eight warmups and 10,000 probe pairs,
+with compiler/runtime/3 GiB guard exits zero and checksum 99,990,000. Its empty
+loop uses 66,810 instructions; the loop containing probe pairs uses 134,455,591.
+That is about 13,439 additional loop instructions per pair, including its checks,
+in a different controlled process. It is not subtracted from browser scope totals
+and is not a confidence interval or exclusive-cost correction. Frequent probes
+make the collector and candidate-prefix totals especially sensitive to observer
+overhead. The data directs a follow-up unprofiled collector probe covering empty
+origins, absent pseudos and repeated selectors, while preserving attempted
+pseudo-class metadata and shadow/slot/part/container behavior. It does not justify
+crediting a broad `rem` cache extension from the rejection log alone.
+
+Both observations receive zero instruction credit and make no broad-baseline or
+historical-cohort change. The counter backend is
+`proc_pid_rusage(getpid(), RUSAGE_INFO_V4).ri_instructions`: inclusive retired
+instructions across all threads in the main browser task. Concurrent work and
+observer overhead are included. Nested totals overlap and must not be summed;
+the latest published CSS totals before a marker can omit intervening unreported
+work. Current V/preallocation/native C-O3 remains separate from the historical
+old-compiler/Boehm/C-O2 cohorts. Full hydration, the preceding intermittent
+exception and Chrome parity remain open.
+
+See [the structured audit](performance/github-style-attribution-20261103.json)
+and [durable C inputs, counters, commands, failures and captures](performance/raw/github-style-attribution-20261103.tar.gz).
