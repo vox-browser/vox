@@ -2796,9 +2796,13 @@ pub fn create_element_with_registry(document &Document, local_name string, names
 		}
 
 		// 5. Otherwise, if definition is non-null, then:
-		// The C++ implementation constructs through the JavaScript constructor for synchronous
-		// autonomous custom elements. Constructor execution is outside this V DOM port, so the
-		// translated path creates the element and performs the available upgrade bookkeeping.
+		if synchronous_custom_elements_flag {
+			if hook := document.custom_element_construction_hook_ {
+				return construct_custom_element_synchronously(document, definition, prefix, registry, hook)
+			}
+		}
+		// Unhosted translation fixtures retain the bookkeeping path below. A
+		// scripting host supplies the actual Construct operation through the hook.
 		mut element := create_element_internal(document, local_name, namespace_html_, prefix, .undefined_, none, registry)
 		if synchronous_custom_elements_flag {
 			element.upgrade_element(definition) or {

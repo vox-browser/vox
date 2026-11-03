@@ -4,17 +4,25 @@ module main
 // element objects. React's focused-element traversal tests HTMLIFrameElement.
 fn compact_html_interfaces_bootstrap() string {
 	return r'
-function HTMLElement(){throw new TypeError("Illegal HTMLElement constructor");}
-function HTMLIFrameElement(){throw new TypeError("Illegal HTMLIFrameElement constructor");}
-function HTMLInputElement(){throw new TypeError("Illegal HTMLInputElement constructor");}
-function HTMLTemplateElement(){throw new TypeError("Illegal HTMLTemplateElement constructor");}
-function HTMLLinkElement(){throw new TypeError("Illegal HTMLLinkElement constructor");}
-function HTMLScriptElement(){throw new TypeError("Illegal HTMLScriptElement constructor");}
-function HTMLButtonElement(){throw new TypeError("Illegal HTMLButtonElement constructor");}
-function HTMLFormElement(){throw new TypeError("Illegal HTMLFormElement constructor");}
-function HTMLDialogElement(){throw new TypeError("Illegal HTMLDialogElement constructor");}
-function HTMLTextAreaElement(){throw new TypeError("Illegal HTMLTextAreaElement constructor");}
-function HTMLSelectElement(){throw new TypeError("Illegal HTMLSelectElement constructor");}
+const __nativeHTMLConstructor=globalThis.__ladybirdHTMLConstructor,__HTMLConstructorTypeError=TypeError,__HTMLConstructorProxy=Proxy,__compactSetElementPrototype=Object.setPrototypeOf;
+delete globalThis.__ladybirdHTMLConstructor;
+function __makeHTMLConstructor(name){
+ const target=({[name]:function(){throw new __HTMLConstructorTypeError("Illegal "+name+" constructor");}})[name];
+ const constructor=new __HTMLConstructorProxy(target,{construct(target,args,newTarget){if(newTarget===constructor)throw new __HTMLConstructorTypeError("Illegal "+name+" constructor");return __nativeHTMLConstructor(newTarget,name,target.prototype);}});
+ Object.defineProperty(target.prototype,"constructor",{value:constructor,writable:true,configurable:true});
+ return constructor;
+}
+const HTMLElement=__makeHTMLConstructor("HTMLElement");
+const HTMLIFrameElement=__makeHTMLConstructor("HTMLIFrameElement");
+const HTMLInputElement=__makeHTMLConstructor("HTMLInputElement");
+const HTMLTemplateElement=__makeHTMLConstructor("HTMLTemplateElement");
+const HTMLLinkElement=__makeHTMLConstructor("HTMLLinkElement");
+const HTMLScriptElement=__makeHTMLConstructor("HTMLScriptElement");
+const HTMLButtonElement=__makeHTMLConstructor("HTMLButtonElement");
+const HTMLFormElement=__makeHTMLConstructor("HTMLFormElement");
+const HTMLDialogElement=__makeHTMLConstructor("HTMLDialogElement");
+const HTMLTextAreaElement=__makeHTMLConstructor("HTMLTextAreaElement");
+const HTMLSelectElement=__makeHTMLConstructor("HTMLSelectElement");
 function SVGElement(){throw new TypeError("Illegal SVGElement constructor");}
 for(const [constructor,parent,name] of [[HTMLElement,Element,"HTMLElement"],[HTMLIFrameElement,HTMLElement,"HTMLIFrameElement"],[HTMLInputElement,HTMLElement,"HTMLInputElement"],[HTMLTemplateElement,HTMLElement,"HTMLTemplateElement"],[HTMLLinkElement,HTMLElement,"HTMLLinkElement"],[HTMLScriptElement,HTMLElement,"HTMLScriptElement"],[HTMLButtonElement,HTMLElement,"HTMLButtonElement"],[HTMLFormElement,HTMLElement,"HTMLFormElement"],[HTMLDialogElement,HTMLElement,"HTMLDialogElement"],[HTMLTextAreaElement,HTMLElement,"HTMLTextAreaElement"],[HTMLSelectElement,HTMLElement,"HTMLSelectElement"],[SVGElement,Element,"SVGElement"]]){
  Object.setPrototypeOf(constructor,parent);

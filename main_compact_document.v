@@ -181,6 +181,9 @@ function __compactDocumentWrapper(state){
  Object.defineProperty(state,"__object",{value:object});return object;
 }
 Object.setPrototypeOf(document,HTMLDocument.prototype);
+// Route creation through the native document factory. The earlier compact
+// own methods otherwise allocate a second wrapper during custom construction.
+delete document.createElement;delete document.createElementNS;
 for(const name of ["addEventListener","removeEventListener","dispatchEvent"])Object.defineProperty(Document.prototype,name,{value:EventTarget.prototype[name],writable:true,enumerable:true,configurable:true});
 const __compactDocumentLegacyAdd=document.addEventListener;
 function __compactDocumentNativeEvent(name){return name==="click"||name==="keydown"||name==="keyup"||name==="keypress"||name==="beforeinput"||name==="input"||name==="change"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid";}
@@ -201,7 +204,7 @@ Object.defineProperty(Document.prototype,"childNodes",{get:function(){return __c
 for(const name of ["firstChild","lastChild"])Object.defineProperty(Document.prototype,name,{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,name,"");},enumerable:true,configurable:true});
 for(const name of ["querySelector","querySelectorAll","getElementById","getElementsByTagName","getElementsByClassName"]){Object.defineProperty(Document.prototype,name,{value:function(value){const state=__compactDocumentState(this);if(!arguments.length)throw new TypeError(name+" requires an argument");value=__compactDocumentString(value);return name==="getElementsByTagName"?__tagCollection(state.bridgeKey,value):__queryElements(state.bridgeKey,name==="getElementById"?"documentElementById":name,value);},writable:true,enumerable:true,configurable:true});}
 for(const [name,action] of [["createElement","documentCreateElement"],["createTextNode","createText"],["createDocumentFragment","createFragment"]])Object.defineProperty(Document.prototype,name,{value:function(value){const state=__compactDocumentState(this);if(name!=="createDocumentFragment"&&!arguments.length)throw new TypeError(name+" requires an argument");return __queryElements(state.bridgeKey,action,name==="createDocumentFragment"?"":__compactDocumentString(value));},writable:true,enumerable:true,configurable:true});
-Object.defineProperty(Document.prototype,"createElementNS",{value:function createElementNS(namespace,name){const state=__compactDocumentState(this);if(arguments.length<2)throw new TypeError("createElementNS requires two arguments");return __queryElements(state.bridgeKey,"documentCreateElementNS",JSON.stringify({namespace:namespace==null?null:__compactDocumentString(namespace),name:__compactDocumentString(name)}));},writable:true,enumerable:true,configurable:true});
+Object.defineProperty(Document.prototype,"createElementNS",{value:function createElementNS(namespace,name){const state=__compactDocumentState(this);if(arguments.length<2)throw new TypeError("createElementNS requires two arguments");namespace=namespace==null?null:__compactDocumentString(namespace);name=__compactDocumentString(name);const element=__queryElements(state.bridgeKey,"documentCreateElementNS",JSON.stringify({namespace:namespace,name:name}));__compactNodeState(element).tagName=name;return element;},writable:true,enumerable:true,configurable:true});
 function __compactOwnerDocument(object){return __queryElements(__compactNodeState(object).bridgeKey,"ownerDocument","");}
 function __compactDocumentElementBindings(object,state){
  if(!state.ownerDocumentKey)return;

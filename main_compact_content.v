@@ -84,6 +84,18 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 		mut mutable_binding := unsafe { &CompactElementQueryBinding(binding) }
 		return mutable_binding.query_with_temporary_reply(input)
 	})!
+	runtime.install_html_element_constructor_binding(fn [mut binding] (element &dom.Element) !voidptr {
+		// Register the native owner before the existing wrapper provider resolves
+		// it, preserving the same identity used by selectors and DOM mutations.
+		_ = binding.element_key(element)
+		mut runtime := unsafe { &browserjs.Runtime(binding.runtime) }
+		return runtime.javascript_event_target(unsafe { &dom.EventTarget(element) }, none)
+	}, fn [binding] () ! {
+		state := binding.runtime.evaluate_host('__ladybirdFinalize()')!
+		mut messages := []string{}
+		apply_javascript_runtime_state(binding.document, state, binding.runtime, mut messages)
+		if messages.len != 0 { return error(messages.join('\n')) }
+	})!
 }
 
 fn (mut binding CompactElementQueryBinding) query_with_temporary_reply(input string) !browserjs.HostFunctionReply {

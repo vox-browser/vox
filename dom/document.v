@@ -5441,6 +5441,7 @@ pub mut:
 	scripts_to_execute_as_soon_as_possible          []&HTMLScriptElement
 	current_script                                  &HTMLScriptElement = unsafe { nil }
 	custom_element_reaction_backup_queue            []&Element
+	custom_element_construction_hook_               ?CustomElementConstructionHook
 	processing_custom_element_reaction_backup_queue bool
 	mutation_observer_microtask_queued              bool
 	pending_mutation_observers                      []&MutationObserver
