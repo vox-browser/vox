@@ -38,9 +38,24 @@ exact pixels, but regresses by 3,399,761 between seven matched medians. Its sour
 and unexecuted expanded checks are removed and retained as rejected evidence.
 A 0.1ms sampling attempt is rejected by macOS sample; the page capture is valid,
 but that attempt supplies no stacks or optimization credit. New optional frame
-phase markers and a compiler inlining threshold of 3,000 are pending a completed
-production build. Earlier concurrent paint-chunk compilation failures and a
+phase markers are pending a completed production build. The compiler inlining
+threshold of 3,000 fails the unchanged 12GiB aggregate memory guard after 832s
+(`20261103-130858-726a288c`, observed peak 12,904,431,616 bytes, exit 125).
+The source now selects 1,500; its completed production measurement is pending.
+Earlier concurrent paint-chunk compilation failures and a
 preprocessing input-change rejection are retained; no failed build is counted.
+
+The separate `native-o3-matched` comparison compiles the same native renderer
+and PNG sources with `-O2` and `-O3`, keeping the browser executable and inputs
+pinned. Seven alternating pairs measure **2,723,336,126 → 2,708,734,300**
+medians, a **14,601,826** difference. Six pairs improve and one regresses by
+10,240,908. Candidate counts are 2,723,626,740; 2,713,599,060; 2,708,734,300;
+2,699,173,094; 2,694,445,904; 2,694,258,573; 2,711,328,051. All fourteen
+captures pass the unchanged pixel/content/current-metadata, ownership, identity
+and normal-exit gates, with successful PID adoption and no independent-capture
+exclusions. This is an explicit native-library override diagnostic. Production
+source now selects `-O3` for that library, without fast-math; its default-build
+target measurement and deferred regression checks remain pending.
 
 The preceding complete default-production benchmark (`font-final-matched`,
 executable `7b96605d1ea4d26f7fa565202e6a7b5976a2ddf0064f2aa2ee2dafd346ca6fd9`,

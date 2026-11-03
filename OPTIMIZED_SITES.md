@@ -51,8 +51,11 @@ The ongoing 2.7B work's latest complete default-production cohort measures
 pixels, all 30 stories, identity, ownership and normal exits in seven launches.
 The **2.7B target remains open**. A separate seven-pair PNG diagnostic saves
 12.4M between medians, with two pair regressions; its lossless compressed stream
-is 8.68% larger and stays within the existing size bound. It has no final default
-build credit yet. Failed cohorts and rejected font/text/capture prototypes remain
+is 8.68% larger and stays within the existing size bound. Compiling the same
+native sources with `-O3` saves another 14.6M between seven matched medians
+(six improving pairs, one regression), reaching a diagnostic 2.709B median and
+2.724B maximum. These overrides have no final default-build credit yet.
+Failed cohorts and rejected font/text/capture prototypes remain
 recorded. PNG metadata is stable against a newly pinned control PNG; the
 historical Vox PNG and earlier raw directory are unavailable after shared Build
 cleanup. Regression suites remain deferred by the user's instruction, so the
