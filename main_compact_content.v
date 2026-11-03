@@ -161,7 +161,9 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if snapshot := request.snapshot {
 		mut messages := []string{}
 		mut elements := map[string]&dom.Element{}
-		if state := javascript_replay_state(snapshot, mut messages) {
+		if replay := compact_query_replay_snapshot(binding.document, snapshot, mut messages) {
+			defer { replay.workspace.finish() }
+			state := replay.state
 			note_compact_replay_effects(state, binding.runtime)
 			elements = binding.runtime.canvas_elements_for_keys(compact_replay_element_keys(state))
 			apply_decoded_javascript_state(binding.document, state, elements, mut messages)

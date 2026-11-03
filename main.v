@@ -2196,7 +2196,10 @@ fn apply_javascript_element_attribute(mut element dom.Element, name string, valu
 	set_javascript_element_attribute(mut element, name, value, true)
 }
 
-fn set_javascript_element_attribute(mut element dom.Element, name string, value ?string, skip_unchanged bool) {
+fn set_javascript_element_attribute(mut element dom.Element, source_name string, value ?string, skip_unchanged bool) {
+	// Snapshot attribute-map keys can belong to a disposable decoder. Hooks
+	// and new Attr records keep their own name after that decoder retires.
+	name := source_name.clone()
 	old_value := element.get_attribute(name)
 	if new_value := value {
 		if previous_value := old_value {
