@@ -3,7 +3,10 @@
 The requested limit is **500,000,000 bytes** for
 `https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/`.
 The measured production bundles **exceed this limit**. The latest valid
-five-minute observation settles at **307,120,240 B** and peaks at **728,435,544 B**.
+five-minute observation settles at **329,418,840 B** and peaks at **729,827,464 B**
+on executable `c9ff98ac…`. A newer twenty-second production observation with
+the three opacity fixes peaks at **681,282,296 B** and settles at **275,662,888 B**
+on executable `590975bd…`; all thirteen exact visual comparisons pass.
 The continuations below record the pinned builds and focused checks.
 A later private CPU-rendering experiment observes a 405,834,632 B five-minute
 peak, but is not shipped and fails two exact rounded-border comparisons.
@@ -823,3 +826,175 @@ no source tree, repository tool or browser bundle was copied.
 The [retained-index receipt](benchmark-results/reddit-comment-memory-2026-11-03-retained.json)
 pins the feature, frozen production input, focused checks, all observation and
 visual artifacts, GPU experiments and fresh live-access result.
+
+
+## Metal transport and sparse opacity canvases
+
+Four more independently tested fixes are committed. The overall
+**500,000,000 B peak cap remains open**; the component results below cannot be
+added together as whole-browser savings.
+
+| Commit | Change | Focused control → candidate |
+| --- | --- | ---: |
+| `698524ed2` | Upload immutable Metal meshes through host-visible buffers | 118,079,488 → 32,768 B graphics growth at recorder snap |
+| `7319dd632` | Use shared-memory Metal leaf uploads, backdrops and readback | 340,492,288 → 188,989,440 B graphics growth through rendering/readback |
+| `6baeb3c38` | Retire physical pages of large idle opacity canvases | 29,147,136 → 16,384 B footprint growth after returning a viewport canvas |
+| `7a2a336e8` | Avoid reading never-backed pages during opacity ink scans | 29,098,008 → 0 B footprint growth during a sparse viewport scan |
+
+The static-mesh patch authenticates the original and patched pinned Skia source
+and verifies staged bytes before installation. Its three patch-preparation tests cover
+idempotence and rejection without partial installation. The negative runtime
+control fails its allocation assertion and the candidate preserves the exact
+rounded-rectangle pixel hash. It changes only Metal; other backends retain
+their transfer path.
+
+The Metal leaf path uses the device belonging to the recorder, checks unified
+memory and texture limits, and retains Skia's existing path for unsupported
+formats, alpha/color conversion, scaling and mipmaps. CPU backdrop replacement
+first snaps and completes pending clears/draws. CPU readback waits for queued
+GPU writes and returns independently owned bytes. Targets export CPU pixels,
+not GPU snapshots. The bridge now explicitly uses the release layouts of its
+pinned Skia archive, which is necessary for the private recorder/device records.
+The focused test checks padded partial writes, image-source ownership, target
+reuse, bounds, conversion/scaling fallbacks and result lifetime after teardown.
+The memory-negative control passes its preceding pixel assertions before
+failing the 230 MiB graphics-growth budget. Native shader rendering stays on
+the GPU; the production picture renderer remains Dawn.
+
+Against the previous native leaf, 6,984 shape and 1,928 path comparisons are
+exact. Eight additional GPU checks pass: 1,344 image-tile comparisons, 32
+independent mipmapped-picture comparisons, 512 SVG-region cases, 384 mixed
+reused-target cases, 96 recorder failure/teardown replays, 4,718 raster replays,
+2,112 image-region cases, and 24 SVG-pattern cases plus 120 unchanged-failure
+checks. These cover cold/warm caches, source/backdrop changes, profiles, overlap,
+MSAA, clipping and row padding. All thirteen native SVG/image/text/ID-collision
+and rounded-border pixel checks pass with the explicit private leaf override.
+A separate stock-production run also passes all thirteen on executable
+`c9ff98ac…`, receipt `20261103-091717-6b3a184e`, containing the leaf change.
+Runtime/tool/reference identities remain unchanged. No references or tolerances
+change.
+
+Two alternating eight-second stock/private-leaf pairs use the same executable
+`e9deac23…`, installed Dawn backend, fixture, viewport and normal author scripts:
+
+| Pair | Stock observed peak | Shared leaf observed peak |
+| --- | ---: | ---: |
+| 1 | 742,984,536 B | 711,052,096 B |
+| 2 | 729,058,088 B | 728,582,952 B |
+
+Every browser/guard exit is zero; identities and fixture remain unchanged and
+content/author-script audits pass. These short startup observations still fail
+the cap. Their variation does not justify a whole-browser percentage claim.
+They precede the two opacity fixes and do not validate those fixes in the
+browser. Host load and per-task kernel lifetime peaks are retained separately
+in the receipt; sampled simultaneous peaks remain lower bounds.
+
+The opacity pool now gives buffers of at least 1 MiB dedicated anonymous
+mappings. Returning an idle canvas replaces its owned mapping with zero-fill
+pages, preserving its address, virtual capacity and CGContext state while
+releasing physical memory. Small buffers keep the original allocation and
+clip-clearing path. The 2,304 existing pool comparisons pass, including nested
+ownership, color spaces, state reset, eviction, budgets and snapshots. A new
+large-canvas test verifies the 16 KiB return cost, transparent reuse at the same
+address, full-size snapshot immutability and actual mapping teardown.
+
+Scanning a transparent mapping can itself fault in an entire viewport. A
+rejected experiment skipped writes to zero chunks, yet still charged
+29,147,136 B just by reading them; its failing memory check and patch remain
+preserved. The shipped scan consults page dispositions only for the pool's own
+anonymous mappings. A page with no backing is still zero-fill. Nonzero
+compressed, resident or unknown flags keep the byte scan, as do failed/short
+queries and small buffers. This interpretation follows the VM object/shadow
+walk and compressor handling in Apple's
+[page-info implementation](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/vm/vm_map.c)
+and [range-query implementation](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/vm/vm_user.c).
+There are 1,500 exact clipped comparisons across page/row boundaries, with
+simulated compressed/unknown dispositions and query failures, plus sparse
+allocation and empty-reuse checks. Existing opacity tests also preserve
+134,217,728 exhaustive composite pixels and 33,280 ink-bound comparisons.
+
+Additional private GPU experiments remain unshipped. Bare Metal probes on this
+machine charge approximately 181 MB for the render engine and 118 MB for the
+transfer engine, even at 160 × 64. Shared CPU-visible target/image transfer
+preserves all thirteen native pixel checks and four mixed-typeface GPU picture
+comparisons. Private CPU atlas uploads remove the observed blit-encoder calls,
+but sampled page peaks remain about 608 MB and kernel lifetime spikes can be
+higher. Per-call autorelease pools observe about 595 MB in one diagnostic.
+Earlier recycle-page trimming, malloc pressure relief, inline-buffer trimming
+and public JSC collection do not establish a passing cap. These runs use
+different evolving executables and diagnostic settings; they supply no matched
+optimization percentage or production acceptance. The argument-buffer toggle
+that produces transparent output is rejected. Failed compilation/setup attempts
+are retained alongside successful checks.
+
+A fresh direct live request again returns HTTP 403. Shared production builds
+initially retain the previous bundle after input changes during preprocessing
+and an unrelated ECDSA link failure. A later successful build resolves that
+validation gap. Executable `89526286…`, receipt `20261103-093652-b9f00af8`,
+contains both opacity changes in its frozen compiler input and passes all
+thirteen exact visual comparisons. A twenty-second original-origin replay
+peaks at **686,689,136 B** and settles at **277,301,312 B**. Normal author-script
+and content audits pass, identities remain unchanged and browser/guard exits
+are zero. No separate production build is queued by this investigation.
+
+The actual-page diagnostic then shows why the sparse scan alone does not
+reclaim its full component saving: an earlier compositor-prefix scan already
+reads all 1,777 zero-fill pages before the final ink scan. Commit `a3e50e460`
+uses the same page-aware scan at that earlier boundary. The native adapter
+explicitly registers pool-owned mappings with capability value two; legacy and
+speculative contexts do not acquire that ownership assumption. Registration
+is cleared at frame boundaries and on unregister. Fractional origin, real
+prefix pixels, failure signaling and speculative/forced recording retain their
+existing behavior. The isolated prefix control charges **29,147,160 B** versus
+**16,384 B** with the change; 44 deferred-layer GPU scenes remain pixel-exact.
+An actual-page diagnostic confirms 1,737 of the 1,777 pages remain unbacked
+after recording, where the earlier path left none. Private compatibility
+libraries exercise this protocol on an older executable through an unshipped
+caller-identity shim; production passes the capability directly.
+
+Completed production executable `590975bd…`, receipt
+`20261103-102143-9974fe73`, contains all five graphics changes and again passes
+all thirteen exact visual cases without reference or tolerance changes. Its
+fresh twenty-second replay peaks at **681,282,296 B** and settles at
+**275,662,888 B**, with unchanged identities, complete content and normal script
+audits, and zero browser/guard exits. The maximum sampling gap is 58.15 ms.
+These short observations establish neither a permanent bound nor an isolated
+percentage improvement across evolving shared builds. A private GPU picture
+and CPU-atlas prototype with the prefix change still peaks at **581,913,360 B**;
+it remains unshipped and fails the requested limit.
+
+A fresh five-minute stock-production observation of `c9ff98ac…` completes
+with a **729,827,464 B** simultaneous observed peak and **329,418,840 B** final
+two-second median. The separate sum of per-task kernel lifetime maxima is
+**765,512,560 B**; it is an auxiliary envelope, not a simultaneous measurement.
+The maximum sampling gap is 59.55 ms. Browser and guard exits are zero, all
+runtime and fixture identities remain unchanged, and the normal author-script
+and content audit passes. The document remains complete, visible and fully
+active at 1708 × 953 and backing scale two, with 49 comments, two images, zero
+native errors and the expected badge-fetch diagnostic. Host load at launch is
+3.67/3.81/3.99 on 18 CPUs, with a shared production compiler active. This
+supersedes the earlier stock five-minute observation for the pinned leaf build;
+it predates the later opacity commits. Memory continues to rise during idle.
+Startup and longer browsing therefore still need investigation.
+
+Separate retained-allocation diagnostics use an O0, non-inlined executable
+generated from a completed canonical compiler input. The allocation hook
+samples base storage and the currently entered main-thread document arena,
+excluding resettable workspaces. The flat diagnostic executable uses the
+self-executable filter-worker fallback rather than the app-path helper.
+These runs supply allocation attribution, not performance or cap acceptance.
+The idle trace samples **10.8 MB** over approximately fifty seconds after its
+trigger; the startup trace samples **158.5 MB** through its twenty-second
+observation and final audit. Layout reconstruction, paint templates, HTTP
+buffering, selector probes and invalidation graphs appear in those stacks.
+The final audit can itself request layout, so the aggregate is not a pure idle
+allocation rate. The existing five-minute stock trace has approximately 9 MB
+steps around thirty seconds and then every minute, alongside smaller growth.
+It does not establish bounded long-term allocation.
+
+The [graphics receipt](benchmark-results/reddit-comment-memory-2026-11-03-graphics.json)
+records exact identities, commands, actual exits, host contention, sampled
+observations, separate kernel lifetime envelopes and artifact hashes. Raw
+account-bearing fixtures, logs and page captures stay private under
+`Build/reddit-comment-memory-20261103-graphics/`. No browser bundle, source tree
+or repository tool is copied.
