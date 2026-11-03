@@ -27,13 +27,15 @@ Both receipts include hashes for committed PNG evidence under `parity/raw/`.
 
 The scale-2 follow-up remains open: the frozen 1024×768 Retina comparison
 improves from 47,705 to 31,350 differing pixels after device-aware paint
-snapping, then to 15,056 after device-aware font metrics and leading.
+snapping, then to 15,056 after device-aware font metrics and leading, and to
+8,611 after correcting outer-shadow geometry.
 Scale-1 parity remains exact at all three sizes. The
 [Retina receipt](parity/chatgpt-retina-20261103.json) retains both captures,
 identities, checks and rejected diagnostics; the
-[font receipt](parity/chatgpt-retina-fonts-20261103.json) retains the next
-improvement. These are focused source-browser results, without a new
-production or live Retina claim.
+[font receipt](parity/chatgpt-retina-fonts-20261103.json) and
+[shadow receipt](parity/chatgpt-retina-shadows-20261103.json) retain the later
+improvements. These are focused source-browser results, without a new
+production or live Retina claim. The shared production build remains busy.
 
 The earlier continuation used `Build/chatgpt-css-error-lifetime-20261102/`.
 That homepage loaded suggestion cards and their Blob-backed icons, used Brave's
@@ -101,6 +103,36 @@ small glyph/underline differences and shadows remain. All three scale-1
 viewports still match exactly. The [font receipt](parity/chatgpt-retina-fonts-20261103.json)
 retains the unchanged-reference checks, source/browser identities and a rejected
 test-driver report-name collision.
+
+`021577d71` snaps the high-density CSS-coordinate shadow's base box while
+preserving floating-point offsets, blur, spread and radii. This follows
+[Chromium 156's outer-shadow path](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/third_party/blink/renderer/core/paint/box_painter_base.cc),
+which builds the shadow from the pixel-snapped border and retains its shadow
+parameters. Existing logical-grid and inset-shadow paths remain available.
+The first experiment scaled the portable integer converter for every
+parameter; its failures are retained, and that experiment was replaced.
+
+The full Retina page improves from 15,056 to 8,611 differing pixels. The
+standalone `device-pixel-shadows` reference remains unchanged: its opaque
+sample is exact, and its translucent sample retains 92 differing edge pixels,
+maximum channel error 6. The complete fixture improves from 12,093 to 92;
+this is a remaining visual failure, not an exact-reference pass. Four focused
+tests pass in all three allocator modes, covering display changes, fractional
+parameters, small-corner spread, paint order, inset fallback and LibWeb policy.
+Existing shadow clipping, color, retained storage and transformed-shadow tests
+also pass.
+
+A source-browser scale-1 batch failed to fetch stylesheets with an adblock
+`TextDecoder` error; all three PNGs from that batch are rejected. A fresh
+current-source browser completes the three scale-1 sizes at zero differing
+pixels and repeats the 8,611-pixel Retina result, with empty diagnostic arrays
+and stable executable/native-library/resource identities. Its rendering and
+adblock inputs stayed unchanged while compiling; unrelated `main.v` work
+changed concurrently. The [shadow receipt](parity/chatgpt-retina-shadows-20261103.json)
+retains those input hashes, the failed batch, earlier invalid diagnostics and
+raw PNG hashes. The latest completed production bundle predates the font and
+shadow fixes; its successor is already building, so no duplicate build was
+queued. Current acceptance remains limited to the focused source browser.
 
 ## November 3: fractional breakpoints and additional viewports
 

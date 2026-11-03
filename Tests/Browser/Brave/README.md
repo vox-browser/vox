@@ -957,6 +957,13 @@ and validation results.
 
 `device-layout-inline-precision` checks native scale 2 fractional form-control
 heights, fixed line heights, `ex` widths, middle alignment and soft line breaks.
+`device-pixel-shadows` retains the unchanged raw 1600×1200 Brave reference for
+an 800×600 CSS viewport, `--windowed --scale 2`. It checks fractional outer
+shadow parameters and device-snapped base boxes. The opaque sample matches
+exactly; the translucent sample retains **92 differing edge pixels** with
+maximum channel error 6. The full comparison improves from 12,093 to 92 pixels
+and remains a known visual failure. Do not normalize or relax its reference.
+
 `device-pixel-font-metrics` checks presenting-grid font metrics and half-leading
 without scaling the selected font instance. It includes 12px, 14px and 17px
 system text, fractional line height, semibold text and normal line height.
