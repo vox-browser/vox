@@ -31,15 +31,18 @@ fn chromium_opaque_compositor_mask_gap(commands []layout.PaintCommand,
 	}
 	opening := unsafe { &commands[start] }
 	closing := unsafe { &commands[end - 1] }
+	// Fixed descendants share viewport coordinates. They can retain their own
+	// opaque prefix too, provided every parent and mask command uses that space.
+	fixed := opening.fixed_to_viewport
 	if opening.kind != 'begin_svg_mask_layer' || closing.kind != 'end_svg_mask_layer'
-		|| opening.fixed_to_viewport || closing.fixed_to_viewport { return false }
+		|| closing.fixed_to_viewport != fixed { return false }
 	mask := opening.visual_layer_data or { return false }
 	finish := closing.visual_layer_data or { return false }
 	if mask.kind != .svg_mask || finish.kind != mask.kind || mask.scope_id == 0
 		|| finish.scope_id != mask.scope_id || mask.opacity != 1 || mask.blend_mode != .normal
 		|| mask.filter != none { return false }
 	leaf := unsafe { &commands[start + 1] }
-	if leaf.kind != 'fill_rect' || leaf.visual_layer_data != none || leaf.fixed_to_viewport
+	if leaf.kind != 'fill_rect' || leaf.visual_layer_data != none || leaf.fixed_to_viewport != fixed
 		|| leaf.opacity != 1 || leaf.group_opacity != 1 || leaf.outer_shadow || leaf.blur != 0
 		|| leaf.clip_outs.len != 0 { return false }
 	child_ink := chromium_compositor_gap_ink(leaf) or { return false }
@@ -54,7 +57,7 @@ fn chromium_opaque_compositor_mask_gap(commands []layout.PaintCommand,
 		}
 		previous = index
 		command := unsafe { &commands[index] }
-		if command.visual_layer_data != none || command.fixed_to_viewport
+		if command.visual_layer_data != none || command.fixed_to_viewport != fixed
 			|| command.opacity != 1 || command.group_opacity != 1 { return false }
 		supported, _ := chromium_shared_recording_leaf_supported(command)
 		if !supported { return false }

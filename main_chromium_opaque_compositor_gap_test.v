@@ -35,6 +35,24 @@ fn test_opaque_compositor_prefix_can_resume_around_a_disjoint_captured_mask() {
 	assert !chromium_compositor_opaque_mask_resume(commands,plan,2,3)
 }
 
+fn test_opaque_fixed_prefix_can_resume_around_a_mask_in_the_same_viewport_space() {
+	mut commands := opaque_mask_gap_test_commands()
+	for index in 1 .. commands.len {
+		commands[index].fixed_to_viewport = true
+	}
+	plan := opaque_mask_gap_test_plan()
+	assert chromium_compositor_gap_can_flush_parent(commands,plan,1,3,6,
+		layout.LayoutRect{0,6400,1024,768})
+	assert chromium_svg_compositor_layer_supported_for_viewport(commands,plan,1,
+		layout.LayoutRect{0,6400,1024,768})
+	assert chromium_compositor_opaque_mask_resume(commands,plan,1,6)
+	for index in 1 .. commands.len {
+		mut mixed := commands.clone()
+		mixed[index].fixed_to_viewport = false
+		assert !chromium_opaque_compositor_mask_gap(mixed,plan,1,3,6)
+	}
+}
+
 fn test_opaque_mask_gap_retains_transparency_fringe_and_paint_order_guards() {
 	commands := opaque_mask_gap_test_commands()
 	plan := opaque_mask_gap_test_plan()

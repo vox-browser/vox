@@ -13,6 +13,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_fixed_headers_keep_their_opaque_recording_across_captured_masks(self):
+        self.compare_fixture('engadget-fixed-header-mask', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_fixed_metadata_keeps_background_logo_and_text_on_the_same_raster(self):
         self.compare_fixture('fixed-scroll-paint-metadata', width=1024, height=768,
                              settle_seconds=5)
