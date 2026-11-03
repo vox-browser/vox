@@ -18,6 +18,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--minimum-reduction-mib', type=int, default=64)
+    parser.add_argument('--minimum-final-reduction-mib', type=int, default=8)
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[1]
     out = args.output.resolve()
@@ -46,6 +47,7 @@ def main():
         guarded += ['--', *command]
         env = os.environ.copy()
         env.pop('VOX_DISABLE_SHARED_DAWN_PIXELS', None)
+        env.pop('VOX_DISABLE_DIRECT_DAWN_READBACK', None)
         env.pop('VOX_SHARED_DAWN_DIAGNOSTICS', None)
         if diagnostics:
             env['VOX_SHARED_DAWN_DIAGNOSTICS'] = '1'
@@ -99,6 +101,7 @@ def main():
     run('functional', [str(binary)], runtime=True, diagnostics=True)
     assert 'VOX_SHARED_DAWN ' in (out / 'functional.log').read_text()
     assert 'Dawn error:' not in (out / 'functional.log').read_text()
+    assert 'VOX_DAWN_DIRECT_READBACK ' in (out / 'functional.log').read_text()
     memory = []
     for index, mode in enumerate(['control', 'shared', 'control', 'shared']):
         name = f'memory-{index}-{mode}'
@@ -113,6 +116,21 @@ def main():
     (out / 'memory.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result), flush=True)
     assert result['minimum_observed_reduction_bytes'] >= args.minimum_reduction_mib * 1024 * 1024
+    final_reads = []
+    for index, mode in enumerate(['final-staged', 'final-direct', 'final-staged', 'final-direct']):
+        name = f'final-memory-{index}-{mode}'
+        run(name, [str(binary), mode], runtime=True)
+        final_reads.append(json.loads(next(line for line in (out / (name + '.log')).read_text().splitlines()
+                                          if line.startswith('{"direct":'))))
+    assert len({x['pixel_hash'] for x in final_reads}) == 1
+    controls = [x['peak_bytes'] for x in final_reads if not x['direct']]
+    candidates = [x['peak_bytes'] for x in final_reads if x['direct']]
+    final_result = dict(trials=final_reads, minimum_observed_peak_reduction_bytes=min(controls) - max(candidates),
+                        scope='Fresh-process 2048x2048 single picture draw; macOS lifetime physical footprint peak.')
+    (out / 'final-read-memory.json').write_text(json.dumps(final_result, indent=2) + '\n')
+    print(json.dumps(final_result), flush=True)
+    assert final_result['minimum_observed_peak_reduction_bytes'] >= args.minimum_final_reduction_mib * 1024 * 1024
+
 
 
 if __name__ == '__main__':

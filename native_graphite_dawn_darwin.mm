@@ -226,6 +226,12 @@ int vox_graphite_draw_picture_region_pixels(uint8_t* pixels, int width, int heig
     insertion.fRecording = recording.get();
     if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
     if (shared.pixels) {
+        if (!std::getenv("VOX_DISABLE_DIRECT_DAWN_READBACK")) {
+            if (std::getenv("VOX_SHARED_DAWN_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_DAWN_DIRECT_READBACK width=%d height=%d\n", region_width, region_height);
+            return shared.read_final(gpu, SkIRect::MakeXYWH(x, y, region_width, region_height),
+                pixels, size_t(pitch));
+        }
         std::vector<uint8_t> result;
         if (!shared.read(gpu, SkIRect::MakeXYWH(x, y, region_width, region_height), result)) return 0;
         for (int row = 0; row < region_height; ++row)

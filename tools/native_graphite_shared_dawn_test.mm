@@ -4,6 +4,8 @@
 #include "src/gpu/graphite/dawn/DawnGraphiteUtils.h"
 #include <cassert>
 #include <mach/mach.h>
+#include <libproc.h>
+#include <sys/resource.h>
 
 static sk_sp<SkData> picture(float phase, bool image, bool tagged) {
     SkPictureRecorder recorder;
@@ -136,6 +138,27 @@ static void check_retired_texture_views() {
 }
 
 int main(int argc, char** argv) { @autoreleasepool {
+    if (argc > 1 && (std::strcmp(argv[1], "final-direct") == 0
+        || std::strcmp(argv[1], "final-staged") == 0)) {
+        bool direct = std::strcmp(argv[1], "final-direct") == 0;
+        unsetenv("VOX_DISABLE_SHARED_DAWN_PIXELS");
+        if (direct) unsetenv("VOX_DISABLE_DIRECT_DAWN_READBACK");
+        else setenv("VOX_DISABLE_DIRECT_DAWN_READBACK", "1", 1);
+        constexpr int width = 2048, height = 2048;
+        std::vector<uint8_t> output(size_t(width) * height * 4, 0xa9);
+        auto data = picture(.25f, true, true);
+        float matrix[] {10, 0, 0, 0, 10, 0, 0, 0, 1};
+        assert(vox_graphite_draw_picture_pixels(output.data(), width, height, width * 4,
+            data->data(), data->size(), matrix));
+        rusage_info_v4 usage {};
+        assert(proc_pid_rusage(getpid(), RUSAGE_INFO_V4, reinterpret_cast<rusage_info_t*>(&usage)) == 0);
+        uint64_t hash = 1469598103934665603ULL;
+        for (auto value : output) { hash ^= value; hash *= 1099511628211ULL; }
+        std::printf("{\"direct\":%s,\"peak_bytes\":%llu,\"pixel_hash\":\"%llu\"}\n",
+            direct ? "true" : "false", (unsigned long long)usage.ri_lifetime_max_phys_footprint,
+            (unsigned long long)hash);
+        return 0;
+    }
     if (argc > 1) {
         bool shared = std::strcmp(argv[1], "shared") == 0;
         task_vm_info_data_t before {}, after {}; mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
@@ -177,6 +200,11 @@ int main(int argc, char** argv) { @autoreleasepool {
         for (float phase : {0.f, .25f, .5f, .75f}) for (bool image : {false, true})
         for (bool tagged : {false, true}) for (bool cropped : {false, true}) {
             auto expected = draw(false, batch, backdrop, phase, image, tagged, cropped);
+            if (!batch) {
+                setenv("VOX_DISABLE_DIRECT_DAWN_READBACK", "1", 1);
+                assert(draw(true, batch, backdrop, phase, image, tagged, cropped) == expected);
+                unsetenv("VOX_DISABLE_DIRECT_DAWN_READBACK");
+            }
             auto actual = draw(true, batch, backdrop, phase, image, tagged, cropped);
             if (actual != expected) {
                 std::fprintf(stderr, "Pixels differ batch=%d backdrop=%d phase=%g image=%d tagged=%d crop=%d\n",

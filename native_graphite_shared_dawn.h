@@ -142,6 +142,16 @@ struct VoxDawnSharedSurface {
         }
         return result;
     }
+    // The caller retires this surface immediately after the read. Leave GPU
+    // access ended and copy into its owned destination, avoiding a second
+    // full-size CPU allocation. Batch targets use read() to resume GPU access.
+    bool read_final(skgpu::graphite::Context* gpu, SkIRect rect, void* out, size_t pitch) {
+        if (!pixels || !out || rect.isEmpty() || pitch < size_t(rect.width()) * 4
+            || pitch > SIZE_MAX / size_t(rect.height())) return false;
+        if (!gpu || !gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes))
+            || !pixels->end_and_wait()) return false;
+        return pixels->copy(rect, out, pitch, false);
+    }
     bool read(skgpu::graphite::Context* gpu, SkIRect rect, std::vector<uint8_t>& out) {
         if (!pixels || !gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes))
             || !pixels->end_and_wait()) return false;
