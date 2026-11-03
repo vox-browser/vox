@@ -4207,3 +4207,34 @@ records 5,064 function rows on frozen HTML with identical geometry/paint.
 Its C-O1 instrumentation disproportionately charges small adapter calls, and
 recursive inclusive times overlap. These call patterns guide investigation;
 they are not unprofiled instruction savings or CPU percentages.
+
+### Specified positioned-image geometry removed (2026-11-03)
+
+`583d9c5cb` preserves specified positioned-image geometry when the first bitmap
+arrives, without requiring a previous natural ratio. All 96 focused executions
+and 245 tool tests pass, including full-rebuild paint comparisons, replacement
+ownership, author ratios, percentage bases, intrinsic constraints and pending
+styles. Preparation failures remain recorded: a synthetic bitmap lacked the
+retained-replay flag, and a later fixture checked layout flags before flushing
+styles. The corrected selection retains the relevant inputs and assertions.
+
+The completed production bundle contains the code, but both original-origin
+diagnostic arms show **no actual fast-path hit**, despite exact original pixels,
+complete content, ownership, normal exits and JavaScriptCore execution. Two
+additional observer captures also show no hit. The script-based style extension
+is ignored by Vox's native audit and supplies no style evidence; the later
+native layout observer retains actual image classes and width/height snapshots.
+The precise cause of ineligibility remains unproved. The controller stops before
+launching an acceptance cohort, so history stays **73 cohorts / 1,660 browser
+attempts**, and no instruction reduction is attributed to an unused path.
+
+`44f6e03c8` removes the engine experiment and `f1c018d66` removes its control.
+All 33 focused rollback checks and 244 restored tool tests pass; native rollback
+validation awaits a later completed bundle. Shared production failures during
+this experiment retain their receipts: missing ECDSA dispatch entries were
+corrected by the concurrent loading work, followed by an input-drift rejection.
+A separate link probe succeeds with the corrected dispatch and fails when its
+seven ECDSA mappings are deliberately undefined. No foreign implementation was
+changed here. The [durable ledger](performance/bbc-positioned-image-specified-size-20261103.json)
+retains every diagnostic, preparation failure, command and exit. The **10% BBC
+goal remains open**, without a homepage catalog entry.
