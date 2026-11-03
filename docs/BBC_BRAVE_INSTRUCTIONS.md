@@ -1,30 +1,31 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Cohort 79 completes seven alternating control/Vox/Brave
+`OPTIMIZED_SITES.md`.** Cohort 80 completes seven alternating control/Vox/Brave
 triples on the 609-response frozen 2026-11-03 homepage. All 21 captures pass
 unchanged pixels, full content, normal native exits, ownership and pinned-input
-checks. Vox's launch-through-encoded-PNG median is **29,619,357,801** instructions;
-Brave's lower-bound median is **17,817,074,138**. The strict integer gate fails:
-`307870823940 > 158739079113`, conservative ratio **1.745529475755338**.
+checks. Vox's launch-through-encoded-PNG median is **29,874,408,766** instructions;
+Brave's lower-bound median is **17,734,725,330**. The strict integer gate fails:
+`314075995300 > 158985928512`, conservative ratio **1.7779460007283894**.
 Both Vox arms explicitly retain the historical logical-grid paint and inline
 font metrics; this is not a result for the newer default Retina rendering.
 
-The closed-text indefinite-height key is eligible on BBC, with candidate-only
-reuse witnessed before encoded PNG in a separate diagnostic. Its same-binary
-control median is **29,660,785,436**: a **41,427,635 (0.1397%)** marginal median
-reduction, four paired improvements and three regressions. The conservative
-control ratio **1.0708615536093389** fails; no robust saving is credited.
-See the [cohort/key ledger](performance/bbc-cohort79-inline-height-20261103.json)
-and [authenticated raw receipts](performance/raw/bbc-cohort79-inline-height-20261103.tar.gz).
+Flex/grid paint reuse is eligible on BBC, with candidate-only cache hits
+witnessed before encoded PNG in a separate diagnostic. Same-binary control
+median is **30,068,054,902**: a **193,646,136 (0.644%)** marginal median reduction,
+three paired improvements and four regressions. The conservative control ratio
+**1.086957174914251** fails; no robust saving is credited.
+See the [cohort/paint ledger](performance/bbc-cohort80-item-paint-20261103.json)
+and [authenticated raw receipts](performance/raw/bbc-cohort80-item-paint-20261103.tar.gz).
 
-Prior cohort 78 also has 21 valid captures, but stylesheet pruning regresses:
-Vox median 31,263,189,299 versus control 30,106,398,512 and Brave 17,848,741,330.
-Five pairs regress and two improve. The candidate and control are removed, with
-all 135 focused rollback executions and 262 instruction-tool checks passing.
-See the [rollback ledger](performance/bbc-cohort78-rollback-20261103.json).
-Prior cohort 77 retains all fourteen attempts, including Brave pair 6's 53,392
-changed reference pixels, in the [profile ledger](performance/bbc-whole-profile-cohort77-20261103.json).
+Prior cohort 79 has 21 valid captures, with Vox/control/Brave medians
+29,619,357,801 / 29,660,785,436 / 17,817,074,138. Its eligible indefinite-height
+key has a small variable point reduction and no robust saving credit; see the
+[key ledger](performance/bbc-cohort79-inline-height-20261103.json).
+Prior cohort 78's stylesheet pruning regresses and is removed; see the
+[rollback ledger](performance/bbc-cohort78-rollback-20261103.json).
+Prior cohort 77 retains Brave pair 6's changed pixels in the
+[profile ledger](performance/bbc-whole-profile-cohort77-20261103.json).
 
 This is a **new workload**, with 609 sealed responses and 91 headlines. The
 original 595-response fixture remains lost. Moving to this page establishes no
@@ -44,7 +45,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **79 cohorts / 1,779 attempted browser trials**, excluding separately
+History is **80 cohorts / 1,800 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 ## Historical results on the earlier fixture
@@ -4715,3 +4716,39 @@ Commits `1f1873a05`, `5ce75b50b` and `1ba6251c3` contain the helper repair,
 implementation and matched benchmark control. All 264 instruction-tool tests
 pass. Native eligibility and unchanged pixels still need a completed production
 bundle before cohort 80 can launch. No catalog entry is added.
+
+
+## Flex/grid paint cohort and registry follow-up (2026-11-03)
+
+The pending paint experiment completes as cohort 80 on production
+`8cce637a6dbdaf684d997c8fdf47a6eade837a9d0edbb31c95a1e3222e821434`.
+Separate fresh diagnostic launches show candidate-only reuse of unchanged
+flex/grid item paint before encoded PNG. Both arms retain exact original pixels,
+full content and 72 unique external author-script executions through JavaScriptCore,
+each matching archived bytes with no reported exception. All 21 unprofiled
+captures pass the complete acceptance audits; the instruction gates still fail.
+The marginal median reduction is variable and receives no robust credit.
+
+The repeated broad selection enters all 490 cases in both default and no-GC
+modes, with 487 passes and the same three failures in each. Every selected
+input hash is unchanged. This supplies no full pass or cadence reset. All
+focused checks, the earlier decoration-pointer oracle failures, actual guards,
+commands, PNGs, counters and native exits are retained in the paint ledger.
+
+A longer native process sample requests 15 seconds and ends with the observed
+browser lifetime, about 7.7 seconds after attachment. Its content and original
+pixels pass. It includes waits, host contention and post-PNG work; neither its
+stack weights nor requested duration establish instructions or exclusive CPU
+time. It identifies repeated DOM/registry walks in tab-loading state checks.
+
+Commits `42611f35b` / `6ea9375e9` use the same registry as container discovery
+to prove that a document has no owned navigable containers before walking its
+DOM. A detached same-document container deliberately falls back to the full
+walk. Live ownership reads preserve registration, removal, adoption, tree order,
+nested documents and shadow trees without a new cache invalidation scheme.
+Five focused cases pass in both arms across all three memory modes (30
+executions), and all 266 instruction-tool tests pass. The first shadow fixture
+used a non-HTML namespace and failed before traversal in both arms; it is
+retained, and the corrected fixture explicitly creates HTML elements.
+Production BBC eligibility and cohort 81 remain pending; no registry saving or
+BBC catalog entry is claimed.
