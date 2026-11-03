@@ -159,6 +159,7 @@ mut:
 	registered_event_sources_       []&EventSource
 	registered_web_sockets_         []&GlobalScopeWebSocket
 	reported_errors_                []dom.JSValue
+	reported_error_information_     []ReportedErrorInformation
 	error_reporting_mode_           bool
 	error_reporting_target_         ?&dom.EventTarget
 	error_reporting_realm_          ?&ScriptingRealm
@@ -988,7 +989,17 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) report_an_exception(exception 
 			worker.report_unhandled_exception(message, filename, u32(lineno), u32(colno))
 			return
 		}
+		mut retained := platform.enter_retained_allocations()
+		defer { retained.finish() }
+		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
+		defer { platform.leave_persistent(persistent) }
 		scope.reported_errors_ << exception
+		scope.reported_error_information_ << ReportedErrorInformation{
+			message: message.clone()
+			filename: filename.clone()
+			lineno: u32(lineno)
+			colno: u32(colno)
+		}
 		if current_realm := realm {
 			mut mutable_realm := unsafe { &ScriptingRealm(current_realm) }
 			report_exception_to_console(exception, mut mutable_realm, .no)

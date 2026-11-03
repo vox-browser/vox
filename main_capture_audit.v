@@ -159,6 +159,7 @@ struct CaptureAudit {
 	// Native HTML timer/event exceptions bypass the compact bridge log.
 	native_reported_error_count int
 	native_reported_errors      []string
+	native_reported_error_information []html.ReportedErrorInformation
 	selections                  []CaptureAuditSelection
 	note                        string = 'Retained DOM/layout/image snapshot. Document-only captures collect after PNG encoding; other captures collect when scheduled. Collection is included in process-exit instruction totals.'
 }
@@ -254,11 +255,13 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 	}
 	mut native_reported_error_count := 0
 	mut native_reported_errors := []string{}
+	mut native_reported_error_information := []html.ReportedErrorInformation{}
 	record := app.document.relevant_settings_object()
 	if record != unsafe { nil } {
 		settings := unsafe { &html.EnvironmentSettingsObject(record) }
 		if scope := settings.window_or_worker_global_scope() {
-			native_reported_error_count = scope.reported_errors().len
+			native_reported_error_count = scope.reported_error_count()
+			native_reported_error_information = scope.reported_error_information()
 			if config.describe_native_errors {
 				for reason in scope.reported_errors() {
 					native_reported_errors << reason.to_string_value()
@@ -302,6 +305,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		javascript_diagnostics:      app.js_messages.clone()
 		native_reported_error_count: native_reported_error_count
 		native_reported_errors:      native_reported_errors
+		native_reported_error_information: native_reported_error_information
 		selections:                  selections
 	}
 }
