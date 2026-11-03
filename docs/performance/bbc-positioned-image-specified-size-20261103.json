@@ -283,5 +283,24 @@
     }
   },
   "limitations": "All4freshdiagnosticbrowsercaptures pass original pixels/content/ownership/normal-exit checks and show actual JSC execution, but no specified-size fast-path marker occurs. The prepared cohort is not launched and no counts qualify for optimization credit. Native rollback validation needs a later completed bundle. No live-site, rendering-time or FPS claim.",
-  "evidence_root": "Build/bbc-positioned-image-specified-size-20261103"
+  "evidence_root": "Build/bbc-positioned-image-specified-size-20261103",
+  "native_rollback_followup": {
+    "root": "Build/bbc-parent-longhand-hash-20261103/native-validation",
+    "executable_sha256": "6b29971990bdae025e55f58633868c2ef45ee4243ebcba162d2a233a0506c577",
+    "checks": "Fresh headless startup,11 smoke and8 SVG checks pass with stable executable/native-library identities. Retired specified-image marker is absent.",
+    "results": [
+      {
+        "name": "headless",
+        "exit": 0
+      },
+      {
+        "name": "smoke",
+        "exit": 0
+      },
+      {
+        "name": "svg",
+        "exit": 0
+      }
+    ]
+  }
 }

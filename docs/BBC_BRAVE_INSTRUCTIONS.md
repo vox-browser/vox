@@ -4238,3 +4238,55 @@ seven ECDSA mappings are deliberately undefined. No foreign implementation was
 changed here. The [durable ledger](performance/bbc-positioned-image-specified-size-20261103.json)
 retains every diagnostic, preparation failure, command and exit. The **10% BBC
 goal remains open**, without a homepage catalog entry.
+
+
+### Parent longhand hash hints (2026-11-03)
+
+`a3a76bc8a` reuses inherited-parent bucket hashes within the existing style
+batch, guarded by parent identity, graph-token identity and mutation revision.
+Every restoration still checks current and retained original payloads. Direct
+mutable-box changes cannot authorize a stale restore; an untyped direct change
+also prevents publication. The hint table is bounded to 1,024 parents and
+retires at the outer batch boundary. All **252 focused executions** and **222
+selected instruction-tool tests** pass.
+
+Separate `v -profile` runs observe 4,065 inherited-hash calls in the control
+versus 2,981 in the candidate, and 560,517 versus 466,209 value-hash calls,
+within 5,124 key queries in each arm. Two unprofiled standalone pairs reduce
+first/second layout medians by **12,022,769.5 instructions** in total, with
+identical geometry and paint. These frozen-HTML diagnostics exclude scripts,
+resource loading, native window setup and PNG capture and earn no BBC credit.
+Fresh original-origin browser diagnostics confirm an actual hint hit before
+capture only in the candidate, complete original content/pixels, ownership,
+normal exits and JavaScriptCore execution in both arms.
+
+Cohort 74 retains all seven alternating control/Vox/Brave triples and all 21
+original PNGs are exact. Control and candidate medians are **29,014,217,889**
+and **29,284,096,731**: the candidate median regresses **269,878,842**, despite
+four pairwise wins and three regressions. Brave trials 5, 6 and 7 fail helper
+ownership; their absent instruction bounds are not inferred. The four observed
+Brave lower bounds have median 15,176,889,092.5. Acceptance is invalid and the
+available numeric gate also fails: **304,887,305,890 > 135,064,777,491**.
+The hint remains a small guarded implementation improvement with no established
+BBC browser reduction. No new BBC savings are credited toward broad cadence;
+the earlier broad batch still has its three known failures and no reset.
+
+The cohort's completed bundle passes fresh headless startup, eleven smoke and
+eight SVG checks with stable identities. It also lacks the retired specified
+positioned-image marker, supplying that experiment's pending native rollback
+check. The generated-C proof explicitly records preprocessor and checked-array
+accessor symbol spelling differences; it makes no raw-byte equality claim.
+The [durable ledger](performance/bbc-parent-longhand-hash-20261103.json) retains
+counts, receipts, diagnostics, profiles and native checks. History is **74
+cohorts / 1,681 browser attempts**. The **10% target remains open**, without a
+BBC homepage catalog entry.
+
+Two separate [thread diagnostics](performance/bbc-thread-cpu-diagnostics-20261103.json)
+retain original pixels/content and pin executable/native inputs. Cumulative
+thread CPU observations place most observed work on one thread; the second
+probe explicitly authenticates the main thread and records CPU-delta-weighted
+frame-pointer stacks before PNG. Geometry queries within script event callbacks
+and repeated layout/style paths are investigation leads. Sampling can miss
+short-lived threads, an interval-end stack can differ from the work in that
+interval, and inclusive stacks overlap. Probe overhead and unresolved native/JIT
+frames prevent CPU percentages, exclusive function costs or instruction credit.

@@ -1,0 +1,3524 @@
+{
+  "diagnostic_only": true,
+  "instruction_credit": false,
+  "acceptance": false,
+  "validation": [
+    {
+      "root": "Build/bbc-thread-cpu-observer-20261103",
+      "driver_guard_exit": 0,
+      "native_exit": 0,
+      "original_pixels_exact": true,
+      "content_exact": true,
+      "ownership": true,
+      "runtime_inputs_stable": true,
+      "runtime_inputs": {
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+          "bytes": 150024
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+          "bytes": 69928
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+          "bytes": 102592
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e",
+          "bytes": 5150944
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91",
+          "bytes": 882592
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+          "bytes": 181544
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+          "bytes": 335064
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+          "bytes": 768872
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+          "bytes": 33371048
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+          "bytes": 2158624
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912",
+          "bytes": 218040
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2",
+          "bytes": 202328
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366",
+          "bytes": 369272
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d",
+          "bytes": 64496
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+          "bytes": 245016
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+          "bytes": 5744128
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd",
+          "bytes": 981792
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+          "bytes": 106528
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91",
+          "bytes": 798160
+        },
+        "/Users/alex/code/vox2/Build/bbc-thread-cpu-observer-20261103/diagnose-sample.py": {
+          "sha256": "f7100ab814c78e3217155587529faead4e587b9b374b0e99a12aa44e0cb513d1",
+          "bytes": 635
+        },
+        "/Users/alex/code/vox2/Build/bbc-thread-cpu-observer-20261103/thread_cpu.c": {
+          "sha256": "a92e6168fe6e7d6127d1869932af2bb152c542ca9e727ff6ee23a32ead8a3265",
+          "bytes": 5724
+        },
+        "/Users/alex/code/vox2/Build/bbc-thread-cpu-observer-20261103/thread_cpu.dylib": {
+          "sha256": "d17ad7ab3050e60a1110a74d69e5c50378011ad70068f8007b7c2520336fea86",
+          "bytes": 35952
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "sha256": "590975bd959b0889ade8b5ba711bb2297bc8423f62f9d810673bcc182881a81c",
+          "bytes": 30334112
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "sha256": "b3d30c2e9625c471c9c8afd6be833247846a65386e96570f88915eb26a2c1acc",
+          "bytes": 634544
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927",
+          "bytes": 150128
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962",
+          "bytes": 70128
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7",
+          "bytes": 661248
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58",
+          "bytes": 212080
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959",
+          "bytes": 1362736
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+          "bytes": 125264
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1",
+          "bytes": 1427648
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618",
+          "bytes": 33833472
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7",
+          "bytes": 1885104
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2",
+          "bytes": 191344
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd",
+          "bytes": 574096
+        }
+      },
+      "jsc": [
+        "JSC_PROBE pid=68033 contexts=1 groups=1 evaluations=1955"
+      ]
+    },
+    {
+      "root": "Build/bbc-thread-cpu-stacks-20261103",
+      "driver_guard_exit": 0,
+      "native_exit": 0,
+      "original_pixels_exact": true,
+      "content_exact": true,
+      "ownership": true,
+      "runtime_inputs_stable": true,
+      "runtime_inputs": {
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+          "bytes": 150024
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+          "bytes": 69928
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+          "bytes": 102592
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e",
+          "bytes": 5150944
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91",
+          "bytes": 882592
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+          "bytes": 181544
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+          "bytes": 335064
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+          "bytes": 768872
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+          "bytes": 33371048
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+          "bytes": 2158624
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912",
+          "bytes": 218040
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2",
+          "bytes": 202328
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366",
+          "bytes": 369272
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d",
+          "bytes": 64496
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+          "bytes": 245016
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+          "bytes": 5744128
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd",
+          "bytes": 981792
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+          "bytes": 106528
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91",
+          "bytes": 798160
+        },
+        "/Users/alex/code/vox2/Build/bbc-thread-cpu-stacks-20261103/diagnose-sample.py": {
+          "sha256": "f7100ab814c78e3217155587529faead4e587b9b374b0e99a12aa44e0cb513d1",
+          "bytes": 635
+        },
+        "/Users/alex/code/vox2/Build/bbc-thread-cpu-stacks-20261103/thread_cpu.c": {
+          "sha256": "b481a3efa211db3308f6a0c3b3f5f34e94c1e548a2ef32eeb6419a4f6484a254",
+          "bytes": 6750
+        },
+        "/Users/alex/code/vox2/Build/bbc-thread-cpu-stacks-20261103/thread_cpu.dylib": {
+          "sha256": "b83b8f84d21c0369c652b4526cac295e4b371e9612ba0f6348dc12c6ca17fe6f",
+          "bytes": 36240
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "sha256": "6b29971990bdae025e55f58633868c2ef45ee4243ebcba162d2a233a0506c577",
+          "bytes": 30334832
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "sha256": "50d6dfb5d1e51cae458b9d0ed86324eab4ab8eda32b6ae2c30a1169493556347",
+          "bytes": 634544
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927",
+          "bytes": 150128
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962",
+          "bytes": 70128
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7",
+          "bytes": 661248
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58",
+          "bytes": 212080
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959",
+          "bytes": 1362736
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+          "bytes": 125264
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1",
+          "bytes": 1427648
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618",
+          "bytes": 33833472
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7",
+          "bytes": 1885104
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2",
+          "bytes": 191344
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd",
+          "bytes": 574096
+        }
+      },
+      "jsc": [
+        "JSC_PROBE pid=97141 contexts=1 groups=1 evaluations=1895"
+      ]
+    }
+  ],
+  "thread_cpu": {
+    "diagnostic_only": true,
+    "boundary_process_instructions": 28554666496,
+    "iterations_before_boundary": 353,
+    "iterations_total": 356,
+    "sampler_tid": 47864878,
+    "thread_cpu_observed_lower_bounds": [
+      {
+        "tid": 47864673,
+        "name": "",
+        "user_ns": 1672931000,
+        "system_ns": 246990000,
+        "samples": 353
+      },
+      {
+        "tid": 47865287,
+        "name": "JIT Worklist Helper Thread",
+        "user_ns": 125385000,
+        "system_ns": 4259000,
+        "samples": 312
+      },
+      {
+        "tid": 47864878,
+        "name": "vox-thread-cpu-observer",
+        "user_ns": 12582000,
+        "system_ns": 65011000,
+        "samples": 353
+      },
+      {
+        "tid": 47865288,
+        "name": "JIT Worklist Helper Thread",
+        "user_ns": 39635000,
+        "system_ns": 1927000,
+        "samples": 311
+      },
+      {
+        "tid": 47864880,
+        "name": "",
+        "user_ns": 4239000,
+        "system_ns": 25286000,
+        "samples": 352
+      },
+      {
+        "tid": 47864995,
+        "name": "",
+        "user_ns": 1276000,
+        "system_ns": 23005000,
+        "samples": 340
+      },
+      {
+        "tid": 47864998,
+        "name": "",
+        "user_ns": 599000,
+        "system_ns": 18786000,
+        "samples": 340
+      },
+      {
+        "tid": 47865351,
+        "name": "JSC Heap Collector Thread",
+        "user_ns": 12690000,
+        "system_ns": 1276000,
+        "samples": 304
+      },
+      {
+        "tid": 47865285,
+        "name": "Heap Helper Thread",
+        "user_ns": 10733000,
+        "system_ns": 1483000,
+        "samples": 312
+      },
+      {
+        "tid": 47865778,
+        "name": "JIT Worklist Helper Thread",
+        "user_ns": 11741000,
+        "system_ns": 255000,
+        "samples": 260
+      },
+      {
+        "tid": 47865281,
+        "name": "Heap Helper Thread",
+        "user_ns": 10198000,
+        "system_ns": 1680000,
+        "samples": 312
+      },
+      {
+        "tid": 47865283,
+        "name": "Heap Helper Thread",
+        "user_ns": 10184000,
+        "system_ns": 1566000,
+        "samples": 312
+      },
+      {
+        "tid": 47865286,
+        "name": "Heap Helper Thread",
+        "user_ns": 10171000,
+        "system_ns": 1579000,
+        "samples": 312
+      },
+      {
+        "tid": 47865284,
+        "name": "Heap Helper Thread",
+        "user_ns": 10157000,
+        "system_ns": 1587000,
+        "samples": 312
+      },
+      {
+        "tid": 47865282,
+        "name": "Heap Helper Thread",
+        "user_ns": 9396000,
+        "system_ns": 1731000,
+        "samples": 312
+      },
+      {
+        "tid": 47864879,
+        "name": "",
+        "user_ns": 6705000,
+        "system_ns": 1784000,
+        "samples": 352
+      },
+      {
+        "tid": 47865289,
+        "name": "JIT Worklist Helper Thread",
+        "user_ns": 7745000,
+        "system_ns": 572000,
+        "samples": 311
+      },
+      {
+        "tid": 47866441,
+        "name": "",
+        "user_ns": 4947000,
+        "system_ns": 1003000,
+        "samples": 175
+      },
+      {
+        "tid": 47866455,
+        "name": "",
+        "user_ns": 4497000,
+        "system_ns": 817000,
+        "samples": 175
+      },
+      {
+        "tid": 47865268,
+        "name": "JavaScriptCore libpas scavenger",
+        "user_ns": 2449000,
+        "system_ns": 2673000,
+        "samples": 314
+      },
+      {
+        "tid": 47864902,
+        "name": "",
+        "user_ns": 3091000,
+        "system_ns": 1520000,
+        "samples": 350
+      },
+      {
+        "tid": 47865365,
+        "name": "",
+        "user_ns": 1673000,
+        "system_ns": 750000,
+        "samples": 2
+      },
+      {
+        "tid": 47865450,
+        "name": "",
+        "user_ns": 1529000,
+        "system_ns": 743000,
+        "samples": 2
+      },
+      {
+        "tid": 47865035,
+        "name": "",
+        "user_ns": 1933000,
+        "system_ns": 285000,
+        "samples": 6
+      },
+      {
+        "tid": 47865457,
+        "name": "",
+        "user_ns": 1532000,
+        "system_ns": 651000,
+        "samples": 2
+      },
+      {
+        "tid": 47865013,
+        "name": "",
+        "user_ns": 1730000,
+        "system_ns": 367000,
+        "samples": 5
+      },
+      {
+        "tid": 47865022,
+        "name": "",
+        "user_ns": 1794000,
+        "system_ns": 287000,
+        "samples": 6
+      },
+      {
+        "tid": 47865012,
+        "name": "",
+        "user_ns": 1729000,
+        "system_ns": 324000,
+        "samples": 6
+      },
+      {
+        "tid": 47866359,
+        "name": "",
+        "user_ns": 1633000,
+        "system_ns": 404000,
+        "samples": 9
+      },
+      {
+        "tid": 47865010,
+        "name": "",
+        "user_ns": 1761000,
+        "system_ns": 255000,
+        "samples": 6
+      },
+      {
+        "tid": 47865009,
+        "name": "",
+        "user_ns": 1735000,
+        "system_ns": 258000,
+        "samples": 5
+      },
+      {
+        "tid": 47865597,
+        "name": "Pool/3",
+        "user_ns": 1714000,
+        "system_ns": 278000,
+        "samples": 279
+      },
+      {
+        "tid": 47865515,
+        "name": "",
+        "user_ns": 1623000,
+        "system_ns": 355000,
+        "samples": 2
+      },
+      {
+        "tid": 47865019,
+        "name": "",
+        "user_ns": 1694000,
+        "system_ns": 283000,
+        "samples": 5
+      },
+      {
+        "tid": 47865023,
+        "name": "",
+        "user_ns": 1778000,
+        "system_ns": 197000,
+        "samples": 5
+      },
+      {
+        "tid": 47865363,
+        "name": "",
+        "user_ns": 1708000,
+        "system_ns": 236000,
+        "samples": 2
+      },
+      {
+        "tid": 47865510,
+        "name": "",
+        "user_ns": 1646000,
+        "system_ns": 276000,
+        "samples": 2
+      },
+      {
+        "tid": 47865018,
+        "name": "",
+        "user_ns": 1628000,
+        "system_ns": 261000,
+        "samples": 5
+      },
+      {
+        "tid": 47865015,
+        "name": "",
+        "user_ns": 1603000,
+        "system_ns": 281000,
+        "samples": 6
+      },
+      {
+        "tid": 47865445,
+        "name": "",
+        "user_ns": 1417000,
+        "system_ns": 464000,
+        "samples": 2
+      },
+      {
+        "tid": 47865038,
+        "name": "",
+        "user_ns": 1632000,
+        "system_ns": 224000,
+        "samples": 2
+      },
+      {
+        "tid": 47865016,
+        "name": "",
+        "user_ns": 1620000,
+        "system_ns": 227000,
+        "samples": 4
+      },
+      {
+        "tid": 47865021,
+        "name": "",
+        "user_ns": 1617000,
+        "system_ns": 222000,
+        "samples": 6
+      },
+      {
+        "tid": 47865020,
+        "name": "",
+        "user_ns": 1513000,
+        "system_ns": 325000,
+        "samples": 6
+      },
+      {
+        "tid": 47865034,
+        "name": "",
+        "user_ns": 1475000,
+        "system_ns": 297000,
+        "samples": 6
+      },
+      {
+        "tid": 47865595,
+        "name": "Pool/1",
+        "user_ns": 1463000,
+        "system_ns": 278000,
+        "samples": 279
+      },
+      {
+        "tid": 47865368,
+        "name": "",
+        "user_ns": 1416000,
+        "system_ns": 304000,
+        "samples": 2
+      },
+      {
+        "tid": 47865512,
+        "name": "",
+        "user_ns": 1493000,
+        "system_ns": 219000,
+        "samples": 2
+      },
+      {
+        "tid": 47865031,
+        "name": "",
+        "user_ns": 1398000,
+        "system_ns": 293000,
+        "samples": 6
+      },
+      {
+        "tid": 47865447,
+        "name": "",
+        "user_ns": 1408000,
+        "system_ns": 249000,
+        "samples": 2
+      },
+      {
+        "tid": 47865862,
+        "name": "",
+        "user_ns": 1317000,
+        "system_ns": 330000,
+        "samples": 1
+      },
+      {
+        "tid": 47865511,
+        "name": "",
+        "user_ns": 1426000,
+        "system_ns": 192000,
+        "samples": 2
+      },
+      {
+        "tid": 47865514,
+        "name": "",
+        "user_ns": 1403000,
+        "system_ns": 211000,
+        "samples": 2
+      },
+      {
+        "tid": 47865370,
+        "name": "",
+        "user_ns": 1410000,
+        "system_ns": 201000,
+        "samples": 2
+      },
+      {
+        "tid": 47864975,
+        "name": "",
+        "user_ns": 1152000,
+        "system_ns": 432000,
+        "samples": 1
+      },
+      {
+        "tid": 47865459,
+        "name": "",
+        "user_ns": 1299000,
+        "system_ns": 273000,
+        "samples": 2
+      },
+      {
+        "tid": 47865030,
+        "name": "",
+        "user_ns": 1240000,
+        "system_ns": 313000,
+        "samples": 4
+      },
+      {
+        "tid": 47865364,
+        "name": "",
+        "user_ns": 1219000,
+        "system_ns": 331000,
+        "samples": 2
+      },
+      {
+        "tid": 47865369,
+        "name": "",
+        "user_ns": 1300000,
+        "system_ns": 248000,
+        "samples": 2
+      },
+      {
+        "tid": 47865027,
+        "name": "",
+        "user_ns": 1259000,
+        "system_ns": 275000,
+        "samples": 6
+      },
+      {
+        "tid": 47864989,
+        "name": "",
+        "user_ns": 777000,
+        "system_ns": 709000,
+        "samples": 340
+      },
+      {
+        "tid": 47865366,
+        "name": "",
+        "user_ns": 1257000,
+        "system_ns": 221000,
+        "samples": 2
+      },
+      {
+        "tid": 47865861,
+        "name": "",
+        "user_ns": 1158000,
+        "system_ns": 314000,
+        "samples": 1
+      },
+      {
+        "tid": 47865014,
+        "name": "",
+        "user_ns": 1160000,
+        "system_ns": 285000,
+        "samples": 6
+      },
+      {
+        "tid": 47865037,
+        "name": "",
+        "user_ns": 1149000,
+        "system_ns": 276000,
+        "samples": 6
+      },
+      {
+        "tid": 47865036,
+        "name": "",
+        "user_ns": 1100000,
+        "system_ns": 324000,
+        "samples": 6
+      },
+      {
+        "tid": 47864996,
+        "name": "",
+        "user_ns": 601000,
+        "system_ns": 813000,
+        "samples": 340
+      },
+      {
+        "tid": 47865025,
+        "name": "",
+        "user_ns": 1173000,
+        "system_ns": 240000,
+        "samples": 6
+      },
+      {
+        "tid": 47865011,
+        "name": "",
+        "user_ns": 1122000,
+        "system_ns": 289000,
+        "samples": 6
+      },
+      {
+        "tid": 47865032,
+        "name": "",
+        "user_ns": 1113000,
+        "system_ns": 295000,
+        "samples": 6
+      },
+      {
+        "tid": 47865017,
+        "name": "",
+        "user_ns": 1090000,
+        "system_ns": 295000,
+        "samples": 6
+      },
+      {
+        "tid": 47865033,
+        "name": "",
+        "user_ns": 1112000,
+        "system_ns": 264000,
+        "samples": 6
+      },
+      {
+        "tid": 47865367,
+        "name": "",
+        "user_ns": 1124000,
+        "system_ns": 235000,
+        "samples": 2
+      },
+      {
+        "tid": 47865478,
+        "name": "",
+        "user_ns": 1139000,
+        "system_ns": 220000,
+        "samples": 1
+      },
+      {
+        "tid": 47865028,
+        "name": "",
+        "user_ns": 1061000,
+        "system_ns": 280000,
+        "samples": 6
+      },
+      {
+        "tid": 47865026,
+        "name": "",
+        "user_ns": 1084000,
+        "system_ns": 220000,
+        "samples": 6
+      },
+      {
+        "tid": 47865040,
+        "name": "",
+        "user_ns": 1049000,
+        "system_ns": 249000,
+        "samples": 6
+      },
+      {
+        "tid": 47865024,
+        "name": "",
+        "user_ns": 1058000,
+        "system_ns": 238000,
+        "samples": 6
+      },
+      {
+        "tid": 47865863,
+        "name": "",
+        "user_ns": 969000,
+        "system_ns": 306000,
+        "samples": 1
+      },
+      {
+        "tid": 47865039,
+        "name": "",
+        "user_ns": 1038000,
+        "system_ns": 231000,
+        "samples": 6
+      },
+      {
+        "tid": 47865029,
+        "name": "",
+        "user_ns": 1052000,
+        "system_ns": 207000,
+        "samples": 6
+      },
+      {
+        "tid": 47866218,
+        "name": "",
+        "user_ns": 813000,
+        "system_ns": 254000,
+        "samples": 9
+      },
+      {
+        "tid": 47865596,
+        "name": "Pool/2",
+        "user_ns": 912000,
+        "system_ns": 127000,
+        "samples": 279
+      },
+      {
+        "tid": 47866315,
+        "name": "",
+        "user_ns": 818000,
+        "system_ns": 184000,
+        "samples": 8
+      },
+      {
+        "tid": 47865594,
+        "name": "Pool/0",
+        "user_ns": 789000,
+        "system_ns": 139000,
+        "samples": 279
+      },
+      {
+        "tid": 47864992,
+        "name": "",
+        "user_ns": 473000,
+        "system_ns": 433000,
+        "samples": 340
+      },
+      {
+        "tid": 47865568,
+        "name": "",
+        "user_ns": 522000,
+        "system_ns": 218000,
+        "samples": 1
+      },
+      {
+        "tid": 47865567,
+        "name": "",
+        "user_ns": 499000,
+        "system_ns": 201000,
+        "samples": 1
+      },
+      {
+        "tid": 47865566,
+        "name": "",
+        "user_ns": 453000,
+        "system_ns": 221000,
+        "samples": 1
+      },
+      {
+        "tid": 47865453,
+        "name": "",
+        "user_ns": 488000,
+        "system_ns": 145000,
+        "samples": 1
+      },
+      {
+        "tid": 47865442,
+        "name": "",
+        "user_ns": 413000,
+        "system_ns": 205000,
+        "samples": 1
+      },
+      {
+        "tid": 47865444,
+        "name": "",
+        "user_ns": 427000,
+        "system_ns": 156000,
+        "samples": 1
+      },
+      {
+        "tid": 47864913,
+        "name": "com.apple.NSEventThread",
+        "user_ns": 188000,
+        "system_ns": 248000,
+        "samples": 348
+      },
+      {
+        "tid": 47865491,
+        "name": "",
+        "user_ns": 111000,
+        "system_ns": 194000,
+        "samples": 1
+      },
+      {
+        "tid": 47865509,
+        "name": "",
+        "user_ns": 114000,
+        "system_ns": 170000,
+        "samples": 1
+      },
+      {
+        "tid": 47864991,
+        "name": "",
+        "user_ns": 177000,
+        "system_ns": 91000,
+        "samples": 340
+      },
+      {
+        "tid": 47865492,
+        "name": "",
+        "user_ns": 97000,
+        "system_ns": 170000,
+        "samples": 1
+      },
+      {
+        "tid": 47864988,
+        "name": "",
+        "user_ns": 170000,
+        "system_ns": 94000,
+        "samples": 340
+      },
+      {
+        "tid": 47864987,
+        "name": "",
+        "user_ns": 173000,
+        "system_ns": 90000,
+        "samples": 340
+      },
+      {
+        "tid": 47865508,
+        "name": "",
+        "user_ns": 87000,
+        "system_ns": 174000,
+        "samples": 1
+      },
+      {
+        "tid": 47864994,
+        "name": "",
+        "user_ns": 141000,
+        "system_ns": 116000,
+        "samples": 340
+      },
+      {
+        "tid": 47864881,
+        "name": "",
+        "user_ns": 9000,
+        "system_ns": 234000,
+        "samples": 2
+      },
+      {
+        "tid": 47864993,
+        "name": "",
+        "user_ns": 119000,
+        "system_ns": 83000,
+        "samples": 340
+      },
+      {
+        "tid": 47865513,
+        "name": "",
+        "user_ns": 66000,
+        "system_ns": 125000,
+        "samples": 1
+      },
+      {
+        "tid": 47864990,
+        "name": "",
+        "user_ns": 115000,
+        "system_ns": 71000,
+        "samples": 340
+      },
+      {
+        "tid": 47864997,
+        "name": "",
+        "user_ns": 76000,
+        "system_ns": 78000,
+        "samples": 340
+      },
+      {
+        "tid": 47866040,
+        "name": "",
+        "user_ns": 51000,
+        "system_ns": 17000,
+        "samples": 228
+      },
+      {
+        "tid": 47866041,
+        "name": "",
+        "user_ns": 37000,
+        "system_ns": 19000,
+        "samples": 228
+      },
+      {
+        "tid": 47864971,
+        "name": "CVDisplayLink",
+        "user_ns": 18000,
+        "system_ns": 24000,
+        "samples": 1
+      }
+    ],
+    "caveats": [
+      "Injected diagnostic; no instruction or optimization credit.",
+      "Cumulative live-thread counters sampled before PNG only. Short-lived or unsampled exited work can be missed.",
+      "No main thread identity was explicitly recorded. Names and PCs are leads, not complete instruction attribution."
+    ]
+  },
+  "weighted_pc_leads": {
+    "diagnostic_only": true,
+    "not_exclusive_function_costs": true,
+    "dominant_thread_tid": 47864673,
+    "main_identity_unverified": true,
+    "interval_cpu_weighted_last_pc_ns": [
+      [
+        "libsystem_kernel.dylib",
+        364432000
+      ],
+      [
+        "JavaScriptCore",
+        276415000
+      ],
+      [
+        "libsystem_platform.dylib",
+        249465000
+      ],
+      [
+        "CoreFoundation",
+        53511000
+      ],
+      [
+        "unknown",
+        42314000
+      ],
+      [
+        "libLadybirdVSkiaText.dylib",
+        38157000
+      ],
+      [
+        "libharfbuzz.0.dylib",
+        36965000
+      ],
+      [
+        "libwebpdecoder.3.2.0.dylib",
+        36937000
+      ],
+      [
+        "_strings__Builder__write_rune",
+        36577000
+      ],
+      [
+        "libsystem_malloc.dylib",
+        32919000
+      ],
+      [
+        "_array__clone_to_depth",
+        28200000
+      ],
+      [
+        "_VMapData__set_general",
+        24967000
+      ],
+      [
+        "_layout__populate_intrinsic_external_blocks_with_visits",
+        24693000
+      ],
+      [
+        "_layout__layout_uncached_independent_formatting_context",
+        24617000
+      ],
+      [
+        "_css__match_repeated_rule_selector",
+        23127000
+      ],
+      [
+        "libswiftCore.dylib",
+        20070000
+      ],
+      [
+        "libsystem_pthread.dylib",
+        17643000
+      ],
+      [
+        "_string__index_after_",
+        12729000
+      ],
+      [
+        "_browserjs__ElementWheelHost__bind_wheel_element",
+        12688000
+      ],
+      [
+        "_css__matches_selector_at",
+        12682000
+      ],
+      [
+        "_string__starts_with",
+        12670000
+      ],
+      [
+        "_layout__TextNodeChunkIterator__try_commit_chunk",
+        12669000
+      ],
+      [
+        "_VMapData__cached_rehash",
+        12665000
+      ],
+      [
+        "_platform__Font__system_face",
+        12631000
+      ],
+      [
+        "_css__collect_matching_rules_with_storage",
+        12624000
+      ],
+      [
+        "_layout__LineBuilder__update_last_line",
+        12613000
+      ],
+      [
+        "_css__Parser__parse_a_calculation",
+        12607000
+      ],
+      [
+        "_layout__Node__for_each_in_inclusive_subtree",
+        12586000
+      ],
+      [
+        "_css__invalidate_matching_style_sheet_subtree",
+        12569000
+      ],
+      [
+        "_css__css_style_computer_for",
+        12560000
+      ],
+      [
+        "_layout__BlockBox__collect_compatibility_descendant_paint_steps",
+        12545000
+      ],
+      [
+        "_layout__layout_offset_in_svg_user_space",
+        12376000
+      ],
+      [
+        "_layout__resolve_content_height_for_node",
+        12329000
+      ],
+      [
+        "_quoted_video_references",
+        12205000
+      ],
+      [
+        "_layout__svg_box_visual_bounds_to_page",
+        12187000
+      ],
+      [
+        "_layout__uncached_block_box_from_typed_layout_shallow",
+        12142000
+      ],
+      [
+        "_layout__measure_scrollable_overflow",
+        12012000
+      ],
+      [
+        "_layout__Node__establishes_a_fixed_positioning_containing_block",
+        11937000
+      ],
+      [
+        "___anon_fn_45",
+        11928000
+      ],
+      [
+        "_layout__InlineLevelIterator__generate_next_item",
+        11894000
+      ],
+      [
+        "_dom__Node__for_each_in_subtree",
+        11881000
+      ],
+      [
+        "_dom__StyleInvalidator__perform_pending_style_invalidations",
+        11804000
+      ],
+      [
+        "_array__pop",
+        11801000
+      ],
+      [
+        "_mbedtls_mpi_sub_abs",
+        11719000
+      ],
+      [
+        "_layout__new_reusing_paint_phase_command_recorder",
+        11565000
+      ],
+      [
+        "_css__matches_attribute_in_namespace",
+        11543000
+      ],
+      [
+        "_css__computed_longhand_reuse_typed_snapshot_matches",
+        11396000
+      ],
+      [
+        "_layout__increase_grid_flexible_tracks_for_spanning_items",
+        11240000
+      ],
+      [
+        "_css__StyleValue__srgb_paint_components",
+        10916000
+      ],
+      [
+        "_layout__should_treat_max_width_as_none",
+        10826000
+      ],
+      [
+        "libVoxGraphite.dylib",
+        10812000
+      ],
+      [
+        "___v3_sum_eq_css__StyleValue",
+        10767000
+      ],
+      [
+        "_css__CascadeScratchLease__finish",
+        10730000
+      ],
+      [
+        "_layout__set_grid_abspos_descendant_rects",
+        10591000
+      ],
+      [
+        "_platform__Timer__release_activity_root",
+        10578000
+      ],
+      [
+        "_platform__shaped_text_safe_break_width_cached",
+        10562000
+      ],
+      [
+        "_layout__layout_font_metrics_for_node",
+        10528000
+      ],
+      [
+        "_layout__run_retaining_independent_formatting_context",
+        10294000
+      ],
+      [
+        "___v3_sum_eq_css__GridTrackSizeListItem",
+        10200000
+      ],
+      [
+        "_VMapData__get_nonempty",
+        10198000
+      ],
+      [
+        "_css__ComputedPropertyPageInterner__intern_semantic_page",
+        9949000
+      ],
+      [
+        "___v3_internal_symbol_static_6373732e53697a65407374617469634066726f6d5f7374796c655f76616c7565",
+        9648000
+      ],
+      [
+        "CoreGraphics",
+        7724000
+      ],
+      [
+        "libicucore.A.dylib",
+        7526000
+      ],
+      [
+        "libobjc.A.dylib",
+        6302000
+      ],
+      [
+        "_string__eq",
+        5962000
+      ],
+      [
+        "_browserjs____anon_fn_448",
+        5872000
+      ],
+      [
+        "AppKit",
+        5822000
+      ],
+      [
+        "_html__WindowOrWorkerGlobalScopeMixin__arm_timeout",
+        5769000
+      ],
+      [
+        "_mbedtls_mpi_mul_mpi",
+        5323000
+      ],
+      [
+        "libVoxGraphiteDawn.dylib",
+        5000000
+      ],
+      [
+        "_mbedtls_mpi_core_exp_mod_optionally_safe",
+        4597000
+      ],
+      [
+        "_closure__closure_create_with_data_and_drop",
+        2281000
+      ],
+      [
+        "_browserjs__Runtime__retain_javascript_value",
+        1338000
+      ]
+    ],
+    "limitations": "Single PC at interval end is only a lead; work within each interval may differ. CPU counters sampled asynchronously. No instruction credit."
+  },
+  "weighted_stack_leads": {
+    "diagnostic_only": true,
+    "no_instruction_credit": true,
+    "main_tid": 48145575,
+    "boundary_process_instructions": 27793605600,
+    "samples": 358,
+    "observed_main_cpu_ns": 1908899000,
+    "leaf_interval_cpu_weighted_ns": [
+      [
+        "libsystem_kernel.dylib",
+        292566000
+      ],
+      [
+        "libsystem_platform.dylib",
+        278691000
+      ],
+      [
+        "JavaScriptCore",
+        230989000
+      ],
+      [
+        "unknown",
+        90771000
+      ],
+      [
+        "CoreFoundation",
+        85927000
+      ],
+      [
+        "libobjc.A.dylib",
+        67937000
+      ],
+      [
+        "libwebpdecoder.3.2.0.dylib",
+        49929000
+      ],
+      [
+        "libLadybirdVSkiaText.dylib",
+        34836000
+      ],
+      [
+        "__RINvNtCsgtPOCBgevO_4core9panicking13assert_failedffECsiVxKWNKfLsy_3yuv",
+        29801000
+      ],
+      [
+        "_VMapData__get_check_nonempty",
+        25230000
+      ],
+      [
+        "_array__push",
+        24229000
+      ],
+      [
+        "_layout__uncached_block_box_from_typed_layout_shallow",
+        22727000
+      ],
+      [
+        "_css__collect_matching_rules_with_storage",
+        22708000
+      ],
+      [
+        "libsystem_malloc.dylib",
+        17946000
+      ],
+      [
+        "libobjcMsgSend.dylib",
+        17465000
+      ],
+      [
+        "libVoxGraphite.dylib",
+        15382000
+      ],
+      [
+        "_layout__computed_transform_is_none",
+        12676000
+      ],
+      [
+        "_css__selector_html_attribute_is_case_insensitive",
+        12650000
+      ],
+      [
+        "_css__parsed_selector_has_invalid_simple_selectors",
+        12647000
+      ],
+      [
+        "_layout__LineBuilder__append_box",
+        12633000
+      ],
+      [
+        "_css__compute_required_invalidation",
+        12629000
+      ],
+      [
+        "_css__invalidate_matching_style_sheet_subtree",
+        12628000
+      ],
+      [
+        "_json2__Decoder__check_string",
+        12624000
+      ],
+      [
+        "_string__eq",
+        12617000
+      ],
+      [
+        "_css__match_repeated_rule_selector",
+        12607000
+      ],
+      [
+        "_layout__run_grid_formatting_context_internal",
+        12605000
+      ],
+      [
+        "_layout__InlineLevelIterator__next_non_whitespace_sequence_items",
+        12605000
+      ],
+      [
+        "_layout__run_uncached_inline_formatting_context_for_width",
+        12600000
+      ],
+      [
+        "_platform__Arena__reset",
+        12600000
+      ],
+      [
+        "libsystem_pthread.dylib",
+        12595000
+      ],
+      [
+        "_strconv__f64_to_decimal",
+        12591000
+      ],
+      [
+        "_css__computed_interpolation_is_inherited_property",
+        12579000
+      ],
+      [
+        "_browserjs____anon_fn_414",
+        12578000
+      ],
+      [
+        "_css__computed_longhand_reuse_typed_snapshot_matches",
+        12554000
+      ],
+      [
+        "_layout__LineBoxFragment__append_glyph_run_ltr",
+        12504000
+      ],
+      [
+        "_layout__Node__establishes_or_extends_a_3d_rendering_context",
+        12492000
+      ],
+      [
+        "_layout__mark_table_fixup_subtrees",
+        12467000
+      ],
+      [
+        "_layout__LineBuilder__projected_text_sequence_width",
+        12464000
+      ],
+      [
+        "_layout__TextNodeChunkIterator__invisible_font_for",
+        12408000
+      ],
+      [
+        "_layout__collect_paintable_boxes_with_auto_content_visibility_in_subtree",
+        12365000
+      ],
+      [
+        "_json2__Encoder__encode_string",
+        12348000
+      ],
+      [
+        "_string__starts_with",
+        12327000
+      ],
+      [
+        "_quoted_video_references",
+        12255000
+      ],
+      [
+        "_css__style_scope_cache_keyframes_rule",
+        12237000
+      ],
+      [
+        "___v3_sum_eq_css__StyleValue",
+        12229000
+      ],
+      [
+        "libdyld.dylib",
+        12204000
+      ],
+      [
+        "Foundation",
+        12080000
+      ],
+      [
+        "_css__StyleComputer__compute_cascaded_values_into",
+        11644000
+      ],
+      [
+        "_layout__resolve_layout_counters",
+        11582000
+      ],
+      [
+        "_json2__decoder_for_text",
+        11579000
+      ],
+      [
+        "_VMapData__set_general",
+        11491000
+      ],
+      [
+        "_css__computed_page_value_is_scalar",
+        11350000
+      ],
+      [
+        "_css__fast_matches_simple_selector",
+        11273000
+      ],
+      [
+        "_css__matches_selector_at",
+        11201000
+      ],
+      [
+        "libharfbuzz.0.dylib",
+        11014000
+      ],
+      [
+        "_dom____anon_fn_79",
+        10880000
+      ],
+      [
+        "_layout__creates_block_formatting_context",
+        10841000
+      ],
+      [
+        "_platform__ThreadScratchScope__finish",
+        10699000
+      ],
+      [
+        "_css__StyleComputer__remember_computed_longhands",
+        10682000
+      ],
+      [
+        "_layout__apply_chromium_ascii_line_breaks",
+        10508000
+      ],
+      [
+        "_array__slice",
+        10278000
+      ],
+      [
+        "_dom__Node__queue_mutation_record",
+        9823000
+      ],
+      [
+        "_mbedtls_mpi_core_sub",
+        8766000
+      ],
+      [
+        "libVoxGraphiteDawn.dylib",
+        8562000
+      ],
+      [
+        "_css__independent_query_all_in",
+        7240000
+      ],
+      [
+        "_mbedtls_mpi_core_cond_swap",
+        5638000
+      ],
+      [
+        "_ecp_mod_p255",
+        5570000
+      ],
+      [
+        "libskia.dylib",
+        5537000
+      ],
+      [
+        "_vox_rgba8_is_opaque",
+        4412000
+      ],
+      [
+        "libsystem_c.dylib",
+        3701000
+      ],
+      [
+        "AppKit",
+        96000
+      ]
+    ],
+    "first_vox_interval_cpu_weighted_ns": [
+      [
+        "_browserjs__Runtime__call_engine_function",
+        247747000
+      ],
+      [
+        "_sapp_run",
+        197711000
+      ],
+      [
+        "_browserjs__evaluate_javascript_core_text",
+        60442000
+      ],
+      [
+        "_browser_decode_raster_image_bytes",
+        49929000
+      ],
+      [
+        "_native_draw_solid_rect_srgb",
+        37695000
+      ],
+      [
+        "_platform__Timer__fire",
+        35774000
+      ],
+      [
+        "_native_encode_snapshot_png",
+        34836000
+      ],
+      [
+        "_layout__uncached_block_box_from_typed_layout_shallow",
+        34835000
+      ],
+      [
+        "__RINvNtCsgtPOCBgevO_4core9panicking13assert_failedffECsiVxKWNKfLsy_3yuv",
+        29801000
+      ],
+      [
+        "_native_prepare_test_window",
+        25807000
+      ],
+      [
+        "_layout__layout_independent_child_with_height_mode",
+        25295000
+      ],
+      [
+        "_VMapData__get_check_nonempty",
+        25230000
+      ],
+      [
+        "_browserjs__js_source_string",
+        25190000
+      ],
+      [
+        "_DenseArray__reserve",
+        24958000
+      ],
+      [
+        "_array__push",
+        24229000
+      ],
+      [
+        "_css__resolve_computed_values_for_document_impl",
+        23722000
+      ],
+      [
+        "_native_draw_svg_path_srgb",
+        23678000
+      ],
+      [
+        "_layout__place_grid_items",
+        23380000
+      ],
+      [
+        "_css__collect_matching_rules_with_storage",
+        22708000
+      ],
+      [
+        "_native_end_css_effect_layer",
+        22084000
+      ],
+      [
+        "_native_draw_image_part_in_context",
+        17951000
+      ],
+      [
+        "_BrowserApp__draw_chromium_svg_solid_run",
+        16145000
+      ],
+      [
+        "_native_draw_retained_glyph_run",
+        13137000
+      ],
+      [
+        "_html__WindowOrWorkerGlobalScopeMixin__arm_timeout",
+        12754000
+      ],
+      [
+        "_layout__computed_transform_is_none",
+        12676000
+      ],
+      [
+        "_css__selector_html_attribute_is_case_insensitive",
+        12650000
+      ],
+      [
+        "_css__parsed_selector_has_invalid_simple_selectors",
+        12647000
+      ],
+      [
+        "_layout__fill_ordinary_paint_box",
+        12640000
+      ],
+      [
+        "_layout__append_retained_block_snapshot",
+        12638000
+      ],
+      [
+        "_layout__build_layout_box_for_element_with_svg_resource_kind",
+        12636000
+      ],
+      [
+        "_layout__LineBuilder__append_box",
+        12633000
+      ],
+      [
+        "_css__compute_required_invalidation",
+        12629000
+      ],
+      [
+        "_css__invalidate_matching_style_sheet_subtree",
+        12628000
+      ],
+      [
+        "_json2__Decoder__check_string",
+        12624000
+      ],
+      [
+        "_layout__paintable_box_get_clip_rect",
+        12619000
+      ],
+      [
+        "_string__eq",
+        12617000
+      ],
+      [
+        "_css__match_repeated_rule_selector",
+        12607000
+      ],
+      [
+        "_layout__run_grid_formatting_context_internal",
+        12605000
+      ],
+      [
+        "_layout__InlineLevelIterator__next_non_whitespace_sequence_items",
+        12605000
+      ],
+      [
+        "_layout__layout_inside_independent_formatting_context_with_mode",
+        12601000
+      ],
+      [
+        "_layout__run_uncached_inline_formatting_context_for_width",
+        12600000
+      ],
+      [
+        "_platform__Arena__reset",
+        12600000
+      ],
+      [
+        "_platform__enter_retained_allocations",
+        12595000
+      ],
+      [
+        "_strconv__f64_to_decimal",
+        12591000
+      ],
+      [
+        "_css__CSSRuleList__evaluate_media_queries",
+        12590000
+      ],
+      [
+        "_css__computed_interpolation_is_inherited_property",
+        12579000
+      ],
+      [
+        "_browserjs____anon_fn_414",
+        12578000
+      ],
+      [
+        "_css__computed_longhand_reuse_typed_snapshot_matches",
+        12554000
+      ],
+      [
+        "_layout__LineBoxFragment__append_glyph_run_ltr",
+        12504000
+      ],
+      [
+        "_layout__Node__establishes_or_extends_a_3d_rendering_context",
+        12492000
+      ],
+      [
+        "_layout__mark_table_fixup_subtrees",
+        12467000
+      ],
+      [
+        "_layout__LineBuilder__projected_text_sequence_width",
+        12464000
+      ],
+      [
+        "_layout__InlineLevelIterator__enter_text_node",
+        12446000
+      ],
+      [
+        "_layout__TextNodeChunkIterator__invisible_font_for",
+        12408000
+      ],
+      [
+        "_layout__collect_paintable_boxes_with_auto_content_visibility_in_subtree",
+        12365000
+      ],
+      [
+        "_json2__Encoder__encode_string",
+        12348000
+      ],
+      [
+        "_string__starts_with",
+        12327000
+      ],
+      [
+        "_quoted_video_references",
+        12255000
+      ],
+      [
+        "_css__style_scope_cache_keyframes_rule",
+        12237000
+      ],
+      [
+        "___v3_sum_eq_css__StyleValue",
+        12229000
+      ],
+      [
+        "_layout__InlineLevelIterator__shape_across_compatible_inline_nodes",
+        12204000
+      ],
+      [
+        "_css__StyleComputer__compute_cascaded_values_into",
+        11644000
+      ],
+      [
+        "_layout__resolve_layout_counters",
+        11582000
+      ],
+      [
+        "_json2__decoder_for_text",
+        11579000
+      ],
+      [
+        "_VMapData__set_general",
+        11491000
+      ],
+      [
+        "_css__computed_page_value_is_scalar",
+        11350000
+      ],
+      [
+        "_css__fast_matches_simple_selector",
+        11273000
+      ],
+      [
+        "_css__matches_selector_at",
+        11201000
+      ],
+      [
+        "_socks__handshake",
+        11162000
+      ],
+      [
+        "_layout__run_inline_formatting_context_for_width",
+        11024000
+      ],
+      [
+        "_platform__shape_text_with_harfbuzz",
+        11014000
+      ],
+      [
+        "_dom____anon_fn_79",
+        10880000
+      ],
+      [
+        "_layout__creates_block_formatting_context",
+        10841000
+      ],
+      [
+        "_platform__ThreadScratchScope__finish",
+        10699000
+      ],
+      [
+        "_css__StyleComputer__remember_computed_longhands",
+        10682000
+      ],
+      [
+        "_platform__coretext_match_family",
+        10634000
+      ],
+      [
+        "_css__style_scope_add_rules_to_run",
+        10589000
+      ],
+      [
+        "_layout__apply_chromium_ascii_line_breaks",
+        10508000
+      ],
+      [
+        "_array__slice",
+        10278000
+      ],
+      [
+        "_platform__ShapingCache__store",
+        10182000
+      ],
+      [
+        "_dom__Node__queue_mutation_record",
+        9823000
+      ],
+      [
+        "_mbedtls_mpi_mul_mod",
+        9526000
+      ],
+      [
+        "_platform__Timer__restart_with_interval",
+        8818000
+      ],
+      [
+        "_mbedtls_mpi_core_sub",
+        8766000
+      ],
+      [
+        "_vox_chrome_initialize_window_host",
+        8571000
+      ],
+      [
+        "_platform__skia_system_face_widths",
+        8214000
+      ],
+      [
+        "_mbedtls_ssl_write_record",
+        7919000
+      ],
+      [
+        "_platform__skia_document_face_widths",
+        7731000
+      ],
+      [
+        "_css__independent_query_all_in",
+        7240000
+      ],
+      [
+        "_ui2__native_set_box_background",
+        6944000
+      ],
+      [
+        "_requestserver__CurlConnection__socket_action",
+        6201000
+      ],
+      [
+        "_mbedtls_mpi_core_cond_swap",
+        5638000
+      ],
+      [
+        "_ecp_mod_p255",
+        5570000
+      ],
+      [
+        "_mbedtls_ssl_fetch_input",
+        5454000
+      ],
+      [
+        "_vox_adblock_worker_evaluate",
+        4736000
+      ],
+      [
+        "_vox_rgba8_is_opaque",
+        4412000
+      ],
+      [
+        "_layout__DocumentLayoutResult__indexed_visual_context_for_layout_handle",
+        3701000
+      ],
+      [
+        "_processmetrics__report_instruction_snapshot",
+        3404000
+      ],
+      [
+        "_native_layer_invalidate_canvases",
+        96000
+      ]
+    ],
+    "inclusive_interval_cpu_weighted_ns": [
+      [
+        "_sapp_run",
+        859323000
+      ],
+      [
+        "_main",
+        798333000
+      ],
+      [
+        "_BrowserApp__draw",
+        632244000
+      ],
+      [
+        "_gg__gg_frame_fn",
+        632244000
+      ],
+      [
+        "_native_layer_update",
+        627987000
+      ],
+      [
+        "_browserjs__Runtime__call_engine_function",
+        383217000
+      ],
+      [
+        "_browserjs__Runtime__call_javascript_function",
+        372337000
+      ],
+      [
+        "_dom__Document__update_layout",
+        366470000
+      ],
+      [
+        "_platform__Timer__fire",
+        359155000
+      ],
+      [
+        "_BrowserApp__poll_navigation",
+        337248000
+      ],
+      [
+        "_BrowserApp__poll_page_preload",
+        327425000
+      ],
+      [
+        "_BrowserApp__install_loaded_page",
+        327425000
+      ],
+      [
+        "_html__EventLoop__process",
+        323381000
+      ],
+      [
+        "_html__Task__execute",
+        314563000
+      ],
+      [
+        "_layout__run_retaining_independent_formatting_context",
+        309032000
+      ],
+      [
+        "_layout__layout_uncached_independent_formatting_context",
+        309032000
+      ],
+      [
+        "_layout__layout_inside_independent_formatting_context_with_mode",
+        309032000
+      ],
+      [
+        "_layout__BlockFormattingContext__layout_block_level_box",
+        301301000
+      ],
+      [
+        "_layout__BlockFormattingContext__layout_block_level_children",
+        301301000
+      ],
+      [
+        "_layout__run_grid_formatting_context_internal",
+        301263000
+      ],
+      [
+        "_layout__layout_independent_child_with_height_mode",
+        288855000
+      ],
+      [
+        "_browserjs__javascript_core_host_function",
+        267311000
+      ],
+      [
+        "___anon_fn_36",
+        267311000
+      ],
+      [
+        "_vox_jsc_host_function_trampoline",
+        267311000
+      ],
+      [
+        "___v3_internal_symbol_static_646f6d2e4576656e74446973706174636865724073746174696340696e766f6b65",
+        259355000
+      ],
+      [
+        "_browserjs____anon_fn_214",
+        259355000
+      ],
+      [
+        "_browserjs__Runtime__invoke_event_callback",
+        259355000
+      ],
+      [
+        "___v3_internal_symbol_static_646f6d2e4576656e7444697370617463686572407374617469634064697370617463685f776974685f6c65676163795f6f7574707574",
+        259355000
+      ],
+      [
+        "_dom__event_target_dispatch_event",
+        259355000
+      ],
+      [
+        "_dom____anon_fn_106",
+        259355000
+      ],
+      [
+        "_dom__EventTarget__process_event_handler_for_event",
+        259355000
+      ],
+      [
+        "_html__MessagePort__post_message_task_steps",
+        259355000
+      ],
+      [
+        "_CompactElementQueryBinding__query",
+        254984000
+      ],
+      [
+        "_html____anon_fn_771",
+        247776000
+      ],
+      [
+        "_dom__Document__update_style",
+        234491000
+      ],
+      [
+        "_css__update_style_for_document_from_upstream",
+        234491000
+      ],
+      [
+        "_css__document_style_update_callback",
+        234491000
+      ],
+      [
+        "_layout__document_layout_update_callback_with_paint_tree",
+        231360000
+      ],
+      [
+        "_layout__run_uncached_inline_formatting_context_for_width",
+        200455000
+      ],
+      [
+        "_css__update_style_recursively",
+        197017000
+      ],
+      [
+        "_css__StyleComputer__recompute_style_with_invalidation",
+        197017000
+      ],
+      [
+        "_layout__run_inline_formatting_context_internal",
+        186625000
+      ],
+      [
+        "_compact_element_geometry_query",
+        183146000
+      ],
+      [
+        "_css__StyleComputer__compute_style_impl",
+        172159000
+      ],
+      [
+        "_css__StyleComputer__compute_style_impl_with_animated_custom_property_recompute",
+        160809000
+      ],
+      [
+        "_browserjs__evaluate_javascript_core_text",
+        135817000
+      ],
+      [
+        "_layout__run_flex_formatting_context_with_mode",
+        134439000
+      ],
+      [
+        "_vox_jsc_value_host_function_trampoline",
+        134175000
+      ],
+      [
+        "_run_document_script_sources_with_media_loader",
+        130296000
+      ],
+      [
+        "_browserjs__Runtime__execute_embedding_script",
+        123441000
+      ],
+      [
+        "_browserjs__Runtime__execute_source",
+        123441000
+      ],
+      [
+        "_browserjs__Runtime__run_document_scripts",
+        123441000
+      ],
+      [
+        "_browserjs__invoke_value_host_function_record",
+        121597000
+      ],
+      [
+        "_dom__Element__get_bounding_client_rect",
+        112350000
+      ],
+      [
+        "_css__up_to_date_computed_properties_for_element",
+        111873000
+      ],
+      [
+        "_preload_element_has_no_display_box",
+        111873000
+      ],
+      [
+        "_BrowserApp__sync_layout_coordinate_scale",
+        111873000
+      ],
+      [
+        "_browser_document_supports_device_layout",
+        111873000
+      ],
+      [
+        "_run_compact_document_script",
+        110801000
+      ],
+      [
+        "_BrowserApp__relayout",
+        107203000
+      ],
+      [
+        "_layout__renderer_box_from_document_layout_result",
+        97956000
+      ],
+      [
+        "_layout__fill_block_box_from_typed_layout_shallow",
+        97956000
+      ],
+      [
+        "_layout__build_typed_paint_tree_projection",
+        97956000
+      ],
+      [
+        "_browserjs____anon_fn_340",
+        97264000
+      ],
+      [
+        "_css__build_matching_rule_set_with_storage",
+        93645000
+      ],
+      [
+        "_css__collect_matching_rules_with_storage",
+        81038000
+      ],
+      [
+        "_BrowserApp__finish_frame_preparation",
+        75026000
+      ],
+      [
+        "_layout__finish_document_layout",
+        73234000
+      ],
+      [
+        "_layout__fill_ordinary_paint_box",
+        72742000
+      ],
+      [
+        "_layout__uncached_block_box_from_typed_layout_shallow",
+        72721000
+      ],
+      [
+        "_layout__run_column_flex_formatting_context",
+        60976000
+      ],
+      [
+        "_layout__run_inline_formatting_context_for_width",
+        60846000
+      ],
+      [
+        "_layout__build_layout_tree_from_computed_styles",
+        60407000
+      ],
+      [
+        "_css__match_repeated_rule_selector",
+        60348000
+      ],
+      [
+        "_css__FontFaceSet__switch_to_loaded",
+        59958000
+      ],
+      [
+        "_css__FontFaceObject__finish_loading_with_error",
+        59958000
+      ],
+      [
+        "_css____anon_fn_534",
+        59958000
+      ],
+      [
+        "_browsernet__get",
+        58771000
+      ],
+      [
+        "_script_sources",
+        58771000
+      ],
+      [
+        "_fetch_browser_resource",
+        58771000
+      ],
+      [
+        "_BrowserApp__draw_command",
+        54766000
+      ],
+      [
+        "_net__http__fetch",
+        54035000
+      ],
+      [
+        "_net__http__HttpProxy__http_do",
+        54035000
+      ],
+      [
+        "_net__http__HttpProxy__ssl_dial",
+        54035000
+      ],
+      [
+        "_net__http__Request__do",
+        54035000
+      ],
+      [
+        "_net__http__Request__method_and_url_to_response",
+        54035000
+      ],
+      [
+        "_layout__InlineLevelIterator__generate_next_item",
+        53727000
+      ],
+      [
+        "_BrowserApp__preload_initial_document_resources",
+        53010000
+      ],
+      [
+        "_layout__layout_viewport",
+        50262000
+      ],
+      [
+        "_BrowserApp__poll_browser_image_requests",
+        49929000
+      ],
+      [
+        "_browser_decoded_image_data",
+        49929000
+      ],
+      [
+        "_browser_decode_raster_image_bytes",
+        49929000
+      ],
+      [
+        "_layout__layout_document_typed_in_viewport",
+        48340000
+      ],
+      [
+        "_layout__run_document_layout_with_renderer_mode",
+        48340000
+      ],
+      [
+        "_layout__build_layout_box_for_element_with_svg_resource_kind",
+        47940000
+      ],
+      [
+        "_layout__InlineLevelIterator__enter_text_node",
+        45996000
+      ],
+      [
+        "_css__StyleComputer__compute_properties",
+        44029000
+      ],
+      [
+        "_mbedtls_ssl_handshake",
+        42873000
+      ],
+      [
+        "_mbedtls__SSLConn__connect",
+        42873000
+      ],
+      [
+        "___native_schedule_screenshot_block_invoke_2",
+        39248000
+      ],
+      [
+        "___native_schedule_screenshot_block_invoke",
+        39248000
+      ],
+      [
+        "_native_encode_snapshot_png",
+        39248000
+      ],
+      [
+        "_native_draw_solid_rect_srgb",
+        37695000
+      ],
+      [
+        "_css__fast_matches_simple_selector",
+        36540000
+      ],
+      [
+        "_VMapData__set_general",
+        36449000
+      ],
+      [
+        "_layout__calculate_content_height_with_constraint",
+        35992000
+      ],
+      [
+        "_layout__grid_item_outer_block_content_contribution",
+        35992000
+      ],
+      [
+        "_layout__layout_absolutely_positioned_descendants",
+        33989000
+      ],
+      [
+        "_layout__layout_absolutely_positioned_box",
+        33989000
+      ],
+      [
+        "_layout__retained_text_node_chunks",
+        33550000
+      ],
+      [
+        "_layout__calculate_content_width_with_constraint",
+        32585000
+      ],
+      [
+        "_layout__calculate_min_content_width",
+        32585000
+      ],
+      [
+        "_layout__intrinsic_outer_width_contribution_with_resolved_box_model",
+        32585000
+      ],
+      [
+        "_mbedtls_ssl_handshake_client_step",
+        31849000
+      ],
+      [
+        "__RINvNtCsgtPOCBgevO_4core9panicking13assert_failedffECsiVxKWNKfLsy_3yuv",
+        29801000
+      ],
+      [
+        "_ecp_mul_restartable_internal",
+        29500000
+      ],
+      [
+        "_platform__shape_text_uncached",
+        26959000
+      ],
+      [
+        "_platform__shape_text_with_harfbuzz",
+        26959000
+      ],
+      [
+        "_native_prepare_test_window",
+        25807000
+      ],
+      [
+        "_browserjs____anon_fn_414",
+        25332000
+      ],
+      [
+        "_VMapData__get_check_nonempty",
+        25230000
+      ],
+      [
+        "_platform__enter_retained_allocations",
+        25197000
+      ],
+      [
+        "_browserjs__js_source_string",
+        25190000
+      ],
+      [
+        "_CompactElementQueryBinding__node_relation_query",
+        25007000
+      ],
+      [
+        "_DenseArray__reserve",
+        24958000
+      ],
+      [
+        "_css__StyleScope__invalidate_style_of_elements_affected_by_has",
+        24884000
+      ],
+      [
+        "_css__StyleScope__build_rule_cache_if_needed",
+        24884000
+      ],
+      [
+        "_css__compute_required_invalidation",
+        24858000
+      ],
+      [
+        "_html__HTMLParser__run_with_stop_at_insertion_point",
+        24609000
+      ],
+      [
+        "_array__push",
+        24229000
+      ],
+      [
+        "_json2__decoder_for_text",
+        24203000
+      ],
+      [
+        "_BrowserApp__synchronize_javascript_task_paint",
+        24201000
+      ],
+      [
+        "_BrowserApp__poll_javascript_tasks",
+        24201000
+      ],
+      [
+        "_layout__create_layout_node_for_element",
+        23722000
+      ],
+      [
+        "_css__resolve_computed_values_for_document_impl",
+        23722000
+      ],
+      [
+        "_native_draw_svg_path_srgb",
+        23678000
+      ],
+      [
+        "_layout__grid_item_minimum_outer_block_contribution",
+        23528000
+      ],
+      [
+        "_layout__LineBuilder__projected_text_sequence_width",
+        23478000
+      ],
+      [
+        "_layout__place_grid_items",
+        23380000
+      ],
+      [
+        "_css__invalidate_owners_for_inserted_style_rule",
+        23327000
+      ],
+      [
+        "_css__invalidate_root_for_style_sheet_change",
+        23327000
+      ],
+      [
+        "_CompactElementQueryBinding__css_sheet_query",
+        23327000
+      ],
+      [
+        "_css__invalidate_matching_style_sheet_subtree",
+        23327000
+      ],
+      [
+        "_css__CSSStyleSheet__insert_rule",
+        23327000
+      ],
+      [
+        "_layout__TextNodeChunkIterator__font_for_code_point",
+        23042000
+      ],
+      [
+        "_layout__TextNodeChunkIterator__next_without_peek",
+        23042000
+      ],
+      [
+        "_native_end_css_effect_layer",
+        22084000
+      ],
+      [
+        "_layout__calculate_intrinsic_flex_width",
+        20177000
+      ],
+      [
+        "_mbedtls_mpi_mul_mod",
+        18292000
+      ],
+      [
+        "_ecp_double_add_mxz",
+        18292000
+      ],
+      [
+        "_native_draw_image_part_in_context",
+        17951000
+      ],
+      [
+        "_platform__shape_text_cached",
+        17913000
+      ],
+      [
+        "_css__parse_css_stylesheet_in_workspace",
+        17155000
+      ],
+      [
+        "_BrowserApp__draw_chromium_svg_solid_run",
+        16145000
+      ],
+      [
+        "_platform__chromium_outline_face_advances",
+        15945000
+      ],
+      [
+        "_html____anon_fn_813",
+        15718000
+      ],
+      [
+        "_webidl__call_user_object_operation",
+        15718000
+      ],
+      [
+        "_browserjs____anon_fn_448",
+        15718000
+      ],
+      [
+        "_html____anon_fn_815",
+        15718000
+      ],
+      [
+        "_mbedtls_ecdh_calc_secret",
+        15613000
+      ],
+      [
+        "_html__parse_html_from_a_string",
+        14786000
+      ],
+      [
+        "_parse_browser_navigation_document_input_with_source",
+        14786000
+      ],
+      [
+        "_main__native_draw_retained_glyph_run",
+        13137000
+      ],
+      [
+        "_native_draw_retained_glyph_run",
+        13137000
+      ],
+      [
+        "_html__WindowOrWorkerGlobalScopeMixin__arm_timeout",
+        12754000
+      ],
+      [
+        "_html__WindowOrWorkerGlobalScopeMixin__run_timer_initialization_steps",
+        12754000
+      ],
+      [
+        "_browserjs__TimerHost__operate",
+        12754000
+      ],
+      [
+        "_layout__computed_transform_is_none",
+        12676000
+      ],
+      [
+        "_javascript_initial_element_state",
+        12659000
+      ],
+      [
+        "_CompactElementQueryBinding__initial_element_state",
+        12659000
+      ],
+      [
+        "_CompactElementQueryBinding__element_state",
+        12659000
+      ],
+      [
+        "_css__selector_html_attribute_is_case_insensitive",
+        12650000
+      ],
+      [
+        "_css__RuleSelectorParser__parse_memoized_rule_selector",
+        12647000
+      ],
+      [
+        "_css__StyleScope__shared_user_agent_only_shadow_style_cache",
+        12647000
+      ],
+      [
+        "_css__RuleSelectorParser__convert_to_rule_impl",
+        12647000
+      ],
+      [
+        "_css__RuleSelectorParser__convert_to_style_rule",
+        12647000
+      ],
+      [
+        "_css__RuleSelectorParser__parse_supported_rule_selector",
+        12647000
+      ],
+      [
+        "_css__parsed_selector_has_invalid_simple_selectors",
+        12647000
+      ],
+      [
+        "_BrowserScriptRequestLoader__poll",
+        12640000
+      ],
+      [
+        "_BrowserScriptRequestLoader__execute_ready",
+        12640000
+      ],
+      [
+        "_layout__append_retained_block_snapshot",
+        12638000
+      ],
+      [
+        "_layout__LineBuilder__append_box",
+        12633000
+      ],
+      [
+        "_decode_compact_element_query_request",
+        12624000
+      ],
+      [
+        "_json2__Decoder__check_json_format",
+        12624000
+      ],
+      [
+        "_json2__decode_standard_T_Map_string_json2__Any",
+        12624000
+      ],
+      [
+        "_json2__Decoder__check_object",
+        12624000
+      ],
+      [
+        "_json2__Decoder__check_string",
+        12624000
+      ],
+      [
+        "_layout__flex_subtree_depends_on_definite_height",
+        12619000
+      ],
+      [
+        "_layout__paintable_box_get_clip_rect",
+        12619000
+      ],
+      [
+        "_string__eq",
+        12617000
+      ],
+      [
+        "_layout__InlineLevelIterator__next_non_whitespace_sequence_items",
+        12605000
+      ],
+      [
+        "_layout__UsedValues__ensure_rare_data",
+        12602000
+      ],
+      [
+        "_layout__InlineItemBufferScope__finish",
+        12600000
+      ],
+      [
+        "_platform__Arena__reset",
+        12600000
+      ],
+      [
+        "_strconv__f64_to_decimal",
+        12591000
+      ],
+      [
+        "_svg__PathInstruction__append_serialization",
+        12591000
+      ],
+      [
+        "_svg__Path__serialize_in_workspace",
+        12591000
+      ],
+      [
+        "_css__evaluate_media_rules_for_document",
+        12590000
+      ],
+      [
+        "_css__CSSRuleList__evaluate_media_queries",
+        12590000
+      ],
+      [
+        "_css__CSSStyleSheet__evaluate_media_queries",
+        12590000
+      ],
+      [
+        "_css__computed_interpolation_is_inherited_property",
+        12579000
+      ],
+      [
+        "_css__StyleComputer__computed_longhand_reuse_key",
+        12579000
+      ],
+      [
+        "_css__computed_longhand_reuse_typed_snapshot_matches",
+        12554000
+      ],
+      [
+        "_css__StyleComputer__restore_computed_longhands",
+        12554000
+      ],
+      [
+        "_layout__prepare_dom_layout_attachment",
+        12532000
+      ],
+      [
+        "_layout__attach_layout_node_recursive",
+        12532000
+      ],
+      [
+        "_layout__LineBox__add_fragment_with_trailing_whitespace",
+        12504000
+      ],
+      [
+        "_layout__LineBoxFragment__append_glyph_run_ltr",
+        12504000
+      ],
+      [
+        "_layout__LineBuilder__append_text_chunk_with_trailing_whitespace",
+        12504000
+      ],
+      [
+        "_layout__Node__establishes_or_extends_a_3d_rendering_context",
+        12492000
+      ],
+      [
+        "_layout__rebuild_compatibility_visual_contexts",
+        12492000
+      ],
+      [
+        "_layout__assign_compatibility_visual_contexts_with_coordinate_root",
+        12492000
+      ],
+      [
+        "_layout__mark_table_fixup_subtrees",
+        12467000
+      ],
+      [
+        "_layout__flex_formatting_context_automatic_minimum_size",
+        12446000
+      ],
+      [
+        "_layout__grid_intrinsic_outer_width_contribution",
+        12408000
+      ],
+      [
+        "_layout__increase_grid_flexible_tracks_for_spanning_items",
+        12408000
+      ],
+      [
+        "_layout__measure_grid_intrinsic_width",
+        12408000
+      ],
+      [
+        "_layout__grid_item_minimum_outer_inline_contribution",
+        12408000
+      ],
+      [
+        "_layout__TextNodeChunkIterator__invisible_font_for",
+        12408000
+      ],
+      [
+        "_browserjs__NativeCloneProjection__project",
+        12376000
+      ],
+      [
+        "_browserjs__StructuredCloneBridge__engine",
+        12376000
+      ],
+      [
+        "_browserjs____anon_fn_241",
+        12376000
+      ],
+      [
+        "_browserjs__StructuredCloneBridge__serialize",
+        12376000
+      ],
+      [
+        "_browserjs__Runtime__history_operation",
+        12376000
+      ],
+      [
+        "_layout__collect_paintable_boxes_with_auto_content_visibility_in_subtree",
+        12365000
+      ],
+      [
+        "_json2__encode_T_json2__Any",
+        12348000
+      ],
+      [
+        "_json2__Encoder_string__json2__Any__encode_map",
+        12348000
+      ],
+      [
+        "_json2__Encoder__encode_string",
+        12348000
+      ],
+      [
+        "_string__starts_with",
+        12327000
+      ],
+      [
+        "_layout__collect_contained_layout_boxes",
+        12299000
+      ],
+      [
+        "_javascript_video_source_states",
+        12255000
+      ],
+      [
+        "_quoted_video_references",
+        12255000
+      ],
+      [
+        "_javascript_initial_state_for_elements",
+        12255000
+      ],
+      [
+        "_compact_initial_state_text",
+        12255000
+      ],
+      [
+        "_css__style_scope_cache_keyframes_rule",
+        12237000
+      ],
+      [
+        "_css__CSSStyleSheet__for_each_effective_rule_with_context",
+        12237000
+      ],
+      [
+        "_css__StyleScope__populate_new_rule_cache",
+        12237000
+      ],
+      [
+        "_css__style_values_equal_using_union",
+        12229000
+      ],
+      [
+        "___v3_sum_eq_css__StyleValue",
+        12229000
+      ],
+      [
+        "_css__style_value_option_changed",
+        12229000
+      ],
+      [
+        "_css__scalar_style_values_equal",
+        12229000
+      ],
+      [
+        "_css__compute_raw_property_invalidation",
+        12229000
+      ],
+      [
+        "_css__compute_property_invalidation",
+        12229000
+      ],
+      [
+        "_layout__InlineLevelIterator__shape_across_compatible_inline_nodes",
+        12204000
+      ],
+      [
+        "___v3_internal_symbol_static_6c61796f75742e426c6f636b436f6e7461696e657240737461746963406e6577",
+        12075000
+      ],
+      [
+        "_layout__BlockBox__collect_compatibility_stacking_context_paint_steps",
+        11697000
+      ],
+      [
+        "_dom__Document__record_display_list_for_viewport",
+        11697000
+      ],
+      [
+        "_layout__viewport_build_stacking_context_tree",
+        11697000
+      ],
+      [
+        "_layout__BlockBox__compatibility_paint_plan",
+        11697000
+      ],
+      [
+        "_BrowserApp__record_document_paint_commands",
+        11697000
+      ],
+      [
+        "_layout__viewport_record_display_list",
+        11697000
+      ],
+      [
+        "_layout__create_layout_node_for_svg_element",
+        11647000
+      ],
+      [
+        "_css__StyleComputer__compute_cascaded_values_into",
+        11644000
+      ],
+      [
+        "_layout__resolve_layout_counters",
+        11582000
+      ],
+      [
+        "_json2__decode_standard_T_json2__Any",
+        11579000
+      ],
+      [
+        "_apply_javascript_runtime_state",
+        11579000
+      ],
+      [
+        "_browserjs__Runtime__intersection_observer_operation",
+        11579000
+      ],
+      [
+        "_compact_query_replay_snapshot",
+        11579000
+      ],
+      [
+        "___anon_fn_9",
+        11579000
+      ],
+      [
+        "_browserjs____anon_fn_268",
+        11579000
+      ],
+      [
+        "_css__CascadeScratchLease__finish",
+        11491000
+      ],
+      [
+        "_css__StyleComputer__publish_computed_property_pages",
+        11350000
+      ],
+      [
+        "_css__computed_page_value_is_scalar",
+        11350000
+      ],
+      [
+        "_css__ComputedPropertyPageInterner__intern_semantic_page",
+        11350000
+      ],
+      [
+        "_css__matches_selector_at",
+        11201000
+      ],
+      [
+        "_socks__handshake",
+        11162000
+      ],
+      [
+        "_net__http__HttpProxy__connect_tcp",
+        11162000
+      ],
+      [
+        "_socks__socks5_dial",
+        11162000
+      ],
+      [
+        "_layout__chromium_line_end_width",
+        11014000
+      ],
+      [
+        "_platform__shaped_text_context_metrics",
+        11014000
+      ],
+      [
+        "_apply_decoded_javascript_state",
+        10880000
+      ],
+      [
+        "_dom__Node__for_each_in_subtree",
+        10880000
+      ],
+      [
+        "_dom____anon_fn_79",
+        10880000
+      ],
+      [
+        "_layout__creates_block_formatting_context",
+        10841000
+      ],
+      [
+        "_platform__ThreadScratchScope__finish",
+        10699000
+      ],
+      [
+        "_css__style_sheet_element_matches_anchor_rule",
+        10699000
+      ],
+      [
+        "_css__StyleComputer__remember_computed_longhands",
+        10682000
+      ],
+      [
+        "_platform__resolve_system_font_face",
+        10634000
+      ],
+      [
+        "_platform__system_fallback_font",
+        10634000
+      ],
+      [
+        "_platform__coretext_match_family",
+        10634000
+      ],
+      [
+        "_platform__Font__system_face",
+        10634000
+      ],
+      [
+        "_css__style_scope_add_cached_rules_to_run",
+        10589000
+      ],
+      [
+        "_css__style_scope_add_rules_to_run",
+        10589000
+      ],
+      [
+        "_layout__apply_chromium_ascii_line_breaks",
+        10508000
+      ],
+      [
+        "___v3_internal_symbol_static_6c61796f75742e546578744e6f64654368756e6b4974657261746f7240737461746963406e65775f776974685f646972656374696f6e",
+        10508000
+      ],
+      [
+        "_html__HTMLTokenizer__consume_parser_text_run",
+        10278000
+      ],
+      [
+        "_array__slice",
+        10278000
+      ],
+      [
+        "_layout__chromium_shape_line_end",
+        10182000
+      ],
+      [
+        "_layout__LineBox__calculate_or_trim_trailing_whitespace",
+        10182000
+      ],
+      [
+        "_platform__ShapingCache__store",
+        10182000
+      ],
+      [
+        "_dom__Node__insert_before",
+        9823000
+      ],
+      [
+        "_parse_page_preload_document",
+        9823000
+      ],
+      [
+        "_BrowserApp__prepare_loaded_page",
+        9823000
+      ],
+      [
+        "_html__HTMLParser__insert_html_element",
+        9823000
+      ],
+      [
+        "_BrowserApp__start_page_preload",
+        9823000
+      ],
+      [
+        "_dom__Node__queue_mutation_record",
+        9823000
+      ],
+      [
+        "_platform__Timer__restart_with_interval",
+        8818000
+      ],
+      [
+        "_mbedtls_mpi_core_sub",
+        8766000
+      ],
+      [
+        "_vox_chrome_initialize_window_host",
+        8571000
+      ],
+      [
+        "_mbedtls_ecdh_make_public",
+        8317000
+      ],
+      [
+        "_platform__shaped_text_width",
+        8214000
+      ],
+      [
+        "_platform__skia_system_face_widths",
+        8214000
+      ],
+      [
+        "_css__StyleComputer__get_computation_context_for_property",
+        8214000
+      ],
+      [
+        "_css__computed_interpolation_font_metrics_for_style",
+        8214000
+      ],
+      [
+        "_mbedtls_ssl_write_record",
+        7919000
+      ],
+      [
+        "_mbedtls_ssl_write_handshake_msg_ext",
+        7919000
+      ],
+      [
+        "_layout__InlineLevelIterator__shape_text_for_layout",
+        7731000
+      ],
+      [
+        "_layout__InlineLevelIterator__dimension_box_on_line",
+        7731000
+      ],
+      [
+        "_platform__skia_document_face_widths",
+        7731000
+      ],
+      [
+        "_css__query_selector_all",
+        7240000
+      ],
+      [
+        "_css__independent_query_all_in",
+        7240000
+      ],
+      [
+        "___v3_internal_symbol_static_62726f777365726a732e43616e766173486f73744073746174696340637265617465",
+        7240000
+      ],
+      [
+        "_initialize_native_browser_context",
+        6944000
+      ],
+      [
+        "_ui2__native_create_element",
+        6944000
+      ],
+      [
+        "_ui2__render_element",
+        6944000
+      ],
+      [
+        "_BrowserApp__mount_ui2_chrome",
+        6944000
+      ],
+      [
+        "_ui2__native_update_button",
+        6944000
+      ],
+      [
+        "___anon_fn_14_callback_adapter_17315483909095690070",
+        6944000
+      ],
+      [
+        "_ui2__render_children",
+        6944000
+      ],
+      [
+        "_ui2__update_embedded_browser",
+        6944000
+      ],
+      [
+        "_ui2__native_set_box_background",
+        6944000
+      ],
+      [
+        "_BrowserApp__initialize_native_window",
+        6944000
+      ],
+      [
+        "_BrowserApp__mount_address_bar",
+        6944000
+      ],
+      [
+        "_vox_curl_socket_deliver",
+        6201000
+      ],
+      [
+        "_requestserver__CurlConnection__socket_action",
+        6201000
+      ],
+      [
+        "_requestserver__curl_socket_activate",
+        6201000
+      ],
+      [
+        "_mbedtls_mpi_core_cond_swap",
+        5638000
+      ],
+      [
+        "_psa_export_public_key",
+        5570000
+      ],
+      [
+        "_mbedtls_ssl_tls13_generate_and_write_xxdh_key_exchange",
+        5570000
+      ],
+      [
+        "_mbedtls_ssl_tls13_write_client_hello_exts",
+        5570000
+      ],
+      [
+        "_mbedtls_ssl_write_client_hello",
+        5570000
+      ],
+      [
+        "_ecp_mod_p255",
+        5570000
+      ],
+      [
+        "_mbedtls_psa_ecp_export_public_key",
+        5570000
+      ],
+      [
+        "_mbedtls_ssl_tls13_fetch_handshake_msg",
+        5454000
+      ],
+      [
+        "_mbedtls_ssl_tls13_handshake_client_step",
+        5454000
+      ],
+      [
+        "_mbedtls_ssl_read_record",
+        5454000
+      ],
+      [
+        "_mbedtls_ssl_fetch_input",
+        5454000
+      ],
+      [
+        "_vox_adblock_worker_evaluate",
+        4736000
+      ],
+      [
+        "_adblock__check_response",
+        4736000
+      ],
+      [
+        "_adblock__evaluate_engine",
+        4736000
+      ],
+      [
+        "_css__parser_consume_a_component_value_from_tokens",
+        4508000
+      ],
+      [
+        "_html__HTMLParser__handle_text",
+        4508000
+      ],
+      [
+        "_dom__StyleElementBase__update_a_style_block",
+        4508000
+      ],
+      [
+        "_html__HTMLParser__handle_element_popped",
+        4508000
+      ],
+      [
+        "_css__style_scope_create_a_css_style_sheet_for_style_element",
+        4508000
+      ],
+      [
+        "_css__parse_css_style_sheet_for_owner_node",
+        4508000
+      ],
+      [
+        "_vox_rgba8_is_opaque",
+        4412000
+      ],
+      [
+        "_dom__compute_intersection",
+        3701000
+      ],
+      [
+        "_layout__DocumentLayoutResult__indexed_visual_context_for_layout_handle",
+        3701000
+      ],
+      [
+        "_html__EventLoop__update_the_rendering",
+        3701000
+      ],
+      [
+        "_dom__Document__run_the_update_intersection_observations_steps",
+        3701000
+      ],
+      [
+        "_layout__viewport_transform_client_rects",
+        3701000
+      ],
+      [
+        "_processmetrics__report_instruction_snapshot",
+        3404000
+      ],
+      [
+        "_native_mark_browser_redraw",
+        96000
+      ],
+      [
+        "___native_wake_browser_block_invoke",
+        96000
+      ],
+      [
+        "_native_layer_invalidate_canvases",
+        96000
+      ]
+    ],
+    "limitations": "Asynchronous CPU-delta weighted frame-pointer stack leads from suspended main thread. PCs represent only interval endpoints; intervals may include other work. Includes sampling overhead. Not exclusive function costs, instructions, or causal performance credit."
+  },
+  "limitations": [
+    "Only intervals with closing process counter at or before capture_document_encoded are selected.",
+    "Cumulative sampled thread CPU is a lower bound; observer is identified separately.",
+    "Second probe records pthread_main_np verified constructor/main tid and uses Mach suspend/read/resume to unwind at most48 frame pointers.",
+    "CPU deltas weighted onto an interval-end stack are leads, not exclusive function costs; inclusive stacks overlap and native/JIT frames can be unresolved.",
+    "Probe initialization, suspension and JSC witness perturb the workload and supply no performance credit.",
+    "Original2second settlement,original reference,original author scripts; these are frozen-replay diagnostics,not live-site proof."
+  ]
+}
