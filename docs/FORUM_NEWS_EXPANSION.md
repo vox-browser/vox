@@ -666,6 +666,49 @@ registered archive, bookmarks and fifteen-site test catalog remain unchanged.
 [fresh full comparison](../Build/engadget-observation-20261103-1436/guarded-site/summary.json),
 [three Brave replays](../Build/engadget-observation-20261103-1436/repeat-brave/summary.json).
 
+## Fresh-process reference agreement (2026-11-03)
+
+Commit `146fd2d24` makes every new site-test pass require two independently
+launched Brave references to agree at zero RGBA pixels. Each reference retains
+its own within-process stability and full-uBO checks. Prepared-cache runs copy
+the same closed profile into both new processes; cold runs start empty. Both
+PNGs, audits and differences are retained. A differing second reference produces
+`reference-replay-mismatch`, even if the first matches Vox and the source.
+Native/source comparison metrics remain available when references disagree.
+
+All **24 Python conformance checks pass**. An offline control using the actual
+previously retained Brave frames detects their **15,642-pixel** disagreement and
+returns `reference-replay-mismatch` despite a zero native difference from the
+first frame. That control stubs the launcher and earns no new browser acceptance.
+
+The fresh end-to-end checks give:
+
+| Page / replay cache | Vox versus Brave | Brave versus fresh Brave | Saved source versus Brave | Result |
+| --- | ---: | ---: | ---: | --- |
+| Engadget / complete | 0 | 0 | 221 | Source-fidelity failure |
+| Engadget / cold | 0 | 0 | 221 | Source-fidelity failure |
+| Hacker News / complete | 0 | 0 | 0 | Strict pass |
+
+The complete Engadget run pins executable `2e53ce13…`; the cold Engadget and
+passing Hacker News runs pin `5e3e9612…`. Browser identities are unchanged within
+each qualified run. The earlier Hacker News control was invalidated when the
+shared executable/helper changed; it remains recorded without acceptance credit.
+Both Engadget runs replay the same complete-acquisition candidate, so “cold”
+describes the frozen/native replay caches, not a new cold live acquisition.
+These matching reference pairs do not supersede the earlier differing replays.
+
+Engadget remains open on the 221 repaint-sensitive source pixels. Its original
+registered archive and golden references are unchanged. Current Chromium's
+[WebP decoder](https://raw.githubusercontent.com/chromium/chromium/main/third_party/blink/renderer/platform/image-decoders/webp/webp_image_decoder.cc)
+enables YUV eligibility after receiving the complete body. This supports further
+investigation of load/paint ordering; it does not identify the installed Brave
+decoder's path in a particular frame.
+[Durable evidence and invalid attempts](evidence/engadget-replay-gate-20261103.json),
+[current Hacker News control](../Build/engadget-replay-gate-20261103-1522/hn-current/summary.json).
+
+Older site checkpoints retain their recorded protocols; they do not
+retroactively establish agreement between fresh Brave processes.
+
 ## Run
 
 ```sh
