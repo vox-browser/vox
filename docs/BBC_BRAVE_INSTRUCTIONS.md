@@ -1,5 +1,37 @@
 # BBC homepage instruction comparison
 
+**The requested 10% advantage remains open; BBC does not qualify for
+`OPTIMIZED_SITES.md`.** On the newly acquired 2026-11-03 homepage, cohort 76
+completes seven alternating control/Vox/Brave triples. All 21 captures pass
+fixed per-engine pixels, complete content, input identities, ownership and
+normal-exit checks. Vox's launch-through-encoded-PNG median is
+**29,975,884,452** instructions; Brave's observed lower-bound median is
+**17,737,591,996**. The strict integer gate fails:
+`309693774280 > 157926110679`, conservative ratio **1.764903825299251**.
+
+This is a **new workload**, with 609 sealed responses and 91 headlines. The
+original 595-response fixture remains lost. Moving to this page establishes no
+historical optimization credit. Both the complete original responses and the
+new frozen replay with fixed references are now committed outside `Build/`.
+See the [new cohort ledger](performance/bbc-fresh-home-20261103.json),
+[original inputs](performance/raw/bbc-fresh-complete-original-inputs-20261103.tar.gz),
+[frozen inputs and references](performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz)
+and [raw acquisition/trial receipts](performance/raw/bbc-fresh-home-20261103.tar.gz).
+
+The matched viewport control has a 30,086,966,767 median, with four paired
+improvements and three regressions; its conservative ratio is 1.092870014869268.
+That variation supplies no robust BBC instruction saving. Earlier new-workload
+cohort 75 retains all 21 attempts, including two ownership rejections caused by
+independent sessions launching the same installed apps during measurement.
+The ownership audit now authenticates distinct private capture roots and their
+live task identities in separate coalitions, retaining all measured-root and
+CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
+pass. The measurement correction earns no engine optimization credit.
+History is **76 cohorts / 1,723 attempted browser trials**, excluding separately
+labeled acquisition/reference/profile diagnostics.
+
+## Historical results on the earlier fixture
+
 **The requested 10% advantage remains open. BBC does not qualify for
 `OPTIMIZED_SITES.md`.** Latest attempted cohort 50 has two early Vox ownership
 rejections and only five complete triples, so it cannot supply an acceptance
@@ -4409,3 +4441,53 @@ a replacement workload or increment the cohort history. See the
 [authenticated raw results](performance/raw/bbc-input-preservation-20261103.tar.gz).
 The original archive/reference files remain missing, the dataset choice remains
 unresolved and the **10% BBC instruction target stays open**.
+
+
+### Fresh frozen homepage protocol (2026-11-03)
+
+Acquisition records the original HTTPS response bodies through a fresh live
+Brave process, with original author scripts enabled. Complete semantic checks
+pass. Eight transport timeouts in the additional resource acquisition are
+retained; a separately recorded stage obtains those bodies. A subsequent stage
+adds the consent frame and its authored resources before reference selection.
+The complete original archive contains 609 responses and 35,282,023 body bytes.
+Its 652,229-byte homepage has SHA-256
+`3b15b815c5f7f2bd42bd02d742253b16134605355a04df706a5fd6316795eb90`.
+
+The frozen replay inserts the same Date shim before author scripts in both
+engines, at epoch **1793697943543 ms**. Original response bytes remain preserved;
+monotonic timers and Math.random remain unchanged. The resulting document SHA
+is `ecda950d0837c3efe51b75ed08fadd526a6453c3cdcff68361e861cf468d0585`.
+Both engines use original origins, a sealed local HTTPS replay with no live
+forwarding, original author scripts, empty private profiles/caches, a native
+1024×768 CSS-pixel viewport at scale 2, visible-image decode and two seconds of
+settling. OS filesystem/shader caches remain warm. Unmapped random analytics,
+browser background endpoints and privacy categories/metrics requests are denied;
+this is a frozen-page workflow rather than a live-site instruction claim.
+
+Counters cover exclusive coalition creation through encoded document PNG
+availability, including startup and native window/target setup. Vox ends before
+PNG file write; Brave includes CDP delivery. Semantic audits and teardown follow
+the endpoint. Owned exited tasks and explicitly permitted owned system services
+are counted; GPU execution and services outside those coalitions are excluded.
+Both cohorts use the adoption-aware default 12 GiB memory guard and preserve
+actual browser/benchmark/guard exits, host load and identities. Each trial
+verifies all pinned inputs again. Shared production changes between cohorts
+receive no optimization credit.
+
+All new-workload reference PNGs remain fixed after selection. Per-engine
+stability is distinct from cross-browser equality: **2,602,001 / 3,145,728 pixels
+(82.7154%)** differ between engines. Every source headline and photograph URL is
+checked; known Vox layout/DOM differences and unavailable local Arial fallback
+faces remain. No masks, tolerance adjustments or reference replacements earn
+instruction credit.
+
+A separate interposer verifies successful JavaScriptCore evaluations whose
+hashes exactly match **72 archived external author scripts**, including BBC
+framework/application chunks. Its PNG remains exact. This establishes actual
+page-code execution; it does not establish complete scripting or DOM parity.
+The copy diagnostic's attempted PNG-end hook did not fire, so its counts also
+include audit/teardown work and supply only leads, with no timing or instruction
+credit. The raw source, commands, logs and initial overflow-limited attempt are
+retained. The subsequent retained-scalar length change has focused checks and a
+separate V profile; production BBC acceptance is still pending.
