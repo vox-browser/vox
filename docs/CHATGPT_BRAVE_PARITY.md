@@ -31,8 +31,15 @@ snapping, then to 15,056 after device-aware font metrics and leading, and to
 8,611 after correcting outer-shadow geometry, then to 6,891 after device-aware
 underlines and ink skipping, then to 3,615 after device-sized shadow overlap and
 rounded background clipping, then to 2,117 after retaining device precision
-in visual clip contexts.
-Scale-1 parity remains exact at all three sizes. The
+in visual clip contexts. Font tracking, SVG user-space and fixed-anchor fixes
+subsequently reduce the older frozen homepage to **one physical pixel**.
+The refreshed frozen reply now differs in **three physical pixels**, each by
+one color level, after correcting the device-pixel snapshot used when its
+composer resumes after the translucent send button. The
+[reply-composer receipt](parity/chatgpt-retina-reply-composer-20261103.json)
+separates the frozen rendering result, successful live reply and pending shared
+production integration. Literal Retina pixel equality remains open.
+Scale-1 parity remains exact at all three recorded homepage sizes. The
 [Retina receipt](parity/chatgpt-retina-20261103.json) retains both captures,
 identities, checks and rejected diagnostics; the
 [font receipt](parity/chatgpt-retina-fonts-20261103.json) and
@@ -43,7 +50,7 @@ records the earlier source-browser result and clean worker shutdown. The
 the 3,615-pixel result on both the focused browser and the completed shared
 production bundle, including actual loaded native images. The subsequent
 [device-clip receipt](parity/chatgpt-retina-device-clips-20261103.json) records
-the current 2,117-pixel result on both the focused source browser and the
+the earlier 2,117-pixel stage on both the focused source browser and the
 completed shared production bundle.
 No new live Retina parity is claimed.
 
@@ -3513,3 +3520,16 @@ The new continuation fix is validated with the completed canonical executable
 and an explicitly loaded native library compiled from canonical source; the
 freshly requested shared production build still needs its own validation.
 Literal Retina pixel equality and broader live feature parity remain open.
+
+
+The corrected native library also preserves exact scale-1 homepage captures at
+800×600, 1024×768 and 1280×800 (`prefix-scale1-124/`), with stable identities,
+empty runtime errors and completed documents. A five-opacity GPU image probe
+matches the existing compositor arithmetic exactly; reciprocal normalization
+regresses and is not adopted (`opacity-gpu-122/`). A trial that sends compound
+stroke fallbacks through the picture backend worsens the reply from three to
+39 differing pixels and is removed (`reply-dawn-compound-126/`). Brave's recorded
+paint diagnostic leaves its frozen reply PNG unchanged (`reply-brave-pictures-123/`).
+The one-pixel homepage and three-pixel reply results remain the accepted current
+measurements. Shared production receipt `20261103-225602-1816d46b` is still
+compiling; no second production build is started for this session.

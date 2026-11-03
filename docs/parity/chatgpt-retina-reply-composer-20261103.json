@@ -295,5 +295,128 @@
   },
   "raw_root": "Build/chatgpt-responsive-20261103/retina-borders-24",
   "privacy": "Private HTML, cookies, backend tokens, guest identifiers and conversation URLs remain under Build and are not copied here.",
-  "acceptance": "Pixel parity remains open: three physical pixels differ by one channel level on the frozen reply, and the older frozen homepage still differs at one pixel. No performance claim or matched-live pixel-parity claim."
+  "acceptance": "Pixel parity remains open: three physical pixels differ by one channel level on the frozen reply, and the older frozen homepage still differs at one pixel. No performance claim or matched-live pixel-parity claim.",
+  "scale1_homepages": {
+    "results": [
+      {
+        "viewport": [
+          800,
+          600
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 1,
+        "png_size": [
+          800,
+          600
+        ],
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 1,
+        "png_size": [
+          1024,
+          768
+        ],
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1280,
+          800
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 1,
+        "png_size": [
+          1280,
+          800
+        ],
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+  },
+  "rejected_followups": {
+    "opacity_gpu_122": {
+      "scope": "Five 256x256 premultiplied image-opacity GPU comparisons. Existing division-based arithmetic agrees exactly; reciprocal normalization regresses. No engine change.",
+      "log": "Build/chatgpt-responsive-20261103/retina-borders-24/opacity-gpu-122/run.log"
+    },
+    "brave_picture_123": {
+      "identity_stable": true,
+      "before_after": 0,
+      "before_reference": 0,
+      "after_reference": 0
+    },
+    "dawn_compound_126": {
+      "assessment": {
+        "results": [
+          {
+            "viewport": [
+              1024,
+              768
+            ],
+            "exit": 0,
+            "stable": true,
+            "scale": 2,
+            "png_size": [
+              2048,
+              1536
+            ],
+            "differing_pixels": 39,
+            "max_channel_error": 5,
+            "bounds": [
+              1944,
+              1142,
+              2014,
+              1463
+            ],
+            "dimensions_match": true,
+            "viewport_match": true,
+            "document_match": true,
+            "ready": "complete",
+            "native_reported_errors": [],
+            "javascript_diagnostics": []
+          }
+        ],
+        "inputs_stable": true,
+        "identity_stable": true,
+        "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+      },
+      "status": "Rejected: 39 differing pixels, max error 5. Canonical source restored; no implementation credit."
+    }
+  },
+  "pending_production_receipt": "Build/production-build/receipts/20261103-225602-1816d46b"
 }
