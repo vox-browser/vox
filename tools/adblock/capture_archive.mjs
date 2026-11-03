@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {isExpectedSiteURL} from './navigation.mjs';
+import {capturePixelReference} from './pixel_reference.mjs';
 
 export const imageAccept = 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8';
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -81,8 +82,11 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
     }
     await fs.writeFile(path.join(directory, 'frozen.html'), snapshot.html);
     await fs.writeFile(path.join(directory, 'live.txt'), snapshot.text);
-    const png = await page.send('Page.captureScreenshot', {format: 'png', captureBeyondViewport: false});
-    await fs.writeFile(path.join(directory, 'live.png'), Buffer.from(png.data, 'base64'));
+    // The live source is a reference too. Require the same loaded fonts,
+    // visible resources and consecutive-frame stability as frozen replay;
+    // otherwise an incomplete or moving source can never qualify its archive.
+    const sourcePixels = await capturePixelReference(page, path.join(directory, 'live.png'),
+        {coverage:'page', url:snapshot.url});
     const requests = new Map(page.events.filter(e => e.method === 'Network.requestWillBeSent')
         .map(e => [e.params.requestId, e.params.request]));
     const responses = new Map(page.events.filter(e => e.method === 'Network.responseReceived')
@@ -150,10 +154,11 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
     await fs.writeFile(pageFile, snapshot.html);
     await fs.writeFile(pageFile + '.content-type', 'text/html;charset=utf-8');
     const {html, text, ...metadata} = snapshot;
-    const report = {...metadata, document_request_method:main.method, frozen_html_sha256: digest(html), resources,
+    const report = {...metadata, source_pixels:sourcePixels,
+        document_request_method:main.method, frozen_html_sha256: digest(html), resources,
         workload: 'Frozen live DOM, scripts removed, normal scripting policy, original encoded resource bodies; no saved raster or computed-style replacement.'};
     await fs.writeFile(path.join(directory, 'archive.json'), JSON.stringify(report, null, 2) + '\n');
-    return {directory, url: snapshot.url, document_request_method:main.method,
+    return {directory, url: snapshot.url, source_pixels:sourcePixels, document_request_method:main.method,
         compat_mode:snapshot.compat_mode,cssom_styles:snapshot.cssom_styles||0,
         resources: resources.filter(r => !r.error).length,
         failed_body_captures: resources.filter(r => r.error).length, frozen_html_sha256: digest(html)};

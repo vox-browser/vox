@@ -7,6 +7,8 @@ import crypto from 'node:crypto';
 import vm from 'node:vm';
 import {archiveHeaders, captureArchive, freezeDocument, imageAccept} from './capture_archive.mjs';
 
+const ready = snapshot => ({ready:'complete',fonts:'loaded',images:[],styles:[],rects:[],...snapshot});
+
 test('freezing retains live CSSOM author rules, raw color syntax and document mode',()=>{
     const raw='p{color:rgb(51 51 51 / 59%)}';
     for(const doctype of [null,{name:'html',publicId:'',systemId:''},
@@ -63,7 +65,7 @@ async function captureMediaRange(t, range, bytes) {
         {method:'Network.responseReceived',params:{requestId:e.id,type:e.type,
             response:{url:e.url,status:e.status,headers:e.headers}}},
         {method:'Network.loadingFinished',params:{requestId:e.id}},
-    ]),evaluate:async()=>({html:'<!doctype html><video src="preview.mp4"></video>',
+    ]),evaluate:async()=>ready({html:'<!doctype html><video src="preview.mp4"></video>',
         url,base:url,text:'story '.repeat(300),width:1024,height:768,scale:1}),
     send:async(method,args)=>{
         if(method==='Page.captureScreenshot')return {data:Buffer.from('png').toString('base64')};
@@ -116,7 +118,7 @@ test('failed main response bodies retain diagnostics without sealing an archive'
                 loaderId:'document-loader',response:{url,status:200,headers:{'Content-Type':'text/html'}}}},
             {method:'Network.loadingFinished',params:{requestId:'main'}},
         ],
-        evaluate:async()=>({html:'<!doctype html><title>News</title>',url,base:url,
+        evaluate:async()=>ready({html:'<!doctype html><title>News</title>',url,base:url,
             text:'story '.repeat(300),width:1024,height:768,scale:1}),
         send:async method=>{
             if(method==='Page.captureScreenshot')return {data:Buffer.from('png').toString('base64')};
@@ -149,7 +151,7 @@ test('a completed POST main navigation can be frozen only with its verified top 
                     response:{url,status:200,headers:{'Content-Type':'text/html'}}}},
                 {method:'Network.loadingFinished',params:{requestId:e.id}},
             ]),
-            evaluate:async()=>({html:'<!doctype html><title>Questions</title>',url,base:url,
+            evaluate:async()=>ready({html:'<!doctype html><title>Questions</title>',url,base:url,
                 text:'question '.repeat(300),width:1024,height:768,scale:1}),
             send:async(method,args)=>{
                 if(method==='Page.captureScreenshot')return {data:Buffer.from('png').toString('base64')};
@@ -196,8 +198,8 @@ test('archive replays encoded images and the frozen main body with original resp
                 response:{url:e.url, status:e.status||200, headers:e.headers}}},
             ...(e.id === 'unfinished' ? [] : [{method:'Network.loadingFinished', params:{requestId:e.id}}]),
         ]),
-        async evaluate() { return {html, url, base:url, text:'text '.repeat(300),
-            width:1024, height:768, scale:1, removed_scripts:3}; },
+        async evaluate() { return ready({html, url, base:url, text:'text '.repeat(300),
+            width:1024, height:768, scale:1, removed_scripts:3}); },
         async send(method, args) {
             if (method === 'Page.captureScreenshot') return {data:encoded.toString('base64')};
             assert.equal(method, 'Network.getResponseBody');
@@ -208,6 +210,10 @@ test('archive replays encoded images and the frozen main body with original resp
     const result = await captureArchive(page, directory, 'https://example.com/');
     assert.equal(result.resources, 2);
     assert.equal(result.failed_body_captures, 0);
+    assert.equal(result.source_pixels.stable,true);
+    assert.equal(result.source_pixels.sha256,crypto.createHash('sha256').update(encoded).digest('hex'));
+    const sourceState=JSON.parse(await fs.readFile(path.join(directory,'live.png.json'),'utf8'));
+    assert.equal(sourceState.stable,true);
     const key = value => crypto.createHash('sha256').update(value).digest('hex');
     const resource = value => path.join(directory, 'cache/resources', key(value));
     assert.deepEqual(await fs.readFile(resource(imageURL)), encoded);
@@ -221,4 +227,46 @@ test('archive replays encoded images and the frozen main body with original resp
     assert.equal(manifest.resources[0].sha256, key('original scripted document'));
     assert.equal(manifest.frozen_html_sha256, key(html));
     await assert.rejects(captureArchive(page, directory, url), /EEXIST/);
+});
+
+test('an unstable live source retains both frames without sealing an archive',async t=>{
+    const root=await fs.mkdtemp(path.join(os.tmpdir(),'vox-archive-unstable-'));
+    t.after(()=>fs.rm(root,{recursive:true,force:true}));
+    const directory=path.join(root,'capture'),url='https://news.example/';
+    let captures=0;
+    const page={events:[],evaluate:async()=>ready({html:'<html>news</html>',url,
+        text:'story '.repeat(300),width:1024,height:768,scale:1}),
+    send:async method=>{
+        assert.equal(method,'Page.captureScreenshot');
+        return {data:Buffer.from('frame-'+(++captures)).toString('base64')};
+    }};
+    await assert.rejects(captureArchive(page,directory,url),/changed between consecutive captures/);
+    assert.equal(captures,2);
+    for(const name of ['archive.json','live.png'])
+        await assert.rejects(fs.stat(path.join(directory,name)),{code:'ENOENT'});
+    const state=JSON.parse(await fs.readFile(path.join(directory,'live.png.json'),'utf8'));
+    assert.equal(state.stable,false);
+    assert.equal(await fs.readFile(state.unstable_captures[0],'utf8'),'frame-1');
+    assert.equal(await fs.readFile(state.unstable_captures[1],'utf8'),'frame-2');
+});
+
+test('unready live resources cannot be sealed even when the document has loaded',async t=>{
+    const root=await fs.mkdtemp(path.join(os.tmpdir(),'vox-archive-unready-'));
+    t.after(()=>fs.rm(root,{recursive:true,force:true}));
+    const url='https://news.example/';
+    for(const [name,resource,error] of [
+        ['image',{images:[{url:url+'photo.webp',x:1,y:1,width:100,height:50,
+            complete:true,naturalWidth:0}]},/missing visible images/],
+        ['stylesheet',{styles:[{url:url+'news.css',active:true,loaded:false}]},/missing active stylesheets/],
+        ['fonts',{fonts:'loading'},/not ready/],
+    ]) {
+        const directory=path.join(root,name);
+        let evaluations=0;
+        const page={events:[],evaluate:async()=>ready({html:'<html>news</html>',url,
+            text:'story '.repeat(300),width:1024,height:768,scale:1,
+            ...(evaluations++?resource:{})}),send:async()=>assert.fail('Unready source must not capture or read bodies')};
+        await assert.rejects(captureArchive(page,directory,url),error);
+        await assert.rejects(fs.stat(path.join(directory,'archive.json')),{code:'ENOENT'});
+        assert.equal(JSON.parse(await fs.readFile(path.join(directory,'live.png.json'),'utf8')).stable,false);
+    }
 });
