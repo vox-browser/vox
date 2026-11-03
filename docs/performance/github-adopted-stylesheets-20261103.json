@@ -1,0 +1,2794 @@
+{
+  "actual_github_guard_exit": 0,
+  "actual_readonly_recovery_exit": 0,
+  "app_copied": false,
+  "broad_baseline_reset": false,
+  "checks": [
+    {
+      "active_tests": [
+        "test_compact_adopted_stylesheets_are_live_native_arrays_in_document_and_shadow_scopes",
+        "test_compact_adopted_stylesheets_validate_arrays_receivers_and_partial_iterable_replacement"
+      ],
+      "actual_guard_terminal_exits": {
+        "compile": 0,
+        "run": 0
+      },
+      "binary_sha256": "efd4ac7c702de0094fdce8129e2342129ebb922974d8370046bcd2c0af3efe86",
+      "cases": 2,
+      "compile_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+          "-showcc",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-d",
+          "vox_ui2",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+          "-w",
+          "-n",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-boehm",
+          "/Users/alex/code/vox2/main_compact_adopted_style_sheets_test.v"
+        ],
+        "elapsed_seconds": 72.01190199999999,
+        "limit_bytes": 12884901888,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 6032392192,
+        "reason": "completed"
+      },
+      "configuration": "boehm",
+      "generated_c_sha256": "06e7644e54a2e8c88dcbe92eadb4a6f784cf332db21ad1965d8bc56914f6e76e",
+      "native_optimization": "C-O0",
+      "runtime_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-boehm"
+        ],
+        "elapsed_seconds": 0.802651708,
+        "limit_bytes": 3221225472,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 103874560,
+        "reason": "completed"
+      }
+    },
+    {
+      "active_tests": [
+        "test_compact_adopted_stylesheets_are_live_native_arrays_in_document_and_shadow_scopes",
+        "test_compact_adopted_stylesheets_validate_arrays_receivers_and_partial_iterable_replacement"
+      ],
+      "actual_guard_terminal_exits": {
+        "compile": 0,
+        "run": 0
+      },
+      "binary_sha256": "d08da78d0c51c54e829417395f7ba491f8690c1f3606a6f196f94b88903d6096",
+      "cases": 2,
+      "compile_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+          "-gc",
+          "none",
+          "-showcc",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-d",
+          "vox_ui2",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+          "-w",
+          "-n",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-none",
+          "/Users/alex/code/vox2/main_compact_adopted_style_sheets_test.v"
+        ],
+        "elapsed_seconds": 75.153628708,
+        "limit_bytes": 12884901888,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 5987680256,
+        "reason": "completed"
+      },
+      "configuration": "none",
+      "generated_c_sha256": "cf009a3bab8cf42adcc10dc66ffaff7ef8bca501bf465fa4aa39c37660a82e60",
+      "native_optimization": "C-O0",
+      "runtime_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-none"
+        ],
+        "elapsed_seconds": 0.7438701249999999,
+        "limit_bytes": 3221225472,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 82051072,
+        "reason": "completed"
+      }
+    },
+    {
+      "active_tests": [
+        "test_compact_adopted_stylesheets_are_live_native_arrays_in_document_and_shadow_scopes",
+        "test_compact_adopted_stylesheets_validate_arrays_receivers_and_partial_iterable_replacement"
+      ],
+      "actual_guard_terminal_exits": {
+        "compile": 0,
+        "run": 0
+      },
+      "binary_sha256": "049ab5f71c26bc5b7529bfd597f73e3fb9d91b5f72e4106a8dfc0136ff159621",
+      "cases": 2,
+      "compile_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-showcc",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-d",
+          "vox_ui2",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+          "-w",
+          "-n",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-prealloc",
+          "/Users/alex/code/vox2/main_compact_adopted_style_sheets_test.v"
+        ],
+        "elapsed_seconds": 74.544290292,
+        "limit_bytes": 12884901888,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 6040911872,
+        "reason": "completed"
+      },
+      "configuration": "prealloc",
+      "generated_c_sha256": "229c6d8f97896b001d09e0c23cab5bbd0328b51ce59c63a6d8cde7e39d9670f4",
+      "native_optimization": "C-O0",
+      "runtime_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-prealloc"
+        ],
+        "elapsed_seconds": 0.882901292,
+        "limit_bytes": 3221225472,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 83312640,
+        "reason": "completed"
+      }
+    },
+    {
+      "active_tests": [
+        "css__test_adopted_sheet_replacement_detaches_old_owner_and_duplicate_deletion_keeps_remaining_owner",
+        "css__test_adopted_sheet_lists_keep_distinct_shadow_owners_and_delete_before_rejected_replacement"
+      ],
+      "actual_guard_terminal_exits": {
+        "compile": 0,
+        "run": 0
+      },
+      "binary_sha256": "a34fbb87bdc12455568fcfa9c825703fffe2a0c3f275c1d152175a3e38a2b9f9",
+      "cases": 2,
+      "compile_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+          "-showcc",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-d",
+          "vox_ui2",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+          "-w",
+          "-n",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-css-boehm",
+          "/Users/alex/code/vox2/css/adopted_style_sheets_mutation_test.v"
+        ],
+        "elapsed_seconds": 43.984356167,
+        "limit_bytes": 12884901888,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 2699755520,
+        "reason": "completed"
+      },
+      "configuration": "css-boehm",
+      "generated_c_sha256": "c6ec02c403ff801f2e8ae5191a1e7e4d9acf1ee1c1fcac104981ffb7a81850b4",
+      "native_optimization": "C-O0",
+      "runtime_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-css-boehm"
+        ],
+        "elapsed_seconds": 0.644160375,
+        "limit_bytes": 3221225472,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 32768,
+        "reason": "completed"
+      }
+    },
+    {
+      "active_tests": [
+        "css__test_adopted_sheet_replacement_detaches_old_owner_and_duplicate_deletion_keeps_remaining_owner",
+        "css__test_adopted_sheet_lists_keep_distinct_shadow_owners_and_delete_before_rejected_replacement"
+      ],
+      "actual_guard_terminal_exits": {
+        "compile": 0,
+        "run": 0
+      },
+      "binary_sha256": "288cc5c1d647393b829fb3df79a40a485703354b7d20b4fba27445ca98473e91",
+      "cases": 2,
+      "compile_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+          "-gc",
+          "none",
+          "-showcc",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-d",
+          "vox_ui2",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+          "-w",
+          "-n",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-css-none",
+          "/Users/alex/code/vox2/css/adopted_style_sheets_mutation_test.v"
+        ],
+        "elapsed_seconds": 32.181258500000006,
+        "limit_bytes": 12884901888,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 2733752320,
+        "reason": "completed"
+      },
+      "configuration": "css-none",
+      "generated_c_sha256": "50c7297a0dc21991ae592de578093e7883954ccda3dfef651edf53d5b0381707",
+      "native_optimization": "C-O0",
+      "runtime_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-css-none"
+        ],
+        "elapsed_seconds": 0.5130638750000001,
+        "limit_bytes": 3221225472,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 32768,
+        "reason": "completed"
+      }
+    }
+  ],
+  "chrome_parity": false,
+  "comparison_eligible": false,
+  "durable_evidence": {
+    "bytes": 227567,
+    "files": 142,
+    "generated_c_policy": "Full generated-C/binary hashes and active test entrypoints retained; eight normalized relevant function bodies archived. Complete generated C and binaries remain at their original Build paths.",
+    "index": {
+      "audit-production-functions.py": "af1ec5ee5b667be39654eff35bb7989760c4de3ee7f395523f7f12d0791fa062",
+      "checks-css-boehm-controller.log": "c8a87885addc99f130a3b941d5e4625293adf3353ac45e8b2eb082ec116d3509",
+      "checks-css-none-controller.log": "5fce2bb758a3a661405690b4444c5874414e9bdfa54aab906643c435224f79f1",
+      "checks-final-controller.log": "734bc46b599be850978879be788fcda0eb083d4eb0e6dbc1a8ed2867011cb8a1",
+      "compile-base-command.json": "14b1e7032f92b2916b7b06c72b6de61209d90a6e922f923c4c24c1624f3c028f",
+      "compile-boehm-command.json": "f765325be75eddfdc4ee660690a754fc007a794d6a9a4b8642fc23fcc103407a",
+      "compile-boehm-guard.json": "b3cd26799fd20f9e367744ec2162c3c8cdbf416ec165854e32e8cc6cdc576ee5",
+      "compile-boehm-result.json": "898872575077c502151d777be7f34e93026576db9fac3cecc68a95415bf00eb1",
+      "compile-boehm.log": "c7680a4ffd3e028e6159662cdee525b14d91915ffc2fba23b48dd7d813902715",
+      "compile-css-boehm-command.json": "905b090f48b1523540f3aaab4651e7b48037287db3a3ad34025ad9d1afdb0c45",
+      "compile-css-boehm-guard.json": "a05f0e85472eb21291442e07bed90fae6094e841bd1271243be6f24a0748c48f",
+      "compile-css-boehm-result.json": "7afcaa258d4825d62454d4225eb8fc86290cd5e534af515e9e3131e2744bdd27",
+      "compile-css-boehm.log": "e73f6a757a7c6a062c75337ded9de27eb4a0f28c7123ff5b90f5f440d11146f6",
+      "compile-css-none-command.json": "59689e872016be2d7bd1cfea1c9a92672c2879b72610c36cc5721798251c437a",
+      "compile-css-none-guard.json": "90fa741e0aa9625ff5a98e809c70c13b0764b41652d8073caf5da8424149ebdd",
+      "compile-css-none-result.json": "f7002bc0a63526fee925e98b19f83ace048e6e9410e0d557cba18e2af3ea43b8",
+      "compile-css-none.log": "c51ad5b50e21b9f4ec2d1064469a172123ce2b5e7c38be801ae80148c4fdfa51",
+      "compile-none-command.json": "500b4768e68b00c308c12a2d96bc4580b87c55b99efa77ded819e51928ba547a",
+      "compile-none-guard.json": "b65b51709c8882ddf6a180c91af8db9f6e538641c27169aabe55e255bca33d3e",
+      "compile-none-result.json": "6e67a73f7e2a99c4e19cd402e198ba7106521799a90f6b8a81f70bab79501553",
+      "compile-none.log": "779de4c9db5abee0958e44ea354f82bbd59ed362c6ef6780a03bc014984af363",
+      "compile-prealloc-command.json": "1493132dcf2638d2eba977b8dbe534b02be9e24c11e0a8687d9d071812cb4622",
+      "compile-prealloc-guard.json": "819606c311c95d8775213e3cc834da34598cf601032a4aef73f331832ee19cb3",
+      "compile-prealloc-result.json": "25c18970ad0389a281ee1c9e6221f8ad554e992629d3f92dbfd111414199fe27",
+      "compile-prealloc.log": "511e702ff99d4ae1294ddec785a84b3b0e309e2cc06aa8d0aadce54d96174c23",
+      "entrypoint-boehm.c.txt": "ade49dd51dfdbc2183c5c7692fd1c5a889cbd3e80c7dc244b48eb9ddffacee5b",
+      "entrypoint-css-boehm.c.txt": "f2c80e37264685de8d34b160916e30d47090b6c1b2488178082ba9ce2a204282",
+      "entrypoint-css-none.c.txt": "f2c80e37264685de8d34b160916e30d47090b6c1b2488178082ba9ce2a204282",
+      "entrypoint-none.c.txt": "ade49dd51dfdbc2183c5c7692fd1c5a889cbd3e80c7dc244b48eb9ddffacee5b",
+      "entrypoint-prealloc.c.txt": "ade49dd51dfdbc2183c5c7692fd1c5a889cbd3e80c7dc244b48eb9ddffacee5b",
+      "feature-commit-config.json": "c14ee91f4f370dd87ad570123829d18a2c1cd629d7825b95fbe766939a9887a8",
+      "feature-commit.json": "5537645942d67d7f7b4a6b07fe697f78c269e9e13bbb15e7e3b21de781b59ff9",
+      "feature-committed.patch": "4b62e1edea311404fa9e0df7831f2da67726fbae651c31dd14a2ec8b07f38fea",
+      "feature-sources.json": "c78e6e60aa406d6cb19fe887ea0eec2d69170c80168c4d8b4479d205995dcc5d",
+      "foreign-main-checks-remaining-controller.log": "0b3fb32ea6e010f3d734b65062d4ab54bd4af26054de7ab80ab0951809a972f0",
+      "foreign-main-compile-none-command.json": "500b4768e68b00c308c12a2d96bc4580b87c55b99efa77ded819e51928ba547a",
+      "foreign-main-compile-none-guard.json": "81510dbccb9df417eed2e66eee74f42a8c1ac7a8e821c3ae9bbbbf7d072e3ea6",
+      "foreign-main-compile-none-result.json": "35cb3842f7bee3af075479349da0267471655bfaf987c5899ec0e7844f5c3134",
+      "foreign-main-compile-none.log": "e499200980ec45b4eb714ef4340ac1b68db40ade3711b621addd4a52515fdd61",
+      "github-after-adoption-01/audit-config.json": "c0bb6f97b936f95af1b3108b9361507dca01ef4e17fb22f77f457237c4a243d6",
+      "github-after-adoption-01/audit.json": "c2432e5d32d5b7b947dd7cded42c1894c12ed793aafc5f1f3b2355b39ad4137f",
+      "github-after-adoption-01/browser.log": "a53081591c51476b3c39c00227ebcd4d9a9621435f3dca68e2f738170b45a637",
+      "github-after-adoption-01/document.png": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+      "github-after-adoption-01/plan.json": "505e0bdcd93ba75fd25a84d3a45989e98071801ff8c62bcf805722f6c4436a3f",
+      "github-after-adoption-01/replay/openssl.log": "1a34f420036ea3125b9cf1326555f9a960f9bc80825741e0d1c52642f13cbf6d",
+      "github-after-adoption-01/replay/ready.json": "ba10b91de4ed9d4363364115853b154a3953721d4ef9d730ea1586f1e5bb43c3",
+      "github-after-adoption-01/result.json": "227ee2303ab4e7acdbe0f3509cead26feb600709fe305d9cbaf6319bb2b987b6",
+      "github-after-adoption-guard-result.json": "89d9ad2810a3bcc2624995b1061c184be2adb89784d4a6c7240a35637960f52a",
+      "github-after-adoption-guard.json": "e7e9a184d05b2a3f36aa5dd0f0258ddfd5df85fd8a5c5f90d429fc8803b474cb",
+      "github-after-adoption.log": "c3dffd631672eec596094eddf09472c8c13e48ae441389ce1f5aafa67d6e2445",
+      "initial-checks-css-boehm-controller.log": "cbb1f72725144e8e33c491afa9c30e1753195f555860076fb357c3875b1e422e",
+      "initial-compile-css-boehm-command.json": "905b090f48b1523540f3aaab4651e7b48037287db3a3ad34025ad9d1afdb0c45",
+      "initial-compile-css-boehm-guard.json": "5888dcca92f9a61c7af15bda362bd90f6a536c83f19f6e8062323e5894d9bbf7",
+      "initial-compile-css-boehm-result.json": "7afcaa258d4825d62454d4225eb8fc86290cd5e534af515e9e3131e2744bdd27",
+      "initial-compile-css-boehm.log": "8b3a8cff3ebd2f259eb1316a27c822475386f2f0f8380e275cfb51f25676ce50",
+      "initial-run-css-boehm-guard.json": "2bf2b5ef6037830dc094a4e3695b12316d41d5d3141c4c5d4c08b65776a083bb",
+      "initial-run-css-boehm-result.json": "bc459749d5034890b9acfa555e773cbb8fea92d5b9ca5988c0bd2dfd8c701f75",
+      "initial-run-css-boehm.log": "8ead52e1335629a2d240da12511748378f4e2b428f56e1fa4fb9fa7899fd57c6",
+      "installed-availability-initial.json": "02a3e463ca97e99201e871c38d0a083906477f57209f2051fb95ee65db5e1e6d",
+      "installed-availability.json": "e106661401be6c417f87e2ebfeb1384ee5a4b2e5cc0df85ef0f963f8a83bb508",
+      "installed-integration-01/audit-config.json": "02edc79bd592077d50f954acf13affbaa8fd659fb47f0748e349278a5e1e7fc4",
+      "installed-integration-01/audit.json": "5373dc3dc7a75ae59fedbcf935257231b7cb677a45fe19d1aeb85d649ac504ca",
+      "installed-integration-01/browser.log": "234962f90074e4cd0789ee398d7a2ee862f3247d3423356c03fb3f3b5797ad81",
+      "installed-integration-01/document.png": "2c2f585a9a53346ed1ea8e60e347fc1ba73ff517ed07622ffe7851fd0ee6285b",
+      "installed-integration-01/plan.json": "1326cb348c32ddc05782d8f5cf46efcc9125e0b99dfa8aa7b58912d42c152bfa",
+      "installed-integration-01/result.json": "321f052dbd8a775619a614c6cf03c998c235b5d7318991982d11e889b0bad9d1",
+      "installed-integration-02-independent-hosts/audit-config.json": "02edc79bd592077d50f954acf13affbaa8fd659fb47f0748e349278a5e1e7fc4",
+      "installed-integration-02-independent-hosts/audit.json": "6666b435a17a9703e90bf573a19e875ee19a84e99cf58e66643b4cf68748845a",
+      "installed-integration-02-independent-hosts/browser.log": "a1736fcea23e1059019b5c7754ec507b9fb501a134ed1de23beab5be7cb1e76a",
+      "installed-integration-02-independent-hosts/document.png": "638ae1e541d5e04fd93c28f064617b64a0d38e9245b765fc7d73cc8cbebc5e68",
+      "installed-integration-02-independent-hosts/plan.json": "f42530b4e61cf49421dfff3e50506039fe1baee10942677445b9e8e4f970d5f8",
+      "installed-integration-02-independent-hosts/recovered-validation.json": "37b2492f8c23e1f11598a53201b11add99fb90f08179dc8769113ab30d41c00c",
+      "installed-integration-02-independent-hosts/result.json": "821206f11b22c4a8f699108b107aa13b6f74cfcc45a191cb5c0ab845bbcb6147",
+      "installed-integration-guard-result.json": "b6936ec33c7f2605ae5f814abe1436a0edc907f02991d8c2128d61d9668a1756",
+      "installed-integration-guard.json": "834d4d274d0d2beb19cff5e27867fdf5ea2676fb66b74f80acfebf4d1315cede",
+      "installed-integration-separated-guard-result.json": "21b7e5b85cdcccf3bfa667f15ad5dd1f35b6df43261bad5d354f4ac320ea55a2",
+      "installed-integration-separated-guard.json": "8e192d5c8c2dad7cf81aec80fcae540cb6b19a1eed55354131ee77ef1fae77ae",
+      "installed-integration-separated.log": "c95daa70e54ea4847ed721ccde1345732d7e6be4f43adf8d0b3e2cb7ad4b4e65",
+      "installed-integration.log": "b157ce0b25ce1ee42d3019b40f6c302f0f2445495e1b5bd6f6c54d7b6dd48402",
+      "installed-separated-availability.json": "637321cb8763633390ebbd14f2a5a4543be9365d4ca311d0de7b22b2a6a94913",
+      "integration-independent-hosts-source.json": "7725ee70e41d48fe0fe5371100a4fd9d426099785a8bb8af7867a61bd3b8c45f",
+      "integration-independent-hosts.html": "d3f22dc7e4ee3282b392d6a0580c1d16f9575241bc61e887d506ef93349ecb02",
+      "integration-source.json": "0f1eacba8982abcd162fcfd5b7bbd9e103c523b9a1d6f3caee2dd334471e22f3",
+      "integration.html": "5372a5cf650f0f31cc00af00595f9264e7f1ff300cfb1fa4b4824f49f6962bad",
+      "prior-receipt-restoration.json": "a2560d2b45bf3911bb97f4b7d32e8ae3237ee56ea411fc4b850ac9d94eb66d0a",
+      "production-function-audit.json": "ae3bc1c5a6ae8dd9d5a4125c74f052711febc9dc846e8107e1c180ee0b685078",
+      "production-function-audit.log": "5f28375c9e303877b23267568fd50890f87c6b73db7ac3044d6d4750d0763835",
+      "production-receipts/20261103-194018-dc45cb6d/build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+      "production-receipts/20261103-194018-dc45cb6d/frozen-compile.json": "f4af0b4c8f2ceba3e5aff4f2ac4506490cb9fa413c5dec518af00e224c32942d",
+      "production-receipts/20261103-194018-dc45cb6d/inputs-before.json": "1d79eafed024094fc060f7339f8a7d01b836799b72c9ccd98c4d1a70b8bc40a4",
+      "production-receipts/20261103-194018-dc45cb6d/memory.json": "06f852e18018ec1c906f8170872f78090a5780d0b2392367007999dfa791d5bc",
+      "production-receipts/20261103-194018-dc45cb6d/result.json": "041c50a59344d186b0325933fce1bdb5c57ca44ed7a460805b2009332b161c97",
+      "production-verified-functions.c.txt": "110ab406424f032f94a0c153721e66a6f2993ab2077c278a127741bf3bc4249a",
+      "recover-installed-validation-result.json": "87a7454a1608754e63863e5cc0bb5bdff7784fd36066b9b6d948e9474401af00",
+      "recover-installed-validation.log": "b4f4837d802784b66f4ec26106ce2f9f2d089860a607e9fbbdf7772390ca743a",
+      "recover-installed-validation.py": "f669a5705b490d8243a8c961a9a5e01004719174594ea5b1c09a4aefffe2e8f7",
+      "run-boehm-guard.json": "3699a93efd553f781a725f550d545ebee45c5568d292a2680c1a598390dd79fd",
+      "run-boehm-result.json": "51a68076607a57777b2e4ff314deb5c3de0bc7f87d7ce0abe17f32dc677fc6ed",
+      "run-boehm.log": "c4af366502fc32e656bd7215e887da16e53f8d56b522d491c558f84d848d55f3",
+      "run-checks.py": "a5f45c064b60b8a2e2b64c0163c8e431c370b6b3937062055036c3a7dd5df6a5",
+      "run-commit.py": "fd6e378528681335263f2d61ed89ba818585cb31ef38729125e6d9994d0989be",
+      "run-css-boehm-guard.json": "7632a2268e16fd2d5e0704cf84cfee3990a64df8350d786da50e394017a53546",
+      "run-css-boehm-result.json": "02c42c45dfeeb38972362f128751dbe30c662dd5116ee3ed93fc5230ae3f16de",
+      "run-css-boehm.log": "9bee8b331c1ccf3ca9d23f0bbc050e2e855f009e9cf7ccb7c9946f6b23917405",
+      "run-css-none-guard.json": "b56dec347fdd1624b6a43bc44ec584640f00801d05defed297de79ce2ab50c6d",
+      "run-css-none-result.json": "14b594ee7ec3dc40aa59f68452d60ffee8512fdfea153993c6e62fa299a9fabf",
+      "run-css-none.log": "79d12382abd13b3dc5e0e8fa5bb2c2171c3779f33ed50aa414920847fa3fd3eb",
+      "run-github-after-adoption.py": "c1e243de111d8587a1d4b5c834f0156b33e909ef71b58b6ce2cff8218a08a842",
+      "run-installed-integration-separated.py": "a1eb5d4556f2d8c4325b8eb0569168ece6c62e83dfbcf5219a2c0048d92dc53a",
+      "run-installed-integration.py": "df3e3b2227dd91fbbfca5357b7b5f6657fdcc905f9bc7adc05ae8deed82fef1f",
+      "run-none-guard.json": "8e678b2c28387ed1d2a99d8b89aa8221a6e5fd1d73d96b4f7e69a0e64260f559",
+      "run-none-result.json": "68ce6990e1a5669bbc1723c1b9307ad818b28077d9f42da970d4cc731f64808b",
+      "run-none.log": "7c24f01bf0e15683a4c2215b1199731c06827994ae90110692e8492f45759ec8",
+      "run-prealloc-guard.json": "15faa8ab68222bc75f6c238821ccf3a5d091ca390eed165711d0fdceeba811d7",
+      "run-prealloc-result.json": "f09b924648f9071ba77e4bbdabd84c8044f00748f2d3f7202881e7e7ec4b5db9",
+      "run-prealloc.log": "d81628985ed2d5c2f8caf5f23510c563f3b53911f2196d5300b35fb9e96799ac",
+      "upstream-sources.json": "b0117b738def5858aaf6344824b6538cd5bddfdb0976c172c8f8de9d2fe67765",
+      "v1-checks-boehm-controller.log": "079f35e88e2d2d286405b11889835b0645f9e19d05ba1bdc7d9f6ecfba9dddda",
+      "v1-checks-remaining-controller.log": "f3a7dbc258626a01157e0bdbb29dcac1f8ccdda4362fe68d163aac309f7c0975",
+      "v1-compile-boehm-command.json": "f765325be75eddfdc4ee660690a754fc007a794d6a9a4b8642fc23fcc103407a",
+      "v1-compile-boehm-guard.json": "c8ce9b118c42581dbe20d0d45b55ddf14d651bc0a6fdefa08ea03ca9ab32877d",
+      "v1-compile-boehm-result.json": "898872575077c502151d777be7f34e93026576db9fac3cecc68a95415bf00eb1",
+      "v1-compile-boehm.log": "b0e354e70aee243cac9a3b3a66b8c197b603a41ab115dab53b880ed65dbf1fb2",
+      "v1-compile-none-command.json": "500b4768e68b00c308c12a2d96bc4580b87c55b99efa77ded819e51928ba547a",
+      "v1-compile-none-guard.json": "c443f80a442845cba6ea5fca8a532fa16f94561256ec62120eee8ffd88d7375f",
+      "v1-compile-none-result.json": "6e67a73f7e2a99c4e19cd402e198ba7106521799a90f6b8a81f70bab79501553",
+      "v1-compile-none.log": "58a12b837f0964fcf1cad5e3c35e0cb737ceec0abf303b0575a71ab60066bab8",
+      "v1-compile-prealloc-command.json": "1493132dcf2638d2eba977b8dbe534b02be9e24c11e0a8687d9d071812cb4622",
+      "v1-compile-prealloc-guard.json": "df410f859eaacc5f686d7c9f03d2d63d7277ff6d17766642f6f77cd5cb729261",
+      "v1-compile-prealloc-result.json": "25c18970ad0389a281ee1c9e6221f8ad554e992629d3f92dbfd111414199fe27",
+      "v1-compile-prealloc.log": "3e0f914e53ae8f81ccf0d5e88000866767de2a75efeadf6e3708b82603756eb7",
+      "v1-feature-sources.json": "aed41d07c9fdbb70143887fef420195f9978a951432ec53b583c388500a2cfd7",
+      "v1-run-boehm-guard.json": "190c4c09d931e537ba8d88fa229fa4af52e44473ed3c4cf386b5bc0f8a464f20",
+      "v1-run-boehm-result.json": "51a68076607a57777b2e4ff314deb5c3de0bc7f87d7ce0abe17f32dc677fc6ed",
+      "v1-run-boehm.log": "eb24026f42a6f3571a7d6982ae8779287cb1936313490e77735b3e2d54d657b4",
+      "v1-run-none-guard.json": "ab868a23825ad023b6d92c1fa67628f1fb3c26b95c6dade9cee5b68497d9bdd8",
+      "v1-run-none-result.json": "68ce6990e1a5669bbc1723c1b9307ad818b28077d9f42da970d4cc731f64808b",
+      "v1-run-none.log": "f35d5d0c04cc5bf4eee729dccab4a5db9b3b12bc9105e4e2129d603ccbdfb306",
+      "v1-run-prealloc-guard.json": "96bdd852cc5ede031ca7c6d312077eb3639d5a3c9d28de55913ecd6b59f9f034",
+      "v1-run-prealloc-result.json": "f09b924648f9071ba77e4bbdabd84c8044f00748f2d3f7202881e7e7ec4b5db9",
+      "v1-run-prealloc.log": "91a29d6f6d5b1a210c9775f4788e0da4428b2d97afa4b518d378e2055ca9b319",
+      "write-evidence.py": "08d7aec661504216e4da47dbc5d3d4e0f41bffcb31a291eec2cdd02503fab97c"
+    },
+    "path": "docs/performance/raw/github-adopted-stylesheets-20261103.tar.gz",
+    "readback_verified": true,
+    "sha256": "ab3fdaf1aa60fe4cce7ba56e1165d016c30de550f264ec49318ba4358f3b68e7"
+  },
+  "earlier_binding_revision": {
+    "cases": 2,
+    "completed_case_executions": 6,
+    "configurations": 3,
+    "reason": "Retained v1 checks preceded captured Proxy/error intrinsics. All three binding configurations rerun after adding a meaningful author-override check. Native ownership implementation/tests stayed unchanged."
+  },
+  "failures": [
+    {
+      "compile_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+          "-showcc",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-d",
+          "vox_ui2",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+          "-w",
+          "-n",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-css-boehm",
+          "/Users/alex/code/vox2/css/adopted_style_sheets_mutation_test.v"
+        ],
+        "elapsed_seconds": 42.746031625,
+        "limit_bytes": 12884901888,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 2723069952,
+        "reason": "completed"
+      },
+      "name": "initial-css-boehm",
+      "reason": "Native fixture used XML-namespace hosts; attachShadow correctly rejected them. Corrected to explicit HTML namespaces.",
+      "runtime_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 1,
+        "command": [
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-css-boehm"
+        ],
+        "elapsed_seconds": 0.57902825,
+        "limit_bytes": 3221225472,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 32768,
+        "reason": "completed"
+      }
+    },
+    {
+      "compile_guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 1,
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+          "-gc",
+          "none",
+          "-showcc",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-d",
+          "vox_ui2",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+          "-w",
+          "-n",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-none",
+          "/Users/alex/code/vox2/main_compact_adopted_style_sheets_test.v"
+        ],
+        "elapsed_seconds": 23.540096625,
+        "limit_bytes": 12884901888,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 1364295680,
+        "reason": "completed"
+      },
+      "name": "foreign-main-none",
+      "reason": "Concurrent main.v change referenced unsupported f64.is_finite. Current source corrected to math.is_nan/is_inf; unfinished build resumed with original failure retained.",
+      "runtime_guard": null
+    }
+  ],
+  "feature_commit": "e67e7fc27bee5526f17bf3b6d42d2d72454a7205",
+  "feature_paths": [
+    "css/adopted_style_sheets.v",
+    "css/cssom_rules.v",
+    "css/adopted_style_sheets_mutation_test.v",
+    "main_compact_link_sheet.v",
+    "main_compact_document.v",
+    "main_compact_adopted_style_sheets.v",
+    "main_compact_adopted_style_sheets_test.v"
+  ],
+  "final_composite_case_executions": 10,
+  "focused_cases": 4,
+  "github": {
+    "actual_browser_exit": 0,
+    "broad_baseline_reset": false,
+    "browser_observations": 1,
+    "browser_pid": 36037,
+    "command": [
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "--enable-javascript",
+      "--window-width",
+      "1024",
+      "--window-height",
+      "852",
+      "--screenshot",
+      "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/github-after-adoption-01/document.png",
+      "https://github.com/vlang/v"
+    ],
+    "comparison_eligible": false,
+    "content_gate": {
+      "failures": [],
+      "passed": true
+    },
+    "environment_controls": {
+      "DYLD_INSERT_LIBRARIES": "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/native-diagnostic-01/network-deny.dylib",
+      "GC_MARKERS": "1",
+      "LADYBIRD_CACHE_DIR": "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/github-after-adoption-01/cache",
+      "LADYBIRD_SCREENSHOT_DELAY_SECONDS": ".5",
+      "LADYBIRD_SCREENSHOT_SCALE": "1",
+      "NO_PROXY": "",
+      "SSL_CERT_FILE": "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/github-after-adoption-01/replay/cert.pem",
+      "VOX_CAPTURE_AUDIT_CONFIG": "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/github-after-adoption-01/audit-config.json",
+      "VOX_CAPTURE_AUDIT_PATH": "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/github-after-adoption-01/audit.json",
+      "VOX_CAPTURE_DOCUMENT_ONLY": "1",
+      "VOX_COOKIE_FILE": "",
+      "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/github-after-adoption-01/profile",
+      "VOX_PROFILE_INSTRUCTIONS": "1",
+      "VOX_PROXY": "socks5h://127.0.0.1:57111",
+      "VOX_TEST_WINDOW": "1"
+    },
+    "exit": 0,
+    "host_after": {
+      "cpu_count": 18,
+      "load_average": [
+        12.24609375,
+        15.1767578125,
+        26.11083984375
+      ],
+      "unix": 1793724875.399916
+    },
+    "javascript_diagnostics": [
+      "Stylesheet https://github.githubassets.com/assets/jdp.78ec31cf68ea99a3.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/kq9.534fad559fbed8f2.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/bv.b745c35cbc44f08d.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/u2l.7871b60c0a7907d4.module.css: HTTP 404",
+      "TypeError: undefined is not an object (evaluating 'Object.getPrototypeOf((tY.XC?.createElement(\"turbo-frame\")).delegate)')\ngetPrototypeOf@[native code]\nt2@https://github.githubassets.com/assets/behaviors-11d6024087159f9b.js:27:17330\nn@https://github.githubassets.com/assets/wp-runtime-fe945356940897d4.js:2:125\nmodule code@https://github.githubassets.com/assets/behaviors-11d6024087159f9b.js:35:7116"
+    ],
+    "native": {
+      "phase_note": "adjacent cumulative checkpoint deltas; nested scopes overlap and must not be summed",
+      "phases": [
+        {
+          "cumulative_instructions": 440056003,
+          "instructions": 440056003,
+          "label": "startup"
+        },
+        {
+          "cumulative_instructions": 442596023,
+          "instructions": 2540020,
+          "label": "startup_page_model"
+        },
+        {
+          "cumulative_instructions": 442712058,
+          "instructions": 116035,
+          "label": "startup_browser_state"
+        },
+        {
+          "cumulative_instructions": 443837387,
+          "instructions": 1125329,
+          "label": "startup_input_bridge"
+        },
+        {
+          "cumulative_instructions": 444367326,
+          "instructions": 529939,
+          "label": "startup_context"
+        },
+        {
+          "cumulative_instructions": 444555600,
+          "instructions": 188274,
+          "label": "navigation_started"
+        },
+        {
+          "cumulative_instructions": 444980364,
+          "instructions": 424764,
+          "label": "startup_navigation"
+        },
+        {
+          "cumulative_instructions": 647607564,
+          "instructions": 202627200,
+          "label": "startup_filter_worker"
+        },
+        {
+          "cumulative_instructions": 1374487152,
+          "instructions": 726879588,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 1376594570,
+          "instructions": 2107418,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 1482078767,
+          "instructions": 105484197,
+          "label": "main_resource_fetch"
+        },
+        {
+          "cumulative_instructions": 1494637684,
+          "instructions": 12558917,
+          "label": "main_resource_cache"
+        },
+        {
+          "cumulative_instructions": 1756193622,
+          "instructions": 261555938,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 1758149462,
+          "instructions": 1955840,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 1905829858,
+          "instructions": 147680396,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 1914141480,
+          "instructions": 8311622,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2127073651,
+          "instructions": 212932171,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2129074834,
+          "instructions": 2001183,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2231151786,
+          "instructions": 102076952,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2237603674,
+          "instructions": 6451888,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2368074400,
+          "instructions": 130470726,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2371116775,
+          "instructions": 3042375,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2479761535,
+          "instructions": 108644760,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2485257727,
+          "instructions": 5496192,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2534095290,
+          "instructions": 48837563,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2536039237,
+          "instructions": 1943947,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2563912071,
+          "instructions": 27872834,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2567807945,
+          "instructions": 3895874,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2641900677,
+          "instructions": 74092732,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2649897364,
+          "instructions": 7996687,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2964208279,
+          "instructions": 314310915,
+          "label": "parse_document"
+        },
+        {
+          "cumulative_instructions": 4680217520,
+          "instructions": 1716009241,
+          "label": "preload_resources"
+        },
+        {
+          "cumulative_instructions": 4680390838,
+          "instructions": 173318,
+          "label": "install_styles"
+        },
+        {
+          "cumulative_instructions": 4687700139,
+          "instructions": 7309301,
+          "label": "install_video_frames"
+        },
+        {
+          "cumulative_instructions": 4969351016,
+          "instructions": 281650877,
+          "label": "javascript_native_bindings"
+        },
+        {
+          "cumulative_instructions": 5032689107,
+          "instructions": 63338091,
+          "label": "javascript_initial_state"
+        },
+        {
+          "cumulative_instructions": 5032929804,
+          "instructions": 240697,
+          "label": "javascript_bootstrap_source"
+        },
+        {
+          "cumulative_instructions": 5188775781,
+          "instructions": 155845977,
+          "label": "javascript_bootstrap_evaluated"
+        },
+        {
+          "cumulative_instructions": 5216825256,
+          "instructions": 28049475,
+          "label": "javascript_document_bindings"
+        },
+        {
+          "cumulative_instructions": 5221145986,
+          "instructions": 4320730,
+          "label": "javascript_adblock_scriptlets"
+        },
+        {
+          "cumulative_instructions": 5253741366,
+          "instructions": 32595380,
+          "label": "javascript_readiness_events"
+        },
+        {
+          "cumulative_instructions": 5254091277,
+          "instructions": 349911,
+          "label": "javascript_finalized"
+        },
+        {
+          "cumulative_instructions": 5255180018,
+          "instructions": 1088741,
+          "label": "run_javascript"
+        },
+        {
+          "cumulative_instructions": 5260377359,
+          "instructions": 5197341,
+          "label": "cookie_blocker"
+        },
+        {
+          "cumulative_instructions": 5263552377,
+          "instructions": 3175018,
+          "label": "script_inserted_stylesheets"
+        },
+        {
+          "cumulative_instructions": 5264215847,
+          "instructions": 663470,
+          "label": "unsized_script_images"
+        },
+        {
+          "cumulative_instructions": 8073801621,
+          "instructions": 2809585774,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 8078360107,
+          "instructions": 4558486,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 8078460434,
+          "instructions": 100327,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 10156669364,
+          "instructions": 2078208930,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 10233491545,
+          "instructions": 76822181,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 10233720005,
+          "instructions": 228460,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 10238511788,
+          "instructions": 4791783,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 10257826402,
+          "instructions": 19314614,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 10399765284,
+          "instructions": 141938882,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 10403497279,
+          "instructions": 3731995,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 10403598716,
+          "instructions": 101437,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 11562609552,
+          "instructions": 1159010836,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 11604959584,
+          "instructions": 42350032,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 11605177684,
+          "instructions": 218100,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 11609620181,
+          "instructions": 4442497,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 11628216764,
+          "instructions": 18596583,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 11692380421,
+          "instructions": 64163657,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 11692543802,
+          "instructions": 163381,
+          "label": "relayout"
+        },
+        {
+          "cumulative_instructions": 11693165267,
+          "instructions": 621465,
+          "label": "script_inserted_images"
+        },
+        {
+          "cumulative_instructions": 11693239046,
+          "instructions": 73779,
+          "label": "install_total"
+        },
+        {
+          "cumulative_instructions": 11800880409,
+          "instructions": 107641363,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 11805056874,
+          "instructions": 4176465,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 11805132230,
+          "instructions": 75356,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 12968782700,
+          "instructions": 1163650470,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 13011360008,
+          "instructions": 42577308,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 13011552487,
+          "instructions": 192479,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 13015829016,
+          "instructions": 4276529,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 13034634055,
+          "instructions": 18805039,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 13201445920,
+          "instructions": 166811865,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 13201678533,
+          "instructions": 232613,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 13209722226,
+          "instructions": 8043693,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 13618867751,
+          "instructions": 409145525,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 13628263368,
+          "instructions": 9395617,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 13628338931,
+          "instructions": 75563,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 15577306521,
+          "instructions": 1948967590,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 15648122442,
+          "instructions": 70815921,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 15648315183,
+          "instructions": 192741,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 15652583199,
+          "instructions": 4268016,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 15671763260,
+          "instructions": 19180061,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 15743771575,
+          "instructions": 72008315,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 15793997689,
+          "instructions": 50226114,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 15794165532,
+          "instructions": 167843,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 15794239809,
+          "instructions": 74277,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 15794511862,
+          "instructions": 272053,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 15794586060,
+          "instructions": 74198,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 15794659707,
+          "instructions": 73647,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 15794744861,
+          "instructions": 85154,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 15794842284,
+          "instructions": 97423,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 15808272660,
+          "instructions": 13430376,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 15808348965,
+          "instructions": 76305,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 15810564393,
+          "instructions": 2215428,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 16331082928,
+          "instructions": 520518535,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 17377435759,
+          "instructions": 1046352831,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 17392181684,
+          "instructions": 14745925,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 17392374373,
+          "instructions": 192689,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 17396624958,
+          "instructions": 4250585,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 17415077237,
+          "instructions": 18452279,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 17499473402,
+          "instructions": 84396165,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 17499547835,
+          "instructions": 74433,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17501617112,
+          "instructions": 2069277,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17512361429,
+          "instructions": 10744317,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17514571739,
+          "instructions": 2210310,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17557380439,
+          "instructions": 42808700,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 17561494458,
+          "instructions": 4114019,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 17561569131,
+          "instructions": 74673,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17563837818,
+          "instructions": 2268687,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17565166558,
+          "instructions": 1328740,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17567305011,
+          "instructions": 2138453,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 18887732608,
+          "instructions": 1320427597,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 18889990528,
+          "instructions": 2257920,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 18930135885,
+          "instructions": 40145357,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 18932496922,
+          "instructions": 2361037,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 18999597948,
+          "instructions": 67101026,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19001756979,
+          "instructions": 2159031,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19112457764,
+          "instructions": 110700785,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19114758046,
+          "instructions": 2300282,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19276698601,
+          "instructions": 161940555,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19278970286,
+          "instructions": 2271685,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19337529883,
+          "instructions": 58559597,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19339780032,
+          "instructions": 2250149,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19790443990,
+          "instructions": 450663958,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 19794460786,
+          "instructions": 4016796,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 19794568748,
+          "instructions": 107962,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 20936671325,
+          "instructions": 1142102577,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 20978902757,
+          "instructions": 42231432,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 20979096297,
+          "instructions": 193540,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 20983542861,
+          "instructions": 4446564,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 21002332145,
+          "instructions": 18789284,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 21090615267,
+          "instructions": 88283122,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 21126926235,
+          "instructions": 36310968,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 21127002979,
+          "instructions": 76744,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 21129266475,
+          "instructions": 2263496,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 24072166331,
+          "instructions": 2942899856,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 27198675053,
+          "instructions": 3126508722,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 27202782076,
+          "instructions": 4107023,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 27202858452,
+          "instructions": 76376,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 29122867295,
+          "instructions": 1920008843,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 29186940485,
+          "instructions": 64073190,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 29187141291,
+          "instructions": 200806,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 29191853827,
+          "instructions": 4712536,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 29210902553,
+          "instructions": 19048726,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 29288595557,
+          "instructions": 77693004,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 29316662987,
+          "instructions": 28067430,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 29316738964,
+          "instructions": 75977,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 29321520209,
+          "instructions": 4781245,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 29731112012,
+          "instructions": 409591803,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 29735243006,
+          "instructions": 4130994,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 29735319219,
+          "instructions": 76213,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 30903478507,
+          "instructions": 1168159288,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 30945738663,
+          "instructions": 42260156,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 30945932522,
+          "instructions": 193859,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 30950312217,
+          "instructions": 4379695,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 30969307551,
+          "instructions": 18995334,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 31035729025,
+          "instructions": 66421474,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 33433692367,
+          "instructions": 2397963342,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 33438090575,
+          "instructions": 4398208,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 33438166957,
+          "instructions": 76382,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 35332812115,
+          "instructions": 1894645158,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 35398039561,
+          "instructions": 65227446,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 35398236976,
+          "instructions": 197415,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 35402748442,
+          "instructions": 4511466,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 35422096551,
+          "instructions": 19348109,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 35498884794,
+          "instructions": 76788243,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 35526383820,
+          "instructions": 27499026,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 35526459775,
+          "instructions": 75955,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 35528587668,
+          "instructions": 2127893,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 35686817991,
+          "instructions": 158230323,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 35688953955,
+          "instructions": 2135964,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 36219794369,
+          "instructions": 530840414,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 36223242934,
+          "instructions": 3448565,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 36333013307,
+          "instructions": 109770373,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 36336507391,
+          "instructions": 3494084,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 36497127549,
+          "instructions": 160620158,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 36500787583,
+          "instructions": 3660034,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 36500862934,
+          "instructions": 75351,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 37640399042,
+          "instructions": 1139536108,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 37682741931,
+          "instructions": 42342889,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 37682939733,
+          "instructions": 197802,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 37687385325,
+          "instructions": 4445592,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 37706228739,
+          "instructions": 18843414,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 37768146209,
+          "instructions": 61917470,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 40119980620,
+          "instructions": 2351834411,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 40124177511,
+          "instructions": 4196891,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 40124255124,
+          "instructions": 77613,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 42011494852,
+          "instructions": 1887239728,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 42075746648,
+          "instructions": 64251796,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 42075947422,
+          "instructions": 200774,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 42080444213,
+          "instructions": 4496791,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 42099611170,
+          "instructions": 19166957,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 42175736827,
+          "instructions": 76125657,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 42265348480,
+          "instructions": 89611653,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 42265424480,
+          "instructions": 76000,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 42267540780,
+          "instructions": 2116300,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 42274222892,
+          "instructions": 6682112,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 42276331535,
+          "instructions": 2108643,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 42347865771,
+          "instructions": 71534236,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 42350026481,
+          "instructions": 2160710,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 42450783778,
+          "instructions": 100757297,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 42454582441,
+          "instructions": 3798663,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 42454658600,
+          "instructions": 76159,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 43587067461,
+          "instructions": 1132408861,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 43629502097,
+          "instructions": 42434636,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 43629695952,
+          "instructions": 193855,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 43634130385,
+          "instructions": 4434433,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 43652895453,
+          "instructions": 18765068,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 43713475755,
+          "instructions": 60580302,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 46063422924,
+          "instructions": 2349947169,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 46067191940,
+          "instructions": 3769016,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 46067268309,
+          "instructions": 76369,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 47928643900,
+          "instructions": 1861375591,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 47992224442,
+          "instructions": 63580542,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 47992418494,
+          "instructions": 194052,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 47996706688,
+          "instructions": 4288194,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 48015741038,
+          "instructions": 19034350,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 48090956019,
+          "instructions": 75214981,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 48117540696,
+          "instructions": 26584677,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 48117618194,
+          "instructions": 77498,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 48119879017,
+          "instructions": 2260823,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 48130624324,
+          "instructions": 10745307,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 48132769682,
+          "instructions": 2145358,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 48383944862,
+          "instructions": 251175180,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 48388403298,
+          "instructions": 4458436,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 48388479104,
+          "instructions": 75806,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 48390725239,
+          "instructions": 2246135,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 50868640339,
+          "instructions": 2477915100,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 50872852174,
+          "instructions": 4211835,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 50872928523,
+          "instructions": 76349,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 52163113570,
+          "instructions": 1290185047,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 52205885147,
+          "instructions": 42771577,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 52206098775,
+          "instructions": 213628,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 52210834968,
+          "instructions": 4736193,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 52230944483,
+          "instructions": 20109515,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 52375759526,
+          "instructions": 144815043,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 52489925681,
+          "instructions": 114166155,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 52490001585,
+          "instructions": 75904,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 52494655184,
+          "instructions": 4653599,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 52571567117,
+          "instructions": 76911933,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 52573714507,
+          "instructions": 2147390,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 52587078604,
+          "instructions": 13364097,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 52589276366,
+          "instructions": 2197762,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 52697729748,
+          "instructions": 108453382,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 52700002310,
+          "instructions": 2272562,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 52774804589,
+          "instructions": 74802279,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 52777077741,
+          "instructions": 2273152,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 53029412697,
+          "instructions": 252334956,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 53033425593,
+          "instructions": 4012896,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 53033501948,
+          "instructions": 76355,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 54293677098,
+          "instructions": 1260175150,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 54335857479,
+          "instructions": 42180381,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 54336064287,
+          "instructions": 206808,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 54340655866,
+          "instructions": 4591579,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 54360547386,
+          "instructions": 19891520,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 54428187748,
+          "instructions": 67640362,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 56888477870,
+          "instructions": 2460290122,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 56892869697,
+          "instructions": 4391827,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 56892945389,
+          "instructions": 75692,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 58895739698,
+          "instructions": 2002794309,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 58960773643,
+          "instructions": 65033945,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 58961000101,
+          "instructions": 226458,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 58965896954,
+          "instructions": 4896853,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 58986169765,
+          "instructions": 20272811,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 59067825561,
+          "instructions": 81655796,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 59095748919,
+          "instructions": 27923358,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 59095823974,
+          "instructions": 75055,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 59098117002,
+          "instructions": 2293028,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 59110384983,
+          "instructions": 12267981,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 59112483896,
+          "instructions": 2098913,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 59209045049,
+          "instructions": 96561153,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 59212833059,
+          "instructions": 3788010,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 59212907927,
+          "instructions": 74868,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 60478753749,
+          "instructions": 1265845822,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 60521061241,
+          "instructions": 42307492,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 60521267408,
+          "instructions": 206167,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 60525846441,
+          "instructions": 4579033,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 60546122269,
+          "instructions": 20275828,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 60614154980,
+          "instructions": 68032711,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 63049368011,
+          "instructions": 2435213031,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 63054134426,
+          "instructions": 4766415,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 63054210115,
+          "instructions": 75689,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 65047660832,
+          "instructions": 1993450717,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 65111588066,
+          "instructions": 63927234,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 65111800998,
+          "instructions": 212932,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 65116645352,
+          "instructions": 4844354,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 65136819402,
+          "instructions": 20174050,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 65219733929,
+          "instructions": 82914527,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 65247033433,
+          "instructions": 27299504,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 65247108712,
+          "instructions": 75279,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 65249367693,
+          "instructions": 2258981,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 65256130198,
+          "instructions": 6762505,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 65258176775,
+          "instructions": 2046577,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 65498446433,
+          "instructions": 240269658,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 65502221029,
+          "instructions": 3774596,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 65502295925,
+          "instructions": 74896,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 66747387173,
+          "instructions": 1245091248,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 66789598461,
+          "instructions": 42211288,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 66789804659,
+          "instructions": 206198,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 66794295688,
+          "instructions": 4491029,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 66814201637,
+          "instructions": 19905949,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 66904126415,
+          "instructions": 89924778,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 69392773605,
+          "instructions": 2488647190,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 69397348874,
+          "instructions": 4575269,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 69397424602,
+          "instructions": 75728,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 71392682342,
+          "instructions": 1995257740,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 71456735663,
+          "instructions": 64053321,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 71456948593,
+          "instructions": 212930,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 71461742340,
+          "instructions": 4793747,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 71481990391,
+          "instructions": 20248051,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 71563934545,
+          "instructions": 81944154,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 71592036865,
+          "instructions": 28102320,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 71592112146,
+          "instructions": 75281,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 71594385927,
+          "instructions": 2273781,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 71605252141,
+          "instructions": 10866214,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 71607309006,
+          "instructions": 2056865,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 71705276739,
+          "instructions": 97967733,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 71709001957,
+          "instructions": 3725218,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 71709076799,
+          "instructions": 74842,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 72960283925,
+          "instructions": 1251207126,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 73002795566,
+          "instructions": 42511641,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 73003001724,
+          "instructions": 206158,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 73007598990,
+          "instructions": 4597266,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 73027504134,
+          "instructions": 19905144,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 73095099804,
+          "instructions": 67595670,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 73128154227,
+          "instructions": 33054423,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 73128229532,
+          "instructions": 75305,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 74539868503,
+          "instructions": 1411638971,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 74552516150,
+          "instructions": 12647647,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 74552826641,
+          "instructions": 310491,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 74673851105,
+          "instructions": 121024464,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 74677642344,
+          "instructions": 3791239,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 74677718822,
+          "instructions": 76478,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 75934555631,
+          "instructions": 1256836809,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 75976734383,
+          "instructions": 42178752,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 75976941198,
+          "instructions": 206815,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 75981487091,
+          "instructions": 4545893,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 76001461659,
+          "instructions": 19974568,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 76072723583,
+          "instructions": 71261924,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 78528178635,
+          "instructions": 2455455052,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 78532675355,
+          "instructions": 4496720,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 78532751698,
+          "instructions": 76343,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 80527049034,
+          "instructions": 1994297336,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 80591176442,
+          "instructions": 64127408,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 80591386655,
+          "instructions": 210213,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 80596219278,
+          "instructions": 4832623,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 80616376504,
+          "instructions": 20157226,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 80697736838,
+          "instructions": 81360334,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 80725886503,
+          "instructions": 28149665,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 80725962403,
+          "instructions": 75900,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 80956614743,
+          "instructions": 230652340,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 80957408256,
+          "instructions": 793513,
+          "label": "capture_started"
+        },
+        {
+          "cumulative_instructions": 80961787266,
+          "instructions": 4379010,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 80962094231,
+          "instructions": 306965,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 80967433343,
+          "instructions": 5339112,
+          "label": "capture_cached"
+        },
+        {
+          "cumulative_instructions": 80967479523,
+          "instructions": 46180,
+          "label": "capture_converted"
+        },
+        {
+          "cumulative_instructions": 80978703734,
+          "instructions": 11224211,
+          "label": "capture_document_encoded"
+        }
+      ],
+      "scopes": {
+        "document_install_to_first_native_layer_submission": [
+          71793330351
+        ],
+        "document_install_to_first_paint": [
+          10463035452
+        ],
+        "install_total": [
+          8946481339
+        ],
+        "navigation_to_first_document_paint": [
+          12765311290
+        ],
+        "navigation_to_first_native_layer_submission": [
+          74095606189
+        ]
+      },
+      "unavailable": []
+    },
+    "new_instruction_credit": 0,
+    "png": {
+      "bytes": 229614,
+      "dimensions": [
+        1024,
+        768
+      ],
+      "path": "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/github-after-adoption-01/document.png",
+      "sha256": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3"
+    },
+    "replay": {
+      "archive": "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/archive-resumed",
+      "ca": "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/github-after-adoption-01/replay/cert.pem",
+      "certificate_sha256": "656e2b6eeaf500cfbc14c79c817e6eb10fd3300d1b1392050e12d89c90b4ba75",
+      "forwarding": false,
+      "manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+      "proxy": "socks5h://127.0.0.1:57111",
+      "url": "https://github.com/vlang/v"
+    }
+  },
+  "github_guard": {
+    "adopted_processes": {},
+    "adoption_error": null,
+    "child_exit_code": 0,
+    "command": [
+      "python3",
+      "Build/github-adopted-sheets-20261103-session4076/run-github-after-adoption.py"
+    ],
+    "elapsed_seconds": 10.605138375000001,
+    "limit_bytes": 12884901888,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+    "observed_peak_rss_bytes": 4425908224,
+    "reason": "completed"
+  },
+  "historical_primary_replacements": 0,
+  "installed_controller_failure": "Second native page completed both assertion bodies, but controller expected the old select-interface success message. Browser exit0; original controller and guard exit1 stay unchanged. A read-only audit verifies correct PASS text, exact viewport, fixture/PNG hashes and empty JavaScript diagnostics without replay. Identity checks precede that text comparison in the original controller.",
+  "installed_first_observation": {
+    "actual_browser_exit": 0,
+    "build_requested": false,
+    "error": "Page API assertions failed",
+    "exit": 1,
+    "new_instruction_credit": 0,
+    "pid": 33241,
+    "text": [
+      "FAIL: NotSupportedError: Element already is a shadow host"
+    ]
+  },
+  "installed_recovery": {
+    "actual_browser_exit": 0,
+    "browser_replayed": false,
+    "exit": 0,
+    "guard_result_sha256": "21b7e5b85cdcccf3bfa667f15ad5dd1f35b6df43261bad5d354f4ac320ea55a2",
+    "native_audit_sha256": "6666b435a17a9703e90bf573a19e875ee19a84e99cf58e66643b4cf68748845a",
+    "original_controller_exit": 1,
+    "original_guard_exit": 1,
+    "original_result_sha256": "821206f11b22c4a8f699108b107aa13b6f74cfcc45a191cb5c0ab845bbcb6147",
+    "original_results_unchanged": true,
+    "png_sha256": "638ae1e541d5e04fd93c28f064617b64a0d38e9245b765fc7d73cc8cbebc5e68",
+    "reason": "Controller retained the old select-interface success string. Both native page assertion bodies completed with the intended adopted-stylesheet PASS text.",
+    "source_sha256": "d3f22dc7e4ee3282b392d6a0580c1d16f9575241bc61e887d506ef93349ecb02",
+    "verified_text": [
+      "PASS: adopted arrays, native cascades, invalidation, ownership and validation"
+    ],
+    "viewport": [
+      640,
+      480
+    ]
+  },
+  "installed_second_observation": {
+    "actual_browser_exit": 0,
+    "build_requested": false,
+    "error": "Page API assertions failed",
+    "exit": 1,
+    "new_instruction_credit": 0,
+    "pid": 34730,
+    "text": [
+      "PASS: adopted arrays, native cascades, invalidation, ownership and validation"
+    ]
+  },
+  "instruction_credit": 0,
+  "limitations": [
+    "Custom-element HTML constructors and lifecycle/upgrade execution remain open; turbo-frame.delegate is still absent.",
+    "Four unarchived CSS modules still receive sealed-replay 404 responses.",
+    "Native-submission and legacy paint markers are separate; no paired optimization cohort or repeatable saving is claimed.",
+    "Current V C-O0 checks and shared-production preallocation C-O3 differ from historical old-compiler/Boehm C-O2 cohorts.",
+    "Eight matching generated-C bodies are not a whole-program performance isolation audit.",
+    "Sampled RSS guards are not kernel allocation limits."
+  ],
+  "original_installed_controller_guard_exits": {
+    "installed-integration": 1,
+    "installed-integration-separated": 1
+  },
+  "prior_receipt_restoration": {
+    "archive_sha256": "fb737f69c96601e9a221c9aa257d6981365545cf058042667899d6454757461b",
+    "exit": 0,
+    "reason": "Reused Build-only private-index controller initially reused its old feature output name. Both prior files restored exactly from their committed hashed evidence archive; no historical primary, capture, source or commit was changed.",
+    "restored_sha256": {
+      "feature-commit.json": "6ace9753575981df9e8fd4be56a8eb6d181b8b5df418c5e36a11d69e39bcd7cb",
+      "feature-committed.patch": "39569560a1ca64506071fb129131d9c8e091a1d064b4dfe96d0db651f9b81a48"
+    }
+  },
+  "production_build_requested": false,
+  "production_function_audit": {
+    "complete_generated_c_sha256": [
+      "229c6d8f97896b001d09e0c23cab5bbd0328b51ce59c63a6d8cde7e39d9670f4",
+      "b0f31393fd710010d9284984ab731025d1da33905b1b344dc549926536421c8b"
+    ],
+    "exit": 0,
+    "functions": [
+      {
+        "function": "compact_adopted_style_sheets_bootstrap",
+        "match": true,
+        "normalized_sha256": "fc52220504431a74a2ef0fe838d3261554d11fb5ebab5c2f7a0b432efbafacc7"
+      },
+      {
+        "function": "CompactElementQueryBinding__adopted_style_sheets_query",
+        "match": true,
+        "normalized_sha256": "66ac6b0f62e9017db506b59d031b5d8155e429419d11fc03cc407a8e12e07758"
+      },
+      {
+        "function": "css__AdoptedStyleSheetsList__item",
+        "match": true,
+        "normalized_sha256": "85bf532c53f852665c75510d7a0a0bd9370a8bf48548ae7d5ab5ea51d5e22e20"
+      },
+      {
+        "function": "css__AdoptedStyleSheetsList__set",
+        "match": true,
+        "normalized_sha256": "2f87c2701f4e86581eb251f1314b598ddb03b753cbc10781468c45a59ced76d4"
+      },
+      {
+        "function": "css__AdoptedStyleSheetsList__delete",
+        "match": true,
+        "normalized_sha256": "81b5084f40474155a2d0d84ea7bec1a9466915f5c88cdb49f004aefcc134e69e"
+      },
+      {
+        "function": "css__AdoptedStyleSheetsList__detach_index",
+        "match": true,
+        "normalized_sha256": "43ac01a83842feb12d867ae625fd71674161f81c409c60cc98b2980106954c3e"
+      },
+      {
+        "function": "css__CSSStyleSheet__add_owning_document_or_shadow_root",
+        "match": true,
+        "normalized_sha256": "6ff9f91ada18625a9d97b2cd2f606f93107e05447f6fdce2cc24a45525d957ae"
+      },
+      {
+        "function": "css__CSSStyleSheet__remove_owning_document_or_shadow_root",
+        "match": true,
+        "normalized_sha256": "30641824296eef7e1808098b64837fb6ccb85c84d1025a55abce65080eec843d"
+      }
+    ],
+    "normalization": "Resolve every referenced C string constant to its exact decoded contents; no code-body differences or anonymous renames were ignored.",
+    "paths": [
+      "/Users/alex/code/vox2/Build/github-adopted-sheets-20261103-session4076/checks-prealloc.c",
+      "/Users/alex/code/vox2/Build/production-build/receipts/20261103-194018-dc45cb6d/generated/Vox.c"
+    ],
+    "scope": "Eight relevant functions only; not a whole-program performance isolation audit."
+  },
+  "production_receipts": [
+    {
+      "observation": "installed-integration-01",
+      "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-194018-dc45cb6d/result.json",
+      "record": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "bab9a5cc590b1303e777456f825d5f112d77f4943769eabf21987f5300cced5b",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-194018-dc45cb6d/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "5f9b720234646ed67800a4cc2dfd675d7cf96d34406d8ec90f17f0a1e06fa415",
+          "dirty": true,
+          "head": "e67e7fc27bee5526f17bf3b6d42d2d72454a7205",
+          "repository_sha256": "50881493762895b1dda66f183450e1f73889e7167591532111b081ed6e8f833a"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "d1dc3411a0399b1290c91cf72f7a7bf7260fc2af9accb5edcff19a2d3049c590",
+          "dirty": true,
+          "head": "9f8dd0c89ff6c03c3e986d2252643390e2e9dc39",
+          "repository_sha256": "8f5001a2e93156130c60878b71dbdbe9ad71d18538e45d687eabfdc5adf2b64d"
+        },
+        "request": {
+          "head": "718717b29fbff51acfbdc876d46ed828926d7e3e",
+          "id": "d0f627c81b4c497890e319dfbb52779b"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "5f9b720234646ed67800a4cc2dfd675d7cf96d34406d8ec90f17f0a1e06fa415",
+          "dirty": true,
+          "head": "e67e7fc27bee5526f17bf3b6d42d2d72454a7205",
+          "repository_sha256": "1d0b550b653f1983ae542ca07677a970507d9ded332ad5ac3f4e0b5bbdd898df"
+        }
+      },
+      "record_hashes": {
+        "build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+        "frozen-compile.json": "f4af0b4c8f2ceba3e5aff4f2ac4506490cb9fa413c5dec518af00e224c32942d",
+        "inputs-before.json": "1d79eafed024094fc060f7339f8a7d01b836799b72c9ccd98c4d1a70b8bc40a4",
+        "memory.json": "06f852e18018ec1c906f8170872f78090a5780d0b2392367007999dfa791d5bc",
+        "result.json": "041c50a59344d186b0325933fce1bdb5c57ca44ed7a460805b2009332b161c97"
+      }
+    },
+    {
+      "observation": "installed-integration-02-independent-hosts",
+      "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-194018-dc45cb6d/result.json",
+      "record": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "bab9a5cc590b1303e777456f825d5f112d77f4943769eabf21987f5300cced5b",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-194018-dc45cb6d/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "5f9b720234646ed67800a4cc2dfd675d7cf96d34406d8ec90f17f0a1e06fa415",
+          "dirty": true,
+          "head": "e67e7fc27bee5526f17bf3b6d42d2d72454a7205",
+          "repository_sha256": "50881493762895b1dda66f183450e1f73889e7167591532111b081ed6e8f833a"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "d1dc3411a0399b1290c91cf72f7a7bf7260fc2af9accb5edcff19a2d3049c590",
+          "dirty": true,
+          "head": "9f8dd0c89ff6c03c3e986d2252643390e2e9dc39",
+          "repository_sha256": "8f5001a2e93156130c60878b71dbdbe9ad71d18538e45d687eabfdc5adf2b64d"
+        },
+        "request": {
+          "head": "718717b29fbff51acfbdc876d46ed828926d7e3e",
+          "id": "d0f627c81b4c497890e319dfbb52779b"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "5f9b720234646ed67800a4cc2dfd675d7cf96d34406d8ec90f17f0a1e06fa415",
+          "dirty": true,
+          "head": "e67e7fc27bee5526f17bf3b6d42d2d72454a7205",
+          "repository_sha256": "1d0b550b653f1983ae542ca07677a970507d9ded332ad5ac3f4e0b5bbdd898df"
+        }
+      },
+      "record_hashes": {
+        "build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+        "frozen-compile.json": "f4af0b4c8f2ceba3e5aff4f2ac4506490cb9fa413c5dec518af00e224c32942d",
+        "inputs-before.json": "1d79eafed024094fc060f7339f8a7d01b836799b72c9ccd98c4d1a70b8bc40a4",
+        "memory.json": "06f852e18018ec1c906f8170872f78090a5780d0b2392367007999dfa791d5bc",
+        "result.json": "041c50a59344d186b0325933fce1bdb5c57ca44ed7a460805b2009332b161c97"
+      }
+    },
+    {
+      "observation": "github-after-adoption-01",
+      "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-194018-dc45cb6d/result.json",
+      "record": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "bab9a5cc590b1303e777456f825d5f112d77f4943769eabf21987f5300cced5b",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-194018-dc45cb6d/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "5f9b720234646ed67800a4cc2dfd675d7cf96d34406d8ec90f17f0a1e06fa415",
+          "dirty": true,
+          "head": "e67e7fc27bee5526f17bf3b6d42d2d72454a7205",
+          "repository_sha256": "50881493762895b1dda66f183450e1f73889e7167591532111b081ed6e8f833a"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "d1dc3411a0399b1290c91cf72f7a7bf7260fc2af9accb5edcff19a2d3049c590",
+          "dirty": true,
+          "head": "9f8dd0c89ff6c03c3e986d2252643390e2e9dc39",
+          "repository_sha256": "8f5001a2e93156130c60878b71dbdbe9ad71d18538e45d687eabfdc5adf2b64d"
+        },
+        "request": {
+          "head": "718717b29fbff51acfbdc876d46ed828926d7e3e",
+          "id": "d0f627c81b4c497890e319dfbb52779b"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "5f9b720234646ed67800a4cc2dfd675d7cf96d34406d8ec90f17f0a1e06fa415",
+          "dirty": true,
+          "head": "e67e7fc27bee5526f17bf3b6d42d2d72454a7205",
+          "repository_sha256": "1d0b550b653f1983ae542ca07677a970507d9ded332ad5ac3f4e0b5bbdd898df"
+        }
+      },
+      "record_hashes": {
+        "build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+        "frozen-compile.json": "f4af0b4c8f2ceba3e5aff4f2ac4506490cb9fa413c5dec518af00e224c32942d",
+        "inputs-before.json": "1d79eafed024094fc060f7339f8a7d01b836799b72c9ccd98c4d1a70b8bc40a4",
+        "memory.json": "06f852e18018ec1c906f8170872f78090a5780d0b2392367007999dfa791d5bc",
+        "result.json": "041c50a59344d186b0325933fce1bdb5c57ca44ed7a460805b2009332b161c97"
+      }
+    }
+  ],
+  "source_sha256": {
+    "css/adopted_style_sheets.v": "7e4f0f0b49eb7965b5486995806dd7945ab0c05d99e0edfd33f835c9dad1c162",
+    "css/adopted_style_sheets_mutation_test.v": "bc672cac53193af91ceb8b28ae8482ba076304cab96df23c04c3d3eb7944f8c5",
+    "css/cssom_rules.v": "24b4642cec1fe38080f50e206c79f59c73d6213d9bdbc4c197f29147b8e24a46",
+    "main_compact_adopted_style_sheets.v": "8514bf51b61c030e67c484913bfe62b6e52489b06ffb55d4eb6d86bd80a8538d",
+    "main_compact_adopted_style_sheets_test.v": "774408c62c86065300f75e2315059f386478860c5716cde6e8c902d4b8638ba2",
+    "main_compact_document.v": "095cef4a1bb372eacaab7254d7e7288f84d8b094c283290140310c7fa2925977",
+    "main_compact_link_sheet.v": "bd4bd89ccfcecee7a35ef348d2707686ee58b81e983a8bc2df71bc6cc23052d6"
+  },
+  "upstream": {
+    "native_source_sha256": {
+      "/Users/alex/code/3rd/ladybird/Libraries/LibWeb/DOM/AdoptedStyleSheets.cpp": "e21f52e682acf88fa68c6719938adde1dd21703ed553ca045c1a9a24ca02f50b",
+      "/Users/alex/code/3rd/ladybird/Libraries/LibWeb/DOM/Document.cpp": "b0d65053697cf57ba81c05eb029b974f10f8be8a4fe337a00136abd1a1c8914c",
+      "/Users/alex/code/3rd/ladybird/Libraries/LibWeb/DOM/ShadowRoot.cpp": "21ee3ef2b91685dd616e97ee0520ef8216ea1e3ddf789ba42ee77b71a83f4938"
+    },
+    "observed_spec_commit": "296213a1d9c8293850295c6e77d3b13dce8681a9",
+    "scope": "Proxy invariants follow the current Web IDL observable-array rules. Attribute replacement retains the explicit clear-before-GetIterator and per-item append behavior of the pinned local upstream Document/ShadowRoot binding glue.",
+    "spec_checked": "2026-11-03",
+    "webidl_url": "https://webidl.spec.whatwg.org/#observable-array-exotic-object"
+  },
+  "user_gui_stopped": false
+}

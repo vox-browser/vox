@@ -5,6 +5,82 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Native adopted stylesheets, November 3, 2026
+
+`e67e7fc27` binds `Document.adoptedStyleSheets` and
+`ShadowRoot.adoptedStyleSheets` to the existing native stylesheet lists. Each
+root has a stable live array view. Reads, iteration, indexed writes, push/pop,
+length truncation and property descriptors reach the native list; the bridge
+rejects holes and descriptor changes that would violate the
+[Web IDL observable-array rules](https://webidl.spec.whatwg.org/#observable-array-exotic-object).
+It captures the array and error constructors before author scripts can replace
+them. Native adoption validates constructed sheets and document identity,
+evaluates media, and invalidates the owning cascade.
+
+The property setter follows the pinned local upstream Document/ShadowRoot
+binding glue: clear before acquiring the iterator, then append one item at a
+time. A later conversion or iterator failure retains the earlier effects and
+preserves the original thrown value. Native indexed replacement now runs the deletion callback before adoption;
+duplicate entries keep their registered owner while another occurrence remains. Owner comparisons use pointer identity, including distinct shadow
+roots. No JavaScript-only stylesheet list or empty-array fallback was added.
+
+Four focused cases supply ten final executions: two binding cases in Boehm,
+GC-none and preallocation, plus two native ownership cases in both GC modes.
+They exercise document/shadow cascades, stylesheet edits, native-to-JavaScript
+mutation, duplicate ownership, brands, array invariants, partial iterable
+replacement, and author overrides. All final compiler, test and guard terminal
+exits are zero; native C-O0 builds use the 10G compiler limit and 12 GiB guard,
+with 3 GiB runtime guards. The initial native fixture's missing HTML namespace
+and an unfinished build blocked by a concurrent `main.v` change remain as failed
+records. The six earlier binding executions preceded the intrinsic-capture
+correction; all three binding configurations were checked again after that
+code and its override test changed. The native ownership source stayed unchanged.
+
+The already queued shared build completed as receipt
+`20261103-194018-dc45cb6d`, executable SHA-256
+`bab9a5cc590b1303e777456f825d5f112d77f4943769eabf21987f5300cced5b`.
+Eight relevant generated-C functions match the passing preallocation test after
+resolving exact string constants. This validates those bodies, not whole-program
+performance isolation. No duplicate production build or app copy was requested.
+
+The first 640×480 API fixture incorrectly shared one shadow host across two
+independent unit scripts. Its browser exited zero but the page assertions and
+controller/guard failed; that capture stays failed. A separately named fixture
+uses independent parsed hosts and completes both public assertion bodies,
+including constructor overrides, with browser exit zero and the intended PASS
+text. Its wrapper still compared against an old select-interface message and
+therefore returned controller/guard exits one. Those exits are preserved. A
+read-only audit of the retained capture verifies the correct text, empty script
+diagnostics, exact 640×480 viewport, and fixture/PNG hashes, and exits zero.
+The controller's identity checks precede the mistaken text comparison. No
+browser observation was replayed or assigned a fabricated exit.
+
+A reused Build-only commit helper briefly overwrote two prior select-feature
+receipt files. Both were restored byte-for-byte from their hashed committed
+archive; the new feature receipts are separate. No historical primary, capture
+or Git commit changed. Subsequent commits use the current config directory for
+receipt output.
+
+One separately declared GitHub observation retains the same 193-response
+archive, strict 33-row/66-link/21-image contract and exact 1024×768 viewport.
+Browser, controller and 12 GiB guard all exit zero. Its PNG remains byte-identical,
+SHA-256 `65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`.
+The adopted-stylesheet spread error disappears. The remaining five diagnostics
+are the missing `turbo-frame.delegate` and four sealed-replay CSS-module 404s.
+Custom-element construction and lifecycle/upgrade execution, full hydration,
+and a complete archived script-resource set remain open.
+
+Main-task retired instructions are 12,765,311,290 at the legacy first-document
+paint marker and 74,095,606,189 at first native-layer submission. These endpoints
+are separate and their scopes overlap. This single shared-build observation
+has no matched control cohort and cannot establish an optimization or assign
+its additional native-submission work to this feature. It receives zero
+instruction credit; the broad baseline, historical primaries and instruction
+ledger stay unchanged. Chrome parity remains unproven.
+
+See [the structured audit](performance/github-adopted-stylesheets-20261103.json)
+and [durable checks, failures and captures](performance/raw/github-adopted-stylesheets-20261103.tar.gz).
+
 ## Select interface identity, November 3, 2026
 
 `b87d298b4` fixes the missing `HTMLSelectElement` reached by GitHub's behavior
