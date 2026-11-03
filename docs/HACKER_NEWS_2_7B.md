@@ -35,7 +35,7 @@ the 2.7B instruction gate passes. A first injected sampling diagnostic rendered
 exactly but captured no usable stacks and changed bundle identity during its
 run; it is retained as invalid and supplies no performance credit.
 
-The latest complete seven-pair production cohort is
+The preceding complete seven-pair production cohort is
 `tokenized-preloads-matched`, executable SHA256
 `b2c78a1c7959754aae157be4b03471e6260370865935892aa5c7db4dcec01066`,
 receipt `20261103-074640-eeb788bc`. Its default median is **2,911,506,984**
@@ -54,6 +54,41 @@ The earlier `semantic-matched` production cohort remains recorded:
 interner adds about 2.13M against its control and earns no isolated credit.
 The later geometry cache uses the broader interner together with conservative
 projection invariants; its matched result is recorded below.
+
+A subsequent seven-launch default cohort (`helper-strip-default`) uses executable
+`2cd7a62071b209a7e5028a2b290b7a85bff82f9afc107e4f9cd68aeff513292a`,
+receipt `20261103-075630-018eebea`. All gates pass; the median is **2,908,600,006**
+and maximum **2,915,031,268**. Its stronger helper dead stripping does not remove
+ICU/Brotli dependencies, so the absolute result supplies no isolated attribution.
+A later two-launch diagnostic (`current-default-pilot`) reaches 2,892,199,045
+median but cannot replace the required seven-trial cohort.
+
+The latest complete matched production cohort, `initial-background-matched`,
+uses executable `7b7b6983906c38dd92d3d052162b98c61e5419cbbca5084bd1b3ea1c450847f8`,
+receipt `20261103-082817-8bf5ceb0`. Starting a bounded set of computed background
+requests before geometry, together with conservative pending-repaint resource
+refresh, measures **2,920,329,627 → 2,915,840,402** medians; the default maximum
+is **2,927,760,540**. All fourteen captures pass the unchanged gates, but two
+pairs regress. Diagnostics confirm one early request. The pending-repaint success
+marker is absent on this workload; an attempted debugger breakpoint targeted an
+inlined-away symbol and establishes no eligibility. This modest result remains
+an experiment, without a completed-feature or target claim.
+
+Separate profiles identify image-completion restyling after first geometry and
+rejected longhand-cache inputs (`vertical-align: inherit`, inherited border
+colors, `font-weight: bolder`, background images and font-relative margins).
+The source now consumes only already-buffered initial image completions before
+first geometry and extends longhand reuse with snapshots of explicitly inherited
+non-inherited parent inputs. Resource/context-dependent parent values retain
+normal computation. Both changes pass type checks and have authored regression
+cases; their production measurements and execution checks are pending.
+
+JSC collection pilots retain every launch. A single-marker setting is promising
+in two alternating pilots, but the seven-pair cohort has helper-ownership failures
+and supplies no acceptance or production-setting credit. Synchronous collection
+and larger heaps remain diagnostics, with no new source setting. The relevant
+options are documented in the upstream
+[WebKit options list](https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/runtime/OptionsList.h).
 
 Retained experiments include demand-loaded ANGLE, deferred private-filter URL
 and regex services, broader scale-only CSS projection, wider lossless PNG pixel
@@ -110,8 +145,7 @@ compilation failure remain recorded and were corrected in source.
 A component diagnostic on the latest bundle observes roughly 279M instructions
 in the filter helper and 239M in its owned macOS SetStoreUpdateService. These
 per-process samples are diagnostic lower bounds; acceptance continues to include
-both through the original exclusive-coalition counter. Unused helper-library
-stripping is pending a completed build. No test suite has been run during this
+both through the original exclusive-coalition counter. The completed helper-strip build retains those libraries. No test suite has been run during this
 continuation.
 
 Disk recovery compressed inactive generated C/preprocessed compiler inputs,
