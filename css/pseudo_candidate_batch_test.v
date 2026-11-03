@@ -21,6 +21,11 @@ fn batch_candidate_abstract(element &dom.Element, pseudo PseudoElement) dom.Abst
 	return dom.AbstractElement.new(element, selected)
 }
 
+fn batch_scope_candidate(scope &StyleScope, element &dom.Element, pseudo PseudoElement) bool {
+	mut batch := PseudoCandidateBatch{}
+	return batch.has_candidate(scope, batch_candidate_abstract(element, pseudo), pseudo)
+}
+
 fn test_batched_pseudo_candidates_preserve_every_originating_and_dedicated_bucket() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }
@@ -51,10 +56,18 @@ fn test_batched_pseudo_candidates_preserve_every_originating_and_dedicated_bucke
 						5 { cache.rules_by_attribute_name['data-x'] = rules }
 						else { cache.other_rules = rules }
 					}
-					mask := cache.originating_element_pseudo_candidates(element)
 					for queried in [PseudoElement.before, .after, .selection, .first_letter, .marker,
 						.backdrop, .unknown_webkit] {
-						assert (mask & pseudo_candidate_bit(queried) != 0) == cache.has_candidate_rule_for_pseudo_element(batch_candidate_abstract(element, queried), queried)
+						mut mask := PseudoCandidateMask{}
+						found := cache.find_pseudo_candidate_and_common_mask(element, queried, mut mask)
+						assert found == cache.has_candidate_rule_for_pseudo_element(batch_candidate_abstract(element, queried), queried)
+						if !found {
+							for next in [PseudoElement.before, .after, .selection, .first_letter,
+								.marker, .backdrop, .unknown_webkit] {
+								actual := mask.bits & pseudo_candidate_bit(next) != 0 || cache.has_direct_pseudo_candidate(next)
+								assert actual == cache.has_candidate_rule_for_pseudo_element(batch_candidate_abstract(element, next), next)
+							}
+						}
 					}
 				}
 			}
@@ -80,19 +93,19 @@ fn test_batched_pseudo_candidate_union_observes_mutable_rules_layers_and_shadow_
 		mut cache := scope.rule_cache_for_cascade_origin(origin, none)?
 		mut rule := batch_candidate_rule(PseudoElement.after)
 		cache.rules_by_class['target'] = [rule, rule]
-		assert scope.originating_element_pseudo_candidates(element) & pseudo_candidate_bit(.after) != 0
+		assert batch_scope_candidate(scope, element, .after)
 		rule.pseudo_element = PseudoElement.selection
-		assert scope.originating_element_pseudo_candidates(element) & pseudo_candidate_bit(.after) == 0
-		assert scope.originating_element_pseudo_candidates(element) & pseudo_candidate_bit(.selection) != 0
+		assert !batch_scope_candidate(scope, element, .after)
+		assert batch_scope_candidate(scope, element, .selection)
 		cache.rules_by_class['target'] = []&MatchingRule{}
 	}
 	mut author := scope.author_rule_caches()?
 	mut layer := RuleCache.new()
 	layer.other_rules = [batch_candidate_rule(PseudoElement.first_letter)]
 	author.by_layer['layer'] = layer
-	assert scope.originating_element_pseudo_candidates(element) & pseudo_candidate_bit(.first_letter) != 0
+	assert batch_scope_candidate(scope, element, .first_letter)
 	layer.other_rules = []&MatchingRule{}
-	assert scope.originating_element_pseudo_candidates(element) & pseudo_candidate_bit(.first_letter) == 0
+	assert !batch_scope_candidate(scope, element, .first_letter)
 }
 
 fn test_batched_pseudo_queries_expire_before_cascade_work_can_change_rules_and_attributes() {
@@ -137,4 +150,26 @@ fn test_empty_pseudo_candidate_batches_do_not_allocate_query_vectors() {
 	$if prealloc {
 		assert platform.thread_arena_usage().used == before
 	}
+}
+
+fn test_positive_dedicated_pseudo_query_does_not_publish_an_incomplete_common_mask() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
+	element.set_attribute_value('class', 'target')
+	mut scope := css_style_scope_for_document(document)
+	scope.build_rule_cache_if_needed()
+	scope.author_rule_cache = RuleCaches.new()
+	scope.user_rule_cache = RuleCaches.new()
+	scope.user_agent_rule_cache = RuleCaches.new()
+	mut cache := scope.rule_cache_for_cascade_origin(.author, none)?
+	cache.rules_by_pseudo_element[.before] = [batch_candidate_rule(PseudoElement.before)]
+	cache.rules_by_class['target'] = [batch_candidate_rule(PseudoElement.after)]
+	mut batch := PseudoCandidateBatch{}
+	assert batch.has_candidate(scope, batch_candidate_abstract(element, .before), .before)
+	// Cascading the admitted ::before can change later candidates. The first
+	// early exit did not inspect the class bucket and cannot cache its absence.
+	cache.rules_by_class['target'] = [batch_candidate_rule(PseudoElement.selection)]
+	assert !batch.has_candidate(scope, batch_candidate_abstract(element, .after), .after)
+	assert batch.has_candidate(scope, batch_candidate_abstract(element, .selection), .selection)
 }
