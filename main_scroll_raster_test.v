@@ -520,3 +520,71 @@ fn test_scroll_raster_skip_plan_handles_groups_and_filters() {
 	assert scroll_raster_strip_region(0, 200, 200).len == 0
 	assert scroll_raster_strip_region(-10, 200, 200) == [layout.LayoutRect{0, 0, 200, 10}]
 }
+
+// Viewport-only recording folds the root scroll into each command transform.
+fn scroll_raster_scrolled_commands(commands []layout.PaintCommand, scroll f64) []layout.PaintCommand {
+	mut shifted := []layout.PaintCommand{cap: commands.len}
+	for command in commands {
+		mut matrix := layout.scroll_raster_normalized_transform(command.transform)
+		matrix[5] -= scroll
+		shifted << layout.PaintCommand{
+			...command
+			transform: matrix
+		}
+	}
+	return shifted
+}
+
+fn test_scroll_raster_gradient_blur_keys_translate_with_content() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}.showcase{position:relative;height:500px;isolation:isolate}.showcase::before{content:"";position:absolute;inset:10% 0 5%;background:radial-gradient(ellipse at center,#263d5d28,transparent 68%);filter:blur(30px);pointer-events:none}</style><section class="showcase"></section>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
+	list := document.record_display_list() or { panic('missing showcase paint') }
+	commands := layout.display_list_commands(list)
+	mut begin := -1
+	for index, command in commands {
+		if command.kind == 'begin_css_filter_layer' { begin = index }
+	}
+	assert begin >= 0
+	assert chromium_gradient_blur_input_supported(commands, begin)
+	scrolled := scroll_raster_scrolled_commands(commands, 37)
+	// A top-level single-gradient blur rasterizes anchored to its content, so
+	// its retained pixels translate and its identity survives the scroll.
+	first := scroll_raster_frame_keys(commands, 0, 1, 1024, 768)
+	second := scroll_raster_frame_keys(scrolled, 37, 1, 1024, 768)
+	assert first[begin].hash == second[begin].hash
+	assert first[begin].has_ink && second[begin].has_ink
+	assert second[begin].ink.y == first[begin].ink.y - 37
+	key := chromium_gradient_blur_content_key(commands, begin, 0)
+	assert key != 0
+	assert chromium_gradient_blur_content_key(scrolled, begin, 37) == key
+	// The content identity follows the blurred gradient itself.
+	mut restopped := commands.clone()
+	for index in begin + 1 .. restopped.len {
+		if restopped[index].kind != 'fill_gradient' { continue }
+		gradient := restopped[index].gradient or { panic('missing gradient') }
+		mut stops := gradient.stops.clone()
+		stops[0] = layout.GradientStop{
+			...stops[0]
+			offset: stops[0].offset + 0.25
+		}
+		restopped[index] = layout.PaintCommand{
+			...restopped[index]
+			gradient: &layout.LinearGradient{
+				...*gradient
+				stops: stops
+			}
+		}
+	}
+	assert chromium_gradient_blur_content_key(restopped, begin, 0) != key
+	// Nested inside another group, the layer may composite through another
+	// path; other blurred content keeps repainting every frame.
+	mut nested := [layout.PaintCommand{ kind: 'begin_css_effect_layer' }]
+	nested << commands[begin..]
+	nested << layout.PaintCommand{ kind: 'end_css_effect_layer' }
+	assert scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash != scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash
+	plain := [blur_filter_begin(10), layout.PaintCommand{ kind: 'fill_rect', x: 10, y: 10, width: 20, height: 20, color: 'red' },
+		layout.PaintCommand{ kind: 'end_css_filter_layer' }]
+	assert scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash != scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash
+}

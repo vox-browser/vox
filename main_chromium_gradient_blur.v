@@ -2,6 +2,20 @@ module main
 
 import layout
 
+// Scroll-independent identity of a supported gradient-blur layer: its command
+// hashes with the viewport scroll removed. The native bridge rasterizes the
+// blur anchored to its content and reuses that raster while this is unchanged.
+fn chromium_gradient_blur_content_key(commands []layout.PaintCommand, start int, scroll f64) u64 {
+	mut key := u64(0x9e3779b97f4a7c15)
+	for index in start .. commands.len {
+		command := unsafe { &commands[index] }
+		key = srk_mix(key, scroll_raster_command_hash(command, scroll))
+		if command.kind == 'end_css_filter_layer' { break }
+	}
+	// Zero disables reuse in the bridge.
+	return if key == 0 { u64(1) } else { key }
+}
+
 // A single generated gradient can retain its drawing commands through blur.
 // Other inputs keep the bitmap filter path until every operation is recorded.
 fn chromium_gradient_blur_input_supported(commands []layout.PaintCommand, start int) bool {

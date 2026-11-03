@@ -218,6 +218,7 @@ extern int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
 	float opacity, int nearest_neighbor, int image_flags, float const *clip_radii);
 extern int ladybird_v_skia_begin_isolated_input(CGContextRef context, float width, float height);
+extern void ladybird_v_skia_set_isolated_input_key(CGContextRef context, uint64_t key);
 extern void *ladybird_v_skia_take_isolated_input(CGContextRef context);
 extern void ladybird_v_skia_discard_isolated_input(void *input);
 extern int ladybird_v_skia_begin_inset_decorations(CGContextRef, float, float, float, float,
@@ -2754,7 +2755,9 @@ void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 
 void native_end_css_filter_layer(void);
 
-void native_record_css_gradient_blur_input(void) {
+// `content_key` is a scroll-independent identity of the layer's commands, or
+// zero; the bridge reuses the rasterized blur while it is unchanged.
+void native_record_css_gradient_blur_input(uint64_t content_key) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	if (native_css_filter_overflow_depth || native_css_filter_stack_depth <= 0) return;
 	NativeCSSFilterLayer *layer = &native_css_filter_stack[native_css_filter_stack_depth - 1];
@@ -2763,6 +2766,10 @@ void native_record_css_gradient_blur_input(void) {
 		|| native_font_compositing_transparency_depth != 0) return;
 	layer->gradient_blur_recording = ladybird_v_skia_begin_isolated_input(layer->context,
 		layer->canvas_width, layer->canvas_height);
+	if (layer->gradient_blur_recording)
+		ladybird_v_skia_set_isolated_input_key(layer->context, content_key);
+#else
+	(void)content_key;
 #endif
 }
 

@@ -165,6 +165,9 @@ struct IsolatedInputRecording {
     SkRect bounds = SkRect::MakeEmpty();
     bool unsupported = false;
     bool defer_leaf_raster = false;
+    // Scroll-independent identity of the recorded content, or zero. A gradient
+    // blur reuses its rasterized layer while this identity is unchanged.
+    uint64_t content_key = 0;
 };
 std::unordered_map<CGContextRef, std::unique_ptr<IsolatedInputRecording>> s_isolated_input_recordings;
 
@@ -2653,6 +2656,12 @@ extern "C" int ladybird_v_skia_begin_isolated_input(CGContextRef context,
     return 1;
 }
 
+extern "C" void ladybird_v_skia_set_isolated_input_key(CGContextRef context, uint64_t key)
+{
+    auto found = s_isolated_input_recordings.find(context);
+    if (found != s_isolated_input_recordings.end()) found->second->content_key = key;
+}
+
 // A mask context is released before its content context is allocated. Detach
 // its owned recording first, so CoreGraphics can safely reuse that address.
 extern "C" void* ladybird_v_skia_take_isolated_input(CGContextRef context)
@@ -2804,6 +2813,165 @@ extern "C" int ladybird_v_skia_draw_gradient_text(CGContextRef context,
 static bool s_test_fail_direct_gradient_blur;
 static unsigned s_test_direct_gradient_blur_successes;
 #endif
+
+// Content-anchored gradient blur.
+//
+// Skia clips a filter layer to the device clip outset by the blur's input
+// extent, and its downsampled blur follows the clipped layer origin. A glow
+// overhanging the canvas by more than three sigma therefore rasterizes with a
+// different phase at every scroll offset, so viewport rows retained across a
+// scroll would not match a fresh replay. Rasterize the filter output once over
+// its complete ink on a transparent surface anchored to the content, keep it
+// while the content identity is unchanged, and blend it over the opaque
+// backdrop on the CPU inside the current clip only. Source-over of the same
+// 8-bit premultiplied filter output has no rounding ties, so it reproduces the
+// GPU composite.
+struct AnchoredGradientBlur {
+    uint64_t key = 0;
+    float scale = 0, sigma = 0, bounds_width = 0, bounds_height = 0;
+    int64_t phase_x = 0, phase_y = 0;
+    // Ink rectangle in device pixels relative to the content anchor.
+    int left = 0, top = 0, width = 0, height = 0;
+    std::vector<uint32_t> pixels; // premultiplied BGRA filter output
+};
+static std::list<AnchoredGradientBlur> s_anchored_gradient_blurs;
+static size_t s_anchored_gradient_blur_bytes = 0;
+static constexpr size_t anchored_gradient_blur_byte_limit = 64 * 1024 * 1024;
+
+// Returns -1, leaving the destination untouched, when the existing paths must
+// draw instead; otherwise whether the blur was composited.
+static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop original,
+    IsolatedInputRecording const& recording, sk_sp<SkPicture> const& input,
+    sk_sp<SkImageFilter> const& filter, float canvas_height, float scale, float sigma,
+    int width, int height)
+{
+    auto direct_draw = picture_regions_backdrop_draw();
+    if (!direct_draw || !original.pixels || std::getenv("VOX_DISABLE_ANCHORED_GRADIENT_BLUR"))
+        return -1;
+    auto const& bounds = recording.bounds;
+    auto ink = filter->computeFastBounds(bounds).makeOutset(2, 2);
+    if (!bounds.isFinite() || !ink.isFinite()) return -1;
+    double anchor_x = std::floor(double(bounds.left()) * scale);
+    double anchor_y = std::floor(double(bounds.top()) * scale);
+    if (std::abs(anchor_x) > 1e7 || std::abs(anchor_y) > 1e7) return -1;
+    // Whole-device-pixel scrolling keeps this sub-pixel phase.
+    int64_t phase_x = std::llround((double(bounds.left()) * scale - anchor_x) * 1024);
+    int64_t phase_y = std::llround((double(bounds.top()) * scale - anchor_y) * 1024);
+    int left = int(std::floor(double(ink.left()) * scale) - anchor_x);
+    int top = int(std::floor(double(ink.top()) * scale) - anchor_y);
+    int ink_width = int(std::ceil(double(ink.right()) * scale) - anchor_x) - left;
+    int ink_height = int(std::ceil(double(ink.bottom()) * scale) - anchor_y) - top;
+    if (ink_width <= 0 || ink_height <= 0 || ink_width > 16384 || ink_height > 16384
+        || size_t(ink_width) * ink_height > 8 * 1024 * 1024) return -1;
+    long ink_x = long(anchor_x) + left, ink_y = long(anchor_y) + top;
+    long x0 = std::max(ink_x, 0L), y0 = std::max(ink_y, 0L);
+    long x1 = std::min(ink_x + ink_width, long(width));
+    long y1 = std::min(ink_y + ink_height, long(height));
+    // Only the clipped rows reach the destination; a reused viewport clips
+    // replay to its exposed strip.
+    auto clip = CGContextGetClipBoundingBox(destination);
+    if (CGRectIsNull(clip) || CGRectIsEmpty(clip)) return 1;
+    if (!CGRectIsInfinite(clip) && std::isfinite(clip.origin.x) && std::isfinite(clip.origin.y)
+        && std::isfinite(clip.size.width) && std::isfinite(clip.size.height)) {
+        x0 = std::max(x0, long(std::floor(CGRectGetMinX(clip) * scale)));
+        x1 = std::min(x1, long(std::ceil(CGRectGetMaxX(clip) * scale)));
+        y0 = std::max(y0, long(std::floor((canvas_height - CGRectGetMaxY(clip)) * scale)));
+        y1 = std::min(y1, long(std::ceil((canvas_height - CGRectGetMinY(clip)) * scale)));
+    }
+    if (x1 <= x0 || y1 <= y0) return 1;
+    // Translucent backdrops keep the existing full-target replay.
+    for (long y = y0; y < y1; ++y) {
+        auto const* row = original.pixels + size_t(y) * original.pitch;
+        for (long x = x0; x < x1; ++x)
+            if (row[size_t(x) * 4 + 3] != 255) return -1;
+    }
+    uint64_t key = recording.content_key;
+    AnchoredGradientBlur const* layer = nullptr;
+    if (key) {
+        for (auto entry = s_anchored_gradient_blurs.begin(); entry != s_anchored_gradient_blurs.end(); ++entry) {
+            if (entry->key == key && entry->scale == scale && entry->sigma == sigma
+                && entry->bounds_width == bounds.width() && entry->bounds_height == bounds.height()
+                && entry->phase_x == phase_x && entry->phase_y == phase_y
+                && entry->left == left && entry->top == top
+                && entry->width == ink_width && entry->height == ink_height) {
+                s_anchored_gradient_blurs.splice(s_anchored_gradient_blurs.begin(),
+                    s_anchored_gradient_blurs, entry);
+                layer = &s_anchored_gradient_blurs.front();
+                break;
+            }
+        }
+    }
+    AnchoredGradientBlur fresh;
+    if (!layer) {
+        fresh = {key, scale, sigma, bounds.width(), bounds.height(), phase_x, phase_y,
+            left, top, ink_width, ink_height, {}};
+        fresh.pixels.assign(size_t(ink_width) * ink_height, 0);
+        SkPictureRecorder recorder;
+        auto* canvas = recorder.beginRecording(SkRect::MakeWH(ink_width, ink_height));
+        // An integral translation keeps the layer's device phase.
+        canvas->translate(-float(ink_x), -float(ink_y));
+        canvas->scale(scale, scale);
+        SkPaint paint;
+        paint.setImageFilter(filter);
+        canvas->saveLayer(bounds, &paint);
+        canvas->drawPicture(input);
+        canvas->restore();
+        auto picture = recorder.finishRecordingAsPicture();
+        SkSerialProcs procs;
+        procs.fImageProc = serialize_shared_picture_image;
+        procs.fTypefaceProc = vox_serialize_picture_typeface;
+        auto bytes = picture ? picture->serialize(&procs) : nullptr;
+        if (!bytes) return -1;
+        VoxGraphitePictureRegion request {
+            {0, 0, ink_width, ink_height, ink_width * 4,
+                reinterpret_cast<uint8_t*>(fresh.pixels.data())},
+            bytes->data(), bytes->size(), {1, 0, 0, 0, 1, 0, 0, 0, 1}};
+        bool rendered;
+#ifdef VOX_TEST_DIRECT_GRADIENT_BLUR
+        if (s_test_fail_direct_gradient_blur) rendered = false; else
+#endif
+            rendered = direct_draw(&request, 1, ink_width, ink_height);
+        if (!rendered) return -1;
+#ifdef VOX_TEST_DIRECT_GRADIENT_BLUR
+        ++s_test_direct_gradient_blur_successes;
+#endif
+        if (key) {
+            s_anchored_gradient_blur_bytes += fresh.pixels.size() * 4;
+            s_anchored_gradient_blurs.push_front(std::move(fresh));
+            layer = &s_anchored_gradient_blurs.front();
+            while (s_anchored_gradient_blur_bytes > anchored_gradient_blur_byte_limit
+                && s_anchored_gradient_blurs.size() > 1) {
+                s_anchored_gradient_blur_bytes -= s_anchored_gradient_blurs.back().pixels.size() * 4;
+                s_anchored_gradient_blurs.pop_back();
+            }
+        } else layer = &fresh;
+    }
+#ifdef VOX_TEST_DIRECT_GRADIENT_BLUR
+    else ++s_test_direct_gradient_blur_successes;
+#endif
+    if (std::getenv("VOX_DIRECT_GRADIENT_BLUR_DIAGNOSTICS"))
+        std::fprintf(stderr, "VOX_ANCHORED_GRADIENT_BLUR cached=%d ink=%ld,%ld,%d,%d region=%ld,%ld,%ld,%ld\n",
+            layer != &fresh, ink_x, ink_y, ink_width, ink_height, x0, y0, x1 - x0, y1 - y0);
+    int region_width = int(x1 - x0), region_height = int(y1 - y0);
+    std::vector<uint32_t> pixels(size_t(region_width) * region_height);
+    for (long y = y0; y < y1; ++y) {
+        auto const* backdrop = original.pixels + size_t(y) * original.pitch + size_t(x0) * 4;
+        auto const* source = layer->pixels.data() + size_t(y - ink_y) * ink_width + size_t(x0 - ink_x);
+        auto* output = reinterpret_cast<uint8_t*>(pixels.data() + size_t(y - y0) * region_width);
+        for (int x = 0; x < region_width; ++x, backdrop += 4, output += 4) {
+            uint32_t value = source[x];
+            unsigned inverse = 255 - (value >> 24);
+            // Premultiplied source-over onto opaque RGBA; BGRA output.
+            output[0] = uint8_t((value & 0xff) + (backdrop[2] * inverse + 127) / 255);
+            output[1] = uint8_t(((value >> 8) & 0xff) + (backdrop[1] * inverse + 127) / 255);
+            output[2] = uint8_t(((value >> 16) & 0xff) + (backdrop[0] * inverse + 127) / 255);
+            output[3] = 255;
+        }
+    }
+    return composite_pixels(destination, std::move(pixels), region_width, region_height,
+        float(x0) / scale, canvas_height - float(y0 + region_height) / scale,
+        float(region_width) / scale, float(region_height) / scale, true);
+}
 extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
     CGContextRef destination, float canvas_width, float canvas_height, float scale, float sigma)
 {
@@ -2825,6 +2993,14 @@ extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
     auto draw_region = picture_region_draw();
     auto original = read_backdrop(destination, {}, scale, width, height);
     if (!original.pixels) return 0;
+    // Opaque backdrops use the content-anchored layer in every replay mode;
+    // the region switches below select only between legacy GPU composites.
+    if (recording->bounds.isFinite() && std::isfinite(sigma)
+        && canvas_width * scale == width && canvas_height * scale == height) {
+        int anchored = draw_anchored_gradient_blur(destination, original, *recording, input,
+            filter, canvas_height, scale, sigma, width, height);
+        if (anchored >= 0) return anchored;
+    }
     bool regional = draw_region && !std::getenv("VOX_DISABLE_PICTURE_REGIONS")
         && !std::getenv("VOX_DISABLE_BLUR_PICTURE_REGIONS")
         && recording->bounds.isFinite() && std::isfinite(sigma)

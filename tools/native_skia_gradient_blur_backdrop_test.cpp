@@ -63,6 +63,9 @@ static std::vector<uint8_t> render(int scale, bool opaque, bool radial,
 
 int main()
 {
+    // These comparisons cover the legacy GPU composite and its direct-backdrop
+    // upload; opaque backdrops otherwise take the content-anchored layer.
+    setenv("VOX_DISABLE_ANCHORED_GRADIENT_BLUR", "1", 1);
     ladybird_v_skia_set_chromium_painting(1);
     unsigned cases = 0;
     for (int scale : {1, 2})

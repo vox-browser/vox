@@ -612,12 +612,15 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 			key.hash = srk_f64(key.hash, scrollbar_opacity)
 		}
 		if layout.scroll_raster_group_begin(command.kind) {
-			if command.kind == 'begin_css_filter_layer' && !layout.scroll_raster_filter_is_pointwise(command) {
-				// A blur or drop shadow is rasterized at its current device
-				// position, and rows retained from another position differ by a
+			if command.kind == 'begin_css_filter_layer' && !layout.scroll_raster_filter_is_pointwise(command)
+				&& !(begins.len == 0 && chromium_gradient_blur_input_supported(commands, index)) {
+				// A blur or drop shadow is rasterized under its clipped device
+				// layer, and rows retained from another position differ by a
 				// few levels. Repaint the whole layer every frame instead: its
 				// key never matches, its inflated ink becomes damage, and the
-				// plan replays a touched layer completely.
+				// plan replays a touched layer completely. A top-level blur of
+				// one gradient rasterizes anchored to its content, so it
+				// translates exactly and keeps its ordinary identity.
 				key.hash = srk_mix(key.hash, scroll_raster_canvas_nonce)
 			}
 			begins << index
