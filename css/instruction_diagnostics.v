@@ -6,6 +6,7 @@ import os
 
 const diagnostic_style_reasons_enabled = os.getenv('VOX_DIAGNOSTIC_STYLE_REASONS') != ''
 const diagnostic_style_elements_enabled = os.getenv('VOX_DIAGNOSTIC_STYLE_ELEMENTS') != ''
+const diagnostic_longhand_inputs_enabled = os.getenv('VOX_DIAGNOSTIC_LONGHAND_INPUTS') != ''
 
 __global (
 	diagnostic_instruction_totals [18]u64
@@ -65,6 +66,14 @@ fn record_diagnostic_longhand_lookup(hit bool) {
 }
 
 fn record_diagnostic_longhand_rejection(id PropertyID, value &dom.StyleValue) {
+	if diagnostic_longhand_inputs_enabled {
+		kind := if typed := typed_style_value_logic_from_dom(value) { typed.type_name() } else { 'untyped' }
+		key := '${string_from_property_id(id)} ${kind}'
+		if diagnostic_longhand_rejections[key] == 0 {
+			eprintln('Vox rejected longhand input: ${key} ${value.css_text}')
+		}
+		diagnostic_longhand_rejections[key]++
+	}
 	$if vox_css_diagnostics ? {
 		kind := if typed := typed_style_value_logic_from_dom(value) { typed.type_name() } else { 'untyped' }
 		key := '${string_from_property_id(id)} ${kind}'
