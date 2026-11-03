@@ -1227,6 +1227,7 @@ pub mut:
 	anonymous_source    ?string
 	scroll_scroller     Scroller = .nearest
 	scroll_axis         Axis = .block
+	scroll_subject_id   ?dom.UniqueNodeID
 	current_time_ms_    ?f64
 	origin_time_ms_     f64
 	monotonic_          bool
@@ -1303,6 +1304,7 @@ pub mut:
 
 pub struct ComputedAnimationProperties {
 pub mut:
+	scroll_range    ScrollAnimationRange
 	duration        f64
 	duration_string string
 	timing_function EasingFunction = EasingFunction.linear()
@@ -4908,6 +4910,8 @@ pub fn (c &ComputedProperties) animations(abstract_element &dom.AbstractElement)
 		.animation_composition,
 		.animation_name,
 		.animation_timeline,
+		.animation_range_start,
+		.animation_range_end,
 	])
 
 	duration_values := coordinated_properties[.animation_duration] or {
@@ -4940,6 +4944,8 @@ pub fn (c &ComputedProperties) animations(abstract_element &dom.AbstractElement)
 	timeline_values := coordinated_properties[.animation_timeline] or {
 		return []ComputedAnimationProperties{}
 	}
+	range_starts := coordinated_properties[.animation_range_start] or { return []ComputedAnimationProperties{} }
+	range_ends := coordinated_properties[.animation_range_end] or { return []ComputedAnimationProperties{} }
 
 	mut animations := []ComputedAnimationProperties{}
 	for i := 0; i < name_values.len; i++ {
@@ -4960,6 +4966,7 @@ pub fn (c &ComputedProperties) animations(abstract_element &dom.AbstractElement)
 		}
 
 		animations << ComputedAnimationProperties{
+			scroll_range: scroll_animation_range_from_values(range_starts[i], range_ends[i])
 			duration: duration
 			duration_string: if duration_keyword == .auto {
 				'auto'
@@ -5131,6 +5138,8 @@ fn computed_interpolation_animation_timeline_from_style_value(value &dom.StyleVa
 			anonymous_source: '${voidptr(abstract_element.element())}:${scroller_to_string(scroller)}'
 			scroll_scroller: scroller
 			scroll_axis: axis
+			scroll_subject_id: abstract_element.element().as_node().unique_id()
+			associated_document: abstract_element.document()
 		}
 	}
 

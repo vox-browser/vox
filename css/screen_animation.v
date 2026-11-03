@@ -716,6 +716,7 @@ pub mut:
 	start_time_                    f64
 	last_sample_time_              ?f64
 	paused_progress_               ?f64
+	scroll_range_                  ScrollAnimationRange
 }
 
 pub fn CSSAnimation.create() &CSSAnimation {
@@ -874,6 +875,7 @@ fn should_update_timeline(old_timeline ?&AnimationTimeline, new_timeline ?&Anima
 }
 
 pub fn (mut animation CSSAnimation) apply_css_properties(animation_properties ComputedAnimationProperties) {
+	animation.scroll_range_ = animation_properties.scroll_range
 	// FIXME: Don't apply overriden properties as defined here: https://drafts.csswg.org/css-animations-2/#animations
 
 	if animation.effect_ == unsafe { nil } {
@@ -942,8 +944,31 @@ pub fn (mut animation CSSAnimation) sample_at(timeline_time f64) ?f64 {
 	// without a resolved source is inactive, rather than a zero-duration
 	// document animation that can publish its forwards-filled end values.
 	mut sample_time := timeline_time
+	mut duration := effect.specified_iteration_duration
+	mut start_delay := effect.specified_start_delay
 	if timeline := animation.timeline_ {
 		if timeline.kind == .scroll {
+			if timeline.scroll_subject_id != none {
+				mut source_timeline := unsafe { &AnimationTimeline(timeline) }
+				extent := source_timeline.sample_anonymous_scroll_source() or {
+					effect.set_output_progress(none)
+					effect.current_phase = .idle
+					return none
+				}
+				target := animation.owning_element_ or {
+					effect.set_output_progress(none)
+					effect.current_phase = .idle
+					return none
+				}
+				context := LengthResolutionContext.for_element(&target)
+				timing := animation.scroll_range_.timing(extent, context, effect.iteration_count) or {
+					effect.set_output_progress(none)
+					effect.current_phase = .idle
+					return none
+				}
+				duration = timing.duration
+				start_delay = timing.start
+			}
 			sample_time = timeline.current_time_ms() or {
 				effect.set_output_progress(none)
 				effect.current_phase = .idle
@@ -957,8 +982,7 @@ pub fn (mut animation CSSAnimation) sample_at(timeline_time f64) ?f64 {
 		animation.paused_progress_ = none
 	}
 	animation.last_sample_time_ = sample_time
-	duration := effect.specified_iteration_duration
-	active_time := sample_time - animation.start_time_ - effect.specified_start_delay
+	active_time := sample_time - animation.start_time_ - start_delay
 	active_duration := if math.is_inf(effect.iteration_count, 0) {
 		math.inf(1)
 	} else {

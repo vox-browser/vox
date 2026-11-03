@@ -23,7 +23,12 @@ pub fn compositor_animation_properties(target dom.AbstractElement) CompositorAni
 		if !abstract_elements_equal(entry.abstract_element, target)
 			|| entry.animation.play_state() !in [.running, .paused] { continue }
 		effect := entry.animation.effect() or { continue }
-		if effect.specified_iteration_duration <= 0 || effect.iteration_count <= 0 { continue }
+		if effect.iteration_count <= 0 { continue }
+		if effect.specified_iteration_duration <= 0 {
+			timeline := entry.animation.timeline() or { continue }
+			if timeline.kind != .scroll || timeline.scroll_subject_id == none
+				|| effect.output_progress == none { continue }
+		}
 		// CSSAnimation keeps its playback state after sampling the end. An
 		// unfilled effect on a monotonic timeline no longer contributes paint
 		// and must not leave a stale surface or overlap barrier behind.

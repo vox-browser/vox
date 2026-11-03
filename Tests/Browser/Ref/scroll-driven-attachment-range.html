@@ -1,0 +1,21 @@
+<!doctype html>
+<link rel="match" href="scroll-driven-attachment-range.ref.html">
+<style>
+html { overflow: hidden; background: white }
+body { margin: 0; width: 1200px; height: 50px }
+@keyframes slide { from { transform: translateX(0px) } to { transform: translateX(200px) } }
+#target {
+    position: fixed; left: 20px; top: 20px; width: 100px; height: 100px;
+    background: green;
+    animation: slide auto linear both;
+    animation-timeline: scroll(root inline);
+    animation-range: 0px 50vw;
+}
+</style>
+<div id="target"></div>
+<script>
+setTimeout(() => {
+    document.documentElement.scrollLeft = 200;
+    document.documentElement.setAttribute("data-offset", document.documentElement.scrollLeft);
+}, 50);
+</script>
