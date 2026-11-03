@@ -54,9 +54,12 @@ fn install_browser_adblock_styles(document &dom.Document, procedural_css string)
 		if document.has_page() { document.page().user_style() or { '' } } else { '' }
 	}
 	marker := '/* vox-adblock-start */'
-	user_style := existing.all_before(marker).trim_right('\n')
 	tokens := browser_adblock_tokens(document)
 	filter_css := adblock.document_css(document.url.serialize(), tokens)!
+	// An unchanged sheet is common during timestamp updates. Its composed
+	// source is comparison storage; only an actual replacement must survive.
+	work := platform.begin_thread_scratch('adblock stylesheet comparison')
+	user_style := existing.all_before(marker).trim_right('\n')
 	// The procedural adapter returns its marker even when it emitted no rules.
 	// Keep that nonempty result for DOM mutation replay, but do not let the
 	// comment alone replace the user sheet and invalidate its unchanged rules.
@@ -71,8 +74,11 @@ fn install_browser_adblock_styles(document &dom.Document, procedural_css string)
 		else { '${user_style}\n${marker}\n${filter_css}\n${procedural_rules}' }
 	// A new ID/class token can leave the emitted rules unchanged. Compare the
 	// actual stylesheet, so input bookkeeping cannot invalidate every style.
-	if existing == source { return }
-	css.set_document_user_style_sheet(document, source)
+	if existing == source { work.finish(); return }
+	work.leave()
+	owned_source := source.clone()
+	work.finish()
+	css.set_document_user_style_sheet(document, owned_source)
 }
 
 fn browser_adblock_requires_runtime(document &dom.Document) bool {
