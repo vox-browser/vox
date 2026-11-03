@@ -1,0 +1,1989 @@
+{
+  "date": "2026-11-03",
+  "requested_peak_limit_bytes": 500000000,
+  "status": "open",
+  "metric": "Sampled simultaneous browser and observed-descendant physical footprint from fresh launch to pre-audit endpoint; polling lower bound. Per-task kernel lifetime maxima are a separate non-simultaneous auxiliary envelope. Safety guards separately sum RSS.",
+  "features": [
+    {
+      "commit": "a6d7fdf17",
+      "title": "Disposable read-only selector probes",
+      "control_retained_bytes": 57356,
+      "candidate_retained_bytes": 0,
+      "regression_cases": 61,
+      "checks": [
+        {
+          "artifact": "general-match-build-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 5144936448
+        },
+        {
+          "artifact": "general-match-runtime-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 147456
+        },
+        {
+          "artifact": "general-match-poison-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 18284544
+        },
+        {
+          "artifact": "general-match-boehm-build-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 5146492928
+        },
+        {
+          "artifact": "general-match-boehm-runtime-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 147456
+        },
+        {
+          "artifact": "general-match-matrix-build-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 2214723584
+        },
+        {
+          "artifact": "general-match-matrix-runtime-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 69976064
+        }
+      ]
+    },
+    {
+      "commit": "1942d8358",
+      "title": "Resolve initial viewport after bookmark preferences",
+      "previous_viewport": [
+        1708,
+        981
+      ],
+      "correct_viewport": [
+        1708,
+        953
+      ],
+      "focused_cases": 4,
+      "checks": [
+        {
+          "artifact": "initial-viewport2-build-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 5829132288
+        },
+        {
+          "artifact": "initial-viewport-runtime-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 107036672
+        },
+        {
+          "artifact": "initial-viewport-allocation-build-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 2962833408
+        },
+        {
+          "artifact": "initial-viewport-allocation-runtime-guard.json",
+          "reason": "completed",
+          "child_exit_code": 0,
+          "observed_peak_rss_bytes": 92585984
+        }
+      ]
+    }
+  ],
+  "observations": {
+    "stock-general-match": {
+      "artifact": "Build/reddit-comment-memory-20261103-graphics/stock-general-match",
+      "executable_sha256": "eb67ec4b0dad2b2be5e96b9bf7552ad0869c101e7b4796ace88bda8de74653d5",
+      "identity_changed": false,
+      "fixture_changed": false,
+      "host": {
+        "cpus": 18,
+        "load": [
+          3.15625,
+          4.92919921875,
+          5.5908203125
+        ],
+        "timestamp": 1793692292.680774
+      },
+      "observation_seconds": 20,
+      "observed_simultaneous_peak_bytes": 671304440,
+      "settled_bytes": 262588408,
+      "auxiliary_sum_of_task_lifetime_peaks_bytes": 697338616,
+      "max_sample_gap_seconds": 0.060513750000000144,
+      "browser_exit": 0,
+      "completed_observation": true,
+      "author_audit_passed": true,
+      "qualifying_production_cap_acceptance": false
+    },
+    "equal-text-reasons2": {
+      "artifact": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2",
+      "executable_sha256": "eb67ec4b0dad2b2be5e96b9bf7552ad0869c101e7b4796ace88bda8de74653d5",
+      "identity_changed": false,
+      "fixture_changed": false,
+      "host": {
+        "cpus": 18,
+        "load": [
+          11.5810546875,
+          7.994140625,
+          6.71923828125
+        ],
+        "timestamp": 1793692711.190531
+      },
+      "observation_seconds": 65,
+      "observed_simultaneous_peak_bytes": 688032600,
+      "settled_bytes": 275089496,
+      "auxiliary_sum_of_task_lifetime_peaks_bytes": 691833712,
+      "max_sample_gap_seconds": 0.0645646250000027,
+      "browser_exit": 0,
+      "completed_observation": true,
+      "author_audit_passed": true,
+      "qualifying_production_cap_acceptance": false
+    },
+    "cropped-picture-diagnostic": {
+      "artifact": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-diagnostic",
+      "executable_sha256": "6b29971990bdae025e55f58633868c2ef45ee4243ebcba162d2a233a0506c577",
+      "identity_changed": false,
+      "fixture_changed": false,
+      "host": {
+        "cpus": 18,
+        "load": [
+          6.7265625,
+          6.990234375,
+          6.31787109375
+        ],
+        "timestamp": 1793691948.3331761
+      },
+      "observation_seconds": 20,
+      "observed_simultaneous_peak_bytes": 564464424,
+      "settled_bytes": 267077648,
+      "auxiliary_sum_of_task_lifetime_peaks_bytes": 580111168,
+      "max_sample_gap_seconds": 0.056105125000001976,
+      "browser_exit": 0,
+      "completed_observation": true,
+      "author_audit_passed": true,
+      "qualifying_production_cap_acceptance": false
+    },
+    "tiled-picture-diagnostic": {
+      "artifact": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-diagnostic",
+      "executable_sha256": "6b29971990bdae025e55f58633868c2ef45ee4243ebcba162d2a233a0506c577",
+      "identity_changed": false,
+      "fixture_changed": false,
+      "host": {
+        "cpus": 18,
+        "load": [
+          4.86865234375,
+          6.12158203125,
+          6.07275390625
+        ],
+        "timestamp": 1793692096.777897
+      },
+      "observation_seconds": 20,
+      "observed_simultaneous_peak_bytes": 572312432,
+      "settled_bytes": 267192384.0,
+      "auxiliary_sum_of_task_lifetime_peaks_bytes": 638552920,
+      "max_sample_gap_seconds": 0.06029141700000018,
+      "browser_exit": 0,
+      "completed_observation": true,
+      "author_audit_passed": true,
+      "qualifying_production_cap_acceptance": false
+    },
+    "tiled-picture-selected": {
+      "artifact": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected",
+      "executable_sha256": "6b29971990bdae025e55f58633868c2ef45ee4243ebcba162d2a233a0506c577",
+      "identity_changed": false,
+      "fixture_changed": false,
+      "host": {
+        "cpus": 18,
+        "load": [
+          5.1640625,
+          6.0283203125,
+          6.03955078125
+        ],
+        "timestamp": 1793692137.445108
+      },
+      "observation_seconds": 20,
+      "observed_simultaneous_peak_bytes": 567446312,
+      "settled_bytes": 267749368.0,
+      "auxiliary_sum_of_task_lifetime_peaks_bytes": 607570704,
+      "max_sample_gap_seconds": 0.06025245800000034,
+      "browser_exit": 0,
+      "completed_observation": true,
+      "author_audit_passed": true,
+      "qualifying_production_cap_acceptance": false
+    },
+    "stock-viewport-recovered": {
+      "artifact": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered",
+      "executable_sha256": "406aaa0e2a9130580d16bfcadc8ee08c8b0fa05f59cd9f0ec2ee18383b342808",
+      "identity_changed": false,
+      "fixture_changed": false,
+      "host": {
+        "cpus": 18,
+        "load": [
+          19.29248046875,
+          20.4140625,
+          16.01953125
+        ],
+        "timestamp": 1793693963.049072
+      },
+      "observation_seconds": 20,
+      "observed_simultaneous_peak_bytes": 661572368,
+      "settled_bytes": 239831104.0,
+      "auxiliary_sum_of_task_lifetime_peaks_bytes": 667110184,
+      "max_sample_gap_seconds": 0.055665333000000095,
+      "browser_exit": 0,
+      "completed_observation": true,
+      "author_audit_passed": true,
+      "qualifying_production_cap_acceptance": false
+    },
+    "pool-viewport-recovered": {
+      "artifact": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered",
+      "executable_sha256": "406aaa0e2a9130580d16bfcadc8ee08c8b0fa05f59cd9f0ec2ee18383b342808",
+      "identity_changed": false,
+      "fixture_changed": false,
+      "host": {
+        "cpus": 18,
+        "load": [
+          19.28662109375,
+          20.04736328125,
+          16.09716796875
+        ],
+        "timestamp": 1793694004.338943
+      },
+      "observation_seconds": 20,
+      "observed_simultaneous_peak_bytes": 545360680,
+      "settled_bytes": 242550824,
+      "auxiliary_sum_of_task_lifetime_peaks_bytes": 553700160,
+      "max_sample_gap_seconds": 0.06299858400000247,
+      "browser_exit": 0,
+      "completed_observation": true,
+      "author_audit_passed": true,
+      "qualifying_production_cap_acceptance": false
+    }
+  },
+  "corrections": {
+    "invalid_candidate_observations": [
+      "cropped-picture-diagnostic",
+      "tiled-picture-diagnostic"
+    ],
+    "reason": "The driver resolves PROBE_GRAPHITE symlinks before choosing DYLD_LIBRARY_PATH. Selecting a symlinked SkiaText helper redirected both trials to prefix-gpu/pool-pair. Dyld logs show the prior pool-pair picture library, and new candidate path markers are absent. These runs receive no cropping/tiling validation or savings credit.",
+    "correction": "New immutable wrappers select each candidate's actual non-symlinked libVoxGraphiteDawn.dylib; require actual path markers before timing or correctness credit."
+  },
+  "driver_restoration": {
+    "note": "An external cleanup removed the older rendering artifact directory during ongoing work. This private wrapper was reconstructed from recorded contents and verified byte-identical to its prior pinned SHA256; earlier deleted artifacts were not reconstructed or assigned new evidence credit.",
+    "path": "Build/reddit-comment-memory-20261103-rendering/probe_verified_production.py",
+    "sha256": "6bddca0149136890ee8c06f06ebf90bf61b7d170c75030b1a2afa85d2be43de8"
+  },
+  "input_integrity": [
+    {
+      "manifest": "general-match-final-inputs.json",
+      "changed": []
+    },
+    {
+      "manifest": "initial-viewport-test-inputs.json",
+      "changed": []
+    }
+  ],
+  "archive_recovery": {
+    "original_manifest_sha256": "b60f9c12fce7bd291b2ad2a0b82c4958d3dc1143da595d12a855d28a9e6f5cba",
+    "new_manifest_sha256": "80b6f591b595d8baf15b997d76ae8d9bab71083d38b3a6a756f7a6b60605f40e",
+    "prior_replay_log_sha256": "347954dd9186255e4c734d3821531925be5650f8db98a9687af37cbad2eb92f7",
+    "response_count": 24,
+    "all_previously_served_response_bodies_verified": true,
+    "original_archive_removed": true,
+    "scope": "Frozen previously served subset with identical body hashes, resource wire headers, and canonical main-frame Content-Type fallback recovered from the browser cache; a new fixture cohort with no cross-fixture causal percentage claim.",
+    "responses": [
+      {
+        "body_sha256": "f134db1400065d159a57f5beb65c9b291aafcddf6115c43b09c3612312c6d43a",
+        "bytes": 239757,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/pages/8ee22c61867b7f75ee77dc26f31b17dce63b7355bea36d93b8d70cb6e2a5989a",
+        "cached_headers_sha256": "e47f2cf7047cfdba8d6e50a8c83d3d49bd967ec099a48462d347833531bf4f84"
+      },
+      {
+        "body_sha256": "1299ae2476471a01a6ab2907d511b3233fb2b87746cc536e8e1153c982f90caa",
+        "bytes": 5018,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/f46ba27481036b0d13af3a182d671c613b31eb193628ceadb1c4ebada5f4f3d7",
+        "cached_headers_sha256": "50bd991f52f344090e1cf2258d2476904a613a523e6ffde2d276c5a59352216a"
+      },
+      {
+        "body_sha256": "ba5ed6d1bf1244bfe331a48b9adc95f4537c437e7a712e0846cafccbdf9daf82",
+        "bytes": 4530,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/a593a2ed7363998698ab8805eae37a5d18f892140bb8bfa8090a15c1d42861ba",
+        "cached_headers_sha256": "079b6e35a749f4eda510ef74bdb52d72c94187a58b085253d4ba6f6a00c9d69d"
+      },
+      {
+        "body_sha256": "635c789f4db0b7b51f2fb7d6d3981d8efcba28d20c0b9fb3706c3df846a811c5",
+        "bytes": 1406,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/08d63664511e790577bce9e8b821edeeaa612cb43f1ca00f47e30ba0f063e402",
+        "cached_headers_sha256": "68c677fc9a5993a837e66c608514eb404afa679a65ce50ba083a0e499dd3ab84"
+      },
+      {
+        "body_sha256": "e8dd3ba85ec61c1ff393affe5b9878b78d87e9f6cbd1214f36272a484d095ae6",
+        "bytes": 678,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/22b4b56c93c369d57afa0d967cafd4e927740771329e853d8b8243d4698d566b",
+        "cached_headers_sha256": "f7d12ce60282c98d0e66cdc8fd95f2249e58d372e422e8362240fcd6eb837324"
+      },
+      {
+        "body_sha256": "2f9d380cf7fdd5fcf8dfe047f977ad86ee594aa964aaef5438361ccaf420a100",
+        "bytes": 3310,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/2539e65aa30215365aa2b142a61dd4e0df305eee40bdf54ac593bdd7ecd8a18a",
+        "cached_headers_sha256": "5f5efaeb4135770bc981cf0f3997601e69f3a2c2da27e6bb7115f794cc0e9dd1"
+      },
+      {
+        "body_sha256": "2726f92ed75ce614ff705d8fa6dc63c8454a75ae533cf54d629e735bd583d235",
+        "bytes": 11851,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/30430802d88d680a999b86043f76f253b11005489458855f14d270a5ccbc73d8",
+        "cached_headers_sha256": "a2c385edfe60beed172efb8e07e595f9304054e73d96811e09a6f75aff9f64b8"
+      },
+      {
+        "body_sha256": "efe971ec339a1ce12fb8ac40bace9a49538d453313b8af965bc9fd98638539b5",
+        "bytes": 587666,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/0e952268bb6d300265e12eb20f283c302e1a56b472e365c492c06d7af820e293",
+        "cached_headers_sha256": "fb14c929516251d04bd7dfe56ba5df4a43a4465a2f8a098b2480b0bc956981eb"
+      },
+      {
+        "body_sha256": "befb1be66d2b5832d961b6aed4c2382bfa8862c9f7618f13358820873f0036b1",
+        "bytes": 119,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/2f119e8af64b77d86dd372d64a079cb00c7b2bf60acd967147c31c54895455bf",
+        "cached_headers_sha256": "979c5ff9718ff139d07f6ffae4048c61763b04e03e5956e9c75808bf469a43e8"
+      },
+      {
+        "body_sha256": "78f8594416b419c615df809e3ba3ff8ed4b5369681b03733cf19a23d8621d356",
+        "bytes": 10214,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/ff4ac2df82dac4deed28d7c529dcc78cca57fc962db432b8892426ea519d1015",
+        "cached_headers_sha256": "da0df67584398b735e7b338db9b28bf789553394c9e0240c7d32052576fea729"
+      },
+      {
+        "body_sha256": "57d18880dd3e28db974abdf435160f70ce2d77ba4d7d9f634ee205c1943af1c5",
+        "bytes": 512,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/b5659215cdd7d84b4ecceacd4f04e04593800e7edb755c173cd0722f8dd832d0",
+        "cached_headers_sha256": "321976139453e36119dee75b62aa79b83e5763c952f678e6426760a0ecca671e"
+      },
+      {
+        "body_sha256": "c8a725d78fc4b1bce109ab1c569995f07b6e1193f0fd5994ca2f23ce50f45253",
+        "bytes": 9445,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/5ff0f79605169876a00e1682720cb090b68787ee39df8c6df39cf377625c0947",
+        "cached_headers_sha256": "f3701a97d3a8a16ff2dfa378f29f7527934c9babfb8174cad7eb6d5318bdffdb"
+      },
+      {
+        "body_sha256": "9f77140cba16e2d24dc62b7953553dfe36e6b7e262b874bea83105470ab7d11d",
+        "bytes": 7249,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/5e73b7de4337c4a24ee4e796aba1d88eceda39212b217d52031ab58e7e4ada73",
+        "cached_headers_sha256": "4a0b5e0e3d3697885cf62a5ce2cbc0c58104c0e1dfa1fef7f7535a2fafb0cc72"
+      },
+      {
+        "body_sha256": "9e896c4e3e6c9323870129424dbbda9dd2ff8a211bb48d3ba0c2d11b4df7155c",
+        "bytes": 5997,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/3f76ccf9052223f7ff0c1cb7782c3dd3657fcbf873d5aeeb60245055075bcb96",
+        "cached_headers_sha256": "b7ccbbcaadbe19acf8b1fb9bd72e957241339836b1d873ecb2f80d5db68ec37f"
+      },
+      {
+        "body_sha256": "11bc831318292392808e355a415bae45b64c8b94a8844aa77b74a06117cedb61",
+        "bytes": 280793,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/b9ab9b6e9d3a5470d1a8202f5dc841427b1a6690a571123840dbb2cc40e96745",
+        "cached_headers_sha256": "f49d63ce0b2b52b4298e28f9ee5a0af4c58dcf1bdb795d90a272df92bf87cdd6"
+      },
+      {
+        "body_sha256": "11362c819c21795b8fc6271025d2d99829ec73c9f1fc5495a7c59bcd377138b5",
+        "bytes": 10724,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/60a889cf8fd057ead3858f0594be279d896759d0d4db2e3ce066c8f6cf60139e",
+        "cached_headers_sha256": "724dc88af0b6ed418b1401745724a46a6deec19e031677140e660ec2efa33c50"
+      },
+      {
+        "body_sha256": "6c85e8559258a34ccd04121ebbf4cde2de609d37a3c47aa89a5ec69faf3c4f3e",
+        "bytes": 598332,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/6f2596fcd409f48c1c4150c849cc85cb0471ee36d6b01925efb80d400c8a9e4a",
+        "cached_headers_sha256": "522e3d5611600c91d9300852e0f3ba929383d005b66581a861eb1a084266af80"
+      },
+      {
+        "body_sha256": "8d16addfdf7769450dd755d77382c28fcd65da2e3a10c92faeb059cee41e395d",
+        "bytes": 4844,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/7ce7e31988afdb9b44817e0224bee87a7615c83b929bfdbdce3430dc36f8de6d",
+        "cached_headers_sha256": "c811a3108eb15c16e41b4a543442bc764e6c2265cc6364a55c7fb599b2ba461c"
+      },
+      {
+        "body_sha256": "75bddaddeea26a28a911c0bbb0a63334c0771257664e840197892e8d25d18f04",
+        "bytes": 306287,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/23dde95810594d0f2b2e68d588e3c79f962ed3285a56c10da9e9b9d23cee3480",
+        "cached_headers_sha256": "c57909c1ad4a83643dc36a4c1c04dc17cd56f8dc6adc95cf6a46d8207d279b5b"
+      },
+      {
+        "body_sha256": "48ea8c7a1339dbb17debf3590ab455a8dc4ee76c124870b0fb73374ca80f82c9",
+        "bytes": 3268,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/5928263746e6683d6fe61303ddd8f0e2b9cb66957b4f294a934c8515fdd4dbfa",
+        "cached_headers_sha256": "236ef6f8eafc8312086f4707d099b3638c510e205733c53811a8a380393bace5"
+      },
+      {
+        "body_sha256": "e50b5fe50d989095b0e966c3d042b437faacb24d7c0622a9ed131be74af19fea",
+        "bytes": 730,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/a2b32cf293f466e9c93bd3cafb2b8f028eee73db5aceefd0ae7a7aa67dbecd79",
+        "cached_headers_sha256": "bf0dfbb425ac1c174bdabcfac90c157b20c0aced9696985a2b589b4f5bab95e9"
+      },
+      {
+        "body_sha256": "83338b42e6ead92b9292d520191bacc85129abfc46d7f3666ede13e42fd417b0",
+        "bytes": 67,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/131d81c0557ef568f90f0de7c85742a3084d75514a5c41c9100b05a46d8079a5",
+        "cached_headers_sha256": "3e9faee358b1cc36f06f66115d2de6386ad670296e7f6325205ec5fc2cb296ba"
+      },
+      {
+        "body_sha256": "3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527",
+        "bytes": 60708,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/35f09900b03e5c2cd3997b43e9564e84b364dffc1848827c4fda9073144c8fed",
+        "cached_headers_sha256": "0136b857890992178ce212ecacedc0f60e841be2a3a73015b10e91e2e0b3e75e"
+      },
+      {
+        "body_sha256": "38ec4697f57d67227cc49eef44b17913ffbc03cc7ddef8b039ebcc5cb9e40c3b",
+        "bytes": 750,
+        "cached_body_path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/cache/resources/fb4f036d13661d2488fa992492f1bd06e3b6adc00db4252b2b30cbe413ba748a",
+        "cached_headers_sha256": "7b182c491a868a625be61eac5c0dfec885be6b95d8860219ee308f1a930cfbe7"
+      }
+    ]
+  },
+  "live_check": {
+    "command": [
+      "curl",
+      "--location",
+      "--max-time",
+      "20",
+      "--silent",
+      "--show-error",
+      "--output",
+      "Build/reddit-comment-memory-20261103-graphics/live-followup.body",
+      "--dump-header",
+      "Build/reddit-comment-memory-20261103-graphics/live-followup.headers",
+      "--write-out",
+      "%{http_code}",
+      "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/"
+    ],
+    "http_status": "403",
+    "exit": 0,
+    "stderr": "",
+    "body_sha256": "13bcba13bd1bad5aace04e8a76880b710337a8d595224967e874401832cc203c"
+  },
+  "pixel_checks": {
+    "case_count": 12,
+    "all_exact": true,
+    "identity_changed": false,
+    "checks": [
+      {
+        "artifact": "followup-pixel-diff-build-guard.json",
+        "reason": "completed",
+        "child_exit_code": 0,
+        "observed_peak_rss_bytes": 248299520
+      },
+      {
+        "artifact": "followup-visual-guard.json",
+        "reason": "completed",
+        "child_exit_code": 0,
+        "observed_peak_rss_bytes": 270647296
+      }
+    ]
+  },
+  "cpu_renderer_policy_shipped": false,
+  "private_gpu_experiments_shipped": false,
+  "notes": [
+    "The 61-case regression binary uses canonical test files through -file-list and explicit Clang. Earlier separate-file attempts fail on compiler native bridge symbols and unavailable cross-file fixture helpers; all failed attempts remain in the manifest.",
+    "Two new selector cases also pass separately with Boehm; the four initial-viewport cases pass with full prealloc arena poisoning.",
+    "Correctly selected picture cropping/tiling still fails the page cap. The actual workload never reaches the multi-tile branch, so there is no claim of a tiling speed/memory benefit or pixel correctness.",
+    "The private CPU shape probe records only picture execution for the rounded fixture and retains its 64-pixel mismatch. It does not validate a native shape path or justify a CPU-default policy.",
+    "The initial viewport fix prevents a second geometry generation in its focused fixture; compiler/shared-build contention and intervening changes preclude an isolated whole-browser percentage.",
+    "The new recovered fixture has a different manifest from the deleted original, all 24 previously served body hashes verified, 23 resource header sets retained, and the main-frame Content-Type fallback from canonical from-cache capture. It is a new cohort, with no full original header-envelope equivalence or cross-fixture causal percentage claim.",
+    "An external cleanup removed earlier private rendering artifacts. The observation wrapper was restored byte-identically against its published SHA256; no deleted historical raw artifact was reconstructed or given new validation credit."
+  ],
+  "artifacts": [
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/archive-recovery-v2.json",
+      "bytes": 10207,
+      "sha256": "30fab3cc3f874d6cc5eaf35e3f908e91396f9331c6adbf15f8cd3fcd98e99cab"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/continuation-capture-scale.json",
+      "bytes": 444,
+      "sha256": "fb3505ecd05b0220feba4ae7b8661db7edc29308066a2905afd8feeda16ccde2"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/continuation-input-integrity.json",
+      "bytes": 161,
+      "sha256": "74fa375eda2fa06603f5de206decc13c0f3b09a6ab88e2a85d1ada5fa4482003"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-build-guard.json",
+      "bytes": 398,
+      "sha256": "2bd0059ec9ff6f2c9e3cac4ebcaf002506edcfa4f6607caf40a6cc429db1318c"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-build.log",
+      "bytes": 3809,
+      "sha256": "52d13f5f5708a13adcc4ea1e0b46ee223d4aee1bee6c52ba2c9c06cb72990479"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-command.json",
+      "bytes": 2477,
+      "sha256": "75f44d60b7435929da379b30c9f4b435d0146ed6dbe97ddd924f71375730e206"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-rounded-diff.json",
+      "bytes": 112,
+      "sha256": "d4b3b50e16fd59b48ba1241afc4a255821e418a31d68f1d602b5ac68da1aaeef"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-rounded-guard.json",
+      "bytes": 518,
+      "sha256": "a1d01b4ff5645027c2bb0ab15dbda5f8d7d9ddc41f9049836596c3351409b26e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-rounded-logs/browser.log",
+      "bytes": 355,
+      "sha256": "34c6f2538096eb11d474661dffebdb9bf0ca2ceb379a66173b9bed745468907d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-rounded.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-rounded.log",
+      "bytes": 588,
+      "sha256": "6b3b28ae09976c056036f214f1e34c95f509d8512f1c43468973a722e8c20526"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-rounded.png",
+      "bytes": 17935,
+      "sha256": "792658854a65de3a1109dcc4ea1f14df43f408203a18d0c7387c874714b289a6"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-v2/libVoxGraphite.dylib",
+      "bytes": 4102520,
+      "sha256": "0b075299ec7aff2185cdf40ed62cb642f7c8b304ba661c11e03a8809e29797dc"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-v2-build-guard.json",
+      "bytes": 401,
+      "sha256": "2c98a45cfb617b37d5ff4bf7c50cdd62c4597195f75329552d4952de0027eef2"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-v2-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-v2-build.log",
+      "bytes": 466,
+      "sha256": "c048373466c2603979750dd72921a41b3097dacbc1c974f4ed61a31cb0c7e946"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-v2-command.json",
+      "bytes": 2485,
+      "sha256": "586cb0a8a6226d70db9e0b27b4026a3722fb5d699b6dcb2cfbf47ab2bdffd7aa"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes-v2.patch",
+      "bytes": 2492,
+      "sha256": "3a2ba99c6da8177be5e6c1aed1b5f441e0e22095a33bac21f9e9f3abf9bd8f02"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cpu-shapes.patch",
+      "bytes": 2492,
+      "sha256": "3a2ba99c6da8177be5e6c1aed1b5f441e0e22095a33bac21f9e9f3abf9bd8f02"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture/libLadybirdVSkiaText.dylib",
+      "bytes": 638168,
+      "sha256": "ba52481553373478f2d13de84932e6307b26dc6972b9c802475a1fdced0c0e8c"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture/libVoxGraphite.dylib",
+      "bytes": 4426664,
+      "sha256": "255287a8fc7eb7ccf90d117b1267e14ad8c033c5f7ec2f9f18ff9db861b3eacc"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture/libVoxGraphiteDawn.dylib",
+      "bytes": 4375720,
+      "sha256": "eed96cb9e4f52d111974d545ee62fcc503f28844e36e419b202312be6c277d12"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-build-guard.json",
+      "bytes": 403,
+      "sha256": "e56565f11a8c27447f673be931544a66d71d19d76bbf67847d8cb98c01f3ae9b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-build.log",
+      "bytes": 371,
+      "sha256": "15d9f7e7687bbadfd237e21f3f4795c9a006af22a82302da66ef513a2645a829"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-command.json",
+      "bytes": 3065,
+      "sha256": "a41c2602cce9387903e3b48e4b4906d44f3fbf4ee393ba5e11b86e523bb1a693"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-diagnostic/audit-config.json",
+      "bytes": 209,
+      "sha256": "941cb7379afda69f85c3cd61754978746fcb00d5b2b247ee058550c2b31be517"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-diagnostic/author-script-audit.json",
+      "bytes": 227,
+      "sha256": "1751f2b4ef89a61fbbd307e02405bae282f920bda65b704b72d276a3e091bd18"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-diagnostic/browser.log",
+      "bytes": 252530,
+      "sha256": "968a1142d248f86745317934c207b0a29f7d4a2cb865926b78df53267b2d9520"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-diagnostic/command.json",
+      "bytes": 6961,
+      "sha256": "f0e79417989dc24ea1c98241593cb03a58d46615d1217097d0e7ba54f01ae923"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-diagnostic/document.json",
+      "bytes": 152312,
+      "sha256": "b6951f25e849fe6d6e84a8b99cded9b8ae93b5074784aecdebe952980de885cd"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-diagnostic/result.json",
+      "bytes": 6454,
+      "sha256": "014438a55e3dba25af53a5acff5f41e5f31e94ef4ae61a0fb60ff25c0ffcdd02"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-diagnostic/samples.json.gz",
+      "bytes": 5573,
+      "sha256": "6848b3f03c7450579295ce2ff0203ac346d5ddc4614262ed4ddae9e1459ed814"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-diagnostic/window.png",
+      "bytes": 777504,
+      "sha256": "e09647066249ef6733def70410974a0360ab3c961f0b6eef2b16650d9fec8f0a"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-page-guard.json",
+      "bytes": 438,
+      "sha256": "c18ebdc2d52a7dcbbd71b41641ae8578fd2f5390167b9c5ee6e0fbd0af498ecb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-page.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture-page.log",
+      "bytes": 6503,
+      "sha256": "a8e81d4a71bbe0ce5230b2bf962a1026d4331f9ae53b1c258ee15abc3440dce2"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropped-picture.patch",
+      "bytes": 3537,
+      "sha256": "f3f694c57964ffb73f0a1d0496cc9157c1c0026f11901a1ef5753447c7132859"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/cropping-attribution-correction.json",
+      "bytes": 620,
+      "sha256": "b4361a18882e2c0c469f323f9156e0f5c5e81d48f2ccba2de971d6b43f097de6"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/driver-restoration.json",
+      "bytes": 473,
+      "sha256": "946c7eb831f257658d2a575aeb2220eaa4f5c8ae257374c6e1afb3cf54795afe"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons-guard.json",
+      "bytes": 483,
+      "sha256": "ad65ac67b6ce90669e39fd2b0512d2e27d1115b0f4110917656ccb3a0d95f7b5"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons.log",
+      "bytes": 653,
+      "sha256": "a42bbea8c1d275fe007558c8269b908bcce8150ac6adbba8cfc5556ffba919f1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/audit-config.json",
+      "bytes": 209,
+      "sha256": "941cb7379afda69f85c3cd61754978746fcb00d5b2b247ee058550c2b31be517"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/author-script-audit.json",
+      "bytes": 227,
+      "sha256": "1751f2b4ef89a61fbbd307e02405bae282f920bda65b704b72d276a3e091bd18"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/browser.log",
+      "bytes": 1025,
+      "sha256": "edf041d1096e7c14fe659862a737d717ee58ddc5d1b5be97f1b45fe0d19cfd46"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/command.json",
+      "bytes": 4240,
+      "sha256": "d77c4c009116f3fb8325026b2801734ad0a385785d13657aa752f56b0ff8df53"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/diagnostic-events.jsonl",
+      "bytes": 980,
+      "sha256": "94e0780dec8888ce28303675a4eef448ccaca05d6f9a1acac051be56ff619b62"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/document.json",
+      "bytes": 152312,
+      "sha256": "f81d5b02878f04262c6754fa2ba0932020c2c14c1fe3489069200915da938349"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/result.json",
+      "bytes": 3853,
+      "sha256": "efddbb716a8bef3a1966edc510f6d6e2f6f00c0aa8accf8de1b2ac76009a6fdc"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/samples.json.gz",
+      "bytes": 14175,
+      "sha256": "801174b66db5c42be5a164a0b51e98764f6067bdf82b0f5c28070d65974e0db1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2/window.png",
+      "bytes": 777365,
+      "sha256": "7baf8a6f890cbb891ffae51cbf63f9b8b15c356e20ce8983650e8a0ec347f664"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2-guard.json",
+      "bytes": 484,
+      "sha256": "8d9290c49a2a96efbadf06300f1b0c0a92e8669c5439c7cebfb3f7be5cb7f743"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/equal-text-reasons2.log",
+      "bytes": 4064,
+      "sha256": "d253e1050a056d6711ce2d79dbaffc8cb9f5040595438ceaf2826f91069f322b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-pixel-diff-build-guard.json",
+      "bytes": 494,
+      "sha256": "8f3049f2f65cbe6f6657c213df7c3e54ea05c661cd8211ba50235a05806dc384"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-pixel-diff-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-pixel-diff-build.log",
+      "bytes": 438,
+      "sha256": "431ca269f81e7ae6eb9fdd245ba290fcdec6cbcd9b23c8d548c28cad66c9e6a3"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/chromium-partial-rounded-border-msaa.actual/browser.log",
+      "bytes": 303,
+      "sha256": "50b3ac25240750f6149bcc2cdacf04eb59e94376327ef6e8313cbec77ddef2ab"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/chromium-partial-rounded-border.actual/browser.log",
+      "bytes": 303,
+      "sha256": "1253f4cc9f18a9e4a659ccfb88bd9b9ba0c6208bfde51683eeda512d71ef877f"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-href-chain-update.actual/browser.log",
+      "bytes": 303,
+      "sha256": "902b6c02bb5dd3f06514da97cf14d58b3dcd8a7f3efb349cf7547f6a2df13e74"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-href-chain-update.reference/browser.log",
+      "bytes": 303,
+      "sha256": "a5055c86d49ca814f27a65229a79a60e8bbe00764328e5e0838253a5a7427001"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-in-defs-removed-repaint.actual/browser.log",
+      "bytes": 303,
+      "sha256": "273f792554c81e9bb007e66041c789e20da9ee871b100b378fec6cafe480cba6"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-in-defs-removed-repaint.reference/browser.log",
+      "bytes": 303,
+      "sha256": "fe5c0157f094d9dfd1e5cdc4fe0501b1054252049bd175ae61a34a32ff781afc"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-stop-added.actual/browser.log",
+      "bytes": 303,
+      "sha256": "743f4c52cb21e26d3e7d41805c375fe9ff6424cacb7e29213a3f6cba517b7397"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-stop-added.reference/browser.log",
+      "bytes": 303,
+      "sha256": "d9140b24b574222e5dcb5812b6cf942e02acadb6beee1c3491752cd9e53cdab9"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-stop-color-animation.actual/browser.log",
+      "bytes": 303,
+      "sha256": "0d734933fedbdb398a6e128f24648ab11ec47a487a026699df7124dd48804ef9"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-stop-color-animation.reference/browser.log",
+      "bytes": 303,
+      "sha256": "7e43ae5d79ca667bd6ee55ffe0c2926c59a27a0e1eb8b44047d5f15d6ca328fc"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-stop-move-before.actual/browser.log",
+      "bytes": 303,
+      "sha256": "70efeefc5a4134fdfd3ebffa5c7c3e91f14fbe291c7bfc646a478562adf8168c"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-stop-move-before.reference/browser.log",
+      "bytes": 303,
+      "sha256": "a479226ae1a7df3853ebdcca20314b0a195f3021d8f2603f3e7a74cf336359d7"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-transform-attribute-update.actual/browser.log",
+      "bytes": 303,
+      "sha256": "d29193925eac2eac382affb7931df07c849f764c62839a7709400a33e87dbf11"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-gradient-transform-attribute-update.reference/browser.log",
+      "bytes": 303,
+      "sha256": "d2a8496dedd22028f75a89ea04de9aa1835b76e890ae518bea26d9506509d0d9"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-image-source-switch-same-size.actual/browser.log",
+      "bytes": 303,
+      "sha256": "680efbc2f5572002a232d3892538c21460700707ce71385088d98a9de2e7e212"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-image-source-switch-same-size.reference/browser.log",
+      "bytes": 303,
+      "sha256": "6fb000706ca2208912baa6ebd45ccff4b80a5792b4688edfad05caf5239aed31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-paint-server-hidden-inherited-style-update.actual/browser.log",
+      "bytes": 303,
+      "sha256": "0aadd657d3fd2e1f803b0a70cb15c5383419501bc9371539e7edfad40cec1999"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-paint-server-hidden-inherited-style-update.reference/browser.log",
+      "bytes": 303,
+      "sha256": "a3417ec2671df433da8745330293658f09fee88fbe016e01f69759c9379aa7eb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-paint-server-html-id-collision.actual/browser.log",
+      "bytes": 303,
+      "sha256": "1f0c33733482dfef74527af274d8406a8554337095b2bd527ecdd937ece32765"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-paint-server-html-id-collision.reference/browser.log",
+      "bytes": 303,
+      "sha256": "ecaa2363dae874bf76e26913b7d482fbefbfd444eca525bd0eba3f136726d20f"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-paint-server-id-collision.actual/browser.log",
+      "bytes": 303,
+      "sha256": "1a3528fdd987442fb2976f5966f67f507324aed024b7295cf7c7f2bf8395d8f0"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/browser-logs/svg-paint-server-id-collision.reference/browser.log",
+      "bytes": 303,
+      "sha256": "2dc84ac64f1e278ebbcedc818c108958c1fc0cbf88474b2e8ec1f92002822db6"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/chromium-partial-rounded-border-msaa.actual.log",
+      "bytes": 181,
+      "sha256": "154ba712c91600454df137c8f7537248490e250a69e3a86fc2fa7f328af47539"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/chromium-partial-rounded-border-msaa.actual.png",
+      "bytes": 18682,
+      "sha256": "ba9fdf16ea8316dac03731c1e019844216f3fc37861f33253393e43597ab406b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/chromium-partial-rounded-border-msaa.diff.png",
+      "bytes": 31707,
+      "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/chromium-partial-rounded-border.actual.log",
+      "bytes": 176,
+      "sha256": "343e730f72b4a644a19faecea010327a41274c2208992598579c0c97b7408128"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/chromium-partial-rounded-border.actual.png",
+      "bytes": 17842,
+      "sha256": "2ea678b2677a68072aecffe740404c365c2ee766b43baa5832271247ae22d5a8"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/chromium-partial-rounded-border.diff.png",
+      "bytes": 31707,
+      "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/result.json",
+      "bytes": 30153,
+      "sha256": "994355edeab252e8ddde7678c870536a09fe7ff703200eb59cd9c23d83187098"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-href-chain-update.actual.log",
+      "bytes": 174,
+      "sha256": "75636b8e88aa6f055cc5b2a7d8f73f940c29a9066fa17a45ce7822155cbf8b57"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-href-chain-update.actual.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-href-chain-update.diff.png",
+      "bytes": 19598,
+      "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-href-chain-update.reference.log",
+      "bytes": 177,
+      "sha256": "84eda6fbf9e34bee625153e457ac033ac496786095ffb5999b71cebfb17c3356"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-href-chain-update.reference.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-in-defs-removed-repaint.actual.log",
+      "bytes": 180,
+      "sha256": "fa4d520ce06288c4a152779daff419b7502e5c7c36163a4784bb89e21571f921"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-in-defs-removed-repaint.actual.png",
+      "bytes": 10300,
+      "sha256": "3ff1144d5df214765cd43f455b69f1b3e1dea2d9543ec85be6cd67959e52f687"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-in-defs-removed-repaint.diff.png",
+      "bytes": 19598,
+      "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-in-defs-removed-repaint.reference.log",
+      "bytes": 183,
+      "sha256": "bf12f5eeccc025efd80316f80ab0e9d645f4027a7fa74d2c0bbe7bed080d2f97"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-in-defs-removed-repaint.reference.png",
+      "bytes": 10300,
+      "sha256": "3ff1144d5df214765cd43f455b69f1b3e1dea2d9543ec85be6cd67959e52f687"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-added.actual.log",
+      "bytes": 167,
+      "sha256": "ab922f2bb2a75f5bd82ce3e865db335d1bbe1a8436779f80d919cf589f24cca3"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-added.actual.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-added.diff.png",
+      "bytes": 19598,
+      "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-added.reference.log",
+      "bytes": 170,
+      "sha256": "344ce9d7221622fb0ff2c7d7cc513439ac3ae346a3bfdc4e13ec78882ea5cead"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-added.reference.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-color-animation.actual.log",
+      "bytes": 177,
+      "sha256": "2f5517e431ba4c5b8eb2ddcb1b2365ffec223aad84edaec468a697eb91fb8dfa"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-color-animation.actual.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-color-animation.diff.png",
+      "bytes": 19598,
+      "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-color-animation.reference.log",
+      "bytes": 180,
+      "sha256": "57f332aa142fcde7da8488aeb2a7c9b6f9486e09472dd3a82750f51b26e16fcb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-color-animation.reference.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-move-before.actual.log",
+      "bytes": 173,
+      "sha256": "a27a07931d48950613cb502503e6b22f13e0ad7ad4f03808ed6d8ff1c4ae8c9a"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-move-before.actual.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-move-before.diff.png",
+      "bytes": 19598,
+      "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-move-before.reference.log",
+      "bytes": 176,
+      "sha256": "80fea043fb7db0a5dc773ede9628b3fecf734f2cb08b7d6ea177ac9cdb94a5d6"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-stop-move-before.reference.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-transform-attribute-update.actual.log",
+      "bytes": 183,
+      "sha256": "29d0a288b95db5cf1fff8480b24a52c6d487113f0a237e935d81dcfe9ca2f47b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-transform-attribute-update.actual.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-transform-attribute-update.diff.png",
+      "bytes": 19598,
+      "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-transform-attribute-update.reference.log",
+      "bytes": 186,
+      "sha256": "821824f4cfd3acccbaf9af8c625d57d0086abb2fc9c677a97d9645b8189ff65a"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-gradient-transform-attribute-update.reference.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-image-source-switch-same-size.actual.log",
+      "bytes": 177,
+      "sha256": "268912628c3bbe213ddefad7ce06c2124716899ffb87cd5df3565a0fd4b73a9e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-image-source-switch-same-size.actual.png",
+      "bytes": 11124,
+      "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-image-source-switch-same-size.diff.png",
+      "bytes": 19598,
+      "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-image-source-switch-same-size.reference.log",
+      "bytes": 180,
+      "sha256": "3f4c8001cf4f339a3a555d5091bc86b03092d97d46ed59397398b527283e7453"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-image-source-switch-same-size.reference.png",
+      "bytes": 11124,
+      "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-hidden-inherited-style-update.actual.log",
+      "bytes": 190,
+      "sha256": "1a85749481ad94aca3d9b5b5bb7d67edeb60212ac66d3649997b7770e150f120"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-hidden-inherited-style-update.actual.png",
+      "bytes": 11124,
+      "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-hidden-inherited-style-update.diff.png",
+      "bytes": 19598,
+      "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-hidden-inherited-style-update.reference.log",
+      "bytes": 193,
+      "sha256": "812521e3b91256baaab064e5e5c86b85b5b1f410a932c6089b572cefc209cb71"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-hidden-inherited-style-update.reference.png",
+      "bytes": 11124,
+      "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-html-id-collision.actual.log",
+      "bytes": 178,
+      "sha256": "d75683891806f4618476eeb549bb0a5a0744ece8258ee12243655b895b480207"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-html-id-collision.actual.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-html-id-collision.diff.png",
+      "bytes": 19598,
+      "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-html-id-collision.reference.log",
+      "bytes": 181,
+      "sha256": "fd21f57ce098fbf87de2977bfeff0e2ec6390fa0ce59549d12986fe89160afb6"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-html-id-collision.reference.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-id-collision.actual.log",
+      "bytes": 173,
+      "sha256": "7a94b6b2343b4db7a37f550debb118c695aadf6d0155b04d733aee982d3bd02b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-id-collision.actual.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-id-collision.diff.png",
+      "bytes": 19598,
+      "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-id-collision.reference.log",
+      "bytes": 176,
+      "sha256": "403d907f0d113aacf2e3673df508f0e70e33cc87de95a9eb9cf6d3bfc664ae58"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual/svg-paint-server-id-collision.reference.png",
+      "bytes": 11125,
+      "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual-guard.json",
+      "bytes": 397,
+      "sha256": "0a0a4dafbcef44555b007540562c99fa8735bacdcce2ebc4a64e7220c0a3a3ce"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/followup-visual.log",
+      "bytes": 836,
+      "sha256": "f61ed1ba1f76df1929946468db5b9a492ffcf2a6bba4b633df30916191812afd"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-boehm-build-guard.json",
+      "bytes": 548,
+      "sha256": "a36ba806b14841ad6c559197f3cf55d8aef12c4e887323a29f2e09f82fcac58c"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-boehm-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-boehm-build.log",
+      "bytes": 5335,
+      "sha256": "6a3da58ffb2eaa84bfb15af6f56d04cb4d5fc7ad23558793e1983f58b1372fec"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-boehm-runtime-guard.json",
+      "bytes": 384,
+      "sha256": "188acc16ec06ca0117a405ea9c973fcb9b8bf308c2fe4bec5f8d44d28148e75f"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-boehm-runtime.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-boehm-runtime.log",
+      "bytes": 356,
+      "sha256": "439519f838acdd3d3a01f7dddaa9c7c255b6b6a4481023f3aaa933d4b6a5a2b8"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-build-guard.json",
+      "bytes": 559,
+      "sha256": "e9797b8aca3f7ad99507e2620456c13e98e282590765a3371f73e50bf613732d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-build.log",
+      "bytes": 7632,
+      "sha256": "3a287633704463b23e48bff6cc2935b0881532962354bae42070d0e434661971"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-final-inputs.json",
+      "bytes": 936,
+      "sha256": "261f62df39bb76146c00222207b116e9c2cf9804f26ee74151b6606d55700c14"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-matrix-build-guard.json",
+      "bytes": 773,
+      "sha256": "d70759b076ea8ea60b4dc2a025fb3897359498f1268a5919b32e902ab0c3dc49"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-matrix-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-matrix-build.log",
+      "bytes": 7830,
+      "sha256": "b753dc7bf1dd84d2f807bf4587e11fc966cf7dd522d21fe34b943820345901dd"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-matrix-runtime-guard.json",
+      "bytes": 382,
+      "sha256": "f4ba52065494f78e2263ebdd6af173f3acd379fb07ee5139bbed1f2125865ec1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-matrix-runtime.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-matrix-runtime.log",
+      "bytes": 402,
+      "sha256": "49885a6689661cac773c8392dee8680e7999fe86e33604f29a180ad23498c0df"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-poison-guard.json",
+      "bytes": 377,
+      "sha256": "2bd2f13a3faf891ec74f5ddadc23d1f31b30083f236b4a3b8f6819b44f3e2ac8"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-poison.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-poison.log",
+      "bytes": 397,
+      "sha256": "e45733185f405e1b8737f67e9f796ce4a77f1658ecb49f1739456fe86bff8431"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-production.json",
+      "bytes": 1599,
+      "sha256": "365d08d6ceb47c38aa0629c3d23ea1b56b217f0e29131d3a48bdd5711deb00c2"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-regressions-guard.json",
+      "bytes": 562,
+      "sha256": "1f8c2f716490a1c067741130ca4b7b5ae64472e41dadc1618fe9a9d7fe74ef82"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-regressions.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-regressions.log",
+      "bytes": 80183,
+      "sha256": "5cc0f1a7e08ea2c2fe0e4785421d4fa72582bdabb4fded527abdc0ec7abc2fa1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-runtime-guard.json",
+      "bytes": 375,
+      "sha256": "1a52f5e8e2e3d5e694163fc28519dda0ed7f886a820fe86e4775e9f8694fed7b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-runtime.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general-match-runtime.log",
+      "bytes": 395,
+      "sha256": "44d931c7dba25fd95531c681f2dd867c299ea6ec8dd8050547398ad35624df78"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general_match_boehm_test",
+      "bytes": 6456336,
+      "sha256": "8572c4541be0afd5c260eb0e7f6dc53a14b71e49f62abd469800aa627ad37a93"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general_match_matrix",
+      "bytes": 11219008,
+      "sha256": "1b9bee7dcaee9e031d44048afa7d744d66e351aab8e0c008688afe6b75a709b0"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/general_match_test",
+      "bytes": 6494656,
+      "sha256": "51d1e7d89974be9040533139b3c484c40f0f6572d9b7540ee77495d03a3cad3f"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-allocation-build-guard.json",
+      "bytes": 635,
+      "sha256": "a9b9596478376f7e1b71dc7ab1249799e75e83001a0db47beb7c359e72def0c9"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-allocation-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-allocation-build.log",
+      "bytes": 563,
+      "sha256": "37c9ac9af070184f18f9802904f8aef41c47bca95a8fca1c34c1ce6627faab32"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-allocation-result.json",
+      "bytes": 381,
+      "sha256": "bf5b3464ea464b7d7259da8f7e380e03f74be661b26abb33e985b36cc746505b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-allocation-runtime-guard.json",
+      "bytes": 397,
+      "sha256": "f917287df67ee3857a384d725ee5fb13c90b6fa35f5a55b396d9e62e179bf574"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-allocation-runtime.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-allocation-runtime.log",
+      "bytes": 545,
+      "sha256": "db6dd268e1140dc9fa9355362d1f01d06a3186fbbad9e1f42a4577832124440f"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-build-guard.json",
+      "bytes": 585,
+      "sha256": "7a4eae8e5935d9bc3b225c1ec5081250cf1aea49257184c34d8e7bd9d7fdb28e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-build.log",
+      "bytes": 31074,
+      "sha256": "7718f61897e36a67143e7cff30ab70953dab82377b5e17853d04a36680d5c223"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-production.json",
+      "bytes": 1802,
+      "sha256": "255853819a798b4bc3335d9ffa3d9b5c02be6cf34c7faaf3c2beb381269e3c75"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-runtime-guard.json",
+      "bytes": 391,
+      "sha256": "80560525d58161eef55626723b239407f9ba22b125875d6367117e472e0e3599"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-runtime.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-runtime.log",
+      "bytes": 363,
+      "sha256": "210b4298d1be75b8694e14d310129f934d13cb50dbf00afecc6c94d8f7174c88"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-staged.patch",
+      "bytes": 369,
+      "sha256": "9a428066dddb7e2f00b3ee2059d0451d1cde75cf641a44c3d458bfc64d59260e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-test-inputs.json",
+      "bytes": 311,
+      "sha256": "4292a41976b684bd93e01e7d45e765b7cef9d92eac8f907b41a82304eb9fa13d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport-ui2-path.txt",
+      "bytes": 38,
+      "sha256": "95c24c43c8056bc1e58d2dc46598dbb1bbdce576bbff7ebf01a41f6979311da0"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport2-build-guard.json",
+      "bytes": 801,
+      "sha256": "029779c02c5b36d9294547593582d0536adb2a9d494a1e6b1da46cfd31a7eafe"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport2-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial-viewport2-build.log",
+      "bytes": 58811,
+      "sha256": "2c3e6881ed6f5dd8cf04b84172bbdf7de22f1d1408f7ce740a460fcd58d887b7"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/initial_chrome_viewport_test",
+      "bytes": 23474304,
+      "sha256": "fd0ec00d546c92fd1fc450313b778a96aa75575a98a3e726532a81f50f2f2268"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/live-followup.body",
+      "bytes": 189908,
+      "sha256": "13bcba13bd1bad5aace04e8a76880b710337a8d595224967e874401832cc203c"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/live-followup.headers",
+      "bytes": 2435,
+      "sha256": "6ada62cf6f6b1e08026b730d312e03735e52dc4dfaf4bdc5956a9c8090bad63a"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/live-followup.json",
+      "bytes": 594,
+      "sha256": "6619d1586b50aad0c48ef58cc997e9bdfaabb5ffad1ea1cee87bc10ecae527b2"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/make_followup_receipt.py",
+      "bytes": 6224,
+      "sha256": "074667d30d1d3d11cfe3e357e666b500309a9222e6463204b1249a1f87fc2e79"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/page_memory_followup.py",
+      "bytes": 5720,
+      "sha256": "51f73b828cb895dde9b4f0360080fdf06914e013e63743d50230fc2630c0a71a"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pixel_diff",
+      "bytes": 958640,
+      "sha256": "c556365125bbc8c96b763e1dd2710aaeb840ec9c618469b9f8ae5d2962b2b071"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered/audit-config.json",
+      "bytes": 209,
+      "sha256": "941cb7379afda69f85c3cd61754978746fcb00d5b2b247ee058550c2b31be517"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered/author-script-audit.json",
+      "bytes": 297,
+      "sha256": "12f8904b828db0a413a26f9f9db49de7227e6b6e2860718d73f5562074686ad9"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered/browser.log",
+      "bytes": 361,
+      "sha256": "37e9072af2a9391c029d3fb9053e4951ce35e5336f56c0ea382c83a60238877e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered/command.json",
+      "bytes": 9926,
+      "sha256": "f90c1bac58ff05f2edfeecd5ae7c6b247e2e9977e870eb26097abac7e36562c1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered/document.json",
+      "bytes": 152312,
+      "sha256": "7323256ef6a696a163fe575aa62de53d18f9266c074a8e09e6bd48a0752cf739"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered/result.json",
+      "bytes": 9853,
+      "sha256": "224a4dd83cdfa63bfa183a1050ccac96b8f410115ba4812e8cb6540d5b6e03c3"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered/samples.json.gz",
+      "bytes": 5590,
+      "sha256": "869748cf11affc031547c7bde1ddb1c6dc1896a65f23ea1c35bb5a371d04be62"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered/window.png",
+      "bytes": 777539,
+      "sha256": "37ec4407f00352bd8b932692b9ee4534acdca5a1f6b50c8655f5500fa2e3db6d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered-guard.json",
+      "bytes": 544,
+      "sha256": "76f65526df89936ca3941f426eea192352c61980d678bd79c37e03220710b1fb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/pool-viewport-recovered.log",
+      "bytes": 655,
+      "sha256": "5153b7cb41a76226b5c4272b62c9d58a02da78bacdbc8041b48ef190600aa870"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recover_observed_archive.py",
+      "bytes": 2453,
+      "sha256": "f2f8ca0baac8ca66218da4b5bb3b0e3aa4491d7af5d40cee7fe29d4e89c97fd6"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recover_observed_archive_v2.py",
+      "bytes": 2865,
+      "sha256": "50209e8f0a4fece80357c9736121313ab9e998576bff229f2c107f2166323e37"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/11362c819c21795b8fc6271025d2d99829ec73c9f1fc5495a7c59bcd377138b5",
+      "bytes": 10724,
+      "sha256": "11362c819c21795b8fc6271025d2d99829ec73c9f1fc5495a7c59bcd377138b5"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/11bc831318292392808e355a415bae45b64c8b94a8844aa77b74a06117cedb61",
+      "bytes": 280793,
+      "sha256": "11bc831318292392808e355a415bae45b64c8b94a8844aa77b74a06117cedb61"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/1299ae2476471a01a6ab2907d511b3233fb2b87746cc536e8e1153c982f90caa",
+      "bytes": 5018,
+      "sha256": "1299ae2476471a01a6ab2907d511b3233fb2b87746cc536e8e1153c982f90caa"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/2726f92ed75ce614ff705d8fa6dc63c8454a75ae533cf54d629e735bd583d235",
+      "bytes": 11851,
+      "sha256": "2726f92ed75ce614ff705d8fa6dc63c8454a75ae533cf54d629e735bd583d235"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/2f9d380cf7fdd5fcf8dfe047f977ad86ee594aa964aaef5438361ccaf420a100",
+      "bytes": 3310,
+      "sha256": "2f9d380cf7fdd5fcf8dfe047f977ad86ee594aa964aaef5438361ccaf420a100"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527",
+      "bytes": 60708,
+      "sha256": "3151728340f566d1400cd9437ae64e8d95583d066712fa1d7c0718b8d10f5527"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/38ec4697f57d67227cc49eef44b17913ffbc03cc7ddef8b039ebcc5cb9e40c3b",
+      "bytes": 750,
+      "sha256": "38ec4697f57d67227cc49eef44b17913ffbc03cc7ddef8b039ebcc5cb9e40c3b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/48ea8c7a1339dbb17debf3590ab455a8dc4ee76c124870b0fb73374ca80f82c9",
+      "bytes": 3268,
+      "sha256": "48ea8c7a1339dbb17debf3590ab455a8dc4ee76c124870b0fb73374ca80f82c9"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/57d18880dd3e28db974abdf435160f70ce2d77ba4d7d9f634ee205c1943af1c5",
+      "bytes": 512,
+      "sha256": "57d18880dd3e28db974abdf435160f70ce2d77ba4d7d9f634ee205c1943af1c5"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/635c789f4db0b7b51f2fb7d6d3981d8efcba28d20c0b9fb3706c3df846a811c5",
+      "bytes": 1406,
+      "sha256": "635c789f4db0b7b51f2fb7d6d3981d8efcba28d20c0b9fb3706c3df846a811c5"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/6c85e8559258a34ccd04121ebbf4cde2de609d37a3c47aa89a5ec69faf3c4f3e",
+      "bytes": 598332,
+      "sha256": "6c85e8559258a34ccd04121ebbf4cde2de609d37a3c47aa89a5ec69faf3c4f3e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/75bddaddeea26a28a911c0bbb0a63334c0771257664e840197892e8d25d18f04",
+      "bytes": 306287,
+      "sha256": "75bddaddeea26a28a911c0bbb0a63334c0771257664e840197892e8d25d18f04"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/78f8594416b419c615df809e3ba3ff8ed4b5369681b03733cf19a23d8621d356",
+      "bytes": 10214,
+      "sha256": "78f8594416b419c615df809e3ba3ff8ed4b5369681b03733cf19a23d8621d356"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/83338b42e6ead92b9292d520191bacc85129abfc46d7f3666ede13e42fd417b0",
+      "bytes": 67,
+      "sha256": "83338b42e6ead92b9292d520191bacc85129abfc46d7f3666ede13e42fd417b0"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/8d16addfdf7769450dd755d77382c28fcd65da2e3a10c92faeb059cee41e395d",
+      "bytes": 4844,
+      "sha256": "8d16addfdf7769450dd755d77382c28fcd65da2e3a10c92faeb059cee41e395d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/9e896c4e3e6c9323870129424dbbda9dd2ff8a211bb48d3ba0c2d11b4df7155c",
+      "bytes": 5997,
+      "sha256": "9e896c4e3e6c9323870129424dbbda9dd2ff8a211bb48d3ba0c2d11b4df7155c"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/9f77140cba16e2d24dc62b7953553dfe36e6b7e262b874bea83105470ab7d11d",
+      "bytes": 7249,
+      "sha256": "9f77140cba16e2d24dc62b7953553dfe36e6b7e262b874bea83105470ab7d11d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/ba5ed6d1bf1244bfe331a48b9adc95f4537c437e7a712e0846cafccbdf9daf82",
+      "bytes": 4530,
+      "sha256": "ba5ed6d1bf1244bfe331a48b9adc95f4537c437e7a712e0846cafccbdf9daf82"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/befb1be66d2b5832d961b6aed4c2382bfa8862c9f7618f13358820873f0036b1",
+      "bytes": 119,
+      "sha256": "befb1be66d2b5832d961b6aed4c2382bfa8862c9f7618f13358820873f0036b1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/c8a725d78fc4b1bce109ab1c569995f07b6e1193f0fd5994ca2f23ce50f45253",
+      "bytes": 9445,
+      "sha256": "c8a725d78fc4b1bce109ab1c569995f07b6e1193f0fd5994ca2f23ce50f45253"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/e50b5fe50d989095b0e966c3d042b437faacb24d7c0622a9ed131be74af19fea",
+      "bytes": 730,
+      "sha256": "e50b5fe50d989095b0e966c3d042b437faacb24d7c0622a9ed131be74af19fea"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/e8dd3ba85ec61c1ff393affe5b9878b78d87e9f6cbd1214f36272a484d095ae6",
+      "bytes": 678,
+      "sha256": "e8dd3ba85ec61c1ff393affe5b9878b78d87e9f6cbd1214f36272a484d095ae6"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/efe971ec339a1ce12fb8ac40bace9a49538d453313b8af965bc9fd98638539b5",
+      "bytes": 587666,
+      "sha256": "efe971ec339a1ce12fb8ac40bace9a49538d453313b8af965bc9fd98638539b5"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/bodies/f134db1400065d159a57f5beb65c9b291aafcddf6115c43b09c3612312c6d43a",
+      "bytes": 239757,
+      "sha256": "f134db1400065d159a57f5beb65c9b291aafcddf6115c43b09c3612312c6d43a"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/recovered-archive-v2/manifest.json",
+      "bytes": 55580,
+      "sha256": "80b6f591b595d8baf15b997d76ae8d9bab71083d38b3a6a756f7a6b60605f40e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/startup_viewport_allocations",
+      "bytes": 16448448,
+      "sha256": "a9a8ef220e5e2fa342a0bed41e6298d058b6c5e377fcd58f503fe6084e6f8b22"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/startup_viewport_allocations.v",
+      "bytes": 1479,
+      "sha256": "196b2643693fde1a75435c19bcc614c81eec968e768a12c0609d89673858071d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match/audit-config.json",
+      "bytes": 209,
+      "sha256": "941cb7379afda69f85c3cd61754978746fcb00d5b2b247ee058550c2b31be517"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match/author-script-audit.json",
+      "bytes": 227,
+      "sha256": "1751f2b4ef89a61fbbd307e02405bae282f920bda65b704b72d276a3e091bd18"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match/browser.log",
+      "bytes": 434,
+      "sha256": "d21f21b96390381ab75e47d5b3bed995b40a6a0ccb54f308947c4acf959e8aa7"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match/command.json",
+      "bytes": 4189,
+      "sha256": "31b1be1be4fe5972089f721f32b6efd6ff2ad7f72cb11732bb664ce0e166da39"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match/document.json",
+      "bytes": 152312,
+      "sha256": "257d7eb4bd671afce72054ad4204f6e2e963ecbe189e137dbb9313f1be9278a5"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match/result.json",
+      "bytes": 3847,
+      "sha256": "d4958e16eac224cc8f6b4001c1445f02ca8af9ee9eda6926a4e7723212721e89"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match/samples.json.gz",
+      "bytes": 5406,
+      "sha256": "bb3bed16ce27a2643fbd8e01e6f97d9c9c2e58236aa8bb27a927f4ad53737add"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match/window.png",
+      "bytes": 777651,
+      "sha256": "3fec1ffaf49bb50bf3a32d7b59b61d9586f00c6df0e73ad665a83b8a51ee4377"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match-guard.json",
+      "bytes": 479,
+      "sha256": "d1acb664b117acde5873b9a1f6901b48679f7da4f2ea33f984b9b6a6351909af"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-general-match.log",
+      "bytes": 3997,
+      "sha256": "c9150030798cf3d3489a755e761dc4b2fdac9a35d9c31dddb3fae818c9f5086d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-initial-viewport-guard.json",
+      "bytes": 488,
+      "sha256": "cd15b45626286f62f5a82ff20739fd05b94c4b3ce290619cec5b24941862acdf"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-initial-viewport.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-initial-viewport.log",
+      "bytes": 1188,
+      "sha256": "fcb1f63618e582bbb5e2036231b264cdf1f914e8cd1958cb6c242789cef0df0e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered/audit-config.json",
+      "bytes": 209,
+      "sha256": "941cb7379afda69f85c3cd61754978746fcb00d5b2b247ee058550c2b31be517"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered/author-script-audit.json",
+      "bytes": 297,
+      "sha256": "12f8904b828db0a413a26f9f9db49de7227e6b6e2860718d73f5562074686ad9"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered/browser.log",
+      "bytes": 361,
+      "sha256": "37bf69f4b71d35742c72ce9a9d30c73eb850a3329599939af8e858be82d66b31"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered/command.json",
+      "bytes": 9511,
+      "sha256": "8d600f01fb6bd564d11cd92835788af57b4381e1a4897e8c038d44bdfb4ab00b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered/document.json",
+      "bytes": 152312,
+      "sha256": "de9f5f39209878299a779decedb642b37b36563ffb74e0148577a5763f22df60"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered/result.json",
+      "bytes": 9537,
+      "sha256": "642cb23dbcce01813e11fc7b68eb39cb5317a468f64dc15b946d28ab6eeee161"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered/samples.json.gz",
+      "bytes": 5789,
+      "sha256": "d2f405b4e14ec09d91131c74368b59e0d9bc81fc3a82eb490889653df7c421a1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered/window.png",
+      "bytes": 777644,
+      "sha256": "87c8a33f6661395d731a8815b8e70bef3325d51e32ad1ec8539c85b9a30318c3"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered-guard.json",
+      "bytes": 460,
+      "sha256": "393bf3c4bbc22e37e76ffd99858ce64fb2089ea20de0c7d6201fe6449d784369"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/stock-viewport-recovered.log",
+      "bytes": 581,
+      "sha256": "c29da0fd4a348715785b0fe2c1b8c08956e3081828d6fa882767cf02781911d9"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-build-guard.json",
+      "bytes": 401,
+      "sha256": "465263b6cc0cbdf5ff8ced411eb5d41bbd12f2ccf899acb54a9f7faeb05af27d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-build.log",
+      "bytes": 3896,
+      "sha256": "c4999857ae54d5e020a0caf9aa552312089f5b0e398b9319aef3b507e61a8338"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-command.json",
+      "bytes": 3061,
+      "sha256": "049850a5a47be0c06a8b207d3e21700c357c48aef1f83c5e4a412eac83ddc4e8"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-diagnostic/audit-config.json",
+      "bytes": 209,
+      "sha256": "941cb7379afda69f85c3cd61754978746fcb00d5b2b247ee058550c2b31be517"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-diagnostic/author-script-audit.json",
+      "bytes": 227,
+      "sha256": "1751f2b4ef89a61fbbd307e02405bae282f920bda65b704b72d276a3e091bd18"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-diagnostic/browser.log",
+      "bytes": 252528,
+      "sha256": "b7fc9e650786bc8e48a0e498ffbced70737d56446392c4a1d89c6c96e4572d84"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-diagnostic/command.json",
+      "bytes": 6955,
+      "sha256": "b67c817bc0dcbbb47626961ed504090add5254abb20bb8c485ce0d2d0a62db89"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-diagnostic/document.json",
+      "bytes": 152312,
+      "sha256": "352bcf0f01f105e74eb2c3768aa8b47e868f6be28cb4f926a150fd38fbb8c197"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-diagnostic/result.json",
+      "bytes": 6466,
+      "sha256": "29dfb4efc37d4c9e07a29e05d1cb727b17aa02dd130771b0b16e910a1786e026"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-diagnostic/samples.json.gz",
+      "bytes": 5176,
+      "sha256": "8b7ac3d6433592ce2c965deae1b71d029d756d491a57e72055122eff190f861a"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-diagnostic/window.png",
+      "bytes": 777541,
+      "sha256": "118568adace43391b712125b007ded32e8f9fc6cd2c030c9c943294a818bbe8c"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-page-guard.json",
+      "bytes": 434,
+      "sha256": "76e243e6a555d0bb4b7dae60ab35161ba5cccc4e5a3cc5ea7e16b301e21596fd"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-page.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-page.log",
+      "bytes": 6511,
+      "sha256": "26f9fbf66fb86b6687e47ffeccf508c24b90f81a6e88e9c8aa0b82e24ea0bd68"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected/audit-config.json",
+      "bytes": 209,
+      "sha256": "941cb7379afda69f85c3cd61754978746fcb00d5b2b247ee058550c2b31be517"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected/author-script-audit.json",
+      "bytes": 227,
+      "sha256": "1751f2b4ef89a61fbbd307e02405bae282f920bda65b704b72d276a3e091bd18"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected/browser.log",
+      "bytes": 257728,
+      "sha256": "44c8f69e541dea7afb7e06be2fae60e079507725cd3ccd07298f35aa0cadc033"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected/command.json",
+      "bytes": 6760,
+      "sha256": "e3c587f4e0a7efe32e32a60b6cef3a45862c2a400ff6a2059fcc182cfa4dc9a0"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected/document.json",
+      "bytes": 152312,
+      "sha256": "8f2fd0d22dd415c0174609045f6847331c14cd389f5807a8c2130dcee276d23b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected/result.json",
+      "bytes": 6273,
+      "sha256": "0b0c3cfe62b01bed9c42978662710bb3e478e02936da88a8a187cfef4180fd3e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected/samples.json.gz",
+      "bytes": 5142,
+      "sha256": "46a2bbb7c1b12443ffec9e856b678b5e54bec10cdb43d6ca1188365f13d68be3"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected/window.png",
+      "bytes": 777511,
+      "sha256": "02b6c5cda4881e4389f85e2287e968c7c1f16baf62d49376b039b419794da6ff"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected-guard.json",
+      "bytes": 435,
+      "sha256": "d12617ff54fac67cfec67622abbf71ebec6bcb46205af538c3faebafd55954bd"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-selected.log",
+      "bytes": 6323,
+      "sha256": "0a1fa63b6de177ae4527c18d0c6a1161db6960bcb4b95b43156c41583f755e93"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-v2/libLadybirdVSkiaText.dylib",
+      "bytes": 638168,
+      "sha256": "ba52481553373478f2d13de84932e6307b26dc6972b9c802475a1fdced0c0e8c"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-v2/libVoxGraphite.dylib",
+      "bytes": 4426664,
+      "sha256": "255287a8fc7eb7ccf90d117b1267e14ad8c033c5f7ec2f9f18ff9db861b3eacc"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-v2/libVoxGraphiteDawn.dylib",
+      "bytes": 4375864,
+      "sha256": "d94f16fbc30f5f9fa73e84cb15a0630ed95a6de2959763c7a3b51b87196f9382"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-v2-build-guard.json",
+      "bytes": 404,
+      "sha256": "585b5276049b9a342f005a08970212294c650fd70ce606c3bab69e8d16b93d94"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-v2-build.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-v2-build.log",
+      "bytes": 372,
+      "sha256": "3031f0df91f2bae469809a47612c5294194c441b2ae163d3eff77d145bb2d3b1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-v2-command.json",
+      "bytes": 3067,
+      "sha256": "a57197b5432f5e044ce4fa65b2e22eb9570a544ad694e853f7047d0365dcba34"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture-v2.patch",
+      "bytes": 4223,
+      "sha256": "f47b89acbc1b1637401f1b45d6e93010840f91c198390cc96026fe3de6ad5999"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/tiled-picture.patch",
+      "bytes": 4223,
+      "sha256": "ba432e8292c4a849e73908a1f801a9270d4b4dcfbe6c069f9e425ee58cd9315b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-graphics/visual_followup.py",
+      "bytes": 3378,
+      "sha256": "6d2f31e3c40e0fda16934f1bc1c9205444672f76b82c220ab8d610920bfaadc0"
+    }
+  ]
+}

@@ -4,9 +4,11 @@ The requested limit is **500,000,000 bytes** for
 `https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/`.
 The measured production bundles **exceed this limit**. The latest valid
 five-minute observation settles at **329,418,840 B** and peaks at **729,827,464 B**
-on executable `c9ff98ac…`. A newer twenty-second production observation with
-the three opacity fixes peaks at **681,282,296 B** and settles at **275,662,888 B**
-on executable `590975bd…`; all thirteen exact visual comparisons pass.
+on executable `c9ff98ac…`. The latest twenty-second production observation
+peaks at **661,572,368 B** and settles at **239,831,104 B** on executable
+`406aaa0e…`, using the cache-recovered fixture described below. Twelve canonical
+visual comparisons pass. The earlier thirteen-case cohort on `590975bd…`
+remains separately recorded.
 The continuations below record the pinned builds and focused checks.
 A later private CPU-rendering experiment observes a 405,834,632 B five-minute
 peak, but is not shipped and fails two exact rounded-border comparisons.
@@ -998,3 +1000,100 @@ observations, separate kernel lifetime envelopes and artifact hashes. Raw
 account-bearing fixtures, logs and page captures stay private under
 `Build/reddit-comment-memory-20261103-graphics/`. No browser bundle, source tree
 or repository tool is copied.
+
+## Selector probes and initial viewport
+
+Commit `a6d7fdf17` retires temporary work in general DOM selector queries,
+static user-style subject matching and stylesheet anchor checks. Parsed
+selectors retain their document ownership; each synchronous probe publishes
+only its boolean. Relational matching contexts, one-shot `:has()` memoization
+and converted invalidation-property vectors now use disposable storage.
+Five hundred and twelve repeated general matches retain **0 B** versus
+**57,356 B** for direct unscoped matching. Two new focused cases pass in
+prealloc, fully poisoned prealloc and Boehm configurations. Sixty-one cases
+also pass together with full arena poisoning, covering live relational reads,
+query scope, user-style changes, stylesheet invalidation and shared `:has()`
+cache behavior. Initial separate-file attempts fail because of the compiler's
+native bridge and omitted cross-file fixtures; the successful matrix uses
+explicit Clang and the canonical test files through `-file-list`.
+
+Completed executable `eb67ec4b…`, receipt `20261103-104416-7d5f3c3f`, contains
+the three new workspaces in its frozen input. A twenty-second stock replay
+observes **671,304,440 B** peak and **262,588,408 B** final median. Identities
+remain unchanged, normal author-script/content audits pass, and browser/guard
+exits are zero. Shared changes between builds prevent attributing a percentage
+to this component fix. A separate 65-second diagnostic still observes genuine
+timestamp-text changes requiring layout; later equal-text updates reuse seven
+replacements. The continued memory steps do not establish bounded allocation.
+
+Commit `1942d8358` resolves the initial viewport after bookmark preferences
+load. The old startup value subtracts only 84 pixels of chrome, while a visible
+bookmark bar requires 112: navigation initially lays out at 1708 × 981, then
+the first frame rebuilds at 1708 × 953. The new ordering starts at the final
+viewport. Four cases pass with full arena poisoning, including the two
+existing scripted viewport tests, bookmark/debug visibility, explicit screenshot
+height, very small windows and unchanged layout generation at the first native
+frame. A separate 256-section allocation fixture performs two alternating
+control/candidate pairs under full arena poisoning: the old two-pass startup
+retains 17,827,331 / 17,813,465 B, versus 9,840,870 / 9,850,495 B for one pass.
+These are component allocations, not browser RAM percentages. Existing viewport
+tests are preserved in their original file. The
+initial compile attempt lacked the prepared UI2 module path; the successful
+check uses the same canonical prepared UI2 adapter as production.
+
+Further private experiments remain unshipped. The first cropping and tiling
+probes incorrectly follow a symlink when the driver chooses the dynamic-library
+directory; dyld logs show the prior helper. Their receipts retain this
+attribution error and grant no candidate validation or savings credit. New
+wrappers select the actual candidate file. The corrected diagnostic records
+95 picture-region calls, all smaller than the proposed 1024-pixel tile size;
+its observed peak is **567,446,312 B** and still fails the cap. The multi-tile
+path therefore supplies no workload benefit or correctness claim. Replacing
+the CPU prototype's native shape fallback with Skia raster shapes leaves the
+same 64 rounded-border differences; the capture logs only picture calls, so
+that experiment does not support the CoreGraphics-fallback hypothesis. The
+CPU rendering policy remains unchanged.
+
+An external cleanup removes the older private rendering-artifact directory
+during this work. The observation wrapper is restored byte-for-byte and matches
+its previously pinned SHA-256 before further use. Deleted historical raw
+artifacts are not reconstructed or assigned new validation credit; published
+receipts and the current graphics evidence remain available.
+
+The cleanup later removes the original archive and base private driver too.
+All 24 response bodies served in the preceding valid 65-second observation
+survive in that run's browser cache and match their recorded replay SHA-256s.
+A new sealed fixture recovers this previously served subset, its 23 resource
+header sets and the main-frame Content-Type fallback used by canonical
+`--from-cache` capture. Its manifest differs from the deleted archive; it is a
+new pinned cohort, with no cross-fixture causal percentage or full original
+header-envelope equivalence claim. A new private observation driver uses the
+canonical replay server, physical-memory sampler and identity helpers directly.
+It verifies all body hashes, original URL/title, complete/visible/fully-active
+state, 1708 × 953 viewport, 49 comments, two images, zero native errors and the
+same expected badge-fetch diagnostic.
+
+Completed production executable `406aaa0e…`, receipt
+`20261103-110455-30b1ed31`, contains the initial-viewport call and selector
+workspaces in its frozen compiler input. A fresh twenty-second run of the
+recovered fixture observes **661,572,368 B** peak and **239,831,104 B** final
+two-second median. The separate sum of per-task kernel lifetime peaks is
+**667,110,184 B**; the largest sampling gap is 55.67 ms. Identities remain
+unchanged, the content/script audit passes, and browser/guard exits are zero.
+The private GPU override on the same executable still observes
+**545,360,680 B** peak, **242,550,824 B** settled and a separate
+**553,700,160 B** lifetime-peak envelope. It remains unshipped and fails the cap.
+These short observations do not establish bounded long-term allocation.
+
+All twelve surviving canonical SVG mutation, image-source, paint-server
+ID-collision and rounded-border cases are pixel-exact on `406aaa0e…`, with
+unchanged executable, tool, source and reference hashes. The former private
+equal-native-input fixture is removed by the cleanup and is not silently
+replaced or counted as a new pass. The canonical pixel-diff tool is rebuilt
+from its repository source after its older binary is removed. No reference or
+tolerance changes. A fresh direct live request again returns HTTP 403.
+**The 500,000,000 B peak limit and live-site validation remain open.**
+
+The [follow-up receipt](benchmark-results/reddit-comment-memory-2026-11-03-followup.json)
+records the two fixes, focused checks, corrected experiment attribution, cache
+recovery provenance, new observations and artifact hashes.
