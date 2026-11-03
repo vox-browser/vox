@@ -1,13 +1,23 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** On the newly acquired 2026-11-03 homepage, cohort 76
-completes seven alternating control/Vox/Brave triples. All 21 captures pass
-fixed per-engine pixels, complete content, input identities, ownership and
-normal-exit checks. Vox's launch-through-encoded-PNG median is
-**29,975,884,452** instructions; Brave's observed lower-bound median is
-**17,737,591,996**. The strict integer gate fails:
-`309693774280 > 157926110679`, conservative ratio **1.764903825299251**.
+`OPTIMIZED_SITES.md`.** Latest cohort 77 retains seven alternating Vox/Brave
+pairs on the 609-response frozen 2026-11-03 homepage. Vox's launch-through-
+encoded-PNG median is **29,631,407,157** instructions; Brave's lower-bound
+median is **17,918,487,741**. The strict integer gate fails:
+`300477745940 > 160073278677`, conservative ratio **1.6894135834606137**.
+All seven Vox captures match their unchanged reference exactly. Brave pair 6
+changes 53,392 reference pixels, maximum channel error 6; acceptance is invalid.
+All native exits, complete content audits and pinned input checks pass. Its
+result-driver exit 1 records the pixel failure. No samples are excluded.
+This current-build baseline has no matched engine-change control and earns no
+isolated optimization credit. See the [cohort/profile ledger](performance/bbc-whole-profile-cohort77-20261103.json)
+and [authenticated raw receipts](performance/raw/bbc-whole-profile-cohort77-20261103.tar.gz).
+
+Earlier cohort 76 completes seven alternating control/Vox/Brave triples with
+all 21 captures valid. Vox median is **29,975,884,452**, Brave lower median
+**17,737,591,996**; its failing gate and **1.764903825299251** conservative
+ratio remain retained. This is still the latest complete valid cohort.
 
 This is a **new workload**, with 609 sealed responses and 91 headlines. The
 original 595-response fixture remains lost. Moving to this page establishes no
@@ -27,7 +37,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **76 cohorts / 1,723 attempted browser trials**, excluding separately
+History is **77 cohorts / 1,737 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 ## Historical results on the earlier fixture
@@ -4536,3 +4546,43 @@ launched**, so history stays at 76 cohorts / 1,723 attempts. No instruction
 saving is attributed to the new path and no BBC catalog entry is added.
 See the [focused/profile/broad/build ledger](performance/bbc-borrowed-layout-lengths-20261103.json)
 and [authenticated raw receipts](performance/raw/bbc-borrowed-layout-lengths-20261103.tar.gz).
+
+
+## Whole-browser V profile and scalar-length rollback (2026-11-03)
+
+The shared production build recovered within its unchanged memory guard. Fresh
+control/candidate scalar-length diagnostics both pass full content, normal
+exits and the fixed Vox pixels, but neither exercises the new fast path. An
+independent encoded-PNG-bounded copy probe identifies the legacy conversion's
+264-byte value-copy site and samples **317,360 values, all Keyword** (tag 0).
+The scalar experiment handles absolute lengths and percentages, so these
+queries remain ineligible. The earlier build-blocked ledger above is historical;
+the native eligibility failure is the reason to remove the experiment and its
+benchmark control (commits `626dfebe2` and `1fd2b0c09`). All 15 existing length
+cases pass in default GC, no GC and bounded preallocation: **45 executions**.
+All **247 remaining instruction-tool tests** pass. No BBC gain is attributed.
+
+A real whole-browser **`v -profile - -profile-no-inline`** diagnostic now also
+completes the original-script frozen homepage, rather than only a microprobe.
+The generated C proves that current-V double-underscore entry symbols enable
+profiling in `install_loaded_page`, `draw` and `poll_javascript_tasks`. Its
+standalone diagnostic executable links the canonical native libraries; no app
+bundle or repository tool is copied. The profile has 9,589 function rows and
+passes unchanged Vox pixels, all 91 headlines, 125 image elements and the full
+content audit. A separate JavaScriptCore source hook verifies **72 exact unique
+archived external author scripts**, 79 nonempty-URL evaluations total, with no
+duplicate URL execution. The scalar success-report function is absent.
+
+The profile records 31,085 uncached inline-formatting calls, 15,408 grid-layout
+calls, 299,434 box-model-edge resolutions and 1,173,764 stylesheet-invalidation
+subtree visits inside the selected roots. These are optimization leads, not
+instruction credit. This instrumented C-O1 run includes timer overhead and
+waits, can interleave counters across threads, and selected-root work can
+continue after PNG capture. Instrumented self/inclusive times do not establish
+exclusive CPU costs. The copy probes separately stop at encoded PNG.
+
+All profile, diagnostic and cohort commands, actual guard/driver/native exits,
+identity records, logs, PNGs, fixed-reference comparisons and raw counters are
+retained in the linked ledger and archive. The previous broad batch remains
+487/490 per memory mode, with the same three recorded failures; there is no
+full-pass or cadence reset. BBC remains outside the optimized catalog.
