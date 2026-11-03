@@ -174,6 +174,7 @@ struct InsetDecorationRecording {
     // A deferred group can contain an unsupported native fallback draw. Keep
     // its original rows until final publication, so retry starts pixel-exact.
     std::vector<uint32_t> checkpoint;
+    bool deferred = false;
     RasterRegion checkpoint_region;
     int checkpoint_width = 0, checkpoint_height = 0;
 };
@@ -205,6 +206,10 @@ static void trim_inset_decoration_backdrop(InsetDecorationRecording& group, SkRe
     for (int row = 0; row < h; ++row)
         std::copy_n(group.backdrop.data() + size_t(int(y) + row) * group.width + int(x),
             w, cropped.data() + size_t(row) * w);
+    // The original backdrop is already the rollback copy. Transfer its
+    // allocation when cropping rather than copying the viewport at begin.
+    if (group.deferred && group.checkpoint.empty())
+        group.checkpoint = std::move(group.backdrop);
     group.backdrop = std::move(cropped);
     group.region = {int(left), int(top), int(right), int(bottom)};
     group.width = w;
@@ -298,7 +303,7 @@ extern "C" int ladybird_v_skia_begin_deferred_inset_decorations(CGContextRef des
     if (tracked != s_shared_clips.end()
         && (tracked->second.unsupported || !tracked->second.clips.empty())) return 1;
     auto& group = *s_inset_decoration_recording;
-    group.checkpoint = group.backdrop;
+    group.deferred = true;
     group.checkpoint_region = group.region;
     group.checkpoint_width = group.width;
     group.checkpoint_height = group.height;
@@ -311,13 +316,16 @@ struct DeferredInsetCheckpoint {
     bool published = false;
     ~DeferredInsetCheckpoint()
     {
-        if (published || group.checkpoint.empty()) return;
+        if (published || !group.deferred) return;
+        // Before cropping the unchanged backdrop itself owns the original
+        // rows. Afterwards that same allocation lives in checkpoint.
+        auto const& original = group.checkpoint.empty() ? group.backdrop : group.checkpoint;
         auto rows = read_backdrop(group.destination, group.checkpoint_region,
             group.scale, group.checkpoint_width, group.checkpoint_height);
         if (!rows.pixels) return;
         for (int y = 0; y < group.checkpoint_height; ++y)
             swap_red_blue_pixels(const_cast<uint8_t*>(rows.pixels) + size_t(y) * rows.pitch,
-                reinterpret_cast<uint8_t const*>(group.checkpoint.data()
+                reinterpret_cast<uint8_t const*>(original.data()
                     + size_t(y) * group.checkpoint_width), group.checkpoint_width);
     }
 };
@@ -348,7 +356,7 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
             group->region.left, group->canvas_height - group->region.bottom,
             group->region.width(), group->region.height(), true);
         checkpoint.published = result != 0;
-        if (result && !group->checkpoint.empty() && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
+        if (result && group->deferred && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
             std::fprintf(stderr, "VOX_DEFERRED_DECORATIONS width=%d height=%d\n", group->width, group->height);
         return result;
     };
@@ -450,7 +458,7 @@ extern "C" int ladybird_v_skia_end_inset_decorations(CGContextRef destination)
 extern "C" int ladybird_v_skia_end_deferred_inset_decorations(CGContextRef destination)
 {
     if (!s_inset_decoration_recording || s_inset_decoration_recording->destination != destination) return 0;
-    bool deferred = !s_inset_decoration_recording->checkpoint.empty();
+    bool deferred = s_inset_decoration_recording->deferred;
     int result = ladybird_v_skia_end_inset_decorations(destination);
     return result || !deferred;
 }

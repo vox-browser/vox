@@ -136,9 +136,47 @@ static std::vector<uint8_t> shadow_group(int scale, bool msaa, float scroll,
     return pixels;
 }
 
+static void checkpoint_storage(bool cropped, int scale)
+{
+    constexpr int width = 512, height = 384;
+    int w = width * scale, h = height * scale, pitch = w * 4;
+    std::vector<uint8_t> pixels(size_t(pitch) * h, 0);
+    for (size_t i = 0; i < pixels.size(); i += 4) {
+        pixels[i] = 31; pixels[i + 1] = 73; pixels[i + 2] = 137; pixels[i + 3] = 255;
+    }
+    auto original = pixels;
+    auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context = CGBitmapContextCreate(pixels.data(), w, h, 8, pitch, color,
+        CGBitmapInfo(kCGImageAlphaPremultipliedLast) | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(color); assert(context);
+    CGContextScaleCTM(context, scale, scale);
+    ladybird_v_skia_set_chromium_painting(1);
+    ladybird_v_skia_set_shared_recording(0, width, height);
+    ladybird_v_skia_set_raster_layer(0, 0, 1);
+    assert(ladybird_v_skia_begin_deferred_inset_decorations(context,
+        0, 0, width, height, width, height, 0, 0));
+    auto& group = *s_inset_decoration_recording;
+    assert(group.deferred && group.checkpoint.empty());
+    assert(group.backdrop.size() == size_t(w) * h);
+    auto* original_allocation = group.backdrop.data();
+    if (cropped) {
+        trim_inset_decoration_backdrop(group, SkRect::MakeXYWH(100, 90, 32, 20));
+        assert(group.checkpoint.data() == original_allocation);
+        assert(group.backdrop.size() < size_t(w) * h / 100);
+    }
+    // An unsupported fallback can touch pixels outside the cropped ink. Full
+    // rollback must work both before and after transferring the original rows.
+    s_isolated_input_recordings.at(context)->unsupported = true;
+    std::fill(pixels.begin(), pixels.end(), 0x3b);
+    assert(!ladybird_v_skia_end_deferred_inset_decorations(context));
+    CGContextFlush(context); assert(pixels == original);
+    CGContextRelease(context);
+}
+
 int main()
 {
     unsetenv("VOX_DISABLE_DEFERRED_DECORATIONS");
+    for (bool cropped : {false, true}) for (int scale : {1, 2}) checkpoint_storage(cropped, scale);
     unsigned cases = 0;
     for (int scale : {1, 2}) for (bool msaa : {false, true})
     for (int transform : {0, 1, 2, 3}) for (int alpha : {128, 255})
