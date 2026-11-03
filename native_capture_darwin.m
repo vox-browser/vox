@@ -1020,7 +1020,9 @@ static void native_set_deferred_layer_destination(CGContextRef context, int acti
     static Set set;
     static dispatch_once_t once;
     dispatch_once(&once, ^{ set = (Set)dlsym(RTLD_DEFAULT, "ladybird_v_skia_set_deferred_layer_destination"); });
-    if (set) set(context, active);
+    // Value 2 marks this adapter's pool-owned opacity canvas; older bridges
+    // continue to interpret it as an ordinary active registration.
+    if (set) set(context, active ? 2 : 0);
 #endif
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "native_opacity_group_darwin.h"
+#include "native_sparse_opacity_ink_darwin.h"
 
 // Included after the native raster-layer state. The existing leaf renderer
 // supplies the fallback frame; complete supported pictures replace root SVG
@@ -32,6 +33,7 @@ int s_shared_viewport_width = 0, s_shared_viewport_height = 0;
 bool s_deferred_layer_frame_enabled = false;
 bool s_deferred_layer_frame_failed = false;
 std::unordered_map<CGContextRef, CGRect> s_deferred_layer_destinations;
+std::unordered_map<CGContextRef, bool> s_mapped_opacity_destinations;
 
 extern "C" void ladybird_v_skia_begin_deferred_layer_frame(int enabled)
 {
@@ -39,6 +41,7 @@ extern "C" void ladybird_v_skia_begin_deferred_layer_frame(int enabled)
     s_deferred_layer_frame_failed = false;
     s_speculative_layer_enabled = false;
     s_deferred_layer_destinations.clear();
+    s_mapped_opacity_destinations.clear();
 }
 
 extern "C" int ladybird_v_skia_finish_deferred_layer_frame()
@@ -47,6 +50,7 @@ extern "C" int ladybird_v_skia_finish_deferred_layer_frame()
     s_deferred_layer_frame_enabled = false;
     s_speculative_layer_enabled = false;
     s_deferred_layer_destinations.clear();
+    s_mapped_opacity_destinations.clear();
     return result;
 }
 
@@ -55,8 +59,15 @@ extern "C" int ladybird_v_skia_finish_deferred_layer_frame()
 // from an arbitrary CGContext's bounding box.
 extern "C" void ladybird_v_skia_set_deferred_layer_destination(CGContextRef context, int active)
 {
-    if (!active) { s_deferred_layer_destinations.erase(context); return; }
+    if (!active) {
+        s_deferred_layer_destinations.erase(context);
+        s_mapped_opacity_destinations.erase(context);
+        return;
+    }
     if (!s_deferred_layer_frame_enabled || !context) return;
+    // Value 2 is the native adapter's explicit ownership hint. Ordinary legacy
+    // and speculative registrations (1) never infer a zero-fill reservation.
+    if (active == 2) s_mapped_opacity_destinations[context] = true;
     auto clip = CGContextConvertRectToDeviceSpace(context, CGContextGetClipBoundingBox(context));
     if (CGRectIsEmpty(clip) || CGRectIsNull(clip) || CGRectIsInfinite(clip)) return;
     for (double edge : {CGRectGetMinX(clip), CGRectGetMinY(clip), CGRectGetMaxX(clip), CGRectGetMaxY(clip)})
@@ -172,8 +183,12 @@ SkCanvas* shared_recording_canvas(CGContextRef destination)
             // An empty canvas still uses the layer's fractional local origin.
             // A painted prefix already belongs to the destination's pixel grid.
             if (!group->checks_prefix && (s_shared_layer_backdrop || group->speculative
-                || native_opacity_layer_ink_bounds(prefix.pixels, prefix.pitch, 0, 0,
-                    pixel_width, pixel_height, &left, &top, &right, &bottom))) {
+                || (s_mapped_opacity_destinations.contains(destination)
+                    ? native_opacity_canvas_ink_bounds(
+                        {destination, const_cast<uint8_t*>(prefix.pixels)}, prefix.pitch, 0, 0,
+                        pixel_width, pixel_height, &left, &top, &right, &bottom)
+                    : native_opacity_layer_ink_bounds(prefix.pixels, prefix.pitch, 0, 0,
+                        pixel_width, pixel_height, &left, &top, &right, &bottom)))) {
                 group->backdrop.resize(size_t(pixel_width) * pixel_height);
                 copy_backdrop_pixels(prefix, pixel_width, pixel_height, group->backdrop);
                 group->backdrop_width = pixel_width;
