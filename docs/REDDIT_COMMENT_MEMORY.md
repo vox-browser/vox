@@ -4,10 +4,13 @@ The requested limit is **500,000,000 bytes** for
 `https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/`.
 The measured production bundles **exceed this limit**. The latest valid
 five-minute observation settles at **329,418,840 B** and peaks at **729,827,464 B**
-on executable `c9ff98ac…`. The latest twenty-second production observation
-peaks at **661,572,368 B** and settles at **239,831,104 B** on executable
-`406aaa0e…`, using the cache-recovered fixture described below. Twelve canonical
-visual comparisons pass. The earlier thirteen-case cohort on `590975bd…`
+on executable `c9ff98ac…`. A later 65-second production observation peaks at
+**655,657,696 B** and settles at **245,671,976 B** on executable `0b745ee9…`,
+using the cache-recovered fixture described below. A twenty-second observation
+on `98dfbb7c…` peaks at **639,863,520 B** and settles at **236,554,232 B**;
+twelve canonical visual comparisons pass on that build. A subsequent five-minute
+attempt is rejected because the executable changes during observation.
+The earlier thirteen-case cohort on `590975bd…`
 remains separately recorded.
 The continuations below record the pinned builds and focused checks.
 A later private CPU-rendering experiment observes a 405,834,632 B five-minute
@@ -1101,3 +1104,77 @@ tolerance changes. A fresh direct live request again returns HTTP 403.
 The [follow-up receipt](benchmark-results/reddit-comment-memory-2026-11-03-followup.json)
 records the two fixes, focused checks, corrected experiment attribution, cache
 recovery provenance, new observations and artifact hashes.
+
+## Shared element accessors and production follow-up
+
+Commit `a1cc0600e` shares the getters and setters for fifteen compact element
+properties across a JavaScript realm. Each wrapper retains its own descriptor;
+protected WeakMap records select the actual receiver. Captured, bound WeakMap
+intrinsics avoid creating an argument array for each property read. Legacy
+facade records remain separate from the Element brand. Borrowed accessors use
+their registered receiver, reject forged receivers before value conversion,
+and preserve conversion exceptions and native DOM/control writes.
+
+Separate instrumented page probes retain 2,644 state records and 2,643 wrapper
+objects while distinct own `id` getters change from **2,639 to one**. Those
+probes use different pinned executables and establish the sharing mechanism,
+not an attributed browser-memory percentage. Four new cases and nineteen
+existing content, parent, control, reflected-attribute, fragment, image and SVG
+cases pass in both Boehm and preallocation modes; the latter runs with full
+arena poisoning. Early fixture failures and a legacy-property negative control
+remain in the private evidence. The control reproduces the pre-existing mixed
+text/markup replay failure; the final tests use independent content owners and
+explicit element lookup.
+
+Frozen compiler input for production `98dfbb7c…`, receipt
+`20261103-120605-b5e5859e`, contains the final bound-intrinsic implementation.
+All twelve canonical image-source, SVG mutation, paint-server ID-collision and
+rounded-border comparisons are pixel-exact, with unchanged inputs, references,
+tolerances and runtime identity. Normal author-script replay also passes the
+complete/visible/fully-active document, URL/title, 1708 × 953 viewport,
+49-comment/two-image and native-error audits.
+
+| Valid stock-production observation | Observed simultaneous peak (B) | Final two-second median (B) |
+| --- | ---: | ---: |
+| `98dfbb7c…`, 20 seconds | 639,863,520 | 236,554,232 |
+| `0b745ee9…`, 65 seconds | 655,657,696 | 245,671,976 |
+
+The corresponding auxiliary sums of observed per-task kernel lifetime peaks
+are 662,850,296 B and 673,139,424 B. These are non-simultaneous envelopes for
+observed tasks, not complete process-coverage bounds. Physical-footprint polling
+can miss short spikes and helpers; the aggregate-RSS safety guard measures a
+different metric. Capture and the endpoint audit follow the primary interval.
+Backing scale is not independently sampled. Shared-checkout changes and host
+contention prevent assigning cross-build RAM differences to this feature.
+
+A 300-second attempt on `98dfbb7c…` records 651,200,576 B peak and
+281,512,000 B endpoint but is **rejected**: the canonical executable changes to
+`6d0d5725…` during observation. Browser exit zero does not restore its validity.
+It supplies no new five-minute acceptance result or evidence of bounded idle
+memory. Every attempt remains recorded.
+
+Two alternating instrumented control/candidate pairs with count logging disabled
+show no startup-peak improvement: controls peak at 641,927,904/643,484,480 B,
+and candidates at 642,910,992/651,578,176 B. Their settled medians are roughly
+237.6/237.8 MB and 236.4/236.9 MB. Launch load averages are approximately 51–62
+on eighteen CPUs. Per-call native autorelease pools likewise establish no peak
+gain. A private stock-renderer 8 MiB GPU-cache trial still peaks at 645,466,848 B.
+
+Further private shared-Metal/CPU-upload trials retain 536,398,584 B peak with an
+8 MiB context budget and 529,877,704 B with 64 MiB. Loaded-image observations
+confirm the selected private libraries. An earlier 8 MiB attempt is rejected
+after another executable replacement. This small diagnostic cohort supplies
+neither acceptance nor smaller-cache optimization credit; the native upload
+prototype and cache policy remain unshipped. A separate comparison of actual
+page pictures finds differing CPU/GPU pixels in all 95 observations, including
+repeated draws: 32–175 channels differ per comparison, with maximum channel
+error 29. Only the original GPU output is published. This rules out treating the
+CPU prototype as a pixel-preserving fix for the requested page.
+
+A fresh direct live request returns HTTP 403. **The 500,000,000 B peak cap,
+bounded longer-term memory and live-site validation remain open.** The
+[accessor follow-up receipt](benchmark-results/reddit-comment-memory-2026-11-03-dom-wrappers.json)
+pins the implementation, test exits, production identities, all accepted and
+rejected observations, failed experiments and private artifact hashes. Raw page
+bytes, screenshots and account-bearing logs remain private under
+`Build/reddit-comment-memory-20261103-dom-wrappers/`.
