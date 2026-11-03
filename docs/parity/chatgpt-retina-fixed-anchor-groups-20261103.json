@@ -1,0 +1,438 @@
+{
+  "date": "2026-11-03",
+  "implementation_commit": "ff3fe215f",
+  "scope": "Default frozen 1024x768 CSS-pixel guest homepage at scale 2. Fixed anchor groups ignore inverse device layout projection and still reject author scaling. No new live visual or performance claim.",
+  "before": {
+    "results": [
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 2,
+        "png_size": [
+          2048,
+          1536
+        ],
+        "differing_pixels": 21,
+        "max_channel_error": 4,
+        "bounds": [
+          1144,
+          906,
+          2014,
+          1230
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+  },
+  "after": {
+    "results": [
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 2,
+        "png_size": [
+          2048,
+          1536
+        ],
+        "differing_pixels": 1,
+        "max_channel_error": 1,
+        "bounds": [
+          2013,
+          1229,
+          2014,
+          1230
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+  },
+  "source": {
+    "identity": {
+      "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/source-49/browser": "0d2b80c46cdf3c4b000fd1ddc8fc86a900799556546a3229ed1696ec6aa4e50d"
+    },
+    "build": {
+      "exit": 0,
+      "stable": true,
+      "changed": [],
+      "inputs": {
+        "/Users/alex/code/vox2/main.v": "3e378c3e47089b57ed60bc044628d6ef99792f14ac1b8098a7b3a779c657c4f8",
+        "/Users/alex/code/vox2/main_device_layout.v": "69e949b8a7b54e452cb9a97a6638dd18fc16462bc45a455bbf9cba4a9de81958",
+        "/Users/alex/code/vox2/css/device_layout_style.v": "99b4d8c3c2c20368c9d8f160218f5ce43c56d332d41663067bcc1abbc8500824",
+        "/Users/alex/code/vox2/css/font_face_values.v": "b73958563c204f70811d90c7bc412ca35c4c04d4b5010f1c975b10c33a2a17d0",
+        "/Users/alex/code/vox2/platform/font_plugin.v": "462bbdf09679834f68a358086303e7f3437fd2450fc5801587fa43676bc80b8e",
+        "/Users/alex/code/vox2/layout/chromium_raster_layers.v": "f8ab92ec4d0d911ce10d9e37323f881080fbc239ff69d87282f2799f735d7bd4",
+        "/Users/alex/code/vox2/layout/chromium_fixed_recording_bounds.v": "04987743475b6b005a5488678c77f08eb3e72ac32cb1f127a48c6a4bb0a77aad",
+        "/Users/alex/code/vox2/native_skia_text_darwin.cpp": "2b5465a3248dbb1a7e7b9d97e9f8c57575355a2869d91522adeace8b74a491ee"
+      }
+    },
+    "guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+        "-no-parallel",
+        "-b",
+        "c",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-d",
+        "vox_production",
+        "-d",
+        "vox_ui2",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-cc",
+        "clang",
+        "-nocache",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-skip-running",
+        "-cflags",
+        "-DLADYBIRD_V_HAS_SKIA_TEXT",
+        "-ldflags",
+        "-L/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27 -lLadybirdVSkiaText -Wl,-rpath,/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27 -Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -lc++",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/source-49/browser",
+        "/Users/alex/code/vox2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 6598197248,
+      "elapsed_seconds": 67.09773150000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "loaded_libraries": [
+      "dyld[46997]: <5EBBAC50-E121-3BB1-8E7C-052660A5741A> /Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27/libLadybirdVSkiaText.dylib",
+      "dyld[46997]: <5EBBAC50-E121-3BB1-8E7C-052660A5741A> /Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27/libLadybirdVSkiaText.dylib",
+      "dyld[46997]: <1B54AA0D-55F9-38AA-8C6A-14B3006BC322> /Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+      "dyld[46997]: <A124A2D3-DBB6-39C1-A639-1E8201FE9651> /Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib"
+    ]
+  },
+  "tests": {
+    "control": [
+      {
+        "mode": "default",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "default",
+        "stage": "runtime",
+        "exit": 1
+      }
+    ],
+    "control_restoration": {
+      "restored": true,
+      "fixture_records_paint_tree": true,
+      "earlier_attempts_47_and_49_invalid": "Fixture inspected paint_order before recording the display list."
+    },
+    "default": [
+      {
+        "mode": "default",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "default",
+        "stage": "runtime",
+        "exit": 0
+      }
+    ],
+    "default_stability": {
+      "stable": true,
+      "after": {
+        "layout/chromium_fixed_recording_bounds.v": "04987743475b6b005a5488678c77f08eb3e72ac32cb1f127a48c6a4bb0a77aad",
+        "layout/chromium_fixed_device_space_test.v": "e74da04e37c554f56bc98db448b9e204f9205f0914c15a461b6142a3ff032ccf"
+      }
+    },
+    "none_prealloc": [
+      {
+        "mode": "none",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "none",
+        "stage": "runtime",
+        "exit": 0
+      },
+      {
+        "mode": "prealloc",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "prealloc",
+        "stage": "runtime",
+        "exit": 0
+      }
+    ],
+    "allocator": {
+      "bounded_realloc_symbol": true
+    },
+    "stability": {
+      "stable": true,
+      "after": {
+        "layout/chromium_fixed_recording_bounds.v": "04987743475b6b005a5488678c77f08eb3e72ac32cb1f127a48c6a4bb0a77aad",
+        "layout/chromium_fixed_device_space_test.v": "e74da04e37c554f56bc98db448b9e204f9205f0914c15a461b6142a3ff032ccf"
+      }
+    },
+    "regressions": {
+      "fixed-device-regression-chromium_raster_layers_test-57": {
+        "results": [
+          {
+            "mode": "none",
+            "stage": "compile",
+            "exit": 0
+          },
+          {
+            "mode": "none",
+            "stage": "runtime",
+            "exit": 0
+          }
+        ],
+        "stability": {
+          "stable": true,
+          "after": {
+            "layout/chromium_fixed_recording_bounds.v": "04987743475b6b005a5488678c77f08eb3e72ac32cb1f127a48c6a4bb0a77aad",
+            "layout/chromium_raster_layers_test.v": "c6b359a5a159e7cb796d1e2619cd05283a7981868c38ef7e546476439fe06a34"
+          }
+        }
+      },
+      "fixed-device-regression-chromium_fixed_raster_identity_test-57": {
+        "results": [
+          {
+            "mode": "none",
+            "stage": "compile",
+            "exit": 0
+          },
+          {
+            "mode": "none",
+            "stage": "runtime",
+            "exit": 0
+          }
+        ],
+        "stability": {
+          "stable": true,
+          "after": {
+            "layout/chromium_fixed_recording_bounds.v": "04987743475b6b005a5488678c77f08eb3e72ac32cb1f127a48c6a4bb0a77aad",
+            "layout/chromium_fixed_raster_identity_test.v": "190b3e7cd585fab4a3f7bc9a7fbd38a0c704805c70eaf71eff74d52973e4be34"
+          }
+        }
+      },
+      "fixed-device-regression-chromium_fixed_paint_metadata_test-57": {
+        "results": [
+          {
+            "mode": "none",
+            "stage": "compile",
+            "exit": 0
+          },
+          {
+            "mode": "none",
+            "stage": "runtime",
+            "exit": 0
+          }
+        ],
+        "stability": {
+          "stable": true,
+          "after": {
+            "layout/chromium_fixed_recording_bounds.v": "04987743475b6b005a5488678c77f08eb3e72ac32cb1f127a48c6a4bb0a77aad",
+            "layout/chromium_fixed_paint_metadata_test.v": "866b91f3a671751644af1c3960fecab3cde64e2f78b24d5f70f54bb5edfd0148"
+          }
+        }
+      },
+      "fixed-device-regression-chromium_fixed_recording_bounds_test-57": {
+        "results": [
+          {
+            "mode": "none",
+            "stage": "compile",
+            "exit": 0
+          },
+          {
+            "mode": "none",
+            "stage": "runtime",
+            "exit": 0
+          }
+        ],
+        "stability": {
+          "stable": true,
+          "after": {
+            "layout/chromium_fixed_recording_bounds.v": "04987743475b6b005a5488678c77f08eb3e72ac32cb1f127a48c6a4bb0a77aad",
+            "layout/chromium_fixed_recording_bounds_test.v": "aa63905dc5d12e5a9bc6ab88899a66dfcb40184c3e81b1a53a59b78ef32a965e"
+          }
+        }
+      }
+    },
+    "invalid_earlier_fixtures": "Attempts 47 and 49 inspected paint_order before recording the display list; their failing assertions establish no regression. Corrected fixture in 51/53/54 records the paint tree first."
+  },
+  "raster_diagnostics": {
+    "single_surface_border_difference": 0,
+    "native_tile_lower_corner_values": [
+      241,
+      220,
+      241
+    ],
+    "brave_tile_lower_corner_values": [
+      245,
+      224,
+      245
+    ],
+    "evidence": [
+      "picture-raster-probe-46",
+      "picture-tile-probe-48"
+    ]
+  },
+  "earlier_production": {
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "035e36fc9773e0324921de9a475811124fc6957fcce4f8f5997b8da21af16ea1",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "bcf2f97c87d00eba1fe49266f3987028a314ef5a3bf78661cd7bc7f8c3f9b1e4",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a0516f35c35068d436d88e74efdc0c182e832382b27016f89df83eebff8dd686",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "02a75881a54cc58bcf621044feed88cd2960af8f0d4bcd335b560913e61fc2bb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "1c65a0d926b8e9ec31c66ffc8ddc0c1153b2e6dc149978d3106144ba75ce6531",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "receipt": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "035e36fc9773e0324921de9a475811124fc6957fcce4f8f5997b8da21af16ea1",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-195059-96870399/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "7ec1461795d2fea2abcb25672a3ba1abc57a7f49febd2dd91fda3266d8f84334",
+        "dirty": true,
+        "head": "6605c6f6a0ed8966b613f018ea23494da9fad682",
+        "repository_sha256": "8348c1417f3a42c6c09a6225659b6083a9339c8c550addc202e9ece222c1d3ff"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "6864eefcd5cd805fe9cad0e3581b96bf251901cac07ef2c4f7f7f8a8950a7aed",
+        "dirty": true,
+        "head": "6605c6f6a0ed8966b613f018ea23494da9fad682",
+        "repository_sha256": "8022b04edadc5f0993d66844b5c4d1af8358cc9d4a7e616693595ccd5f13427b"
+      },
+      "request": {
+        "head": "6605c6f6a0ed8966b613f018ea23494da9fad682",
+        "id": "4518bd5ce6f94c278ff8200374848786"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "7ec1461795d2fea2abcb25672a3ba1abc57a7f49febd2dd91fda3266d8f84334",
+        "dirty": true,
+        "head": "6605c6f6a0ed8966b613f018ea23494da9fad682",
+        "repository_sha256": "8348c1417f3a42c6c09a6225659b6083a9339c8c550addc202e9ece222c1d3ff"
+      }
+    },
+    "assessment": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            2048,
+            1536
+          ],
+          "differing_pixels": 21,
+          "max_channel_error": 4,
+          "bounds": [
+            1144,
+            906,
+            2014,
+            1230
+          ],
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+    },
+    "contains_anchor_fix": false
+  },
+  "pinned_evidence": {
+    "Build/chatgpt-responsive-20261103/retina-borders-24/fixed-device-49/inputs.json": "31b65d6a38378613273e938bceaee6380938a52e2c06933b26b2b1615085bbef",
+    "Build/chatgpt-responsive-20261103/retina-borders-24/picture-raster-probe-46/probe.cpp": "b727901f0a79c46107f7518b3d604a125eb03556a0f64919519e8127746317d3",
+    "Build/chatgpt-responsive-20261103/retina-borders-24/picture-tile-probe-48/probe.cpp": "1463a8887b1abd477eb9e0e7014381140bfd23660b350c6eff8a4a9927a0ccec",
+    "docs/parity/raw/chatgpt-retina-fixed-anchor-groups.png": "26ae8d0ad6dda5286702e6b4b92e0d1073887c22bd8f4a8d5d47d01e30c3d5f6"
+  },
+  "remaining": {
+    "coordinate": [
+      2013,
+      1229
+    ],
+    "reference": [
+      243,
+      243,
+      243
+    ],
+    "actual": [
+      244,
+      244,
+      244
+    ],
+    "interpretation": "Cookie-panel rounded edge. Earlier receipts called this a shadow pixel before the owning paint stage was isolated."
+  },
+  "limitations": [
+    "One physical pixel remains different; pixel-perfect Retina acceptance remains open.",
+    "Shared production validation of the anchor fix is pending. The retained production result verifies the preceding 21-pixel stage only.",
+    "Private archives, cookies and SKP files remain under Build. References and tolerances are unchanged."
+  ]
+}

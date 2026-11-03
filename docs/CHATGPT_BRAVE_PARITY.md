@@ -3449,3 +3449,15 @@ containing these changes remain open. Broader paint-metadata experiments in
 The run-36 compilation also records a native-source comment change during
 compilation; it supplies no stable build acceptance. Their raw evidence remains
 under `Build/chatgpt-responsive-20261103/`.
+
+`ff3fe215f` subsequently normalizes fixed-anchor grouping for device layout.
+The unchanged full Retina homepage now differs in **one physical pixel**, with
+maximum channel error 1. The pixel is on the cookie panel's rounded edge at
+(2013, 1229); the prior shadow attribution was provisional. A single-surface
+replay of the recorded button paint is exact, and replaying its former tile
+boundary reproduces the eliminated 20 corner errors. The corrected regression
+fixture fails on the old implementation at density 2 and passes in all three
+allocator modes; four existing fixed/raster suites pass. See the
+[anchor-group receipt](parity/chatgpt-retina-fixed-anchor-groups-20261103.json).
+The latest completed production capture independently verifies the preceding
+21-pixel stage; it is not validation of the later anchor fix.
