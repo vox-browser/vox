@@ -2551,5 +2551,51 @@
     "Build/bbc-disk-recovery-20261103/compressed-completed-artifacts.json",
     "Build/bbc-disk-recovery-20261103/compressed-older-artifacts.json",
     "Build/bbc-disk-recovery-20261103/compressed-older-generated-c.json"
-  ]
+  ],
+  "function_source_proof_reaudit": {
+    "receipt": "Build/bbc-cascade-value-borrow-20261103/historical-function-source-re-audit.json",
+    "correction": "The earlier broad function regex could select a call site rather than a definition. This re-audit anchors unindented typed C definitions. Original proof files remain retained. No counter, workload, reference or performance credit is changed.",
+    "functions": [
+      {
+        "label": "r14-first-version",
+        "receipt": "20261103-061731-b799d512",
+        "standalone": "Build/bbc-pseudo-candidates-20261103/ssr-instruction-probe.c",
+        "function": "css__RuleCache__originating_element_pseudo_candidates",
+        "identical": true,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "907f9116dd208c1f7fb2374b8d22b2b21741d3f0e3e611d84af8f7404e412239",
+        "standalone_sha256": "907f9116dd208c1f7fb2374b8d22b2b21741d3f0e3e611d84af8f7404e412239"
+      },
+      {
+        "label": "r14-adaptive",
+        "receipt": "20261103-065343-cdd55cf8",
+        "standalone": "Build/bbc-pseudo-candidates-adaptive-20261103/ssr-v2-instruction-probe.c",
+        "function": "css__RuleCache__find_pseudo_candidate_and_common_mask",
+        "identical": true,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "e13b08fc8fc6315da3946da6a73355e21b8498a9914dc16fd759d451db80bba8",
+        "standalone_sha256": "e13b08fc8fc6315da3946da6a73355e21b8498a9914dc16fd759d451db80bba8"
+      },
+      {
+        "label": "r14-adaptive",
+        "receipt": "20261103-065343-cdd55cf8",
+        "standalone": "Build/bbc-pseudo-candidates-adaptive-20261103/ssr-v2-instruction-probe.c",
+        "function": "css__StyleScope__find_pseudo_candidate_and_common_mask",
+        "identical": true,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "15aa2bbce3f5cb813897d4bcf045d44b6125434752aef4ff7f59e4690271f863",
+        "standalone_sha256": "15aa2bbce3f5cb813897d4bcf045d44b6125434752aef4ff7f59e4690271f863"
+      },
+      {
+        "label": "r14-adaptive",
+        "receipt": "20261103-065343-cdd55cf8",
+        "standalone": "Build/bbc-pseudo-candidates-adaptive-20261103/ssr-v2-instruction-probe.c",
+        "function": "css__PseudoCandidateBatch__has_candidate",
+        "identical": false,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "26c2f3b579f7ae14e2431a0cdf9de60dbefb750d8202aa363e3e4711b9ea4e8c",
+        "standalone_sha256": "769d93f51bc739c8a6e5197d60ff65dfd8a316b0b0e2655319c5d39eb3ce389f"
+      }
+    ]
+  }
 }

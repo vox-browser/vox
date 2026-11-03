@@ -4047,3 +4047,11 @@ pending, with no cadence reset. The image-source change is retained; the
 counts, every regression and failure, full guard/identity/ownership receipts,
 commands and local evidence. No isolated rendering, live-site or FPS gain is
 claimed.
+
+A later source-proof audit tightens the generated-C extractor to match only
+unindented typed function definitions; the earlier expression could select a
+call site. Rechecking the actual R14 union/adaptive functions and image-source
+helper confirms the same function bodies (allowing only diagnostic string
+symbol renumbering). Original proof files remain retained, with the corrected
+hashes linked from both durable ledgers. No counts, endpoints, references or
+performance credit change.

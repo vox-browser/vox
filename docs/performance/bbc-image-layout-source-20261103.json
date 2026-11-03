@@ -1117,5 +1117,21 @@
     "The cohort executable d5414c4a59f0537b663d2a8530890315d4d4e5777115dd61a58bc325577111c8 contains R14 batching and the broader exact-length prototype in both arms. It isolates only the image-source control, and cannot validate their subsequent removal/narrowing.",
     "Broad verification after the observed saving is pending; the previously retained broad selection ran with these image paths but was not pinned as this feature's later acceptance build. No broad cadence reset.",
     "Frozen-page startup/capture counts establish neither isolated rendering speed nor scrolling FPS. Rendering/scripting limitations and the retained cross-browser pixel mismatch remain unchanged."
-  ]
+  ],
+  "function_source_proof_reaudit": {
+    "receipt": "Build/bbc-cascade-value-borrow-20261103/historical-function-source-re-audit.json",
+    "correction": "The earlier broad function regex could select a call site rather than a definition. This re-audit anchors unindented typed C definitions. Original proof files remain retained. No counter, workload, reference or performance credit is changed.",
+    "functions": [
+      {
+        "label": "image-source",
+        "receipt": "20261103-072109-1e55b60e",
+        "standalone": "Build/bbc-exact-layout-lengths-20261103/ssr-instruction-probe.c",
+        "function": "layout__image_source_for_layout",
+        "identical": false,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "2e552cbf5c55c8c8a2ad403f8ff9fee9095ebc8fb54010dc8853355a57d1ce8c",
+        "standalone_sha256": "826eac6d026dc0e3bbb77bf951fd0e1fc2a053b23ff052c7f612087f49ece30f"
+      }
+    ]
+  }
 }
