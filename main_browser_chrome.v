@@ -25,6 +25,7 @@ struct BrowserChromeState {
 	reload                 bool
 	tab_titles             []string
 	tab_favicons           []int
+	tab_loading            []bool
 	tab_coloring           bool
 	custom_tab_titles      bool
 	tab_colors             []browsertabs.TabColor
@@ -116,6 +117,7 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 		address_editable:       app.address_bar_editable()
 		tab_titles:             titles
 		tab_favicons:           app.cached_browser_tab_favicons()
+		tab_loading:            app.browser_tab_loading_states()
 		tab_coloring:           tab_coloring
 		custom_tab_titles:      settings.enable_custom_tab_titles
 		tab_colors:             if tab_coloring { app.browser_tab_colors() } else { []browsertabs.TabColor{} }
@@ -222,6 +224,7 @@ $if vox_ui2 ? {
 			]
 		}])
 		app.start_browser_memory_chrome()
+		app.sync_browser_tab_loading_animation(chrome)
 		return ui2.embedded_browser_control('address')
 	}
 }
@@ -235,6 +238,7 @@ fn (mut app BrowserApp) update_browser_chrome(width int, height int) {
 		chrome := app.browser_chrome_state(width, height)
 		changed := browser_chrome_requires_update(app.browser_chrome, chrome)
 		app.browser_chrome = chrome
+		app.sync_browser_tab_loading_animation(chrome)
 		if !changed { return }
 		// UI2 retains action IDs and menu keys after the frame scratch expires.
 		persistent := platform.enter_persistent()

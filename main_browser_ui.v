@@ -17,6 +17,9 @@ mut:
 	swipe           browserui.Swipe
 	memory_label    string
 	memory_timer    &platform.Timer = unsafe { nil }
+	tab_loading_timer &platform.Timer = unsafe { nil }
+	tab_loading_frame int
+	tab_loading []bool
 	version         u64
 	popup           ?browserui.Popup
 	link            string

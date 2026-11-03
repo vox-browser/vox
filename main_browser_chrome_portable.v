@@ -15,6 +15,7 @@ $if !vox_ui2 ? {
 			if ui_state.memory_timer == unsafe { nil } { app.start_browser_memory_chrome() }
 			chrome := app.browser_chrome_state(window.width, window.height)
 			app.browser_chrome = chrome
+			app.sync_browser_tab_loading_animation(chrome)
 			mut images := map[string]int{}
 			for index, icon in chrome.bookmark_favicons {
 				if icon < 0 { continue }

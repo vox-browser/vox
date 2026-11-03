@@ -23,6 +23,7 @@ pub mut:
 	custom_title string
 	url      string
 	favicon  string
+	loading  bool
 	color    TabColor
 	ready    bool
 	activate bool
@@ -196,15 +197,21 @@ pub fn (mut session Session) take_reopen_request() bool {
 // A dead tab is removed without affecting its siblings. Each launcher reaps
 // only its own children; closing the original process does not own their lives.
 pub fn (mut session Session) poll(title string, address string, favicon string, ready bool) ! {
+	session.poll_loading(title, address, favicon, ready, false)!
+}
+
+// Loading is independent of readiness to show the native window. A tab can
+// present its first frame while its document and subresources are still loading.
+pub fn (mut session Session) poll_loading(title string, address string, favicon string, ready bool, loading bool) ! {
 	scratch := platform.begin_thread_scratch('tab session poll')
 	defer { scratch.finish() }
-	session.poll_state(title, address, favicon, ready) or {
+	session.poll_state(title, address, favicon, ready, loading) or {
 		scratch.leave()
 		return error(err.msg().clone())
 	}
 }
 
-fn (mut session Session) poll_state(title string, address string, favicon string, ready bool) ! {
+fn (mut session Session) poll_state(title string, address string, favicon string, ready bool, loading bool) ! {
 	for i := session.children.len - 1; i >= 0; i-- {
 		if C.vox_tabs_reap(i32(session.children[i])) != 0 { session.children.delete(i) }
 	}
@@ -221,6 +228,7 @@ fn (mut session Session) poll_state(title string, address string, favicon string
 		tab.title = title
 		tab.url = address
 		tab.favicon = favicon
+		tab.loading = loading
 		if ready && !tab.ready {
 			tab.ready = true
 			if tab.activate { state.selected = tab.id }
@@ -256,7 +264,7 @@ pub fn (mut session Session) open(executable string, arguments []string, backgro
 	if !background {
 		for mut tab in state.tabs { tab.activate = false }
 	}
-	state.tabs << Tab{ id: id, pid: pid, activate: !background }
+	state.tabs << Tab{ id: id, pid: pid, activate: !background, loading: true }
 	state.frame = frame
 	// Retain ownership even if publishing the new tab fails: the terminated
 	// child still needs to be reaped by the next poll.

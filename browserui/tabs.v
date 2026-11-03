@@ -2,12 +2,15 @@ module browserui
 
 import ui2
 import browsertabs
+import math
 
 pub struct Tab {
 pub:
 	index    int
 	title    string
 	icon     string
+	loading  bool
+	loading_frame int
 	x        f64
 	width    f64 // distance between tab origins; shoulders overlap by 10px
 	selected bool
@@ -15,6 +18,27 @@ pub:
 	color    browsertabs.TabColor
 	color_action string
 	rename_action string
+}
+
+// The same rotating arc occupies the favicon slot on every UI2 backend.
+pub fn tab_loading_icon(index int, frame int) ui2.Element {
+	mut points := []ui2.VectorPoint{cap: 33}
+	start := f64(frame % 60) * 2 * math.pi / 60 - math.pi / 2
+	for step in 0 .. 33 {
+		angle := start + f64(step) * 1.5 * math.pi / 32
+		points << ui2.VectorPoint{ x: 8 + 6 * math.cos(angle), y: 8 + 6 * math.sin(angle) }
+	}
+	return ui2.Element{
+		...ui2.view('tab-icon-${index}', ui2.rect(12, 4, 16, 16), ui2.BoxStyle{ transparent: true }, [])
+		vector: ui2.VectorPath{
+			points: points
+			closed: false
+			fill_enabled: false
+			stroke: 0x1a73e8
+			stroke_width: 2
+		}
+		accessibility_label: 'Loading'
+	}
 }
 
 fn tab_context_menu(tab Tab) []ui2.MenuEntry {
@@ -129,7 +153,9 @@ pub fn tab_strip(width f64, tabs []Tab, new_x f64) ui2.Element {
 	for tab in tabs {
 		paint_width := tab.width + 10
 		mut content := []ui2.Element{}
-		content << if tab.icon != '' {
+		content << if tab.loading {
+			tab_loading_icon(tab.index, tab.loading_frame)
+		} else if tab.icon != '' {
 			ui2.image('tab-icon-${tab.index}', tab.icon, ui2.rect(12, 4, 16, 16))
 		} else {
 			tab_fallback_icon(tab)

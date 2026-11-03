@@ -193,7 +193,8 @@ fn (mut app BrowserApp) poll_process_tabs() {
 	}
 	mut session := app.tabs.session
 	previous := session.revision
-	session.poll(app.browser_tab_title(), app.address, app.tabs.process_icon, app.initial_window_frame_presented) or {
+	session.poll_loading(app.browser_tab_title(), app.address, app.tabs.process_icon,
+		app.initial_window_frame_presented, app.browser_document_loading()) or {
 		eprintln('Vox: tab session failed: ${err}')
 		sapp.quit()
 		return

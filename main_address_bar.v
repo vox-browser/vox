@@ -29,9 +29,13 @@ fn (mut app BrowserApp) mount_address_bar() {
 }
 
 fn (mut app BrowserApp) unmount_address_bar() {
+	app.stop_browser_tab_loading_animation()
 	app.stop_browser_memory_chrome()
 	if app.tabs != unsafe { nil } {
-		for mut tab in app.tabs.pages { tab.stop_browser_memory_chrome() }
+		for mut tab in app.tabs.pages {
+			tab.stop_browser_tab_loading_animation()
+			tab.stop_browser_memory_chrome()
+		}
 	}
 	$if vox_ui2 ? {
 		if !app.native_address_bar { return }
@@ -43,6 +47,8 @@ fn (mut app BrowserApp) unmount_address_bar() {
 		owner.app = unsafe { nil }
 		app.native_address_bar = false
 	}
+	// Unmounting can deliver a final UI event that refreshes the chrome.
+	app.stop_browser_tab_loading_animation()
 }
 
 fn (mut app BrowserApp) resize_address_bar(width int) {
