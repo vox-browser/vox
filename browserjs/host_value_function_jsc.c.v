@@ -184,6 +184,10 @@ fn (runtime &Runtime) actual_javascript_exception(value voidptr) IError {
 }
 
 fn (runtime &Runtime) call_engine_function(function voidptr, arguments []voidptr) !voidptr {
+	// JSC drains Promise reactions before this API entry returns. Native task
+	// completions must keep their owning HTML realm active through that drain.
+	runtime.prepare_html_script()
+	defer { runtime.clean_up_html_script() }
 	mut exception := unsafe { nil }
 	value := C.vox_jsc_JSObjectCallAsFunction(runtime.context, function, unsafe { nil }, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
