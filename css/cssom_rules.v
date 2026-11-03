@@ -2222,7 +2222,7 @@ pub fn (sheet &CSSStyleSheet) registered_properties_from_css_property_rules() ma
 
 pub fn (mut sheet CSSStyleSheet) add_owning_document_or_shadow_root(document_or_shadow_root &dom.Node) {
 	for existing in sheet.owning_documents_or_shadow_roots {
-		if existing == document_or_shadow_root {
+		if voidptr(existing) == voidptr(document_or_shadow_root) {
 			return
 		}
 	}
@@ -2245,7 +2245,7 @@ pub fn (mut sheet CSSStyleSheet) remove_owning_document_or_shadow_root(document_
 	document := document_or_shadow_root.document()
 	mut kept := []&dom.Node{}
 	for existing in sheet.owning_documents_or_shadow_roots {
-		if existing != document_or_shadow_root {
+		if voidptr(existing) != voidptr(document_or_shadow_root) {
 			kept << existing
 		}
 	}

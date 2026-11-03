@@ -59,6 +59,11 @@ pub fn (list &AdoptedStyleSheetsList) length() int {
 	return list.sheets.len
 }
 
+pub fn (list &AdoptedStyleSheetsList) item(index int) ?&CSSStyleSheet {
+	if index < 0 || index >= list.sheets.len { return none }
+	return list.sheets[index]
+}
+
 pub fn (list &AdoptedStyleSheetsList) visit_edges(mut visitor dom.CellVisitor) {
 	visitor.visit(list.document_or_shadow_root)
 	for sheet in list.sheets {
@@ -101,6 +106,7 @@ pub fn (mut list AdoptedStyleSheetsList) set(index int, sheet &CSSStyleSheet) ! 
 	if index < 0 || index > list.sheets.len {
 		return error('RangeError: adopted stylesheet index is out of bounds')
 	}
+	if index < list.sheets.len { list.detach_index(index) }
 	list.validate_and_adopt(sheet)!
 	if index == list.sheets.len {
 		list.sheets << sheet
@@ -113,9 +119,19 @@ pub fn (mut list AdoptedStyleSheetsList) delete(index int) {
 	if index < 0 || index >= list.sheets.len {
 		return
 	}
-	mut sheet := unsafe { &CSSStyleSheet(list.sheets[index]) }
-	sheet.remove_owning_document_or_shadow_root(list.document_or_shadow_root)
+	list.detach_index(index)
 	list.sheets.delete(index)
+}
+
+// An owner is registered once even when a sheet occurs several times. Keep it
+// until its last occurrence is removed, including indexed replacement.
+fn (list &AdoptedStyleSheetsList) detach_index(index int) {
+	mut sheet := unsafe { &CSSStyleSheet(list.sheets[index]) }
+	mut another := false
+	for position, existing in list.sheets {
+		if position != index && voidptr(existing) == voidptr(sheet) { another = true; break }
+	}
+	if !another { sheet.remove_owning_document_or_shadow_root(list.document_or_shadow_root) }
 	list.invalidate_style()
 }
 

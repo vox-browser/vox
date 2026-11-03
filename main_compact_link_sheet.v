@@ -15,6 +15,7 @@ struct CompactSheetRequest {
 	disabled bool
 	media    string
 	base_url ?string
+	root_key string
 }
 
 fn (mut binding CompactElementQueryBinding) sheet_key(sheet &css.CSSStyleSheet) string {
@@ -72,6 +73,9 @@ fn (mut binding CompactElementQueryBinding) css_sheet_query(source string) !stri
 	mut allocations := platform.RetainedArenaScope{}
 	if storage != unsafe { nil } { allocations = storage.enter_nested() }
 	defer { allocations.finish() }
+	if request.op.starts_with('adopted') {
+		return binding.adopted_style_sheets_query(request)
+	}
 	mut result := json2.Any(json2.Null{})
 	if request.op == 'construct' {
 		sheet := css.css_style_sheet_construct(css.CSSStyleSheetInit{
