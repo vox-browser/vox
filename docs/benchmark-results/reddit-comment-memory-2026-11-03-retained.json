@@ -1,0 +1,2799 @@
+{
+  "date": "2026-11-03",
+  "url": "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/",
+  "target_bytes": 500000000,
+  "production_peak_target_met": false,
+  "renderer_policy_changed": false,
+  "raw": "Build/reddit-comment-memory-20261103-retained",
+  "feature_commit": "011993bfee0ee6b87cb16b5f483df1461c7e663c",
+  "files_at_commit": {
+    "layout/document_tree_builder.v": "8fe0f5d5b107c34291397ac84e9d5eef3c87f2d54440195f29a5458682f933b4",
+    "layout/native_equal_text.v": "250978f31ba7aafd04b299342327f018dde5e11fdb0c0a8973c1d970818cfaab",
+    "layout/native_equal_text_cache_storage_test.v": "68f2db316c2767b8a0570a7d381ec923b5073d1a9d029bcd8e06b32f9f8cdf9c"
+  },
+  "focused": {
+    "component": "Native equal-text validation index refill, 256 comment paragraphs, 16 repeated refills",
+    "control_retained_bytes": 6295545,
+    "candidate_retained_bytes": 0,
+    "new_cases": 3,
+    "existing_equal_text_cases": 8,
+    "modes": [
+      "prealloc",
+      "poisoned prealloc"
+    ],
+    "qualification": "Component allocation result only; current native result owns the reused private index, while explicitly retained paint/geometry snapshots keep their original lifetime."
+  },
+  "scope": {
+    "metric": "Sampled simultaneous fresh-browser and observed-descendant physical footprint; RSS is a separate 3 GiB safety guard metric.",
+    "sampling_seconds": 0.05,
+    "endpoint": "Launch through observation_seconds, before the endpoint content audit and PNG; settled is final two-second median.",
+    "workload": "Sealed exact cached thread at its original HTTPS URL, normal author scripts, fresh empty profile/cache, 1708x953 document at backing scale 2.",
+    "limitations": [
+      "Sampled lower bound: short spikes, short-lived/unobserved descendants and external services can be missed.",
+      "OS filesystem/font/shader caches retained; other sessions and focused compilers active, host timestamps/load retained.",
+      "The native visual guard for this task follows the long observation and verifies the same runtime identity; other host sessions remain active.",
+      "Different production executables and observation lengths prevent matched whole-browser percentage attribution.",
+      "HTTP 403 prevents verified live-site behavior.",
+      "No claim of a permanent idle/browsing bound, scrolling fps or success at the 500 MB peak target."
+    ]
+  },
+  "observations": [
+    {
+      "pid": 46807,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1708",
+        "--window-height",
+        "1065",
+        "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/"
+      ],
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "73c98de015d89a592565d1d83a89e15e7e94cb8d0c99af912b1fa211f4ecdcf9",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "273862e18bd70b5c70d9a4c95073d2ab43db8b5a2b4acb5b5b604601aa4ccfd8",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c56a4b2f3dc1c2cbc2415fd6925c65c4dbe3d4c84a4ba7e455752ebc2a029f09",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "3481c98e843c7e2eb5d13467ad121be8f4fe34ca330e8bd7d1e8b52b7b3e7560",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/probe_stock.py": "2f67ea02438cee8f4309cdc9341fd66af93b250257db2a6b0a149e03f4f0f255",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-rendering/probe_verified_production.py": "6bddca0149136890ee8c06f06ebf90bf61b7d170c75030b1a2afa85d2be43de8",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/probe.py": "08f821f3f7c4da387ff5bd387a629579eea2be06edd40a79f7273daf77105558",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+        "/Users/alex/code/vox2/tools/page_archive.py": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c",
+        "/Users/alex/code/vox2/tools/wikipedia_browser_memory.py": "7f38e8d66feaf79793e9ceb8d89e22efb6d9a9fc8a75ee891d8d7199f2fccb53",
+        "/Users/alex/code/vox2/tools/process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c",
+        "/Users/alex/code/vox2/tools/pikabu_browser_memory.py": "f69915de181eecd665a26256e7b1f17232121782469695755c8f74fafd3e3812",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "56fd66566d79c12fe7f7eccc4ba36d6f45d8b875699608ae2a8ef4a904f0411a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c"
+      },
+      "identity_changed": false,
+      "fixture_changed": false,
+      "host": {
+        "cpus": 18,
+        "load": [
+          7.51708984375,
+          6.962890625,
+          10.02001953125
+        ],
+        "timestamp": 1793681210.424872
+      },
+      "observed_peak_bytes": 735431488,
+      "peak": {
+        "seconds": 1.4582318749999998,
+        "physical_footprint_bytes": 735431488,
+        "processes": [
+          {
+            "pid": 46816,
+            "start_ticks": 4112499158081,
+            "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+            "physical_footprint_bytes": 30278376,
+            "resident_size_bytes": 55984128,
+            "task_lifetime_peak_bytes": 32473832
+          },
+          {
+            "pid": 46807,
+            "start_ticks": 4112497468945,
+            "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "physical_footprint_bytes": 705153112,
+            "resident_size_bytes": 513966080,
+            "task_lifetime_peak_bytes": 712132624
+          }
+        ],
+        "vanished_during_sample": [],
+        "reused_pids_excluded": []
+      },
+      "settled_bytes": 290080904,
+      "browser_exit": 0,
+      "completed_observation": true,
+      "seconds": 65.577950334,
+      "observation_seconds": 65,
+      "sampled_through_audit_peak_bytes": 735431488,
+      "max_sample_gap_seconds": 0.06035637500000002,
+      "diagnostic": false,
+      "author_script_audit_passed": true,
+      "valid_frozen_observation": true,
+      "guard": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-retained/probe_stock.py",
+          "stock-initial"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 669253632,
+        "elapsed_seconds": 65.934219541,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "document": {
+        "url": "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/",
+        "title": "UA Pov: Ukraine hits 10% of Russia\u2019s oil refining capacity in just 72 hours - UNITED24 Media : UkraineRussiaReport",
+        "ready": "complete",
+        "visibility": "visible",
+        "fully_active": true,
+        "viewport_width": 1708,
+        "viewport_height": 953,
+        "javascript_diagnostics": [
+          "Error fetching badge indicator data"
+        ],
+        "native_reported_error_count": 0,
+        "selector_counts": [
+          1,
+          49,
+          2
+        ]
+      },
+      "post_startup_peak": {
+        "seconds": 20.534590292,
+        "physical_footprint_bytes": 674154632,
+        "processes": [
+          {
+            "pid": 46807,
+            "start_ticks": 4112497468945,
+            "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "physical_footprint_bytes": 674154632,
+            "resident_size_bytes": 535052288,
+            "task_lifetime_peak_bytes": 712132624
+          }
+        ],
+        "vanished_during_sample": [
+          46816
+        ],
+        "reused_pids_excluded": []
+      },
+      "artifacts": [
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-initial/result.json",
+          "sha256": "ba1fbbb7d0cb2ef36f2710ae21b8c9199c1f142f4c80d5c53f032f81f771c15c"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-initial/command.json",
+          "sha256": "4c6ed7a78d66738fe153f647322f9b3553d8bba31d22035ad912f221d7c2406b"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-initial/samples.json.gz",
+          "sha256": "0963eccc39bf8cd12f03099059516739d198510c22dd4e144c291a75127cbb74"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-initial/document.json",
+          "sha256": "352bcf0f01f105e74eb2c3768aa8b47e868f6be28cb4f926a150fd38fbb8c197"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-initial/browser.log",
+          "sha256": "bce13b46bcb71ce04e3aa92b43ca7baa51bef92e282f4b478fd3f76f9340f743"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-initial/window.png",
+          "sha256": "1b8466554aba72c51bf6ad84c3dcdd3ff2c6ec659bdc9e0583c83757850c85a9"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-initial/author-script-audit.json",
+          "sha256": "1751f2b4ef89a61fbbd307e02405bae282f920bda65b704b72d276a3e091bd18"
+        }
+      ]
+    },
+    {
+      "pid": 52103,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1708",
+        "--window-height",
+        "1065",
+        "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/"
+      ],
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "73c98de015d89a592565d1d83a89e15e7e94cb8d0c99af912b1fa211f4ecdcf9",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "273862e18bd70b5c70d9a4c95073d2ab43db8b5a2b4acb5b5b604601aa4ccfd8",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c56a4b2f3dc1c2cbc2415fd6925c65c4dbe3d4c84a4ba7e455752ebc2a029f09",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "3481c98e843c7e2eb5d13467ad121be8f4fe34ca330e8bd7d1e8b52b7b3e7560",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/probe_arena2.py": "c3bf9b68a378ecce2e900efbb4a6c0868255b99c2f84a44b541acd93c2f4808a",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/libArenaAccounting2.dylib": "6573b68cfda0929e8218f7e25cf6edd4046a35bf85a47d6ff613e23d11e69b0f",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/arena_accounting2.mm": "b0be773fa8d5d0e8af65255b03a8283e230a92053ce81c0cf8e01a1719ebb7dc",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-rendering/probe_verified_production.py": "6bddca0149136890ee8c06f06ebf90bf61b7d170c75030b1a2afa85d2be43de8",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/probe.py": "08f821f3f7c4da387ff5bd387a629579eea2be06edd40a79f7273daf77105558",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+        "/Users/alex/code/vox2/tools/page_archive.py": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c",
+        "/Users/alex/code/vox2/tools/wikipedia_browser_memory.py": "7f38e8d66feaf79793e9ceb8d89e22efb6d9a9fc8a75ee891d8d7199f2fccb53",
+        "/Users/alex/code/vox2/tools/process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c",
+        "/Users/alex/code/vox2/tools/pikabu_browser_memory.py": "f69915de181eecd665a26256e7b1f17232121782469695755c8f74fafd3e3812",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "56fd66566d79c12fe7f7eccc4ba36d6f45d8b875699608ae2a8ef4a904f0411a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c"
+      },
+      "identity_changed": false,
+      "fixture_changed": false,
+      "host": {
+        "cpus": 18,
+        "load": [
+          5.52978515625,
+          6.4814453125,
+          9.54345703125
+        ],
+        "timestamp": 1793681295.9939961
+      },
+      "observed_peak_bytes": 730860376,
+      "peak": {
+        "seconds": 1.9166190410000001,
+        "physical_footprint_bytes": 730860376,
+        "processes": [
+          {
+            "pid": 52104,
+            "start_ticks": 4114552629495,
+            "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+            "physical_footprint_bytes": 30474984,
+            "resident_size_bytes": 56442880,
+            "task_lifetime_peak_bytes": 32948968
+          },
+          {
+            "pid": 52103,
+            "start_ticks": 4114551129228,
+            "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "physical_footprint_bytes": 700385392,
+            "resident_size_bytes": 525893632,
+            "task_lifetime_peak_bytes": 712919104
+          }
+        ],
+        "vanished_during_sample": [],
+        "reused_pids_excluded": []
+      },
+      "settled_bytes": 290203736.0,
+      "browser_exit": 0,
+      "completed_observation": true,
+      "seconds": 80.56244087500001,
+      "observation_seconds": 80,
+      "sampled_through_audit_peak_bytes": 730860376,
+      "max_sample_gap_seconds": 0.06188391700000001,
+      "diagnostic": true,
+      "author_script_audit_passed": true,
+      "valid_frozen_observation": true,
+      "guard": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-input/probe_arena2.py",
+          "../reddit-comment-memory-20261103-retained/arena-diagnostic"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 663257088,
+        "elapsed_seconds": 80.85571641599999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "document": {
+        "url": "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/",
+        "title": "UA Pov: Ukraine hits 10% of Russia\u2019s oil refining capacity in just 72 hours - UNITED24 Media : UkraineRussiaReport",
+        "ready": "complete",
+        "visibility": "visible",
+        "fully_active": true,
+        "viewport_width": 1708,
+        "viewport_height": 953,
+        "javascript_diagnostics": [
+          "Error fetching badge indicator data"
+        ],
+        "native_reported_error_count": 0,
+        "selector_counts": [
+          1,
+          49,
+          2
+        ]
+      },
+      "post_startup_peak": {
+        "seconds": 20.396075375,
+        "physical_footprint_bytes": 678938712,
+        "processes": [
+          {
+            "pid": 52103,
+            "start_ticks": 4114551129228,
+            "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "physical_footprint_bytes": 678938712,
+            "resident_size_bytes": 524926976,
+            "task_lifetime_peak_bytes": 712919104
+          }
+        ],
+        "vanished_during_sample": [
+          52104
+        ],
+        "reused_pids_excluded": []
+      },
+      "artifacts": [
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/arena-diagnostic/result.json",
+          "sha256": "9684156a99b005334c4eb5379fa30b6debd92702f1711acf409bbfa31f20594a"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/arena-diagnostic/command.json",
+          "sha256": "fe0162706123cadde39ec24d6982488186f136007e6525d92d11f9b17b562b22"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/arena-diagnostic/samples.json.gz",
+          "sha256": "be05056b79de5e1a1131339e38813eb26bfbf925bb5b838c19c0ec6c93b17904"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/arena-diagnostic/document.json",
+          "sha256": "8f2fd0d22dd415c0174609045f6847331c14cd389f5807a8c2130dcee276d23b"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/arena-diagnostic/browser.log",
+          "sha256": "19e96c856bc439c2c8e614b66815cde05ef7e6741f1bbc0174dc699b557eb541"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/arena-diagnostic/window.png",
+          "sha256": "bbd12dfb8440a1f17913f412cc12b08c1a0f9c26b913e2739fe22001e52b42b4"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/arena-diagnostic/author-script-audit.json",
+          "sha256": "1751f2b4ef89a61fbbd307e02405bae282f920bda65b704b72d276a3e091bd18"
+        }
+      ]
+    },
+    {
+      "pid": 94332,
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1708",
+        "--window-height",
+        "1065",
+        "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/"
+      ],
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "2cd7a62071b209a7e5028a2b290b7a85bff82f9afc107e4f9cd68aeff513292a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "6a0805b0f98d62acf30b44e898505fb9847f88365c5efa8349e0349433c34694",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c56a4b2f3dc1c2cbc2415fd6925c65c4dbe3d4c84a4ba7e455752ebc2a029f09",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "3481c98e843c7e2eb5d13467ad121be8f4fe34ca330e8bd7d1e8b52b7b3e7560",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/probe_stock.py": "2f67ea02438cee8f4309cdc9341fd66af93b250257db2a6b0a149e03f4f0f255",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-rendering/probe_verified_production.py": "6bddca0149136890ee8c06f06ebf90bf61b7d170c75030b1a2afa85d2be43de8",
+        "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/probe.py": "08f821f3f7c4da387ff5bd387a629579eea2be06edd40a79f7273daf77105558",
+        "/Users/alex/code/vox2/tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+        "/Users/alex/code/vox2/tools/page_archive.py": "6adc2f3021f7468d88bace19af1b14302db353ff1aa8d879bfeaba4baa06a13c",
+        "/Users/alex/code/vox2/tools/wikipedia_browser_memory.py": "7f38e8d66feaf79793e9ceb8d89e22efb6d9a9fc8a75ee891d8d7199f2fccb53",
+        "/Users/alex/code/vox2/tools/process_instruction_counts.py": "bd127f0c07d179d372f5929a726f568e3061fa4afa6c3213d2f26b4e11aa770c",
+        "/Users/alex/code/vox2/tools/pikabu_browser_memory.py": "f69915de181eecd665a26256e7b1f17232121782469695755c8f74fafd3e3812",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c56b6d3a1492d3aff87454f947627bbad2d9099166aece8eec922c62e456131c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c"
+      },
+      "identity_changed": false,
+      "fixture_changed": false,
+      "host": {
+        "cpus": 18,
+        "load": [
+          49.6396484375,
+          24.548828125,
+          14.44580078125
+        ],
+        "timestamp": 1793682305.589525
+      },
+      "observed_peak_bytes": 728435544,
+      "peak": {
+        "seconds": 2.3649647500000004,
+        "physical_footprint_bytes": 728435544,
+        "processes": [
+          {
+            "pid": 94338,
+            "start_ticks": 4138783793700,
+            "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker",
+            "physical_footprint_bytes": 29852440,
+            "resident_size_bytes": 55689216,
+            "task_lifetime_peak_bytes": 32326424
+          },
+          {
+            "pid": 94332,
+            "start_ticks": 4138781332431,
+            "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "physical_footprint_bytes": 698583104,
+            "resident_size_bytes": 512376832,
+            "task_lifetime_peak_bytes": 721799232
+          }
+        ],
+        "vanished_during_sample": [],
+        "reused_pids_excluded": []
+      },
+      "settled_bytes": 307120240,
+      "browser_exit": 0,
+      "completed_observation": true,
+      "seconds": 300.67485529199996,
+      "observation_seconds": 300,
+      "sampled_through_audit_peak_bytes": 728435544,
+      "max_sample_gap_seconds": 0.06627649999999718,
+      "diagnostic": false,
+      "author_script_audit_passed": true,
+      "valid_frozen_observation": true,
+      "guard": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-retained/probe_stock.py",
+          "stock-cache-long"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 670859264,
+        "elapsed_seconds": 301.314511625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "document": {
+        "url": "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/",
+        "title": "UA Pov: Ukraine hits 10% of Russia\u2019s oil refining capacity in just 72 hours - UNITED24 Media : UkraineRussiaReport",
+        "ready": "complete",
+        "visibility": "visible",
+        "fully_active": true,
+        "viewport_width": 1708,
+        "viewport_height": 953,
+        "javascript_diagnostics": [
+          "Error fetching badge indicator data"
+        ],
+        "native_reported_error_count": 0,
+        "selector_counts": [
+          1,
+          49,
+          2
+        ]
+      },
+      "post_startup_peak": {
+        "seconds": 280.649568042,
+        "physical_footprint_bytes": 707135600,
+        "processes": [
+          {
+            "pid": 94332,
+            "start_ticks": 4138781332431,
+            "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "physical_footprint_bytes": 707135600,
+            "resident_size_bytes": 559611904,
+            "task_lifetime_peak_bytes": 721799232
+          }
+        ],
+        "vanished_during_sample": [
+          94338
+        ],
+        "reused_pids_excluded": []
+      },
+      "artifacts": [
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-cache-long/result.json",
+          "sha256": "14f704f3d753e5e348b51cdd5d243a23e9856536738a950e3de244a55cac3ea3"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-cache-long/command.json",
+          "sha256": "344ff1bf0b9708ce5e750319d031477c7d3f90b5cc68ca4d08845f37d5c67a9a"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-cache-long/samples.json.gz",
+          "sha256": "c737a29611baccf16a338e63c1baeac2fa5802b9ebf38e2a10dadf3a1907005c"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-cache-long/document.json",
+          "sha256": "5d2bece1eb35dd7dcd18128c52e3c586e7edc1131725258b1cf1850deaf5b17c"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-cache-long/browser.log",
+          "sha256": "2c9fb75a6a5f144a3baf04235fc71407937ad18421c8d1c4ede960af4c68623f"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-cache-long/window.png",
+          "sha256": "29553a6066e4860d03322c00cf971b2fc5f047f66da68d68a354ce39f119e7d2"
+        },
+        {
+          "path": "Build/reddit-comment-memory-20261103-retained/stock-cache-long/author-script-audit.json",
+          "sha256": "1751f2b4ef89a61fbbd307e02405bae282f920bda65b704b72d276a3e091bd18"
+        }
+      ]
+    }
+  ],
+  "production_features": {
+    "result": {
+      "receipt": "Build/production-build/receipts/20261103-075630-018eebea/result.json",
+      "receipt_sha256": "32db880a27f14b80663a3cca5191ac59bb41e70fac7391df26c9d9a2a6c7da08",
+      "result": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "2cd7a62071b209a7e5028a2b290b7a85bff82f9afc107e4f9cd68aeff513292a",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-075630-018eebea/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "f5534f3ba610ed3c2d2e1a08cee55d964287293bcb468be1b68611264d86a4ef",
+          "dirty": true,
+          "head": "95e27c99df1ed0766c063c4dee16b8c4f7ca39f8",
+          "repository_sha256": "68c9d70843316c3ba4d0a476d33ff1dd909ee8b186a679d41a14124605d1c5a4"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "f5534f3ba610ed3c2d2e1a08cee55d964287293bcb468be1b68611264d86a4ef",
+          "dirty": true,
+          "head": "1d11642dd83a0e2a0a31b0b06a3ce0b27ae8ef90",
+          "repository_sha256": "abfc78be97e0860b20c360b455f443518ad147576be46fd8cb0d6fb5e1331bbf"
+        },
+        "request": {
+          "head": "95e27c99df1ed0766c063c4dee16b8c4f7ca39f8",
+          "id": "06ac3e833b9a4af1940d63a3a8cfedfa"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "f5534f3ba610ed3c2d2e1a08cee55d964287293bcb468be1b68611264d86a4ef",
+          "dirty": true,
+          "head": "011993bfee0ee6b87cb16b5f483df1461c7e663c",
+          "repository_sha256": "68c9d70843316c3ba4d0a476d33ff1dd909ee8b186a679d41a14124605d1c5a4"
+        }
+      },
+      "frozen_compilation": "Build/production-build/receipts/20261103-075630-018eebea/frozen-compile.json",
+      "frozen_compilation_sha256": "42fada81d0c3e87b3e06cb00e6f662c6fd5e773862a00e7305cde3faa427499f",
+      "preprocessed_path": "Build/production-build/receipts/20261103-075630-018eebea/frozen-compiler-inputs/0-Vox.c.i",
+      "preprocessed_sha256": "c2eeacdcea4945e8d3cbf2a941541cabc334fcbdbae435975b6d2cd5c5a4adef",
+      "features": {
+        "cache_move": true,
+        "cache_refill": true,
+        "bootstrap_transport": true
+      }
+    },
+    "artifact": {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-production-features.json",
+      "sha256": "350d842fb5564ff87926eb2f721bb73cc2400469ba1d8c1226e16bf46d6f847d"
+    }
+  },
+  "gpu_diagnostics": {
+    "queue_cap": {
+      "trials": {
+        "inputs": {
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-peak/depth-control": "ec75bfd64b5c3d1c972b9f01a395d0c8597d9fa73f1cfc5070f11bd595ec312e",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/libQueueCap.dylib": "895c391724969a1788f1cdcc3debec09e1612bd9b48bba9887d71e08e99a2edf",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/metal_queue_cap.mm": "ffb4342e70edc1c443ed69d2b0d5b2ab1a92b50a8b3aa4ffc4810b6ecb47efde",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/queue_cap_probe.py": "9fba21e86f1a65ce2232a080b472728b45cd130f468fa20d43efc536ee08921c"
+        },
+        "trials": [
+          {
+            "cap": 0,
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--limit-gib",
+              "3",
+              "--timeout",
+              "30",
+              "--lock",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/queue-cap-0.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/queue-cap-0.json",
+              "--",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-peak/depth-control"
+            ],
+            "exit": 0
+          },
+          {
+            "cap": 4,
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--limit-gib",
+              "3",
+              "--timeout",
+              "30",
+              "--lock",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/queue-cap-4.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/queue-cap-4.json",
+              "--",
+              "python3",
+              "-c",
+              "import os,subprocess,sys;sys.exit(subprocess.run(sys.argv[1:],env=dict(os.environ,DYLD_INSERT_LIBRARIES='/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/libQueueCap.dylib',VOX_QUEUE_CAP_PROBE='4')).returncode)",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-peak/depth-control"
+            ],
+            "exit": 0
+          },
+          {
+            "cap": 8,
+            "command": [
+              "python3",
+              "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+              "--limit-gib",
+              "3",
+              "--timeout",
+              "30",
+              "--lock",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/queue-cap-8.lock",
+              "--report",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/queue-cap-8.json",
+              "--",
+              "python3",
+              "-c",
+              "import os,subprocess,sys;sys.exit(subprocess.run(sys.argv[1:],env=dict(os.environ,DYLD_INSERT_LIBRARIES='/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/libQueueCap.dylib',VOX_QUEUE_CAP_PROBE='8')).returncode)",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-peak/depth-control"
+            ],
+            "exit": 0
+          }
+        ]
+      },
+      "qualification": "Actual overridden queue methods are logged. Four/eight pending-buffer limits retain the same isolated region hash but submission footprint stays around 319 MB; no GPU policy change ships."
+    },
+    "ganesh": {
+      "inputs": {
+        "Build/reddit-comment-memory-20261103-retained/ganesh_phases.mm": "052e9cef02528f3e09ed53fe335add1ee3869a817644367f42284050602581e4",
+        "Build/reddit-comment-memory-20261103-retained/ganesh-phases": "cae8145eec26e9f013e2b342998347513432d989d298c9a68a3fcbb33e0b2cd8",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia/include/gpu/ganesh/mtl/GrMtlBackendContext.h": "b6e2524d315cd3a07547a9afa82c3dbd7d370c2b252c174960f50e5216e362ce",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia/include/gpu/ganesh/mtl/GrMtlDirectContext.h": "437a4f7582f5853022a3bb8338bbd98d09dc5513b7fc9ce411b47d59f96d5489",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia/include/gpu/ganesh/GrDirectContext.h": "6fcf852ecda7a56472d8166a0e32d2b5b5b46b2213657dd30e03c9b66242189e",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia/include/gpu/ganesh/SkSurfaceGanesh.h": "015ef53e941fc549e8130177b5e3d15312e368e348ed8c0e0e532f43cf71202b",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia/include/core/SkCanvas.h": "7ba4370527df133cb333372009047c2178ba8e1b52f8606049a4f23aa45b30b2",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia/include/core/SkColorSpace.h": "7be0bf06dfd49fb10ae496ead87b5494b536f796ba7ff2103787f0dc7835ca56",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia/include/core/SkPaint.h": "5bf75aeedd6bee93605847ec7f5e2d86e969808442c54387878f51bea226bbef"
+      },
+      "submit_bytes": 352453280,
+      "pixel_hash": 18118845953447803667,
+      "graphite_region_hash": 13950444575854455419,
+      "qualification": "Uses a different installed Skia revision/backend, reaches a higher footprint and a different region hash. No matched reduction or rendering-equivalence credit; not shipped."
+    }
+  },
+  "live_request": {
+    "result": {
+      "url": "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/",
+      "timestamp": 1793682189.159162,
+      "route": "direct urllib ProxyHandler({})",
+      "user_agent": "Mozilla/5.0",
+      "status": 403,
+      "final_url": "https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/",
+      "body_sha256": "0ed85f559a04525f63e2b3f372ebcd254e980de8099ab669f3899849719fecb9",
+      "elapsed_seconds": 0.24317097663879395
+    },
+    "artifact": {
+      "path": "Build/reddit-comment-memory-20261103-retained/live-result.json",
+      "sha256": "6a51ebc45580e926b5591ed0392391fa524f822f737f787db517cecf70e7a854"
+    }
+  },
+  "guards": {
+    "ganesh-run.json": {
+      "result": {
+        "command": [
+          "Build/reddit-comment-memory-20261103-retained/ganesh-phases"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 19824640,
+        "elapsed_seconds": 0.433439708,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/ganesh-run.json",
+        "sha256": "d443e95b64792390243a19950684eaea27916a42a4679ddf877e667ebffddccf"
+      }
+    },
+    "ganesh-build.json": {
+      "result": {
+        "command": [
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-DSK_GANESH",
+          "-DSK_METAL",
+          "-DSK_RELEASE",
+          "-fno-rtti",
+          "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+          "Build/reddit-comment-memory-20261103-retained/ganesh_phases.mm",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "Metal",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-o",
+          "Build/reddit-comment-memory-20261103-retained/ganesh-phases"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 201048064,
+        "elapsed_seconds": 0.956208833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/ganesh-build.json",
+        "sha256": "a2cfafc99e4df6e2f31bbd66b68b127809489f018e98ece07037e6841ac60dec"
+      }
+    },
+    "queue-cap-8.json": {
+      "result": {
+        "command": [
+          "python3",
+          "-c",
+          "import os,subprocess,sys;sys.exit(subprocess.run(sys.argv[1:],env=dict(os.environ,DYLD_INSERT_LIBRARIES='/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/libQueueCap.dylib',VOX_QUEUE_CAP_PROBE='8')).returncode)",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-peak/depth-control"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 41910272,
+        "elapsed_seconds": 1.74577425,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-8.json",
+        "sha256": "f1deec280186207cc1fad72f98d0eaced9db062ff44ca565782dee160b9544ba"
+      }
+    },
+    "cache-final-poison.json": {
+      "result": {
+        "command": [
+          "Build/reddit-comment-memory-20261103-retained/cache-tests3"
+        ],
+        "reason": "completed",
+        "child_exit_code": -10,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 80199680,
+        "elapsed_seconds": 0.89678475,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/cache-final-poison.json",
+        "sha256": "94309d36fec87e072a763100358269acc489a66e9f5a4ee7399b8a34c696765e"
+      }
+    },
+    "queue-cap-build.json": {
+      "result": {
+        "command": [
+          "clang++",
+          "-std=c++20",
+          "-dynamiclib",
+          "-fPIC",
+          "-O2",
+          "-framework",
+          "Foundation",
+          "-framework",
+          "Metal",
+          "Build/reddit-comment-memory-20261103-retained/metal_queue_cap.mm",
+          "-o",
+          "Build/reddit-comment-memory-20261103-retained/libQueueCap.dylib"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 86392832,
+        "elapsed_seconds": 0.280868375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-build.json",
+        "sha256": "99db1a63d35090a9cc80c8a3b30809390973c1287933fe69ce2ac7f733b0bbfa"
+      }
+    },
+    "cache-compile.json": {
+      "result": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-retained/compile_layout.py",
+          "prealloc",
+          "native_equal_text_cache_storage_test.v",
+          "cache-tests"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 6835683328,
+        "elapsed_seconds": 28.594964667000003,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/cache-compile.json",
+        "sha256": "5b156a2395410b17b4f513633e31c62d00d5474dbac67b0d61fd4c9c46374757"
+      }
+    },
+    "queue-cap-4.json": {
+      "result": {
+        "command": [
+          "python3",
+          "-c",
+          "import os,subprocess,sys;sys.exit(subprocess.run(sys.argv[1:],env=dict(os.environ,DYLD_INSERT_LIBRARIES='/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/libQueueCap.dylib',VOX_QUEUE_CAP_PROBE='4')).returncode)",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-peak/depth-control"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 42516480,
+        "elapsed_seconds": 1.891452666,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-4.json",
+        "sha256": "20ced27cf5a85a56893670d7ccbd401d9c2e4722aa089755c8caca523ad18476"
+      }
+    },
+    "cache-final-runtime2.json": {
+      "result": {
+        "command": [
+          "Build/reddit-comment-memory-20261103-retained/cache-tests4"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 51986432,
+        "elapsed_seconds": 0.29989775,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/cache-final-runtime2.json",
+        "sha256": "2db4dd16d47cfa8b732aa378196883a75afb963f9edef90461f43008e31d216e"
+      }
+    },
+    "stock-cache-long-guard.json": {
+      "result": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-retained/probe_stock.py",
+          "stock-cache-long"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 670859264,
+        "elapsed_seconds": 301.314511625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/stock-cache-long-guard.json",
+        "sha256": "9128a8dca3042c638d2992ac3e15a48ea9d89462718cdd409ba46a10d7b66d3b"
+      }
+    },
+    "equaltext-existing-poison.json": {
+      "result": {
+        "command": [
+          "Build/reddit-comment-memory-20261103-retained/equaltext-existing"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 29343744,
+        "elapsed_seconds": 0.41720779199999997,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/equaltext-existing-poison.json",
+        "sha256": "296c43f97e7a2936a0e14d8d30f177ee5e5d37ab084adc8014ebc6d60925dc5e"
+      }
+    },
+    "equaltext-existing-compile.json": {
+      "result": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-retained/compile_layout.py",
+          "prealloc",
+          "native_equal_text_test.v",
+          "equaltext-existing"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 7068680192,
+        "elapsed_seconds": 26.225778333,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/equaltext-existing-compile.json",
+        "sha256": "3ecdccffa84f95df096bae3b43bdd4e58ecb209e82e43fd7e75dd6f9f5803fe1"
+      }
+    },
+    "cache-final-runtime.json": {
+      "result": {
+        "command": [
+          "Build/reddit-comment-memory-20261103-retained/cache-tests3"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 52576256,
+        "elapsed_seconds": 0.30052454100000003,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/cache-final-runtime.json",
+        "sha256": "0ade20c72dad118732f5d8937c1e24823d4f381a082d10c07cb0f7d14ca81afd"
+      }
+    },
+    "cache-compile4.json": {
+      "result": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-retained/compile_layout.py",
+          "prealloc",
+          "native_equal_text_cache_storage_test.v",
+          "cache-tests4"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 6779699200,
+        "elapsed_seconds": 29.239737792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/cache-compile4.json",
+        "sha256": "8eb12b1b954b9e95905ce9988415580fd757392297a3a311fcfb059afc2761f0"
+      }
+    },
+    "cache-poison.json": {
+      "result": {
+        "command": [
+          "Build/reddit-comment-memory-20261103-retained/cache-tests2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 57622528,
+        "elapsed_seconds": 0.6641564169999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/cache-poison.json",
+        "sha256": "74eed460a5f10e70ef62bf3fa297396b99f2085b6e062480dd1dc485ac0fbe47"
+      }
+    },
+    "stock-initial-guard.json": {
+      "result": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-retained/probe_stock.py",
+          "stock-initial"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 669253632,
+        "elapsed_seconds": 65.934219541,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/stock-initial-guard.json",
+        "sha256": "917216eea8a1e0aa2a2dc88180c1af86fff5b8e6a33ce0ddcf8b0b8da0cb7d98"
+      }
+    },
+    "arena-guard.json": {
+      "result": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-input/probe_arena2.py",
+          "../reddit-comment-memory-20261103-retained/arena-diagnostic"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 663257088,
+        "elapsed_seconds": 80.85571641599999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/arena-guard.json",
+        "sha256": "6f5ce1c624e9d0e1c33cf8ace6f0ae9c13518fae152f1b75b81a6a17fac1b4bb"
+      }
+    },
+    "equaltext-final-compile.json": {
+      "result": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-retained/compile_layout.py",
+          "prealloc",
+          "native_equal_text_test.v",
+          "equaltext-final"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 6972063744,
+        "elapsed_seconds": 30.607720916,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/equaltext-final-compile.json",
+        "sha256": "dba3cb6239b07858034758a71c2ffe747313b2a486e9ed8ab49caf369c73b000"
+      }
+    },
+    "cache-final-poison2.json": {
+      "result": {
+        "command": [
+          "Build/reddit-comment-memory-20261103-retained/cache-tests4"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 76922880,
+        "elapsed_seconds": 0.929100375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/cache-final-poison2.json",
+        "sha256": "020d41574cf17b75d62859457a9867d9ec7d475c7b8fbcbf3aeb72f7d5d5eaaf"
+      }
+    },
+    "cache-runtime.json": {
+      "result": {
+        "command": [
+          "Build/reddit-comment-memory-20261103-retained/cache-tests2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 52477952,
+        "elapsed_seconds": 0.29101216700000004,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/cache-runtime.json",
+        "sha256": "4eadfffb99659bc45385992ca400b3aa9e90a9abb8f77f3243992a13faff4732"
+      }
+    },
+    "cache-compile3.json": {
+      "result": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-retained/compile_layout.py",
+          "prealloc",
+          "native_equal_text_cache_storage_test.v",
+          "cache-tests3"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 6820691968,
+        "elapsed_seconds": 28.240499041,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/cache-compile3.json",
+        "sha256": "2b2c6d3231e33760a359859a80ff2db0b1609183fc8a83929fc7c9b7f4d07ca2"
+      }
+    },
+    "queue-cap-0.json": {
+      "result": {
+        "command": [
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-peak/depth-control"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 30556160,
+        "elapsed_seconds": 1.7402495,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-0.json",
+        "sha256": "4b20be016e88a3e16938944eef0ac3f624c7c9983292cbd194c875b91d63feb1"
+      }
+    },
+    "native-cache-visual-guard.json": {
+      "result": {
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/visual_stock.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 253247488,
+        "elapsed_seconds": 60.5644355,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual-guard.json",
+        "sha256": "8cfaacf009b5f2138d302f926eb3804caecccddc2c4f5ea04b6525198f6d3fcc"
+      }
+    },
+    "equaltext-final-poison.json": {
+      "result": {
+        "command": [
+          "Build/reddit-comment-memory-20261103-retained/equaltext-final"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 38469632,
+        "elapsed_seconds": 0.406659375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/equaltext-final-poison.json",
+        "sha256": "902d7b0c7f509d3d676cc717acbfabdad569b0aba5863618247cddc6b468c2ae"
+      }
+    },
+    "cache-compile2.json": {
+      "result": {
+        "command": [
+          "python3",
+          "Build/reddit-comment-memory-20261103-retained/compile_layout.py",
+          "prealloc",
+          "native_equal_text_cache_storage_test.v",
+          "cache-tests2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 6801637376,
+        "elapsed_seconds": 26.517216375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/cache-compile2.json",
+        "sha256": "d836838551cf4063b5cf827f226c5bb3572572c8946f06bf7a3ac57868399f95"
+      }
+    }
+  },
+  "visual": {
+    "result.json": {
+      "result": {
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "2cd7a62071b209a7e5028a2b290b7a85bff82f9afc107e4f9cd68aeff513292a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "6a0805b0f98d62acf30b44e898505fb9847f88365c5efa8349e0349433c34694",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c56a4b2f3dc1c2cbc2415fd6925c65c4dbe3d4c84a4ba7e455752ebc2a029f09",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "3481c98e843c7e2eb5d13467ad121be8f4fe34ca330e8bd7d1e8b52b7b3e7560",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/visual_stock.py": "46fa396b3c916f0ea0059fa7c1b309bb81b414305f5a28de1c6f0536e5d215de"
+        },
+        "tool_sha256": {
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff": "ff8dd514c58e3e6870539554989fc17054ff3e47369c9b0e438f050f3f1aed1c",
+          "/Users/alex/code/vox2/capture_screenshot.sh": "fdf053e6ae1f7ae32a9c44408504387b860784f1b40de9547e3bf73db3fd0d62"
+        },
+        "fixture_sha256": {
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html": "00c8237fe47703896d26207dece9fdd802e4ca49b84e6b178f657d8293802f06",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/green-100x100-ref.html": "6bc260f5e1f09493d33fa5c82c2d8c83c2b2a512d92f55867fb0c2ce6830271d",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-gradient-in-defs-removed-repaint.html": "c47e3d4a7e4551948a21b01d7a7f69c1263be58c0d4fde10ee56d13b313dd472",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg-gradient-in-defs-removed-repaint-ref.html": "b87d670748afdc0f417757c008dd2f90d58e949d0df208336eaed44954f88587",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-paint-server-hidden-inherited-style-update.html": "23addb46947da1c8c28de47d7846dc002285530f1ad2bc4d104aeca52d4d337f",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg-paint-server-hidden-inherited-style-update-ref.html": "011bca2acbf970920b4751d338510a538f25d01cd6ce8c3d8a21b2b13deb1b72",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-added.html": "fea79e57b15fb90c126e645975e0534c5e01b1e7d775471ab192de58685cb273",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html": "4008cf44107170a06b3d267c34952b46734d7168f8e8e4bee50a6e8567524233",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-color-animation.html": "2f92a8194f10da00154a7e35b71b73251a9136fb40cfb3619b16a6b422b02850",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html": "46440e1a39e7d5761a6e5fadd2a40fcf7caa9a371c25f388d9f746872a70451d",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-href-chain-update.html": "46bb22d66fbe36ac36ac8c616446427cfe269e403ef4ae5b645ec6f507e70821",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-transform-attribute-update.html": "69e4b9890caa137e389ebc4b8596d6ead1444a14469a6c49430ede2df0e45040",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/equal-native-input.html": "84dd1711b815c386dacd7b28e3581c5537915e96bf89550a1c25b0d20bc3491e",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/equal-native-reference.html": "9b4b4754b9f238712fd1897701ea471ccc601ed5c7348ebfc37d359929b387ed"
+        },
+        "cases": [
+          {
+            "case": "svg-image-source-switch-same-size",
+            "source": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html",
+            "reference": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/green-100x100-ref.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/green-100x100-ref.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.expected.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.expected.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.diff.png\n"
+          },
+          {
+            "case": "svg-gradient-in-defs-removed-repaint",
+            "source": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-gradient-in-defs-removed-repaint.html",
+            "reference": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg-gradient-in-defs-removed-repaint-ref.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg-gradient-in-defs-removed-repaint-ref.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.expected.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-gradient-in-defs-removed-repaint.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.expected.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.diff.png\n"
+          },
+          {
+            "case": "svg-paint-server-hidden-inherited-style-update",
+            "source": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-paint-server-hidden-inherited-style-update.html",
+            "reference": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg-paint-server-hidden-inherited-style-update-ref.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg-paint-server-hidden-inherited-style-update-ref.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.expected.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-paint-server-hidden-inherited-style-update.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.expected.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.diff.png\n"
+          },
+          {
+            "case": "svg/gradient-stop-added",
+            "source": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-added.html",
+            "reference": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.expected.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-added.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.expected.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.diff.png\n"
+          },
+          {
+            "case": "svg/gradient-stop-color-animation",
+            "source": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-color-animation.html",
+            "reference": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.expected.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-color-animation.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.expected.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.diff.png\n"
+          },
+          {
+            "case": "svg/gradient-stop-move-before",
+            "source": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html",
+            "reference": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.expected.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.expected.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.diff.png\n"
+          },
+          {
+            "case": "svg/gradient-href-chain-update",
+            "source": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-href-chain-update.html",
+            "reference": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.expected.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-href-chain-update.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.expected.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.diff.png\n"
+          },
+          {
+            "case": "svg/gradient-transform-attribute-update",
+            "source": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-transform-attribute-update.html",
+            "reference": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.expected.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-transform-attribute-update.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.expected.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.diff.png\n"
+          },
+          {
+            "case": "equal-native-input",
+            "source": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/equal-native-input.html",
+            "reference": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/equal-native-reference.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/equal-native-reference.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.expected.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/equal-native-input.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.expected.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.diff.png\n"
+          }
+        ],
+        "identity_changed": false
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/result.json",
+        "sha256": "c63329d810c859b089fd4e7ac1a6e41eb4642ff0a858bdca4bd009612909c28c"
+      }
+    },
+    "extra-result.json": {
+      "result": {
+        "identity": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "2cd7a62071b209a7e5028a2b290b7a85bff82f9afc107e4f9cd68aeff513292a",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "6a0805b0f98d62acf30b44e898505fb9847f88365c5efa8349e0349433c34694",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "c56a4b2f3dc1c2cbc2415fd6925c65c4dbe3d4c84a4ba7e455752ebc2a029f09",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "3481c98e843c7e2eb5d13467ad121be8f4fe34ca330e8bd7d1e8b52b7b3e7560",
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/visual_stock.py": "46fa396b3c916f0ea0059fa7c1b309bb81b414305f5a28de1c6f0536e5d215de"
+        },
+        "identity_changed": false,
+        "fixtures": {
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html": "cd9e530818694384a0f141cc71a7d1705c22394ad25756d20dd1dfd5ddf7db43",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html": "4008cf44107170a06b3d267c34952b46734d7168f8e8e4bee50a6e8567524233",
+          "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html": "181cafc7b686ded3aa8f4444970461ea27438325a1135fde1459e5badfe1c48a",
+          "/Users/alex/code/vox2/Tests/Browser/Brave/input/chromium-partial-rounded-border.html": "f956ec369637833d6c7a589ffcc08619d63f97fca33e37c29ed2dcf09035ad05",
+          "/Users/alex/code/vox2/Tests/Browser/Brave/expected/chromium-partial-rounded-border.png": "dea601551d29cc12ed910f7478551ebcc1f3d179c78e618a661c383004a18752",
+          "/Users/alex/code/vox2/Tests/Browser/Brave/input/chromium-partial-rounded-border-msaa.html": "d6e3b5d92551a8642dd72d7f98fdea83fa98b95e3b9129adf86b10e8ab8c9df8",
+          "/Users/alex/code/vox2/Tests/Browser/Brave/expected/chromium-partial-rounded-border-msaa.png": "70808e84618f962a523b110f0598dae57254ee0c025928bdeb21eee94554570d"
+        },
+        "tools": {
+          "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/visual_current.py": "ee6f1de81f6f6310dce649d3f70673ec8dd492e3075d468181a93b39df92a638",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff": "ff8dd514c58e3e6870539554989fc17054ff3e47369c9b0e438f050f3f1aed1c",
+          "/Users/alex/code/vox2/capture_screenshot.sh": "fdf053e6ae1f7ae32a9c44408504387b860784f1b40de9547e3bf73db3fd0d62"
+        },
+        "cases": [
+          {
+            "case": "paint-server-id-collision",
+            "source": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html",
+            "reference": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.reference.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.reference.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.diff.png\n",
+            "pixel_exact": true
+          },
+          {
+            "case": "paint-server-html-id-collision",
+            "source": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html",
+            "reference": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.reference.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              },
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.actual.png",
+                  "800",
+                  "600"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.reference.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 480000\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.diff.png\n",
+            "pixel_exact": true
+          },
+          {
+            "case": "chromium-partial-rounded-border",
+            "source": "/Users/alex/code/vox2/Tests/Browser/Brave/input/chromium-partial-rounded-border.html",
+            "reference": "/Users/alex/code/vox2/Tests/Browser/Brave/expected/chromium-partial-rounded-border.png",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/vox2/Tests/Browser/Brave/input/chromium-partial-rounded-border.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border.actual.png",
+                  "1024",
+                  "768"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Tests/Browser/Brave/expected/chromium-partial-rounded-border.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border.diff.png\n",
+            "pixel_exact": true
+          },
+          {
+            "case": "chromium-partial-rounded-border-msaa",
+            "source": "/Users/alex/code/vox2/Tests/Browser/Brave/input/chromium-partial-rounded-border-msaa.html",
+            "reference": "/Users/alex/code/vox2/Tests/Browser/Brave/expected/chromium-partial-rounded-border-msaa.png",
+            "commands": [
+              {
+                "command": [
+                  "sh",
+                  "/Users/alex/code/vox2/capture_screenshot.sh",
+                  "/Users/alex/code/vox2/Tests/Browser/Brave/input/chromium-partial-rounded-border-msaa.html",
+                  "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border-msaa.actual.png",
+                  "1024",
+                  "768"
+                ],
+                "exit": 0
+              }
+            ],
+            "diff_command": [
+              "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+              "/Users/alex/code/vox2/Tests/Browser/Brave/expected/chromium-partial-rounded-border-msaa.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border-msaa.actual.png",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border-msaa.diff.png"
+            ],
+            "diff_exit": 0,
+            "diff_output": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border-msaa.diff.png\n",
+            "pixel_exact": true
+          }
+        ]
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/extra-result.json",
+        "sha256": "d14194115b4efb6dffd237798324453489d296b64a4b37cd414652782e0a2bad"
+      }
+    },
+    "exact-result.json": {
+      "result": {
+        "cases": [
+          {
+            "case": "svg-image-source-switch-same-size",
+            "exact": true
+          },
+          {
+            "case": "svg-gradient-in-defs-removed-repaint",
+            "exact": true
+          },
+          {
+            "case": "svg-paint-server-hidden-inherited-style-update",
+            "exact": true
+          },
+          {
+            "case": "svg/gradient-stop-added",
+            "exact": true
+          },
+          {
+            "case": "svg/gradient-stop-color-animation",
+            "exact": true
+          },
+          {
+            "case": "svg/gradient-stop-move-before",
+            "exact": true
+          },
+          {
+            "case": "svg/gradient-href-chain-update",
+            "exact": true
+          },
+          {
+            "case": "svg/gradient-transform-attribute-update",
+            "exact": true
+          },
+          {
+            "case": "equal-native-input",
+            "exact": true
+          },
+          {
+            "case": "paint-server-id-collision",
+            "exact": true
+          },
+          {
+            "case": "paint-server-html-id-collision",
+            "exact": true
+          },
+          {
+            "case": "chromium-partial-rounded-border",
+            "exact": true
+          },
+          {
+            "case": "chromium-partial-rounded-border-msaa",
+            "exact": true
+          }
+        ],
+        "browser_logs": [
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/green-100x100-ref.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.expected.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-image-source-switch-same-size.expected/browser.log",
+            "log_sha256": "c545e799d673b97ba84adc1ed58dae7a60f445c11f72c1231077ae60ced0f540"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-image-source-switch-same-size.actual/browser.log",
+            "log_sha256": "1cf28ca9bd0ba03b3a905f7e80409dcb43d0b9e39fe3f95e4693aa0a7f0c0e5f"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg-gradient-in-defs-removed-repaint-ref.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.expected.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-in-defs-removed-repaint.expected/browser.log",
+            "log_sha256": "63d698b0ae9a8b0eac2fa5daabb49f8ad5b6e8c76ec24ffa82cd883633c99c82"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-gradient-in-defs-removed-repaint.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-in-defs-removed-repaint.actual/browser.log",
+            "log_sha256": "f9107005d97d04c04cafb8c997118d463f537da0e43fc0d19131bb19ff4ff46d"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg-paint-server-hidden-inherited-style-update-ref.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.expected.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-paint-server-hidden-inherited-style-update.expected/browser.log",
+            "log_sha256": "fec0e911835d7e0d89084fe438b697a8b2e47ada8acdbfc1f80404eda7f44563"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-paint-server-hidden-inherited-style-update.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-paint-server-hidden-inherited-style-update.actual/browser.log",
+            "log_sha256": "c712d53492b5f7c4ea8dd864ffcb47f63bf9631d5684fc28e67a1334aa233091"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.expected.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-added.expected/browser.log",
+            "log_sha256": "cf2692b0d14b8c7f07b3daac44de0bb45f2bc7252d987ea0b2258405e78ac529"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-added.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-added.actual/browser.log",
+            "log_sha256": "03bd01357ba99261d2daff1200b3bd0941365c110167452f52adcf1e14c17f6b"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.expected.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-color-animation.expected/browser.log",
+            "log_sha256": "9011c26d12ac3dc2f7750b929c875d0b1e8d35924c5aa6c1e06e0b69eddf62cf"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-color-animation.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-color-animation.actual/browser.log",
+            "log_sha256": "0d9a423078f450642f642abaf35981fb6e0827a8f7d3d8defcf229b7191a8804"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.expected.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-move-before.expected/browser.log",
+            "log_sha256": "859fab9018e1638296d83de2ab8b621acd78cf463df9d60759032d314f372499"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-move-before.actual/browser.log",
+            "log_sha256": "490a27e65ff8d95ffbaa903c0bda75237d144c0f0012afa4ba00b1166949e0f4"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.expected.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-href-chain-update.expected/browser.log",
+            "log_sha256": "f23b6e5f9fe90ee02807c4d2f3ac13e557f2d3162ba409319022641cead7545d"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-href-chain-update.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-href-chain-update.actual/browser.log",
+            "log_sha256": "c07df00ea820cbf451336fe12d2b02d8f41bb4abc9c4d99b30e3d7982402acdd"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.expected.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-transform-attribute-update.expected/browser.log",
+            "log_sha256": "9e685f26317a8f9ded357e852ddfab01695a76872181da1ba497dd027ee085c2"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-transform-attribute-update.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-transform-attribute-update.actual/browser.log",
+            "log_sha256": "597aaf731856a2e46515b0ac83a8854e8093c097fb96d012c2f4cb5ede71a950"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/equal-native-reference.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.expected.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/equal-native-input.expected/browser.log",
+            "log_sha256": "37de1ae2b406bb42597e6308ff6171cf0b35b67d1f890f2b737070700f674056"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/equal-native-input.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103/../reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/equal-native-input.actual/browser.log",
+            "log_sha256": "eedc20ef1afa16bda32366964ca2d76b83c690d1ff5feb638050270016d9cdb4"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.reference.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/paint-server-id-collision.reference/browser.log",
+            "log_sha256": "df48e9040250ad95d7d39442e97ecd88727a6500416b4f050ab76a79e49fd3b1"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/paint-server-id-collision.actual/browser.log",
+            "log_sha256": "9a9a4cff3019f57f16f4f6b167fd73b2924eae5382358fb204395d7900ffdbef"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/expected/svg/green-square-100-ref.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.reference.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/paint-server-html-id-collision.reference/browser.log",
+            "log_sha256": "067dec02104fb15223e920d77b34b1963f059dd03272bc090aa635e5e81c2c09"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.actual.png",
+              "800",
+              "600"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/paint-server-html-id-collision.actual/browser.log",
+            "log_sha256": "f8b34d0c35ec61ef76fed457d390ac3886162824ff3eaeeabdc7c7ca1a57606f"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/vox2/Tests/Browser/Brave/input/chromium-partial-rounded-border.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border.actual.png",
+              "1024",
+              "768"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/chromium-partial-rounded-border.actual/browser.log",
+            "log_sha256": "194d364c4d67873037281f514d0392e4178c4b10c6048faca075ed5f228f463f"
+          },
+          {
+            "command": [
+              "sh",
+              "/Users/alex/code/vox2/capture_screenshot.sh",
+              "/Users/alex/code/vox2/Tests/Browser/Brave/input/chromium-partial-rounded-border-msaa.html",
+              "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-input/../reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border-msaa.actual.png",
+              "1024",
+              "768"
+            ],
+            "exit": 0,
+            "log": "/Users/alex/code/vox2/Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/chromium-partial-rounded-border-msaa.actual/browser.log",
+            "log_sha256": "a725b06190c9b28009613dbcb7c37dba22e8608dff002c9a7d86d3d2632dfe7a"
+          }
+        ]
+      },
+      "artifact": {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/exact-result.json",
+        "sha256": "f6e3d78eb5812a8d7d6356a126701d9d0eed3bd82ddccefbd1ff29198dc648a8"
+      }
+    },
+    "artifacts": [
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/chromium-partial-rounded-border-msaa.actual/browser.log",
+        "sha256": "a725b06190c9b28009613dbcb7c37dba22e8608dff002c9a7d86d3d2632dfe7a"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/chromium-partial-rounded-border.actual/browser.log",
+        "sha256": "194d364c4d67873037281f514d0392e4178c4b10c6048faca075ed5f228f463f"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/equal-native-input.actual/browser.log",
+        "sha256": "eedc20ef1afa16bda32366964ca2d76b83c690d1ff5feb638050270016d9cdb4"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/equal-native-input.expected/browser.log",
+        "sha256": "37de1ae2b406bb42597e6308ff6171cf0b35b67d1f890f2b737070700f674056"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/paint-server-html-id-collision.actual/browser.log",
+        "sha256": "f8b34d0c35ec61ef76fed457d390ac3886162824ff3eaeeabdc7c7ca1a57606f"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/paint-server-html-id-collision.reference/browser.log",
+        "sha256": "067dec02104fb15223e920d77b34b1963f059dd03272bc090aa635e5e81c2c09"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/paint-server-id-collision.actual/browser.log",
+        "sha256": "9a9a4cff3019f57f16f4f6b167fd73b2924eae5382358fb204395d7900ffdbef"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/paint-server-id-collision.reference/browser.log",
+        "sha256": "df48e9040250ad95d7d39442e97ecd88727a6500416b4f050ab76a79e49fd3b1"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-href-chain-update.actual/browser.log",
+        "sha256": "c07df00ea820cbf451336fe12d2b02d8f41bb4abc9c4d99b30e3d7982402acdd"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-href-chain-update.expected/browser.log",
+        "sha256": "f23b6e5f9fe90ee02807c4d2f3ac13e557f2d3162ba409319022641cead7545d"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-in-defs-removed-repaint.actual/browser.log",
+        "sha256": "f9107005d97d04c04cafb8c997118d463f537da0e43fc0d19131bb19ff4ff46d"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-in-defs-removed-repaint.expected/browser.log",
+        "sha256": "63d698b0ae9a8b0eac2fa5daabb49f8ad5b6e8c76ec24ffa82cd883633c99c82"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-added.actual/browser.log",
+        "sha256": "03bd01357ba99261d2daff1200b3bd0941365c110167452f52adcf1e14c17f6b"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-added.expected/browser.log",
+        "sha256": "cf2692b0d14b8c7f07b3daac44de0bb45f2bc7252d987ea0b2258405e78ac529"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-color-animation.actual/browser.log",
+        "sha256": "0d9a423078f450642f642abaf35981fb6e0827a8f7d3d8defcf229b7191a8804"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-color-animation.expected/browser.log",
+        "sha256": "9011c26d12ac3dc2f7750b929c875d0b1e8d35924c5aa6c1e06e0b69eddf62cf"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-move-before.actual/browser.log",
+        "sha256": "490a27e65ff8d95ffbaa903c0bda75237d144c0f0012afa4ba00b1166949e0f4"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-stop-move-before.expected/browser.log",
+        "sha256": "859fab9018e1638296d83de2ab8b621acd78cf463df9d60759032d314f372499"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-transform-attribute-update.actual/browser.log",
+        "sha256": "597aaf731856a2e46515b0ac83a8854e8093c097fb96d012c2f4cb5ede71a950"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-gradient-transform-attribute-update.expected/browser.log",
+        "sha256": "9e685f26317a8f9ded357e852ddfab01695a76872181da1ba497dd027ee085c2"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-image-source-switch-same-size.actual/browser.log",
+        "sha256": "1cf28ca9bd0ba03b3a905f7e80409dcb43d0b9e39fe3f95e4693aa0a7f0c0e5f"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-image-source-switch-same-size.expected/browser.log",
+        "sha256": "c545e799d673b97ba84adc1ed58dae7a60f445c11f72c1231077ae60ced0f540"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-paint-server-hidden-inherited-style-update.actual/browser.log",
+        "sha256": "c712d53492b5f7c4ea8dd864ffcb47f63bf9631d5684fc28e67a1334aa233091"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/browser-logs/svg-paint-server-hidden-inherited-style-update.expected/browser.log",
+        "sha256": "fec0e911835d7e0d89084fe438b697a8b2e47ada8acdbfc1f80404eda7f44563"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border-msaa.actual.log",
+        "sha256": "8162e0347ab6bff4212cc3c1cd0b80e450e30c407ae1ee73f6d981e9e8deb382"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border-msaa.actual.png",
+        "sha256": "ba9fdf16ea8316dac03731c1e019844216f3fc37861f33253393e43597ab406b"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border-msaa.diff.png",
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border.actual.log",
+        "sha256": "2b0b903dbfb3feca2428e8391ff40c1dc6107f4496ab96a5e2428dd32559c4f4"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border.actual.png",
+        "sha256": "2ea678b2677a68072aecffe740404c365c2ee766b43baa5832271247ae22d5a8"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/chromium-partial-rounded-border.diff.png",
+        "sha256": "071cc871af8fcb2270f19dddabc472d9df8babda0fab398adb48c2925e37281e"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.actual.log",
+        "sha256": "50e64a82799ea5abb23855d78769ef1226d5dff8a0b88991671a273c16d27560"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.actual.png",
+        "sha256": "fe1d4b5a76e199e5dc3134f34a92c41177c6e850746ef3934b090c63a3256fef"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.expected.log",
+        "sha256": "f1fdb80add05f713e8845e32f703e6192ae30e6aa2f69ea1432d1a6469cbcc84"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/equal-native-input.expected.png",
+        "sha256": "fe1d4b5a76e199e5dc3134f34a92c41177c6e850746ef3934b090c63a3256fef"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.actual.log",
+        "sha256": "2955b32bd5f3dc636dfdedd4c802e674f49f75cb83f8adb05a36509db3e50f89"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.actual.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.reference.log",
+        "sha256": "ed25f9daff4da820d0043d3590102087eaf9672d58449548b305b37b570b3478"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-html-id-collision.reference.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.actual.log",
+        "sha256": "57c7dcd85942f5aa312057cbfda308de9b6ac5d867ac8546d5493815f6877135"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.actual.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.reference.log",
+        "sha256": "c8c76a32f69b7fcec649b07b6462cdb36a56e321cbaae39682fab0c26cfe746f"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/paint-server-id-collision.reference.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.actual.log",
+        "sha256": "c7726f73dfd5cfe4aa3c4202503c0a2fa6856aad61423db9082b691ca139adc7"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.actual.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.expected.log",
+        "sha256": "46ff753889614c916fc27de326dca660e7a0beaf51361e874a1861ac6591fcd9"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-href-chain-update.expected.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.actual.log",
+        "sha256": "56a5e7b02b1b3935ff37140ae53a41f9f9bd5e282eca573b366b2288fad069ed"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.actual.png",
+        "sha256": "3ff1144d5df214765cd43f455b69f1b3e1dea2d9543ec85be6cd67959e52f687"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.expected.log",
+        "sha256": "d636c832eed400cc7cff312ba74f36444920fea39eb323499ae168ee5c86fb19"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-in-defs-removed-repaint.expected.png",
+        "sha256": "3ff1144d5df214765cd43f455b69f1b3e1dea2d9543ec85be6cd67959e52f687"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.actual.log",
+        "sha256": "1a120b3f7df2566d71220d9472987f8bbad215cac2ea9145747d690b0e14eda8"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.actual.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.expected.log",
+        "sha256": "dd91215d6890b194a747086f1679727b7be7c4b61e4ddede03b4e9e5a5e85e96"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-added.expected.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.actual.log",
+        "sha256": "7f66d3101492c99c26463780abc989370ec725b0944288aeef5cea808cd611a0"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.actual.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.expected.log",
+        "sha256": "99accfb0f9c1c4c81ec9091818569a595ae546e8d23ce82f88a895fc6aa2cdef"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-color-animation.expected.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.actual.log",
+        "sha256": "90331a09e019285b45f9cfb54ac6d308dfebf801e233db9475db1bbb5dd1f362"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.actual.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.expected.log",
+        "sha256": "db490eadb735d94f319df9905dd0cd2274f266c39e4b7f0836180d37ab9c6cb2"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-stop-move-before.expected.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.actual.log",
+        "sha256": "67834ff67e37dc88bc52ba859c672d5dc0b860af3ec236707283ca8b51bf082e"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.actual.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.expected.log",
+        "sha256": "78fbb1a7eee87c244a0fd3529f515f16fc6af767512411b02e14f06181f89b30"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-gradient-transform-attribute-update.expected.png",
+        "sha256": "0e56e0c8bfe9f506daeee59ea699610a2346cd2b9f534ab90cc84ca16a88e1cb"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.actual.log",
+        "sha256": "0e26ba89c8cfc1e7406d2cd96ef23225213eebb84621d1bde852b81085647ade"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.actual.png",
+        "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.expected.log",
+        "sha256": "17615ac797f2fcca95ad391d6b0dbb1fb9f39ffed62f813a97b3f0a300477043"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-image-source-switch-same-size.expected.png",
+        "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.actual.log",
+        "sha256": "31d6180fb20fa7c0d8507602cb53ecd1395801d9ff85d8e70968f46d8adf272e"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.actual.png",
+        "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.diff.png",
+        "sha256": "6d29e02eb4f42bf3a90bc01ba4b9c776e96fe83a647e5fe72c82da349463ef31"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.expected.log",
+        "sha256": "40977332e6fd692032f44ad00143b1cdc1700c085ebdd7056f0d3323f16ccae3"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual/svg-paint-server-hidden-inherited-style-update.expected.png",
+        "sha256": "6f2c70a6533991f6055da343d657dbd041e18396e8c4b5c5351e239558fdaf26"
+      }
+    ]
+  },
+  "retained_failures": [
+    "The initial snapshot test read a native scene without retaining its owner; corrected to use the required explicit scene lease.",
+    "The first geometry-only fixture omitted the native host lease for its currently presented projection and faults with arena poisoning; corrected to retain that projection across the diagnostic update. Snapshot assertions and poisoning are preserved.",
+    "The first post-observation launcher attempted to parse the reserved empty guard receipt; it exits before launching any native visual check. The corrected launcher waits for final JSON."
+  ],
+  "compressed_generated_inputs": {
+    "result": [
+      {
+        "original": "Build/reddit-comment-memory-20261103-input/style-identity-after-storage-tests.c",
+        "original_sha256": "45d25b55bdde2c30c47d54fdbbb5607803fdf9dbe8412739be85fc71eb5d1115",
+        "original_bytes": 64712834,
+        "compressed": "Build/reddit-comment-memory-20261103-retained/reddit-comment-memory-20261103-input-style-identity-after-storage-tests.c.gz",
+        "compressed_sha256": "5d07f0b7b22981ffe65cb06696b9d4c1a6cc6ede705f7acdd9ae9de08cf7d19b",
+        "compressed_bytes": 10460145
+      },
+      {
+        "original": "Build/reddit-comment-memory-20261103-retained/cache-tests3.c",
+        "original_sha256": "9b11c1f4d68cd7e40c5a7dae712114ac80593c41b9aee682bb960ffeff640993",
+        "original_bytes": 36476809,
+        "compressed": "Build/reddit-comment-memory-20261103-retained/reddit-comment-memory-20261103-retained-cache-tests3.c.gz",
+        "compressed_sha256": "348cd6c31c208dc28b42c25735183533e7a62ecd84ebe6ad10dce1cb6fcfa00c",
+        "compressed_bytes": 6087132
+      },
+      {
+        "original": "Build/reddit-comment-memory-20261103-retained/cache-tests.c",
+        "original_sha256": "3b56830c6c3578942fca1c38e06304ed092e34673c3c5503a83bdffecfecd2e2",
+        "original_bytes": 36470649,
+        "compressed": "Build/reddit-comment-memory-20261103-retained/reddit-comment-memory-20261103-retained-cache-tests.c.gz",
+        "compressed_sha256": "970fa03ac6aaeffdecb1b287669123064c981906567217a0aa009a2478cee498",
+        "compressed_bytes": 6086585
+      },
+      {
+        "original": "Build/reddit-comment-memory-20261103-retained/cache-tests2.c",
+        "original_sha256": "c472e5758e6cee3da76a4ecfa932b9337110b018cac5c06ac378e46d0ed07079",
+        "original_bytes": 36472257,
+        "compressed": "Build/reddit-comment-memory-20261103-retained/reddit-comment-memory-20261103-retained-cache-tests2.c.gz",
+        "compressed_sha256": "27469a2e108e7c771b992806e8ed31b95a5d5243bdcd8a544dea36391be26e89",
+        "compressed_bytes": 6086838
+      },
+      {
+        "original": "Build/reddit-comment-memory-20261103-retained/equaltext-existing.c",
+        "original_sha256": "91251e95de88d17aa40c447a37a54075f672b83ba1592bc9ccc58e404b8152fb",
+        "original_bytes": 36683980,
+        "compressed": "Build/reddit-comment-memory-20261103-retained/reddit-comment-memory-20261103-retained-equaltext-existing.c.gz",
+        "compressed_sha256": "5554fc85b857bda4e3f3475ff7b33899243c7b737cae7269bf1c39151627cd0c",
+        "compressed_bytes": 6113220
+      }
+    ],
+    "artifact": {
+      "path": "Build/reddit-comment-memory-20261103-retained/compressed-generated-inputs.json",
+      "sha256": "c8234af20b713ad3b67f17675a9d1c6084afa146e91feed44ec70d426a86566a"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/after-memory.log",
+      "sha256": "5e6eda3a80386b570cf38243fe33d85e45390036f38bb76e658d183570ec5a2e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/after-memory2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/after_memory.py",
+      "sha256": "e8821e9f62835b6047a8ff5fd4fc4cb584c0a58e1dae3833b397857db33c49e6"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/after_memory_v2.py",
+      "sha256": "9e9f8a7f76ff054bdfd73186d8e1a274326ac7ac78372430900a758a8828bafb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/arena-diagnostic.log",
+      "sha256": "63e985fe283b3ad0c938fc31d021993a7c2852f5f51996effd4a43f94d621db6"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/arena-guard.json",
+      "sha256": "6f5ce1c624e9d0e1c33cf8ace6f0ae9c13518fae152f1b75b81a6a17fac1b4bb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-compile.json",
+      "sha256": "5b156a2395410b17b4f513633e31c62d00d5474dbac67b0d61fd4c9c46374757"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-compile.log",
+      "sha256": "47a9fa56b1d138dd9b6c7a1d209822802ff1c5f828306c6c7ac5825e7b4cd80d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-compile2.json",
+      "sha256": "d836838551cf4063b5cf827f226c5bb3572572c8946f06bf7a3ac57868399f95"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-compile2.log",
+      "sha256": "75a619bf41a4a35096693c4ddf427494afa70823b414fd93656d9dc6b31bc38d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-compile3.json",
+      "sha256": "2b2c6d3231e33760a359859a80ff2db0b1609183fc8a83929fc7c9b7f4d07ca2"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-compile3.log",
+      "sha256": "c9f4468928423e5ae50193cdc02faa84ed30d852cb8966a73856e60aa5027eb2"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-compile4.json",
+      "sha256": "8eb12b1b954b9e95905ce9988415580fd757392297a3a311fcfb059afc2761f0"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-compile4.log",
+      "sha256": "d84e6c0b268f75bd2fb0fffd775b5bfaa5873ec92288f37ee6f732a392dfd6b4"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-final-poison.json",
+      "sha256": "94309d36fec87e072a763100358269acc489a66e9f5a4ee7399b8a34c696765e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-final-poison.log",
+      "sha256": "9b52157cc597627cb5dac76cce978c53fe77f33f7d240c676cb0ff165a4faa34"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-final-poison2.json",
+      "sha256": "020d41574cf17b75d62859457a9867d9ec7d475c7b8fbcbf3aeb72f7d5d5eaaf"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-final-poison2.log",
+      "sha256": "5a5e118c8a44463ccb11707c9c268231a9206d8c237dbd7b88c416535e6455b0"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-final-runtime.json",
+      "sha256": "0ade20c72dad118732f5d8937c1e24823d4f381a082d10c07cb0f7d14ca81afd"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-final-runtime.log",
+      "sha256": "6702076786e338d65ad2db6b0115f243bb4fa070b007b33a9ed65a56bfcf7055"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-final-runtime2.json",
+      "sha256": "2db4dd16d47cfa8b732aa378196883a75afb963f9edef90461f43008e31d216e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-final-runtime2.log",
+      "sha256": "93019d0583a4ef12f8b9916481f22ec6f08fbfaf88ee5dc253e596c81000b0fb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-poison.json",
+      "sha256": "74eed460a5f10e70ef62bf3fa297396b99f2085b6e062480dd1dc485ac0fbe47"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-poison.log",
+      "sha256": "c1499a5711a1d491757d3c566f5f6f1bfa28c210322622bb3f9ecf45e6864e85"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-production-features.json",
+      "sha256": "350d842fb5564ff87926eb2f721bb73cc2400469ba1d8c1226e16bf46d6f847d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-runtime.json",
+      "sha256": "4eadfffb99659bc45385992ca400b3aa9e90a9abb8f77f3243992a13faff4732"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-runtime.log",
+      "sha256": "c5c20477d7e5c3478ab2262d16f7dade88c1d74f0600ab28a212842bf2661b08"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-tests-command.json",
+      "sha256": "fbb1cb628703cb1a4c0835b4bf8d0c928efc740d580e1a7bed01e3eef3dd9eb2"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-tests2-command.json",
+      "sha256": "28cdf6f85ecee8d1bac9a0bfd619bc00469d869cb7328f3cbdc800af02570dab"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-tests3-command.json",
+      "sha256": "70ca372440513efcb6a46cc358228aa3e98e54a6c14ae38e46ea44726c535e02"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/cache-tests4-command.json",
+      "sha256": "c9326f1823c37e51464a61322236259f1d4a6b6d0094129b0a1a458e7199bb68"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/compile_layout.py",
+      "sha256": "702cbfd1bbf34d3918b2b8501db5a69153bca5bb8c7938f5766ee5d7d45c91de"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/compressed-generated-inputs.json",
+      "sha256": "c8234af20b713ad3b67f17675a9d1c6084afa146e91feed44ec70d426a86566a"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/equaltext-existing-command.json",
+      "sha256": "455361c43e11c595eb77df1c21671a5d2e2b0a1d8f2d3fecf1c710a7541b2168"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/equaltext-existing-compile.json",
+      "sha256": "3ecdccffa84f95df096bae3b43bdd4e58ecb209e82e43fd7e75dd6f9f5803fe1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/equaltext-existing-compile.log",
+      "sha256": "a9428d6d15cd2b961e0f74fc431711137b9abdb584ece14654857e29d0af3e70"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/equaltext-existing-poison.json",
+      "sha256": "296c43f97e7a2936a0e14d8d30f177ee5e5d37ab084adc8014ebc6d60925dc5e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/equaltext-existing-poison.log",
+      "sha256": "d3ef2e4c4fed19bc1f58da5ad59480f599754bdd303f514e5c9a39f28117e55c"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/equaltext-final-command.json",
+      "sha256": "014bb412827c57fb3be4428cc8bd17fb2346add5c3696f97383bf937759dda8d"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/equaltext-final-compile.json",
+      "sha256": "dba3cb6239b07858034758a71c2ffe747313b2a486e9ed8ab49caf369c73b000"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/equaltext-final-compile.log",
+      "sha256": "a76bcc481fc4a3dde53bf9eb86cfed01014e6ec955c2f9ccf63c022c432f1afe"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/equaltext-final-poison.json",
+      "sha256": "902d7b0c7f509d3d676cc717acbfabdad569b0aba5863618247cddc6b468c2ae"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/equaltext-final-poison.log",
+      "sha256": "68dbf82f2690ad24ae3cdb06056df9abe25f80c4238fef59bdc223687c2e09eb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/ganesh-build.json",
+      "sha256": "a2cfafc99e4df6e2f31bbd66b68b127809489f018e98ece07037e6841ac60dec"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/ganesh-build.log",
+      "sha256": "f1d0e419b61711041245af7d9ed63ee1752afd6480f2f51a117ca5fc2a2bd36f"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/ganesh-inputs.json",
+      "sha256": "8507b630e3b441236ac1bc527b1364316cbabb0a24b0f161577d2db74b391f2a"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/ganesh-run.json",
+      "sha256": "d443e95b64792390243a19950684eaea27916a42a4679ddf877e667ebffddccf"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/ganesh-run.log",
+      "sha256": "6ab2da684ad53c895cecfd980b89620d6210d6acb055ea26003ba3c30ca99bce"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/ganesh_phases.mm",
+      "sha256": "052e9cef02528f3e09ed53fe335add1ee3869a817644367f42284050602581e4"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/live-result.json",
+      "sha256": "6a51ebc45580e926b5591ed0392391fa524f822f737f787db517cecf70e7a854"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/make_receipt.py",
+      "sha256": "9135e9b17dbebd95752128e9daab78f9c2e57979a2e1a0aa200e350f024e09e4"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/metal_queue_cap.mm",
+      "sha256": "ffb4342e70edc1c443ed69d2b0d5b2ab1a92b50a8b3aa4ffc4810b6ecb47efde"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual-command.json",
+      "sha256": "4c9bf489dc0cc0c704fb9ad1f291800aef9fec18ac2eb27c419e1cb3e5310aa9"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual-guard.json",
+      "sha256": "8cfaacf009b5f2138d302f926eb3804caecccddc2c4f5ea04b6525198f6d3fcc"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/native-cache-visual.log",
+      "sha256": "1fd342996a26632c392cdf34245ab62584f526743cb61a933f14c3b1d67bafa1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/probe_stock.py",
+      "sha256": "2f67ea02438cee8f4309cdc9341fd66af93b250257db2a6b0a149e03f4f0f255"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-0.json",
+      "sha256": "4b20be016e88a3e16938944eef0ac3f624c7c9983292cbd194c875b91d63feb1"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-0.log",
+      "sha256": "33c5d7549043df016d178edc6d389ae9a6ff9946d74910167faa353a568b1584"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-4.json",
+      "sha256": "20ced27cf5a85a56893670d7ccbd401d9c2e4722aa089755c8caca523ad18476"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-4.log",
+      "sha256": "309faf3915a075c798672fe88946c87ffa1ea385e191872c5bd964e42a442d89"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-8.json",
+      "sha256": "f1deec280186207cc1fad72f98d0eaced9db062ff44ca565782dee160b9544ba"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-8.log",
+      "sha256": "2501b52cb747a36eaba30728166b66920edc9834579cc6d21df660b03836b59b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-build.json",
+      "sha256": "99db1a63d35090a9cc80c8a3b30809390973c1287933fe69ce2ac7f733b0bbfa"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-build.log",
+      "sha256": "ed2cf621720529dfb347e536bbf80eaa5c9ec47335425e5b3784c2910bb8e4ca"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/queue-cap-observations.json",
+      "sha256": "90954801ac08e9674e2d0446630ba56f91f5f894f8a10fbd55ef44d82537b102"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/queue_cap_probe.py",
+      "sha256": "9fba21e86f1a65ce2232a080b472728b45cd130f468fa20d43efc536ee08921c"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/stock-cache-long-guard.json",
+      "sha256": "9128a8dca3042c638d2992ac3e15a48ea9d89462718cdd409ba46a10d7b66d3b"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/stock-cache-long.log",
+      "sha256": "e4649015349006b6d741bf849f09649242161cf00a83e2e478727268a822a8fb"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/stock-initial-guard.json",
+      "sha256": "917216eea8a1e0aa2a2dc88180c1af86fff5b8e6a33ce0ddcf8b0b8da0cb7d98"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/stock-initial.log",
+      "sha256": "441f4c5224daf371be8fd2e850ea68b6470c4d6afb19a071798a9db4891d119e"
+    },
+    {
+      "path": "Build/reddit-comment-memory-20261103-retained/visual_stock.py",
+      "sha256": "46fa396b3c916f0ea0059fa7c1b309bb81b414305f5a28de1c6f0536e5d215de"
+    }
+  ],
+  "pending": [
+    "Production peak <=500 MB is not achieved.",
+    "Persistent idle growth, longer browsing/interaction coverage and successful live-site validation remain open.",
+    "CPU raster policy remains experimental and unshipped, with known rounded-edge differences and unvalidated longer-run/performance bounds."
+  ]
+}

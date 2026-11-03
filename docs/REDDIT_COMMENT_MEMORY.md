@@ -3,8 +3,8 @@
 The requested limit is **500,000,000 bytes** for
 `https://old.reddit.com/r/UkraineRussiaReport/comments/1xls5ou/ua_pov_ukraine_hits_10_of_russias_oil_refining/`.
 The measured production bundles **exceed this limit**. The latest valid
-five-minute observation settles at **338,348,192 B** and peaks at **750,554,016 B**.
-The transport continuation below records its pinned build and focused checks.
+five-minute observation settles at **307,120,240 B** and peaks at **728,435,544 B**.
+The continuations below record the pinned builds and focused checks.
 A later private CPU-rendering experiment observes a 405,834,632 B five-minute
 peak, but is not shipped and fails two exact rounded-border comparisons.
 The peak investigation below records that distinction and corrects an earlier
@@ -752,3 +752,74 @@ open. The [peak investigation receipt](benchmark-results/reddit-comment-memory-2
 retains the exact identities, failed attempts, raw artifact hashes and focused
 checks. Completed generated C inputs were losslessly compressed; their
 manifest records original and compressed hashes.
+
+
+## Reusing the native text-validation index
+
+Commit `011993bfe` moves the private equal-text validation index from a replaced
+native layout result to its successor and refills the same vector. Previously
+every full relayout allocated another page-wide vector in the document arena.
+Only the current result consumes this index; published geometry, retained paint
+scenes, DOM identities and live ranges keep their existing ownership. A
+geometry-only tree-dump result continues to have no text-reuse index.
+
+For a 256-comment fixture, sixteen index refills retain **0 B** with reuse versus
+**6,295,545 B** with the old discard/rebuild behavior. These are component
+allocations, not whole-browser RAM savings. Three focused cases pass normally
+and with full arena poisoning. They check the retention budget, a real changed
+text relayout followed by equal-text reuse, retention of the previous published
+scene, and invalidation for a geometry-only result. Eight existing equal-text
+cases pass normally and with poisoning, preserving text-node/range/paint
+identity, connection state and fallback after real content/style/viewport
+changes. The first fixture failures omitted the explicit scene and presented
+projection leases required by native snapshots; those failed runs remain
+preserved, and the corrected fixtures retain the original snapshot assertions.
+
+A fresh pre-change stock-production observation on executable `73c98de0…`,
+65 seconds, peaks at **735,431,488 B** and settles at **290,080,904 B**. Its
+identities remain unchanged, browser/guard exits are zero and the complete
+original-origin replay passes the normal author-script and content audits.
+An 80-second instrumented arena observation on the same executable peaks at
+730,860,376 B and settles at 290,203,736 B. Zero arena readings when no retained
+owner is entered do not establish zero document allocation; the asynchronous
+mapping stacks are diagnostics, not optimization credit.
+
+A completed production build containing the cache fix, executable
+`2cd7a620…`, receipt `20261103-075630-018eebea`, completes a five-minute
+observation with a **307,120,240 B** final two-second median and a
+**728,435,544 B** simultaneous observed peak. Frozen compiler input confirms
+both the cache move and vector refill. Browser and guard exits are zero;
+executable, native-library, filter-resource and fixture identities remain
+unchanged. The original URL/title, complete visible fully active 1708 × 953
+document, 49 comments, two images, zero native errors and expected badge-fetch
+JavaScript diagnostic pass the audit. The longest sampling gap is 66.28 ms.
+Host load is high: 49.64/24.55/14.45 on 18 CPUs at launch, with other sessions
+active. Shared native/CSS changes, clock-driven content and host contention
+prevent attributing the whole-browser difference to index reuse. The startup
+spike still exceeds the target; a later refresh also reaches **707,135,600 B**
+at 280.65 seconds, and idle growth continues. After the observation, all
+thirteen native SVG, same-size image, equal-text, ID-collision and rounded-border
+comparisons are pixel-exact on this same executable. Runtime, tool and reference
+hashes remain unchanged; the visual guard exits zero. No references or
+tolerances change.
+
+Two further private GPU experiments do not ship. Limiting Metal command queues
+to four or eight pending buffers preserves the isolated rounded-rectangle hash,
+but the observed submission footprint stays around 319 MB. A Ganesh/Metal
+experiment using the installed upstream Skia library reaches 352,453,280 B at
+submission and produces a different region hash from the Graphite control.
+Its different Skia/backend inputs prevent matched attribution; it demonstrates
+neither the required memory reduction nor identical rendering.
+
+A fresh direct live request still returns **HTTP 403**. Renderer policy is
+unchanged. The CPU renderer remains experimental, with its known edge differences and
+longer-run limitations recorded above.
+The default-production **500,000,000 B peak target remains open**. All commands,
+samples, actual guard/test exits and failed fixtures for this continuation are
+retained under `Build/reddit-comment-memory-20261103-retained/`. A new compression
+manifest maps completed generated C inputs to losslessly verified gzip files;
+no source tree, repository tool or browser bundle was copied.
+
+The [retained-index receipt](benchmark-results/reddit-comment-memory-2026-11-03-retained.json)
+pins the feature, frozen production input, focused checks, all observation and
+visual artifacts, GPU experiments and fresh live-access result.
