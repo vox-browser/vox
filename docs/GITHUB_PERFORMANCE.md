@@ -5,6 +5,64 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Recovered selective-query checkpoint, November 3, 2026
+
+Session 4076 resumed the October 25 selective computed-style-query work after
+an account handoff. The original feature `16138c63` and its integrated commit
+`8dcc75cf9` have byte-identical Git patches. Both public queries still flush
+pending selective work through `Document.update_style()` without requesting a
+full document cascade. All six tests introduced by that feature remain in the
+current source. Later changes add selective missing-style bootstrap and hidden
+style materialization; the current implementation is therefore newer than the
+historical measured candidate.
+
+The recovered conversation reports a three-pair local reduction of 94.43% and a
+completed 30-pair page cohort with approximate medians of 53.52 billion and
+52.10 billion retired instructions through native submission. The reported
+2.65% page reduction has a paired confidence interval including zero, so its
+repeatable page credit is zero. These are handoff reports, not independently
+reverified measurements. Exact counts, confidence bounds, primary exits,
+binary identities and input hashes cannot be recovered from those rounded
+figures. They must not replace the raw cohort.
+
+The handoff also reports 87 selected CSS/SVG/layout cases passing in each GC
+mode, after two retained ICU header/library link failures were repaired.
+Screenshot comparisons were still underway: completed before/final pairs
+matched, while some canonical references differed in both builds. A subsequent
+custom-property diagnostic reportedly completed, with its final audit pending.
+The current checkout cannot independently establish those exits, the final
+screenshot totals or the diagnostic's detailed counters.
+
+`Build/instructions/` is absent, including the previously documented native
+submission and style-attribution evidence. The round-30 final audit and
+`Build/v/instruction-optimization-validation-baseline.json` are absent too.
+A search of the current repository found no sealed GitHub fixture or surviving
+files named for the historical instruction rounds. No historical primary,
+completed focused check or broad case was replayed during recovery. The pending
+historical audit remains blocked; no broad baseline is reset and no new
+instruction credit is assigned. Existing historical reports remain intact.
+
+The latest completed production receipt observed during recovery was
+`Build/production-build/receipts/20261103-142818-b5138f54/result.json`, with
+actual build exit zero. Its executable SHA-256 matched the installed
+`Build/v/Vox.app/Contents/MacOS/Vox`:
+`db4eab235d92fa1d57bd1cda027d16f6540067b261d036697bb6eb6d4bfc34ad`.
+This identity check does not execute the browser or validate the historical
+candidate. No build was requested, and the shared bundle and GUI processes were
+left untouched.
+
+Recovery audit:
+`Build/github-instruction-recovery-20261103-session4076/source-and-evidence-audit.json`
+(SHA-256 `2ae38cc2b7043e5ab24267ff2d875cf338b368ba20418f775f4b405cd9c74b7b`).
+It records the identical patches, six surviving tests, selective query source,
+missing evidence and observed production identity. Completing the historical
+checkpoint requires the original 60 primary records and summaries, strict
+generated-C/input audits, build/focused/GC receipts, six broad runtime receipts,
+all screenshot attempts and the custom-property diagnostic with actual exits.
+Restored artifacts must match their original hashes; newly captured content or
+a new cohort would require a separately declared experiment and cannot fill
+holes in the completed cohort. Chrome parity remains unverified.
+
 ## Rejected compact private matching-rule candidates, October 25
 
 Rejected after the complete 30-pair cohort: the candidate used 74,170,885 more

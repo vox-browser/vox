@@ -2915,6 +2915,10 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Native-submission style attribution October25:one observer-perturbed observation/10inclusive hardware wrappers+16cause+16font-guard counters/full-C removal exact/130native pins/actual native+sign+verify+smoke+browser+guard0/strictcontent/exact1024x768.
   Full-document cause5214→5214;custom-property dependency0→15684;node14→2144;zero font refresh/fallback/rejections/zero instrumentation failures/no open wrappers. Repeated animated/selective passes require investigation;overlapping totals never summed/call counts never substitute for instructions.
   Diagnostic pagecredit0/no broad reset/current4 carry54,475,673/canonical baseline pending/legacy179ledger+canonical+GUI preserved/Chrome parity open.
+  Selective-query handoff recovery November3 (session4076):original16138c63/integrated8dcc75cf9 patches byte-identical;both selective query flushes and all six original tests remain;later bootstrap/hidden-style changes preserved.
+  Handoff-only local94.43%/30pagepairs approximately53.52B→52.10B/CI includes0/repeatablecredit0;reported87bothGC/screenshots unfinished/custom-property diagnostic final audit pending;raw receipts unavailable, not independently reverified.
+  Build/instructions plus round30 final audit and validation ledger absent;no sealed fixture or historical round artifacts found. Historical final audit blocked pending original hashed records/actual exits;no primary or completed focused/broad replay/no baseline reset/no new credit.
+  Production receipt20261103-142818-b5138f54 build0/executable identity matches at inspection;identity-only/no runtime or historical validation/no build requested/canonical+GUI+foreign preserved. See docs/GITHUB_PERFORMANCE.md recovery checkpoint;Chrome parity open.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST
