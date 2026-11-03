@@ -148,6 +148,23 @@ fn (mut runtime Runtime) custom_element_registry_operation(mut binding CustomEle
 				binding.next_id++
 				binding.next_id
 			}
+			// Reserve identity before author metadata can define this callback in
+			// another registry. A failed outer definition must keep an identity
+			// published by a successful nested definition, and otherwise release
+			// both its reservation and temporary GC root.
+			known := constructor in binding.constructor_ids
+			binding.constructor_ids[constructor] = id
+			runtime.retain_javascript_value(constructor)!
+			defer {
+				if !known {
+					mut published := false
+					for _, bound in binding.registries {
+						if id in bound.constructors { published = true; break }
+					}
+					if !published { binding.constructor_ids.delete(constructor) }
+				}
+				runtime.release_javascript_value(constructor)
+			}
 			extends := if C.JSValueIsUndefined(runtime.context, args[4]) { ?string(none) } else { ?string((runtime.binding_dom_utf16(args[4])!).str()) }
 			owner := voidptr(&runtime)
 			// Capture callback values/prototype exactly once under the native

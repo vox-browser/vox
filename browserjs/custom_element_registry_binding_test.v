@@ -219,3 +219,42 @@ fn test_custom_registry_preserves_domstrings_and_reads_only_required_metadata() 
 	assert attributes.len == 1
 	assert attributes[0].bytes() == [u8(0xed), 0xa0, 0x80]
 }
+
+fn test_custom_registry_cross_registry_metadata_reentry_preserves_constructor_identity() {
+	mut runtime, mut document, registry := custom_registry_fixture()!
+	defer { runtime.close(); document.finalize() }
+	assert runtime.evaluate_host(r'
+ const scoped=new CustomElementRegistry();let nested=false;
+ const Shared=function(){};Object.defineProperty(Shared.prototype,"connectedCallback",{get(){if(!nested){nested=true;scoped.define("x-shared",Shared)}return function(){}}});
+ customElements.define("x-shared",Shared);
+ if(customElements.getName(Shared)!=="x-shared"||scoped.getName(Shared)!=="x-shared")throw Error("nested constructor identity");
+ let duplicate=0;for(const r of [customElements,scoped])try{r.define("x-duplicate",Shared)}catch(error){if(error instanceof DOMException&&error.name==="NotSupportedError")duplicate++}
+ const marker={};let failedNested=false;
+ const Retried=function(){};Object.defineProperty(Retried.prototype,"connectedCallback",{get(){if(!failedNested){failedNested=true;scoped.define("x-retried",Retried);throw marker}return undefined}});
+ let original=false;try{customElements.define("x-retried",Retried)}catch(error){original=error===marker}
+ if(customElements.get("x-retried")!==undefined||scoped.getName(Retried)!=="x-retried")throw Error("failed outer reservation");
+ customElements.define("x-retried",Retried);
+ duplicate===2&&original&&customElements.getName(Retried)==="x-retried"&&scoped.get("x-retried")===Retried;
+ ')! == 'true'
+	assert registry.definition_count() == 2
+	// Unpublished reservations leave no constructor keys or object roots. The
+	// existing exception transport retains each original thrown value, so use
+	// a primitive exception and check object roots separately from that policy.
+	binding := custom_element_registry_bindings_[voidptr(runtime)] or { panic('Missing registry binding') }
+	before_ids := binding.constructor_ids.len
+	before := custom_registry_object_roots(runtime)
+	assert runtime.evaluate_host(r'
+ for(let i=0;i<20;i++){const C=function(){};Object.defineProperty(C.prototype,"connectedCallback",{get(){throw 1}});try{customElements.define("x-failed-"+i,C)}catch(error){if(error!==1)throw error}}
+ true;
+ ')! == 'true'
+	assert binding.constructor_ids.len == before_ids
+	assert custom_registry_object_roots(runtime) == before
+}
+
+fn custom_registry_object_roots(runtime &Runtime) int {
+	mut count := 0
+	for value in runtime.protected_values_ {
+		if C.JSValueIsObject(runtime.context, value) { count++ }
+	}
+	return count
+}
