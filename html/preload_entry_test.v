@@ -27,7 +27,7 @@ fn test_translate_a_preload_destination_uses_exact_keywords() {
 
 fn test_preload_entry_consumes_a_resolved_response_once() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page.html' })
-	url := dom.dom_url_parse('/app.js', document.base_url(), 'UTF-8') or { panic(err) }
+	url := dom.dom_url_parse('/app.js', document.base_url(), 'UTF-8') or { panic('Expected a valid preload URL') }
 	request := create_potential_cors_request(url, RequestDestination.script, .anonymous, .no)
 	mut entry := &PreloadEntry{
 		integrity_metadata: 'sha256-test'
@@ -38,18 +38,22 @@ fn test_preload_entry_consumes_a_resolved_response_once() {
 	})
 	store_preloaded_resource(document, create_a_preload_key(request), entry)
 	assert document.preloaded_resource_entry_count() == 1
+	assert preload_key_storage_key(create_a_preload_key(request)) == preload_key_storage_key(PreloadKey{
+		url:url, destination:RequestDestination.script, mode:.cors, credentials_mode:.same_origin
+	})
 
 	consumed_preload_responses.clear()
-	assert consume_a_preloaded_resource(document, url, .script, .cors, .same_origin, 'sha256-test', record_consumed_preload_response)
+	// Keep the enum type explicit across the optional destination argument.
+	assert consume_a_preloaded_resource(document, url, RequestDestination.script, .cors, .same_origin, 'sha256-test', record_consumed_preload_response)
 	assert consumed_preload_responses.len == 1
 	assert consumed_preload_responses[0].body == [u8(1), 2, 3]
 	assert document.preloaded_resource_entry_count() == 0
-	assert !consume_a_preloaded_resource(document, url, .script, .cors, .same_origin, 'sha256-test', record_consumed_preload_response)
+	assert !consume_a_preloaded_resource(document, url, RequestDestination.script, .cors, .same_origin, 'sha256-test', record_consumed_preload_response)
 }
 
 fn test_preload_entry_delivers_a_response_that_was_pending_at_consumption() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
-	url := dom.dom_url_parse('/style.css', document.base_url(), 'UTF-8') or { panic(err) }
+	url := dom.dom_url_parse('/style.css', document.base_url(), 'UTF-8') or { panic('Expected a valid preload URL') }
 	request := create_potential_cors_request(url, RequestDestination.style, .no_cors, .no)
 	mut entry := &PreloadEntry{}
 	store_preloaded_resource(document, create_a_preload_key(request), entry)
@@ -75,7 +79,7 @@ fn test_link_preload_commits_its_entry_to_the_associated_document() {
 	model.fetch_and_process_linked_preload_resource()
 	assert document.preloaded_resource_entry_count() == 1
 
-	url := dom.dom_url_parse('/asset.bin', document.base_url(), 'UTF-8') or { panic(err) }
+	url := dom.dom_url_parse('/asset.bin', document.base_url(), 'UTF-8') or { panic('Expected a valid preload URL') }
 	consumed_preload_responses.clear()
 	assert consume_a_preloaded_resource(document, url, none, .no_cors, .include, '', record_consumed_preload_response)
 	assert consumed_preload_responses[0].body == [u8(9)]
