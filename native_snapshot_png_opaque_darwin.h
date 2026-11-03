@@ -9,6 +9,7 @@
 #include <dlfcn.h>
 #include <stdio.h>
 #include "native_rgba_is_opaque.h"
+#include "native_crc32.h"
 
 static void native_png_write_u32(unsigned char *bytes, uint32_t value)
 {
@@ -24,8 +25,8 @@ static void native_png_append_chunk(NSMutableData *output, const char *type,
     [output appendBytes:word length:4];
     [output appendBytes:type length:4];
     if (length) [output appendBytes:bytes length:length];
-    uLong crc = crc32(0, (const Bytef *)type, 4);
-    if (length) crc = crc32(crc, bytes, length);
+    uLong crc = vox_crc32(0, (const Bytef *)type, 4);
+    if (length) crc = vox_crc32(crc, bytes, length);
     native_png_write_u32(word, (uint32_t)crc);
     [output appendBytes:word length:4];
 }

@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "runtime.h"
+#include "../native_crc32.h"
 
 static JSValueRef vox_adblock_snapshot_error(JSContextRef context,
         const char *text, JSValueRef *exception) {
@@ -138,7 +139,7 @@ static int vox_adblock_install_snapshot(JSGlobalContextRef context,
     uint32_t expected_crc = (uint32_t)crc_bytes[0] | ((uint32_t)crc_bytes[1] << 8) |
         ((uint32_t)crc_bytes[2] << 16) | ((uint32_t)crc_bytes[3] << 24);
     const unsigned char *payload = snapshot + 16;
-    if ((uint32_t)crc32(0, payload, (uInt)size) != expected_crc) return 4;
+    if ((uint32_t)vox_crc32(0, payload, (uInt)size) != expected_crc) return 4;
     void *owner = NULL;
     void *bytes = vox_adblock_copy_snapshot(payload, size, &owner);
     if (!bytes) return 3;
