@@ -4011,3 +4011,39 @@ open**, with no BBC homepage catalog entry. The
 [durable ledger](performance/bbc-pseudo-candidates-adaptive-20261103.json)
 retains exact counts, all failures, profiles, ownership/identity receipts,
 commands, host telemetry, compression manifests and local evidence paths.
+
+### Available image-request sources (2026-11-03)
+
+`8b10299ff` reads an available image request's current URL before parsing
+`srcset`, whose fallback the old constructor/relayout immediately overwrote.
+There is no retained selection cache. All **96 focused executions** pass across
+both policies and three memory modes, covering live replacements, request
+availability, empty URLs, source fallbacks, constructor/relayout dimensions,
+namespace guards and retained image painting. The benchmark control's 242 tool
+tests pass. Separate original-origin diagnostics confirm this path before PNG,
+original content/pixels, ownership, normal exits and actual JavaScriptCore
+execution (1,903 candidate / 1,926 control evaluations).
+
+Cohort 68 retains seven alternating control/Vox/Brave triples. Its observed
+medians are **29,400,231,885 control**, **28,974,054,499 Vox** and
+**15,094,259,216 Brave**. The Vox median is **426,177,386 lower (1.4496%)**;
+five matched pairs improve and two regress, with paired median reduction
+409,680,327. These are observed results with substantial variation. All 14
+Vox/control PNGs are exact, and all content, ownership, adoption, identity and
+normal-exit checks pass. Brave pair 7 differs by 64,177 pixels, invalidating
+acceptance. The numeric gate also fails:
+**296,509,379,560 > 135,657,192,798**, ratio **1.9671529102**.
+
+The pinned executable is `d5414c4a59f0537b663d2a8530890315d4d4e5777115dd61a58bc325577111c8`
+(receipt `20261103-072109-1e55b60e`). It contains R14 batching and the broader
+exact-length prototype in both arms; this comparison isolates only image source
+selection. It cannot validate their later removal/narrowing. Headless startup,
+eleven smoke and eight SVG checks pass with unchanged executable/library
+identities. Broad verification following this observed reduction remains
+pending, with no cadence reset. The image-source change is retained; the
+**10% BBC target remains open**, without a catalog entry. History reaches
+**68 cohorts / 1,576 browser attempts**. The
+[durable ledger](performance/bbc-image-layout-source-20261103.json) retains exact
+counts, every regression and failure, full guard/identity/ownership receipts,
+commands and local evidence. No isolated rendering, live-site or FPS gain is
+claimed.
