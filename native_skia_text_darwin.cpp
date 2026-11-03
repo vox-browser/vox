@@ -3933,6 +3933,16 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             // Blink records compositor contents in layer coordinates. Keeping
             // large page offsets in the rrect changes GPU edge rounding.
             auto local_matrix = matrix;
+            // Sticky translations live in the property matrix while layout
+            // coordinates stay untranslated. Resolve integral translations
+            // before subtracting the layer origin, so the recorded rrect is
+            // actually local to that layer rather than offset a second time.
+            if (matrix.isTranslate() && transform_e == std::trunc(transform_e)
+                && transform_f == std::trunc(transform_f)) {
+                local_rect.offset(transform_e, transform_f);
+                if (has_underlay) local_underlay.offset(transform_e, transform_f);
+                local_matrix.setTranslate(page_x, page_y - scroll_y);
+            }
             local_matrix.preTranslate(s_raster_origin_x, s_raster_origin_y);
             canvas->setMatrix(local_matrix);
             local_rect.offset(-s_raster_origin_x, -s_raster_origin_y);
