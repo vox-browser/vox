@@ -34,8 +34,8 @@ fn chromium_opaque_compositor_mask_gap(commands []layout.PaintCommand,
 	// Fixed descendants share viewport coordinates. They can retain their own
 	// opaque prefix too, provided every parent and mask command uses that space.
 	fixed := opening.fixed_to_viewport
-	if opening.kind != 'begin_svg_mask_layer' || closing.kind != 'end_svg_mask_layer'
-		|| closing.fixed_to_viewport != fixed { return false }
+	// Closing markers carry only scope identity, with no painted coordinates.
+	if opening.kind != 'begin_svg_mask_layer' || closing.kind != 'end_svg_mask_layer' { return false }
 	mask := opening.visual_layer_data or { return false }
 	finish := closing.visual_layer_data or { return false }
 	if mask.kind != .svg_mask || finish.kind != mask.kind || mask.scope_id == 0

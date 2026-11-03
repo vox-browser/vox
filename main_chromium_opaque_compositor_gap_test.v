@@ -46,11 +46,24 @@ fn test_opaque_fixed_prefix_can_resume_around_a_mask_in_the_same_viewport_space(
 	assert chromium_svg_compositor_layer_supported_for_viewport(commands,plan,1,
 		layout.LayoutRect{0,6400,1024,768})
 	assert chromium_compositor_opaque_mask_resume(commands,plan,1,6)
-	for index in 1 .. commands.len {
+	for index in [1,2,3,4,6] {
 		mut mixed := commands.clone()
 		mixed[index].fixed_to_viewport = false
 		assert !chromium_opaque_compositor_mask_gap(mixed,plan,1,3,6)
 	}
+}
+
+fn test_fixed_mask_closing_marker_does_not_change_its_painted_coordinate_space() {
+	mut commands := opaque_mask_gap_test_commands()
+	for index in [1,2,3,4,6] {
+		commands[index].fixed_to_viewport = true
+	}
+	// Display-list lowering attaches no geometry or fixed flag to closing markers.
+	assert !commands[5].fixed_to_viewport
+	plan := opaque_mask_gap_test_plan()
+	assert chromium_opaque_compositor_mask_gap(commands,plan,1,3,6)
+	assert chromium_svg_compositor_layer_supported_for_viewport(commands,plan,1,
+		layout.LayoutRect{0,6400,1024,768})
 }
 
 fn test_opaque_mask_gap_retains_transparency_fringe_and_paint_order_guards() {
