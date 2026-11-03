@@ -20659,3 +20659,94 @@ and newer app bundles are preserved, and the user's GUI browser is not stopped.
 
 See [the structured audit](performance/github-empty-collector-20261103.json)
 and [durable generated C, checks, counters and captures](performance/raw/github-empty-collector-20261103.tar.gz).
+
+
+## Deferred repeated-selector memo setup, November 4, 2026
+
+Feature `ded75a2b3c1a3774001df4ac8a1dd7b9b2a655fe` defers construction of a collection's repeated-selector memo
+until its first eligible repeated-selector store. Collections with nonempty
+unique-selector candidates avoid the unused map allocation. The optional map
+header stays in a local record; matching order, sheet identity, attempted
+pseudo-class metadata, scoped/shadow routing and scratch cleanup are preserved.
+Stores publish the borrowed header without cloning or resetting its view.
+
+Two new collector cases cover unique and mixed repeated selectors, ordered
+results, state changes, attempted metadata, scratch lifetime and forced GC.
+Namespace coverage now inspects retained memo state, and a new 128-selector
+case checks entries and hover metadata after growth and forced GC. The final
+feature checks pass 30 C-O0 case executions with Boehm, GC-disabled and
+preallocation coverage. Four supplemental preallocation workspace cases also
+pass, covering non-nil storage, nested style queries, public result lifetime
+and document-arena accumulation: 34 focused executions in total. Compiler,
+runtime and guard exits are all zero; compile limits remain 12 GiB/V10G and
+runtime limits 3 GiB.
+
+The fixed local mechanism diagnostic uses the same current-V/preallocated C-O2
+executable and native dependencies for both variants. The control sets
+`VOX_DISABLE_LAZY_REPEATED_RULE_MEMO=1`; the candidate leaves it unset. This
+isolates initialization modes within the new representation and does not claim
+literal previous-executable equivalence. Three alternating pairs are retained
+without retries or extensions. Each fresh process reports two separate hardware
+intervals of 2,048 complete collector calls. Setup, eight warmups, forced GC,
+assertions and printing are outside the intervals; checksums are 2,048 for unique
+selectors and 6,144 for the mixed repeated fixture.
+
+| Pair | Unique eager | Unique deferred | Repeated eager | Repeated deferred |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 3,219,877 | 2,958,115 | 9,534,153 | 9,469,742 |
+| 2 | 3,259,836 | 2,958,157 | 9,375,375 | 9,372,076 |
+| 3 | 3,218,077 | 2,970,900 | 9,702,928 | 9,389,578 |
+
+Unique median retired instructions fall from 3,219,877 to
+2,958,157, an observed 8.1283% reduction.
+Mixed repeated medians are 9,534,153 and 9,389,578, an
+observed 1.5164% reduction. All three pairs improve
+in each interval; the smallest repeated paired saving is only
+3,299 instructions. These are local observations without
+a confidence interval or attributed page gain. All six processes and 3 GiB guards
+exit zero with pinned executable/native hashes. Unique interval arena growth is
+589,824 versus 262,144 bytes; repeated growth is 2,490,368 bytes in both variants.
+These observations do not measure whole-process memory footprint. The backend
+reads `proc_pid_rusage(..., RUSAGE_INFO_V4).ri_instructions` for all threads in
+the current process. Substantial host contention remains recorded.
+
+Preparatory evidence retains the initial incorrect raw-collector involvement
+assertion, concurrent idle-layout compile errors, superseded optional-map
+representations and intentional controller SIGTERMs stopping future submissions.
+None of the preliminary probe executables ran hardware primaries. Generated-C
+review exposed a mutable-option header copy and an unused reset allocation from
+`map.move()`; the final representation avoids both. Explicit header publication
+also preserves value-header compiler semantics. The pinned runtime's shared
+`VMapData` allocation is visible in the archived constructor C. Preliminary
+passes do not count toward the final 34 focused executions.
+
+Installed validation remains pending. The latest completed bundle, executable
+SHA-256 `de8cc0044d2999eed4ccf359f787ce99a30d4fa25206ecaa68c4094a659d0530`,
+lacks this feature. It passes the separate fresh HTTP API fixture at exactly
+640×480 with browser/controller/3 GiB guard exits zero. That observation is a
+baseline only; it does not validate the candidate or establish a paired pixel
+comparison.
+
+One coalesced production request was recorded. Staged collector/helper bodies
+and the memo record match the tested C; five unchanged helpers match preceding
+production after exact string-constant resolution, preserving assertion code.
+Shared receipt `20261104-003720-f7f20c86` then reaches its 1,800-second guard
+timeout: guard exit 125, wrapped shell exit -9, frozen native compilation
+incomplete. The native compiler's final terminal status was not captured; no
+native build, signing, smoke or candidate browser success is inferred. The
+preceding shared build's timeout is retained too. The shared worker and any
+subsequent coalesced work are preserved.
+
+No candidate API or GitHub browser observation has launched. The separately
+declared candidate fixture, exact baseline/candidate pixel comparison and strict
+193-response/33-row/66-link/21-image GitHub N=1 correctness diagnostic remain
+unexecuted. Their plans are retained for continuation; no primary is replaced.
+There is no matched whole-page saving, per-page eligibility count, new page
+credit, broad-baseline reset, hydration or Chrome-parity claim. Current-V/C-O2
+preallocated local counts remain separate from C-O3 production and historical
+old-compiler/Boehm/C-O2 results. Broad suites are not rerun for this local-only
+result. Concurrent edits, newer app bundles and the user's GUI browser are
+preserved.
+
+See [the local checkpoint and pending validation audit](performance/github-lazy-match-memo-20261104.json)
+and [durable C, failed builds, focused checks and counters](performance/raw/github-lazy-match-memo-20261104.tar.gz).

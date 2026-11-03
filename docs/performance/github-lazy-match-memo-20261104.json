@@ -1,0 +1,2056 @@
+{
+  "app_copied": false,
+  "baseline": {
+    "actual_browser_exit": 0,
+    "build_requested": true,
+    "exit": 0,
+    "new_instruction_credit": 0,
+    "pid": 46825,
+    "requests": [
+      {
+        "path": "/integration.html",
+        "unix": 1793742615.7127838
+      },
+      {
+        "path": "/favicon.ico",
+        "unix": 1793742615.829111
+      }
+    ],
+    "text": [
+      "PASS: lazy repeated-selector memo"
+    ],
+    "viewport": [
+      640,
+      480
+    ]
+  },
+  "baseline_guard": {
+    "adopted_processes": {},
+    "adoption_error": null,
+    "child_exit_code": 0,
+    "command": [
+      "python3",
+      "Build/github-lazy-match-memo-20261104-session4076/run-baseline-integration.py",
+      "--run"
+    ],
+    "elapsed_seconds": 9.567214875,
+    "limit_bytes": 3221225472,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+    "observed_peak_rss_bytes": 318930944,
+    "reason": "completed"
+  },
+  "baseline_plan": {
+    "controller_sha256": "3a7d5ae272af08fcc0d1ef3fa0ae00c35686d1c15c0ad12f6fc5da3e0473e439",
+    "created_unix": 1793742607.6400142,
+    "executable_sha256": "de8cc0044d2999eed4ccf359f787ce99a30d4fa25206ecaa68c4094a659d0530",
+    "expected_viewport": [
+      640,
+      480
+    ],
+    "fixture_sha256": "4c0fb1dac8dc237805d04258e72e76c22c25eaffba8eb17f42ca2e28ce9642a5",
+    "new_instruction_credit": 0,
+    "observations": 1,
+    "retries": 0,
+    "scope": "Separate ordinary fresh-process baseline correctness and exact viewport reference using the latest completed production bundle; does not contain or validate the new feature and provides no hardware optimization observation."
+  },
+  "baseline_terminal": {
+    "actual_exit": 0,
+    "command": [
+      "python3",
+      "tools/run_memory_bounded.py",
+      "--lock",
+      "Build/github-lazy-match-memo-20261104-session4076/baseline-integration.lock",
+      "--report",
+      "Build/github-lazy-match-memo-20261104-session4076/baseline-integration-guard.json",
+      "--limit-gib",
+      "3",
+      "--timeout",
+      "240",
+      "--",
+      "python3",
+      "Build/github-lazy-match-memo-20261104-session4076/run-baseline-integration.py",
+      "--run"
+    ]
+  },
+  "broad_baseline_reset": false,
+  "candidate_browser_observations": 0,
+  "checkpoint": "Local feature and focused checks complete; installed validation pending shared native build",
+  "chrome_parity": false,
+  "completed_unix": 1793743687.726717,
+  "durable_evidence": {
+    "bytes": 19007843,
+    "files": 372,
+    "generated_c_policy": "Full measured probe C, incomplete native staging C and preceding production C; focused active entrypoints/resolved test bodies and binary hashes. No app or source-tree copy.",
+    "index": {
+      "ablation-verified-functions.c.txt": "89df8f719f0327408427778e81a74bb23b622a50393d9069e1892310aed5632e",
+      "archive-controller.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive-guard.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "audit-ablation-c.py": "1cc79d609b70ad733cd210db09495a5de2406c5ebd60b71b3b753779340d08dd",
+      "audit-focused-viewport.py": "79f70e69c4fe4aa1f37bf42aedfec8b2cf4d49f59f65016f2bbe3fc43664612e",
+      "audit-focused.py": "1e0ee99242503cd5b05b34b50a84f2819c588bd473ec6625ddaee7c49b3cce31",
+      "audit-local-c.py": "c33b7d75d5373b40ce718430349a133baec18437525e0d0ed031c5da882ffc06",
+      "audit-production-functions-uncached.py": "2882d4ad955cbf301500bd366b5fb20ee319f6a8b09829bc94f4f9a4bc5a0ff7",
+      "audit-production-functions.py": "f6fe36f6fc7ea9ab6be0b1c0d62f7356628b2df508eb1a1552f9f4d69de0c0a9",
+      "audit-workspace.py": "cc13104203b20138be97cdd367a34ccf14cc2ec2be18a74c75a885db88da0239",
+      "baseline-availability.json": "38e2be64c78c4a8896023ee6247ea0ace47e5d4a12ba25be98a31075eeffcfe5",
+      "baseline-integration-01/audit-config.json": "02edc79bd592077d50f954acf13affbaa8fd659fb47f0748e349278a5e1e7fc4",
+      "baseline-integration-01/audit.json": "b46bad8b9fa59a72cc845990367fdb9b638cc705ca62a3652e4d1bf22667d923",
+      "baseline-integration-01/browser.log": "c2159fa072286c24d66ff7586a13d253f1b94fed4350cf694f5c639d679bc01f",
+      "baseline-integration-01/document.png": "f673d2984f33c6e44317dd141136ca0feffbf08f4f8b4aad1b7757a263a8a8e7",
+      "baseline-integration-01/plan.json": "0b7e709953667b46c97b861940c1a406b22858ca35def4ceeb094c47f1b9ac88",
+      "baseline-integration-01/result.json": "623e8184392cf17893076f4d9cae8192e4ebc53013cd486aea38a2c53baa2a69",
+      "baseline-integration-controller.log": "61d42093064ff505db102216ba673083309b58bafe2bfeb9ef503b563521e7d9",
+      "baseline-integration-guard.json": "797d624d3f947887d0d7fdb7443302ee9bf75fb1eaae942be953e2ae94ccbfdf",
+      "baseline-integration-terminal.json": "655aecd98c07b22f4f41901e4104a89b0227e263e41ecabd6b1109c558fba816",
+      "baseline-predeclared-plan.json": "d8d20698aa2b750b6065f3bc61197a1841c9bd09c58897e68476f3412b4c1cb4",
+      "candidate-audit-tool-terminal.json": "3fb696c6e53334afe520fefbcc5991fa3d53a8484c4143f882720b559a5193c5",
+      "candidate-function-audit.json": "f9154d6978d55609f80a28219cc88024f447d90f270a361e4b5ee0bae3e7c962",
+      "candidate-verified-functions.c.txt": "1e95a19c8059f47f7edd733fffcd1c03c7af7b9886e26b0d6b1a772df9af50f8",
+      "canonical-counter-and-tools.json": "23bc707ea752bf43e8c557e4a6394c9ab647f96532d670c0dc6a93621e96e170",
+      "check.py": "823dacdfa9b8c06f756e7eaf97c6340d1c347d195a077c1f06af75d8b401d02c",
+      "checks-before-boehm-test-bodies.c.txt": "8334de7932ae9361994d1ff18b24b501543e74ca6567e5ec20c4f7b56d8aa5ec",
+      "checks-bucket-neighbor-v3-boehm-test-bodies.c.txt": "1d9a41a36adebaff8ef46d3909f06d4440e3582f1e3a0bf8065f6f7e9e34f8ab",
+      "checks-bucket-neighbor-v3-none-test-bodies.c.txt": "1d9a41a36adebaff8ef46d3909f06d4440e3582f1e3a0bf8065f6f7e9e34f8ab",
+      "checks-empty-neighbor-v3-prealloc-test-bodies.c.txt": "49c0382b221babf792a7c4e02fa5cd62f39895bacee1ba3d3a59dbf50e84046b",
+      "checks-metadata-neighbor-v3-boehm-test-bodies.c.txt": "41be8a2e9a605c8770b6b8c7864409bae6776b5d3cca05958ef6d0a671192baf",
+      "checks-metadata-neighbor-v3-none-test-bodies.c.txt": "41be8a2e9a605c8770b6b8c7864409bae6776b5d3cca05958ef6d0a671192baf",
+      "checks-repeat-neighbor-v3-boehm-test-bodies.c.txt": "41dc8a068a07b30c31e12fe6eb8de7ec45409a8ecfc8f98bbdfaef0262b026ca",
+      "checks-repeat-neighbor-v3-none-test-bodies.c.txt": "41dc8a068a07b30c31e12fe6eb8de7ec45409a8ecfc8f98bbdfaef0262b026ca",
+      "checks-repeat-neighbor-v3-prealloc-test-bodies.c.txt": "41dc8a068a07b30c31e12fe6eb8de7ec45409a8ecfc8f98bbdfaef0262b026ca",
+      "checks-v3-final-boehm-test-bodies.c.txt": "8334de7932ae9361994d1ff18b24b501543e74ca6567e5ec20c4f7b56d8aa5ec",
+      "checks-v3-final-none-test-bodies.c.txt": "8334de7932ae9361994d1ff18b24b501543e74ca6567e5ec20c4f7b56d8aa5ec",
+      "checks-v3-final-prealloc-test-bodies.c.txt": "8334de7932ae9361994d1ff18b24b501543e74ca6567e5ec20c4f7b56d8aa5ec",
+      "checks-workspace-neighbor-v3-prealloc-test-bodies.c.txt": "f884471ec63021b442447ae1aeae8a4732188b0fee83eb9ce7c838491caee79f",
+      "compile-ablation-probe-command.json": "c950152b19a868f6ea3458088bb0f151fad342988a2cf3ee547e9ad927df2a9a",
+      "compile-ablation-probe-guard.json": "69d3633dc2b193329d5c4f309958907133a1db03a36be5f5a52e4592465eaaec",
+      "compile-ablation-probe-result.json": "c1876bc2bf50083861b5c1984513e3617c0048818279e753da53aaa11a9d0dd8",
+      "compile-ablation-probe.log": "77a81108e6ad6f3b9c95b79d554aae8c9b8ae3b884c6e6736325f86e2d5ff1a7",
+      "compile-ablation-v2-probe-command.json": "9290f50d39734f170cd67019f1ea5a1df6f6b362154bef57420e74f0180bdf81",
+      "compile-ablation-v2-probe-guard.json": "299ab36498b035448d54786299c2c62195d5127f66d9b168a60a07068e8eec86",
+      "compile-ablation-v2-probe-result.json": "5534c55dee6ac3ede6e4d1bfdb71f144fa0847a49f422019cd27b5e4012fa5d4",
+      "compile-ablation-v2-probe.log": "360f7aa14f945af0a2c090c3d2e0ab1316ce3acc01d524ce5bd87b9bd4bc14e8",
+      "compile-ablation-v3-probe-command.json": "347efa4c6154f61bf63046215a16798c46d6aac4da8b29aa6f59fd48bc861ce0",
+      "compile-ablation-v3-probe-guard.json": "9c7ab8b50891614cd4f85602ee16668605e583fb7e038351000c530a0c4953d1",
+      "compile-ablation-v3-probe-result.json": "e659b8cf2b10e496223e79ac6336631ff0f917d79dce3f9b1f18808e48ed45bb",
+      "compile-ablation-v3-probe.log": "6effc39ab5cfee6936a2488363133188dd2d692abdf8c99f22e655368322f0c2",
+      "compile-base-command.json": "eb8fb991239118164a542be3f5da4b6f51b71fc48f349874ee3fd3d4a2015d7e",
+      "compile-before-boehm-command.json": "3ee9105a4ffdfd293cad27e04b81800ca44792170ba60ea8e84946078cb39052",
+      "compile-before-boehm-guard.json": "e5fdecaedab1c04d07e4b25cffba23427965289ed2ccbbb868b3b67e979fc449",
+      "compile-before-boehm-result.json": "cd8ffa0c6adc6019343c9c475a3a46a731d367f0d1d40e81bf895ba0c2d6c3d1",
+      "compile-before-boehm.log": "51cb422ddaab92d74e50d6940dbbefeaebbb9092cdbe7b4ba6e5eef8ec0ef118",
+      "compile-before-probe-command.json": "72cdd67ed3e689363f5ad50aafea8dc9a6ccfe9232c41163039ad141464f80da",
+      "compile-before-probe-guard.json": "cea43b0d3ee531efd3d327c54f320f5c6d1da0eac4be369b7518296460f53d9d",
+      "compile-before-probe-result.json": "73b9992207c62fac7389064ad8fd5e9fe2a532cdc83f952f86954e219fe20fa6",
+      "compile-before-probe-v2-command.json": "9b0feeee133a8530c5e3342e1cd34c46b8c287aac7d1d99333a29ea11a428a3d",
+      "compile-before-probe-v2-guard.json": "e23735551eda08872b83efd23236b0681e5cedbb1d3802c7d30be7141c3ddfab",
+      "compile-before-probe-v2-result.json": "acac7f66b7a20f55365ace0617c8ecc6de33f8f535f007f3782b3b4b4b52f121",
+      "compile-before-probe-v2.log": "f7d8dfa4f405dbeda6fea334e9090f2dd6fbb1009b26b286bd404e8d4090ced8",
+      "compile-before-probe.log": "2da17208bf72ea8ecf5645a1b8d89b8e47bc5152b58b33098dad9e81c5a2f266",
+      "compile-bucket-neighbor-v3-boehm-command.json": "2fabe23b109b702f05fba13a9264b3ac028fa8a4ad5834749f73c9bc74f2fd6e",
+      "compile-bucket-neighbor-v3-boehm-guard.json": "9e12131a34abdcb1943e0267c8b3da0e65420f9379746861142ca869521520f0",
+      "compile-bucket-neighbor-v3-boehm-result.json": "1ddcf65d7f1d96fe75096963de27927cffe50aada7fe3e5b8b4fd19b5482957b",
+      "compile-bucket-neighbor-v3-boehm.log": "46afb3e6bdeda011283d4fc9e9cf6df8fba753abb63e649343d6682012159068",
+      "compile-bucket-neighbor-v3-none-command.json": "21755dc28a5633a3ab3f36aed50fae5a25f6addf1c7bb6c7b9899c77d0f100e0",
+      "compile-bucket-neighbor-v3-none-guard.json": "d24925b626ff294c29d2c2635a1b9992b282a1161c4bf2670b321c3824693026",
+      "compile-bucket-neighbor-v3-none-result.json": "32548e70c2dbe845c623e6ee14ef15ac1965bf0e4f5f295948ba635671a44f1e",
+      "compile-bucket-neighbor-v3-none.log": "a6bf6442f78e13904a1651016bbffbf74b936174ef13ececbdfafbe42ca9dcef",
+      "compile-empty-neighbor-v3-prealloc-command.json": "8005600d7bfe8e9cbc0f94fcb4b70e862bd6ecf5ab9eb6b76e15e2567b6077bc",
+      "compile-empty-neighbor-v3-prealloc-guard.json": "a52e6b88bdc9ca45d67c52a5e737f473e96df998775d3b170a2a7dcfee17aadf",
+      "compile-empty-neighbor-v3-prealloc-result.json": "590430d78fee49e8c38ea24d55f632f46cac062429d7ab46f6345fad1b9a24a4",
+      "compile-empty-neighbor-v3-prealloc.log": "2581c1e6c522c378563dac9435f9d35099f7e936cac7a264c10bdbdfb5da2dfa",
+      "compile-final-boehm-command.json": "08ed21708744bd4696c4a95204b14c7fd9e6bd5b95bdcc6b5ef32f059c97d17e",
+      "compile-final-boehm-guard.json": "07a3e926bbdd305e200fdc22800c9a1ea22f9ee1dc9231b9e62be2fba8ad3659",
+      "compile-final-boehm-result.json": "907dc5998b1ab645792ea7e1b9f2c0e3fab297d60ab3a17eb638e65d549f0bbb",
+      "compile-final-boehm.log": "b919f42ebf50b42f272bf556b3fb9a9029321b1edede1110d92157b56aaf0ea2",
+      "compile-final-none-command.json": "f731a49981c9523e268f84357c591ab98f8965dc81bdba56a7842808091b95e2",
+      "compile-final-none-guard.json": "2ded3c9c404d10c3f69b19ec123efe3e9ae6e58c9531e7939538a7af5f07fa09",
+      "compile-final-none-result.json": "64302febc0c42611a9632e15f644089be983723bfb1217a8ffd4909adcdadd0f",
+      "compile-final-none.log": "90e32b60006909fa001f5e569077fdb43e59567895a6ee18d149c7ce5ed619be",
+      "compile-final-prealloc-command.json": "e2f0b36a92dd64dfd1de1242edd8ddd52db047e63e2b12d8cede9f9ddec6ea65",
+      "compile-final-prealloc-guard.json": "666572fcf89d22db8d05b02c77aec2b110c37f0671678a64d6e4d3d793902211",
+      "compile-final-prealloc-result.json": "5eb361cc8452c89c3526df60ebf6129a52dc8c6b808ba1ddd5685afd6c24eb9f",
+      "compile-final-prealloc.log": "fdd4af1a4b422eae096093b9430a3502e8cc4fcecbe4a2f2e98fc3a46990dd57",
+      "compile-final-probe-command.json": "506d3f38b2e209746e94960104dcc155cb467b06fd9153158495c515b536190e",
+      "compile-final-probe-guard.json": "165ff28110761c3c7b874a7fa212e1b52ea53e53fc0e45dafcda8c351479d0ce",
+      "compile-final-probe-result.json": "45171ba1b4e8279ba3cfddf0a61f2bd4cccbfd45c71675a973caf91dddfb149e",
+      "compile-final-probe.log": "57cbfdd436c517f5f86df0398c3468fd9efbeb5b7a875b27306efe2218e3eb0e",
+      "compile-metadata-neighbor-boehm-command.json": "7b5edfc05a6a5a807e7d54a6e179600247e3b6b4dd08720e24467c778a86d33b",
+      "compile-metadata-neighbor-boehm-guard.json": "fbaef39ba58fef8cddb8f20106def5b91ac5f9a6127f52cfe77c4358236871fb",
+      "compile-metadata-neighbor-boehm-result.json": "c173b9a1e5be9088df2e95ca9e8df9e72d0fd76bf03060478988fac7a15b1914",
+      "compile-metadata-neighbor-boehm.log": "b8b5a9710a642f8104825224dd7d6251d730f570f0f54a50126521fe42af09c5",
+      "compile-metadata-neighbor-none-command.json": "8451f8400bd21200b566755d12e8a78e2c185ce87fa929c25c25ba3e5b7cec19",
+      "compile-metadata-neighbor-none-guard.json": "b61dc6034521e92be33bac29fc4dea7783fa92195e7dc7ec7169c790512e3d8f",
+      "compile-metadata-neighbor-none-result.json": "42a34b54a8f4fb0866a02da210af103ff6f0dce48457fe0832eb5eb581f46326",
+      "compile-metadata-neighbor-none.log": "dfbbd94e7b8e4c517a6bc77eb824cc90c28138b0a05a4f88c1c66c751876e120",
+      "compile-metadata-neighbor-v2-boehm-command.json": "36f63dc698e1ed52765983e55c7c9b3667ba55e635c4c355be33fc72efaf911f",
+      "compile-metadata-neighbor-v2-boehm-guard.json": "f2f893382c3de2db04d19f3a8391ce366b071a035c69a45cc810efe5bf00c96a",
+      "compile-metadata-neighbor-v2-boehm-result.json": "ca0eddd8b5a109167ef8d0fc5b3ee59d23acef9a329cfad32e0f894fa615102f",
+      "compile-metadata-neighbor-v2-boehm.log": "73fcf4f1c770c4c537c4263fe25f0e787aae01e90b8a5cf84fe48fbf4fd77c83",
+      "compile-metadata-neighbor-v2-none-command.json": "47dd14353d59a1f5ba4042d3e248ec6e568ccc2472fce012b23c3ac63196f942",
+      "compile-metadata-neighbor-v2-none-guard.json": "82233f4f37da8ef6ba3105e2c195dadb3604e3ee2ed0c2105dfb475f8e7a9fce",
+      "compile-metadata-neighbor-v2-none-result.json": "d7c82eef45bbec9a4577744a49bf24fe61700787de7e26804e93cb804e927b5e",
+      "compile-metadata-neighbor-v2-none.log": "29ee83bb59371a01d47606dc5baecb179234b6188c1e188c7a806a4af829c323",
+      "compile-metadata-neighbor-v3-boehm-command.json": "bd147817d03c0fd50d0f80a7e3ae44e5c183a93321c596ecde3d2c1d4b1f07c6",
+      "compile-metadata-neighbor-v3-boehm-guard.json": "5f29299db57ef6d87a85cc51bda19797e92b2a994f0dc67ed78a0fad04d5046c",
+      "compile-metadata-neighbor-v3-boehm-result.json": "503d6829baa6c527c9a9f2c070849812a9abc2c4f83e6e22c1b400a23edc436a",
+      "compile-metadata-neighbor-v3-boehm.log": "9e3dde842600420b1a363791e66ab710e44a59e1b3bb76162a9d165a79555e11",
+      "compile-metadata-neighbor-v3-none-command.json": "bd85ca6958e50d00bd4f57acda2f3b5d3243ba4f4911000d15eb14089c5b50cd",
+      "compile-metadata-neighbor-v3-none-guard.json": "9c33e5c5acd188d03707fb75d53a7df5f7165bda9a40d36c9f552e047d9f03da",
+      "compile-metadata-neighbor-v3-none-result.json": "71c94236cbeed59c44b41963c7c5ec492a80d4879428294052c4bc03eb65fa1d",
+      "compile-metadata-neighbor-v3-none.log": "dad1ab841212fbe8ce79dcaadf85a1841053ce03efdc804871c4407449ca9047",
+      "compile-repeat-neighbor-boehm-command.json": "f45c24fd78ceb4cf9984b10c8fcf42b8427358abddf5c3bc4b8797c365fadbc7",
+      "compile-repeat-neighbor-boehm-guard.json": "27b0239aeab3e833d0d8734a028478dc2de5960ac7a3310acd13dda997d79e3e",
+      "compile-repeat-neighbor-boehm-result.json": "c88a57a7f1f2f64dbb542ace352a34cc3b9d2a0ca26716024ce04d772f6565e7",
+      "compile-repeat-neighbor-boehm.log": "702be0cd4aa86acf4a85c698ea0d9b29f741f1782056a2c3757d5a1591e1bd01",
+      "compile-repeat-neighbor-none-command.json": "c6b3b641b5a24f7239d79610f684c440cc38a6c57985f8c964b93a04dd9626e2",
+      "compile-repeat-neighbor-none-guard.json": "b1ea851440adb7672988f625c269c2bc78f3ac6047d5bb45fff968880066dce2",
+      "compile-repeat-neighbor-none-result.json": "c1f037b8e12f3137381f5001a430093e82b44b117166fddc794ecc811d811ebc",
+      "compile-repeat-neighbor-none.log": "b1e9d98e19857630a81045404e821fa1a75b0268d43700d716d352a0282d1c5a",
+      "compile-repeat-neighbor-v3-boehm-command.json": "685a32fbe5dde90872477547aa94fc6ddf8d9c3bdbdb0eebda270534ac98be04",
+      "compile-repeat-neighbor-v3-boehm-guard.json": "44252c5b73f4f6a25a99d701bf462f4f3b77acd30912cfb4c351250344aff541",
+      "compile-repeat-neighbor-v3-boehm-result.json": "f5f7d12bfb7978194488d9b6230d5cccd274985923ebe9944cea33b719549f2d",
+      "compile-repeat-neighbor-v3-boehm.log": "ace9416e02efb672d082b69aa58e787f83a19d15802d04632c763b70de3234be",
+      "compile-repeat-neighbor-v3-none-command.json": "a6d63fb6b7427fe5207da2a4932609ee2b511f12e65d4ba6cfe0c43d3838520d",
+      "compile-repeat-neighbor-v3-none-guard.json": "a4a417e3d636a03f4df83efbe0a1e5e7014f1e8c4007eb6ddf78dd845fe153bd",
+      "compile-repeat-neighbor-v3-none-result.json": "30c416369691c052e910bd76c4fb874342935c9899e6920ed4884052186f4763",
+      "compile-repeat-neighbor-v3-none.log": "c24da7fbb9497c88041224af2d6cfff37996d1a8f56794cb18b00fb33fbebfc8",
+      "compile-repeat-neighbor-v3-prealloc-command.json": "9f2e3a45224487ee58abd8632d5e8074507a1b79a5dc0912b7099a404cd2e11f",
+      "compile-repeat-neighbor-v3-prealloc-guard.json": "26a332b4ac4434864d63710a10e27d3a0ba655cfc288f61dc80811c6cde2ea73",
+      "compile-repeat-neighbor-v3-prealloc-result.json": "5d6b70b8bf72c389568ecd0387c10805a1423803c1613f7e7c9ff0cf67bd7567",
+      "compile-repeat-neighbor-v3-prealloc.log": "2d2c9f080aaf15f0181ac14e6560a38a155c6f20ddb982b095aa55caf5f50d55",
+      "compile-v2-final-boehm-command.json": "f1a6b8d7c43884be3d81e449f73d3a315eda780ec8a36c4213d8f1e4bd1a2f8b",
+      "compile-v2-final-boehm-guard.json": "39a31eb3eaa608f7bd401bd1c6372747f1b1722167872a50a1953655c0e66efa",
+      "compile-v2-final-boehm-result.json": "54d58a6a0bf9f157c9fc775c30dfb9a399e05f116bda96e7213f620a5cc3d98d",
+      "compile-v2-final-boehm.log": "4d1c0584f2a3c5a2c8a96a17e6996adbf791df0817f1a8503b5ab362b0e5136f",
+      "compile-v2-final-none-command.json": "384b2b57f928c989b6b6be720602c447a13f8bd9702adba2d358a4e08f58f896",
+      "compile-v2-final-none-guard.json": "c23f699620ce6ea86b0125bc7615d859081b91d9c9aaafaea0bf6c19825e7418",
+      "compile-v2-final-none-result.json": "ece52ec93778803686c21e5513245fe3d251b57bb7866cbabc909148b491a44e",
+      "compile-v2-final-none.log": "7362be86569bcf046048f31720d6dee72ed4f7389918a1ef8db2dc3d6021d68e",
+      "compile-v3-final-boehm-command.json": "5ddffc09d153079b77d9dbc49e240f928d3a6a54df8043a164f225e831741847",
+      "compile-v3-final-boehm-guard.json": "98e6a13711c81a180bca46c46e978160ea98bc2689fe4d7c5a134cf9c23f3208",
+      "compile-v3-final-boehm-result.json": "e7fb19bfe6711603aa4f24113b01658ae9db4cbc116950c1af3f3404dc201cb8",
+      "compile-v3-final-boehm.log": "f9731c1c765c82b73a5022bf43d60832cc902720df1ce91661a9f858467433c6",
+      "compile-v3-final-none-command.json": "0ed7a656e568dfdc7eb8211657d99f8407d948d30296743eb4e3b64a978c0e94",
+      "compile-v3-final-none-guard.json": "65d65c11bfd8e9326093ebcf3ab3949837f24f452f162723b542b6ccf5659032",
+      "compile-v3-final-none-result.json": "baa377c1033fccdcf5700364a72b6bd4e01ce2f81e039796b2b644f95752259b",
+      "compile-v3-final-none.log": "ce08ee60fe3b5fcd580b2c9d475a99ad2cbdd395793c2387e15939cd1ead63f5",
+      "compile-v3-final-prealloc-command.json": "1d4fd36f0a63a5f0652ad6ae2c295abe8f147269e78843dafb82ad6d1aca7d99",
+      "compile-v3-final-prealloc-guard.json": "3b787e8726b3f14b30578ba4880f06033556ddc05a622f3378708ce81995dc93",
+      "compile-v3-final-prealloc-result.json": "f1ef203cc55eb0cae3f7c1c1f23f041aac4b0ee1e947459df371c6b3767bd5ee",
+      "compile-v3-final-prealloc.log": "31af185a2c54e10f4f05081b4e6931b95ea2f383438f1fffb94eeab12d84af5e",
+      "compile-workspace-neighbor-v3-prealloc-command.json": "6d0d7e7369d6af872f88b782c0671ef253469896b44838a9235b862998b9ebf0",
+      "compile-workspace-neighbor-v3-prealloc-guard.json": "6ed7a9081533c989bd52928e363140eab80445b63f23124a2fe7faf2c302026b",
+      "compile-workspace-neighbor-v3-prealloc-result.json": "7b41f2cc596779d5906f34b485654c0edd7d93be16098aeabd5b8945328e233d",
+      "compile-workspace-neighbor-v3-prealloc.log": "bdaf84fe2e23f7059dcd0fa15039e14f58023f3a14dcae62e7ad00fc2b07f7ff",
+      "css__collect_matching_rules_with_storage-before.c.txt": "b603ba9595957f8911cf16694a3df621f95ddb08a847cafc04bcc8374368b5a4",
+      "css__collect_matching_rules_with_storage-final.c.txt": "0297929a53643b3016a04dbd8fa9e8d30019f62badff41be47a3651dad59d7a0",
+      "css__match_repeated_rule_selector-before.c.txt": "60ef5311298d641a8bb3d2e61c6fbc307335a9ca7e888c0644ed672d51169925",
+      "css__match_repeated_rule_selector-final.c.txt": "dc499db3aa7d5441f11b67ecb9b9879a3d5ba26479efdf26d0d5ca6fc30da54d",
+      "entrypoint-before-boehm.c.txt": "c882f0932a53eabb62946b0098c0886e61a1e7db4e3b78b9dc3d3c06145a3849",
+      "entrypoint-bucket-neighbor-v3-boehm.c.txt": "bf647c64512721dc771e1d056e39b632f51a6bd6208d2bc4ab0eff341088124b",
+      "entrypoint-bucket-neighbor-v3-none.c.txt": "bf647c64512721dc771e1d056e39b632f51a6bd6208d2bc4ab0eff341088124b",
+      "entrypoint-empty-neighbor-v3-prealloc.c.txt": "1a0a933259f3a258491b9dd0fc812cfd5c6fdc8a198c109ad1b9ab3462dd48a1",
+      "entrypoint-metadata-neighbor-v3-boehm.c.txt": "4ddf713973119e5939cce710645b6600db136ee0ca1fd987097b4db716e43a74",
+      "entrypoint-metadata-neighbor-v3-none.c.txt": "4ddf713973119e5939cce710645b6600db136ee0ca1fd987097b4db716e43a74",
+      "entrypoint-repeat-neighbor-v3-boehm.c.txt": "d41d7cbab859e2e0f5e5fc541bf803be6f9a3d6d075ee3ceffb8ea0a0cc90cee",
+      "entrypoint-repeat-neighbor-v3-none.c.txt": "d41d7cbab859e2e0f5e5fc541bf803be6f9a3d6d075ee3ceffb8ea0a0cc90cee",
+      "entrypoint-repeat-neighbor-v3-prealloc.c.txt": "d41d7cbab859e2e0f5e5fc541bf803be6f9a3d6d075ee3ceffb8ea0a0cc90cee",
+      "entrypoint-v3-final-boehm.c.txt": "c882f0932a53eabb62946b0098c0886e61a1e7db4e3b78b9dc3d3c06145a3849",
+      "entrypoint-v3-final-none.c.txt": "c882f0932a53eabb62946b0098c0886e61a1e7db4e3b78b9dc3d3c06145a3849",
+      "entrypoint-v3-final-prealloc.c.txt": "c882f0932a53eabb62946b0098c0886e61a1e7db4e3b78b9dc3d3c06145a3849",
+      "entrypoint-workspace-neighbor-v3-prealloc.c.txt": "fd56ada1533d5cecc67f6fdce9e690aff403f42d68b7b94a7e682aa07527c1dd",
+      "feature-commit-controller-terminal.json": "a6be675fd2cd2fcc9f10b8226a36af16e50c062f7ead4d17ac28a78c31d79d0c",
+      "feature-commit-controller.log": "970bd9119ee4a10a660c2f1aa51ab871e8b8fee101b15d229909f5d2c19990ea",
+      "feature-commit.json": "973d24fa9180c3a39238b135b112f1aa43772465d95e1ee56896625784305fcf",
+      "feature-committed.patch": "8c36572da7d9096a8a870d835d1c60b6a1b32e7b6fb5ea3f36a66df87acf1485",
+      "feature-config.json": "9e269187dd4473b1cd923cb7606b8f03ca09621e8f42d6b7bdbf764e64b5d553",
+      "feature-sources.json": "de9cec9942cc643e73c3e224069c4c58bd8311487563b3c2ceac9c0f2694b3bd",
+      "final-audit.py": "9e456c50b4826a34ebfc0d71cbce23ff474644d6c8124815ddc1c0a55d020ed5",
+      "focused-audit-controller-terminal.json": "e5e95b378868f7150db9f77cff9f3e510df9e49b64dbaef14722fc2951e0f581",
+      "focused-audit-controller.log": "873d703a583c3f316576147b857fbcce777fea4db54b264a6685a9322e6490f9",
+      "focused-audit.json": "8b7f1022a6313e77f224d0b32efc0a27b47e2fda90375ce2b422f6d58c6646e1",
+      "generated/ablation-probe.c": "b654965554369c007d31da8636acfeda40cccf924b37b4e52636335d694bd0b5",
+      "generated/previous-production-Vox.c": "c09eef33f4f08fbeb862589d2dd263511525b0b7e05926949c7b94ed622665a8",
+      "generated/staged-native-incomplete-Vox.c": "3fcebc10070980f1f8eeff7d8f40b84e853b3ffbbae9c83152febbb50bf41f3f",
+      "github-predeclared-plan.json": "5500e10832392c15f67b463f13244730804de3625e1a96a8a1a889dfe66e2477",
+      "inline-map-borrowed-header.v": "9bd039d209fa9b6b13244aaa5bffbf37cde7855f19f7a4305215c980b2f34dfa",
+      "inline-map-writeback.v": "d464023dc2f4f2dcb9b390923ad64d1e5dc2adc1eb8229143bec2a00deae452c",
+      "inline-v1-local-plan.json": "76879a2859b43a90698ed5096841f384b271c9d6fec74b27f83efdb333207749",
+      "inline-v1-superseded-controller-signals.json": "657778c3e41bd9aea36d633e42d7f19ecb4a9a397369aafd5c2da280939ed562",
+      "inline-v2-local-plan.json": "f3e6bb4d8e6b39658075f1d5f2fd018962c92f8b66d955de061cc99fef6a7b1d",
+      "inline-v2-superseded-controller-signals.json": "c9c6fbd077a7d2cf4595dc4d873f316d127c9ad5e6f1f9f608132f58d2ec081d",
+      "installed-availability-initial.json": "b5a3763875371a7c6168c7e93590bb27e4f70ee624b014f830e17ded594a6cc9",
+      "installed-availability.json": "b56b4fbcde59ebf4ff3f688e0b2a7c9c38a2f693d44100d262b78a78fbc61088",
+      "integration.html": "4c0fb1dac8dc237805d04258e72e76c22c25eaffba8eb17f42ca2e28ce9642a5",
+      "local-01-before-guard.json": "caa400a626bdb49b35dc901e6d53e28d4458095829e5626573ac1d1d9b6ebbf7",
+      "local-01-before-terminal.json": "8b896a146bbabebba5bdffe79ed24ede32a4d70325b756aeaf60bf72175ba0d2",
+      "local-01-before.log": "aa0ae0f6360fb7b5570b3c515e592ebc6be7c3660f3be78dd34fff897e6619a5",
+      "local-01-final-guard.json": "8f81c2d90e116e896c50d350d23984e5df1dbc7e092bc74d7d321f4bd1a42eb3",
+      "local-01-final-terminal.json": "b0403f71d21b36e7ad1f93ff1c18bc712a27db28a23aaf032eac8e1d2075441d",
+      "local-01-final.log": "2ba25e1ba54c54daf58e60fa4b972e779bf870ae2a9622846b927f4cb06cc729",
+      "local-02-before-guard.json": "7abd5098b34ec92a8e162113b5504f61c7f53c2ae06fd26bec10ae1087d1f052",
+      "local-02-before-terminal.json": "1a20080a7861bc30ea0c0eaec8bd7337114ecb52bb56398b2464147cd4987208",
+      "local-02-before.log": "3386f8c1a25e879168731ca5f1085bf8fbaff508567130577f3a33f76ff70f51",
+      "local-02-final-guard.json": "b251c594bb9d954cc08fd5b6a231adbe5341bb09a3f7fae7a7041722a4cb2e1b",
+      "local-02-final-terminal.json": "640b824f80f8eaac454a466d05af2936c9a3453a8cd2199bcd573cc627aaf00f",
+      "local-02-final.log": "0753239acfc4fcfc4181a9a7d45137ec8863327a089d67fe84473b2ed63b8184",
+      "local-03-before-guard.json": "7924ec65127513577854deb80ee96bc3f35f1a0495330d18019f3e3740214e86",
+      "local-03-before-terminal.json": "d3208149ccccf4a7e727c945a013c9694c36c42e5be0d855f2fe939fdd89ab5a",
+      "local-03-before.log": "3ba3d545847ea61f85e4d859bb968c4932c4fafcebbd82d53ec306b490df3afa",
+      "local-03-final-guard.json": "558110d6a24a2c72cea47c0a35462c53eb43309730b4abf915be57515f64e657",
+      "local-03-final-terminal.json": "8d77c6a4f0de60c610955c7bfcd21e9856be6a48a0616a1665d18802a99b1d7b",
+      "local-03-final.log": "cba4abf0f6b4e673350fca6cac620579d4bc2a49939adcbb15b9d1150d587534",
+      "local-c-audit.json": "06f9836beaba12778ba234500bbbd9b783cca9f59670a67edc3263b5a8b9830f",
+      "local-controller-terminal.json": "edada383fbbb0ee75f6ae051df2e03b002225fe3cdf9502f9e765bb4f247bc55",
+      "local-input-pins.json": "0cc64aff8c1ef8556ce689776a2284504a2f19b46e88b3c766142d55ee079189",
+      "local-observations.json": "14543bc32206faa330b0bf9c7cb96ae14e26940e62711302cd8c7eda75396968",
+      "local-plan.json": "b05be3cd015b7f316644c485c06661e94981617722c64db0cc5ca3c13a1e2df5",
+      "local-result.json": "18e04beed00bdf83d04e0b005a496790edfc3bde76095028f8c582b80f7f442a",
+      "optional-map-guard.json": "3389301b96051d0ca64763ebfd46e1cad880e4902b12170854460f3cdd5d4126",
+      "optional-map-terminal.json": "83454fef1b7be209771dc51a6c4c6c490ff00a1a899bdd9fee1ffa90bc1df203",
+      "optional-map.log": "cdf7498548c6452467bbfe9e5217b7cc61fe035020237020cf7c295759840a1d",
+      "optional-map.v": "583d682887f1b2d2008f6fc3e629b47e69184f4b26c65425289d02c6ce31fe7e",
+      "optional-parameter-compile-final-boehm-command.json": "08ed21708744bd4696c4a95204b14c7fd9e6bd5b95bdcc6b5ef32f059c97d17e",
+      "optional-parameter-compile-final-boehm-guard.json": "117d0b011d21b2a607cb466c32022cbf4d9ff5dc7f4c31d9b6d2e4c20b02eeb7",
+      "optional-parameter-compile-final-boehm-result.json": "907dc5998b1ab645792ea7e1b9f2c0e3fab297d60ab3a17eb638e65d549f0bbb",
+      "optional-parameter-compile-final-boehm.log": "b493548316df90719ef5bd5826d61d4ee10ba39aaf7d0ac964b617450d537cc3",
+      "optional-parameter-compile-final-none-command.json": "f731a49981c9523e268f84357c591ab98f8965dc81bdba56a7842808091b95e2",
+      "optional-parameter-compile-final-none-guard.json": "9aa8743d0c35e8e5fe268d08313d963c991f25db8b07bef14ecd0d532dff99ba",
+      "optional-parameter-compile-final-none-result.json": "64302febc0c42611a9632e15f644089be983723bfb1217a8ffd4909adcdadd0f",
+      "optional-parameter-compile-final-none.log": "43926168db267050cef14ad4dd842b887d0e0142616377727a5743e51be47855",
+      "optional-parameter-compile-final-prealloc-command.json": "e2f0b36a92dd64dfd1de1242edd8ddd52db047e63e2b12d8cede9f9ddec6ea65",
+      "optional-parameter-compile-final-prealloc-guard.json": "47769203d56cd0984c7c08208021734890a019392dce385522a33a02915678bc",
+      "optional-parameter-compile-final-prealloc-result.json": "ee1a34465e1ebed18a7e97444e3cec3f26acbab2bedc22be8202b77d42159b81",
+      "optional-parameter-compile-final-prealloc.log": "4d1b68f0845a1957be3efe3084675a74fcbcdc405d4cb02e4bb300479f8bdd96",
+      "optional-parameter-compile-repeat-neighbor-boehm-command.json": "f45c24fd78ceb4cf9984b10c8fcf42b8427358abddf5c3bc4b8797c365fadbc7",
+      "optional-parameter-compile-repeat-neighbor-boehm-guard.json": "c544b241eefd395cb075f5568f7a96d98529a43daa0a3df430b6b3cbacd3eb85",
+      "optional-parameter-compile-repeat-neighbor-boehm-result.json": "268b6e6b2012042ae0280c6b2cbdacc2a75e0345d36b1aba72f825cd7aa67324",
+      "optional-parameter-compile-repeat-neighbor-boehm.log": "9fad79d4b287fd61904e6bef73dcc268a5da78e9194edb94bd7f78b35eca7ddf",
+      "optional-parameter-compile-repeat-neighbor-none-command.json": "c6b3b641b5a24f7239d79610f684c440cc38a6c57985f8c964b93a04dd9626e2",
+      "optional-parameter-compile-repeat-neighbor-none-guard.json": "24bd5043971e98cb03c6dcd6280b03754997310d79576237031978aaab67c5dc",
+      "optional-parameter-compile-repeat-neighbor-none-result.json": "2832f15d037152a60eb0298cd9fe297e3065e039fbc7fe92e5f1dc0d31a77e4b",
+      "optional-parameter-compile-repeat-neighbor-none.log": "28fec575ffcdd687905302ec68c248e6abbbd373a832c09f2c32a2ae20b455af",
+      "optional-parameter-compile-repeat-neighbor-prealloc-command.json": "d3648c92286fc304a7f9a085c4c602e659e9d21fad6f254b3e3e0e9fb2f1e3e4",
+      "optional-parameter-compile-repeat-neighbor-prealloc-guard.json": "c0e29f9262f0ce2076ef750db675c83f537320b74c3f563ad77cfb8e1ff60d7a",
+      "optional-parameter-compile-repeat-neighbor-prealloc-result.json": "6ab2685010788a2044defebece2ad80704938843c0a37fef32e0f53af69b7949",
+      "optional-parameter-compile-repeat-neighbor-prealloc.log": "1174e2a012a4a7c0eddc9c8325b0d2a9e3f2f5e9a77023e759184cad6d78a688",
+      "optional-parameter-run-final-boehm-guard.json": "93935798b2d0a7d7c5b3810a404a69b1938a085a52b3ae2c2afd428147869636",
+      "optional-parameter-run-final-boehm-result.json": "6dd656202597eda4ab7964aa9e03a47df190a58c7ba3a1156f70a77ae1d46d3b",
+      "optional-parameter-run-final-boehm.log": "0e0dd5d2c212343720eb46ad0dbf855f89207d1b115d264df04da45f183493d5",
+      "optional-parameter-run-final-none-guard.json": "136f0e0b7b9b0954fbb7c30d446e12e024e4aa3558b21ad31731c148aa80d369",
+      "optional-parameter-run-final-none-result.json": "b0365cb8df979d5c52f03913450a336ae31476d920f44a649cbb35e01cb82989",
+      "optional-parameter-run-final-none.log": "cc5f8724ee1bf0a21c0abd75c02c4874f33542d1111c924d99247ad84c8c73bc",
+      "optional-parameter-to-inline-repeated_rule_matching.v.patch": "8b10693f1fce7f980d936bca599ef523c1d96029274c713548d7e738b966ff8e",
+      "optional-parameter-to-inline-repeated_rule_matching_test.v.patch": "8ea3c8dd63127dcd93b606b6daa1807ca342a9a806da66630f40e7b78c3e180c",
+      "optional-parameter-to-inline-style_scope_cache.v.patch": "15e7b82ee7d60663edf1d36507f0d9880bec68a4ae90defc8ad110a156ca20c8",
+      "pending-older-production-collector.c.txt": "b603ba9595957f8911cf16694a3df621f95ddb08a847cafc04bcc8374368b5a4",
+      "pending-older-production-identity.json": "c46c2d74adc671012d6e1f114b1f8968cb5f54d15695f43e4c9430796f59d6f9",
+      "pending-production-receipt/build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+      "pending-production-receipt/build.log": "301c71bf090d179483bc0791914bb9f234805c5101e2ef76abebbfb53091a71d",
+      "pending-production-receipt/frozen-compile.json": "6fc7bc9fe6ef1ce1d5dd342b7eaf175635ff460c44d163f6d34d274e8fe2b5fd",
+      "pending-production-receipt/inputs-before.json": "97640c5595aad21cef9def29fdd0dd2b843476f2e45666ece4a7aff1c99210b7",
+      "pending-production-receipt/memory.json": "467c429f7242601b1f482741164fc8544480dfe37e4e4a38225beab9ebbfbb7e",
+      "pending-production-receipt/result.json": "51aed20705f5cbd0e6b909ee087b1b1b1a4cdeaa9162bd45918cad5a7ac3af42",
+      "pending-waiter-signal.json": "84d656ff4e0af525bbc24ae11466ca67ea5ce76b989a97dcfdcc51b66e106584",
+      "pending-waiter-tool-terminal.json": "1d56e379e65e5635dcacaa4b80b7734a028d2a89d3d5b17e98627052a16d2001",
+      "pre-ablation-local-plan.json": "5a7bb68a689ca9774ada5a5c5c6daf68bf76d8782bf5e5f6f08d4a06f0b5e5a1",
+      "preceding-shared-build-timeout.json": "cd61ddd2a8a1eda0d5c6579ed2d444db6812ab7817c06df94492c436f9c77954",
+      "probe-map-constructor.c.txt": "4cd7cb317087faf466746672608c74bdf9b2190bd113e12963e0e36aedd47582",
+      "production-request.json": "3b925add787390cde746e405e355d955b858dd37a59fd9b002b69f77c0b9750c",
+      "run-baseline-integration.py": "3a7d5ae272af08fcc0d1ef3fa0ae00c35686d1c15c0ad12f6fc5da3e0473e439",
+      "run-before-boehm-guard.json": "4e3c0dfea204a3332fcb7c043d1c9b92aa7505496530a801a3a090eb6ad706f7",
+      "run-before-boehm-result.json": "0b6e913f5359b74467233d4c9220db5833e5f90088d5b1817aa74da269b03cde",
+      "run-before-boehm.log": "55b1dce812e9509e03fa53a5e751b8df669cd533027b34283cbbbbd01d1c8817",
+      "run-bucket-neighbor-v3-boehm-guard.json": "0c4978cf0ba5a52ccfc7ccc04367c947b0ab910d1ead73ad90bbdac36bece91e",
+      "run-bucket-neighbor-v3-boehm-result.json": "bf54aa9c1a78250660d274cbdf599a03659b1acfba41af26e0046fa19e2e4c00",
+      "run-bucket-neighbor-v3-boehm.log": "8acb88d73706cafed3308949b8fdff299cbb13c17ebef0b8ae4c4fd09ccd4f41",
+      "run-bucket-neighbor-v3-none-guard.json": "f7335034de343200a065cd43180cd7c8dd8d0e7d12175939fe6b22b36134169c",
+      "run-bucket-neighbor-v3-none-result.json": "60bc3950e230e4af84dfeabd871b2f7670b8811903ff38abca7ced15bac6ec07",
+      "run-bucket-neighbor-v3-none.log": "83880082d8fab473d19e7b7949926c6ef569d5dbde0c3f613403c5aa36aaddb6",
+      "run-empty-neighbor-v3-prealloc-guard.json": "b078383e7ed6bcb0474d8047c24acfb2dfb65fec52e5d0336a5eb0fa5fabc284",
+      "run-empty-neighbor-v3-prealloc-result.json": "88efdd9976126517a519c76b75cce385741b0938240f4a5b09b36c18dba3f0a7",
+      "run-empty-neighbor-v3-prealloc.log": "2b66289c3f2651e17fa86784c4e83d0492df0f3e6fe284d607ff39e8bbd03c86",
+      "run-final-boehm-guard.json": "005b012113588120fa424b41094e25ea4dc59fb69a0bee42c84d92773da783fb",
+      "run-final-boehm-result.json": "6dd656202597eda4ab7964aa9e03a47df190a58c7ba3a1156f70a77ae1d46d3b",
+      "run-final-boehm.log": "c04f5af9e5b55842115e3b8db8b17fad8171091385f7e758e22917d3e52c804a",
+      "run-final-none-guard.json": "22792611ed886b55ce7fcdec8b3b76239646591ffc49d71938c04178fc408ca7",
+      "run-final-none-result.json": "b0365cb8df979d5c52f03913450a336ae31476d920f44a649cbb35e01cb82989",
+      "run-final-none.log": "ad9df2a216c6c7f2dd8f3caee1bbaca675ad3a184583db978dd865dab27dad44",
+      "run-final-prealloc-guard.json": "8b076ebe34a420f209c6d09da1995d53da305238a3d4e2de28731059b6b76985",
+      "run-final-prealloc-result.json": "0f019e2199f871a06cd976c02f9a15679f588c835ef6d2b0e908450b726cb373",
+      "run-final-prealloc.log": "b8addfb38d9212c8ff903eef89d7c9f30e648f684e3e4013e72c95281cd975d6",
+      "run-github-after-bindings.py": "f776c14ba83630644cdbfd43884376d8a1c93ceeeb2a44ae50e7122dc550b8eb",
+      "run-installed-integration.py": "11150d06837b3020108ccc707ca92484259fb4fbf607d4ba16829af035bf9114",
+      "run-installed-pipeline.py": "a734984d746cd81a5dc93297b97953ae9f1a56b4b2b8a02d591741d25fb11ade",
+      "run-local.py": "95d7ea9dcb889d2ed386e6c3fe3773bcb6e1e49375e3c564343cb82011e9e1a2",
+      "run-metadata-neighbor-boehm-guard.json": "c581747622e83c00dcd57254f348d612f79f4b40c5dc7068021347361dd026e9",
+      "run-metadata-neighbor-boehm-result.json": "6785741d44c1796ab5d9225e356c2f09b2279589bf279b21111677c9fb5d8641",
+      "run-metadata-neighbor-boehm.log": "4d0572c817550d5d7f2a18cf872dd8978d4651b506214bc3378aa6b0df7498e5",
+      "run-metadata-neighbor-none-guard.json": "ff5fcb40246382725276c772f14dabd1b512676fc544cdb608ad5f0c88d90ec6",
+      "run-metadata-neighbor-none-result.json": "cab778a8a9b5cf1ae986b3bf8396aacd43f1ec195c10fefebb58a05a59c43434",
+      "run-metadata-neighbor-none.log": "67fccb33346ad2596007441bf624250b0ce7158fc8a8e769bba8057e0cde1dc2",
+      "run-metadata-neighbor-v2-boehm-guard.json": "296c2168461e2233f43eaf9aab5e35ac7158e42dde74c02877b1e393f0da1b08",
+      "run-metadata-neighbor-v2-boehm-result.json": "55e48506b38c4f289e921270d8c094094f091266cc9dd0cca06ccfa8cc821266",
+      "run-metadata-neighbor-v2-boehm.log": "f3de46874342032c41f40e21c1da1ab108447044586762f1e5ea6ef195ff4108",
+      "run-metadata-neighbor-v2-none-guard.json": "906800ed48b22b847dbc2fbda12494ced3ebe94a699bfbcfcacf8f900bc82877",
+      "run-metadata-neighbor-v2-none-result.json": "fe5b4697f9f2716cf007c1c8e0c821c185195903cd8e40f4c98a3bc3944ff7fe",
+      "run-metadata-neighbor-v2-none.log": "77d5ce516b36ba914d84df7aa336b08571419b432d054ff10c549a04fa289db5",
+      "run-metadata-neighbor-v3-boehm-guard.json": "1188013a2a7098fd8cf297caffe2db0cf6dacccc5002b4d8e1ab9d5b1ad64ae7",
+      "run-metadata-neighbor-v3-boehm-result.json": "09f1795d65f00d07ecb8c7f085bb33303e87a564d9d2a79bb64666ee66b0ac09",
+      "run-metadata-neighbor-v3-boehm.log": "f6b21326c43956e9fd89743ceefd90d35503e089aaef29a82c786d7bfb2eb317",
+      "run-metadata-neighbor-v3-none-guard.json": "190ccc108c0c6568439591311b7d900da4d94a91f34008c94ff9ec2fcf53c429",
+      "run-metadata-neighbor-v3-none-result.json": "b9100427942615d68847cdb7c70a282eacbdb72f9c66e9f88694f13da8ef9bb0",
+      "run-metadata-neighbor-v3-none.log": "cfe919d0a2fad7a6eab676b6704e07ebf27f9186e7a83a20f7bf1a94642e4fc6",
+      "run-repeat-neighbor-boehm-guard.json": "68385d8e98010ba6a0cfc56d36e45c4873c8fdc48fcd71e83e64128419cbdf82",
+      "run-repeat-neighbor-boehm-result.json": "f6da9b5be26a536c6a012d127156054d33ed8ab0042c8acd81b0e4773b4dee9b",
+      "run-repeat-neighbor-boehm.log": "3ab299401f83c98ef98e5e5fc8d18fdcc1418e157d2e9ffbacf139ba0e5406af",
+      "run-repeat-neighbor-none-guard.json": "ebd820123a23adafbfc22c1d1340eb34cbecb39a98f1b0e4c00e02bc9266d8d1",
+      "run-repeat-neighbor-none-result.json": "2bbb46e3bbbb62f5942dc7f805aac3b0266fc71405fc5524dc7dfeade94bd5b4",
+      "run-repeat-neighbor-none.log": "3678b762c5e037d33298dbb56dde9ce00acb984dda01b823a5c28ed566b0305a",
+      "run-repeat-neighbor-v3-boehm-guard.json": "a297c117437f03b23d851785a493cc5a84774f84ec13d2e27abab0efea3d2258",
+      "run-repeat-neighbor-v3-boehm-result.json": "0b694bc61ecf566d3c2cfef489812dc64ab8d7f241a4c827933c2d12aa864218",
+      "run-repeat-neighbor-v3-boehm.log": "9319ed78b35f418d9b85f0e2aa3fbc008979cf950252531e9742f5136b97ba86",
+      "run-repeat-neighbor-v3-none-guard.json": "0537996213c4d0c1b0cc4a78a5b163d272e57b038f65bb76806dc32c2f87091a",
+      "run-repeat-neighbor-v3-none-result.json": "1a02945e5487a7e23d9d9a31fffd257bc9e33ecce189514693775ba9e2000002",
+      "run-repeat-neighbor-v3-none.log": "937538d1a3d6094ed532ac31eb9afdb8cbf0b9ad4c2fc6c2a9a0c96ee0b008c3",
+      "run-repeat-neighbor-v3-prealloc-guard.json": "7a528010e852c6faf1976a3d8057ecdd9cdfa3fffa1e5082f8031ccefae64ff5",
+      "run-repeat-neighbor-v3-prealloc-result.json": "a80626670de3015b0689aca14d68170d26b051c2a4a2378ce343da150dded1f9",
+      "run-repeat-neighbor-v3-prealloc.log": "2d75ece2ad5d7b50cad8f504deca14fb05f21570cf1a5a7045f92cfafee61477",
+      "run-v2-final-boehm-guard.json": "cc84556603e826fda1cefd0a6b2bb5cb9d405370f417342058d8139843fbce14",
+      "run-v2-final-boehm-result.json": "05697619472a5fe3057d2f1f58e070918f7eea0a268f044abdefa4d6b9f546af",
+      "run-v2-final-boehm.log": "5de94c4b021fe21c3487b183bca9ce66a107f1ca6c488e4986833f490ab18c16",
+      "run-v2-final-none-guard.json": "3bd4b6861bc0fc06f66439c26ed7b849c2325dcdc04a0c4dd1532d94f2518cc7",
+      "run-v2-final-none-result.json": "e5e0eabe80a38184c30f70c0b0d866c8f83e758f9ea1a790796e3df5ac9478e1",
+      "run-v2-final-none.log": "b83e49eb34b10e880b8f8c9a4ffe9c7d339bdff3b9700a70f45d8854d61412a3",
+      "run-v3-final-boehm-guard.json": "9c21a499b3b8f3cd410379d2d11f5aa61c6b440e681b1d0bb696f08a7a8f0f0b",
+      "run-v3-final-boehm-result.json": "e358d26fbf66544976df1c24c0088ca0f03cc11731b58ff3d57bb1a4d977bb03",
+      "run-v3-final-boehm.log": "a6eb8c7deb0a5bf649ac1163f85332100a8473de5a25a089f6a7282f759afa81",
+      "run-v3-final-none-guard.json": "ffd4423e42fbc99013ce7170b375f5e4731acbdc2156d00d4a90a741cbff7fe1",
+      "run-v3-final-none-result.json": "34a6f27661b6814a6a609e14fe12dc5b9442f3b58a011e2ef007a4278e6759da",
+      "run-v3-final-none.log": "b6ecbbb02e903c8b5e27958a82f1b82aee52f9863f09836abde307815134f69a",
+      "run-v3-final-prealloc-guard.json": "51cc0df61d9c26130799e7b60007f7783e69422a237f84a0494414dbe27ee8fe",
+      "run-v3-final-prealloc-result.json": "3e737e35a7030998446282a4c0a4a466600573b20433353614e9efd60a2b75db",
+      "run-v3-final-prealloc.log": "84c7c9825db6d14c9a803d9327fac5c6eb0e942c3a2b3858c6781cba74a3a231",
+      "run-workspace-neighbor-v3-prealloc-guard.json": "423f0ed0cd68c35e1a5b8742ef6feca5f387d9ab231f685fba2ac1421973bfe0",
+      "run-workspace-neighbor-v3-prealloc-result.json": "7549c1f9620e215beeb7af5ac77bf8d7a6eb399528f54e00e61584c8eef935a1",
+      "run-workspace-neighbor-v3-prealloc.log": "64551314c1f8a84f326e7f1cf357882b9f5bd6d171f57e392fad070c1dda8876",
+      "superseded-controller-tool-terminals.json": "2d94de9052f35d5415f7e1da9912489e28528250ae85f2f6769ae240b4d7d2ec",
+      "two-binary-run-local.py": "0a6e2ca91112f7167e994396731339ec0adb1c1b423b2a9b3bd365ca98bb6952",
+      "v1-compile-before-boehm-command.json": "3ee9105a4ffdfd293cad27e04b81800ca44792170ba60ea8e84946078cb39052",
+      "v1-compile-before-boehm-guard.json": "6bd3657a3661f455ed58e991d7414eef4dd2cd7def9993032fdd1a340bb5d0ea",
+      "v1-compile-before-boehm-result.json": "cd8ffa0c6adc6019343c9c475a3a46a731d367f0d1d40e81bf895ba0c2d6c3d1",
+      "v1-compile-before-boehm.log": "b9dd7931fec583c942c4ab1a00036995568bf008a8d1e1ee413df96b7b3e381f",
+      "v1-fixture-correction.patch": "3928e2c3f6345ce90a0fdb68bbde00ef39aa294f8d693bd4d83a511c0de8b1f9",
+      "v1-local-plan.json": "ba188cc0981faab17bbd9de4a33067390d78b4cbb43d069a5cfabde3126cc973",
+      "v1-optional-map-guard.json": "45cc827ab2980fa7e66cf4bd457ce30bf38deea99fc24507148492a387e50d75",
+      "v1-optional-map-terminal.json": "3156810684830aaf69de1778c19c26ff12a18ae4e103162099b4fd4b95d6462a",
+      "v1-optional-map.log": "5de8c0563a1dc5531f4f0a1ed2663460a6a53671cf52e781767d8f2a71971c8a",
+      "v1-run-before-boehm-guard.json": "2738e3d3f2ff4b75eff04ee54650f46084f4551ae17ffedd3b3b67b91e6f388f",
+      "v1-run-before-boehm-result.json": "2db348f616a8adf76646118a73b2e265aa2dba48129c049dd3649b492172c1f3",
+      "v1-run-before-boehm.log": "c0f3f7346df58695aaf6a6e92a2a99540f6676c75230ef79e7fc0ae2a2ab9733",
+      "v3-focused-controller-result.json": "1e3293fa527afea404fa015ab4fdaad756955ab642bc2fbd94b17b01e0e49e6e",
+      "v3-neighbors-controller-result.json": "4cb694adb82bc9e3509e22b235b0105889876926c6d80ff4b9e962f14ce141be",
+      "write-documentation.py": "73e78d609828dbc262406487861617044c17df28532e82d527903c41b9538dd2",
+      "write-evidence.py": "e8dc843d173a32a5caed7eb9b14a96242acf0b23866f5ce979d8e52cab06bef7",
+      "write-pending-documentation.py": "450eb44b4768d4db9511c462e86709df23091bd752e198c7a8eb6a8ef37084d4",
+      "write-pending-evidence.py": "67cd7ae078d50036e6ca36cea6bee7d2966fab8bd5de33c0f29357ff653356f3"
+    },
+    "path": "docs/performance/raw/github-lazy-match-memo-20261104.tar.gz",
+    "readback_verified": true,
+    "sha256": "e13d6cba81c2f5e3112fb3c63ecc1a8c2df99c4a99b60c15eff70a990266d713"
+  },
+  "failed_shared_receipt": {
+    "guard": {
+      "adopted_processes": {},
+      "adoption_error": null,
+      "child_exit_code": -9,
+      "command": [
+        "sh",
+        "-c",
+        "exec sh -c \"$(cat)\" \"$0\"",
+        "/Users/alex/code/vox2/build-prod-browser.sh"
+      ],
+      "elapsed_seconds": 1800.159893208,
+      "limit_bytes": 12884901888,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "observed_peak_rss_bytes": 4995727360,
+      "reason": "timeout"
+    },
+    "native_terminal_exit": "not captured; only guarded shell exit -9 is observed",
+    "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-003720-f7f20c86/result.json",
+    "record": {
+      "exit": 125,
+      "inputs": {
+        "build_inputs_sha256": "e2c55b70aba7f67360b012334339ec4cc739907070106ea3797f59aafe4e7112",
+        "dirty": true,
+        "head": "3bc664bd1032fdef0b32ee373f7572be37fbaa21",
+        "repository_sha256": "6852ddbf3145bbe76c4f5b2785c57da32c6f2e8d935c127b9556e70dda4aa7bd"
+      },
+      "request": {
+        "head": "3bc664bd1032fdef0b32ee373f7572be37fbaa21",
+        "id": "14b218390d8a4045b81f2b3df50fc354"
+      }
+    }
+  },
+  "feature": {
+    "blobs": {
+      "css/lazy_repeated_rule_memo_test.v": "321630f6924ed92351d78243b8269c887f9fd57c",
+      "css/repeated_rule_matching.v": "695bffa2143e2f55b989e8e01aec58d59a03610f",
+      "css/repeated_rule_matching_test.v": "cc9063333512d4f170f73f05fd221e9d1947899f",
+      "css/style_scope_cache.v": "1f8a3c4155c91768a1cb28a10c9a47d14eda164b"
+    },
+    "commit": "ded75a2b3c1a3774001df4ac8a1dd7b9b2a655fe",
+    "parent": "3bc664bd1032fdef0b32ee373f7572be37fbaa21",
+    "paths": [
+      "css/style_scope_cache.v",
+      "css/repeated_rule_matching.v",
+      "css/repeated_rule_matching_test.v",
+      "css/lazy_repeated_rule_memo_test.v"
+    ]
+  },
+  "focused": {
+    "checks": [
+      {
+        "active_tests": [
+          "css__test_unique_selector_collection_preserves_results_and_scratch_lifetime",
+          "css__test_mixed_unique_and_repeated_selectors_keep_order_metadata_and_scope_lifetime"
+        ],
+        "binary_sha256": "de121194c9f1b74c2f7fbc69f88d30aa0bb77bae2787bd25c221b9a27ea0b465",
+        "cases": 2,
+        "configuration": "before-boehm",
+        "generated_c_sha256": "d527961231e92082fbf38ad490b3f168ad5ce7fe2bd3afb0e16284aced7cbb2d",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-before-boehm",
+                "/Users/alex/code/vox2/css/lazy_repeated_rule_memo_test.v"
+              ],
+              "elapsed_seconds": 123.578811541,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2402844672,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-before-boehm"
+              ],
+              "elapsed_seconds": 0.645779542,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 6324224,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_unique_selector_collection_preserves_results_and_scratch_lifetime",
+          "css__test_mixed_unique_and_repeated_selectors_keep_order_metadata_and_scope_lifetime"
+        ],
+        "binary_sha256": "bbe1fee16cd317a8e1203a390b6cbec4a1bebc8c827e16660768d001500642d5",
+        "cases": 2,
+        "configuration": "v3-final-boehm",
+        "generated_c_sha256": "159fd9389de096e6608301ee4d15c128534a45a602aebe65048b7479431dca46",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-v3-final-boehm",
+                "/Users/alex/code/vox2/css/lazy_repeated_rule_memo_test.v"
+              ],
+              "elapsed_seconds": 68.74056108399999,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2510487552,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-v3-final-boehm"
+              ],
+              "elapsed_seconds": 0.605705,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_unique_selector_collection_preserves_results_and_scratch_lifetime",
+          "css__test_mixed_unique_and_repeated_selectors_keep_order_metadata_and_scope_lifetime"
+        ],
+        "binary_sha256": "abd870c1631dc00c5bbea708af6b1d665d1a3a88d5c8b3454b95486d0793b9d8",
+        "cases": 2,
+        "configuration": "v3-final-none",
+        "generated_c_sha256": "76a28bd57365d8832e8eb9ec2c3036989bb647ced845a7de6c0e5681aae21b88",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-v3-final-none",
+                "/Users/alex/code/vox2/css/lazy_repeated_rule_memo_test.v"
+              ],
+              "elapsed_seconds": 74.13437449999999,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2362277888,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-v3-final-none"
+              ],
+              "elapsed_seconds": 0.714988875,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_unique_selector_collection_preserves_results_and_scratch_lifetime",
+          "css__test_mixed_unique_and_repeated_selectors_keep_order_metadata_and_scope_lifetime"
+        ],
+        "binary_sha256": "96885885f316bba2d87da62cd52087d7d1ab810ab199bdd8517ae32d9d68041e",
+        "cases": 2,
+        "configuration": "v3-final-prealloc",
+        "generated_c_sha256": "2c7c03c7577f64282a6956da0702898b5fe7e8c11f0d93f0de812abe143cae92",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-prealloc",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-v3-final-prealloc",
+                "/Users/alex/code/vox2/css/lazy_repeated_rule_memo_test.v"
+              ],
+              "elapsed_seconds": 82.60786695799999,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2270445568,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-v3-final-prealloc"
+              ],
+              "elapsed_seconds": 0.766092125,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 18628608,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_repeated_rule_matches_preserve_order_pseudo_rules_and_attempted_state_metadata",
+          "css__test_repeated_selector_matches_expire_between_style_updates_and_keep_has_involvement",
+          "css__test_repeated_match_sheet_identity_keeps_default_namespace_decisions_separate",
+          "css__test_repeated_match_memo_keeps_entries_and_metadata_after_growth"
+        ],
+        "binary_sha256": "c532de45d59891a5c5b0484c98dc0032b9acaf3bf1acb5bcb24ad910ff698189",
+        "cases": 4,
+        "configuration": "repeat-neighbor-v3-boehm",
+        "generated_c_sha256": "79c474c5b40ae3c2e7b885fecb3d89d943d5d8f8dcda8f889c91073a93a4acc2",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-repeat-neighbor-v3-boehm",
+                "/Users/alex/code/vox2/css/repeated_rule_matching_test.v"
+              ],
+              "elapsed_seconds": 67.1986615,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2717073408,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-repeat-neighbor-v3-boehm"
+              ],
+              "elapsed_seconds": 0.641109458,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_repeated_rule_matches_preserve_order_pseudo_rules_and_attempted_state_metadata",
+          "css__test_repeated_selector_matches_expire_between_style_updates_and_keep_has_involvement",
+          "css__test_repeated_match_sheet_identity_keeps_default_namespace_decisions_separate",
+          "css__test_repeated_match_memo_keeps_entries_and_metadata_after_growth"
+        ],
+        "binary_sha256": "a421ba8a857cafb6b74861d37a9d1fb335262a466fdc2ba38b9cea923d2faf8a",
+        "cases": 4,
+        "configuration": "repeat-neighbor-v3-none",
+        "generated_c_sha256": "611711d1a06296595803f15e848b6ba1d89c70e12788c6bb76a25965c27c87c2",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-repeat-neighbor-v3-none",
+                "/Users/alex/code/vox2/css/repeated_rule_matching_test.v"
+              ],
+              "elapsed_seconds": 71.971502833,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2699132928,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-repeat-neighbor-v3-none"
+              ],
+              "elapsed_seconds": 0.636134125,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 22069248,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_repeated_rule_matches_preserve_order_pseudo_rules_and_attempted_state_metadata",
+          "css__test_repeated_selector_matches_expire_between_style_updates_and_keep_has_involvement",
+          "css__test_repeated_match_sheet_identity_keeps_default_namespace_decisions_separate",
+          "css__test_repeated_match_memo_keeps_entries_and_metadata_after_growth"
+        ],
+        "binary_sha256": "412de99429dd40a30f61628fd4033662ca6e669dad85ab83dc96638084342955",
+        "cases": 4,
+        "configuration": "repeat-neighbor-v3-prealloc",
+        "generated_c_sha256": "af939065b2738bae246e63abad4ef124b00d5d71ad516c141cf74195062d3c11",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-prealloc",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-repeat-neighbor-v3-prealloc",
+                "/Users/alex/code/vox2/css/repeated_rule_matching_test.v"
+              ],
+              "elapsed_seconds": 74.116663042,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2262368256,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-repeat-neighbor-v3-prealloc"
+              ],
+              "elapsed_seconds": 0.6170644590000001,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 10027008,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_matching_rules_keep_attempted_metadata_across_states_and_subjects"
+        ],
+        "binary_sha256": "d3ef56aa43442cc9c2641f2943925246198d85847e5af312643cd685def99780",
+        "cases": 1,
+        "configuration": "metadata-neighbor-v3-boehm",
+        "generated_c_sha256": "9f7d163168b13bc0e06cafbdff0920bfe798e18803de1033fcfaa0d5eeda50fb",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-metadata-neighbor-v3-boehm",
+                "/Users/alex/code/vox2/css/matching_attempted_metadata_test.v"
+              ],
+              "elapsed_seconds": 69.888320375,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2573664256,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-metadata-neighbor-v3-boehm"
+              ],
+              "elapsed_seconds": 0.626263209,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_matching_rules_keep_attempted_metadata_across_states_and_subjects"
+        ],
+        "binary_sha256": "95ead82a0ec653ed95d36de16ecc98f0acaac4017918ec68ce77448754b83cbf",
+        "cases": 1,
+        "configuration": "metadata-neighbor-v3-none",
+        "generated_c_sha256": "38de5587c26e240cdcc3cf9c9437b494d2d339f23c5432f84e9eac48f48f1994",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-metadata-neighbor-v3-none",
+                "/Users/alex/code/vox2/css/matching_attempted_metadata_test.v"
+              ],
+              "elapsed_seconds": 75.520638875,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2298691584,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-metadata-neighbor-v3-none"
+              ],
+              "elapsed_seconds": 0.670793375,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+          "css__test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+          "css__test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity"
+        ],
+        "binary_sha256": "ed011f4794f8be7c88f2a85bf3250c6747d6e94b8dd27e1f937fcd582846df1a",
+        "cases": 3,
+        "configuration": "bucket-neighbor-v3-boehm",
+        "generated_c_sha256": "c0949a1c127cb9e157ab0174246049a3f620053105a0ce9f113a2b9bb8acf70b",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-bucket-neighbor-v3-boehm",
+                "/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v"
+              ],
+              "elapsed_seconds": 68.470248041,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2709045248,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-bucket-neighbor-v3-boehm"
+              ],
+              "elapsed_seconds": 0.7188994580000001,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+          "css__test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+          "css__test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity"
+        ],
+        "binary_sha256": "f0f1cee9bfedc917f79433e41799abf8cb18da390fc3299db88e40db7ef79075",
+        "cases": 3,
+        "configuration": "bucket-neighbor-v3-none",
+        "generated_c_sha256": "d49f507627a4f2d8d03892eccfc9b89475761298526ff221063e4e18baa31723",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-bucket-neighbor-v3-none",
+                "/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v"
+              ],
+              "elapsed_seconds": 67.514482625,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2701312000,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-bucket-neighbor-v3-none"
+              ],
+              "elapsed_seconds": 0.800114542,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 15024128,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_empty_match_collection_preserves_attempts_and_releases_candidate_scratch",
+          "css__test_empty_match_collection_distinguishes_no_candidates_from_nonmatching_selectors"
+        ],
+        "binary_sha256": "2b5a202a37aae9add4cbf0e1205ac5edebd10490e872f7238be7fa4e40526644",
+        "cases": 2,
+        "configuration": "empty-neighbor-v3-prealloc",
+        "generated_c_sha256": "8a8194dd3a75a6d8846ff460933cc307685bdc599fa28153c3237f2d382d4faf",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-prealloc",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-empty-neighbor-v3-prealloc",
+                "/Users/alex/code/vox2/css/empty_rule_match_collection_test.v"
+              ],
+              "elapsed_seconds": 86.83418325000001,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2272018432,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-empty-neighbor-v3-prealloc"
+              ],
+              "elapsed_seconds": 0.7272630409999999,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_matching_rule_workspace_preserves_layers_pseudo_rules_and_attempted_metadata",
+          "css__test_matching_rule_workspaces_preserve_outer_results_during_nested_style_queries",
+          "css__test_matching_rule_lists_do_not_accumulate_in_the_document_arena",
+          "css__test_public_matching_rule_results_survive_internal_workspace_reuse"
+        ],
+        "binary_sha256": "cd794f6a9fc1483d26ec5f3aafd6126242e4b2749f03cb86d60af8f19b731f76",
+        "cases": 4,
+        "configuration": "workspace-neighbor-v3-prealloc",
+        "generated_c_sha256": "0e441de86e416045303a1e274901bfdbeb024010f85b98757b2b7d2919318d63",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-prealloc",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-workspace-neighbor-v3-prealloc",
+                "/Users/alex/code/vox2/css/matching_rule_set_workspace_test.v"
+              ],
+              "elapsed_seconds": 278.98420150000004,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2191818752,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-workspace-neighbor-v3-prealloc"
+              ],
+              "elapsed_seconds": 0.761566166,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 22183936,
+              "reason": "completed"
+            }
+          }
+        },
+        "supplemental_reason": "Final review covers non-nil production workspace storage, nested queries, public result lifetime and document-arena accumulation. No source change or hardware cohort extension."
+      }
+    ],
+    "coverage": "Original eager baseline two cases; candidate two new collector cases in Boehm/none/prealloc; four repeated-selector cases in all three modes including 128-entry growth and namespace ownership; metadata and direct-bucket neighbors in Boehm/none; empty-collector neighbor in prealloc. Superseded experiments are not final pass credit. Four supplemental preallocation matching-workspace lifetime cases also pass.",
+    "exit": 0,
+    "focused_case_executions": 34,
+    "source_sha256": {
+      "css/lazy_repeated_rule_memo_test.v": "d0fdd161bb27fc4c740ad47b622f6c3daf2e319a053c753fbf1595bcef69fb77",
+      "css/repeated_rule_matching.v": "85c930f99a0366a239d745509111f9fa53537da99165955b3c4af2e4d561a8d8",
+      "css/repeated_rule_matching_test.v": "9cce5c93ada195ac5e8821fbfd491ad4d3411af3cb6b82034ebcb86e9a9ce1e1",
+      "css/style_scope_cache.v": "46f98fa6ac5ea10ba8a66af9dfa42cbd5f80b9feda72e696cd5785aa67965b15"
+    }
+  },
+  "github_observations": 0,
+  "github_plan_unexecuted": {
+    "broad_baseline_reset": false,
+    "created_unix": 1793741918.518346,
+    "expected_document_viewport": [
+      1024,
+      768
+    ],
+    "extensions": 0,
+    "observations": 1,
+    "retries": 0,
+    "scope": "One separate ordinary shared-production GitHub correctness diagnostic after lazy repeated-selector memo allocation; no paired before/after page cohort, saving attribution or per-page eligibility count.",
+    "source_contract": {
+      "images": 21,
+      "links": 66,
+      "responses": 193,
+      "rows": 33
+    },
+    "source_manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+    "whole_page_credit": 0
+  },
+  "installed_validation_complete": false,
+  "limitations": [
+    "The three-pair same-executable experiment compares eager/deferred initialization within the new memo representation, not a literal previous executable or whole-page saving. All six processes and both 2048-call intervals are retained with zero exits and fixed order; no retries or extensions.",
+    "Unique collector instructions fall 8.1283%; mixed repeated collector instructions fall an observed1.5164%. No confidence interval or page coverage claim. Hardware source is processmetrics proc_pid_rusage RUSAGE_INFO_V4 ri_instructions across all main-process threads; host contention is retained.",
+    "All34 focused executions pass, including four supplemental preallocated workspace lifetime cases. Compile limits remain12GiB/V10G and runtime3GiB. Preparatory failures, superseded implementations and controller terminations remain in raw evidence; no preliminary probe ran hardware primaries.",
+    "The preceding completed production bundle passes the API fixture at640x480 but lacks the feature. It is only a correctness baseline, not candidate validation or a paired pixel result.",
+    "The staged collector/helper/memo record match tested generated C; five unchanged helpers match previous production with assertions preserved. Native compilation timed out: guard125/wrapped shell-9, frozen compile incomplete. No signing, smoke, candidate browser or GitHub pass credit is taken.",
+    "One coalesced production request remains recorded. Shared production workers and newer bundles are preserved. The separately declared candidate fixture and GitHub N1 have not launched, so no primary is replaced or retried.",
+    "CurrentV/prealloc/C-O2 local evidence stays separate from C-O3 production and historical old-compiler/Boehm/C-O2 cohorts. No matched page gain, broad reset, hydration or Chrome parity claim."
+  ],
+  "local": {
+    "broad_baseline_reset": false,
+    "exit": 0,
+    "interpretation": "Fixed local mechanism diagnostic only; unique and repeated intervals reported separately, all regressions retained; no repeatable page CI.",
+    "new_whole_page_credit": 0,
+    "observations": [
+      {
+        "actual_guard_exit": 0,
+        "binary_sha256": "c7e79e451060b41cf8cf278dbefc5815642f1664fdbca977b9658d9c04945a69",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-01-before.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-01-before-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe"
+        ],
+        "eager_initialization_ablation": true,
+        "finished_unix": 1793742189.8937879,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            84.076171875,
+            76.6337890625,
+            72.462890625
+          ],
+          "started_unix": 1793742189.309433
+        },
+        "measurements": {
+          "repeated": {
+            "arena_growth": 2490368,
+            "checksum": 6144,
+            "instructions": 9534153
+          },
+          "unique": {
+            "arena_growth": 589824,
+            "checksum": 2048,
+            "instructions": 3219877
+          }
+        },
+        "pair": 1,
+        "variant": "before"
+      },
+      {
+        "actual_guard_exit": 0,
+        "binary_sha256": "c7e79e451060b41cf8cf278dbefc5815642f1664fdbca977b9658d9c04945a69",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-01-final.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-01-final-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe"
+        ],
+        "eager_initialization_ablation": false,
+        "finished_unix": 1793742190.48752,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            84.076171875,
+            76.6337890625,
+            72.462890625
+          ],
+          "started_unix": 1793742190.124901
+        },
+        "measurements": {
+          "repeated": {
+            "arena_growth": 2490368,
+            "checksum": 6144,
+            "instructions": 9469742
+          },
+          "unique": {
+            "arena_growth": 262144,
+            "checksum": 2048,
+            "instructions": 2958115
+          }
+        },
+        "pair": 1,
+        "variant": "final"
+      },
+      {
+        "actual_guard_exit": 0,
+        "binary_sha256": "c7e79e451060b41cf8cf278dbefc5815642f1664fdbca977b9658d9c04945a69",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-02-final.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-02-final-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe"
+        ],
+        "eager_initialization_ablation": false,
+        "finished_unix": 1793742190.91431,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            84.076171875,
+            76.6337890625,
+            72.462890625
+          ],
+          "started_unix": 1793742190.619304
+        },
+        "measurements": {
+          "repeated": {
+            "arena_growth": 2490368,
+            "checksum": 6144,
+            "instructions": 9372076
+          },
+          "unique": {
+            "arena_growth": 262144,
+            "checksum": 2048,
+            "instructions": 2958157
+          }
+        },
+        "pair": 2,
+        "variant": "final"
+      },
+      {
+        "actual_guard_exit": 0,
+        "binary_sha256": "c7e79e451060b41cf8cf278dbefc5815642f1664fdbca977b9658d9c04945a69",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-02-before.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-02-before-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe"
+        ],
+        "eager_initialization_ablation": true,
+        "finished_unix": 1793742191.3241448,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            84.076171875,
+            76.6337890625,
+            72.462890625
+          ],
+          "started_unix": 1793742191.058097
+        },
+        "measurements": {
+          "repeated": {
+            "arena_growth": 2490368,
+            "checksum": 6144,
+            "instructions": 9375375
+          },
+          "unique": {
+            "arena_growth": 589824,
+            "checksum": 2048,
+            "instructions": 3259836
+          }
+        },
+        "pair": 2,
+        "variant": "before"
+      },
+      {
+        "actual_guard_exit": 0,
+        "binary_sha256": "c7e79e451060b41cf8cf278dbefc5815642f1664fdbca977b9658d9c04945a69",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-03-before.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-03-before-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe"
+        ],
+        "eager_initialization_ablation": true,
+        "finished_unix": 1793742191.8966348,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            84.076171875,
+            76.6337890625,
+            72.462890625
+          ],
+          "started_unix": 1793742191.454271
+        },
+        "measurements": {
+          "repeated": {
+            "arena_growth": 2490368,
+            "checksum": 6144,
+            "instructions": 9702928
+          },
+          "unique": {
+            "arena_growth": 589824,
+            "checksum": 2048,
+            "instructions": 3218077
+          }
+        },
+        "pair": 3,
+        "variant": "before"
+      },
+      {
+        "actual_guard_exit": 0,
+        "binary_sha256": "c7e79e451060b41cf8cf278dbefc5815642f1664fdbca977b9658d9c04945a69",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-03-final.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/local-03-final-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe"
+        ],
+        "eager_initialization_ablation": false,
+        "finished_unix": 1793742192.337822,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            84.076171875,
+            76.6337890625,
+            72.462890625
+          ],
+          "started_unix": 1793742192.056844
+        },
+        "measurements": {
+          "repeated": {
+            "arena_growth": 2490368,
+            "checksum": 6144,
+            "instructions": 9389578
+          },
+          "unique": {
+            "arena_growth": 262144,
+            "checksum": 2048,
+            "instructions": 2970900
+          }
+        },
+        "pair": 3,
+        "variant": "final"
+      }
+    ],
+    "pairs": 3,
+    "paths": {
+      "repeated": {
+        "before_instructions": [
+          9534153,
+          9375375,
+          9702928
+        ],
+        "before_median": 9534153,
+        "final_instructions": [
+          9469742,
+          9372076,
+          9389578
+        ],
+        "final_median": 9389578,
+        "observed_median_saving": 144575,
+        "observed_percent_saving": 1.5163906012416626,
+        "paired_savings": [
+          64411,
+          3299,
+          313350
+        ],
+        "wins": 3
+      },
+      "unique": {
+        "before_instructions": [
+          3219877,
+          3259836,
+          3218077
+        ],
+        "before_median": 3219877,
+        "final_instructions": [
+          2958115,
+          2958157,
+          2970900
+        ],
+        "final_median": 2958157,
+        "observed_median_saving": 261720,
+        "observed_percent_saving": 8.128260800024348,
+        "paired_savings": [
+          261762,
+          301679,
+          247177
+        ],
+        "wins": 3
+      }
+    },
+    "scope": "Fixed local3paired ablation runs/currentV+prealloc+C-O2: same executable/hash/native inputs;control sets VOX_DISABLE_LAZY_REPEATED_RULE_MEMO=1 to initialize eagerly in the same stack-local memo record,candidate leaves it unset;2048 complete unique calls and separately2048 repeated calls;setup/eight warmups/forcedGC/assertions outside RI intervals."
+  },
+  "local_c_audit": {
+    "exit": 0,
+    "generated_c": "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe.c",
+    "generated_c_sha256": "b654965554369c007d31da8636acfeda40cccf924b37b4e52636335d694bd0b5",
+    "hardware_observations_at_audit": 0,
+    "scope": "Same executable for eager/deferred initialization; inline optional map header; explicit header publication retains length/capacity after each store; no mutable-option heap header copy. This is an initialization ablation, not old-build equivalence or a whole-program isolation claim.",
+    "verified_functions_sha256": "89df8f719f0327408427778e81a74bb23b622a50393d9069e1892310aed5632e"
+  },
+  "local_input_pins": {
+    "plan_sha256": "b05be3cd015b7f316644c485c06661e94981617722c64db0cc5ca3c13a1e2df5",
+    "runtime": {
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+        "bytes": 150024,
+        "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+        "bytes": 69928,
+        "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+        "bytes": 102592,
+        "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+        "bytes": 181544,
+        "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+        "bytes": 335064,
+        "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+        "bytes": 768872,
+        "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+        "bytes": 33371048,
+        "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+        "bytes": 2158624,
+        "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+        "bytes": 245016,
+        "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+        "bytes": 5744128,
+        "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+        "bytes": 106528,
+        "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+      },
+      "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe": {
+        "bytes": 9535920,
+        "sha256": "c7e79e451060b41cf8cf278dbefc5815642f1664fdbca977b9658d9c04945a69"
+      },
+      "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+        "bytes": 150128,
+        "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927"
+      },
+      "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+        "bytes": 70128,
+        "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962"
+      },
+      "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+        "bytes": 661248,
+        "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7"
+      },
+      "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+        "bytes": 125264,
+        "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+      },
+      "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+        "bytes": 33833472,
+        "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618"
+      },
+      "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+        "bytes": 1885104,
+        "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7"
+      },
+      "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+        "bytes": 191344,
+        "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2"
+      }
+    },
+    "source_c_audit": {
+      "exit": 0,
+      "generated_c": "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe.c",
+      "generated_c_sha256": "b654965554369c007d31da8636acfeda40cccf924b37b4e52636335d694bd0b5",
+      "hardware_observations_at_audit": 0,
+      "scope": "Same executable for eager/deferred initialization; inline optional map header; explicit header publication retains length/capacity after each store; no mutable-option heap header copy. This is an initialization ablation, not old-build equivalence or a whole-program isolation claim.",
+      "verified_functions_sha256": "89df8f719f0327408427778e81a74bb23b622a50393d9069e1892310aed5632e"
+    }
+  },
+  "local_plan": {
+    "acceptance": "Mechanism evidence only; retain all six processes and both intervals including regressions. No whole-page CI or gain credit.",
+    "additional_focused_growth_test": "128 distinct repeated selectors retain entries and attempted hover metadata across two traversals and forced GC; outside timed fixture",
+    "binary_label": "ablation-v3-probe",
+    "broad_baseline_reset": false,
+    "cases_per_process": [
+      "unique:2048 complete collector calls",
+      "mixed repeated:2048 complete collector calls"
+    ],
+    "comparison": "Initialization ablation in the same representation, not literal old-build performance equivalence.",
+    "counter_backend": "processmetrics direct cumulative hardware retired instructions (main process all threads); separate start/end for each interval",
+    "created_unix": 1793741861.03869,
+    "earlier_protocol": "No primary or hardware observation launched for preliminary two-binary plans. Generated-C review found optional-mut header allocation; revised to inline record before measurement. Earlier compiles/failed checks retained. Inline optional map field must explicitly move updated header back; small syntax/runtime probe passes; unfinished v1 compile-only binary has no primary. map.move() resets the borrowed local header with an unused allocation; replaced before primaries by explicit unsafe header publication. A small 258-entry growth probe passed; no local hardware primary launched.",
+    "extensions": 0,
+    "fixture_correction": "Raw collector publishes attempted bitmap; element involvement flags belong to full style path. Erroneous direct-collector flag assertion removed. No local primary has launched.",
+    "fixture_sha256": "d0fdd161bb27fc4c740ad47b622f6c3daf2e319a053c753fbf1595bcef69fb77",
+    "implementation_sha256": {
+      "css/repeated_rule_matching.v": "85c930f99a0366a239d745509111f9fa53537da99165955b3c4af2e4d561a8d8",
+      "css/repeated_rule_matching_test.v": "9cce5c93ada195ac5e8821fbfd491ad4d3411af3cb6b82034ebcb86e9a9ce1e1",
+      "css/style_scope_cache.v": "46f98fa6ac5ea10ba8a66af9dfa42cbd5f80b9feda72e696cd5785aa67965b15"
+    },
+    "order": [
+      [
+        "before",
+        "final"
+      ],
+      [
+        "final",
+        "before"
+      ],
+      [
+        "before",
+        "final"
+      ]
+    ],
+    "pairs": 3,
+    "preliminary_probe_note": "before-probe was compiled against the preliminary fixture, which had an incorrect element-involvement assertion and measured only unique selectors. It has no runtime/counter observation and is excluded by protocol before all primaries.",
+    "retries": 0,
+    "scope": "Fixed local3paired ablation runs/currentV+prealloc+C-O2: same executable/hash/native inputs;control sets VOX_DISABLE_LAZY_REPEATED_RULE_MEMO=1 to initialize eagerly in the same stack-local memo record,candidate leaves it unset;2048 complete unique calls and separately2048 repeated calls;setup/eight warmups/forcedGC/assertions outside RI intervals.",
+    "whole_page_credit": 0
+  },
+  "new_whole_page_credit": 0,
+  "paired_whole_page_comparison": false,
+  "production_request": {
+    "actual_exit": 0,
+    "reason": "Latest completed production generated C lacks inline memo and lazy initialization; current running production snapshot also predates this feature. One coalesced request; no duplicate build or bundle copy.",
+    "request": {
+      "head": "3bc664bd1032fdef0b32ee373f7572be37fbaa21",
+      "id": "f4610c6f8a134309853ecb971692954a"
+    },
+    "requested_unix": 1793742012.2004359,
+    "stderr": "",
+    "stdout": ""
+  },
+  "production_requests": 1,
+  "source_sha256": {
+    "css/lazy_repeated_rule_memo_test.v": "d0fdd161bb27fc4c740ad47b622f6c3daf2e319a053c753fbf1595bcef69fb77",
+    "css/repeated_rule_matching.v": "85c930f99a0366a239d745509111f9fa53537da99165955b3c4af2e4d561a8d8",
+    "css/repeated_rule_matching_test.v": "9cce5c93ada195ac5e8821fbfd491ad4d3411af3cb6b82034ebcb86e9a9ce1e1",
+    "css/style_scope_cache.v": "46f98fa6ac5ea10ba8a66af9dfa42cbd5f80b9feda72e696cd5785aa67965b15"
+  },
+  "staging_c_audit": {
+    "complete_generated_c_sha256": [
+      "b654965554369c007d31da8636acfeda40cccf924b37b4e52636335d694bd0b5",
+      "c09eef33f4f08fbeb862589d2dd263511525b0b7e05926949c7b94ed622665a8",
+      "3fcebc10070980f1f8eeff7d8f40b84e853b3ffbbae9c83152febbb50bf41f3f"
+    ],
+    "exit": 0,
+    "functions": [
+      {
+        "compared_paths": [
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261104-003720-f7f20c86/generated/Vox.c"
+        ],
+        "comparison": "Tested candidate versus production",
+        "function": "css__collect_matching_rules_with_storage",
+        "match": true,
+        "normalized_sha256": "4b3975b525c04b1425be3f100f6c3666d3186e5daeb93575f6ae774c9dc24650"
+      },
+      {
+        "compared_paths": [
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261104-003720-f7f20c86/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__StyleComputer__release_matching_rule_candidates",
+        "match": true,
+        "normalized_sha256": "c573e230ad0b2d99f1ba21b48714ed1d4407e98ded4c4a8a9608df3d77b10c7c"
+      },
+      {
+        "compared_paths": [
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261104-003720-f7f20c86/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__StyleComputer__acquire_matching_rule_candidates",
+        "match": true,
+        "normalized_sha256": "9dbe9bdbca3d027a88a0326567dc4b50157d094dcf724fa67e9105018a3d62db"
+      },
+      {
+        "compared_paths": [
+          "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261104-003720-f7f20c86/generated/Vox.c"
+        ],
+        "comparison": "Tested candidate versus production",
+        "function": "css__match_repeated_rule_selector",
+        "match": true,
+        "normalized_sha256": "2ece7fab330c7740a30e0e7b4c5e6117d90b0685e79c03c17087ae7ea36cba87"
+      },
+      {
+        "compared_paths": [
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261104-003720-f7f20c86/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__style_scope_add_cached_rules_to_run",
+        "match": true,
+        "normalized_sha256": "820bd8897ff59043239098bb6a5f5f4cd51c635893dde46d1860674c71433c91"
+      },
+      {
+        "compared_paths": [
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261104-003720-f7f20c86/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__style_scope_add_slotted_rules_for_available_scopes",
+        "match": true,
+        "normalized_sha256": "549898606adddc849c524f709c26aa54d2123c1cb0014854136c152ddddadf75"
+      },
+      {
+        "compared_paths": [
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261104-003720-f7f20c86/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__style_scope_add_part_rules_for_available_scopes",
+        "match": true,
+        "normalized_sha256": "ba228bff466ec8e6e4e52abec925a6d5ca476c15c025c834684d685df351a72c"
+      }
+    ],
+    "memo_record_match": true,
+    "memo_record_sha256": "199fae62d9b9713c7011130f973055afb4b0902b38e9a5a46dbf276a263420d2",
+    "normalization": "Resolve every referenced C string constant exactly; no code, assertion branches or symbol renames ignored.",
+    "paths": [
+      "/Users/alex/code/vox2/Build/github-lazy-match-memo-20261104-session4076/checks-ablation-v3-probe.c",
+      "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c",
+      "/Users/alex/code/vox2/Build/production-build/receipts/20261104-003720-f7f20c86/generated/Vox.c"
+    ],
+    "scope": "Changed collector and memo helper bodies match tested candidate. Five unchanged helper bodies match prior production; test-mode assertion reporting differs and is not normalized away. Not whole-program performance isolation. Staging generated-C audit only: native build has not completed and this is not installed-browser validation."
+  },
+  "user_gui_stopped": false
+}
