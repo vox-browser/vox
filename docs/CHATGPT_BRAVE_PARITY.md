@@ -66,6 +66,30 @@ failures, identities, references and protocol corrections remain below. These
 checks cover rendering and functionality for the recorded guest workflow and
 viewport; they supply no performance claim.
 
+## November 3: CSS tracking size survives physical font scaling
+
+`756d1b5d4` keeps the original CSS font size for HarfBuzz's AAT tracking lookup,
+while the physical size still controls glyph geometry. This follows Chromium
+156's [specified-size shaping path](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_face.cc).
+The new metadata participates in font identity, shaping and HarfBuzz caches,
+character fallback, owned CSS font copies and invisible font variants. Default
+font keys retain their existing form when tracking and physical sizes agree.
+
+The [standalone text fixture](../Tests/Browser/Brave/input/device-layout-css-tracking.html)
+improves from 27,306 differing pixels to zero at 800×600 CSS pixels, scale 2,
+with native device layout explicitly enabled. Numeric scaling, cache isolation,
+invalid overrides and character-fallback tests pass under all three allocator
+modes. Existing system matching, cascade/native-handle, shaping-cache ownership,
+font identity and HarfBuzz release/face-cache checks pass as well.
+
+The opt-in SVG device-layout diagnostic improves from 89,586 to **582 differing
+pixels**; all 30 original visible text ranges are now exact. Three SVG controls
+and a few rounded edges still differ, so the temporary eligibility bypass was
+removed. The ordinary archived path remains at 2,117 pixels and exact scale-1
+parity at all three sizes. The [tracking receipt](parity/chatgpt-retina-tracking-20261103.json)
+retains both results, unchanged references, raw PNGs and the original failing
+font test. No default SVG-device-layout, live Retina or performance claim is made.
+
 ## November 3: animation samples in device-layout snapshots
 
 `b25c31a88` materializes the selected animation/transition values into the
