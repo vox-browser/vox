@@ -37,6 +37,7 @@ test('default matching stays parser-free and custom filters load the original pa
     defaults.context.voxDocumentFilters('https://news.ycombinator.com/', ['.title','.content','#hnmain']);
     assert.notEqual(defaults.context.voxAdblockURLLoaded,true);
     assert.notEqual(defaults.context.voxAdblockRegexAnalyzerLoaded,true);
+    assert.notEqual(defaults.context.voxAdblockBase64Loaded,true);
     defaults.context.voxAdblockInitialize('||metrics.example^$script\n##.advert');
     assert.equal(typeof defaults.context.voxAdblockParser.AstFilterParser, 'function');
     assert.equal(defaults.context.voxAdblockRegexAnalyzerLoaded,true);

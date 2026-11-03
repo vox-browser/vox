@@ -14,6 +14,10 @@ import { checkResponseHeaders } from './response_headers.js';
 import { snapshotResources } from './resources.js';
 
 const environment = ['ublock', 'chromium', 'user_stylesheet'];
+globalThis.voxAdblockLoadBase64 = () => {
+    (0, eval)(defaultData.base64Source());
+    globalThis.voxAdblockBase64Loaded = true;
+};
 globalThis.voxAdblockLoadRegexAnalyzer = () => {
     if (!globalThis.Regex) (0, eval)(defaultData.regexSource());
     globalThis.voxAdblockRegexAnalyzerLoaded = true;

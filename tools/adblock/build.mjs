@@ -11,6 +11,7 @@ import { encodeSnapshot, encodeNativeSnapshot } from './snapshot.mjs';
 import { parserStub } from './lazy_parser.mjs';
 import { resourcesStub } from './lazy_resources.mjs';
 import { urlStub } from './lazy_url.mjs';
+import { base64Stub } from './lazy_base64.mjs';
 import * as parserExports from '../../adblock/vendor/ublock/js/static-filtering-parser.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
@@ -28,6 +29,9 @@ const options = {
     bundle: true, platform: 'browser', format: 'iife', target: 'safari16.4',
     define: { global: 'globalThis' }, minify: true, legalComments: 'eof', loader: { '.dat': 'text' }, metafile: true,
     plugins: [{ name: 'standalone-ublock-background', setup(b) {
+        b.onLoad({filter: /\/tools\/adblock\/base64\.js$/}, () => lazyParser ? {
+            contents: base64Stub(), loader:'js', resolveDir:here,
+        } : undefined);
         b.onLoad({filter: /\/tools\/adblock\/url\.js$/}, () => lazyParser ? {
             contents: urlStub(), loader:'js', resolveDir:here,
         } : undefined);
@@ -137,7 +141,11 @@ const urlBundle = await build({entryPoints:[path.join(here,'url.js')],
     minify:true,legalComments:'eof',write:false});
 const urlSource = urlBundle.outputFiles[0].text;
 const regexSource = await fs.readFile(path.join(root,'adblock/vendor/ublock/lib/regexanalyzer/regex.js'),'utf8');
-const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, lazyNetworkBuckets: true, lazyNetworkReferences: true, publicSuffixText, parserSource, builtinScriptletsSource, resourceCatalog, urlSource, regexSource });
+const base64Bundle = await build({entryPoints:[path.join(here,'base64.js')],
+    bundle:true,platform:'browser',format:'iife',target:'safari16.4',
+    minify:true,legalComments:'eof',write:false});
+const base64Source = base64Bundle.outputFiles[0].text;
+const snapshot = encodeSnapshot(serializer.deserialize(selfie), { lazyCosmetics: true, lazyNetworkBuckets: true, lazyNetworkReferences: true, publicSuffixText, parserSource, builtinScriptletsSource, resourceCatalog, urlSource, regexSource, base64Source });
 await fs.writeFile(path.join(here, 'generated-defaults.js'), snapshot.source);
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.bin'), encodeNativeSnapshot(snapshot.binary));
 await fs.writeFile(path.join(root, 'adblock/engine.snapshot.json.gz'), gzipSync(snapshot.metadata, {level: 9, mtime: 0}));
