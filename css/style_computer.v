@@ -719,19 +719,36 @@ fn expand_property_longhands(property_id PropertyID, value &dom.StyleValue) []Ex
 }
 
 // Whether the opaque cascaded `value` for `property_id` is the CSS-wide `revert`/`revert-layer`
-// keyword. The port's dom.StyleValue only carries serialized text, so re-type it to test the typed
-// StyleValue predicate.
+// keyword. Inspect a retained typed box without copying the complete union.
+// Hand-authored DOM bridge values keep their parse-from-text fallback.
 fn opaque_is_revert(property_id PropertyID, value &dom.StyleValue) bool {
+	if !retain_cascade_value_copies && value.css_value_handle != unsafe { nil } {
+		box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		return box.value.is_revert()
+	}
 	typed := style_value_logic_from_dom(property_id, value) or { return false }
 	return typed.is_revert()
 }
 
 fn opaque_is_revert_layer(property_id PropertyID, value &dom.StyleValue) bool {
+	if !retain_cascade_value_copies && value.css_value_handle != unsafe { nil } {
+		box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		return box.value.is_revert_layer()
+	}
 	typed := style_value_logic_from_dom(property_id, value) or { return false }
 	return typed.is_revert_layer()
 }
 
 fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, property_id PropertyID, value &dom.StyleValue) &dom.StyleValue {
+	if !retain_cascade_value_copies && value.css_value_handle != unsafe { nil } {
+		box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		// Only substitution and guaranteed-invalid values need materialization.
+		// No callback runs while this synchronous tag check borrows the box.
+		if box.value !is UnresolvedStyleValue && box.value !is GuaranteedInvalidStyleValue {
+			report_cascade_value_borrow(abstract_element)
+			return unsafe { value }
+		}
+	}
 	typed := style_value_logic_from_dom(property_id, value) or { return unsafe { value } }
 	if typed is UnresolvedStyleValue {
 		mut resolved := resolve_unresolved_style_value_for_property(abstract_element, property_id, typed)
@@ -748,16 +765,28 @@ fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, prope
 }
 
 fn opaque_is_guaranteed_invalid(value &dom.StyleValue) bool {
+	if !retain_cascade_value_copies && value.css_value_handle != unsafe { nil } {
+		box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		return box.value is GuaranteedInvalidStyleValue
+	}
 	typed := typed_style_value_logic_from_dom(value) or { return false }
 	return typed is GuaranteedInvalidStyleValue
 }
 
 fn opaque_is_unresolved(value &dom.StyleValue) bool {
+	if !retain_cascade_value_copies && value.css_value_handle != unsafe { nil } {
+		box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		return box.value is UnresolvedStyleValue
+	}
 	typed := typed_style_value_logic_from_dom(value) or { return false }
 	return typed is UnresolvedStyleValue
 }
 
 fn opaque_is_pending_substitution(value &dom.StyleValue) bool {
+	if !retain_cascade_value_copies && value.css_value_handle != unsafe { nil } {
+		box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		return box.value is PendingSubstitutionStyleValue
+	}
 	typed := typed_style_value_logic_from_dom(value) or { return false }
 	return typed is PendingSubstitutionStyleValue
 }
