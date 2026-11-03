@@ -1,0 +1,338 @@
+{
+  "date": "2026-11-03",
+  "implementation_commit": "b297b078a",
+  "scope": "SVG descendant CSS lengths stay in SVG user units; outer viewport remains device-layout sized. Full-page Retina diagnostic is opt-in only; no live or performance claim.",
+  "source": {
+    "identity": {
+      "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/device-layout-22/browser": "973f1accec977dd24cae6258aadd27f8bc4989b42bf191e344a9bd0b35f379bc"
+    },
+    "build": {
+      "exit": 0,
+      "stable": true,
+      "changed": [],
+      "inputs": {
+        "/Users/alex/code/vox2/main_device_layout.v": "a30e3f3de3452b3101a2bdcd66a7ae2a41e9080948503e5402b62a68c6483b86",
+        "/Users/alex/code/vox2/main.v": "0c50e33f4d7d61bc0926d71793c31665fbb7df9f7ec6cb8873d2c5a428437d4c",
+        "/Users/alex/code/vox2/css/device_layout_style.v": "99b4d8c3c2c20368c9d8f160218f5ce43c56d332d41663067bcc1abbc8500824",
+        "/Users/alex/code/vox2/css/font_face_values.v": "b73958563c204f70811d90c7bc412ca35c4c04d4b5010f1c975b10c33a2a17d0",
+        "/Users/alex/code/vox2/platform/font_plugin.v": "462bbdf09679834f68a358086303e7f3437fd2450fc5801587fa43676bc80b8e",
+        "/Users/alex/code/vox2/platform/harfbuzz.c.v": "16b375f29bd553ce90cef67c2daff53a1a18c3a58f0e2a30a01cc17d8c3cd252",
+        "/Users/alex/code/vox2/platform/shaping_cache.v": "f7509c7f9e52f5b265b80a78b4fa1034ea0dee1103b225594c44d222a90210b4",
+        "/Users/alex/code/vox2/platform/system_font_matching.v": "29cedcfa260e42cb1bfacb83ae0fc1e0fff94abc493430066ad9b949a9c04c31",
+        "/Users/alex/code/vox2/platform/glyph_run.v": "6dc28268b6a9c89bcb1497b3071d047e21fcb1034b54ba57271987125eb1f89e"
+      }
+    },
+    "guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+        "-no-parallel",
+        "-b",
+        "c",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-memory-limit",
+        "10G",
+        "-w",
+        "-enable-globals",
+        "-d",
+        "vox_production",
+        "-d",
+        "vox_ui2",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-cc",
+        "clang",
+        "-nocache",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-skip-running",
+        "-cflags",
+        "-DLADYBIRD_V_HAS_SKIA_TEXT",
+        "-ldflags",
+        "-L/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-library-1 -lLadybirdVSkiaText -Wl,-rpath,/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-library-1 -Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -lc++",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/device-layout-22/browser",
+        "/Users/alex/code/vox2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 6599278592,
+      "elapsed_seconds": 131.04406304199998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "diagnostic_hook": "\t$if macos {\n\t\tif os.getenv('VOX_DIAGNOSTIC_INLINE_SVG_DEVICE_LAYOUT') == '1' { return true }\n\t}\n"
+  },
+  "focused": {
+    "results": [
+      {
+        "mode": "default",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "default",
+        "stage": "runtime",
+        "exit": 0
+      },
+      {
+        "mode": "none",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "none",
+        "stage": "runtime",
+        "exit": 0
+      },
+      {
+        "mode": "prealloc",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "prealloc",
+        "stage": "runtime",
+        "exit": 0
+      }
+    ],
+    "stable": {
+      "stable": true,
+      "after": {
+        "css/device_layout_style.v": "99b4d8c3c2c20368c9d8f160218f5ce43c56d332d41663067bcc1abbc8500824",
+        "layout/device_svg_user_space_test.v": "b9eae834b3f6434c4a1a82e230c5800c34c0ccb1a5609f47a6cb89f8af8762af"
+      }
+    },
+    "allocator": {
+      "bounded_realloc_symbol": true
+    }
+  },
+  "full_page": {
+    "before": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            2048,
+            1536
+          ],
+          "differing_pixels": 582,
+          "max_channel_error": 202,
+          "bounds": [
+            179,
+            46,
+            2014,
+            1230
+          ],
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+    },
+    "after": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            2048,
+            1536
+          ],
+          "differing_pixels": 22,
+          "max_channel_error": 12,
+          "bounds": [
+            1144,
+            871,
+            2014,
+            1230
+          ],
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+    },
+    "loaded_libraries": [
+      "dyld[87410]: <57015F7C-9A29-3E04-A8CD-15F586AD7783> /Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-library-1/libLadybirdVSkiaText.dylib",
+      "dyld[87410]: <57015F7C-9A29-3E04-A8CD-15F586AD7783> /Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-library-1/libLadybirdVSkiaText.dylib",
+      "dyld[87410]: <1B54AA0D-55F9-38AA-8C6A-14B3006BC322> /Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+      "dyld[87410]: <A124A2D3-DBB6-39C1-A639-1E8201FE9651> /Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib"
+    ]
+  },
+  "standalone": {
+    "control": {
+      "results": [
+        {
+          "viewport": [
+            800,
+            600
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            1600,
+            1200
+          ],
+          "differing_pixels": 3688,
+          "max_channel_error": 238,
+          "bounds": [
+            50,
+            66,
+            560,
+            120
+          ],
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+    },
+    "candidate": {
+      "results": [
+        {
+          "viewport": [
+            800,
+            600
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            1600,
+            1200
+          ],
+          "differing_pixels": 0,
+          "max_channel_error": 0,
+          "bounds": null,
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+    }
+  },
+  "mutation_reftests": {
+    "results": [
+      {
+        "name": "svg-image-source-switch-same-size",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-0/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-1/actual.png"
+      },
+      {
+        "name": "svg-gradient-in-defs-removed-repaint",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-2/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-3/actual.png"
+      },
+      {
+        "name": "svg-paint-server-hidden-inherited-style-update",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-4/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-5/actual.png"
+      },
+      {
+        "name": "svg/gradient-transform-attribute-update",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-6/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-7/actual.png"
+      },
+      {
+        "name": "svg/pattern-attribute-update",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-8/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-7/actual.png"
+      },
+      {
+        "name": "svg/gradient-stop-move-before",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-9/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-7/actual.png"
+      },
+      {
+        "name": "svg/paint-server-id-collision",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-10/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-7/actual.png"
+      },
+      {
+        "name": "svg/paint-server-html-id-collision",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-11/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-7/actual.png"
+      },
+      {
+        "name": "svg/gradient-href-chain-update",
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-12/actual.png",
+        "reference": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/capture-7/actual.png"
+      }
+    ],
+    "inputs_stable": true,
+    "expected_cases": 9,
+    "captures": 13
+  },
+  "evidence_files": {
+    "Build/chatgpt-responsive-20261103/retina-borders-24/device-layout-svg-user-22/inputs.json": "4dab0ba8cefb6861bc6e45bfa0044362ab453e0a5425d1091ed936978d8fab9f",
+    "Build/chatgpt-responsive-20261103/retina-borders-24/svg-guards-23/inputs-before.json": "9be0acd6d73c15c9e95d1ba06afc35d8cc4a813a4178bd3e5a35c198ead5d06a",
+    "docs/parity/raw/chatgpt-retina-svg-user-space.png": "636b3aae8e4a9fab88e9bef777958e8cca6516c1bd9da4d15d03daa21eef0bae",
+    "docs/parity/raw/device-layout-svg-user-space-brave.png": "d672e026117cf808222af6fc973db631465468a30eb26b178a7c01ee2249b6f9",
+    "docs/parity/raw/device-layout-svg-user-space-vox.png": "4f63ad24d6b8ea9d904c74f1a2b712ea1c3fce3e817f80e07dd101bbf1aea6e7"
+  },
+  "limitations": [
+    "Default SVG-page screenshot layout remains CSS-pixel based and differs in 2117 Retina pixels.",
+    "Diagnostic native device-layout path differs in 22 physical pixels; acceptance remains open.",
+    "No private archived document or session content is committed."
+  ]
+}
