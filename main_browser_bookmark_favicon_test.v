@@ -57,6 +57,46 @@ fn test_bookmark_favicon_completion_refreshes_chrome_without_waiting_or_mutating
 	}
 }
 
+// A completed background fetch that followed a redirect leaves final_url
+// different from the requested url. Drawing the bookmark bar must decode that
+// retained body directly, never re-enter a blocking network fetch per frame.
+fn test_redirected_remote_favicon_decodes_without_resynchronous_fetch() {
+	mut app := bookmark_favicon_app()
+	defer { app.document.finalize() }
+	app.bookmarks.add('https://redirect.example/path', 'Redirect')!
+	app.bookmarks.toggle_visible()!
+	address := 'https://redirect.example/favicon.ico'
+	app.resource_cache[address] = PreloadedResource{
+		url:       address
+		final_url: 'https://cdn.redirect.example/favicon.ico'
+		body:      base64.decode(bookmark_favicon_png).bytestr()
+	}
+	first := app.browser_chrome_state(800, 600)
+	assert first.bookmark_favicons.len == 1
+	assert first.bookmark_favicons[0] >= 0
+	// Decoded once and reused; no new background request and no refetch.
+	assert address !in app.background_resource_pending
+	second := app.browser_chrome_state(800, 600)
+	assert second.bookmark_favicons == first.bookmark_favicons
+}
+
+// An errored favicon response is remembered as absent so the chrome neither
+// re-requests it nor retries a synchronous fetch on later frames.
+fn test_errored_remote_favicon_is_remembered_absent_without_refetch() {
+	mut app := bookmark_favicon_app()
+	defer { app.document.finalize() }
+	app.bookmarks.add('https://missing.example/path', 'Missing')!
+	app.bookmarks.toggle_visible()!
+	address := 'https://missing.example/favicon.ico'
+	app.resource_cache[address] = PreloadedResource{url: address, error: 'HTTP 404'}
+	first := app.browser_chrome_state(800, 600)
+	assert first.bookmark_favicons == [-1]
+	assert address !in app.background_resource_pending
+	second := app.browser_chrome_state(800, 600)
+	assert second.bookmark_favicons == [-1]
+	assert address !in app.background_resource_pending
+}
+
 $if vox_ui2 ? {
 	#include "native_browser_bookmarks_test_darwin.h"
 	fn C.native_test_address_window() voidptr

@@ -23,6 +23,9 @@ mut:
 	tab_favicons        []int
 	bookmark_icon_paths map[int]string
 	bookmark_favicons   []int
+	// Decoded icon per favicon address, or -1 once an address is known to
+	// supply no icon. Chrome never retries a failed icon during a frame.
+	bookmark_favicon_ids map[string]int
 }
 
 fn (app &BrowserApp) browser_text_cache() &BrowserChromeTextCache {
