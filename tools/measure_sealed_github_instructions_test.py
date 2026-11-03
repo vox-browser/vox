@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from coalition_instruction_counts import CoalitionReading
 import measure_sealed_github_instructions as measurement
 
 
@@ -302,8 +303,176 @@ class ProvenanceTests(unittest.TestCase):
                 self.assertEqual(env[key], '')
             self.assertEqual(env['DYLD_INSERT_LIBRARIES'], '/deny.dylib')
             self.assertEqual(env['LADYBIRD_CACHE_DIR'], '/results/pair-01.vox/cache')
+            self.assertEqual(env['VOX_PROFILE_DIR'], '/results/pair-01.vox/profile')
             args.gc_markers = 2
             self.assertEqual(measurement.native_environment(args, Path('/results/pair-01.vox'))['GC_MARKERS'], '2')
+
+
+class SharedBundleTests(unittest.TestCase):
+    app = Path('/shared/Vox.app')
+
+    def row(self, pid):
+        return dict(pid=pid, parent=1, uid=os.getuid(),
+                    command=str(self.app / 'Contents/MacOS/Vox') + ' --screenshot /private/capture.png')
+
+    def proc(self, starts):
+        return SimpleNamespace(
+            read=lambda pid: SimpleNamespace(start=starts[pid], exited=False),
+            path=lambda pid: str(self.app / 'Contents/MacOS/Vox'))
+
+    def test_pin_existing_gui_without_requiring_an_idle_shared_bundle(self):
+        gui = self.row(11)
+        other = dict(self.row(12), command='/unrelated/App')
+        with patch.object(measurement, 'processes', return_value=[gui, other]):
+            self.assertEqual(measurement.existing_app_identities(self.proc({11: 100}), self.app),
+                             [dict(gui, start_ticks=100)])
+
+    def test_preexisting_process_disappearing_is_distinct_from_permission_failure(self):
+        for code in (2, 3, 13):
+            with self.subTest(errno=code), patch.object(measurement, 'processes', return_value=[self.row(11)]):
+                proc = SimpleNamespace(read=lambda pid: (_ for _ in ()).throw(OSError(code, 'fixture')))
+                if code == 13:
+                    with self.assertRaises(OSError):
+                        measurement.existing_app_identities(proc, self.app)
+                else:
+                    self.assertEqual(measurement.existing_app_identities(proc, self.app), [])
+
+    def test_new_root_can_share_a_bundle_with_an_existing_gui(self):
+        existing = [dict(self.row(11), start_ticks=100)]
+        rows = measurement.validate_app_members(self.proc({22: 200}), self.app,
+                                                [self.row(22)], existing)
+        self.assertEqual([row['pid'] for row in rows], [22])
+        self.assertEqual(rows[0]['start_ticks'], 200)
+        self.assertEqual(rows[0]['executable'], str(self.app / 'Contents/MacOS/Vox'))
+
+    def test_preexisting_gui_in_measured_coalition_is_rejected(self):
+        existing = [dict(self.row(11), start_ticks=100)]
+        with self.assertRaisesRegex(RuntimeError, 'preexisting browser task'):
+            measurement.validate_app_members(self.proc({11: 100}), self.app, [self.row(11)], existing)
+
+    def test_recycled_pid_is_compared_by_creation_identity(self):
+        old = [dict(self.row(11), start_ticks=100)]
+        rows = measurement.validate_app_members(self.proc({11: 200}), self.app, [self.row(11)], old)
+        self.assertEqual(rows[0]['start_ticks'], 200)
+
+    def test_argv_cannot_disguise_an_unrelated_executable(self):
+        proc = self.proc({22: 200})
+        proc.path = lambda pid: '/unrelated/app'
+        with self.assertRaisesRegex(RuntimeError, 'unrelated executable'):
+            measurement.validate_app_members(proc, self.app, [self.row(22)], [])
+
+    def test_identity_churn_and_exited_members_fail_closed(self):
+        for readings in [
+            [SimpleNamespace(start=100, exited=False), SimpleNamespace(start=200, exited=False)],
+            [SimpleNamespace(start=100, exited=False), SimpleNamespace(start=100, exited=True)],
+        ]:
+            with self.subTest(readings=readings):
+                proc = self.proc({22: 100})
+                proc.read = lambda pid: readings.pop(0)
+                with self.assertRaisesRegex(RuntimeError, 'identity changed'):
+                    measurement.validate_app_members(proc, self.app, [self.row(22)], [])
+
+    def test_only_authenticated_members_are_adopted_by_memory_guard(self):
+        members = measurement.validate_app_members(self.proc({22: 200}), self.app, [self.row(22)], [])
+        with patch.object(measurement, 'publish_adopted_processes') as publish, \
+                patch.object(measurement, 'read_adopted_processes', return_value={22: 'started'}):
+            registry = Path('/private/pids.json')
+            measurement.adopt_app_members(registry, members)
+            publish.assert_called_once_with(registry, [22])
+
+    def test_missing_memory_guard_adoption_is_an_error(self):
+        with patch.object(measurement, 'publish_adopted_processes'), \
+                patch.object(measurement, 'read_adopted_processes', return_value={}):
+            with self.assertRaisesRegex(RuntimeError, 'did not register'):
+                measurement.adopt_app_members(Path('/private/pids.json'), [dict(pid=22)])
+
+    def test_shared_bundle_coalition_keeps_gui_outside_and_adopts_measured_root_and_helper(self):
+        rows = [self.row(pid) for pid in (11, 22, 23)]
+        groups = {11: 88, 22: 77, 23: 77}
+        api = SimpleNamespace(resource_coalition=lambda pid: groups[pid],
+                              read=lambda cid: CoalitionReading(cid, 1000, 2000, 2, 0, 1, 2))
+        attempts = []
+        with patch.object(measurement, 'processes', return_value=rows), \
+                patch.object(measurement, 'adopt_app_members') as adopt:
+            scan = measurement.native_membership(api, 77, self.app, 22, time.monotonic() + 1,
+                attempts, self.proc({11: 100, 22: 200, 23: 201}),
+                [dict(rows[0], start_ticks=100)], Path('/private/pids.json'))
+        self.assertEqual([row['pid'] for row in scan['members']], [22, 23])
+        self.assertEqual(adopt.call_args.args[1], scan['members'])
+        self.assertEqual(len(attempts), 1)
+
+    def test_shared_coalition_cannot_hide_preexisting_gui_behind_same_app_path(self):
+        rows = [self.row(pid) for pid in (11, 22)]
+        api = SimpleNamespace(resource_coalition=lambda pid: 77,
+                              read=lambda cid: CoalitionReading(cid, 1000, 2000, 2, 0, 1, 2))
+        with patch.object(measurement, 'processes', return_value=rows), \
+                patch.object(measurement, 'adopt_app_members') as adopt:
+            with self.assertRaisesRegex(RuntimeError, 'preexisting browser task'):
+                measurement.native_membership(api, 77, self.app, 22, time.monotonic() + 1, [],
+                    self.proc({11: 100, 22: 200}), [dict(rows[0], start_ticks=100)],
+                    Path('/private/pids.json'))
+        adopt.assert_not_called()
+
+    def test_reused_existing_root_is_neither_adopted_nor_terminated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture, folder = root / 'fixture', root / 'observation'
+            fixture.mkdir()
+            folder.mkdir()
+            png = folder / 'document.png'
+            existing = dict(self.row(11), command=str(self.app / 'Contents/MacOS/Vox')
+                            + ' --screenshot ' + str(png))
+            args = SimpleNamespace(vox=self.app / 'Contents/MacOS/Vox', fixture=fixture,
+                network_deny=Path('/deny.dylib'), work_dir=root, settle_seconds=.5, gc_markers=1,
+                vox_javascript_mode='explicit', vox_chrome_height=112, timeout=1,
+                memory_guard_registry=root / 'pids.json')
+            with patch.dict(os.environ, {}, clear=True), \
+                    patch.object(measurement, 'SealedFixture'), \
+                    patch.object(measurement, 'MacCoalitionCounters'), \
+                    patch.object(measurement, 'MacCounters', return_value=self.proc({11: 100})), \
+                    patch.object(measurement, 'processes', return_value=[existing]), \
+                    patch.object(measurement.subprocess, 'run', return_value=SimpleNamespace(
+                        returncode=0, stdout='', stderr='')) as launch, \
+                    patch.object(measurement, 'adopt_app_members') as adopt, \
+                    patch.object(measurement.os, 'kill') as kill:
+                result = measurement.run_vox(args, folder, {}, 'fixture-hash')
+            self.assertEqual(result['exit'], 1)
+            self.assertIn('preexisting browser task', result['error'])
+            self.assertTrue((folder / 'profile').is_dir())
+            self.assertEqual(list((folder / 'profile').iterdir()), [])
+            command = launch.call_args.args[0]
+            self.assertEqual(command[:3], ['/usr/bin/open', '-n', '-g'])
+            self.assertIn('VOX_PROFILE_DIR=' + str(folder / 'profile'), command)
+            adopt.assert_not_called()
+            kill.assert_not_called()
+
+    def test_failed_adoption_cleans_up_only_the_verified_new_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture, folder = root / 'fixture', root / 'observation'
+            fixture.mkdir()
+            folder.mkdir()
+            launched = dict(self.row(22), command=str(self.app / 'Contents/MacOS/Vox')
+                            + ' --screenshot ' + str(folder / 'document.png'))
+            args = SimpleNamespace(vox=self.app / 'Contents/MacOS/Vox', fixture=fixture,
+                network_deny=Path('/deny.dylib'), work_dir=root, settle_seconds=.5, gc_markers=1,
+                vox_javascript_mode='explicit', vox_chrome_height=112, timeout=1,
+                memory_guard_registry=root / 'pids.json')
+            with patch.dict(os.environ, {}, clear=True), \
+                    patch.object(measurement, 'SealedFixture'), \
+                    patch.object(measurement, 'MacCoalitionCounters'), \
+                    patch.object(measurement, 'MacCounters', return_value=self.proc({22: 200})), \
+                    patch.object(measurement, 'existing_app_identities',
+                                 return_value=[dict(self.row(11), start_ticks=100)]), \
+                    patch.object(measurement, 'processes', return_value=[launched]), \
+                    patch.object(measurement.subprocess, 'run', return_value=SimpleNamespace(
+                        returncode=0, stdout='', stderr='')), \
+                    patch.object(measurement, 'adopt_app_members', side_effect=RuntimeError('adoption failed')), \
+                    patch.object(measurement.os, 'kill') as kill:
+                result = measurement.run_vox(args, folder, {}, 'fixture-hash')
+            self.assertEqual(result['exit'], 1)
+            self.assertEqual(result['error'], 'adoption failed')
+            kill.assert_called_once_with(22, 15)
 
 
 if __name__ == '__main__':

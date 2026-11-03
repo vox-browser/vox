@@ -37,6 +37,7 @@ from coalition_instruction_counts import MacCoalitionCounters, CoalitionCounter,
 from measure_browser_instructions import CDP, chrome_debugger_endpoint, parse_native_counters
 from probe_frozen_github_chrome import ReplayCDP
 from process_instruction_counts import MacCounters, CounterSampler
+from run_memory_bounded import publish_adopted_processes, read_adopted_processes
 from seal_github_instruction_fixture import SealedFixture
 
 URL = 'https://github.com/vlang/v'
@@ -276,6 +277,7 @@ def native_environment(args, folder):
     extra_gc = sorted(key for key in os.environ if key.startswith('GC_') and key != 'GC_MARKERS')
     require(not extra_gc, 'Remove ambient collector controls before measuring: ' + ', '.join(extra_gc))
     env = dict(DYLD_INSERT_LIBRARIES=str(args.network_deny), VOX_TEST_WINDOW='1', VOX_COOKIE_FILE='',
+               VOX_PROFILE_DIR=str(folder / 'profile'),
                VOX_PROFILE_INSTRUCTIONS='1', VOX_CAPTURE_DOCUMENT_ONLY='1',
                VOX_CAPTURE_AUDIT_CONFIG=str(args.work_dir / 'audit-config.json'),
                VOX_CAPTURE_AUDIT_PATH=str(folder / 'audit.json'), LADYBIRD_CACHE_DIR=str(folder / 'cache'),
@@ -294,6 +296,50 @@ def build_provenance(path, executable):
             'Vox build receipt does not identify this executable')
     return dict(path=str(path), sha256=sha(path), bytes=path.stat().st_size,
                 configuration_note='Compiler/GC/preallocation/native options remain those of this pinned build receipt; setting GC_MARKERS cannot enable GC in a GC-none binary.')
+
+
+def existing_app_identities(proc, app):
+    """Pin existing GUI/helper identities without requiring an idle bundle."""
+    identities = []
+    for row in processes():
+        if not row['command'].startswith(str(app) + '/Contents/'):
+            continue
+        try:
+            reading = proc.read(row['pid'])
+        except OSError as exc:
+            if exc.errno in (2, 3):
+                continue
+            raise
+        require(not reading.exited and reading.start > 0,
+                'Preexisting browser process has no live identity')
+        identities.append(dict(row, start_ticks=reading.start))
+    return identities
+
+
+def validate_app_members(proc, app, members, existing):
+    """A shared bundle's unrelated tasks must never enter this observation."""
+    previous = {(row['pid'], row['start_ticks']) for row in existing}
+    verified = []
+    for row in members:
+        before = proc.read(row['pid'])
+        executable = proc.path(row['pid'])
+        after = proc.read(row['pid'])
+        require(not before.exited and not after.exited and before.start > 0
+                and before.start == after.start, 'Browser member identity changed')
+        require((row['pid'], before.start) not in previous,
+                'Measured coalition contains a preexisting browser task')
+        require(executable.startswith(str(app) + '/Contents/'),
+                'Measured coalition contains an unrelated executable')
+        verified.append(dict(row, start_ticks=before.start, executable=executable))
+    return verified
+
+
+def adopt_app_members(registry, members):
+    """Publish only the identities authenticated by validate_app_members()."""
+    publish_adopted_processes(registry, [row['pid'] for row in members])
+    registered = read_adopted_processes(registry)
+    require(all(row['pid'] in registered for row in members),
+            'Memory guard did not register every live browser member')
 
 
 def parse_native_coalitions(text, coalition_id):
@@ -318,7 +364,7 @@ def parse_native_coalitions(text, coalition_id):
     return dict(markers=selected, delta=delta, coalition_id=coalition_id)
 
 
-def native_membership(api, cid, app, pid, deadline, attempts):
+def native_membership(api, cid, app, pid, deadline, attempts, proc, existing, registry):
     while True:
         before = api.read(cid)
         members, vanished = [], []
@@ -344,6 +390,8 @@ def native_membership(api, cid, app, pid, deadline, attempts):
                     root_present=root_present, vanished_during_scan=vanished)
         attempts.append(scan)
         if stable and owned and exact and root_present:
+            scan['members'] = validate_app_members(proc, app, members, existing)
+            adopt_app_members(registry, scan['members'])
             return scan
         require(time.monotonic() < deadline, 'No stable exact native coalition membership before capture')
         time.sleep(.01)
@@ -366,18 +414,21 @@ def run_vox(args, folder, expected, manifest_sha):
                   membership_attempts=[])
     queue = None
     pid = root_start = cid = None
+    root_is_fresh = False
     proc = api = None
     try:
         cache = folder / 'cache'
         shutil.copytree(args.fixture, cache)
+        (folder / 'profile').mkdir()
         sealed = SealedFixture(cache, manifest_sha)
         png, audit = folder / 'document.png', folder / 'audit.json'
         env = native_environment(args, folder)
         result['environment_controls'] = env
         app = application(args.vox)
-        require(app is not None, 'Native exclusive coalition launch requires a private .app bundle')
-        require(not any(row['command'].startswith(str(app) + '/Contents/') for row in processes()),
-                'Native private app already has running processes; will not reuse or terminate them')
+        require(app is not None, 'Native exclusive coalition launch requires an .app bundle')
+        api, proc = MacCoalitionCounters(), MacCounters()
+        existing = existing_app_identities(proc, app)
+        result['preexisting_app_processes'] = existing
         command = ['/usr/bin/open', '-n', '-g', '-a', str(app),
                    '--stdout', str(folder / 'stdout.log'), '--stderr', str(folder / 'browser.log')]
         for key, value in sorted(env.items()):
@@ -387,7 +438,6 @@ def run_vox(args, folder, expected, manifest_sha):
         result.update(command=command, actual_open_exit=launched.returncode,
                       launch_stdout=launched.stdout, launch_stderr=launched.stderr)
         require(launched.returncode == 0, 'LaunchServices failed to launch native browser')
-        api, proc = MacCoalitionCounters(), MacCounters()
         deadline = time.monotonic() + args.timeout
         while pid is None:
             roots = [row for row in processes() if row['command'].startswith(str(args.vox) + ' ')
@@ -401,6 +451,10 @@ def run_vox(args, folder, expected, manifest_sha):
             time.sleep(.01)
         require(proc.path(pid) == str(args.vox), 'Native executable path mismatch')
         root_start = proc.read(pid).start
+        verified = validate_app_members(proc, app, [result['root']], existing)
+        require(verified[0]['start_ticks'] == root_start, 'Native root identity changed')
+        root_is_fresh = True
+        adopt_app_members(args.memory_guard_registry, verified)
         cid, cli_cid = api.resource_coalition(pid), api.resource_coalition(os.getpid())
         require(cid != cli_cid, 'Native browser inherited observer coalition')
         result.update(resource_coalition=cid, observer_resource_coalition=cli_cid)
@@ -409,7 +463,8 @@ def run_vox(args, folder, expected, manifest_sha):
                       flags=select.KQ_EV_ADD | select.KQ_EV_ENABLE | select.KQ_EV_ONESHOT,
                       fflags=select.KQ_NOTE_EXIT | 0x04000000)], 0, 0)
         result['membership_before_capture'] = native_membership(api, cid, app, pid,
-                min(deadline, time.monotonic() + 15), result['membership_attempts'])
+                min(deadline, time.monotonic() + 15), result['membership_attempts'],
+                proc, existing, args.memory_guard_registry)
         while True:
             events = queue.control(None, 1, .05)
             if events:
@@ -440,11 +495,11 @@ def run_vox(args, folder, expected, manifest_sha):
         sealed.validate()
         require(result['content_gate']['passed'], 'Native content gate failed: ' + repr(result['content_gate']['failures']))
         result.update(exit=0, comparison_eligible=True,
-                      accounting_note='Exact in-process resource-coalition snapshots include live and exited helper work; main-task markers are separate diagnostics. Exclusive stable live membership verified after LaunchServices launch and before capture. No launch hold: membership may first be scanned after navigation; departed startup task paths cannot be reconstructed. Native private app had no live process before launch.')
+                      accounting_note='Exact in-process resource-coalition snapshots include live and exited helper work; main-task markers are separate diagnostics. Exclusive stable live membership verified after a fresh LaunchServices launch and before capture. Existing shared-bundle tasks are excluded by PID/start identity; the measured root and authenticated live members are registered with the memory guard. No launch hold: membership may first be scanned after navigation; departed startup task paths cannot be reconstructed.')
     except Exception as exc:
         result.update(exit=1, error=str(exc), traceback=traceback.format_exc())
     finally:
-        if pid is not None and 'root_kernel_wait_status' not in result:
+        if root_is_fresh and pid is not None and 'root_kernel_wait_status' not in result:
             # Only terminate the exact PID/start identity created by this launch.
             try:
                 if proc.read(pid).start == root_start and proc.path(pid) == str(args.vox):
@@ -556,8 +611,8 @@ def run_chrome(args, folder, expected, manifest_sha):
         api, proc = MacCoalitionCounters(), MacCounters()
         profile = folder / 'profile'
         profile.mkdir()
-        require(not any(row['command'].startswith(str(args.chrome_app) + '/Contents/') for row in processes()),
-                'Private Chrome app already has running processes; will not reuse or terminate them')
+        existing = existing_app_identities(proc, args.chrome_app)
+        result['preexisting_app_processes'] = existing
         flags = ['--headless=new', '--no-first-run', '--no-default-browser-check', '--enable-automation',
                  '--disable-background-networking', '--no-proxy-server',
                  '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost',
@@ -578,6 +633,8 @@ def run_chrome(args, folder, expected, manifest_sha):
         require(len(roots) == 1, 'Chrome root identity is not unique')
         pid = roots[0]['pid']
         require(proc.path(pid) == str(args.chrome), 'Chrome executable path mismatch')
+        verified = validate_app_members(proc, args.chrome_app, roots, existing)
+        adopt_app_members(args.memory_guard_registry, verified)
         cid, cli_cid = api.resource_coalition(pid), api.resource_coalition(os.getpid())
         require(cid != cli_cid, 'Chrome inherited the observer resource coalition')
         result.update(root=roots[0], resource_coalition=cid, observer_resource_coalition=cli_cid)
@@ -622,6 +679,8 @@ def run_chrome(args, folder, expected, manifest_sha):
                             required_present=present, all_owned=owned, exact_live_count=exact)
                 result['membership_attempts'].append(scan)
                 if stable and present and owned and exact:
+                    scan['members'] = validate_app_members(proc, args.chrome_app, members, existing)
+                    adopt_app_members(args.memory_guard_registry, scan['members'])
                     return scan
                 require(time.monotonic() < limit, 'Cannot establish exclusive stable Chrome coalition membership')
                 time.sleep(.1)
@@ -734,13 +793,15 @@ def main():
     parser.add_argument('--vox-build-protocol', type=Path, required=True)
     parser.add_argument('--vox-javascript-mode', choices=['explicit', 'default-enabled'], default='explicit',
                         help='Use default-enabled only for a verified older build that runs author scripts by default; selects JavaScriptCore explicitly. No launch probing or retries.')
-    parser.add_argument('--vox-chrome-height', type=int, default=84,
+    parser.add_argument('--vox-chrome-height', type=int, default=112,
                         help='Verified native toolbar plus status-bar height; document viewport remains 1024x768 and actual PNG/DOM dimensions must pass.')
     parser.add_argument('--gc-markers', type=int, choices=[1, 2], default=1)
     parser.add_argument('--chrome-app', type=Path, required=True)
     parser.add_argument('--fixture', type=Path, required=True)
     parser.add_argument('--network-deny', type=Path, required=True)
     parser.add_argument('--work-dir', type=Path, required=True)
+    parser.add_argument('--memory-guard-registry', type=Path, required=True,
+                        help='Private PID registry also passed to run_memory_bounded.py --adopt-pids-from.')
     parser.add_argument('--runtime-library', type=Path, action='append', default=[])
     parser.add_argument('--samples', type=int, default=3)
     parser.add_argument('--timeout', type=float, default=120)
@@ -751,8 +812,11 @@ def main():
     args = parser.parse_args()
     require(args.samples > 0 and args.timeout > 0 and args.settle_seconds >= 0 and args.vox_chrome_height >= 0,
             'Samples/watchdog must be positive and settle seconds nonnegative')
-    for key in ['vox', 'vox_build_protocol', 'chrome_app', 'fixture', 'network_deny', 'work_dir']:
+    for key in ['vox', 'vox_build_protocol', 'chrome_app', 'fixture', 'network_deny', 'work_dir',
+                'memory_guard_registry']:
         setattr(args, key, getattr(args, key).resolve())
+    require(not read_adopted_processes(args.memory_guard_registry),
+            'Memory guard registry must be private and empty before the cohort')
     import plistlib
     bundle = plistlib.loads((args.chrome_app / 'Contents/Info.plist').read_bytes())
     args.chrome = args.chrome_app / 'Contents/MacOS' / bundle['CFBundleExecutable']
@@ -772,7 +836,8 @@ def main():
             paths.update(path.absolute() for path in app.rglob('*') if path.is_file())
     paths.update(REPO / 'tools' / name for name in ['coalition_instruction_counts.py',
                  'process_instruction_counts.py', 'measure_browser_instructions.py',
-                 'probe_frozen_github_chrome.py', 'seal_github_instruction_fixture.py'])
+                 'probe_frozen_github_chrome.py', 'seal_github_instruction_fixture.py',
+                 'run_memory_bounded.py'])
     paths.update(path for path in (REPO / 'adblock/lists').rglob('*') if path.is_file())
     pinned = fingerprint(paths)
     args.work_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
@@ -790,6 +855,8 @@ def main():
                 runtime_pins=pinned, endpoint_scope=NOTE, audit_policy=AUDIT_POLICY, performance_credit=0,
                 chrome_parity_established=False, timeout=args.timeout, settle_seconds=args.settle_seconds,
                 vox_build_provenance=provenance, gc_marker_threads=args.gc_markers,
+                memory_guard_registry=str(args.memory_guard_registry),
+                fresh_private_profiles=True, shared_app_bundles=True,
                 environment_policy='Clear inherited browser, dyld, timing and proxy controls; reject ambient GC controls other than GC_MARKERS and set its native value explicitly. Build mode is unchanged.',
                 policy='All attempted samples retained, no retries; cached body metadata synthetic. Fail closed on missing/nonGET requests, use native DYLD network guard. Browser app files, linked native runtime, tools, filter lists and sealed fixture pinned before launches and after every sample. Counts exclude GPU execution and external services.')
     # This is written before the first measured launch, and never rewritten.
