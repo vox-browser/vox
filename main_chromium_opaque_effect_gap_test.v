@@ -2,6 +2,33 @@ module main
 
 import layout
 
+fn test_fixed_opacity_scope_borrows_only_its_proved_immediate_parent_grid() {
+	mut commands := opaque_effect_gap_commands()
+	for mut command in commands { command.fixed_to_viewport = true }
+	mut plan := opaque_effect_gap_plan()
+	plan.layers[2].has_fixed_opacity_paint_origin = true
+	assert chromium_opacity_raster_parent(commands, plan, 2) == 1
+	assert chromium_opacity_raster_parent(commands, plan, 0) == 0
+	assert chromium_opacity_raster_parent(commands, plan, 1) == 1
+	assert chromium_opacity_raster_parent(commands, plan, -1) == -1
+	assert chromium_opacity_raster_parent(commands, plan, 3) == 3
+	mut storage := ChromiumMSAAStorage{}
+	storage.update(commands, plan, 800, 600, 0, 2)
+	assert storage.raster_parents[..3] == [0, 1, 1]
+	plan.layers[2].has_fixed_opacity_paint_origin = false
+	storage.update(commands, plan, 800, 600, 0, 2)
+	assert storage.raster_parents[..3] == [0, 1, 2]
+	plan.layers[2].has_fixed_opacity_paint_origin = true
+	plan.layers[1].composited_contents = false
+	assert chromium_opacity_raster_parent(commands, plan, 2) == 2
+	plan.layers[1].composited_contents = true
+	plan.command_layers[5] = 0
+	assert chromium_opacity_raster_parent(commands, plan, 2) == 2
+	plan.command_layers[5] = 1
+	commands[0].color = '#fffffffe'
+	assert chromium_opacity_raster_parent(commands, plan, 2) == 2
+}
+
 fn opaque_effect_gap_commands() []layout.PaintCommand {
 	effect := &layout.PaintVisualLayer{ kind: .css_effect, scope_id: 71, opacity: .5 }
 	return [

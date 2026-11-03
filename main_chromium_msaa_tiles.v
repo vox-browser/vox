@@ -6,6 +6,7 @@ import painting
 import os
 
 fn C.native_set_chromium_raster_layer_size(f64, f64)
+fn C.native_set_chromium_paint_origin(f64, f64, i32)
 
 // Chromium rasterizes the root layer on the GPU in tiles as wide as the
 // viewport. CalculateGpuTileSize() covers the viewport height with four
@@ -387,6 +388,7 @@ mut:
 	legacy_tiles []i32
 	tiles [][]i32
 	grids []ChromiumRasterGrid
+	raster_parents []int
 }
 
 fn (mut storage ChromiumMSAAStorage) update(commands []layout.PaintCommand,
@@ -414,10 +416,18 @@ fn (mut storage ChromiumMSAAStorage) update_for_device_viewport(commands []layou
 		storage.grids << ChromiumRasterGrid{}
 	}
 	for index in 0 .. storage.by_layer.len { storage.by_layer[index].clear() }
+	for storage.raster_parents.len < plan.layers.len { storage.raster_parents << 0 }
+	for index in 0 .. plan.layers.len {
+		storage.raster_parents[index] = chromium_opacity_raster_parent(commands, plan, index)
+	}
 	for trigger in storage.triggers {
 		if trigger.command_index >= 0 && trigger.command_index < plan.command_layers.len {
 			layer := plan.command_layers[trigger.command_index]
 			if layer >= 0 && layer < plan.layers.len { storage.by_layer[layer] << trigger }
+			if layer >= 0 && layer < plan.layers.len {
+				parent := storage.raster_parents[layer]
+				if parent != layer { storage.by_layer[parent] << trigger }
+			}
 		}
 	}
 	for index, layer in plan.layers {
@@ -489,30 +499,36 @@ fn (mut app BrowserApp) select_chromium_raster_layer(index int) {
 			|| index >= app.chromium_raster_tiles.len {
 			return
 		}
-		layer := app.chromium_raster_plan.layers[index]
-		set_chromium_image_decode_scope(if index == 0 || layer.legacy_raster { 0 } else { index })
+		original := app.chromium_raster_plan.layers[index]
+		set_chromium_image_decode_scope(if index == 0 || original.legacy_raster { 0 } else { index })
+		raster_index := if index < app.chromium_msaa_storage.raster_parents.len {
+			app.chromium_msaa_storage.raster_parents[index]
+		} else { index }
+		layer := app.chromium_raster_plan.layers[raster_index]
 		scale := C.native_display_device_pixel_ratio()
-		x := if index == 0 || layer.legacy_raster {
+		x := if raster_index == 0 || layer.legacy_raster {
 			0.0
 		} else {
 			math.floor(layer.bounds.x * scale) / scale
 		}
-		y := if index == 0 || layer.legacy_raster {
+		y := if raster_index == 0 || layer.legacy_raster {
 			0.0
 		} else {
 			math.floor(layer.bounds.y * scale) / scale
 		}
-		C.native_set_chromium_raster_layer(x, y, int(index == 0 || layer.legacy_raster))
+		C.native_set_chromium_raster_layer(x, y, int(raster_index == 0 || layer.legacy_raster))
 		C.native_set_chromium_raster_layer_size(layer.bounds.width, layer.bounds.height)
+		C.native_set_chromium_paint_origin(original.fixed_opacity_paint_origin_x,
+			original.fixed_opacity_paint_origin_y, i32(raster_index != index))
 		direct_image := app.page_zoom == 1 && chromium_direct_image_layer_supported(app.paint_commands, app.chromium_raster_plan, index)
 		C.native_set_chromium_direct_image_layer(i32(direct_image))
 		C.native_set_chromium_layer_shared_recording(i32(!direct_image && app.page_zoom == 1 && chromium_shared_recording_layer_supported(app.paint_commands, app.chromium_raster_plan, index)))
-		tiles := app.chromium_raster_tiles[index]
+		tiles := app.chromium_raster_tiles[raster_index]
 		pointer := if tiles.len > 0 { &tiles[0] } else { unsafe { &i32(nil) } }
 		rows := chromium_gpu_raster_tile_rows(int(math.ceil(f64(app.viewport_height) * scale)))
 		C.native_set_chromium_msaa_tiles(pointer, tiles.len, rows)
-		if index < app.chromium_raster_grids.len {
-			grid := app.chromium_raster_grids[index]
+		if raster_index < app.chromium_raster_grids.len {
+			grid := app.chromium_raster_grids[raster_index]
 			if grid.columns > 0 {
 				cell_pointer := if grid.native_cells.len > 0 {
 					&grid.native_cells[0]

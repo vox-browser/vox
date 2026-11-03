@@ -3031,11 +3031,38 @@ static double s_raster_origin_x = 0, s_raster_origin_y = 0;
 static double s_raster_layer_width = 0, s_raster_layer_height = 0;
 static bool s_raster_layer_is_root = true;
 static bool s_direct_image_layer = false;
+static bool s_has_explicit_paint_origin = false;
+static double s_paint_origin_x = 0, s_paint_origin_y = 0;
+
+extern "C" void ladybird_v_skia_set_paint_origin(double x, double y, int active)
+{
+    s_has_explicit_paint_origin = active && std::isfinite(x) && std::isfinite(y);
+    s_paint_origin_x = x;
+    s_paint_origin_y = y;
+}
+
+static bool apply_chromium_paint_origin(VoxGraphiteShape& shape,
+    float a, float b, float c, float d, float e, float f)
+{
+    // This slice is the inverse display projection. Author transforms retain
+    // their existing geometry until their separate paint spaces are supported.
+    if (!s_has_explicit_paint_origin || !(a > 0) || a != d || b != 0 || c != 0
+        || e != 0 || f != 0 || shape.fill != 0 || !shape.has_underlay
+        || shape.clip_out_count != 0) return false;
+    float x = s_paint_origin_x / a, y = s_paint_origin_y / d;
+    if (!std::isfinite(x) || !std::isfinite(y)) return false;
+    shape.rect[0] -= x; shape.rect[1] -= y;
+    shape.underlay_rect[0] -= x; shape.underlay_rect[1] -= y;
+    shape.matrix[2] += shape.matrix[0] * x + shape.matrix[1] * y;
+    shape.matrix[5] += shape.matrix[3] * x + shape.matrix[4] * y;
+    return true;
+}
 
 #include "native_chromium_shared_recording.h"
 
 extern "C" void ladybird_v_skia_set_raster_layer(double x, double y, int root)
 {
+    s_has_explicit_paint_origin = false;
     // Frame setup and the first paint command both select the root. Keep its
     // recorded background until the SVG tiles are replayed over the leaf frame.
     if (!(root && s_raster_layer_is_root
@@ -4262,6 +4289,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                 std::copy_n(s_underlay_float_color, 4, descriptor.underlay_float_color);
             }
         }
+        apply_chromium_paint_origin(descriptor, transform_a, transform_b,
+            transform_c, transform_d, transform_e, transform_f);
         if (!s_plain_rect_prefetch && !std::getenv("VOX_DISABLE_SOLID_UNIFORM_BORDER")
             && vox_draw_solid_uniform_border(reinterpret_cast<uint8_t*>(pixels.data()),
                 raster_width, raster_height, raster_width * 4, has_background, descriptor)) {

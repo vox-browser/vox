@@ -2926,6 +2926,15 @@ void native_set_chromium_layer_shared_recording(int enabled) {
 #endif
 }
 
+void native_set_chromium_paint_origin(double x, double y, int active) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    extern void ladybird_v_skia_set_paint_origin(double, double, int);
+    ladybird_v_skia_set_paint_origin(x, y, active);
+#else
+    (void)x; (void)y; (void)active;
+#endif
+}
+
 void native_begin_font_compositing_layer(float width, float height) {
 	CGContextRef destination = [[NSGraphicsContext currentContext] CGContext];
 	int fresh_destination = native_layer_claim_document_bitmap(destination);

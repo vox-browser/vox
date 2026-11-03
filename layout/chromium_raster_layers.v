@@ -21,6 +21,11 @@ pub mut:
 	// A rounded clip below the picture's common property state is rasterized
 	// inside that picture, preventing the single-image raster optimization.
 	picture_local_rounded_clip bool
+	// A non-composited opacity saveLayer retains its fixed owner's paint
+	// offset independently of the containing picture's raster-tile origin.
+	has_fixed_opacity_paint_origin bool
+	fixed_opacity_paint_origin_x f64
+	fixed_opacity_paint_origin_y f64
 	// An opaque, flat scrolling background also paints inside the contents
 	// picture. Its ordinary border-box paint remains in the parent layer.
 	scroll_background_command int = -1
@@ -161,6 +166,9 @@ fn (mut plan ChromiumRasterLayerPlan) prepare(count int) {
 		plan.layer_storage[index].bounds = LayoutRect{}
 		plan.layer_storage[index].recorded_bounds = LayoutRect{}
 		plan.layer_storage[index].fixed_bounds_extended = false
+		plan.layer_storage[index].has_fixed_opacity_paint_origin = false
+		plan.layer_storage[index].fixed_opacity_paint_origin_x = 0
+		plan.layer_storage[index].fixed_opacity_paint_origin_y = 0
 		plan.layer_storage[index].legacy_raster = false
 		plan.layer_storage[index].scroll_contents = false
 		plan.layer_storage[index].composited_contents = false
@@ -792,6 +800,13 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 		chromium_layerize_chunks_into(scratch.chunks, commands.len, device_scale, mut plan, mut scratch.layer_states)
 	}
 	for layer_index, state in scratch.layer_states {
+		if state.legacy_effect && state.atomic_opacity && state.fixed_to_viewport {
+			if origin := scratch.fixed_bounds[state.fixed_raster_owner] {
+				plan.layers[layer_index].has_fixed_opacity_paint_origin = true
+				plan.layers[layer_index].fixed_opacity_paint_origin_x = origin.x
+				plan.layers[layer_index].fixed_opacity_paint_origin_y = origin.y
+			}
+		}
 		plan.layers[layer_index].scroll_contents = state.scroll_frame > 0
 		plan.layers[layer_index].composited_contents = !state.legacy_effect
 			&& (plan.layers[layer_index].composited_contents
