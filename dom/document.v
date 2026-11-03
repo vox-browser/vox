@@ -9793,6 +9793,14 @@ pub fn (mut d Document) set_navigation_id(id ?string) {
 
 // https://html.spec.whatwg.org/multipage/document-sequences.html#descendant-navigables
 pub fn (d &Document) descendant_navigables() []&Navigable {
+	if !retain_descendant_navigable_scan && !d.may_have_registered_navigable_container() {
+		report_empty_descendant_navigables(d)
+		return []&Navigable{}
+	}
+	return d.collect_descendant_navigables()
+}
+
+fn (d &Document) collect_descendant_navigables() []&Navigable {
 	// 1. Let navigables be new list.
 	mut navigables := []&Navigable{}
 	navigables_ptr := &navigables
