@@ -1,0 +1,246 @@
+{
+  "archive": {
+    "error_responses": [
+      {
+        "body_sha256": "af0ac154b70b9dfe6881dcda75ab648ffcd259160258c8a9af8008e822872952",
+        "status": 404,
+        "url": "https://github.githubassets.com/assets/images/modules/signup/icons/alert-fill-12.svg"
+      }
+    ],
+    "manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+    "original_document_sha256": "6354faa8a7ae959043041c95cfc62fc2943f32bf89cde910795feb2dd1184f79",
+    "reused_responses": 88,
+    "source_progress_sha256": "034981ca81aba16255edc37910a9b9106672a6f2f37d64ba30adb3c35c8475e9",
+    "total_responses": 193
+  },
+  "broad_baseline_reset": false,
+  "chrome_comparison_performed": false,
+  "created_utc": "2026-11-03T12:13:17.167619+00:00",
+  "durable_archive": {
+    "bytes": 7419857,
+    "files": 322,
+    "path": "docs/performance/raw/github-fresh-archive-and-native-20261103.tar.gz",
+    "sha256": "0b870f8e58dd37444294b823bf645e4f3a09a85fef9952fb02dd6d5a498a4ccf",
+    "verification": "Every archived member read back and checked against its SHA256"
+  },
+  "feature_commit": "c7013474978be5371d4643ecbafff01b50cff431",
+  "focused_checks": {
+    "guard_exit": 0,
+    "receipt_sha256": "8a1d78675662ccfef22cac87c6582ef543c7166b5ab28b66afd74e0b75dde38d",
+    "tests": 16
+  },
+  "historical_cohort_replacements": 0,
+  "historical_final_audit": "blocked_missing_original_receipts",
+  "new_instruction_credit": 0,
+  "observations": [
+    {
+      "actual_browser_exit": 0,
+      "actual_guard_exit": 1,
+      "content_gate": {
+        "failures": [
+          "wrong document viewport"
+        ],
+        "passed": false
+      },
+      "directory": "Build/github-new-baseline-20261103-session4076/native-diagnostic-01",
+      "driver_exit": 1,
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          21.1474609375,
+          19.12255859375,
+          15.7919921875
+        ],
+        "unix": 1793707512.367212
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          19.9296875,
+          18.83544921875,
+          15.65380859375
+        ]
+      },
+      "javascript_error": "performance.mark is not a function",
+      "javascript_error_count": 9,
+      "native_scopes": {
+        "document_install_to_first_native_layer_submission": [
+          21361966788
+        ],
+        "document_install_to_first_paint": [
+          11076357344
+        ],
+        "install_total": [
+          9528888293
+        ],
+        "navigation_to_first_document_paint": [
+          13398593452
+        ],
+        "navigation_to_first_native_layer_submission": [
+          23684202896
+        ]
+      },
+      "observed_peak_rss_bytes": 1410039808,
+      "plan_sha256": "832ea8c19cde43f955893c95bbcbcd8646a9eef9d91c823ffccd2f95b481a98d",
+      "png_sha256": "b0b7ff50c0229ef654e7b1f29ebd7d042a9449d0aa4b09f5d8a7ccb46b8c8dfa",
+      "production": {
+        "bytes": 1298,
+        "configuration_note": "Compiler/GC/preallocation/native options remain those of this pinned build receipt; setting GC_MARKERS cannot enable GC in a GC-none binary.",
+        "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-144643-8e77433f/result.json",
+        "sha256": "3963842c3ed9833a715416ed176882ca308e3ffe9ba0e57be14a4e074f688b94"
+      },
+      "replay_requests": 137,
+      "result_sha256": "71bc07a50814213da3eef1c171a1cfdfb47036c4f67aca6dd0591e34881764ec",
+      "runtime_executable_sha256": "2e53ce1329b6f4c34a641385f13353c698d98746b058fd71d903ef7f8f6f3790",
+      "unarchived_requests": [
+        {
+          "archived": false,
+          "bytes": 0,
+          "method": "GET",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status": 404,
+          "t_unix": 1793707509.317041,
+          "url": "https://github.com/favicon.ico"
+        }
+      ],
+      "viewport": [
+        1024,
+        796
+      ]
+    },
+    {
+      "actual_browser_exit": 0,
+      "actual_guard_exit": 0,
+      "content_gate": {
+        "failures": [],
+        "passed": true
+      },
+      "directory": "Build/github-new-baseline-20261103-session4076/native-diagnostic-02-viewport-correction",
+      "driver_exit": 0,
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          25.04052734375,
+          22.607421875,
+          17.89892578125
+        ],
+        "unix": 1793707680.9412491
+      },
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          23.91259765625,
+          22.34765625,
+          17.78076171875
+        ]
+      },
+      "javascript_error": "performance.mark is not a function",
+      "javascript_error_count": 9,
+      "native_scopes": {
+        "document_install_to_first_native_layer_submission": [
+          21014867892
+        ],
+        "document_install_to_first_paint": [
+          10979834035
+        ],
+        "install_total": [
+          9463317302
+        ],
+        "navigation_to_first_document_paint": [
+          13299023734
+        ],
+        "navigation_to_first_native_layer_submission": [
+          23334057591
+        ]
+      },
+      "observed_peak_rss_bytes": 1402601472,
+      "plan_sha256": "50ea0e129b82ffe3f74a3f39b19a57d482db46efdb62c8182aba3c79cbbbd754",
+      "png_sha256": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+      "production": {
+        "bytes": 1298,
+        "configuration_note": "Compiler/GC/preallocation/native options remain those of this pinned build receipt; setting GC_MARKERS cannot enable GC in a GC-none binary.",
+        "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-144643-8e77433f/result.json",
+        "sha256": "3963842c3ed9833a715416ed176882ca308e3ffe9ba0e57be14a4e074f688b94"
+      },
+      "replay_requests": 137,
+      "result_sha256": "a08a8bc933044e8fdf2a7810b330751e3ceba81c393f7fde8108da5b5f4d74e2",
+      "runtime_executable_sha256": "2e53ce1329b6f4c34a641385f13353c698d98746b058fd71d903ef7f8f6f3790",
+      "unarchived_requests": [
+        {
+          "archived": false,
+          "bytes": 0,
+          "method": "GET",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status": 404,
+          "t_unix": 1793707678.493603,
+          "url": "https://github.com/favicon.ico"
+        }
+      ],
+      "viewport": [
+        1024,
+        768
+      ]
+    }
+  ],
+  "post_observation_tool_identity": {
+    "all_tool_inputs_unchanged": true,
+    "exit": 0,
+    "pins": {
+      "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/native-diagnostic-01/network-deny.dylib": {
+        "bytes": 33728,
+        "sha256": "a35f17f4f872246998bccbdf75100dfeed77099ca5e3d94d39f2eaad93861add"
+      },
+      "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/native-diagnostic-01/source-contract.json": {
+        "bytes": 3680,
+        "sha256": "f9d757d278a021247e5849f7640033bf5b77cdf2a970a01a2d7883b5bd36d170"
+      },
+      "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/run-native-diagnostic.py": {
+        "bytes": 10626,
+        "sha256": "9fc6eb8903d0312471e782e19e741f8863a1942350feeb92ac785a3ca18ebb7b"
+      },
+      "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/run-native-viewport-correction.py": {
+        "bytes": 7384,
+        "sha256": "dde3af2e268a367d4e13329716b82a394e56faad708e6601693c7a24ea37224a"
+      },
+      "/Users/alex/code/vox2/tools/measure_browser_instructions.py": {
+        "bytes": 43318,
+        "sha256": "fc11d6efa8f41569d58c1f1f0e7f41f386b2f2b5ec9803c56ccfb6a0fcf1184e"
+      },
+      "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": {
+        "bytes": 52085,
+        "sha256": "d8a900378f7da676d147eeea11dec7befc8ea1ce32ed3f567def0a002ec51c74"
+      },
+      "/Users/alex/code/vox2/tools/page_archive.py": {
+        "bytes": 19082,
+        "sha256": "a0815ab83220a5412f3778051d5fa9674c42f07220adcd19de5aca781b0817f4"
+      }
+    },
+    "verified_utc": "2026-11-03T12:15:10.190662+00:00"
+  },
+  "production_configuration": {
+    "allocator": "prealloc_malloc",
+    "allocator_definition": "inline u8* v_malloc(i64 n) {\n if (n < 0) {\n  _memory_panic(_str_227, n);\n } else if (n == 0) {\n  return (u8*)(((void*)0));\n }\n u8* res = (u8*)(((void*)0));\n {\n  return prealloc_malloc(n);\n }\n if (res == 0) {\n  _memory_panic(_str_227, n);\n }\n return res;\n}\n",
+    "frozen_compilation_sha256": "417aaf3833dcf396281c4d457b0c5dfaf948e368d9257c56508a799c0a1fe646",
+    "generated_c_sha256": "38d5cd4372669c96dba951376b5077d60b8ddd1b8a7d5b9af949fa9c6a75973a",
+    "native_optimization": "-O3"
+  },
+  "schema": 1,
+  "screenshot_chrome_checks": {
+    "adopted_processes": {},
+    "adoption_error": null,
+    "child_exit_code": 0,
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "measure_sealed_github_instructions_test.ContentGateTests.test_explicit_javascript_launch_contract_remains_enabled",
+      "measure_sealed_github_instructions_test.ContentGateTests.test_older_default_enabled_launch_selects_javascriptcore_without_new_switch"
+    ],
+    "elapsed_seconds": 0.407737541,
+    "limit_bytes": 3221225472,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+    "observed_peak_rss_bytes": 27885568,
+    "reason": "completed"
+  },
+  "screenshot_chrome_correction_commit": "082f54bb10561f5bc18514e8c5955a71a4ae4e41"
+}

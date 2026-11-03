@@ -5,6 +5,81 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## New archived GitHub input and native diagnostic, November 3, 2026
+
+Commit `c70134749` adds hash-pinned import of unfinished page captures into a
+new output directory. The original progress manifest and every imported body
+are checked before use and again before sealing. Status, headers, body bytes
+and original provenance survive the import. Completed responses are not
+refetched, including earlier API responses no longer reachable from static
+links. Unfinished progress remains ineligible for replay; missing pins, changed
+inputs, ambiguous imports and overlapping output paths fail. All 16 focused
+archiver tests pass under a 3 GiB guard.
+
+The independent GitHub preparation now seals 193 responses, preserving all 88
+previous successful responses exactly. The signup icon URL listed in the
+preceding preparation report is explicitly optional through the existing
+`--extra-url` policy; its actual 404 status, headers and error body are archived.
+No success response is substituted. The new manifest SHA-256 is
+`902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b`.
+This is a new input, not the missing historical fixture or a replacement cohort.
+
+Two separately declared single-observation diagnostics use fresh processes of
+the latest completed shared production bundle, private profiles and caches,
+the original-origin disk replay and a verified process-local offline guard.
+The first browser actually exits zero, but its 880px window produces a
+1024×796 document PNG; its controller and guard exit 1. That failed observation,
+PNG and counters remain intact. The separate viewport correction uses an
+852px window and passes with an exact 1024×768 document PNG, matching DOM
+viewport and actual browser/controller/guard exits zero. No completed primary
+is discarded, replaced or added to the historical cohort.
+
+The corrected observation matches its predeclared source contract: 33 rows,
+66 filename/href entries, one wide About section and all 21 image URLs. The
+avatar and V logo decode to their independently checked source dimensions,
+60×60 and 500×500. This establishes the recorded content checks, not complete
+rendering or script parity: five offscreen badge images still have zero natural
+size, and commit metadata remains in server-rendered placeholder form. The
+replay records 137 requests and blocks an unarchived favicon request without
+live forwarding.
+
+| Corrected single observation, main-task hardware scope | Retired instructions |
+| --- | ---: |
+| Navigation to legacy document-paint marker | 13,299,023,734 |
+| Navigation to first native layer submission | 23,334,057,591 |
+
+These nested scopes are reported separately and never summed. Native layer
+submission does not establish physical presentation or web FCP. The pinned
+executable SHA-256 is
+`2e53ce1329b6f4c34a641385f13353c698d98746b058fd71d903ef7f8f6f3790`,
+from completed production receipt `20261103-144643-8e77433f`. Its frozen native
+command uses `-O3`, and the emitted `v_malloc` calls `prealloc_malloc`. It is
+not the historical old-compiler, Boehm, C-O2 configuration. Runtime identities
+were checked throughout the observation, archive bodies were revalidated, and
+the pinned tool identities were independently checked afterward.
+
+All nine retained JavaScript diagnostics report `performance.mark is not a
+function`, including the shared GitHub runtime module. Source inspection finds
+the native timing implementation but no `mark` method in the public JavaScript
+Performance factory. Author scripts begin execution and then fail; this does
+not establish hydrated-page equivalence. There is no Chrome measurement, paired
+saving, optimization credit or broad-baseline reset. The historical audit stays
+blocked on its original missing receipts.
+
+The viewport finding also corrects the diagnostic's default screenshot chrome
+allowance to 84px in `082f54bb1`; callers with a visible bookmark bar can still
+request 112px. Two focused launch-contract checks and the CLI help check pass.
+The exact PNG/DOM viewport gates are unchanged.
+
+The [structured audit](performance/github-fresh-archive-20261103.json) records
+all actual exits, counters, host conditions, input identities and limitations.
+The [durable evidence archive](performance/raw/github-fresh-archive-and-native-20261103.tar.gz)
+retains both attempts, the original and completed input captures, controllers
+and receipts. All 322 evidence files were read back and checked by SHA-256;
+archive SHA-256 is
+`0b870f8e58dd37444294b823bf645e4f3a09a85fef9952fb02dd6d5a498a4ccf`.
+No app bundle was copied or rebuilt, and the user's GUI browser was preserved.
+
 ## Shared-bundle diagnostic launches, November 3, 2026
 
 Tooling commit `db88d5d99` lets the sealed GitHub diagnostic launch fresh
@@ -20,8 +95,10 @@ Pass the same private registry path to the outer guard's `--adopt-pids-from`
 and the diagnostic's new required `--memory-guard-registry`. The registry must
 be empty before the cohort. Every Vox observation now has an empty private
 `VOX_PROFILE_DIR`, in addition to its private cache. The default window chrome
-allowance is 112 pixels for current bookmark bars; an older bundle can still
-explicitly request 84. Actual document PNG and DOM viewport checks remain
+allowance initially used 112 pixels for bookmark bars. The subsequent native
+diagnostic above establishes 84px screenshot chrome for the measured current
+bundle and corrects the default; 112 remains an explicit option. Actual
+document PNG and DOM viewport checks remain
 1024×768. No bundle copy or production build is needed. These profile/default
 changes define a new workload; they do not amend any completed historical run.
 
