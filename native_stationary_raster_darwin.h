@@ -39,6 +39,14 @@ static int native_stationary_raster_same_key(VoxStationaryRasterKey a,
         && a.scroll == b.scroll && a.page_top == b.page_top && a.zoom == b.zoom
         && a.scrollbar_opacity == b.scrollbar_opacity;
 }
+static int native_stationary_raster_copy_image(VoxStationaryRaster *cache, uint8_t *pixels) {
+    if (!cache->image) return 0;
+    CFDataRef data = CGDataProviderCopyData(CGImageGetDataProvider(cache->image));
+    int valid = data && CFDataGetLength(data) == (CFIndex)cache->bytes;
+    if (valid) memcpy(pixels, CFDataGetBytePtr(data), cache->bytes);
+    if (data) CFRelease(data);
+    return valid;
+}
 static int native_begin_stationary_raster_snapshot(uint64_t owner, uint64_t revision,
     uint64_t generation, double scroll, double page_top, double zoom,
     double scrollbar_opacity, int eligible, int allow_snapshot) {
@@ -72,16 +80,29 @@ static int native_begin_stationary_raster_snapshot(uint64_t owner, uint64_t revi
     VoxStationaryRasterKey key = {owner, revision, generation, scroll, page_top, zoom,
         scrollbar_opacity};
     size_t bytes = pitch * height;
+    int snapshot = allow_snapshot && !getenv("VOX_COPY_STATIONARY_RASTER_PIXELS");
     int reuse = cache->valid && native_stationary_raster_same_key(cache->key, key)
         && cache->width == width && cache->height == height && cache->pitch == pitch
+        && cache->allow_snapshot == snapshot
         && CGAffineTransformEqualToTransform(cache->transform, transform);
-    if (cache->bytes != bytes) {
+    if (!reuse && cache->image) {
+        CGImageRelease(cache->image);
+        cache->image = NULL;
+    }
+    if (cache->bytes != bytes || (snapshot && !reuse)) {
+        free(cache->pixels);
+        cache->pixels = NULL;
+        reuse = 0;
+    }
+    // Snapshot-capable frames keep only their immutable image. Allocate a
+    // byte backing for the copy path, or later if snapshot creation fails.
+    if (!snapshot && !cache->pixels) {
         uint8_t *replacement = realloc(cache->pixels, bytes);
         if (!replacement) { native_discard_stationary_raster(); return 0; }
         cache->pixels = replacement;
-        cache->bytes = bytes;
         reuse = 0;
     }
+    cache->bytes = bytes;
     cache->key = key;
     cache->width = width; cache->height = height; cache->pitch = pitch;
     cache->transform = transform;
@@ -89,7 +110,7 @@ static int native_begin_stationary_raster_snapshot(uint64_t owner, uint64_t revi
     cache->active = !reuse;
     cache->independent = 0;
     cache->valid = reuse;
-    cache->allow_snapshot = allow_snapshot && !getenv("VOX_COPY_STATIONARY_RASTER_PIXELS");
+    cache->allow_snapshot = snapshot;
     if (reuse) {
         if (cache->allow_snapshot && cache->image
             && vox_frame_snapshot_select(context, cache->image)) {
@@ -97,9 +118,16 @@ static int native_begin_stationary_raster_snapshot(uint64_t owner, uint64_t revi
                 fprintf(stderr, "Vox stationary raster: retained immutable frame\n");
         } else {
             CGContextFlush(context);
-            memcpy(pixels, cache->pixels, bytes);
+            if (cache->pixels) memcpy(pixels, cache->pixels, bytes);
+            else if (!native_stationary_raster_copy_image(cache, pixels)) {
+                // The caller can repaint a complete fresh frame if a provider
+                // cannot expose its exact bytes. Never publish partial reuse.
+                cache->valid = 0;
+                cache->active = 1;
+                reuse = 0;
+            }
         }
-        if (getenv("VOX_STATIONARY_RASTER_DIAGNOSTICS"))
+        if (reuse && getenv("VOX_STATIONARY_RASTER_DIAGNOSTICS"))
             fprintf(stderr, "Vox stationary raster: reused\n");
     }
     return reuse;
@@ -120,9 +148,18 @@ static void native_end_stationary_raster(void) {
         CGContextFlush(context);
         uint8_t *pixels = CGBitmapContextGetData(context);
         if (pixels) {
-            memcpy(cache->pixels, pixels, cache->bytes);
-            cache->valid = 1;
             if (cache->allow_snapshot) cache->image = CGBitmapContextCreateImage(context);
+            if (cache->image) {
+                free(cache->pixels);
+                cache->pixels = NULL;
+                cache->valid = 1;
+            } else {
+                if (!cache->pixels) cache->pixels = malloc(cache->bytes);
+                if (cache->pixels) {
+                    memcpy(cache->pixels, pixels, cache->bytes);
+                    cache->valid = 1;
+                }
+            }
         }
     }
     cache->active = 0;

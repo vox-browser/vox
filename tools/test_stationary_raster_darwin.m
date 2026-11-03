@@ -1,11 +1,19 @@
 #import <Cocoa/Cocoa.h>
 #include <assert.h>
+static int fail_snapshot_creation;
+static CGImageRef create_snapshot(CGContextRef context) {
+    return fail_snapshot_creation ? NULL : CGBitmapContextCreateImage(context);
+}
+#define CGBitmapContextCreateImage create_snapshot
 #include "../native_stationary_raster_darwin.h"
+#undef CGBitmapContextCreateImage
+
+static int bitmap_padding;
 
 static CGContextRef bitmap(int width, int height, int scale) {
     CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     CGContextRef context = CGBitmapContextCreate(NULL, width * scale, height * scale,
-        8, width * scale * 4, color, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+        8, width * scale * 4 + bitmap_padding, color, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(color);
     assert(context);
     CGContextScaleCTM(context, scale, scale);
@@ -33,11 +41,15 @@ static void test_immutable_snapshot(int scale) {
     CGContextRef source = bitmap(32, 24, scale);
     NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:source flipped:NO];
     assert(!native_begin_stationary_raster_snapshot(1, 2, 3, .5, 7, 1, .4, 1, 1));
+    BOOL copied = getenv("VOX_COPY_STATIONARY_RASTER_PIXELS") != NULL;
+    assert((native_stationary_raster.pixels != NULL) == copied);
     fill(source, 17);
     size_t bytes = CGBitmapContextGetBytesPerRow(source) * CGBitmapContextGetHeight(source);
     uint8_t *expected = malloc(bytes);
     memcpy(expected, CGBitmapContextGetData(source), bytes);
     native_end_stationary_raster();
+    assert((native_stationary_raster.pixels != NULL) == copied);
+    assert((native_stationary_raster.image == NULL) == copied);
 
     CGContextRef destination = bitmap(32, 24, scale);
     CGContextRef wrong = bitmap(33, 24, scale);
@@ -45,7 +57,6 @@ static void test_immutable_snapshot(int scale) {
     fill(destination, 91);
     VoxFrameSnapshot previous = vox_frame_snapshot_begin(destination);
     assert(native_begin_stationary_raster_snapshot(1, 2, 3, .5, 7, 1, .4, 1, 1));
-    BOOL copied = getenv("VOX_COPY_STATIONARY_RASTER_PIXELS") != NULL;
     assert((vox_frame_snapshot.image == NULL) == copied);
     if (!copied) {
         assert(memcmp(expected, CGBitmapContextGetData(destination), bytes));
@@ -87,6 +98,49 @@ static void test_immutable_snapshot(int scale) {
     CGContextRelease(wrong);
     CGContextRelease(destination);
     CGContextRelease(source);
+}
+static void test_snapshot_copy_mode_transitions(void) {
+    native_discard_stationary_raster();
+    CGContextRef context = bitmap(32, 24, 2);
+    NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    unsetenv("VOX_COPY_STATIONARY_RASTER_PIXELS");
+    assert(!native_begin_stationary_raster_snapshot(1, 2, 3, 0, 0, 1, 1, 1, 1));
+    fill(context, 17); native_end_stationary_raster();
+    assert(native_stationary_raster.image && !native_stationary_raster.pixels);
+    // A changed document retires its old immutable image before replay starts.
+    assert(!native_begin_stationary_raster_snapshot(1, 3, 3, 0, 0, 1, 1, 1, 1));
+    assert(!native_stationary_raster.image && !native_stationary_raster.pixels);
+    fill(context, 31); native_end_stationary_raster();
+    assert(native_stationary_raster.image && !native_stationary_raster.pixels);
+    setenv("VOX_COPY_STATIONARY_RASTER_PIXELS", "1", 1);
+    assert(!native_begin_stationary_raster_snapshot(1, 3, 3, 0, 0, 1, 1, 1, 1));
+    assert(!native_stationary_raster.image && native_stationary_raster.pixels);
+    fill(context, 47); native_end_stationary_raster();
+    size_t bytes = native_stationary_raster.bytes;
+    uint8_t *expected = malloc(bytes);
+    memcpy(expected, CGBitmapContextGetData(context), bytes);
+    fill(context, 91);
+    assert(native_begin_stationary_raster_snapshot(1, 3, 3, 0, 0, 1, 1, 1, 1));
+    assert(!memcmp(expected, CGBitmapContextGetData(context), bytes));
+    // Snapshot allocation failure keeps a byte-backed cache, with the same
+    // exact fallback reuse on a later fresh frame.
+    assert(!native_begin_stationary_raster_snapshot(1, 4, 3, 0, 0, 1, 1, 1, 1));
+    fill(context, 47);
+    fail_snapshot_creation = 1; native_end_stationary_raster(); fail_snapshot_creation = 0;
+    assert(native_stationary_raster.valid && !native_stationary_raster.image
+        && native_stationary_raster.pixels);
+    fill(context, 91);
+    assert(native_begin_stationary_raster_snapshot(1, 4, 3, 0, 0, 1, 1, 1, 1));
+    assert(!memcmp(expected, CGBitmapContextGetData(context), bytes));
+    unsetenv("VOX_COPY_STATIONARY_RASTER_PIXELS");
+    assert(!native_begin_stationary_raster_snapshot(1, 3, 3, 0, 0, 1, 1, 1, 1));
+    assert(!native_stationary_raster.image && !native_stationary_raster.pixels);
+    fill(context, 47); native_end_stationary_raster();
+    fill(context, 91);
+    assert(native_begin_stationary_raster_snapshot(1, 3, 3, 0, 0, 1, 1, 1, 1));
+    assert(!memcmp(expected, CGBitmapContextGetData(context), bytes));
+    native_discard_stationary_raster(); free(expected);
+    NSGraphicsContext.currentContext = nil; CGContextRelease(context);
 }
 int main(void) {
     @autoreleasepool {
@@ -148,6 +202,13 @@ int main(void) {
         }
         test_immutable_snapshot(1);
         test_immutable_snapshot(2);
+        bitmap_padding = 16;
+        test_immutable_snapshot(1);
+        test_immutable_snapshot(2);
+        bitmap_padding = 0;
+        BOOL copied = getenv("VOX_COPY_STATIONARY_RASTER_PIXELS") != NULL;
+        test_snapshot_copy_mode_transitions();
+        if (copied) setenv("VOX_COPY_STATIONARY_RASTER_PIXELS", "1", 1);
         native_discard_stationary_raster();
     }
     puts("stationary raster: exact copies, all input invalidations, dynamic content and clip guards passed");
