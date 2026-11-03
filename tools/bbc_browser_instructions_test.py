@@ -711,7 +711,7 @@ class BBCInstructionTests(unittest.TestCase):
     def test_optimization_controls_require_a_control_app(self):
         args = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json',
                 '--capture-reference']
-        for flag in ['--control-retain-flow-style-identities', '--control-disable-retained-simple-svg', '--control-retain-definite-intrinsic-measurement', '--control-retain-selector-substring-scan', '--control-retain-redundant-sheet-removal', '--control-retain-full-font-input-scan', '--control-disable-early-text-font-requests', '--control-retain-selector-rule-font-sync', '--control-retain-empty-procedural-styles', '--control-copy-stationary-raster-pixels', '--control-disable-inline-measurement-reuse',
+        for flag in ['--control-retain-keyword-length-resolution', '--control-retain-flow-style-identities', '--control-disable-retained-simple-svg', '--control-retain-definite-intrinsic-measurement', '--control-retain-selector-substring-scan', '--control-retain-redundant-sheet-removal', '--control-retain-full-font-input-scan', '--control-disable-early-text-font-requests', '--control-retain-selector-rule-font-sync', '--control-retain-empty-procedural-styles', '--control-copy-stationary-raster-pixels', '--control-disable-inline-measurement-reuse',
                      '--control-disable-grid-width-only', '--control-disable-stationary-raster',
                      '--control-disable-client-geometry-index',
                      '--control-disable-tracked-persistent-shortcut',
@@ -739,6 +739,25 @@ class BBCInstructionTests(unittest.TestCase):
                 run_trial(engine, 'same-app', engine, args)
         self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_STATIONARY_RASTER_REUSE='1')),
                                 ('vox', environment), ('brave', environment)])
+        self.assertIs(args.vox_environment, environment)
+
+    def test_keyword_length_control_is_isolated_and_restored_after_failure(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_retain_keyword_length_resolution=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_RETAIN_KEYWORD_LENGTH_RESOLUTION='1')),
+                               ('vox', environment), ('brave', environment)])
+        self.assertIs(args.vox_environment, environment)
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
         self.assertIs(args.vox_environment, environment)
 
     def test_cascade_value_copies_control_is_isolated_and_restored_after_failure(self):
