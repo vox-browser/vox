@@ -1,27 +1,30 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Cohort 78 completes seven alternating control/Vox/Brave
+`OPTIMIZED_SITES.md`.** Cohort 79 completes seven alternating control/Vox/Brave
 triples on the 609-response frozen 2026-11-03 homepage. All 21 captures pass
 unchanged pixels, full content, normal native exits, ownership and pinned-input
-checks. Vox's launch-through-encoded-PNG median is **31,263,189,299** instructions;
-Brave's lower-bound median is **17,848,741,330**. The strict integer gate fails:
-`324416048800 > 159014279835`, conservative ratio **1.836152351996092**.
+checks. Vox's launch-through-encoded-PNG median is **29,619,357,801** instructions;
+Brave's lower-bound median is **17,817,074,138**. The strict integer gate fails:
+`307870823940 > 158739079113`, conservative ratio **1.745529475755338**.
 Both Vox arms explicitly retain the historical logical-grid paint and inline
 font metrics; this is not a result for the newer default Retina rendering.
 
-The stylesheet-pruning candidate regresses against its same-binary control:
-control median **30,106,398,512**, five paired regressions and two small wins.
-The candidate median increases by **1,156,790,787 (3.84%)**. The candidate and
-control have been removed, with all 135 focused rollback executions and 262
-instruction-tool checks passing. No saving or broad-check reset is credited.
-See the [cohort/rollback ledger](performance/bbc-cohort78-rollback-20261103.json)
-and [authenticated raw receipts](performance/raw/bbc-cohort78-rollback-20261103.tar.gz).
+The closed-text indefinite-height key is eligible on BBC, with candidate-only
+reuse witnessed before encoded PNG in a separate diagnostic. Its same-binary
+control median is **29,660,785,436**: a **41,427,635 (0.1397%)** marginal median
+reduction, four paired improvements and three regressions. The conservative
+control ratio **1.0708615536093389** fails; no robust saving is credited.
+See the [cohort/key ledger](performance/bbc-cohort79-inline-height-20261103.json)
+and [authenticated raw receipts](performance/raw/bbc-cohort79-inline-height-20261103.tar.gz).
 
+Prior cohort 78 also has 21 valid captures, but stylesheet pruning regresses:
+Vox median 31,263,189,299 versus control 30,106,398,512 and Brave 17,848,741,330.
+Five pairs regress and two improve. The candidate and control are removed, with
+all 135 focused rollback executions and 262 instruction-tool checks passing.
+See the [rollback ledger](performance/bbc-cohort78-rollback-20261103.json).
 Prior cohort 77 retains all fourteen attempts, including Brave pair 6's 53,392
-changed reference pixels. Its Vox median is 29,631,407,157 and Brave lower median
-17,918,487,741; it supplies no valid acceptance or isolated engine-change credit.
-See the [cohort/profile ledger](performance/bbc-whole-profile-cohort77-20261103.json).
+changed reference pixels, in the [profile ledger](performance/bbc-whole-profile-cohort77-20261103.json).
 
 This is a **new workload**, with 609 sealed responses and 91 headlines. The
 original 595-response fixture remains lost. Moving to this page establishes no
@@ -41,7 +44,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **78 cohorts / 1,758 attempted browser trials**, excluding separately
+History is **79 cohorts / 1,779 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 ## Historical results on the earlier fixture
@@ -4678,3 +4681,37 @@ preserved. The allocator checks do not validate that separate feature; subsequen
 commits select explicit paths with `git commit --only`. The linked ledger names
 the affected paths. BBC remains outside the catalog, with no full broad pass
 or cadence reset.
+
+
+## Indefinite-height key cohort and broad checks (2026-11-03)
+
+The pending key experiment completes as cohort 79 on pinned production
+`928ebab161db15b7268b7ad984ef61a0da283e03599fcb889754dcf6d739667d`.
+Fresh diagnostic launches pass the original Vox pixels and full content. The
+candidate reuses text measurements across differing stored indefinite heights;
+control retains those heights in its key and does not report this path.
+A separately hashed JavaScriptCore source hook verifies 72 unique external
+archived author scripts, each executed once with exact original bytes and no
+reported exception, in each arm. This establishes the selected execution path,
+not full BBC scripting/DOM parity. Instrumentation supplies no instruction credit.
+
+All 21 unprofiled cohort attempts are valid and retained, but the target and
+conservative matched-control gates fail. The 41.4M marginal median point
+reduction exceeds the broad-check cadence, despite variation preventing robust
+credit. All 490 selected cases enter in both default GC and no-GC modes;
+487 pass and the same three names fail in each mode: text-control baseline,
+radio-control baseline and trailing collapsed margin. Inputs are unchanged;
+compiler, runtime and guard exits are retained. No full pass or cadence reset
+is claimed. The test selection includes current code rather than reusing an
+older compiled binary. The implementation remains, without a BBC saving claim.
+
+The next experiment permits unchanged flex/grid item paint projections to use
+the existing ordinary-box cache, adding both item roles to its key. All five
+focused cases pass in both arms across default, no-GC and bounded-preallocation
+modes (30 executions). Their complete payload oracle now compares immutable
+cold paint snapshots by value, preserving borrowed-owner identity checks; the
+old helper's decoration-pointer failures in both arms remain retained.
+Commits `1f1873a05`, `5ce75b50b` and `1ba6251c3` contain the helper repair,
+implementation and matched benchmark control. All 264 instruction-tool tests
+pass. Native eligibility and unchanged pixels still need a completed production
+bundle before cohort 80 can launch. No catalog entry is added.
