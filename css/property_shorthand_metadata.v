@@ -4,6 +4,9 @@ module css
 
 pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.animation_range {
+			[.animation_range_start, .animation_range_end]
+		}
 		.font_synthesis {
 			[.font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position]
 		}
@@ -12,7 +15,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.align_content, .align_items, .align_self, .anchor_name, .anchor_scope,
 				.animation_composition, .animation_delay, .animation_direction, .animation_duration,
 				.animation_fill_mode, .animation_iteration_count, .animation_name,
-				.animation_play_state, .animation_timeline, .animation_timing_function, .appearance,
+				.animation_play_state, .animation_range_end, .animation_range_start, .animation_timeline, .animation_timing_function, .appearance,
 				.aspect_ratio, .backdrop_filter, .backface_visibility, .background_attachment,
 				.background_blend_mode, .background_clip, .background_color, .background_image,
 				.background_origin, .background_position_x, .background_position_y,
@@ -97,7 +100,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 		.animation {
 			[.animation_duration, .animation_timing_function, .animation_delay,
 				.animation_iteration_count, .animation_direction, .animation_fill_mode,
-				.animation_play_state, .animation_name, .animation_timeline]
+				.animation_play_state, .animation_name, .animation_timeline, .animation_range_start, .animation_range_end]
 		}
 		.background {
 			[.background_attachment, .background_clip, .background_color, .background_image,
@@ -364,6 +367,9 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 
 pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.animation_range {
+			[.animation_range_start, .animation_range_end]
+		}
 		.font_synthesis {
 			[.font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position]
 		}
@@ -372,7 +378,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.align_content, .align_items, .align_self, .anchor_name, .anchor_scope,
 				.animation_composition, .animation_delay, .animation_direction, .animation_duration,
 				.animation_fill_mode, .animation_iteration_count, .animation_name,
-				.animation_play_state, .animation_timeline, .animation_timing_function, .appearance,
+				.animation_play_state, .animation_range_end, .animation_range_start, .animation_timeline, .animation_timing_function, .appearance,
 				.aspect_ratio, .backdrop_filter, .backface_visibility, .background_attachment,
 				.background_blend_mode, .background_clip, .background_color, .background_image,
 				.background_origin, .background_position_x, .background_position_y,
@@ -457,7 +463,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 		.animation {
 			[.animation_duration, .animation_timing_function, .animation_delay,
 				.animation_iteration_count, .animation_direction, .animation_fill_mode,
-				.animation_play_state, .animation_name, .animation_timeline]
+				.animation_play_state, .animation_name, .animation_timeline, .animation_range_start, .animation_range_end]
 		}
 		.background {
 			[.background_attachment, .background_clip, .background_color, .background_image,
@@ -733,6 +739,12 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.animation_range_start {
+			[.animation, .animation_range, .all]
+		}
+		.animation_range_end {
+			[.animation, .animation_range, .all]
+		}
 		.text_box_trim {
 			[.all]
 		}

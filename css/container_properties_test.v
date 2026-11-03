@@ -31,7 +31,7 @@ fn test_container_property_metadata_and_shorthand_relationships() {
 	assert generated_shorthands_for_longhand(.container_name) == [PropertyID.all, .container]
 	assert generated_shorthands_for_longhand(.container_type) == [PropertyID.all, .container]
 	assert PropertyID.container_name in generated_longhands_for_shorthand(.all)
-	assert number_of_longhand_properties == 362
+	assert number_of_longhand_properties == 364
 	assert last_longhand_property_id() == .webkit_font_smoothing
 }
 

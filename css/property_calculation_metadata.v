@@ -183,6 +183,9 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'animation-range' { return .animation_range }
+	if name == 'animation-range-end' { return .animation_range_end }
+	if name == 'animation-range-start' { return .animation_range_start }
 	if name == 'text-box-trim' { return .text_box_trim }
 	if name == 'text-box-edge' { return .text_box_edge }
 	if name == 'font-synthesis' { return .font_synthesis }
@@ -3198,6 +3201,9 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.animation_range { 'animation-range' }
+		.animation_range_start { 'animation-range-start' }
+		.animation_range_end { 'animation-range-end' }
 		.text_box_trim { 'text-box-trim' }
 		.text_box_edge { 'text-box-edge' }
 		.font_synthesis { 'font-synthesis' }
@@ -3690,6 +3696,9 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.animation_range { 'normal' }
+		.animation_range_start { 'normal' }
+		.animation_range_end { 'normal' }
 		.text_box_trim { 'none' }
 		.text_box_edge { 'auto' }
 		.font_synthesis { 'weight style small-caps position' }
@@ -4127,6 +4136,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.animation_range_start, .animation_range_end {
+			AnimationType.none_
+		}
 		.text_box_trim, .text_box_edge {
 			AnimationType.discrete
 		}
@@ -4207,6 +4219,9 @@ pub fn is_animatable_property(property_id PropertyID) bool {
 
 pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 	return match property_id {
+		.animation_range, .animation_range_start, .animation_range_end {
+			PropertyMultiplicity.coordinating_list
+		}
 		.animation, .animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .background, .background_attachment, .background_blend_mode, .background_clip, .background_image, .background_origin, .background_position, .background_position_x, .background_position_y, .background_repeat, .background_size, .mask, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size, .scroll_timeline, .scroll_timeline_axis, .scroll_timeline_name, .transition, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .view_timeline, .view_timeline_axis, .view_timeline_inset, .view_timeline_name {
 			PropertyMultiplicity.coordinating_list
 		}
@@ -4275,6 +4290,7 @@ pub fn property_requires_computation_with_initial_value(property_id PropertyID) 
 
 pub fn property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	return match property_id {
+		.animation_range_start, .animation_range_end { true }
 		.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			true
 		}
@@ -4361,6 +4377,9 @@ pub fn resolve_legacy_value_alias(property_id PropertyID, keyword Keyword) ?Keyw
 
 pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueType {
 	return match property_id {
+		.animation_range_start, .animation_range_end {
+			ValueType.length
+		}
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			ValueType.length
 		}
@@ -4373,6 +4392,9 @@ pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueT
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.animation_range_start, .animation_range_end {
+			value_type in [.length, .percentage]
+		}
 		.text_box_edge {
 			value_type == .string
 		}
@@ -4557,6 +4579,9 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.animation_range_start, .animation_range_end {
+			lowercase_value in ['normal']
+		}
 		.text_box_trim {
 			lowercase_value in ['none', 'trim-start', 'trim-end', 'trim-both']
 		}
@@ -5225,6 +5250,9 @@ pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
 
 pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 	return match property_id {
+		.animation_range_start, .animation_range_end {
+			true
+		}
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			value.raw_value() >= 0
 		}
@@ -5258,6 +5286,9 @@ pub fn property_accepts_number(property_id PropertyID, value f64) bool {
 
 pub fn property_accepts_percentage(property_id PropertyID, value Percentage) bool {
 	return match property_id {
+		.animation_range_start, .animation_range_end {
+			true
+		}
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			value.value() >= 0
 		}

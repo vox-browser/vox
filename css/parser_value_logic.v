@@ -855,7 +855,8 @@ fn property_uses_special_coordinating_list_parser(property_id PropertyID) bool {
 	return property_id in [.background_attachment, .background_blend_mode, .background_clip,
 		.background_image, .background_origin, .background_position_x, .background_position_y,
 		.background_repeat, .background_size, .mask_clip, .mask_composite, .mask_image, .mask_mode,
-		.mask_origin, .mask_position, .mask_repeat, .mask_size, .transition_property]
+		.mask_origin, .mask_position, .mask_repeat, .mask_size, .transition_property,
+		.animation_range_start, .animation_range_end]
 }
 
 pub fn (mut parser Parser) parse_css_value_for_property(property_id PropertyID) ?StyleValue {
@@ -1134,6 +1135,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.animation_timeline {
 			return parser.parse_animation_timeline_value(mut tokens)
+		}
+		.animation_range, .animation_range_start, .animation_range_end {
+			return parser.parse_animation_range_value(property_id, mut tokens)
 		}
 		.animation_timing_function {
 			return parser.parse_animation_timing_function_value(mut tokens)
@@ -4098,10 +4102,11 @@ const animation_shorthand_longhands = [PropertyID.animation_duration,
 
 // https://drafts.csswg.org/css-animations/#propdef-animation
 fn (mut parser Parser) parse_animation_value(mut tokens ComponentValueStream) ?StyleValue {
-	// animation-timeline is a reset-only sub-property and is intentionally not
+	// Timeline and attachment ranges are reset-only sub-properties and are not
 	// accepted as a component of the animation shorthand.
 	return parser.parse_coordinating_value_list_shorthand(mut tokens, .animation, animation_shorthand_longhands, [
 		PropertyID.animation_timeline,
+		PropertyID.animation_range_start, PropertyID.animation_range_end,
 	])
 }
 

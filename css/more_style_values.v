@@ -2369,7 +2369,7 @@ fn coordinating_list_config(shorthand PropertyID) ?CoordinatingListConfig {
 		.animation {
 			CoordinatingListConfig{
 				entry_when_all_initial: 'none'
-				reset_only_longhands: [PropertyID.animation_timeline]
+				reset_only_longhands: [PropertyID.animation_timeline, .animation_range_start, .animation_range_end]
 			}
 		}
 		.transition {
@@ -2394,25 +2394,25 @@ fn coordinating_list_config(shorthand PropertyID) ?CoordinatingListConfig {
 }
 
 // Serialize a coordinating-list shorthand by zipping its parallel longhand lists per entry,
-// mirroring the upstream `coordinating_value_list_shorthand_serialize`. Returns none when
-// the value can't be serialized this way (so the caller falls back to default_serialize).
+// mirroring the upstream `coordinating_value_list_shorthand_serialize`. A recognized
+// shorthand with incompatible lists or non-initial reset-only values serializes empty.
 fn (style_value ShorthandStyleValue) serialize_coordinating_list(mode SerializationMode) ?string {
 	config := coordinating_list_config(style_value.shorthand_) or { return none }
 
 	// Reset-only longhands must all hold their initial value (the port stores them as a
 	// per-entry list, so every entry must be initial).
 	for reset_only in config.reset_only_longhands {
-		index := style_value.coordinating_longhand_index(reset_only) or { return none }
+		index := style_value.coordinating_longhand_index(reset_only) or { return '' }
 		initial_css := computed_interpolation_property_initial_value(reset_only).css_text
 		value := style_value.values_[index]
 		if value is StyleValueList {
 			for item in value.values() {
 				if item.serialize(mode) != initial_css {
-					return none
+					return ''
 				}
 			}
 		} else if value.serialize(mode) != initial_css {
-			return none
+			return ''
 		}
 	}
 
@@ -2424,17 +2424,17 @@ fn (style_value ShorthandStyleValue) serialize_coordinating_list(mode Serializat
 		}
 		value := style_value.values_[index]
 		if value !is StyleValueList {
-			return none
+			return ''
 		}
 		count := (value as StyleValueList).values().len
 		if entry_count == -1 {
 			entry_count = count
 		} else if count != entry_count {
-			return none
+			return ''
 		}
 	}
 	if entry_count <= 0 {
-		return none
+		return ''
 	}
 
 	mut entries := []string{}
@@ -2807,6 +2807,7 @@ fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationM
 }
 
 pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) string {
+	if range := style_value.serialize_animation_range(mode) { return range }
 	if synthesis := style_value.serialize_font_synthesis(mode) { return synthesis }
 	if s := style_value.serialize_page_break_legacy_shorthand(mode) {
 		return s

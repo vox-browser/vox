@@ -451,6 +451,8 @@ pub enum PropertyID {
 	font_synthesis_position
 	text_box_trim
 	text_box_edge
+	animation_range_start
+	animation_range_end
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
@@ -523,6 +525,7 @@ pub enum PropertyID {
 	border_radius
 	transition
 	animation
+	animation_range
 	scroll_timeline
 	view_timeline
 	border_image

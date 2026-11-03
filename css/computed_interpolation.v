@@ -9383,6 +9383,7 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay,
 		.animation_direction, .animation_duration, .animation_fill_mode,
 		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
+		.animation_range_start, .animation_range_end,
 		.animation_timing_function, .aspect_ratio, .background_blend_mode, .background_clip,
 		.background_color, .background_image, .background_origin, .background_position_x,
 		.background_position_y, .background_repeat, .background_size, .border_bottom_color,
