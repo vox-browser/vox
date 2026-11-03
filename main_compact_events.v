@@ -54,7 +54,10 @@ window.__ladybirdDispatch = function (name, id, replay) {
      } else if (raw && (nativeMedia || !Object.prototype.hasOwnProperty.call(receiver, "on" + name)) &&
       Function("event", raw).call(receiver, event) === false) event.preventDefault();
     }
-    if (!current && typeof window["on" + name] === "function" && window["on" + name].call(window, event) === false)
+    // Native click dispatch already owns Window handlers and propagation.
+    // Replaying a global onclick here can undo a delegated toggle even when
+    // the document listener stopped the original event before Window.
+    if (!current && name !== "click" && typeof window["on" + name] === "function" && window["on" + name].call(window, event) === false)
      event.preventDefault();
    } catch (error) { console.error(error); }
   }
