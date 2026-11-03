@@ -59,12 +59,25 @@ fn selector_list_contains_named_namespace(selectors SelectorList) bool {
 fn dom_selector_query_contains_named_namespace(target voidptr, selector_text string) bool {
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	selectors := state.parse(selector_text) or { return false }
+	scratch := platform.begin_thread_scratch('DOM selector namespace check')
+	defer { scratch.finish() }
 	return selector_list_contains_named_namespace(selectors)
+}
+
+// These compounds only read element names and attributes. Their matching
+// vectors cannot escape the callback; parsed selectors keep document storage.
+fn independent_element_matches(element &dom.Element, selectors SelectorList) ?bool {
+	scratch := platform.begin_thread_scratch('independent element match')
+	defer { scratch.finish() }
+	compounds := independent_query_compounds(selectors) or { return none }
+	mut context := MatchContext{has_result_cache: unsafe { nil }}
+	return independent_query_matches(element, compounds, mut context)
 }
 
 fn dom_selector_query_matches(target voidptr, selector_text string, element &dom.Element, scoping_root &dom.ParentNode) bool {
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	selectors := state.parse(selector_text) or { return false }
+	if result := independent_element_matches(element, selectors) { return result }
 	for selector in selectors.selectors {
 		mut context := MatchContext{has_result_cache: unsafe { nil }}
 		if matches(selector, element, none, mut context, none, scoping_root, .normal, none) {
@@ -140,6 +153,7 @@ fn document_query_selector_list(document &dom.Document, selector_text string) ?S
 }
 
 fn element_matches_any(element &dom.Element, selectors SelectorList) bool {
+	if result := independent_element_matches(element, selectors) { return result }
 	for selector in selectors.selectors {
 		if selector_matches(selector, element) {
 			return true
