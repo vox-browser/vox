@@ -3714,3 +3714,71 @@ instruction table. Its historical rendering/scripting limitations and earlier
 broad failures still apply. Console diagnostics in cohorts 59 and 60 contain
 the known `dotcom-bootstrap.js` CORS failure and no reported React hydration
 error; this alone does not establish full React conformance.
+
+
+## Retained flow trees across no-op restyles: cohort 61 (2026-11-03)
+
+**The 10% target remains unmet.** All seven alternating control/Vox/Brave
+triples are retained, bringing history to **61 cohorts / 1,460 attempts**.
+All 21 native exits, complete content and exclusive ownership checks pass,
+and all 1,639 pinned input files independently rehash unchanged. Every
+original attempt also retains its actual post-trial hashes and timestamp;
+`7ce073234` adds those success receipts without changing either endpoint.
+No attempt is retried or excluded.
+
+| Statistic | Vox candidate | Vox control | Brave lower bound |
+| --- | ---: | ---: | ---: |
+| Median launch-to-PNG instructions | 29,472,562,200 | 29,918,100,073 | 15,135,775,457 |
+
+All fourteen Vox/control PNGs match their original reference. Their observed
+median reduction is **445,537,873 instructions (1.4892%)**, with five improving
+and two regressing matched pairs. Brave3 and Brave4 differ by **304,064** and
+**64,177** pixels. Those failures invalidate acceptance, and even the raw
+conservative instruction gate fails: **304,986,195,690 > 135,073,104,777**,
+ratio **2.0321408660**. No accepted Brave advantage or BBC instruction-table
+entry is claimed. The unchanged fixture, scripts, clock, private cache,
+viewport/scale, settlement, RGB compatibility and capture scope remain in
+force. Exact vectors, brackets, commands and host telemetry are in the
+[tracked ledger](performance/bbc-flow-styles-20261103.json) and
+`Build/bbc-flow-styles-20261103/flow-styles-matched-cohort/`.
+
+Engine commit **`09dd7a7d4`** retains closed flow/grid/flex subtrees after a
+no-op style recomputation replaces their DOM style object. It compares all
+raw property inputs and flags, allowing newly allocated equal typed scalar
+values while keeping identity checks for resource graphs. The font cascade,
+selected font, generation, viewport, root metrics, subject, resolved cache
+provenance and current color environment must match. Animated/unknown styles,
+non-unit density projections, font/context changes and existing excluded
+subtrees retain the complete builder. No new geometry cache is added. Control
+**`a3c2e4921`** restores the prior style-identity requirement.
+
+Separate production diagnostics witness actual subtree reuse after navigation
+and before PNG encoding only in the candidate. Both pass content, original
+pixels, native exit zero and ownership; JavaScriptCore creates one context
+and executes **1,956 / 1,990 evaluations**. The cohort executable is
+`1c463f8633d63c464346dbc2ce497017bb9a0a80c3f4b9ab452fe8f0edb47b65`,
+receipt **`20261103-040243-ba54e3f3`**. The probes are absent in the unprofiled
+cohort. The known BBC bootstrap CORS and rendering limitations still apply.
+
+All **28 focused cases** pass enabled and disabled in default, no-GC and
+production-bounded-preallocated modes (**168 executions**); all **240
+instruction-tool tests** pass. A final C-O3/no-GC standalone frozen-HTML
+probe witnesses reuse, preserves **2,855 nodes / 902 lines / extent 55,212,771**
+and the identical paint-dump hash. Across two alternating pairs, second-layout
+medians are **1,206,174,389.5 candidate / 1,519,807,941 control**, a
+**313,633,551.5** instruction reduction. It excludes scripts, resources,
+browser startup, window setup and PNG and supplies no BBC credit. Earlier
+failed strict-identity and test-compilation preparations, plus the predecessor
+probe, remain retained separately.
+
+The broad run enters **486 cases in each of default/no-GC modes**, with
+**483 passing and the same three known baseline failures** in each. All owned
+feature inputs stay unchanged. This is not a full pass or cadence reset.
+Fresh headless, eleven smoke and eight SVG checks initially all exit zero,
+but a shared publication changes the executable and Skia library before the
+identity check finishes; that attempt is rejected. A fresh validation on the
+later completed **`20261103-040720-a4b16a6c`** bundle
+(`ac089f6e9ee05ca73fad9393a5bf7b5cf4f2a5f676cb280da0763b113a7bde59`)
+passes all those checks with unchanged runtime identities. It contains the
+same feature and confirms that the earlier viewport/grid-placement experiments
+are absent; it is distinguished from the cohort executable.
