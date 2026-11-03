@@ -130,3 +130,32 @@ fn test_create_element_retains_and_uses_documents_registry() {
 	svg_element := dom.create_element(document, 'circle', 'http://www.w3.org/2000/svg', none, none, false)!
 	assert svg_element.custom_element_registry() == voidptr(registry)
 }
+
+fn test_custom_element_registry_metadata_runs_under_guard_and_recovers_after_throw() {
+	mut document := parse_document('<!doctype html><x-outer></x-outer>')
+	defer { document.finalize() }
+	mut registry := CustomElementRegistry.create(document)
+	mut observed := &CustomElementDefinitionGuardObservation{}
+	registry.define_with_metadata('x-outer', CustomElementConstructor{ id: 700 }, ElementDefinitionOptions{}, fn [mut registry, mut observed] (_ CustomElementConstructor) !CustomElementConstructor {
+		registry.define('x-inner', CustomElementConstructor{ id: 701 }, ElementDefinitionOptions{}) or {
+			observed.rejected = err.msg().starts_with('NotSupportedError:')
+		}
+		return error('author getter exception')
+	}) or { assert err.msg() == 'author getter exception' }
+	assert observed.rejected
+	assert registry.definition_count() == 0
+	registry.define('x-inner', CustomElementConstructor{ id: 701 }, ElementDefinitionOptions{})!
+	assert registry.get('x-inner')? == 701
+	mut read := &CustomElementDefinitionGuardObservation{}
+	registry.define_with_metadata('x-inner', CustomElementConstructor{ id: 702 }, ElementDefinitionOptions{}, fn [mut read] (_ CustomElementConstructor) !CustomElementConstructor {
+		read.rejected = true
+		return CustomElementConstructor{ id: 702 }
+	}) or { assert err.msg().starts_with('NotSupportedError:') }
+	assert !read.rejected
+}
+
+@[heap]
+struct CustomElementDefinitionGuardObservation {
+mut:
+	rejected bool
+}

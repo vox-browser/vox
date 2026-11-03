@@ -3113,6 +3113,10 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		messages << 'JavaScript Performance bindings: ${err.msg()}'
 		return none
 	}
+	mutable_runtime.install_custom_element_registry_binding() or {
+		messages << 'JavaScript CustomElementRegistry bindings: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_window_media_query_binding() or {
 		messages << 'JavaScript media query bindings: ${err.msg()}'
 		return none

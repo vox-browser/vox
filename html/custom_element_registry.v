@@ -206,7 +206,18 @@ fn (registry &CustomElementRegistry) initialize_global_document(document &dom.Do
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-define
 pub fn (mut registry CustomElementRegistry) define(name string, constructor CustomElementConstructor, options ElementDefinitionOptions) ! {
-	if !constructor.is_constructor {
+	registry.define_with_metadata(name, constructor, options, fn (identity CustomElementConstructor) !CustomElementConstructor {
+		return identity
+	})!
+}
+
+// The engine must read author-controlled constructor metadata after the name,
+// constructor identity and extends checks, while the reentrancy guard is held.
+// Standalone callers keep the declarative define() interface above.
+pub type CustomElementMetadataReader = fn (CustomElementConstructor) !CustomElementConstructor
+
+pub fn (mut registry CustomElementRegistry) define_with_metadata(name string, identity CustomElementConstructor, options ElementDefinitionOptions, read_metadata CustomElementMetadataReader) ! {
+	if !identity.is_constructor {
 		return error('TypeError: custom element callback is not a constructor')
 	}
 	if !is_valid_custom_element_name(name) {
@@ -215,7 +226,7 @@ pub fn (mut registry CustomElementRegistry) define(name string, constructor Cust
 	if registry.registration_with_name(name) != none {
 		return error("NotSupportedError: a custom element with name '${name}' is already defined")
 	}
-	if registry.registration_with_constructor(constructor.id) != none {
+	if registry.registration_with_constructor(identity.id) != none {
 		return error('NotSupportedError: constructor is already in use')
 	}
 	mut local_name := name
@@ -238,6 +249,7 @@ pub fn (mut registry CustomElementRegistry) define(name string, constructor Cust
 	defer {
 		registry.element_definition_is_running = false
 	}
+	constructor := read_metadata(identity)!
 	mut lifecycle_callbacks := []string{}
 	for callback in custom_element_reaction_names() {
 		if callback in constructor.lifecycle_callbacks && callback !in lifecycle_callbacks {
@@ -256,13 +268,13 @@ pub fn (mut registry CustomElementRegistry) define(name string, constructor Cust
 		form_associated_: constructor.form_associated
 		disable_internals_: 'internals' in constructor.disabled_features
 		disable_shadow_: 'shadow' in constructor.disabled_features
-		constructor_id_: constructor.id
+		constructor_id_: identity.id
 		lifecycle_callbacks_: lifecycle_callbacks.clone()
 		exception_reporter_: constructor.exception_reporter
 	}
 	registration := &CustomElementRegistration{
 		definition: definition
-		constructor_id: constructor.id
+		constructor_id: identity.id
 		lifecycle_callbacks: lifecycle_callbacks
 	}
 	registry.definitions_ << registration
@@ -275,7 +287,7 @@ pub fn (mut registry CustomElementRegistry) define(name string, constructor Cust
 	}
 	if promise := registry.when_defined_promise_map_[name] {
 		mut pending := unsafe { promise }
-		pending.resolve(dom.js_number(f64(constructor.id)))
+		pending.resolve(dom.js_number(f64(identity.id)))
 		registry.when_defined_promise_map_.delete(name)
 	}
 }
