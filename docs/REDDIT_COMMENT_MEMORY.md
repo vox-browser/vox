@@ -1352,3 +1352,20 @@ independently sampled, and no new five-minute or idle-growth bound is establishe
 [shared Dawn receipt](benchmark-results/reddit-comment-memory-2026-11-03-dawn-shared.json)
 retains all attempts, focused checks, input identities, guard exits and private
 artifact hashes under `Build/reddit-comment-memory-20261103-dawn-shared/`.
+
+Post-fix injected diagnostics observe about 211 MB in the main process's
+graphics ledger and 306 MB internal memory at its sampled peak, with the filter
+helper additional. Internal memory falls toward 237 MB after initial painting.
+A bitmap probe records fifteen 3416 × 2130 frame-bitmap requests and one
+opacity-canvas request; this is not a count of simultaneously live/resident
+buffers. It finds no large opacity-result bitmap in its sampled size range, so
+tiling that result has no demonstrated benefit for this page.
+
+A private queue-sharing prototype still peaks at 541,494,056 B after its provider
+lookup succeeds and establishes no consistent additional reduction. Two earlier
+provider-ineligible attempts and two allocation interposers that abort before
+navigation remain recorded and receive no optimization credit. No queue-sharing,
+opacity policy or allocator-probe code is shipped. The
+[diagnostic follow-up receipt](benchmark-results/reddit-comment-memory-2026-11-03-dawn-followup.json)
+retains these attempts and the remaining memory attribution; the shared
+production build is still pending.
