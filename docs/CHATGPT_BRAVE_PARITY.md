@@ -27,10 +27,13 @@ Both receipts include hashes for committed PNG evidence under `parity/raw/`.
 
 The scale-2 follow-up remains open: the frozen 1024×768 Retina comparison
 improves from 47,705 to 31,350 differing pixels after device-aware paint
-snapping. Scale-1 parity remains exact at all three sizes. The
+snapping, then to 15,056 after device-aware font metrics and leading.
+Scale-1 parity remains exact at all three sizes. The
 [Retina receipt](parity/chatgpt-retina-20261103.json) retains both captures,
-identities, checks and rejected diagnostics; this is a focused source-browser
-result, without a new production or live Retina claim.
+identities, checks and rejected diagnostics; the
+[font receipt](parity/chatgpt-retina-fonts-20261103.json) retains the next
+improvement. These are focused source-browser results, without a new
+production or live Retina claim.
 
 The earlier continuation used `Build/chatgpt-css-error-lifetime-20261102/`.
 That homepage loaded suggestion cards and their Blob-backed icons, used Brave's
@@ -77,6 +80,27 @@ memory guards, compiles use the default 12 GiB guard, and executable/native
 library/resource identities remain unchanged throughout each accepted capture.
 The [Retina receipt](parity/chatgpt-retina-20261103.json) includes the retained
 failing tests, rejected font-changing Brave diagnostic and unstable baseline.
+
+`178c506e9` rounds inline font ascent, descent, line gap and half-leading on
+the device grid while preserving the selected CSS font instance and its
+fractional x-height. Normal line height follows those metrics. Already scaled
+layout divides out its coordinate scale, and LibWeb metrics retain their
+previous behavior. A 17px system font's raw ascent of 16.435547 becomes 16.5
+at density 2 instead of 16; this removes the composer's one-device-pixel
+baseline error. The entire sidebar also becomes pixel-exact.
+
+The standalone `device-pixel-font-metrics` fixture matches Brave at zero pixels
+across 1600×1200 image pixels. It covers 12px, 14px and 17px system text,
+fractional line leading, semibold text and normal line height while inline SVG
+keeps CSS-coordinate layout. Five new tests pass in all three allocator modes,
+covering metric-cache immutability, legacy ascent adjustments, invalid scales,
+zero-size struts, negative leading, display changes and both coordinate spaces.
+Existing inline-metric/cache, inline geometry, device-layout and style projection
+tests pass. The full page improves from 31,350 to 15,056 differing pixels;
+small glyph/underline differences and shadows remain. All three scale-1
+viewports still match exactly. The [font receipt](parity/chatgpt-retina-fonts-20261103.json)
+retains the unchanged-reference checks, source/browser identities and a rejected
+test-driver report-name collision.
 
 ## November 3: fractional breakpoints and additional viewports
 

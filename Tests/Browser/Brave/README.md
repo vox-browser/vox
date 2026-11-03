@@ -957,6 +957,13 @@ and validation results.
 
 `device-layout-inline-precision` checks native scale 2 fractional form-control
 heights, fixed line heights, `ex` widths, middle alignment and soft line breaks.
+`device-pixel-font-metrics` checks presenting-grid font metrics and half-leading
+without scaling the selected font instance. It includes 12px, 14px and 17px
+system text, fractional line height, semibold text and normal line height.
+Inline SVG keeps layout in CSS coordinates. Its raw 1600×1200 Brave reference
+uses an 800×600 CSS viewport, `--windowed --scale 2`, and matches the focused
+source browser exactly without downsampling.
+
 `device-pixel-paint-grid` checks device-pixel snapping while inline SVG keeps
 HTML layout in CSS coordinates. Fractional solid fills, opaque and translucent
 rounded borders, and text-line origins use the presenting grid. Its unchanged
