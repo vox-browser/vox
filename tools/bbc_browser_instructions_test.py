@@ -877,6 +877,26 @@ class BBCInstructionTests(unittest.TestCase):
                 run_trial('control', 'same-app', 'control', args)
         self.assertIs(args.vox_environment, environment)
 
+    def test_descendant_navigable_scan_control_is_isolated_and_restored_after_failure(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
+                               control_retain_descendant_navigable_scan=True)
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_RETAIN_DESCENDANT_NAVIGABLE_SCAN='1')),
+                               ('vox', environment), ('brave', environment)])
+        self.assertIs(args.vox_environment, environment)
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
+
+
     def test_uncached_item_paint_control_is_isolated_and_restored_after_failure(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
@@ -896,6 +916,11 @@ class BBCInstructionTests(unittest.TestCase):
                 run_trial('control', 'same-app', 'control', args)
         self.assertIs(args.vox_environment, environment)
 
+
+    def test_descendant_navigable_control_requires_a_control_app(self):
+        with self.assertRaises(SystemExit):
+            parse_args(['--archive', 'fixture', '--output', 'out',
+                        '--memory-guard-registry', 'registry', '--control-retain-descendant-navigable-scan'])
 
     def test_item_paint_control_requires_a_control_app(self):
         with self.assertRaises(SystemExit):
