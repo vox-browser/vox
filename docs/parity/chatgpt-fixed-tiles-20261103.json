@@ -1,0 +1,464 @@
+{
+  "version": 1,
+  "feature_commit": "635ceb1b66e51006dae5774206baeb4130cb76c4",
+  "scope": "Fresh processes rendering the frozen original guest DOM and archived original styles/resources at scale 1. Candidate is a focused source browser, not a production bundle. No current live application, signed-in, other-route, responsive-script or performance claim.",
+  "evidence_root": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103",
+  "control": {
+    "results": [
+      {
+        "viewport": [
+          800,
+          600
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 14,
+        "max_channel_error": 2,
+        "bounds": [
+          571,
+          452,
+          713,
+          459
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1280,
+          800
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 14,
+        "max_channel_error": 2,
+        "bounds": [
+          699,
+          468,
+          841,
+          475
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+  },
+  "candidate": {
+    "results": [
+      {
+        "viewport": [
+          800,
+          600
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1280,
+          800
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+  },
+  "control_identity": {
+    "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/layer-origin-3/browser": "2806517e69362d4087f4ad88af4b1eca484bc1200d5f511e5e838eb6f4f3dd72"
+  },
+  "candidate_identity": {
+    "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/layer-origin-final-9/browser": "9fb9e202e5628c0e1859806688d7405f1d26812d0d57dce2d54e53bd813a63e2"
+  },
+  "native_libraries": {
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "0be8dd155ae8ff446b52ae4e34485145673f661dd27f48e5c09fce52d94bac31",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "510b6f913d4fd3c4200d5afeb990438935c0cd37ede83f52029bfb4645e98f08",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "25a64f6149d4e96bb56a3313373ba5d37d690af81aacbfd48a2513e66dc8fe51",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+  },
+  "native_libraries_match_control": true,
+  "brave_identity": {
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+  },
+  "frozen_sha256": "ae0edf7118bf02d811f42f431070f77c1bcc5827a022a6ddb5761287a2586a06",
+  "archive_manifest_sha256": "30223364573900b18187a21bd689f245047f3cf4e0b0f4abfa7c44d1cd0fccdf",
+  "response_entries": 745,
+  "references": {
+    "1024x768": "b9e2580821127a1ee490babf2bf3aec18ca87521e96e476ea6cae2bde36101ca",
+    "1280x800": "8d13018ebbf6e375c7de7a84afd17c1102aae5557ddb3ed4acfa8f3fe67d781a",
+    "800x600": "d68fb62c0b5b5270a615c3f28c5019348c6c6a823d7bdbd1d02d0706a0a8686c"
+  },
+  "focused": [
+    {
+      "mode": "default",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "mode": "default",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "mode": "none",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "mode": "none",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "mode": "prealloc",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "mode": "prealloc",
+      "stage": "runtime",
+      "exit": 0
+    }
+  ],
+  "regressions": [
+    {
+      "test": "layout/chromium_raster_layers_test.v",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_raster_layers_test.v",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_sticky_raster_bounds_test.v",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_sticky_raster_bounds_test.v",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_fixed_raster_bounds_test.v",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_fixed_raster_bounds_test.v",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_fixed_raster_identity_test.v",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_fixed_raster_identity_test.v",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_fixed_paint_metadata_test.v",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_fixed_paint_metadata_test.v",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_paint_chunk_metadata_test.v",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "test": "layout/chromium_paint_chunk_metadata_test.v",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "test": "main_chromium_msaa_grid_test.v",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "test": "main_chromium_msaa_grid_test.v",
+      "stage": "runtime",
+      "exit": 0
+    }
+  ],
+  "focused_source_stability": {
+    "stable": true,
+    "after": {
+      "layout/chromium_raster_layers.v": "f8ab92ec4d0d911ce10d9e37323f881080fbc239ff69d87282f2799f735d7bd4",
+      "layout/chromium_paint_chunk_metadata.v": "f18edae7f43d58b6ed753d9ebc46e4d2d196e36946d695e40b0418eabe1b8b8f",
+      "layout/chromium_fixed_recording_bounds.v": "25f0753b4923b7cab0c709fa4a0551b6ede9dedbf380f1f0ad8e27b4a783916e",
+      "layout/chromium_fixed_recording_bounds_test.v": "aa63905dc5d12e5a9bc6ab88899a66dfcb40184c3e81b1a53a59b78ef32a965e"
+    }
+  },
+  "regression_source_stability": {
+    "stable": true,
+    "after": {
+      "layout/chromium_raster_layers.v": "f8ab92ec4d0d911ce10d9e37323f881080fbc239ff69d87282f2799f735d7bd4",
+      "layout/chromium_paint_chunk_metadata.v": "f18edae7f43d58b6ed753d9ebc46e4d2d196e36946d695e40b0418eabe1b8b8f",
+      "layout/chromium_fixed_recording_bounds.v": "25f0753b4923b7cab0c709fa4a0551b6ede9dedbf380f1f0ad8e27b4a783916e",
+      "layout/chromium_raster_layers_test.v": "c6b359a5a159e7cb796d1e2619cd05283a7981868c38ef7e546476439fe06a34",
+      "layout/chromium_sticky_raster_bounds_test.v": "4196287b7383a3cfd7dec6c9a291121dfc0cc018f2c24293c9bf4df325320c70",
+      "layout/chromium_fixed_raster_bounds_test.v": "a4d362ce39929b240f086ca030269436e2090d2f6c9a0fdcf35231e5bb9b4fee",
+      "layout/chromium_fixed_raster_identity_test.v": "190b3e7cd585fab4a3f7bc9a7fbd38a0c704805c70eaf71eff74d52973e4be34",
+      "layout/chromium_fixed_paint_metadata_test.v": "866b91f3a671751644af1c3960fecab3cde64e2f78b24d5f70f54bb5edfd0148",
+      "layout/chromium_paint_chunk_metadata_test.v": "03cfb959af6625b4b09f0ffd235c5380bf7c9d8347654aa7dd686795b4ad9d0a",
+      "main_chromium_msaa_grid_test.v": "2712535390ebbfe133ce0f62e01e573ce6383ade73cf180a84e74b640a98838e"
+    }
+  },
+  "test_functions": {
+    "layout/chromium_fixed_recording_bounds_test.v": 3,
+    "layout/chromium_raster_layers_test.v": 25,
+    "layout/chromium_sticky_raster_bounds_test.v": 5,
+    "layout/chromium_fixed_raster_bounds_test.v": 1,
+    "layout/chromium_fixed_raster_identity_test.v": 3,
+    "layout/chromium_fixed_paint_metadata_test.v": 2,
+    "layout/chromium_paint_chunk_metadata_test.v": 10,
+    "main_chromium_msaa_grid_test.v": 4
+  },
+  "bounded_prealloc": {
+    "bounded_realloc_symbol": true
+  },
+  "fixed_sibling_input": {
+    "exit": 0,
+    "identity_stable": true,
+    "fixture_stable": true,
+    "fixture_sha256": "3bd3b9672d7e6ea50297d5516503f526780ce553ee8467e179cba7517d78e50d",
+    "reference_stable": true,
+    "reference_sha256": "124d2296a825948e510bfbee2a7b17e36ad8dc64a7fb124a1a83c0679ebdad03",
+    "differing_pixels": 0,
+    "max_channel_error": 0,
+    "bounds": null,
+    "ready": "complete",
+    "native_reported_errors": [],
+    "url": "file:///Users/alex/code/vox2/Tests/Browser/Ref/fixed-sibling-raster.html"
+  },
+  "fixed_sibling_reference": {
+    "exit": 0,
+    "identity_stable": true,
+    "fixture_stable": true,
+    "fixture_sha256": "9357716969fec1ea43dcc61a1d20fee1eb3151f22f89ead697f0e724c1ede0fa",
+    "reference_stable": true,
+    "reference_sha256": "124d2296a825948e510bfbee2a7b17e36ad8dc64a7fb124a1a83c0679ebdad03",
+    "differing_pixels": 0,
+    "max_channel_error": 0,
+    "bounds": null,
+    "ready": "complete",
+    "native_reported_errors": [],
+    "url": "file:///Users/alex/code/vox2/Tests/Browser/Ref/fixed-sibling-raster.ref.html"
+  },
+  "brave_tiling": {
+    "trace": "brave-tiles-2/trace.json.gz",
+    "trace_sha256": "7a34bcace26fe7f90cf847073283532ef81883ff3ab5a95f319a52bea1e4cdd5",
+    "completion": {
+      "dataLossOccurred": false,
+      "stream": "1",
+      "traceFormat": "json",
+      "streamCompression": "none"
+    },
+    "assessment": {
+      "identity_stable": true,
+      "before_after": 0,
+      "before_reference": 0,
+      "after_reference": 0
+    },
+    "layer_origin": [
+      144,
+      61
+    ],
+    "layer_size": [
+      996,
+      667
+    ],
+    "tiling_rect": [
+      0,
+      128,
+      996,
+      349
+    ],
+    "tile_rects": [
+      [
+        0,
+        128,
+        1024,
+        256
+      ],
+      [
+        0,
+        382,
+        1024,
+        256
+      ]
+    ],
+    "source_picture_sha256": "664108a89b52f9dd8e3f6029bc8c8d73b59f1d2a5aab2da7afa9282f1dc79eac",
+    "native_replay": {
+      "inputs": [
+        {
+          "name": "brave",
+          "source": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/brave-print-2/pictures/layer_3.skp",
+          "sha256": "664108a89b52f9dd8e3f6029bc8c8d73b59f1d2a5aab2da7afa9282f1dc79eac",
+          "width": 1024,
+          "height": 256,
+          "matrix": [
+            1,
+            0,
+            0,
+            0,
+            1,
+            -382,
+            0,
+            0,
+            1
+          ],
+          "box": [
+            416,
+            5,
+            581,
+            25
+          ]
+        },
+        {
+          "name": "vox",
+          "source": "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/native-picture-final/picture-31.skp",
+          "sha256": "3f023da9a40d73969a1d16467b61dfbc766da3d16569cfa2362cf895a1041ecd",
+          "width": 1024,
+          "height": 256,
+          "matrix": [
+            1,
+            0,
+            -144,
+            0,
+            1,
+            -290,
+            0,
+            0,
+            1
+          ],
+          "box": [
+            416,
+            218,
+            581,
+            238
+          ]
+        }
+      ],
+      "library": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+      "library_sha256": "25a64f6149d4e96bb56a3313373ba5d37d690af81aacbfd48a2513e66dc8fe51",
+      "library_stable": true,
+      "differing_pixels": 0,
+      "max_error": 0,
+      "bounds": null
+    }
+  },
+  "rejected_reduction": {
+    "scope": "Rejected reduced visual fixture; control and candidate both retain 18 differing pixels. No regression acceptance claim.",
+    "fixture_sha256": "59aae700b45fdf84d6b37ffd5f4fbf8032545e55d039b22c9528ee8ad8ec12f8",
+    "reference_sha256": "c015718ec2a223f3732a0338036afadc7ead394f0a2fbdb95e41972e514ec2fa",
+    "control": "../tiling-fixture-control-9/assessment.json",
+    "candidate": "../tiling-fixture-candidate-9/assessment.json"
+  },
+  "production_validation": "Pending a completed shared production bundle containing this fix."
+}

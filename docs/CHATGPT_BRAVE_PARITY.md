@@ -2,9 +2,10 @@
 
 The earlier guest homepage and live ChatGPT send/reply workflow were recorded
 as pixel-exact against Brave at 1024×768, scale 1. The November 3 follow-up fixes
-a fractional media-query breakpoint and makes a refreshed frozen guest homepage
-pixel-exact at 800×600. That refreshed page still differs at fourteen border
-pixels at 1024×768 and 1280×800; full parity remains open for that variant.
+a fractional media-query breakpoint and the fixed picture's partial-recording
+tile origin. The refreshed frozen guest homepage is now pixel-exact at
+800×600, 1024×768 and 1280×800 on the focused source browser. Validation of the
+tile-origin fix in a completed shared production bundle remains pending.
 Original frontend/static captures use SOCKS and are replayed; earlier ordinary
 conversation checks kept backend, identity and telemetry requests live.
 Fresh-session captures and their request counts are recorded separately below.
@@ -16,6 +17,8 @@ cannot currently be independently rechecked. New evidence is under
 `Build/chatgpt-responsive-20261103/`; its principal results, input hashes and
 browser identities are also committed in the
 [responsive parity receipt](parity/chatgpt-responsive-20261103.json).
+The subsequent [fixed-tile receipt](parity/chatgpt-fixed-tiles-20261103.json)
+records the exact three-viewport result and its focused browser identity.
 
 The earlier continuation used `Build/chatgpt-css-error-lifetime-20261102/`.
 That homepage loaded suggestion cards and their Blob-backed icons, used Brave's
@@ -89,13 +92,78 @@ The captures use scale 1, ten-second settling, private profiles, fresh browser
 processes, and separate 3 GiB runtime memory guards. This frozen comparison
 does not establish responsive JavaScript behavior or live application execution.
 
-The remaining fourteen pixels have maximum channel error 2 and lie along the
+At that point, the remaining fourteen pixels had maximum channel error 2 along the
 bottom corners of the rounded “What can you do?” border. Independent Skia probes
-reproduce that difference when the border shares a multisampled surface. Moving
-the tile origin did not remove it. Native picture dumps and Brave paint logs
-retain the investigation; no speculative renderer change, reference adjustment
-or tolerance increase was shipped. The standalone regression fixture and its
-Brave PNG are committed with the breakpoint fix.
+reproduced that difference when the border shared a multisampled surface. The
+initial tile-origin probes did not remove it. Those failed probes remain
+historical diagnostics; the complete tile trace below identifies the correct
+origin. The standalone media-query fixture and its Brave PNG remain unchanged.
+
+## November 3: fixed hit-test bounds and exact partial raster tiles
+
+`635ceb1b6` retains hit-test-only fixed-container geometry while tracking the
+drawn recording bounds separately. Compatible viewport anchors can contribute
+that empty geometry to an earlier fixed picture; drawing commands keep their
+existing fixed-owner identity. Opposite anchors, independently composited
+surfaces and scrolling descendants retain their own recordings. The added
+fixed-container mode preserves ordinary drawing-client grouping and the
+existing unsupported root-culling fallback.
+
+Chromium's
+[partial-recording tiling calculation](https://chromium.googlesource.com/chromium/src/+/156.0.8078.48/cc/tiles/picture_layer_tiling.cc#884)
+snaps the recorded rectangle to 128 device texels within the complete layer's
+coordinate space. A complete, non-lossy Brave trace places this page's main
+layer at `(144,61)`, size `996×667`, with tiling rectangle `(0,128,996,349)`.
+Its raster tiles begin at layer y=128 and y=382. The button's bottom corners
+therefore paint in the second tile, which has none of the composer's SVG paths.
+Vox previously started its recording at document y=230 and put the button and
+composer paths together in one multisampled tile. The fixed-container geometry
+restores the partial recording's document y=189 origin. Replaying Brave's own
+picture at its traced second-tile origin independently reproduces the border
+at zero pixels, without color adjustments.
+
+The small layout reduction independently confirms this geometry in Brave:
+an unpainted fixed sibling extends a layer to `(100,20,800,700)`, while the
+recorded tile rectangle is `(128,128,92,142)` in that layer. The focused V tests
+check the corresponding `(228,148,92,142)` document rectangle, device scaling,
+resize/reuse, opposite anchors and nested compositor/scroll exclusions.
+
+| Document viewport | Matched source control | Source browser with fixed tiles |
+| --- | ---: | ---: |
+| 800×600 | 0 differing pixels | **0** |
+| 1024×768 | 14 | **0** |
+| 1280×800 | 14 | **0** |
+
+`layer-origin-control-matrix-6/` and `layer-origin-final-matrix-9/` use fresh
+processes, private profiles, scale 1, ten-second settling and the same unchanged
+Brave references and original archived resources. All four native libraries
+match between control and candidate. Every capture has stable identities and
+inputs, matching document/viewport/PNG identity, complete readiness and empty
+native error/script diagnostic arrays. The candidate is a directly compiled
+no-GC source browser linked to the existing canonical native libraries; it is
+not a production-bundle or performance result.
+
+All three new test functions pass in default, no-GC and verified bounded
+prealloc modes. Fifty existing layer, sticky, fixed-owner, hit-test and MSAA-grid
+test functions also pass. All twenty guarded compile/runtime steps exit zero,
+with relevant source hashes stable. The existing fixed-sibling visual pair
+remains exact against the unchanged Brave capture. Evidence is in
+`fixed-recording-focused-9/`, `fixed-recording-regressions-9/` and the two
+`fixed-sibling-*-final-9/` directories under the private evidence root.
+
+Rejected candidates remain retained: broad metadata regrouping introduced
+55/230/5,667 differences across the three viewports, and trimming every fixed
+recording introduced a single sidebar-icon pixel at each size. Neither was
+shipped. GPU format, resolve-mode and Skia-version probes did not fix the original
+border. A separate single-SVG reduction still differs at eighteen pixels in
+both control and candidate; its input/reference are preserved in
+`rejected-single-svg-reduction-9/`, with no acceptance claim for that case.
+
+The latest completed production bundle predates this final fix; a shared build
+request is queued. The exact frozen-page result does not revalidate the current
+live frontend, backend conversation workflow, responsive scripts, signed-in
+sessions or other routes. Earlier live results above remain historical because
+their raw evidence was removed externally.
 
 ## Captured workload
 
