@@ -1292,3 +1292,56 @@ records the focused checks, raw component counts, all page attempts, native
 library identities, visual checks and guard exits. Account-bearing page bytes,
 screenshots and logs remain private under
 `Build/reddit-comment-memory-20261103-gpu-upload/`.
+
+## Shared Dawn picture transport and buffer initialization
+
+Commit `025a4a624` keeps Dawn's existing GPU rasterization while transferring
+supported pixels through IOSurface on unified-memory Metal devices. CPU access
+follows Skia submission, Dawn `EndAccess`, queue completion and an IOSurface
+lock; GPU access resumes through `BeginAccess`. Immutable images retain their
+surface owner through Skia's release callback. Backdrop clears finish before
+CPU writes, and batched output publishes only after every request succeeds.
+Unsupported devices/formats and mipmaps retain the original transport.
+
+Two authenticated changes to the pinned Dawn Skia build avoid remaining small
+GPU transfers: static meshes initialize in directly mapped buffers, and the
+16-byte unused binding buffer receives explicit CPU zeros. Both retain the
+original path without extended buffer mapping support; ordinary resource
+initialization remains enabled. Static-buffer tests retain their original copy
+path. The existing idle-only context handoff is preserved.
+
+All **104 exact native comparisons** pass, covering single/batched regions,
+target reuse, translucent backdrops, tagged images, padded BGRA/RGBA uploads,
+opaque/premultiplied data, source lifetime and mipmap fallback. Bounds and CPU/GPU
+ownership rejection checks also pass. Four authenticated patch-installation tests
+pass. Two fresh alternating focused pairs have identical output hashes and
+physical-footprint growth of 349,520,136/349,159,688 B for controls versus
+209,518,880/209,518,904 B for shared transport: **139,640,784 B** minimum
+observed component reduction. This post-draw metric is not browser peak RAM.
+
+Four alternating 20-second page observations use the same completed executable
+`6e79a2f8…`, receipt `20261103-134808-a021d411`, with pinned explicit native
+library overrides. Controls use the former implementation/original Skia archive;
+candidates use the final transport and both patched objects. All normal author
+script/content audits, identities and browser/guard exits pass.
+
+| Attempt | Observed simultaneous peak (B) | Final two-second median (B) |
+| --- | ---: | ---: |
+| Control 1 | 679,676,640 | 239,355,896 |
+| Shared Dawn 1 | 552,864,576 | 237,111,360 |
+| Control 2 | 683,936,504 | 238,798,864 |
+| Shared Dawn 2 | 544,869,064 | 238,045,152 |
+
+All twelve canonical visual comparisons are pixel-exact on the candidate with
+unchanged references, tolerances and input/runtime hashes. An earlier visual
+attempt has five exact cases but is rejected after the canonical executable
+changes. Earlier transport-only controls and the static/null-buffer prototype
+use different executables and supply no cross-build optimization credit.
+
+These overrides validate the implementation, not its installation in a completed
+production bundle. Polling can miss spikes/helpers, backing scale is not
+independently sampled, and no new five-minute or idle-growth bound is established.
+**The 500,000,000 B peak cap and live-site validation remain open.** The
+[shared Dawn receipt](benchmark-results/reddit-comment-memory-2026-11-03-dawn-shared.json)
+retains all attempts, focused checks, input identities, guard exits and private
+artifact hashes under `Build/reddit-comment-memory-20261103-dawn-shared/`.
