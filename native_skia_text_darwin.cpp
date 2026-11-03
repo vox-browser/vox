@@ -3987,6 +3987,13 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     auto local_bounds = paint.canComputeFastBounds()
         ? paint.computeFastBounds(rounded_rect.rect(), &paint_bounds_storage)
         : rounded_rect.rect();
+    // A rounded stroke has an exact outer contour at half the stroke width.
+    // Preserve that natural surface extent for compound CSS borders: the
+    // generic stroke/miter and AA padding changes MSAA edge rounding.
+    bool const tight_compound_stroke = s_chromium_painting && fill == 0 && has_underlay
+        && matrix.isScaleTranslate();
+    if (tight_compound_stroke)
+        local_bounds = rounded_rect.rect().makeOutset(thickness / 2, thickness / 2);
     if (has_underlay)
         local_bounds.join(underlay_rect.rect());
     if (auto input = s_isolated_input_recordings.find(destination);
@@ -4001,7 +4008,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         || shared_recording_defers_leaf_raster(destination, matrix.mapRect(local_bounds).makeOutset(2, 2))) return 1;
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
-            canvas_height, anti_alias ? 2.0f : 0.0f, region))
+            canvas_height, anti_alias && !tight_compound_stroke ? 2.0f : 0.0f, region))
         return 1;
     if (!leaf_raster_region_intersects_destination_clip(destination, canvas_height, region))
         return 1;
