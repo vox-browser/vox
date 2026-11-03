@@ -1,6 +1,7 @@
 module browserjs
 
 import libjs
+import platform
 
 
 #flag darwin -framework JavaScriptCore
@@ -107,6 +108,12 @@ fn javascript_core_syntax_position(context voidptr, exception voidptr, property 
 }
 
 fn evaluate_with_javascript_core(context voidptr, source ScriptSource, stringify_result bool, positioned_syntax_errors bool) !string {
+	result := evaluate_javascript_core_text(context, source, stringify_result, positioned_syntax_errors, false)!
+	return result.value
+}
+
+fn evaluate_javascript_core_text(context voidptr, source ScriptSource, stringify_result bool,
+	positioned_syntax_errors bool, temporary bool) !TemporaryText {
 	// Both engines must consume the entire same UTF-16 input, including NULs.
 	script := js_source_string(source.code)
 	if script == unsafe { nil } {
@@ -139,7 +146,20 @@ fn evaluate_with_javascript_core(context voidptr, source ScriptSource, stringify
 		return error(message)
 	}
 	if value == unsafe { nil } || !stringify_result {
-		return ''
+		return TemporaryText{}
 	}
-	return js_string_to_v(context, value)
+	mut workspace := platform.ThreadScratchScope{}
+	// Evaluation and author object coercion can publish persistent native state.
+	// Only a primitive string's conversion bytes enter the temporary workspace.
+	if temporary && C.JSValueIsString(context, value) {
+		workspace = platform.begin_thread_scratch('temporary evaluated text')
+	}
+	text := js_string_to_v(context, value) or {
+		workspace.leave()
+		message := err.msg().clone()
+		workspace.finish()
+		return error(message)
+	}
+	workspace.leave()
+	return TemporaryText{value: text, workspace: workspace}
 }

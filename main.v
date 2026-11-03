@@ -3238,11 +3238,13 @@ fn (mut app BrowserApp) poll_javascript_tasks() {
 	if app.document == unsafe { nil } || app.js_runtime == unsafe { nil } { return }
 	mut runtime := app.js_runtime
 	if !runtime.take_document_state_dirty() { return }
-	state := runtime.evaluate_host('__ladybirdFinalize()') or {
+	state := runtime.evaluate_host_temporary_text('__ladybirdFinalize()') or {
 		app.js_messages << 'JavaScript asynchronous callback: ${err.msg()}'
 		return
 	}
-	navigation := apply_javascript_runtime_state(app.document, state, runtime, mut app.js_messages)
+	defer { state.finish() }
+	navigation := apply_javascript_runtime_state(app.document, state.value, runtime, mut app.js_messages)
+	state.finish()
 	runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	replayed_effects := runtime.take_document_replay_effects()
 	app.synchronize_javascript_task_paint(replayed_effects)

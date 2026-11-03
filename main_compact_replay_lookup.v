@@ -105,7 +105,13 @@ fn compact_replay_element_keys(state map[string]json2.Any) []string {
 
 fn apply_javascript_runtime_state(document &dom.Document, encoded string,
 	runtime &browserjs.Runtime, mut messages []string) ?string {
-	state := javascript_replay_state(encoded, mut messages) or { return none }
+	mut storage := document.native_storage()
+	mut owner := platform.RetainedArenaScope{}
+	if storage != unsafe { nil } { owner = storage.enter_nested() }
+	defer { owner.finish() }
+	replay := compact_query_replay_snapshot(document, encoded, mut messages) or { return none }
+	defer { replay.workspace.finish() }
+	state := replay.state
 	note_compact_replay_effects(state, runtime)
 	elements := runtime.canvas_elements_for_keys(compact_replay_element_keys(state))
 	return apply_decoded_javascript_state(document, state, elements, mut messages)
