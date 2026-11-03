@@ -24,6 +24,9 @@ fn retained_paint_payload_equal[T](actual T, expected T) bool {
 		|| T is &PaintSVGSolidColorData || T is &PaintSVGGradientData
 		|| T is &PaintLocalBorderData || T is &PaintBoxShadowData
 		|| T is &PaintBackgroundLayerData || T is &PaintImageData
+		|| T is &BlockBoxMediaData || T is &BlockBoxDecorationData
+		|| T is &BlockBoxFilterData || T is &BlockBoxScrollSnapData
+		|| T is &BlockBoxClipData || T is &BlockBoxCanvasData || T is &BlockBoxSVGData
 		|| T is &PaintSVGPathData || T is &LinearGradient
 		|| T is &painting.TableCellCoordinates || T is &painting.BordersDataWithElementKind
 		|| T is &painting.FieldSetPaintable || T is &CompatibilityOverlayData
