@@ -36,18 +36,20 @@ fn test_idle_maintenance_discards_only_the_recycle_cache_payload() {
 		assert bytes[0] == 83 && bytes[bytes.len - 1] == 83
 		scratch.finish()
 		if arenas_poisoned() { return }
-		block := unsafe { &PreallocBlockView(current_block()) }
-		cache := unsafe { &PreallocRecycleCacheView(block.recycle_cache) }
+		cache := acquire_prealloc_recycle_cache()
 		assert cache.count > 0
 		assert cache.count <= prealloc_recycle_cache_slots()
 		count := cache.count
 		capacity := cache.bytes
+		release_prealloc_recycle_cache(cache)
 		live := []u8{len:1024, init:19}
 		release_unused_browser_memory()
+		_ = acquire_prealloc_recycle_cache()
 		assert cache.count == count && cache.bytes == capacity
 		for index in 0 .. count {
 			assert C.vox_arena_test_resident_bytes(cache.start(index), uint(cache.size(index))) == 0
 		}
+		release_prealloc_recycle_cache(cache)
 		assert live[0] == 19 && live[1023] == 19
 		refill := begin_thread_scratch('recycled idle refill')
 		replacement := []u8{len:128 * 1024, init:47}

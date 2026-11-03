@@ -54,7 +54,7 @@ fn test_performance_observer_binding_delivers_native_entries_and_preserves_wrapp
 	assert runtime.evaluate_host('JSON.stringify(log)')! == r'[true,true,true,true,"same,resource,same",2,2,true,0,"{\"name\":\"same\",\"entryType\":\"mark\",\"startTime\":3,\"duration\":0}"]'
 	assert runtime.evaluate_host(r'
  let failures=0;for(const read of [()=>PerformanceEntry.prototype.toJSON.call({}),()=>PerformanceObserverEntryList.prototype.getEntries.call({})]){try{read()}catch(e){if(e instanceof TypeError)failures++}}
- Object.prototype.toString.call(saved)==="[object PerformanceEntry]"&&failures===2&&observer.takeRecords().length===0;
+ Object.prototype.toString.call(saved)==="[object PerformanceMark]"&&saved instanceof PerformanceMark&&failures===2&&observer.takeRecords().length===0;
  ')! == 'true'
 }
 

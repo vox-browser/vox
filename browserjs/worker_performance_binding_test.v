@@ -97,3 +97,23 @@ fn test_module_worker_entry_can_use_native_performance_before_its_first_message(
 	receiver.define_value_host_function('__workerPerformance', fn [actual] (_ voidptr, _ []voidptr) !voidptr { return actual })!
 	assert receiver.evaluate_host('(()=>{const value=__workerPerformance();return value.native&&value.observer==="function"&&value.now>=0&&value.now<30000&&value.origin>0})()')! == 'true'
 }
+
+fn test_javascript_worker_marks_use_the_worker_clock_and_allow_navigation_timing_names() {
+	for module_worker in [false, true] {
+		mut runtime, environment := worker_performance_fixture(module_worker)!
+		defer { runtime.close() }
+		mut scope := environment.settings.window_or_worker_global_scope()!
+		assert runtime.evaluate_host(r'
+ globalThis.workerMark=performance.mark("navigationStart",{startTime:7,detail:{worker:true}});
+ const direct=new PerformanceMark("connectStart",{startTime:9});
+ workerMark instanceof PerformanceMark&&workerMark.startTime===7&&workerMark.detail.worker&&direct.name==="connectStart"&&
+ performance.getEntriesByName("navigationStart")[0]===workerMark&&performance.getEntriesByName("connectStart").length===0;
+ ')! == 'true'
+		assert scope.performance().get_entries_by_name('navigationStart', 'mark').len == 1
+		mut scratch := platform.begin_thread_scratch('worker mark detail')
+		assert runtime.evaluate_host('workerMark.detail.worker')! == 'true'
+		scratch.finish()
+		gc_collect()
+		assert runtime.evaluate_host('workerMark.detail.worker')! == 'true'
+	}
+}

@@ -38,7 +38,6 @@ mut:
 	previous       &PreallocBlockView = unsafe { nil }
 	next           &PreallocBlockView = unsafe { nil }
 	scope          voidptr
-	recycle_cache  voidptr
 	min_block_size int
 	is_scope       bool
 	mmap_allocated bool
@@ -62,33 +61,46 @@ mut:
 	finalized      i32
 }
 
-// V keeps two parallel arrays after this header. Derive their length from
-// the compiler's cache type rather than fixing it to a particular V version.
-struct PreallocRecycleCacheView {
-	count int
-	bytes int
-}
-
-fn prealloc_recycle_cache_slots() int {
-	$if prealloc {
-		payload_bytes := int(sizeof(VPreallocBlockCache)) - int(sizeof(PreallocRecycleCacheView))
-		slot_bytes := int(sizeof(voidptr) + sizeof(int))
-		assert payload_bytes > 0 && payload_bytes % slot_bytes == 0
-		return payload_bytes / slot_bytes
+// Current V shares recycled blocks between threads. Access its emitted C
+// record so the C compiler supplies field offsets and array capacity; a V-side
+// mirror must not guess the private allocator type's layout.
+$if prealloc {
+	struct C.VPreallocBlockPool {
+	mut:
+		lock   i32
+		count  int
+		bytes  i64
+		starts &voidptr
+		sizes  &int
 	}
-	return 0
-}
+	__global C.g_prealloc_block_pool C.VPreallocBlockPool
 
-fn (cache &PreallocRecycleCacheView) start(index int) voidptr {
-	assert index >= 0 && index < cache.count && cache.count <= prealloc_recycle_cache_slots()
-	return unsafe { (&voidptr(&u8(cache) + sizeof(PreallocRecycleCacheView)))[index] }
-}
+	fn C.v_prealloc_atomic_cas_i32(pointer &i32, expected int, desired int) int
+	fn C.v_prealloc_atomic_store_i32(pointer &i32, value int) int
 
-fn (cache &PreallocRecycleCacheView) size(index int) int {
-	assert index >= 0 && index < cache.count && cache.count <= prealloc_recycle_cache_slots()
-	return unsafe {
-		(&int(&u8(cache) + sizeof(PreallocRecycleCacheView)
-			+ prealloc_recycle_cache_slots() * int(sizeof(voidptr))))[index]
+	fn prealloc_recycle_cache_slots() int {
+		bytes := usize(&C.g_prealloc_block_pool.sizes) - usize(&C.g_prealloc_block_pool.starts)
+		assert bytes > 0 && bytes % sizeof(voidptr) == 0
+		return int(bytes / sizeof(voidptr))
+	}
+
+	fn acquire_prealloc_recycle_cache() &C.VPreallocBlockPool {
+		for C.v_prealloc_atomic_cas_i32(&C.g_prealloc_block_pool.lock, 0, 1) == 0 {}
+		return unsafe { &C.g_prealloc_block_pool }
+	}
+
+	fn release_prealloc_recycle_cache(cache &C.VPreallocBlockPool) {
+		C.v_prealloc_atomic_store_i32(unsafe { &cache.lock }, 0)
+	}
+
+	fn (cache &C.VPreallocBlockPool) start(index int) voidptr {
+		assert index >= 0 && index < cache.count && cache.count <= prealloc_recycle_cache_slots()
+		return unsafe { cache.starts[index] }
+	}
+
+	fn (cache &C.VPreallocBlockPool) size(index int) int {
+		assert index >= 0 && index < cache.count && cache.count <= prealloc_recycle_cache_slots()
+		return unsafe { cache.sizes[index] }
 	}
 }
 
@@ -550,10 +562,11 @@ pub fn (arena &Arena) trim_unused_pages() bool {
 fn trim_thread_arena_recycle_pages() {
 	$if prealloc {
 		verify_prealloc_layout()
-		block := unsafe { &PreallocBlockView(current_block()) }
-		if block == unsafe { nil } || block.recycle_cache == unsafe { nil } { return }
+		// Hold the allocator's own lock while retiring detached pages. Another
+		// thread must not take a pooled block until its remapping is complete.
+		cache := acquire_prealloc_recycle_cache()
+		defer { release_prealloc_recycle_cache(cache) }
 		// The metadata stays warm while only the detached payload pages retire.
-		cache := unsafe { &PreallocRecycleCacheView(block.recycle_cache) }
 		assert cache.count >= 0 && cache.count <= prealloc_recycle_cache_slots()
 		for index in 0 .. cache.count {
 			if C.vox_retire_unused_arena_pages(cache.start(index), uint(cache.size(index))) != 0 {

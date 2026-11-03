@@ -8,12 +8,33 @@ fn performance_observer_binding_factory() string {
  const prototypes=[{}, {}, {}];
  function PerformanceObserverEntryList(){throw new T("Illegal constructor")}
  function PerformanceEntry(){throw new T("Illegal constructor")}
+ const markPrototype=Object.create(prototypes[2]);
+ prototypes[4]=markPrototype;
+ function markArguments(name,options){
+  name=operate("string",null,name);
+  if(options!=null&&!object(options))throw new T("markOptions must be a dictionary");
+  options=options==null?{}:options;
+  const detail=options.detail,rawStart=options.startTime;
+  const start=rawStart===undefined?undefined:operate("markDouble",null,rawStart);
+  return [name,start,detail];
+ }
+ const PerformanceMark=new Proxy(function PerformanceMark(markName){throw new T("PerformanceMark constructor requires new")},{construct(target,args,newTarget){
+  if(args.length===0)throw new T("PerformanceMark requires a name");
+  const values=markArguments(args[0],args[1]),requested=newTarget.prototype;
+  const receiver=create(object(requested)?requested:markPrototype);
+  return operate("constructMark",receiver,...values);
+ }});
+ Object.setPrototypeOf(PerformanceMark,PerformanceEntry);
+ const markMethod={mark(name,options=undefined){
+  operate("performanceMarkBrand",this);if(arguments.length===0)throw new T("mark requires a name");
+  return operate("mark",this,...markArguments(name,options));
+ }}.mark;
  const PerformanceObserver=new Proxy(function PerformanceObserver(callback){throw new T("PerformanceObserver constructor requires new")},{construct(target,args,newTarget){
   if(args.length===0||typeof args[0]!=="function")throw new T("PerformanceObserver requires a callback function");
   const requested=newTarget.prototype,receiver=create(object(requested)?requested:prototypes[0]);
   operate("construct",receiver,args[0]);return receiver;
  }});
- for(const [index,constructor,name] of [[0,PerformanceObserver,"PerformanceObserver"],[1,PerformanceObserverEntryList,"PerformanceObserverEntryList"],[2,PerformanceEntry,"PerformanceEntry"]]){
+ for(const [index,constructor,name] of [[0,PerformanceObserver,"PerformanceObserver"],[1,PerformanceObserverEntryList,"PerformanceObserverEntryList"],[2,PerformanceEntry,"PerformanceEntry"],[4,PerformanceMark,"PerformanceMark"]]){
   define(constructor,"prototype",{value:prototypes[index],writable:false});
   define(prototypes[index],"constructor",{value:constructor,writable:true,configurable:true});
   define(prototypes[index],Symbol.toStringTag,{value:name,configurable:true});
@@ -43,6 +64,7 @@ fn performance_observer_binding_factory() string {
   const get=descriptor({get [name](){return operate(name,this)}},name).get;
   define(prototypes[2],name,{get,enumerable:true,configurable:true});
  }
- return function make(index,dropped){return index===3?(dropped===undefined?{}:{droppedEntriesCount:dropped}):create(prototypes[index])};
+ define(markPrototype,"detail",{get:descriptor({get detail(){return operate("markDetail",this)}},"detail").get,enumerable:true,configurable:true});
+ return function make(index,dropped){return index===5?markMethod:index===3?(dropped===undefined?{}:{droppedEntriesCount:dropped}):create(prototypes[index])};
 })'
 }

@@ -33,17 +33,22 @@ pub fn PerformanceMark.new(name string, options PerformanceMarkOptions, now f64,
 // The current time and principal-global kind are supplied by the translated
 // host boundary; the remaining steps mirror the constructor algorithm.
 pub fn PerformanceMark.create_for_constructor(mark_name string, mark_options PerformanceMarkOptions, now f64, window_context bool) !&PerformanceMark {
-	if window_context && mark_name in navigation_timing_entry_names {
-		return error("SyntaxError: '${mark_name}' is part of PerformanceTiming")
-	}
+	validate_mark_options(mark_name, mark_options, now, window_context)!
 	start_time := mark_options.start_time or { now }
-	if start_time < 0 {
-		return error('TypeError: startTime cannot be negative')
-	}
 	return &PerformanceMark{
 		entry: performancetimeline.PerformanceEntry.new(mark_name, 'mark', start_time, 0)
 		detail: if mark_options.detail_set { mark_options.detail } else { none }
 	}
+}
+
+// The actual-value binding performs the constructor's detail clone after these
+// checks and before allocating or publishing its native entry.
+pub fn validate_mark_options(mark_name string, mark_options PerformanceMarkOptions, now f64, window_context bool) ! {
+	if window_context && mark_name in navigation_timing_entry_names {
+		return error("SyntaxError: '${mark_name}' is part of PerformanceTiming")
+	}
+	start_time := mark_options.start_time or { now }
+	if start_time < 0 { return error('TypeError: startTime cannot be negative') }
 }
 
 pub fn PerformanceMark.construct_impl(mark_name string, mark_options PerformanceMarkOptions, now f64, window_context bool) !&PerformanceMark {

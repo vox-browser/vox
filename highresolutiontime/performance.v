@@ -389,7 +389,7 @@ fn (performance &Performance) filtered_entries(name ?string, kind ?string) []&pe
 }
 
 // Performance.cpp queues and buffers through its relevant global's mixin.
-fn (mut performance Performance) record_entry(entry &performancetimeline.PerformanceEntry) {
+pub fn (mut performance Performance) record_entry(entry &performancetimeline.PerformanceEntry) {
 	if queue := performance.host.queue_entry { queue(entry) }
 	if buffer := performance.host.buffer_entry { buffer(entry); return }
 	mut timeline := performance.window_or_worker()

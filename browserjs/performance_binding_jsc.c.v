@@ -36,7 +36,7 @@ pub fn (mut runtime Runtime) install_performance_binding() ! {
 	factory := runtime.evaluate_host_value(performance_binding_factory())!
 	defer { runtime.release_javascript_value(factory) }
 	global := C.JSContextGetGlobalObject(runtime.context)
-	wrapper := runtime.call_javascript_function(factory, global, [operation, global])!
+	wrapper := runtime.call_javascript_function(factory, global, [operation, global, binding.make])!
 	runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(performance) })!
 	performance_bindings_[owner] = true
 	runtime.add_close_handler(fn [owner] () { performance_bindings_.delete(owner) })
