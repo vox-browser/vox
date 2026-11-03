@@ -3976,10 +3976,25 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                 if (has_underlay) local_underlay.offset(transform_e, transform_f);
                 local_matrix.setTranslate(page_x, page_y - scroll_y);
             }
-            local_matrix.preTranslate(s_raster_origin_x, s_raster_origin_y);
+            // Layer origins use destination CSS pixels. Device-layout shapes
+            // use scaled units, so subtract the inverse-scaled origin. Mixing
+            // those spaces retains a large offset in the recorded curve and
+            // changes GPU edge rounding even though the final matrix cancels it.
+            double local_origin_x = s_raster_origin_x, local_origin_y = s_raster_origin_y;
+            if (transform_a > 0 && transform_a == transform_d && transform_b == 0 && transform_c == 0) {
+                local_origin_x /= transform_a;
+                local_origin_y /= transform_d;
+                if (transform_a != 1 && transform_e == std::trunc(transform_e)
+                    && transform_f == std::trunc(transform_f)) {
+                    local_rect.offset(transform_e / transform_a, transform_f / transform_d);
+                    if (has_underlay) local_underlay.offset(transform_e / transform_a, transform_f / transform_d);
+                    local_matrix = SkMatrix::MakeAll(transform_a, 0, page_x, 0, transform_d, page_y - scroll_y, 0, 0, 1);
+                }
+            }
+            local_matrix.preTranslate(local_origin_x, local_origin_y);
             canvas->setMatrix(local_matrix);
-            local_rect.offset(-s_raster_origin_x, -s_raster_origin_y);
-            if (has_underlay) local_underlay.offset(-s_raster_origin_x, -s_raster_origin_y);
+            local_rect.offset(-local_origin_x, -local_origin_y);
+            if (has_underlay) local_underlay.offset(-local_origin_x, -local_origin_y);
         }
         // Retain precision until the complete raster resolves. Standalone
         // fallback leaves keep their existing byte palette and child blending.
