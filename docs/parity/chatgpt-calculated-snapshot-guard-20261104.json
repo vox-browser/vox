@@ -1,0 +1,321 @@
+{
+  "date": "2026-11-04",
+  "implementation_commit": "4c6cadd80d707203f20e0317e8ddeb50d9c44652",
+  "change": "Calculated LengthPercentage payloads in all eight Size fields, including fit-content payloads, are ineligible for idle/document-wide scalar snapshot sharing. Values remain on their individual styles.",
+  "scope_limit": "This guard covers Size dimensions; it does not claim complete ownership of every other calculation-bearing CSS record or complete live ChatGPT support.",
+  "regression_before": [
+    {
+      "mode": "default",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "mode": "default",
+      "stage": "runtime",
+      "exit": 1
+    }
+  ],
+  "regression_after": [
+    {
+      "mode": "default",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "mode": "default",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "mode": "none",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "mode": "none",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "mode": "prealloc",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "mode": "prealloc",
+      "stage": "runtime",
+      "exit": 0
+    },
+    {
+      "mode": "prealloc-o3",
+      "stage": "compile",
+      "exit": 0
+    },
+    {
+      "mode": "prealloc-o3",
+      "stage": "runtime",
+      "exit": 0
+    }
+  ],
+  "source_stability": {
+    "stable": true,
+    "after": {
+      "css/idle_layout_snapshots.v": "d29aafbf33bab9e9b1b0982d4bcda9daf98bf4b7966b240eb4588a668e22e1a1",
+      "css/calculated_snapshot_ownership_test.v": "638f06894a3e32d15f35acef18c5bdd6c58b1c94c42aad064ac9386e9cd98866"
+    }
+  },
+  "regression_coverage": [
+    "All eight Size fields with calculated and fit-content payloads",
+    "Ordinary scalar dimensions remain eligible",
+    "Equal calculated widths do not merge through manual sharing or document buckets",
+    "Raw width replacement preserves the previous 180px value and produces a new 170px value against a 200px basis"
+  ],
+  "optimized_test_flags": "-prealloc -gc none -cflags \"-O3 -mllvm -inline-threshold=1500\"; 12 GiB compile guard, 3 GiB runtime guard, V memory limit 10G, bounded realloc symbol checked",
+  "existing_snapshot_suite": {
+    "results": [
+      {
+        "mode": "prealloc",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "prealloc",
+        "stage": "runtime",
+        "exit": 1
+      }
+    ],
+    "failure": "Retained-allocation reference budget in test_repeated_native_reresolution_does_not_retain_duplicate_cache_records",
+    "candidate_actual_bytes": 267004,
+    "candidate_reference_bytes": 458867,
+    "required_difference_bytes": 268800
+  },
+  "unchanged_budget_control": {
+    "assessment": {
+      "results": [
+        {
+          "stage": "compile",
+          "exit": 0
+        },
+        {
+          "stage": "candidate",
+          "exit": 1
+        },
+        {
+          "stage": "control",
+          "exit": 1
+        }
+      ],
+      "stable": true
+    },
+    "qualification": {
+      "removed_eligibility_checks": 8,
+      "method": "Frozen generated C with only the eight added Size eligibility calls replaced by true. Canonical source and memory-test threshold remain unchanged."
+    },
+    "candidate_generated_c_sha256": "3f7b668f23cb0fb3eca12b98df4ef9aecc2336f2b26fe4177ae46b19ee5a66d9",
+    "control_generated_c_sha256": "a50b35089877bdab53d9412a5bbdeff1ec0a92be8da030e73e1ca7636b31f794",
+    "control_actual_bytes": 267004,
+    "control_reference_bytes": 458867,
+    "conclusion": "The same assertion fails with identical allocation counts when the eight new eligibility calls are disabled. This failure is independent of the added Size guard; its threshold is unchanged."
+  },
+  "identical_input_cache_diagnostic": {
+    "exit": 0,
+    "environment": {
+      "VOX_DISABLE_IDENTICAL_LAYOUT_INPUTS": "1"
+    },
+    "qualification": "Diagnostic only: the existing suite passes with this separate optimization disabled. This environment is not used for candidate acceptance."
+  },
+  "candidate_build": {
+    "assessment": {
+      "exit": 0,
+      "stable": true,
+      "changed": [],
+      "inputs": {
+        "/Users/alex/code/vox2/main.v": "37ec3e5f087fdf4cf0e4b7e20a0cf727cf75eb81949248680eb200c00995c998",
+        "/Users/alex/code/vox2/main_device_layout.v": "69e949b8a7b54e452cb9a97a6638dd18fc16462bc45a455bbf9cba4a9de81958",
+        "/Users/alex/code/vox2/css/device_layout_style.v": "99b4d8c3c2c20368c9d8f160218f5ce43c56d332d41663067bcc1abbc8500824",
+        "/Users/alex/code/vox2/css/font_face_values.v": "b73958563c204f70811d90c7bc412ca35c4c04d4b5010f1c975b10c33a2a17d0",
+        "/Users/alex/code/vox2/platform/font_plugin.v": "462bbdf09679834f68a358086303e7f3437fd2450fc5801587fa43676bc80b8e",
+        "/Users/alex/code/vox2/layout/chromium_raster_layers.v": "995e4c64117ab0fcaefdd4da59f5e64bde418d066a5e43fc3941dfd081dc62a3",
+        "/Users/alex/code/vox2/layout/chromium_fixed_recording_bounds.v": "04987743475b6b005a5488678c77f08eb3e72ac32cb1f127a48c6a4bb0a77aad",
+        "/Users/alex/code/vox2/css/idle_layout_snapshots.v": "d29aafbf33bab9e9b1b0982d4bcda9daf98bf4b7966b240eb4588a668e22e1a1",
+        "/Users/alex/code/vox2/css/calculated_snapshot_ownership_test.v": "638f06894a3e32d15f35acef18c5bdd6c58b1c94c42aad064ac9386e9cd98866",
+        "/Users/alex/code/vox2/native_skia_text_darwin.cpp": "f419d28206e50c197bc851d203db11df7fe138c04a7fb7e202b8a55d8390cf35",
+        "/Users/alex/code/vox2/native_capture_darwin.m": "6159dac5bd21dfd25fbc15fad84f17de18b519b9d06f860830d0373d59e53673",
+        "/Users/alex/code/vox2/main_chromium_msaa_tiles.v": "df1618321cf8b1a80c8c18207d6cd55a8a08df874f54b307c4b3e66a9dafe5e3",
+        "/Users/alex/code/vox2/main_chromium_opacity_raster_parent.v": "db3cec2d6720aae33d3b64a7953a3b664e91640bdf856003879117aca3e60bbd",
+        "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-current-178/libLadybirdVSkiaText.dylib": "2d5196397a02f3a3f5d8d25a2543b1306ddd2d0529a826ef79396596ebeef839"
+      }
+    },
+    "repository_stability": {
+      "build_inputs_stable": false
+    },
+    "qualification": "Selected source and native inputs remain stable. Broader repository inputs changed during compilation. C backend without production optimization; this executable is diagnostic and does not validate an updated production bundle.",
+    "executable_sha256": "57a993a9d37d9f90cc276ad59c12bd94bebef7069b95cced34e141ee2ac6eebf",
+    "native_sha256": "2d5196397a02f3a3f5d8d25a2543b1306ddd2d0529a826ef79396596ebeef839"
+  },
+  "frozen_reply": {
+    "assessment": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": true,
+          "scale": 2,
+          "png_size": [
+            2048,
+            1536
+          ],
+          "differing_pixels": 1,
+          "max_channel_error": 1,
+          "bounds": [
+            2013,
+            1142,
+            2014,
+            1143
+          ],
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": true,
+      "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+    },
+    "png_sha256": "1a80ccd77dfe707bd694c1bf266143179d02a1c349d8a35d2b961b2b63600831",
+    "pixels_identical_to_committed_production_capture": true
+  },
+  "native_old_session": {
+    "exit": 0,
+    "identity_stable": true,
+    "inputs_stable": true,
+    "guard_budget": "standard 12 GiB full-application guard",
+    "backend_responses_seeded": false,
+    "initial_native_cookie_jar_empty": false,
+    "session_cookie_source": "Matching anonymous Brave session captured before input; values remain private",
+    "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+    "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+    "ready": "complete",
+    "fully_active": true,
+    "reply_observed": false,
+    "native_error_count": 0,
+    "javascript_diagnostic_count": 0,
+    "native_input_started": true,
+    "service_blocked": true,
+    "passed": false,
+    "expected_native_loaded": true,
+    "pixels": {
+      "size": [
+        2048,
+        1536
+      ],
+      "reference_size": [
+        2048,
+        1536
+      ],
+      "expected_size": [
+        2048,
+        1536
+      ],
+      "differing_pixels": 38211,
+      "max_channel_error": 242,
+      "bounds": [
+        552,
+        162,
+        2016,
+        1455
+      ]
+    }
+  },
+  "fresh_socks_brave_session": {
+    "assessment": {
+      "identity_stable": true,
+      "inputs_stable": true,
+      "fresh_document_requests": 2,
+      "response_entries": 1021,
+      "captured_frozen": true,
+      "reported_errors": 0,
+      "reply_observed": true,
+      "service_blocked": false
+    },
+    "browser_exit": 0,
+    "guard_exit": 0,
+    "network_policy": "Fresh anonymous Brave profile through socks5h://127.0.0.1:1337; captured data and cookies remain private. Frontend makes two homepage requests."
+  },
+  "native_fresh_session": {
+    "exit": 0,
+    "identity_stable": true,
+    "inputs_stable": true,
+    "guard_budget": "standard 12 GiB full-application guard",
+    "backend_responses_seeded": false,
+    "initial_native_cookie_jar_empty": false,
+    "session_cookie_source": "Matching anonymous Brave session captured before input; values remain private",
+    "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+    "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+    "ready": "complete",
+    "fully_active": true,
+    "reply_observed": false,
+    "native_error_count": 0,
+    "javascript_diagnostic_count": 0,
+    "native_input_started": true,
+    "service_blocked": true,
+    "passed": false,
+    "expected_native_loaded": true,
+    "pixels": {
+      "size": [
+        2048,
+        1536
+      ],
+      "reference_size": [
+        2048,
+        1536
+      ],
+      "expected_size": [
+        2048,
+        1536
+      ],
+      "differing_pixels": 32038,
+      "max_channel_error": 242,
+      "bounds": [
+        552,
+        394,
+        2016,
+        1455
+      ]
+    }
+  },
+  "invalid_attempts": [
+    {
+      "directory": "calculated-snapshot-before-174",
+      "reason": "Test read the initial cache before initialization; no defect credit."
+    },
+    {
+      "directory": "calculated-snapshot-after-176",
+      "reason": "Reflected option unwrap did not compile; replaced by a concrete Size helper."
+    },
+    {
+      "directory": "source-177",
+      "reason": "Foreground driver/guard completion lost across headless CLI continuation; no build acceptance."
+    },
+    {
+      "directory": "calculated-snapshot-after-179",
+      "reason": "Foreground guard completion missing; diagnostic runtime passes but build receipt is invalid."
+    }
+  ],
+  "job_lifetime": "Accepted checks use detached drivers with durable guard receipts; no foreground-session completion is inferred.",
+  "claims": {
+    "focused_regressions_pass": true,
+    "all_existing_tests_pass": false,
+    "literal_retina_pixel_equality": false,
+    "native_live_reply_observed": false,
+    "updated_production_crash_resolution_verified": false,
+    "performance_acceptance": false
+  },
+  "private_raw_root": "Build/chatgpt-responsive-20261103/retina-borders-24"
+}

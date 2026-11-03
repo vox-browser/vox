@@ -3608,3 +3608,42 @@ The broader raster-pass experiment 158 regresses both frozen pages from one
 to 41 differing pixels and remains private. Restricting its owner-based variant
 to one-cell pictures never activates the promotion, so its unchanged one-pixel
 result is inconclusive. No raster experiment is included in the implementation.
+
+
+## November 4: calculated dimensions stay with their styles
+
+`4c6cadd80` prevents calculated payloads in the eight `Size` fields from joining
+the scalar snapshot pool, including a calculated fit-content argument. Eligibility
+reads the length tag without traversing its calculation graph. Equal calculated
+values keep separate style records, and raw width replacement preserves the old
+180px value while resolving the replacement to 170px against a 200px basis.
+This guards the dimension-comparison path found in the production input crash;
+updated production validation remains pending.
+
+Both new regressions fail on the unfixed source and pass with default, no-GC,
+prealloc and production-optimized prealloc flags. The
+[receipt](parity/chatgpt-calculated-snapshot-guard-20261104.json) links the exact
+commands, source hashes, bounded-allocation checks and actual guard exits.
+Foreground attempts whose guards ended during CLI continuations are rejected;
+accepted runs use detached drivers with durable receipts.
+
+The existing snapshot suite still reports one retained-memory budget failure:
+267,004 bytes versus a 458,867-byte reference, short of its unchanged 268,800-byte
+required saving. A frozen-C control disables exactly the eight new eligibility
+calls and produces identical counts and the same failure. Disabling the separate
+identical-input cache makes that suite pass, as a diagnostic only. No memory-test
+threshold or production runtime setting is relaxed for this change.
+
+The diagnostic browser preserves the one-pixel frozen reply, with identical
+pixels to the committed production capture. Its selected inputs remain stable,
+but broader repository inputs changed during compilation; its C backend also
+omits production optimization. It cannot establish clean-head or production
+crash resolution. Both native Send attempts exit normally with zero reported
+native/script errors, but receive the service activity block and no reply.
+A fresh anonymous Brave session through SOCKS receives the expected reply with
+zero recorded errors; its matching cookies still do not make the native attempt
+succeed. Session contents remain private under `Build/`.
+
+Literal Retina equality, native live service compatibility and updated production
+validation remain open. The completed production bundle still has the previously
+recorded input crash; the snapshot guard must be validated in a build containing it.
