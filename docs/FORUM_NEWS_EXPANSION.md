@@ -561,6 +561,65 @@ verified to relieve shared disk pressure. The prepared acquisition input profile
 sealed responses, captures, logs and receipts remain available.
 [Archive receipt](../Build/engadget-continue-20261103-1002/closed-profile-compression.json).
 
+## Rounded photo backgrounds and capture limits (2026-11-03)
+
+Commit `9cf299518` composites a validated opaque rounded background with its
+replaced image in one GPU pass. The first photograph's native regression
+compares 240 frozen Brave corner pixels: the separate-pass control differs at
+14 pixels and the paired draw is exact. The sample rectangles exclude the
+category badge overlay; the original WebP response bytes are unchanged. Three
+selection tests, including actual layout/raster ownership, pass with default GC
+and GC disabled. Colors requiring more than byte precision, unmatched clips, effects, transforms
+and other raster owners retain their ordinary path.
+[Durable receipts and identities](evidence/engadget-parity-20261103.json),
+[native regression](../tools/test_native_rounded_image_pair.py).
+
+On executable
+`406aaa0e2a9130580d16bfcadc8ee08c8b0fa05f59cd9f0ec2ee18383b342808`,
+the registered frozen Engadget page improves from 87 native pixels to **zero**.
+A fresh, complete-cache acquisition through the explicit SOCKS proxy also has
+**zero native pixels**, but still fails source fidelity at **221 pixels**
+(maximum channel error 3). Its candidate archive is kept separately and does
+not replace the registered archive, whose original source-fidelity failure is
+90,850 pixels. These results do not establish a strict site pass.
+[Registered capture](../Build/engadget-continue-20261103-1002/rounded-pair-site/summary.json),
+[fresh complete-cache candidate](../Build/engadget-continue-20261103-1002/fresh-complete-site/summary.json).
+
+Cold replay is not deterministic. A later cold attempt on the same executable
+has 39,914 native/reference differences because **Brave's image changes** by
+that amount; Vox's decoded RGBA is byte-identical to its earlier zero-diff
+capture. That failing attempt is retained, not retried away. The source-fidelity
+metric in that attempt is 76,080. Exactness is qualified by the pinned capture
+and cache conditions rather than claimed for every cold launch. Complete cache
+preparation is also insufficient to guarantee one Brave output: the latest
+registered-archive repeat on executable
+`6f46b72a7ca84ae4852e3e8cfc0b092f85d3c1518ea0148b90939a0d7e3bcdd7`
+has **23,596 native/reference differences**, while Vox's RGBA remains identical
+to the earlier exact capture. Only Brave changes; that failure is retained too.
+[Latest complete-cache attempt](../Build/engadget-continue-20261103-1002/registered-complete2/summary.json),
+[RGBA comparison](../Build/engadget-continue-20261103-1002/latest-complete-variation.json).
+[Cold variation](../Build/engadget-continue-20261103-1002/cold-replay-variation.json),
+[retained attempt and controls](../Build/engadget-continue-20261103-1002/pair-production-checks/sites/summary.json).
+
+All **8 focused tests / 13 captures** pass on the pinned build. BBC and Hacker
+News still pass their strict source/replay/native zero-pixel checks. The latest
+installed native backend also passes the 240-pixel regression. Shared CSS work
+briefly blocked final V compilation; after its narrowing fix, all three selection
+tests execute successfully in both GC modes. An initial complete-cache repeat
+is invalid because the production bundle changed during it, and is retained
+without acceptance credit.
+[Focused verification](../Build/engadget-continue-20261103-1002/rounded-pair-verification.json),
+[latest native backend](../Build/engadget-continue-20261103-1002/native-pair-latest/summary.json),
+[invalid bundle-change attempt](../Build/engadget-continue-20261103-1002/registered-complete/summary.json).
+
+Shared cleanup removed older test dependencies and historical Build artifacts.
+The full 1.75.0 uBO extension was restored from the upstream release with its
+published SHA-256 checked, and the checker/diff binaries were rebuilt from
+canonical sources. The durable JSON receipt above preserves the current exact
+counts, image hashes, engine identities and failures independently of Build
+cleanup. Authored WebP/texture reducers with decoding or sampling differences
+are diagnostic only; none replaced an existing reference or lowered a gate.
+
 ## Run
 
 ```sh

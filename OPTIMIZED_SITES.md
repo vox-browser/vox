@@ -367,7 +367,7 @@ scrolling and whole-site behavior outside that claim.
 | [The Verge](https://www.theverge.com/) | Strict frozen-viewport pass, 0 pixels | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
 | [Pikabu](https://pikabu.ru/) | Deferred in this pixel-parity session | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
 | [TechCrunch](https://techcrunch.com/) | Open: 34,710 native pixels; source fidelity passes | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
-| [Engadget](https://www.engadget.com/) | Active: 87 native / 90,850 saved-source pixels; WebP ICC and large-layer regressions exact | [Engadget checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
+| [Engadget](https://www.engadget.com/) | Open: exact pinned native captures; 221 fresh-source pixels; Brave replay varies even warm | [Engadget checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
 | [The Register](https://www.theregister.com/) | Open: initial native gap 6,786; source gap 110,180 pixels | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
 | [Slate](https://slate.com/) | Open: initial native gap 221,448; source gap 19,064 pixels | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
 | [WIRED](https://www.wired.com/) | Open: frozen reference changes between captures | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
