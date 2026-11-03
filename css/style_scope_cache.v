@@ -2401,6 +2401,12 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 	style_scope_add_part_rules_for_available_scopes(style_computer, abstract_element, cascade_origin, qualified_layer_name, scope, shadow_root, element_shadow_root, mut rules_to_run)
 
  record_diagnostic_instruction_scope(12, diagnostic_scope_start)
+	// No selector can match when all ordinary, host, slot and part paths
+	// produced no candidates. Keep the scratch-release defer, but avoid
+	// constructing the per-match memo map for this empty result.
+	if rules_to_run.len == 0 {
+		return []ScopedMatchingRule{}
+	}
  diagnostic_matches_start := begin_diagnostic_instruction_scope()
  defer { record_diagnostic_instruction_scope(13, diagnostic_matches_start) }
 
