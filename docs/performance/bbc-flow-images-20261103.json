@@ -1469,5 +1469,13 @@
       "candidate": 1152315459.5
     },
     "control_minus_candidate": 22232923.0
+  },
+  "post_removal_native_followup_20261103": {
+    "description": "Later R14 candidate bundles contain no R13 flow-image diagnostic marker and pass headless startup, eleven smoke and eight SVG checks with stable executable/native-library identities. This validates the R13 removal under those later pinned builds, without attributing their unrelated changes or BBC counts to R13.",
+    "evidence": "docs/performance/bbc-pseudo-candidates-adaptive-20261103.json",
+    "directories": [
+      "Build/bbc-pseudo-candidates-adaptive-20261103/native-validation",
+      "Build/bbc-pseudo-candidates-adaptive-20261103/native-validation-v2"
+    ]
   }
 }

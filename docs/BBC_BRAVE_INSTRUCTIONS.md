@@ -3962,3 +3962,52 @@ Headless, eleven smoke and eight SVG checks all exit zero, but shared publicatio
 changes runtime hashes during validation; that stable-bundle claim is rejected.
 R13's native rollback validation remains pending. BBC remains outside the
 homepage instruction table, with the same workload and limitations.
+
+### Adaptive pseudo batching rejected (2026-11-03)
+
+The follow-up `bd5a2a7a3` preserves positive-query early exits and shares a
+common candidate mask only after a complete rejection. All 114 focused case
+executions pass across both policies and three memory modes. The separate
+requested `v -profile` diagnostic confirms the selected path; its 20,040 queries
+use 43,127 bucket-iterator advances and only 80 original bucket-predicate calls,
+versus 107,100 predicates in the control. Instrumented times earn no credit.
+Two alternating unprofiled standalone pairs save **19,857,726** instructions
+across first/second layout medians, with unchanged geometry and paint dumps.
+Those script-free layout deltas exclude browser startup, resource replay and
+PNG capture and establish no BBC browser gain.
+
+All three subsequent cohorts retain the original launch-through-encoded-PNG
+protocol. Cohort 65 stops after three attempted browsers when a shared bundle
+publication changes pinned inputs. Cohort 66 launches all 21 browsers, but disk
+exhaustion interrupts the final Brave capture and final guard/controller
+receipts. Its missing exits remain unknown. The six completed triples and the
+seventh Vox/control results remain available; no sample is excluded or repaired.
+Completed diagnostic C/test artifacts were losslessly compressed with hash
+manifests; raw counters, logs and PNGs remain intact.
+
+Cohort 67 retains all 21 result receipts and unchanged original Vox/control
+pixels. Its descriptive medians are **29,256,270,093 control** and
+**29,376,953,822 candidate**, an observed increase of **120,683,729**. Three
+matched pairs improve and four regress; the paired median regresses by
+256,334,180. Brave pair 1 differs by 304,064 pixels, and pair 5 fails private
+helper coalition ownership before a selected interval is available. The six
+recorded Brave intervals have median 15,064,801,199.5; this is an invalid-cohort
+statistic. The numeric gate also fails:
+**311,735,280,420 > 134,857,329,507**, ratio **2.0804338437**. Neither this
+cohort nor the retained interrupted cohorts establishes optimization credit.
+The cumulative history is **67 cohorts / 1,555 browser attempts**.
+
+Because neither batching variant establishes a BBC improvement, `f6944f9b5`
+removes the engine experiment and `e641e1fef` removes its benchmark control.
+All 42 restoration case executions and 241 instruction-tool tests pass. Broad
+verification before removal enters all 486 selected cases in both memory modes,
+with 483 passes and the same three known failures per mode; it is not a full
+pass or a cadence reset. Two pinned candidate bundles separately pass headless
+startup, eleven smoke and eight SVG checks with unchanged runtime identities.
+Those checks also confirm the earlier R13 flow-image experiment is absent;
+they validate the batching candidate before removal, while native validation of
+the batching removal needs a later completed bundle. The **10% goal remains
+open**, with no BBC homepage catalog entry. The
+[durable ledger](performance/bbc-pseudo-candidates-adaptive-20261103.json)
+retains exact counts, all failures, profiles, ownership/identity receipts,
+commands, host telemetry, compression manifests and local evidence paths.

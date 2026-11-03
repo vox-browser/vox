@@ -1,0 +1,2555 @@
+{
+  "status": "Rejected for the BBC goal; both batching variants removed by f6944f9b5",
+  "target_met": false,
+  "catalog_entry_added": false,
+  "history_cohorts": 67,
+  "history_browser_attempts": 1555,
+  "scope": "Exclusive resource coalition creation/fresh launch through encoded document PNG. Vox before file write; Brave includes CDP delivery. Audits and teardown after the selected endpoint.",
+  "workload": "The unchanged 595-response BBC original-origin archive, original author scripts, historical RGB policy, original per-engine pixel references, 1024x768 CSS viewport, capture scale 2, settle 2s. Fresh profiles and retained OS caches.",
+  "implementation": "Adaptive version preserves dedicated-bucket and positive-query early exits; only a completed rejection publishes a temporary common bit mask. Any positive query expires the mask before cascade callbacks. Removed after full-browser evidence failed to establish a gain.",
+  "commits": [
+    "bd5a2a7a3",
+    "f6944f9b5"
+  ],
+  "focused": {
+    "cases": 19,
+    "policies": 2,
+    "memory_modes": 3,
+    "executions": 114,
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ]
+  },
+  "standalone": {
+    "credit_for_bbc": false,
+    "receipt": "Build/bbc-pseudo-candidates-adaptive-20261103/ssr-v2-instruction-results.json",
+    "raw": {
+      "diagnostic_only": true,
+      "bbc_instruction_credit": false,
+      "acceptance": false,
+      "executable_sha256": "93f8bad36bfaf2777f96901938798d1d22b22f9f01ec7e432d1210f455870637",
+      "html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+      "rows": [
+        {
+          "pair": 0,
+          "arm": "witness",
+          "guard_exit": 0,
+          "native_exit": 0,
+          "geometry": [
+            "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+          ],
+          "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+          "startup_parse": 345236505,
+          "first_layout": 2691144030,
+          "mutation": 148160,
+          "second_layout": 1193583029,
+          "markers": {
+            "width": false,
+            "svg": false,
+            "edges": false,
+            "pseudo_batch": true
+          }
+        },
+        {
+          "pair": 1,
+          "arm": "control",
+          "guard_exit": 0,
+          "native_exit": 0,
+          "geometry": [
+            "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+          ],
+          "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+          "startup_parse": 341045540,
+          "first_layout": 2692093174,
+          "mutation": 97165,
+          "second_layout": 1203159351,
+          "markers": {
+            "width": false,
+            "svg": false,
+            "edges": false,
+            "pseudo_batch": false
+          }
+        },
+        {
+          "pair": 1,
+          "arm": "candidate",
+          "guard_exit": 0,
+          "native_exit": 0,
+          "geometry": [
+            "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+          ],
+          "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+          "startup_parse": 341198487,
+          "first_layout": 2681110103,
+          "mutation": 98363,
+          "second_layout": 1193268374,
+          "markers": {
+            "width": false,
+            "svg": false,
+            "edges": false,
+            "pseudo_batch": false
+          }
+        },
+        {
+          "pair": 2,
+          "arm": "candidate",
+          "guard_exit": 0,
+          "native_exit": 0,
+          "geometry": [
+            "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+          ],
+          "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+          "startup_parse": 341175011,
+          "first_layout": 2681492027,
+          "mutation": 97082,
+          "second_layout": 1193553501,
+          "markers": {
+            "width": false,
+            "svg": false,
+            "edges": false,
+            "pseudo_batch": false
+          }
+        },
+        {
+          "pair": 2,
+          "arm": "control",
+          "guard_exit": 0,
+          "native_exit": 0,
+          "geometry": [
+            "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+          ],
+          "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+          "startup_parse": 341144960,
+          "first_layout": 2690585386,
+          "mutation": 97473,
+          "second_layout": 1203301546,
+          "markers": {
+            "width": false,
+            "svg": false,
+            "edges": false,
+            "pseudo_batch": false
+          }
+        }
+      ],
+      "limitations": "Standalone C-O3 no-GC engine, frozen BBC HTML without scripts or resource replay, viewport1024x768/layout scale1. First layout and second update after appending a zero-size body child use process deltas. Includes synchronous native style/layout but no browser startup/window/PNG. Dumps and scalar geometry do not establish pixel equality or full-browser savings. Witness has diagnostic logging and supplies no timing credit."
+    },
+    "phases": {
+      "first_layout": {
+        "control_median": 2691339280.0,
+        "candidate_median": 2681301065.0,
+        "reduction": 10038215.0
+      },
+      "second_layout": {
+        "control_median": 1203230448.5,
+        "candidate_median": 1193410937.5,
+        "reduction": 9819511.0
+      }
+    },
+    "total_median_reduction": 19857726.0
+  },
+  "profile": {
+    "credit_for_bbc": false,
+    "receipt": "Build/bbc-pseudo-candidates-adaptive-20261103/v2-profile-results.json",
+    "raw": {
+      "diagnostic_only": true,
+      "instrumentation": "V -profile - -profile-no-inline with explicit CSS scope entries",
+      "bbc_instruction_credit": false,
+      "executable_sha256": "0aaded94af10ffca98871ba2618274b5095b72af56f7014e168e0223d33ba6df",
+      "html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+      "rows": [
+        {
+          "arm": "control",
+          "guard_exit": 0,
+          "native_exit": 0,
+          "profiled_rows": 33,
+          "selected": {
+            "css__PseudoCandidateBatch__has_candidate": {
+              "calls": 20040,
+              "inclusive_ms": 72.985,
+              "self_ms": 0.589,
+              "mean_ns": 3642.0,
+              "name": "css__PseudoCandidateBatch__has_candidate"
+            },
+            "css__RuleCache__has_candidate_rule_for_pseudo_element": {
+              "calls": 59096,
+              "inclusive_ms": 68.615,
+              "self_ms": 15.642,
+              "mean_ns": 1161.0,
+              "name": "css__RuleCache__has_candidate_rule_for_pseudo_element"
+            },
+            "css__RuleCache__find_pseudo_candidate_and_common_mask": {
+              "name": "css__RuleCache__find_pseudo_candidate_and_common_mask",
+              "calls": 0,
+              "instrumented_entry_in_generated_C": true,
+              "scope_limited_zero": true
+            },
+            "css__RuleCache__has_direct_pseudo_candidate": {
+              "name": "css__RuleCache__has_direct_pseudo_candidate",
+              "calls": 0,
+              "instrumented_entry_in_generated_C": true,
+              "scope_limited_zero": true
+            },
+            "css__rule_cache_bucket_has_pseudo_element": {
+              "calls": 107100,
+              "inclusive_ms": 24.183,
+              "self_ms": 17.891,
+              "mean_ns": 226.0,
+              "name": "css__rule_cache_bucket_has_pseudo_element"
+            },
+            "css__RuleBucketIterator__next": {
+              "name": "css__RuleBucketIterator__next",
+              "calls": 0,
+              "instrumented_entry_in_generated_C": true,
+              "scope_limited_zero": true
+            }
+          },
+          "geometry": [
+            "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+          ],
+          "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0"
+        },
+        {
+          "arm": "candidate",
+          "guard_exit": 0,
+          "native_exit": 0,
+          "profiled_rows": 40,
+          "selected": {
+            "css__PseudoCandidateBatch__has_candidate": {
+              "calls": 20040,
+              "inclusive_ms": 28.564,
+              "self_ms": 0.652,
+              "mean_ns": 1425.0,
+              "name": "css__PseudoCandidateBatch__has_candidate"
+            },
+            "css__RuleCache__has_candidate_rule_for_pseudo_element": {
+              "name": "css__RuleCache__has_candidate_rule_for_pseudo_element",
+              "calls": 0,
+              "instrumented_entry_in_generated_C": true,
+              "scope_limited_zero": true
+            },
+            "css__RuleCache__find_pseudo_candidate_and_common_mask": {
+              "calls": 15510,
+              "inclusive_ms": 22.128,
+              "self_ms": 5.693,
+              "mean_ns": 1427.0,
+              "name": "css__RuleCache__find_pseudo_candidate_and_common_mask"
+            },
+            "css__RuleCache__has_direct_pseudo_candidate": {
+              "calls": 59082,
+              "inclusive_ms": 2.602,
+              "self_ms": 1.999,
+              "mean_ns": 44.0,
+              "name": "css__RuleCache__has_direct_pseudo_candidate"
+            },
+            "css__rule_cache_bucket_has_pseudo_element": {
+              "calls": 80,
+              "inclusive_ms": 0.003,
+              "self_ms": 0.002,
+              "mean_ns": 34.0,
+              "name": "css__rule_cache_bucket_has_pseudo_element"
+            },
+            "css__RuleBucketIterator__next": {
+              "calls": 43127,
+              "inclusive_ms": 13.955,
+              "self_ms": 4.791,
+              "mean_ns": 324.0,
+              "name": "css__RuleBucketIterator__next"
+            }
+          },
+          "geometry": [
+            "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+          ],
+          "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0"
+        }
+      ],
+      "limitations": "Instrumented frozen HTML, no scripts/resources/window/startup comparison/PNG; times and instruction snapshots are diagnostic only. The PseudoCandidateBatch.has_candidate entry explicitly enables profiling. All tracked callee entries are instrumented; missing rows mean zero calls only within that selected scope, not globally. C-O1 diagnostic flags differ from the unprofiled C-O3 binary. Child timings overlap."
+    }
+  },
+  "broad": {
+    "receipt": "Build/bbc-pseudo-candidates-adaptive-20261103/broad-adaptive-pseudo-candidates-current-v-fixed-shared-source/summary.json",
+    "cases_per_mode": 486,
+    "modes": 2,
+    "all_cases_entered": true,
+    "owned_inputs_changed": [],
+    "known_failures_per_mode": 3,
+    "passes_per_mode": 483,
+    "full_pass": false,
+    "cadence_reset": false
+  },
+  "diagnostics": [
+    {
+      "receipt": "Build/bbc-pseudo-candidates-adaptive-20261103/pseudo-candidates-production-diagnostic-validation.json",
+      "rows": [
+        {
+          "label": "candidate",
+          "driver_guard_exit": 0,
+          "diagnostic_only": true,
+          "no_instruction_credit": true,
+          "native_exit": 0,
+          "content_exact": true,
+          "pixels_exact": true,
+          "ownership": true,
+          "fast_path": true,
+          "jsc": [
+            "JSC_PROBE pid=75282 contexts=1 groups=1 evaluations=1957"
+          ],
+          "path_before_capture": true
+        },
+        {
+          "label": "control",
+          "driver_guard_exit": 0,
+          "diagnostic_only": true,
+          "no_instruction_credit": true,
+          "native_exit": 0,
+          "content_exact": true,
+          "pixels_exact": true,
+          "ownership": true,
+          "fast_path": false,
+          "jsc": [
+            "JSC_PROBE pid=76067 contexts=1 groups=1 evaluations=1916"
+          ],
+          "path_before_capture": true
+        }
+      ]
+    },
+    {
+      "receipt": "Build/bbc-pseudo-candidates-adaptive-20261103/pseudo-candidates-production-v2-diagnostic-validation.json",
+      "rows": [
+        {
+          "label": "candidate",
+          "driver_guard_exit": 0,
+          "diagnostic_only": true,
+          "no_instruction_credit": true,
+          "native_exit": 0,
+          "content_exact": true,
+          "pixels_exact": true,
+          "ownership": true,
+          "fast_path": true,
+          "jsc": [
+            "JSC_PROBE pid=1978 contexts=1 groups=1 evaluations=1933"
+          ],
+          "path_before_capture": true
+        },
+        {
+          "label": "control",
+          "driver_guard_exit": 0,
+          "diagnostic_only": true,
+          "no_instruction_credit": true,
+          "native_exit": 0,
+          "content_exact": true,
+          "pixels_exact": true,
+          "ownership": true,
+          "fast_path": false,
+          "jsc": [
+            "JSC_PROBE pid=3534 contexts=1 groups=1 evaluations=2373"
+          ],
+          "path_before_capture": true
+        }
+      ]
+    }
+  ],
+  "cohorts": [
+    {
+      "cohort": 65,
+      "attempts": 3,
+      "complete_result_receipts": 3,
+      "complete_triples": [
+        1
+      ],
+      "history_cohorts": 65,
+      "history_cohort_attempts": 1513,
+      "cohort_valid": false,
+      "accepted": false,
+      "counts": {
+        "control": [
+          29752664790
+        ],
+        "vox": [
+          29352439901
+        ],
+        "brave": [
+          15254713893
+        ]
+      },
+      "medians": {
+        "control": 29752664790,
+        "vox": 29352439901,
+        "brave": 15254713893
+      },
+      "paired_reductions": [
+        400224889
+      ],
+      "paired_median_reduction": 400224889,
+      "wins": 1,
+      "regressions": 0,
+      "numeric_gate": {
+        "left": 293524399010,
+        "right": 137292425037,
+        "passes": false,
+        "ratio": 1.9241553861242253
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/bbc_browser_instructions.py",
+          "--archive",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/clock-archive",
+          "--output",
+          "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-matched-cohort",
+          "--memory-guard-registry",
+          "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-matched-cohort-pids.json",
+          "--vox-app",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--control-vox-app",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--brave-app",
+          "/Applications/Brave Browser.app",
+          "--expected-vox",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-vox/document.png",
+          "--expected-brave",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-brave/document.png",
+          "--repeat",
+          "7",
+          "--diff-tool",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+          "--retain-incremental-webp-paint-policy",
+          "--control-retain-separate-pseudo-queries"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "93484": "Tue Nov  3 07:15:33 2026    ",
+          "93491": "Tue Nov  3 07:15:33 2026    ",
+          "94797": "Tue Nov  3 07:15:40 2026    ",
+          "94802": "Tue Nov  3 07:15:40 2026    ",
+          "95974": "Tue Nov  3 07:15:47 2026    ",
+          "95981": "Tue Nov  3 07:15:47 2026    ",
+          "96030": "Tue Nov  3 07:15:47 2026    ",
+          "96031": "Tue Nov  3 07:15:47 2026    ",
+          "96040": "Tue Nov  3 07:15:47 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1318125568,
+        "elapsed_seconds": 21.574712,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "guard_receipt_complete": true,
+      "rows": [
+        {
+          "pair": 1,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-matched-cohort/pair-1-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-matched-cohort/pair-1-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15254713893,
+            "upper": 15274586985
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              12.712890625,
+              17.419921875,
+              15.1630859375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              12.25537109375,
+              17.24658203125,
+              15.115234375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": false,
+          "identity_failure": {
+            "changed_inputs": [
+              {
+                "expected": {
+                  "bytes": 30237984,
+                  "sha256": "7a61dab73ead869f8b583121a643c35147da78a77254d8461c340324aebc689b"
+                },
+                "observed": {
+                  "bytes": 30255728,
+                  "sha256": "ada886d05a2041fdcd430ee4b27b90f6af74de2cda6def01f214c0d1ad68b948"
+                },
+                "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox"
+              }
+            ],
+            "invalidates_cohort": true
+          },
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 1,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-matched-cohort/pair-1-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-matched-cohort/pair-1-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29752664790,
+            "upper": 29752664790
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              12.38720703125,
+              17.59814453125,
+              15.18505859375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              12.775390625,
+              17.51171875,
+              15.18212890625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 1,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-matched-cohort/pair-1-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-matched-cohort/pair-1-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29352439901,
+            "upper": 29352439901
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              12.775390625,
+              17.51171875,
+              15.18212890625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              12.712890625,
+              17.419921875,
+              15.1630859375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        }
+      ],
+      "audited_unix": 1793679964.5811682,
+      "limitations": "Cohort 65 stops on shared executable drift. Cohort 66 reaches a disk-full failure in pair 7 Brave, has no final guard/controller receipt and cannot be accepted. Missing native/supervisor exits remain unknown; no values are reconstructed. All attempted launches are retained. Later cohorts use new output directories."
+    },
+    {
+      "cohort": 66,
+      "attempts": 21,
+      "complete_result_receipts": 20,
+      "complete_triples": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "history_cohorts": 66,
+      "history_cohort_attempts": 1534,
+      "cohort_valid": false,
+      "accepted": false,
+      "counts": {
+        "control": [
+          29084282870,
+          29407958033,
+          29478533902,
+          29337487489,
+          28599655038,
+          28582445925,
+          28864727086
+        ],
+        "vox": [
+          30373968804,
+          30356204867,
+          29299656059,
+          30528196367,
+          29163204632,
+          30919047316,
+          30772354479
+        ],
+        "brave": [
+          15108064137,
+          15145813845,
+          15320440017,
+          15339189314,
+          15515832460,
+          15422666406
+        ]
+      },
+      "medians": {
+        "control": 29084282870,
+        "vox": 30373968804,
+        "brave": 15329814665.5
+      },
+      "paired_reductions": [
+        -1289685934,
+        -948246834,
+        178877843,
+        -1190708878,
+        -563549594,
+        -2336601391,
+        -1907627393
+      ],
+      "paired_median_reduction": -1190708878,
+      "wins": 1,
+      "regressions": 6,
+      "numeric_gate": {
+        "left": 309190473160,
+        "right": 135972577233,
+        "passes": false,
+        "ratio": 2.046526082734752
+      },
+      "guard": null,
+      "guard_receipt_complete": false,
+      "rows": [
+        {
+          "pair": 1,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-1-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-1-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15108064137,
+            "upper": 15108064137
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              26.0283203125,
+              19.8427734375,
+              16.2412109375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              25.46533203125,
+              19.82861328125,
+              16.25732421875
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 1,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-1-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-1-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29084282870,
+            "upper": 29084282870
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              20.8310546875,
+              18.50146484375,
+              15.6953125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              23.21044921875,
+              19.09228515625,
+              15.9375
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 1,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-1-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-1-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 30373968804,
+            "upper": 30373968804
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              23.21044921875,
+              19.09228515625,
+              15.9375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              25.595703125,
+              19.65478515625,
+              16.154296875
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 2,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-2-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-2-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15145813845,
+            "upper": 15151577996
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              25.46533203125,
+              19.82861328125,
+              16.25732421875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              28.310546875,
+              20.51171875,
+              16.51904296875
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 2,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-2-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-2-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29407958033,
+            "upper": 29407958033
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              28.05126953125,
+              20.72216796875,
+              16.640625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              26.56640625,
+              20.64794921875,
+              16.662109375
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 2,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-2-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-2-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 30356204867,
+            "upper": 30356204867
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              28.92626953125,
+              20.7685546875,
+              16.6328125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              28.05126953125,
+              20.72216796875,
+              16.640625
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 3,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-3-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-3-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15320440017,
+            "upper": 15320440017
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              24.90869140625,
+              20.56689453125,
+              16.7021484375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              25.15576171875,
+              20.68994140625,
+              16.76806640625
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 3,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-3-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-3-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29478533902,
+            "upper": 29478533902
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              26.56640625,
+              20.64794921875,
+              16.662109375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              25.88037109375,
+              20.603515625,
+              16.669921875
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 3,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-3-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-3-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29299656059,
+            "upper": 29299656059
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              25.88037109375,
+              20.603515625,
+              16.669921875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              24.90869140625,
+              20.56689453125,
+              16.7021484375
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 4,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-4-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-4-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15339189314,
+            "upper": 15341091839
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              29.78759765625,
+              21.72412109375,
+              17.15576171875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              28.68310546875,
+              21.62890625,
+              17.14892578125
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 4,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-4-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-4-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29337487489,
+            "upper": 29337487489
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              27.828125,
+              21.67431640625,
+              17.21728515625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              27.76171875,
+              21.7626953125,
+              17.2744140625
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 4,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-4-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-4-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 30528196367,
+            "upper": 30528196367
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              28.68310546875,
+              21.62890625,
+              17.14892578125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              27.9873046875,
+              21.6015625,
+              17.16552734375
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 5,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-5-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-5-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15515832460,
+            "upper": 15540045945
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              27.63134765625,
+              22.0595703125,
+              17.4599609375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              26.45947265625,
+              21.90869140625,
+              17.43359375
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 5,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-5-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-5-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28599655038,
+            "upper": 28599655038
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              27.76171875,
+              21.7626953125,
+              17.2744140625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              28.55712890625,
+              22.14501953125,
+              17.462890625
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 5,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-5-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-5-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29163204632,
+            "upper": 29163204632
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              28.55712890625,
+              22.14501953125,
+              17.462890625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              27.63134765625,
+              22.0595703125,
+              17.4599609375
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 6,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-6-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-6-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15422666406,
+            "upper": 15444178288
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              25.78173828125,
+              21.84375,
+              17.4365234375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              24.677734375,
+              21.68017578125,
+              17.404296875
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 6,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-6-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-6-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28582445925,
+            "upper": 28582445925
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              24.22265625,
+              21.63525390625,
+              17.41357421875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              22.65673828125,
+              21.3837890625,
+              17.37353515625
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 6,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-6-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-6-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 30919047316,
+            "upper": 30919047316
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              24.677734375,
+              21.68017578125,
+              17.404296875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              24.22265625,
+              21.63525390625,
+              17.41357421875
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 7,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-7-brave/launch.json",
+          "raw_receipt": null,
+          "result_complete": false,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 7,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-7-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-7-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28864727086,
+            "upper": 28864727086
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              22.65673828125,
+              21.3837890625,
+              17.37353515625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              21.64306640625,
+              21.1943359375,
+              17.330078125
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 7,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-7-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v2-matched-cohort/pair-7-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 30772354479,
+            "upper": 30772354479
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              21.64306640625,
+              21.1943359375,
+              17.330078125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              19.92626953125,
+              20.841796875,
+              17.25
+            ]
+          },
+          "memory_adoption_verified": false,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        }
+      ],
+      "audited_unix": 1793679967.341495,
+      "limitations": "Cohort 65 stops on shared executable drift. Cohort 66 reaches a disk-full failure in pair 7 Brave, has no final guard/controller receipt and cannot be accepted. Missing native/supervisor exits remain unknown; no values are reconstructed. All attempted launches are retained. Later cohorts use new output directories."
+    },
+    {
+      "cohort": 67,
+      "attempts": 21,
+      "complete_result_receipts": 21,
+      "complete_triples": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "history_cohorts": 67,
+      "history_cohort_attempts": 1555,
+      "cohort_valid": false,
+      "accepted": false,
+      "counts": {
+        "control": [
+          29256270093,
+          28298268948,
+          29913590830,
+          28076977548,
+          29395039746,
+          29323714785,
+          29143058565
+        ],
+        "vox": [
+          31173528042,
+          29376953822,
+          29503670239,
+          29159591751,
+          29651373926,
+          28978786695,
+          28745624020
+        ],
+        "brave": [
+          15091163806,
+          14991460577,
+          15228171181,
+          14984147723,
+          15089344629,
+          15040257770
+        ]
+      },
+      "medians": {
+        "control": 29256270093,
+        "vox": 29376953822,
+        "brave": 15064801199.5
+      },
+      "paired_reductions": [
+        -1917257949,
+        -1078684874,
+        409920591,
+        -1082614203,
+        -256334180,
+        344928090,
+        397434545
+      ],
+      "paired_median_reduction": -256334180,
+      "wins": 3,
+      "regressions": 4,
+      "numeric_gate": {
+        "left": 311735280420,
+        "right": 134857329507,
+        "passes": false,
+        "ratio": 2.0804338437047054
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/bbc_browser_instructions.py",
+          "--archive",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/clock-archive",
+          "--output",
+          "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort",
+          "--memory-guard-registry",
+          "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort-pids.json",
+          "--vox-app",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--control-vox-app",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--brave-app",
+          "/Applications/Brave Browser.app",
+          "--expected-vox",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-vox/document.png",
+          "--expected-brave",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-brave/document.png",
+          "--repeat",
+          "7",
+          "--diff-tool",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+          "--retain-incremental-webp-paint-policy",
+          "--control-retain-separate-pseudo-queries"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "41461": "Tue Nov  3 07:24:42 2026    ",
+          "41470": "Tue Nov  3 07:24:42 2026    ",
+          "42793": "Tue Nov  3 07:24:49 2026    ",
+          "42802": "Tue Nov  3 07:24:49 2026    ",
+          "43533": "Tue Nov  3 07:24:57 2026    ",
+          "43542": "Tue Nov  3 07:24:57 2026    ",
+          "43556": "Tue Nov  3 07:24:57 2026    ",
+          "43557": "Tue Nov  3 07:24:57 2026    ",
+          "43563": "Tue Nov  3 07:24:57 2026    ",
+          "44257": "Tue Nov  3 07:25:03 2026    ",
+          "44263": "Tue Nov  3 07:25:03 2026    ",
+          "44278": "Tue Nov  3 07:25:03 2026    ",
+          "44279": "Tue Nov  3 07:25:03 2026    ",
+          "44281": "Tue Nov  3 07:25:03 2026    ",
+          "44781": "Tue Nov  3 07:25:08 2026    ",
+          "44787": "Tue Nov  3 07:25:08 2026    ",
+          "45630": "Tue Nov  3 07:25:16 2026    ",
+          "45635": "Tue Nov  3 07:25:16 2026    ",
+          "46470": "Tue Nov  3 07:25:23 2026    ",
+          "46476": "Tue Nov  3 07:25:23 2026    ",
+          "47276": "Tue Nov  3 07:25:30 2026    ",
+          "47283": "Tue Nov  3 07:25:30 2026    ",
+          "47908": "Tue Nov  3 07:25:37 2026    ",
+          "47915": "Tue Nov  3 07:25:37 2026    ",
+          "47924": "Tue Nov  3 07:25:38 2026    ",
+          "47925": "Tue Nov  3 07:25:38 2026    ",
+          "47927": "Tue Nov  3 07:25:38 2026    ",
+          "48331": "Tue Nov  3 07:25:43 2026    ",
+          "48338": "Tue Nov  3 07:25:43 2026    ",
+          "48352": "Tue Nov  3 07:25:43 2026    ",
+          "48353": "Tue Nov  3 07:25:43 2026    ",
+          "48357": "Tue Nov  3 07:25:44 2026    ",
+          "48992": "Tue Nov  3 07:25:49 2026    ",
+          "48998": "Tue Nov  3 07:25:49 2026    ",
+          "50399": "Tue Nov  3 07:25:57 2026    ",
+          "50409": "Tue Nov  3 07:25:57 2026    ",
+          "51266": "Tue Nov  3 07:26:04 2026    ",
+          "51274": "Tue Nov  3 07:26:04 2026    ",
+          "52602": "Tue Nov  3 07:26:11 2026    ",
+          "52606": "Tue Nov  3 07:26:11 2026    ",
+          "53661": "Tue Nov  3 07:26:19 2026    ",
+          "53893": "Tue Nov  3 07:26:20 2026    ",
+          "53897": "Tue Nov  3 07:26:20 2026    ",
+          "53917": "Tue Nov  3 07:26:21 2026    ",
+          "53918": "Tue Nov  3 07:26:21 2026    ",
+          "53921": "Tue Nov  3 07:26:21 2026    ",
+          "53998": "Tue Nov  3 07:26:21 2026    ",
+          "53999": "Tue Nov  3 07:26:21 2026    ",
+          "54578": "Tue Nov  3 07:26:27 2026    ",
+          "54583": "Tue Nov  3 07:26:27 2026    ",
+          "55183": "Tue Nov  3 07:26:34 2026    ",
+          "55188": "Tue Nov  3 07:26:34 2026    ",
+          "56272": "Tue Nov  3 07:26:42 2026    ",
+          "56286": "Tue Nov  3 07:26:42 2026    ",
+          "57278": "Tue Nov  3 07:26:49 2026    ",
+          "57283": "Tue Nov  3 07:26:49 2026    ",
+          "58237": "Tue Nov  3 07:26:56 2026    ",
+          "58248": "Tue Nov  3 07:26:56 2026    ",
+          "58279": "Tue Nov  3 07:26:56 2026    ",
+          "58280": "Tue Nov  3 07:26:56 2026    ",
+          "58284": "Tue Nov  3 07:26:56 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1397800960,
+        "elapsed_seconds": 144.653931209,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "guard_receipt_complete": true,
+      "rows": [
+        {
+          "pair": 1,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-1-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-1-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 1,
+          "error": "Captured document differs from its unchanged pixel reference",
+          "interval": {
+            "lower": 15091163806,
+            "upper": 15125771079
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.96875,
+              15.60107421875,
+              15.70751953125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.81103515625,
+              15.5576171875,
+              15.69140625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "2b24aa397ae57a97a9d00a720aeb8940c793b5a7213ae8fbf681038a7be350de",
+          "different_pixels": 304064,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 1,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-1-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-1-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29256270093,
+            "upper": 29256270093
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.35302734375,
+              15.5283203125,
+              15.685546875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.24462890625,
+              15.486328125,
+              15.66943359375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 1,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-1-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-1-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 31173528042,
+            "upper": 31173528042
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.24462890625,
+              15.486328125,
+              15.66943359375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.96875,
+              15.60107421875,
+              15.70751953125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 2,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-2-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-2-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 14991460577,
+            "upper": 15013757169
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.81103515625,
+              15.5576171875,
+              15.69140625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.58544921875,
+              15.49853515625,
+              15.66943359375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 2,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-2-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-2-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28298268948,
+            "upper": 28298268948
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.5810546875,
+              15.4658203125,
+              15.6552734375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.5341796875,
+              15.44140625,
+              15.6455078125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 2,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-2-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-2-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29376953822,
+            "upper": 29376953822
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.58544921875,
+              15.49853515625,
+              15.66943359375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.5810546875,
+              15.4658203125,
+              15.6552734375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 3,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-3-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-3-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15228171181,
+            "upper": 15243160548
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.46435546875,
+              15.384765625,
+              15.6220703125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.1865234375,
+              15.3115234375,
+              15.5947265625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 3,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-3-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-3-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29913590830,
+            "upper": 29913590830
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.5341796875,
+              15.44140625,
+              15.6455078125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.67919921875,
+              15.4423828125,
+              15.6435546875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 3,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-3-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-3-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29503670239,
+            "upper": 29503670239
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.67919921875,
+              15.4423828125,
+              15.6435546875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.46435546875,
+              15.384765625,
+              15.6220703125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 4,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-4-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-4-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 14984147723,
+            "upper": 14988964903
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.1865234375,
+              15.3115234375,
+              15.5947265625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              15.85302734375,
+              15.63818359375,
+              15.7080078125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 4,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-4-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-4-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28076977548,
+            "upper": 28076977548
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              18.41552734375,
+              16.193359375,
+              15.90380859375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              18.7021484375,
+              16.28955078125,
+              15.939453125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 4,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-4-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-4-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29159591751,
+            "upper": 29159591751
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              15.85302734375,
+              15.63818359375,
+              15.7080078125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              18.41552734375,
+              16.193359375,
+              15.90380859375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 5,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-5-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-5-brave/result.json",
+          "result_complete": true,
+          "native_exit": null,
+          "driver_exit": 1,
+          "error": "A private browser helper is outside its resource coalition",
+          "interval": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              18.0048828125,
+              16.25732421875,
+              15.93359375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              19.44580078125,
+              16.5849609375,
+              16.05078125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": false,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": false,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        },
+        {
+          "pair": 5,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-5-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-5-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29395039746,
+            "upper": 29395039746
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              18.7021484375,
+              16.28955078125,
+              15.939453125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              18.353515625,
+              16.2958984375,
+              15.9453125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 5,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-5-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-5-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29651373926,
+            "upper": 29651373926
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              18.353515625,
+              16.2958984375,
+              15.9453125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              18.0048828125,
+              16.25732421875,
+              15.93359375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 6,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-6-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-6-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15089344629,
+            "upper": 15105086654
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              19.44580078125,
+              16.5849609375,
+              16.05078125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              19.97021484375,
+              16.7412109375,
+              16.10888671875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 6,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-6-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-6-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29323714785,
+            "upper": 29323714785
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              21.65380859375,
+              17.1435546875,
+              16.25439453125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              20.396484375,
+              17.02294921875,
+              16.2216796875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 6,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-6-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-6-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28978786695,
+            "upper": 28978786695
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              19.97021484375,
+              16.7412109375,
+              16.10888671875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              21.65380859375,
+              17.1435546875,
+              16.25439453125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 7,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-7-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-7-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15040257770,
+            "upper": 15050881337
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              19.79150390625,
+              17.05419921875,
+              16.24658203125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              19.48779296875,
+              17.03662109375,
+              16.2451171875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 7,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-7-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-7-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29143058565,
+            "upper": 29143058565
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              20.396484375,
+              17.02294921875,
+              16.2216796875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              20.2841796875,
+              17.0556640625,
+              16.23779296875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 7,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-7-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-pseudo-candidates-adaptive-20261103/adaptive-pseudo-v3-matched-cohort/pair-7-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28745624020,
+            "upper": 28745624020
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              20.2841796875,
+              17.0556640625,
+              16.23779296875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              19.79150390625,
+              17.05419921875,
+              16.24658203125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        }
+      ],
+      "audited_unix": 1793680074.070538,
+      "limitations": "Cohort 65 stops on shared executable drift. Cohort 66 reaches a disk-full failure in pair 7 Brave, has no final guard/controller receipt and cannot be accepted. Missing native/supervisor exits remain unknown; no values are reconstructed. All attempted launches are retained. Later cohorts use new output directories."
+    }
+  ],
+  "native_checks": [
+    {
+      "directory": "Build/bbc-pseudo-candidates-adaptive-20261103/native-validation",
+      "results": [
+        {
+          "name": "headless",
+          "exit": 0
+        },
+        {
+          "name": "smoke",
+          "exit": 0
+        },
+        {
+          "name": "svg",
+          "exit": 0
+        }
+      ],
+      "runtime_identities_unchanged": true,
+      "identity_before_receipt": "Build/bbc-pseudo-candidates-adaptive-20261103/native-validation/identity-before.json",
+      "identity_after_receipt": "Build/bbc-pseudo-candidates-adaptive-20261103/native-validation/identity-after.json",
+      "r13_flow_image_marker_absent": true,
+      "validates_batch_candidate_before_removal": true,
+      "validates_engine_removal": false
+    },
+    {
+      "directory": "Build/bbc-pseudo-candidates-adaptive-20261103/native-validation-v2",
+      "results": [
+        {
+          "name": "headless",
+          "exit": 0
+        },
+        {
+          "name": "smoke",
+          "exit": 0
+        },
+        {
+          "name": "svg",
+          "exit": 0
+        }
+      ],
+      "runtime_identities_unchanged": true,
+      "identity_before_receipt": "Build/bbc-pseudo-candidates-adaptive-20261103/native-validation-v2/identity-before.json",
+      "identity_after_receipt": "Build/bbc-pseudo-candidates-adaptive-20261103/native-validation-v2/identity-after.json",
+      "r13_flow_image_marker_absent": true,
+      "validates_batch_candidate_before_removal": true,
+      "validates_engine_removal": false
+    }
+  ],
+  "restoration": {
+    "cases": 14,
+    "memory_modes": 3,
+    "executions": 42,
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      }
+    ],
+    "tool_tests": 241,
+    "engine_removal_native_validation_pending": true
+  },
+  "preparation_failures": [
+    "Initial primitive-mut mask compile failures are retained under focused-css-v1/ and ssr-compile*.",
+    "Broad CI compiler attempts failed in an independently edited GridSizeValue smart cast; initial current-V attempts failed on an independently edited immutable font field. No tests executed in those attempts. After shared-source correction, 486 selected cases executed in each mode with the three known baseline failures.",
+    "The first additional profile compile failed in that same grid helper; its wrapper also attempted a rejected compatibility fallback. No diagnostic binary/run or credit resulted. The successful v2 profile explicitly disables fallback.",
+    "Cohort 65 was stopped after three browser attempts by pinned-input drift when the shared bundle was replaced.",
+    "Cohort 66 retained 21 attempted launches, 20 result receipts and six complete triples; disk-full errors prevented the final Brave capture and final guard/controller receipts. Those exits are unknown. Empty/missing receipts are retained without reconstruction. A subsequent native-validation command failed shell redirection before launching a browser.",
+    "Cohort 67 retains all 21 result receipts. Brave pair 1 differs by 304064 pixels; Brave pair 5 fails private-helper coalition ownership and has no selected interval. All 14 Vox/control PNGs are exact. Six Brave counts supply only descriptive invalid-cohort statistics."
+  ],
+  "artifact_compression_manifests": [
+    "Build/bbc-pseudo-candidates-adaptive-20261103/compressed-completed-artifacts.json",
+    "Build/bbc-disk-recovery-20261103/compressed-completed-artifacts.json",
+    "Build/bbc-disk-recovery-20261103/compressed-older-artifacts.json",
+    "Build/bbc-disk-recovery-20261103/compressed-older-generated-c.json"
+  ]
+}
