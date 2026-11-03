@@ -1,23 +1,27 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Latest cohort 77 retains seven alternating Vox/Brave
-pairs on the 609-response frozen 2026-11-03 homepage. Vox's launch-through-
-encoded-PNG median is **29,631,407,157** instructions; Brave's lower-bound
-median is **17,918,487,741**. The strict integer gate fails:
-`300477745940 > 160073278677`, conservative ratio **1.6894135834606137**.
-All seven Vox captures match their unchanged reference exactly. Brave pair 6
-changes 53,392 reference pixels, maximum channel error 6; acceptance is invalid.
-All native exits, complete content audits and pinned input checks pass. Its
-result-driver exit 1 records the pixel failure. No samples are excluded.
-This current-build baseline has no matched engine-change control and earns no
-isolated optimization credit. See the [cohort/profile ledger](performance/bbc-whole-profile-cohort77-20261103.json)
-and [authenticated raw receipts](performance/raw/bbc-whole-profile-cohort77-20261103.tar.gz).
+`OPTIMIZED_SITES.md`.** Cohort 78 completes seven alternating control/Vox/Brave
+triples on the 609-response frozen 2026-11-03 homepage. All 21 captures pass
+unchanged pixels, full content, normal native exits, ownership and pinned-input
+checks. Vox's launch-through-encoded-PNG median is **31,263,189,299** instructions;
+Brave's lower-bound median is **17,848,741,330**. The strict integer gate fails:
+`324416048800 > 159014279835`, conservative ratio **1.836152351996092**.
+Both Vox arms explicitly retain the historical logical-grid paint and inline
+font metrics; this is not a result for the newer default Retina rendering.
 
-Earlier cohort 76 completes seven alternating control/Vox/Brave triples with
-all 21 captures valid. Vox median is **29,975,884,452**, Brave lower median
-**17,737,591,996**; its failing gate and **1.764903825299251** conservative
-ratio remain retained. This is still the latest complete valid cohort.
+The stylesheet-pruning candidate regresses against its same-binary control:
+control median **30,106,398,512**, five paired regressions and two small wins.
+The candidate median increases by **1,156,790,787 (3.84%)**. The candidate and
+control have been removed, with all 135 focused rollback executions and 262
+instruction-tool checks passing. No saving or broad-check reset is credited.
+See the [cohort/rollback ledger](performance/bbc-cohort78-rollback-20261103.json)
+and [authenticated raw receipts](performance/raw/bbc-cohort78-rollback-20261103.tar.gz).
+
+Prior cohort 77 retains all fourteen attempts, including Brave pair 6's 53,392
+changed reference pixels. Its Vox median is 29,631,407,157 and Brave lower median
+17,918,487,741; it supplies no valid acceptance or isolated engine-change credit.
+See the [cohort/profile ledger](performance/bbc-whole-profile-cohort77-20261103.json).
 
 This is a **new workload**, with 609 sealed responses and 91 headlines. The
 original 595-response fixture remains lost. Moving to this page establishes no
@@ -37,7 +41,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **77 cohorts / 1,737 attempted browser trials**, excluding separately
+History is **78 cohorts / 1,758 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 ## Historical results on the earlier fixture
@@ -4646,3 +4650,31 @@ At this checkpoint, cohort 77 remains the latest instruction result and the
 10% target is unmet. Native checks and cohorts 78/79 await a completed canonical
 bundle with their required code and fixed rendering policy. No catalog entry,
 robust instruction saving, full broad pass or cadence reset is claimed.
+
+
+## Pruning rejection and current-V allocator repair (2026-11-03)
+
+The pending pruning experiment above completed as cohort 78 with all 21 trials
+valid, but regressed. Engine rollback `ed7c15257` and tool rollback `628b9f2b1`
+remove it; the original failed fixture, rendering diagnostics, watch timeouts
+and a prelaunch wrapper error remain preserved. No cohort was repeated to seek
+a favorable sample. The exact counter intervals and all integer arithmetic are
+recomputed from launch counters in the linked ledger.
+
+Current V replaced its private per-thread preallocation cache with a locked
+process-wide pool, removing a field mirrored by the platform adapter. This
+blocked production and preallocation checks. Commit `a2baaa98a` follows the
+current emitted C pool layout, derives capacity from its array addresses, and
+holds the allocator's own atomic lock while retiring detached pages. Existing
+block/scope ABI guards and memory limits remain. Eleven focused test functions
+pass across default, no-GC and bounded-preallocation processes, including four
+concurrent refill workers and preservation of live bytes. Retirement-specific
+assertions execute in preallocation mode. All 45 rollback cases then pass in
+all three memory modes. Earlier compiler failures remain retained.
+
+A shared-index mistake included nine already-staged Performance API paths from
+another session in that allocator commit. That work and linear history are
+preserved. The allocator checks do not validate that separate feature; subsequent
+commits select explicit paths with `git commit --only`. The linked ledger names
+the affected paths. BBC remains outside the catalog, with no full broad pass
+or cadence reset.
