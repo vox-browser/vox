@@ -5,18 +5,22 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 
 // Main-thread opacity groups keep the original full-canvas device space.
 // Reuse only idle canvases; nested groups must own distinct backing stores.
-// The clip supplied on release bounds every write to the group. Clearing that
-// region leaves the entire canvas transparent for its next, possibly disjoint,
-// clip without touching a full viewport of otherwise unused pages.
+// The clip supplied on release bounds every write to the group. Small buffers
+// clear that region; large dedicated mappings discard all payload pages. Both
+// leave a transparent canvas for the next, possibly disjoint, clip.
 typedef struct {
     CGContextRef context;
     uint8_t *pixels;
 } VoxOpacityCanvas;
 
 #define VOX_OPACITY_CANVAS_POOL_SLOTS 2
+// Large canvases own page-aligned mappings so idle payload can be discarded
+// without changing the CGContext, virtual capacity, or surviving snapshots.
+#define VOX_OPACITY_CANVAS_MAPPED_MIN_BYTES (1024u * 1024u)
 #define VOX_OPACITY_CANVAS_POOL_BYTES (32u * 1024u * 1024u)
 static VoxOpacityCanvas native_opacity_canvas_pool[VOX_OPACITY_CANVAS_POOL_SLOTS];
 static size_t native_opacity_canvas_pool_bytes;
@@ -31,8 +35,10 @@ static size_t native_opacity_canvas_bytes(VoxOpacityCanvas canvas) {
 }
 
 static void native_destroy_opacity_canvas(VoxOpacityCanvas canvas) {
+    size_t bytes = native_opacity_canvas_bytes(canvas);
     CGContextRelease(canvas.context);
-    free(canvas.pixels);
+    if (bytes >= VOX_OPACITY_CANVAS_MAPPED_MIN_BYTES) munmap(canvas.pixels, bytes);
+    else free(canvas.pixels);
 }
 
 static void native_discard_opacity_canvas_pool(void) {
@@ -62,12 +68,21 @@ static VoxOpacityCanvas native_acquire_opacity_canvas(size_t width, size_t heigh
         }
     }
     if (!canvas.context) {
-        canvas.pixels = (uint8_t *)calloc(height, width * 4);
-        if (!canvas.pixels) return canvas;
+        size_t bytes = height * width * 4;
+        if (bytes >= VOX_OPACITY_CANVAS_MAPPED_MIN_BYTES) {
+            void *mapping = mmap(NULL, bytes, PROT_READ | PROT_WRITE,
+                MAP_PRIVATE | MAP_ANON, -1, 0);
+            if (mapping == MAP_FAILED) return canvas;
+            canvas.pixels = (uint8_t *)mapping;
+        } else {
+            canvas.pixels = (uint8_t *)calloc(height, width * 4);
+            if (!canvas.pixels) return canvas;
+        }
         canvas.context = CGBitmapContextCreate(canvas.pixels, width, height, 8, width * 4,
             color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
         if (!canvas.context) {
-            free(canvas.pixels);
+            if (bytes >= VOX_OPACITY_CANVAS_MAPPED_MIN_BYTES) munmap(canvas.pixels, bytes);
+            else free(canvas.pixels);
             return (VoxOpacityCanvas){0};
         }
     }
@@ -109,8 +124,19 @@ static void native_release_opacity_canvas(VoxOpacityCanvas canvas, size_t left,
         slot = 0;
     }
     size_t pitch = CGBitmapContextGetBytesPerRow(canvas.context);
-    for (size_t row = top; row < bottom; ++row)
-        memset(canvas.pixels + row * pitch + left * 4, 0, (right - left) * 4);
+    if (bytes >= VOX_OPACITY_CANVAS_MAPPED_MIN_BYTES) {
+        // Replacing our own mapping releases physical pages and guarantees
+        // transparent bytes on reuse. No malloc metadata or live payload is
+        // inside this dedicated reservation. Quartz has flushed the group.
+        if (mmap(canvas.pixels, bytes, PROT_READ | PROT_WRITE,
+                MAP_PRIVATE | MAP_ANON | MAP_FIXED, -1, 0) == MAP_FAILED) {
+            native_destroy_opacity_canvas(canvas);
+            return;
+        }
+    } else {
+        for (size_t row = top; row < bottom; ++row)
+            memset(canvas.pixels + row * pitch + left * 4, 0, (right - left) * 4);
+    }
     native_opacity_canvas_pool[slot] = canvas;
     native_opacity_canvas_pool_bytes += bytes;
 }
