@@ -14,6 +14,14 @@ fn idle_layout_rare_data_is_shareable(data &ComputedLayoutRareData) bool {
 	return true
 }
 
+fn idle_layout_size_is_shareable(size Size) bool {
+	// Calculations retain typed source graphs rather than scalar geometry.
+	// Inspect the tag without following that graph or extending its lifetime
+	// through the document-wide snapshot pool.
+	if value := size.length_percentage_ { return !value.is_calculated() }
+	return true
+}
+
 fn idle_layout_snapshot_is_shareable(cache &ComputedLayoutCache) bool {
 	if cache.writable_owner_identity != 0 || !idle_layout_rare_data_is_shareable(cache.rare_data())
 		|| cache.computed_values_background_layers_.len != 0 {
@@ -21,6 +29,9 @@ fn idle_layout_snapshot_is_shareable(cache &ComputedLayoutCache) bool {
 	}
 	// A projection can retain an element-specific source style. Keep it local.
 	$for field in ComputedLayoutCache.fields {
+		$if field.typ is Size {
+			if !idle_layout_size_is_shareable(cache.$(field.name)) { return false }
+		}
 		$if field.name == 'device_layout_projection_' {
 			if voidptr(cache.$(field.name)) != unsafe { nil } { return false }
 		}
