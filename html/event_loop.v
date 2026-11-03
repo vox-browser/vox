@@ -1155,7 +1155,9 @@ pub fn (mut event_loop EventLoop) pause() &PauseHandle {
 }
 
 pub fn (mut event_loop EventLoop) unpause(handle &PauseHandle) {
-	assert handle.event_loop == event_loop
+	// Identity, not `==`: V compares referenced values, which expands into a
+	// multi-megabyte deep comparison of the whole event loop graph in C.
+	assert voidptr(handle.event_loop) == voidptr(event_loop)
 	event_loop.execution_paused = false
 	event_loop.schedule()
 	_ = unsafe_shared_current_time_ms() - handle.time_before_pause
