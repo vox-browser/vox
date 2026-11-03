@@ -11,7 +11,8 @@ template<class Function> static Function selected(char const* name, Function fal
     if(!library)return fallback;
     auto symbol=dlsym(library,name);assert(symbol);return reinterpret_cast<Function>(symbol);
 }
-static std::vector<uint8_t> render(int scale, bool translated, bool underlay, bool root) {
+static std::vector<uint8_t> render(int scale, bool translated, bool underlay, bool root,
+    float offset_x = 260, float offset_y = 0, float phase = 0) {
     constexpr int width=1024, height=768;
     int pw=width*scale,ph=height*scale;
     std::vector<uint8_t> pixels(size_t(pw)*ph*4);
@@ -26,11 +27,12 @@ static std::vector<uint8_t> render(int scale, bool translated, bool underlay, bo
     int msaa_cell=0;selected("ladybird_v_skia_set_msaa_grid",&ladybird_v_skia_set_msaa_grid)(&msaa_cell,1,768*scale,256*scale,1);
     selected("ladybird_v_skia_set_layer_shared_recording",&ladybird_v_skia_set_layer_shared_recording)(1);
     if(underlay) {
-        float data[]{translated?502.0f:762.0f,77,246,44,22,22,22,22,22,22,22,22};
+        float data[]{762+phase-(translated?offset_x:0),77+phase-(translated?offset_y:0),246,44,22,22,22,22,22,22,22,22};
         selected("ladybird_v_skia_set_rounded_rect_underlay",&ladybird_v_skia_set_rounded_rect_underlay)(data,237,243,254,255);
     }
-    assert(selected("ladybird_v_skia_draw_rounded_rect",&ladybird_v_skia_draw_rounded_rect)(context,translated?502:762,77,246,44,
-        22,22,22,22,22,22,22,22,1,0,0,1,translated?260:0,0,0,0,0,width,height,
+    assert(selected("ladybird_v_skia_draw_rounded_rect",&ladybird_v_skia_draw_rounded_rect)(context,
+        762+phase-(translated?offset_x:0),77+phase-(translated?offset_y:0),246,44,
+        22,22,22,22,22,22,22,22,1,0,0,1,translated?offset_x:0,translated?offset_y:0,0,0,0,width,height,
         237,243,254,underlay?128:255,1,0,1,0));
     // A nonconvex path makes the shared GPU picture use multisampling,
     // as in a sticky message area containing its vector action icons.
@@ -53,6 +55,14 @@ int main(){assert(shared_picture_draw());int failures=0;
         int different=0;for(size_t i=0;i<a.size();i+=4)
             if(!std::equal(a.begin()+i,a.begin()+i+4,b.begin()+i))++different;
         std::printf("scale=%d underlay=%d root=%d: %d differing pixels\n",scale,underlay,root,different);
+        failures+=different;
+    }
+    for(int scale:{1,2})for(bool underlay:{false,true})for(float phase:{0.f,.5f}) {
+        auto a=render(scale,true,underlay,false,0,-182.5f,phase);
+        auto b=render(scale,false,underlay,false,0,-182.5f,phase);
+        int different=0;for(size_t i=0;i<a.size();i+=4)
+            if(!std::equal(a.begin()+i,a.begin()+i+4,b.begin()+i))++different;
+        std::printf("fractional scale=%d underlay=%d phase=%.1f: %d differing pixels\n",scale,underlay,phase,different);
         failures+=different;
     }return failures?1:0;
 }
