@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Font metrics on the presenting device grid</title>
+<style>
+html, body { margin: 0; background: white; color: #111 }
+body { font-family: system-ui, sans-serif }
+.sample { position: absolute; left: 20px; width: 700px }
+.paragraph { top: 20.25px; font-size: 14px; line-height: 20.578125px }
+.title { top: 120.5390625px; font-size: 14px; font-weight: 600; line-height: 20.296875px }
+.composer { top: 180px; font-size: 17px; line-height: 24px }
+.small { top: 240.25px; font-size: 12px; line-height: 16px }
+.normal { top: 300px; font-size: 17px; line-height: normal }
+</style>
+<div class="sample paragraph">Cookies help this site function, measure usage, and support<br>Fractional font ascent and line leading</div>
+<div class="sample title">We use cookies</div>
+<div class="sample composer">Ask ChatGPT</div>
+<div class="sample small">Log in to get answers based on saved chats</div>
+<div class="sample normal">Normal line height<br>Second line</div>
+<!-- Keep HTML layout in CSS coordinates while the display uses scale 2. -->
+<svg width="1" height="1"></svg>

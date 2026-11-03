@@ -715,8 +715,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			fragment_baseline = font_baseline_for_line_height(primary_metrics, fragment_computed.line_height())
 			if primary_metrics.floor_inline_leading && fragment_computed.line_height_is_normal() {
 				if run := fragment.glyph_run() {
-					used := run.font().inline_metrics()
-					used_font_baseline = CSSPixels.nearest_value_for(f64(used.ascent)).plus(CSSPixels.new(int(math.floor(f64(used.line_gap) / 2))))
+					used := layout_inline_font_metrics(fragment.layout_node_, run.font())
+					used_font_baseline = CSSPixels.nearest_value_for(f64(used.ascent)).plus(inline_half_leading(CSSPixels.nearest_value_for(f64(used.line_gap)), used))
 				}
 			}
 		} else {
@@ -900,8 +900,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			font_metrics := layout_font_metrics_for_node(fragment.layout_node_)
 			typographic_height := CSSPixels.nearest_value_for(f64(font_metrics.ascent + font_metrics.descent))
 			leading := fragment_computed.line_height().minus(typographic_height)
-			mut half_leading := CSSPixels.from_raw(leading.raw_value() / 2)
-			if font_metrics.floor_inline_leading { half_leading = css.css_pixels_floor(half_leading) }
+			half_leading := inline_half_leading(leading, font_metrics)
 			end_leading := if font_metrics.floor_inline_leading { leading.minus(half_leading) } else { half_leading }
 			ascent := CSSPixels.nearest_value_for(f64(font_metrics.ascent))
 			descent := CSSPixels.nearest_value_for(f64(font_metrics.descent))
@@ -914,8 +913,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			// either side, so a taller fallback face grows the line.
 			if font_metrics.floor_inline_leading && fragment_computed.line_height_is_normal() {
 				if run := fragment.glyph_run() {
-					used := run.font().inline_metrics()
-					used_half_gap := CSSPixels.new(int(math.floor(f64(used.line_gap) / 2)))
+					used := layout_inline_font_metrics(fragment.layout_node_, run.font())
+					used_half_gap := inline_half_leading(CSSPixels.nearest_value_for(f64(used.line_gap)), used)
 					used_end_gap := CSSPixels.nearest_value_for(f64(used.line_gap)).minus(used_half_gap)
 					baseline := fragment.block_offset().plus(fragment.baseline())
 					top_of_inline_box = css_pixels_min(top_of_inline_box,
@@ -1132,9 +1131,21 @@ fn (builder &LineBuilder) y_for_float_to_be_inserted_here(box_state &UsedValues,
 
 fn layout_font_metrics_for_node(node &Node) platform.FontPixelMetrics {
 	if text := node.as_text_node() {
-		return text.font_for_rendering().inline_metrics()
+		return layout_inline_font_metrics(node, text.font_for_rendering())
 	}
-	return node.first_available_font().inline_metrics()
+	return layout_inline_font_metrics(node, node.first_available_font())
+}
+
+fn layout_inline_font_metrics(node &Node, font &platform.Font) platform.FontPixelMetrics {
+	document := node.document()
+	return font.inline_metrics_at_scale(document.display_device_pixel_ratio() / document.layout_coordinate_scale())
+}
+
+fn inline_half_leading(leading CSSPixels, metrics platform.FontPixelMetrics) CSSPixels {
+	half := CSSPixels.from_raw(leading.raw_value() / 2)
+	if !metrics.floor_inline_leading { return half }
+	scale := metrics.inline_leading_scale
+	return CSSPixels.nearest_value_for(math.floor(half.to_double() * scale) / scale)
 }
 
 fn middle_alignment_offset(node &Node, top CSSPixels, bottom CSSPixels, height CSSPixels,
@@ -1185,12 +1196,14 @@ fn font_baseline_for_line_height(font_metrics platform.FontPixelMetrics, line_he
 	ascent := CSSPixels.nearest_value_for(f64(font_metrics.ascent))
 	typographic_height :=
 		CSSPixels.nearest_value_for(f64(font_metrics.ascent + font_metrics.descent))
-	mut half_leading := CSSPixels.from_raw(line_height.minus(typographic_height).raw_value() / 2)
-	if font_metrics.floor_inline_leading { half_leading = css.css_pixels_floor(half_leading) }
+	half_leading := inline_half_leading(line_height.minus(typographic_height), font_metrics)
 	return ascent.plus(half_leading)
 }
 
 fn normal_line_height_for_font_metrics(font_metrics platform.FontPixelMetrics) CSSPixels {
+	if font_metrics.floor_inline_leading && font_metrics.inline_leading_scale != 1 {
+		return CSSPixels.nearest_value_for(f64(font_metrics.ascent + font_metrics.descent + font_metrics.line_gap))
+	}
 	gap := if font_metrics.floor_inline_leading { int(font_metrics.line_gap) } else { 0 }
 	return CSSPixels.new(int(math.round_to_even(f64(font_metrics.ascent))) + int(math.round_to_even(f64(font_metrics.descent))) + gap)
 }

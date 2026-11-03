@@ -6075,7 +6075,14 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 	if c.cached_first_available_computed_font_ != unsafe { nil } {
 		computed_font := c.cached_first_available_computed_font_
 		font := computed_font.font_for_metrics()
-		metrics := font.inline_metrics()
+		mut scale := 1.0
+		if subject := c.subject_element_ {
+			scale = subject.document().display_device_pixel_ratio() / c.layout_coordinate_scale()
+		}
+		metrics := font.inline_metrics_at_scale(scale)
+		if metrics.floor_inline_leading && metrics.inline_leading_scale != 1 {
+			return CSSPixels.nearest_value_for(f64(metrics.ascent + metrics.descent + metrics.line_gap))
+		}
 		gap := if metrics.floor_inline_leading { int(metrics.line_gap) } else { 0 }
 		return CSSPixels.new(int(math.round_to_even(f64(metrics.ascent))) + int(math.round_to_even(f64(metrics.descent))) + gap)
 	}

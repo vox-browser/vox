@@ -97,6 +97,7 @@ pub:
 	descent               f32
 	line_gap              f32
 	floor_inline_leading  bool
+	inline_leading_scale  f64 = 1
 }
 
 pub struct FontGlyphBounds {

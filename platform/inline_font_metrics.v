@@ -5,19 +5,29 @@ import math
 // Blink's HTML inline layout uses integer ascent and descent, while retaining
 // the fractional x-height for vertical-align:middle. SVG keeps pixel_metrics().
 pub fn (font &Font) inline_metrics() FontPixelMetrics {
+	return font.inline_metrics_at_scale(1)
+}
+
+// Keep the selected CSS font instance, but round its metrics on the presenting
+// device grid. Layout that already uses device coordinates supplies scale 1.
+pub fn (font &Font) inline_metrics_at_scale(device_scale f64) FontPixelMetrics {
 	metrics := font.pixel_metrics()
 	if font.font_rendering_policy != .chromium { return metrics }
+	scale := if device_scale > 0 && !math.is_inf(device_scale, 0) && !math.is_nan(device_scale) {
+		device_scale
+	} else { 1.0 }
 	// Blink's zero-sized font contributes no strut. SkFont's one-pixel
 	// fallback metrics belong to the upstream font API, not HTML line layout.
 	if font.point_size == 0 { return FontPixelMetrics{ floor_inline_leading: true } }
-	ascent := math.round(f64(metrics.ascent))
-	descent := math.round(f64(metrics.descent))
+	ascent := math.round(f64(metrics.ascent) * scale)
+	descent := math.round(f64(metrics.descent) * scale)
 	return FontPixelMetrics{
 		...metrics
-		ascent:               f32(ascent + chromium_legacy_ascent_adjustment(font, ascent, descent))
-		descent:              f32(descent)
-		line_gap:             f32(math.round(f64(metrics.line_gap)))
+		ascent:               f32((ascent + chromium_legacy_ascent_adjustment(font, ascent, descent)) / scale)
+		descent:              f32(descent / scale)
+		line_gap:             f32(math.round(f64(metrics.line_gap) * scale) / scale)
 		floor_inline_leading: true
+		inline_leading_scale: scale
 	}
 }
 
