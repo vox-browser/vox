@@ -4132,3 +4132,34 @@ The [raw diagnostic ledger](performance/bbc-phase-instructions-20261103.json)
 retains both extractions. Checkpoint gaps include interleaved callbacks,
 asynchronous work and probe overhead; they are leads for investigation, rather
 than exclusive function instruction costs or optimization credit.
+
+### Keyword-length shortcut rejected (2026-11-03)
+
+`2300d4ac0` avoids copying typed keyword wrappers before numeric length
+rejection. All 108 focused executions and 244 tool tests pass. Separate
+`v -profile` diagnostics confirm the selected scope, with 79,912 resolver
+calls per arm and no generic-wrapper conversions in the candidate within that
+scope. Two standalone layout pairs save 5,512,747 instructions across medians,
+with identical geometry and paint dumps; this is no BBC browser credit.
+
+Fresh production diagnostics confirm the actual path before encoded PNG,
+original pixels/content, ownership and actual JavaScriptCore execution.
+Cohort 71 retains all 21 launches. Observed medians are **29,136,371,921
+control**, **29,668,120,108 candidate**, and **15,305,088,035 Brave**. Five
+matched pairs regress and two improve; both the difference of medians and
+paired median regress by **531,748,187**. Brave pairs 3 and 5 differ by
+304,064 pixels, invalidating acceptance. The numeric gate also fails:
+**302,149,303,840 > 135,435,582,306**, ratio **2.0078502918**.
+
+Because no BBC gain is established, `ba7e391f0` removes the shortcut and
+`a4bfdeede` removes its control. The retained rounding/cache restoration cases
+pass in both policies and all three memory modes (84 executions); 243 restored
+tool tests pass. Headless startup, eleven smoke and eight SVG checks pass with
+stable identities on the candidate bundle before removal; native rollback
+validation requires a later completed bundle. No positive BBC reduction is
+credited toward the broad cadence, whose earlier three known failures remain.
+The [durable ledger](performance/bbc-keyword-length-resolution-20261103.json)
+retains every count, failure, profile, explicit preprocessor-normalization proof,
+command and identity/ownership/guard receipt. History reaches **71 cohorts /
+1,635 browser attempts**. The **10% goal remains open**, without a BBC homepage
+catalog entry.
