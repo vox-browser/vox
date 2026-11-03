@@ -56,7 +56,7 @@ for requested in "$@"; do
 		*/*)
 			input_path=$requested
 			case "$input_path" in
-				*/Tests/LibWeb/Ref/input/*) test_kind=reftest ;;
+				*/Tests/LibWeb/Ref/input/*|Tests/Browser/Ref/*|*/Tests/Browser/Ref/*) test_kind=reftest ;;
 			esac
 			;;
 		*)
