@@ -20568,3 +20568,94 @@ exception and Chrome parity remain open.
 
 See [the structured audit](performance/github-style-attribution-20261103.json)
 and [durable C inputs, counters, commands, failures and captures](performance/raw/github-style-attribution-20261103.tar.gz).
+
+## Empty selector-collector setup, November 3–4, 2026
+
+Feature `0242fee33ec2711839c2e57ff97cfaaa63947890` returns the empty rule list
+once all ordinary, own-host, slotted and part candidate paths have produced no
+candidates. It preserves candidate-scratch cleanup and caller-owned attempted
+pseudo-class metadata while avoiding construction of the unused repeated-selector
+memo map. Nonempty candidate lists still take the existing matching path,
+including selectors that fail after publishing attempted state.
+
+Two new cases cover empty ordinary/pseudo collections, scratch depth and context
+cleanup, later cache population/removal and nonmatching-selector metadata.
+Baseline/new cases and existing direct-bucket/empty-bucket neighbors pass 18
+focused C-O0 case executions, with Boehm, GC-disabled and preallocation coverage
+as listed in the structured audit. No broad suite is rerun for this local result.
+Two original setup compiles failed because the non-Result fixture helper used
+error propagation; both actual compiler/guard exits one remain retained, and no
+runtime launched from them.
+
+The fixed local mechanism diagnostic measures 2,048 complete empty collector
+calls per fresh process, using current V/preallocation/native C-O2. Setup, eight
+warmups, forced GC, validation and printing remain outside the hardware interval.
+Its first cohort stops after one failed observation: the counter-enable variable
+was omitted, `begin_instructions()` returned an unavailable snapshot, and the
+browser-free test process/guard exited one without a valid instruction count.
+That primary remains intact. A separately declared corrected diagnostic enables
+`VOX_PROFILE_INSTRUCTIONS=1` in a clean environment and retains its three fixed
+alternating pairs without retries or extensions. Its declaration file hash and
+birth/mtime precede its first observation; the copied plan's `created_unix` field
+retains the original declaration timestamp and is not presented as the corrected
+file creation time.
+
+The corrected counts are:
+
+| Pair | Before | Candidate | Saving |
+| --- | ---: | ---: | ---: |
+| 1 | 1,175,243 | 911,689 | 263,554 |
+| 2 | 1,214,055 | 907,892 | 306,163 |
+| 3 | 1,186,038 | 907,800 | 278,238 |
+
+Median instructions fall from 1,186,038 to 907,892: an observed local reduction of
+278,146 instructions, or 23.4517%, with all three pairs improving. Every corrected
+process and 3 GiB runtime guard exits zero, and every checksum is 2,048. Observed
+thread-arena growth is 327,696 bytes before and 2 bytes after in all observations;
+that interval also includes counter setup and is not an isolated memory-footprint
+measurement. This is a local mechanism result, not a whole-page confidence
+interval. It does not establish GitHub hit coverage or speedup.
+
+Both local probe programs are byte-identical outside the single collector C
+definition; no code, constants or paths are normalized away in that isolation
+check. Full control/candidate C, commands, binaries' hashes, retained failed
+attempts and all six observations are archived. Compile-time test assertions use
+a different failure reporter from production; that difference is preserved. The
+changed collector matches the installed production C exactly after resolving
+string constants, and six unchanged helper bodies match the preceding production
+build. No assertion code is ignored to obtain that comparison.
+
+One coalesced production request was needed because the previously completed
+bundle's collector C lacked the guard. Completed receipt
+`20261103-233616-8b529a6d` publishes executable SHA-256
+`de8cc0044d2999eed4ccf359f787ce99a30d4fa25206ecaa68c4094a659d0530`.
+The fresh loopback HTTP fixture passes stylesheet insertion/removal and pseudo
+queries at exactly 640×480, with browser/controller/3 GiB guard exits zero and
+no reported script exceptions. The changed collector's C matches the tested
+candidate; six unchanged helpers match the preceding production build, including
+assertion code. A subsequent shared build for concurrent work remains separate
+from this completed, pinned validation.
+
+A separately predeclared ordinary N=1 cached GitHub diagnostic passes the
+unchanged 193-response archive and strict 33-row/66-link/21-image content gate.
+Browser/controller/12 GiB guard exits are zero. The 1024×768 PNG remains
+byte-identical, SHA-256
+`65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`.
+There are zero native exceptions and four previously unarchived CSS module 404s.
+Main-task instructions are 12,853,422,390 at legacy paint and 51,464,580,505 at
+native submission, reported separately as diagnostic counts. One observation
+cannot attribute a page saving or regression; concurrent engine changes are not
+isolated by this page capture.
+
+There is no paired whole-page cohort, new whole-page instruction credit, broad
+baseline reset or historical-observation replacement. The ordinary capture
+checks correctness for its pinned build; per-page execution counts for the new
+fast path have not been instrumented. Production uses current V/preallocation/
+native C-O3, distinct from this local C-O2 diagnostic and historical old-compiler/
+Boehm/C-O2 cohorts. The counter covers retired instructions across all threads in
+the main process; contention remains recorded. Full hydration, the preceding
+intermittent exception and Chrome parity remain open. Concurrent source changes
+and newer app bundles are preserved, and the user's GUI browser is not stopped.
+
+See [the structured audit](performance/github-empty-collector-20261103.json)
+and [durable generated C, checks, counters and captures](performance/raw/github-empty-collector-20261103.tar.gz).

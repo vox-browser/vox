@@ -1,0 +1,3096 @@
+{
+  "actual_installed_receipt": {
+    "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/result.json",
+    "record": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "de8cc0044d2999eed4ccf359f787ce99a30d4fa25206ecaa68c4094a659d0530",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "f45d88b5154e686461ff9c6608031e935dad1fad1974518eb44e29547a58f974",
+        "dirty": true,
+        "head": "6c39417abc12423968bd41f5564b80bbe8beb7d1",
+        "repository_sha256": "176e6f00ff560e481f1e36358634788ccbae69e244c7bfddb7707aa680bab35a"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "b9836c9912ab3b8e387f494d817660774762b772e6729fce65f5962120a02bed",
+        "dirty": true,
+        "head": "e264835144a0753238955d8789ae0a21c1fb5201",
+        "repository_sha256": "a8ce02a0de583a0b03170ea4f2f36064364971ad923bcfc12ca2c8c0d971b960"
+      },
+      "request": {
+        "head": "6c39417abc12423968bd41f5564b80bbe8beb7d1",
+        "id": "f372eba40d904f01996e04f04629d8e9"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "f45d88b5154e686461ff9c6608031e935dad1fad1974518eb44e29547a58f974",
+        "dirty": true,
+        "head": "6c39417abc12423968bd41f5564b80bbe8beb7d1",
+        "repository_sha256": "176e6f00ff560e481f1e36358634788ccbae69e244c7bfddb7707aa680bab35a"
+      }
+    }
+  },
+  "app_copied": false,
+  "broad_baseline_reset": false,
+  "chrome_parity": false,
+  "completed_unix": 1793739560.891627,
+  "corrected_declaration_identity": {
+    "created_unix_field_note": "The copied plan retains the original declaration timestamp. Corrected-plan file birth/mtime and pinned hash precede its first corrected observation; no primary or plan has been rewritten.",
+    "declaration_file_birthtime_unix": 1793738477.10137,
+    "declaration_file_mtime_unix": 1793738477.1014688,
+    "first_corrected_observation_unix": 1793738479.770742,
+    "plan_existed_before_first_observation": true,
+    "plan_sha256": "35d98aa88a05ffe1611b6ffb36574c5b906a9ab24624c1aab44c89d784b94884"
+  },
+  "corrected_local_plan": {
+    "baseline_source_sha256": "31c2f799bb2456617d1bfafc1519b19ebc05ec1430dd24a652d58b997cb758ec",
+    "broad_baseline_reset": false,
+    "created_unix": 1793737725.4579,
+    "environment": {
+      "VOX_PROFILE_INSTRUCTIONS": "1"
+    },
+    "extensions": 0,
+    "fixture_correction": "Result calls in setup helper now panic on failure instead of incorrectly propagating; both original compile1 failures retained, no runtime or counter observation started.",
+    "order": [
+      [
+        "before",
+        "final"
+      ],
+      [
+        "final",
+        "before"
+      ],
+      [
+        "before",
+        "final"
+      ]
+    ],
+    "original_observations_replaced": 0,
+    "pairs": 3,
+    "prior_invalid_cohort": "Build/github-empty-collector-20261103-session4076/local-result.json",
+    "prior_invalid_result_sha256": "40c915c79383c396b3a9c8711ebc613b6290b32e500e72f0481897aaf79ab4b3",
+    "retries": 0,
+    "scope": "Fixed local mechanism probe of 2048 complete empty collector calls; current V/preallocation/native C-O2, no internal function instrumentation. Setup, eight warmups, forced GC, validation and printing outside the hardware interval. Counter explicitly enabled with VOX_PROFILE_INSTRUCTIONS=1 in a clean environment.",
+    "test_source_sha256": "d6c808bab61cb0de52c92737286d7aa5d3ce830b4a7066ab9e5fd844ffe7be4e",
+    "whole_page_credit": 0
+  },
+  "durable_evidence": {
+    "bytes": 14286857,
+    "files": 187,
+    "generated_c_policy": "Full control/candidate probe and installed production C archived; binary hashes, active focused test entrypoints/bodies and exact function isolation retained. Binaries remain at original Build paths; no source tree or app copied.",
+    "index": {
+      "audit-focused.py": "d0ff16c29b80ab440063b10921ccb223dc0518418aed2ace224abcf52dc47b27",
+      "audit-local-c.py": "efb48bb64b24000c89dd09cf3cf9240a02ec2efae674ae7c0d6fa6a17e7469f8",
+      "audit-production-functions.py": "c022b3cf175c240bfb72a569fa46db86a36ccdab94b91e477789b87250bb93e3",
+      "candidate-function-audit.json": "09bc1d26a57790de17a2138fc168d999e3c9d51b04264bfa93e1f11b905e868e",
+      "candidate-verified-functions.c.txt": "5ad07e711284437403f1673680035afe1603da2a55d5f747d260346a60bef73e",
+      "check.py": "9bb46ae285b9eec980cc94e2b3e0e1f67922c43338a840fa1e5bb7424c49db41",
+      "checks-before-boehm-test-bodies.c.txt": "49c0382b221babf792a7c4e02fa5cd62f39895bacee1ba3d3a59dbf50e84046b",
+      "checks-before-probe-test-bodies.c.txt": "fe1f4be78897f54ac394e9d3e82b8af45132e433157fb5c9c79a75d59c66c7cb",
+      "checks-empty-neighbor-boehm-test-bodies.c.txt": "d74f9fb1adb9c5ea42d219a0b3a275d546ac6627f30750eb4e059b7df8653a7a",
+      "checks-empty-neighbor-none-test-bodies.c.txt": "d74f9fb1adb9c5ea42d219a0b3a275d546ac6627f30750eb4e059b7df8653a7a",
+      "checks-final-boehm-test-bodies.c.txt": "49c0382b221babf792a7c4e02fa5cd62f39895bacee1ba3d3a59dbf50e84046b",
+      "checks-final-none-test-bodies.c.txt": "49c0382b221babf792a7c4e02fa5cd62f39895bacee1ba3d3a59dbf50e84046b",
+      "checks-final-prealloc-test-bodies.c.txt": "49c0382b221babf792a7c4e02fa5cd62f39895bacee1ba3d3a59dbf50e84046b",
+      "checks-final-probe-test-bodies.c.txt": "fe1f4be78897f54ac394e9d3e82b8af45132e433157fb5c9c79a75d59c66c7cb",
+      "checks-neighbor-boehm-test-bodies.c.txt": "1d9a41a36adebaff8ef46d3909f06d4440e3582f1e3a0bf8065f6f7e9e34f8ab",
+      "checks-neighbor-none-test-bodies.c.txt": "1d9a41a36adebaff8ef46d3909f06d4440e3582f1e3a0bf8065f6f7e9e34f8ab",
+      "collector-before.c.txt": "e747bcefc30058fac1a0a312b8048c3d6fd1c4439253f4036d62484c7d88bfd3",
+      "collector-change.patch": "989681e90fadd740f196cf207b91ed9cf3263f7581fabf33765db18b086b68b3",
+      "collector-final.c.txt": "b603ba9595957f8911cf16694a3df621f95ddb08a847cafc04bcc8374368b5a4",
+      "compile-base-command.json": "a898c4464c8ac177f454edc3256156f1391c505c2c017d1dd3983dc2948c47a1",
+      "compile-before-boehm-command.json": "541eeaebdb59d2fbaf81b67ea0f16149b1c1850e1d71b74bb7878ebb0cc1c9e2",
+      "compile-before-boehm-guard.json": "0232f88e9bfbc8d78d293f699b0559bedc18dc3ae98f8828260d1d676115a5f0",
+      "compile-before-boehm-result.json": "6042082b49f3338247df9d5d7332b7f4a32b377740f9751ce5df2f99c357a6be",
+      "compile-before-boehm.log": "1140e905d7842b3376452f3277438c39c990716e8ba28ad814076c2f444380ee",
+      "compile-before-probe-command.json": "f7e2969699714797e6a95a60a5746d1b91b5959de3cb3aa2dc6d6371ca522ef6",
+      "compile-before-probe-guard.json": "ecd07d2131091cfde461da51e5a5f8497888bf65500a89be654f392bfc82bfe5",
+      "compile-before-probe-result.json": "6f1c127949f7fe30cf6b0509a01445771742132d4251499223b8c0974e956afd",
+      "compile-before-probe.log": "33c57a955f8fbd550ae47303eb1607c5aad45ff617bd0c07f8097c0366318199",
+      "compile-empty-neighbor-boehm-command.json": "26035d8344ad3806608201e7d3dbeb36b7cdfc9fdc75ad7646c8f0d44ec0d4ca",
+      "compile-empty-neighbor-boehm-guard.json": "bb52143ecc6bd90f8a21c7a6e55d850ec893cc9ac3e163c5c151c1bee6792238",
+      "compile-empty-neighbor-boehm-result.json": "ec5457bfc455a3380f1b5f7818c33535f8b267911e975e98f6f76677640dc5e6",
+      "compile-empty-neighbor-boehm.log": "105cf82c0bc102809dafbb147b7f4caa66290f06b9cc62d6ab400eb0a6cf4296",
+      "compile-empty-neighbor-none-command.json": "aae390d7fece57b3bb4a222cd7de1a2940392c4cff33dfdcc6c4dd64fa834bb8",
+      "compile-empty-neighbor-none-guard.json": "3e562e028e49fb2c03c0c8cf2fb24812c756ab9a86e22adc2380b2c97eb67897",
+      "compile-empty-neighbor-none-result.json": "c6372b477af098e4ab7487243362acbc9fd3903db19288a8e199943f9870d41e",
+      "compile-empty-neighbor-none.log": "2fb00844b1783e32b7a97ac4088eb8f107dd5f95c6f57ad045a9f3789bd356c8",
+      "compile-final-boehm-command.json": "00077987cee1fe9e2883ab4bd6336dde293fd9fa2468b43995da8223b4f57bfe",
+      "compile-final-boehm-guard.json": "72a31a59663321dfdfaf9537a4bbeadb50dac580493e3f5f66a14ae2036c3cb7",
+      "compile-final-boehm-result.json": "aebb7e0ff41f62276e8db2dccd8dc93a8709e34688a634f6c4da7704403b1597",
+      "compile-final-boehm.log": "867c73e09e726db92f32a99fdd6cc3e6bcdc9e958acaa1a6388462fcb12babd7",
+      "compile-final-none-command.json": "bb10b538798c7e15cb9225d7e3220bd248bbc1d065abd52102955006004f36bf",
+      "compile-final-none-guard.json": "cace982245cd90f4fe4a3fb771389a2801a3b10a942ce704b8b50a964a829e51",
+      "compile-final-none-result.json": "434eef0e964390c570e70be6cdc26a86918dda138d4b39dd33abd187b4bb2507",
+      "compile-final-none.log": "36aa66630ed08525ff7b76a11ff89292e0993ddf830cb45d15414af61433b1a3",
+      "compile-final-prealloc-command.json": "b160bc9e08407dc7a23f7c83205dbd3f91db459258e55bdc5bd049979b59cd44",
+      "compile-final-prealloc-guard.json": "740a4bcc9c6c5691642f186fe7c55443e5023cd9544c00cfc9f5adaee57ae91f",
+      "compile-final-prealloc-result.json": "a8ab9d64c2c0620ac6f63bfbc4afc13d8fce256d727e1868d5914160b1bbaf43",
+      "compile-final-prealloc.log": "f782062cbcaba98263ad3e0d68f5e9913af5c568ee5d3d7231101d9fc7f60143",
+      "compile-final-probe-command.json": "d67561371f41ad66235b4a0a750e0d10e23ba62f89a896487828721fc7724595",
+      "compile-final-probe-guard.json": "09f864137aca38224525508782a16c9174d61050ab327ed718b4f5b79c834c5c",
+      "compile-final-probe-result.json": "5cc59bb10e4130413745e3c28c3c9c2d726b59420e8178e92bc27e1d2cf95061",
+      "compile-final-probe.log": "00a07d7f21ebf5d2c25be60b1573c0eaa7875eac974b900eae20a2008090b13f",
+      "compile-neighbor-boehm-command.json": "834b1d9da90cef058f8aadba81c2eeb1579a40295c120c1ca545866c0a7271dd",
+      "compile-neighbor-boehm-guard.json": "d26259e069455b068badd565827ef78185008157b0363797e97bf71d16a3d658",
+      "compile-neighbor-boehm-result.json": "582144ecc46d4942c78235a758aee02e91b4dcab1482828a79d2b536425ffb95",
+      "compile-neighbor-boehm.log": "13e8f240a0aa7cd5cef6ceecaf75d6a087c4b0ef53f16a4b9b9d1da67f8a635a",
+      "compile-neighbor-none-command.json": "dd03c8618ead6fae217c339dfb614d1043561d3eedce60c6580694b572432e95",
+      "compile-neighbor-none-guard.json": "57e428393298cc0218956a239059ff6e985c08e4ce3a4b562ec694a04bcf20bb",
+      "compile-neighbor-none-result.json": "2c94ec6f97da05e604c5392e2d7266918e480c24d40c24ab720f1063aa32cd17",
+      "compile-neighbor-none.log": "6c131e17a7061db827b172e48863c0722d9c4fa30612ac93072f7637462ef6da",
+      "counter-enabled/declaration-identity.json": "d7191c9f2b63d356467b30699d1840ce1a9865bb9b6b6f15608497b65d73d0ef",
+      "counter-enabled/local-01-before-guard.json": "234196b71a5ac54bdf323b2d2b31f1cb4e48c0a48a9216fe3f51f6f83da8813b",
+      "counter-enabled/local-01-before-terminal.json": "6a166af06b1a1b040c62a479f49b179973a4ca952479f1a429c5a8ecab733392",
+      "counter-enabled/local-01-before.log": "3211814295edc721f5fda4fc3c94a494940cececb069eeb7f052c1c5e242b86d",
+      "counter-enabled/local-01-final-guard.json": "10493e96c64df64d15696c53fbdde4b57179bbb9de80dc1d5c28cd1e3812d578",
+      "counter-enabled/local-01-final-terminal.json": "a4bff89ce2c0521f9f446a8dfb6ca06e9ce95798f52ca7c4137bb36e29b1b261",
+      "counter-enabled/local-01-final.log": "3c7966945c4198b32d5b56dd0575d50cb34832a5d9224aab468142673a0026f4",
+      "counter-enabled/local-02-before-guard.json": "d07e6eb343880c846058662de9e9807cb279368f33c3f81568d7f94b9f4d3c2f",
+      "counter-enabled/local-02-before-terminal.json": "47016990562c2db8561f12aac9780beccc44e6c917b5acf10c9b896ca02e54e3",
+      "counter-enabled/local-02-before.log": "0a02d57c350bf672505936af61ea072faf336e94b042c906717fc0ed1aadb6f5",
+      "counter-enabled/local-02-final-guard.json": "748cd61617136ec1a0f089e3144c2bd0f41687500792a8ba11e9324464e2fbdf",
+      "counter-enabled/local-02-final-terminal.json": "a721e7dd880312f05e814d32aeb68c50a75622271c06c6692e9df757415d599c",
+      "counter-enabled/local-02-final.log": "8eba9e516245743713b3037f069ce3941ee03e0cfc10561fd52febefe2197ae0",
+      "counter-enabled/local-03-before-guard.json": "4189cdc754ac353f6d4e6ab0dd1d34ab8cdd107c9203f9711e4d6cb57ff8eeb2",
+      "counter-enabled/local-03-before-terminal.json": "a7120692ddd933a01e223cea1232fbd9e54a41416e29ff45c50a1c925af53cb1",
+      "counter-enabled/local-03-before.log": "2f7a5495eb96bee2a8cb8284f1e6a853fdb794cd22ede020485c9aaecade545b",
+      "counter-enabled/local-03-final-guard.json": "e0b054c01d3ae03deafc855f1f41d1d395e711c19081490f99933ace549164e3",
+      "counter-enabled/local-03-final-terminal.json": "c4e97cb4a67fc97988ad0ea9ae378ede1011c5ba6311dc45fbb426bc200482f8",
+      "counter-enabled/local-03-final.log": "26b59b078c48532d02225732b4a54807971068a7710b3afbf541af3cea3c4784",
+      "counter-enabled/local-input-pins.json": "384eaa20f16de99464f1ccb3bd5e394d1c4101e1b7adf9f23ae7d178b28765b7",
+      "counter-enabled/local-observations.json": "b6ef4ed8d54499d27d7340a78bae38ccac8be90b176b392447fcee1429c31ed6",
+      "counter-enabled/local-plan.json": "35d98aa88a05ffe1611b6ffb36574c5b906a9ab24624c1aab44c89d784b94884",
+      "counter-enabled/local-result.json": "46a03e88888cfefa87760a2c4d8349d84fbdd8557bdbd0c303d92829788fa907",
+      "entrypoint-before-boehm.c.txt": "1a0a933259f3a258491b9dd0fc812cfd5c6fdc8a198c109ad1b9ab3462dd48a1",
+      "entrypoint-empty-neighbor-boehm.c.txt": "630b3c9ee6414430fb0360fdf034d468f2c380569d5cbb58f95b6d2984c850f7",
+      "entrypoint-empty-neighbor-none.c.txt": "630b3c9ee6414430fb0360fdf034d468f2c380569d5cbb58f95b6d2984c850f7",
+      "entrypoint-final-boehm.c.txt": "1a0a933259f3a258491b9dd0fc812cfd5c6fdc8a198c109ad1b9ab3462dd48a1",
+      "entrypoint-final-none.c.txt": "1a0a933259f3a258491b9dd0fc812cfd5c6fdc8a198c109ad1b9ab3462dd48a1",
+      "entrypoint-final-prealloc.c.txt": "1a0a933259f3a258491b9dd0fc812cfd5c6fdc8a198c109ad1b9ab3462dd48a1",
+      "entrypoint-neighbor-boehm.c.txt": "bf647c64512721dc771e1d056e39b632f51a6bd6208d2bc4ab0eff341088124b",
+      "entrypoint-neighbor-none.c.txt": "bf647c64512721dc771e1d056e39b632f51a6bd6208d2bc4ab0eff341088124b",
+      "feature-commit-config.json": "e12dfa4d27d19e6c4ebe2d458691851ea7686c1f7a8570ff6fd288157bf7b518",
+      "feature-commit.json": "dd1b2e90c54f2f6e678dc2ce7aa0d9a5982fa495cf09235a25910f3d380426e4",
+      "feature-committed.patch": "cc116ae6c0dcaf50cc62707c9eb1f596c3a9418a20c7f859af448aba6a7c2c14",
+      "feature-sources.json": "92ce72667373a22b2274f5973b61bafb8577fe26205dee77dffa8de38b2e3719",
+      "final-audit.py": "98efdf7455e15035c397400f92c9b2a1aa0726895be92f808e25e628f66edd99",
+      "focused-audit.json": "0d3413799e1d5d4a52a5597bf11d9fd7dd309700b8d890bd300bd224523a0ba9",
+      "generated/checks-before-probe.c": "6358636aecfd62e4f2510a68a0f8739dc022a47d9d4765dc837e89b93ec89ed3",
+      "generated/checks-final-probe.c": "933efd674b602a0303934f5958e73cb5c28a495f110de3cbc0af5416167f4c06",
+      "generated/production-Vox.c": "c09eef33f4f08fbeb862589d2dd263511525b0b7e05926949c7b94ed622665a8",
+      "github-after-bindings-controller.log": "042524d0cbe479c0739177a20ddb6d92b5c08151d3d376610396637ad594b54e",
+      "github-after-bindings-guard.json": "f8fe3888476bd8ca782efffaab30a19fc3659baececdd1f0ebf765684c5e75d3",
+      "github-after-bindings-terminal.json": "5f193ce63d0a06145b98f19edf33c1b33e81465652b2b71746a37e7dd648b5d8",
+      "github-after-empty-collector-01/audit-config.json": "c0bb6f97b936f95af1b3108b9361507dca01ef4e17fb22f77f457237c4a243d6",
+      "github-after-empty-collector-01/audit.json": "4e32ed944afbd122f050ce987dd6b45c34d8d194f4ae4bfd0a03514b3d8c0de1",
+      "github-after-empty-collector-01/browser.log": "fe34058ad19b3c39212c189c52fb4fdd6c36555c6d0e84ba5ff622c1e440989a",
+      "github-after-empty-collector-01/document.png": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+      "github-after-empty-collector-01/plan.json": "6a2bcc27e62a1fe41c0b6e3a7503d25484d5d0750acc2ce5ee3a83f2645b8922",
+      "github-after-empty-collector-01/replay/openssl.log": "daa02ca41c59312ff9a9a7ab1aefb4e32023fe18b1a60ba6c3c63f582bd52f89",
+      "github-after-empty-collector-01/replay/ready.json": "8aeeebb6ea26fc868a4770d3cdf3b4760f1801ac895304f518e070d28464e71a",
+      "github-after-empty-collector-01/result.json": "0c9820bdbf955933b37462fe0e8bba899044d5f3585013da1de74a58f0950938",
+      "github-predeclared-plan.json": "422e7cf114c9a1e7ebdec044f5482d50a289f2b44e0e204e600e2031d17c96a5",
+      "installed-availability-initial.json": "7b1480b1324189da09d3cfe2c43e4d736732a09eb4d1549c4c0b653230d96da1",
+      "installed-availability.json": "37f0755dd0860b7e1cbfe2e44847fa3ce8ac2a332eb62f161c71518e93c29698",
+      "installed-integration-01/audit-config.json": "02edc79bd592077d50f954acf13affbaa8fd659fb47f0748e349278a5e1e7fc4",
+      "installed-integration-01/audit.json": "b5058589239d7ac6197c69f167db9932263344083673e06ff9112a424f984ff3",
+      "installed-integration-01/browser.log": "b4c47bc540ba2126c61240d93d4e7babfb09d5c097aac5770f58c40126932e01",
+      "installed-integration-01/document.png": "c4ba0ed365e0a3e7c869dfc07e98fe9095f50a6002f2af84b51c49a879231813",
+      "installed-integration-01/plan.json": "7150e8ce69c400f7f4491a1cc87780be8d4ddfd95e114e4d660dcdd7de20f793",
+      "installed-integration-01/result.json": "cf7b6033f1cf47498cc7473dc140c893471fecf10ea21ab6c5e5fb09196fc90e",
+      "installed-integration-controller.log": "a2c2cdce46337a65a2341c4d174eb3f5e1f54e0f0976f90c19470eb68e24312b",
+      "installed-integration-guard.json": "539aff7409c712671f9eed980ba1666864825d3f2e3548a42898dcc33de21381",
+      "installed-integration-terminal.json": "8d296cfea54126dc995344ee2f65aa46a6b26e0d241ebbfb778eaf9c2728cc5b",
+      "integration.html": "dfc3a27e9b53c04ec2a713eb7977d7c2577ea54210ef78d226b40c0160f5632c",
+      "local-01-before-guard.json": "7bf4940f860213adb836953e09592754667c4c3cce5708b89d752a848457268c",
+      "local-01-before-terminal.json": "0df49b879707afeec2d8ffaa12931e6e323a0095e9e465a7d0ca3fd0eb822067",
+      "local-01-before.log": "ed288ad68e9d141166277d6b572e1d222d947e515d2a7d926e1c49baefd04480",
+      "local-c-audit.json": "eb3f7ea11d320f46ef1dffcc5d16fef9040e2ae7351d8edb17f78770dd088c7e",
+      "local-input-pins.json": "18dd80a12eed29264d5238087c042b08cef12950a3084bc1867ce3ef5e227681",
+      "local-plan.json": "5b3f3771868ae21221beda6b86ad721dfe893010d79bffd17017065ae6888f70",
+      "local-result.json": "40c915c79383c396b3a9c8711ebc613b6290b32e500e72f0481897aaf79ab4b3",
+      "production-function-audit.json": "09bc1d26a57790de17a2138fc168d999e3c9d51b04264bfa93e1f11b905e868e",
+      "production-functions-controller.log": "226544ebee5eefdddd090d0da39732f4437ad517aeb7db9d5a36dd3dcaf1554d",
+      "production-functions-terminal.json": "0458721a69eb2164c1f61a87d9e54d076905dca33b1545fae190e4886a338dac",
+      "production-receipts/20261103-233616-8b529a6d/build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+      "production-receipts/20261103-233616-8b529a6d/build.log": "10db43c9003749eff52bcc2bfe23fb57d1aa68dacaf5425592f63754dc9c5d6e",
+      "production-receipts/20261103-233616-8b529a6d/frozen-compile.json": "9119ded03c7298e175cb155b00825851d917085ada2419de3cccd0ddb26fa90e",
+      "production-receipts/20261103-233616-8b529a6d/inputs-before.json": "3ed5b6d3f563e961fd8a74df24adf457eb193d1531c65232d53a5655578ca9f3",
+      "production-receipts/20261103-233616-8b529a6d/memory.json": "8d65b618f36067e68fa44b3b75c18a9f07d7cbe03846f262c5b35fce8dff51f3",
+      "production-receipts/20261103-233616-8b529a6d/result.json": "417e33d7ba23daf67a913ace6bbf86f33e7061df3ffb1f11663d6035e86622e2",
+      "production-receipts/20261103-233616-8b529a6d/smoke-memory.json": "9ae3e74f680ad0216888c4bd789ca8de37238ae9a43b7626452976fec87157d8",
+      "production-receipts/20261103-233616-8b529a6d/smoke.log": "d1b914d42cad6409c69e7ad5c6708fc2ec2882920f461c56ae45dd735c635e67",
+      "production-request.json": "727a55494d9ea89a0f215d8880e587601da42f6a5a8769ed9671f997ec85e8e5",
+      "production-request.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "production-verified-functions.c.txt": "5ad07e711284437403f1673680035afe1603da2a55d5f747d260346a60bef73e",
+      "run-before-boehm-guard.json": "9c8a0612d84ddeea495f44c3588d77642b3eb10456822022bddaf21f6168b705",
+      "run-before-boehm-result.json": "087a750bfad7ff92b7471fa20bdcf601a28d93347e5f6cbd9f5679387e3fcbf1",
+      "run-before-boehm.log": "a985822c4851a14d54e7e3f9bddb3708e004ef36539b2c3002f627ec169d33ce",
+      "run-empty-neighbor-boehm-guard.json": "5fbc8db95f55ef97a5e5ff49116d6ffca92808ed03ec79727e755b3073373e45",
+      "run-empty-neighbor-boehm-result.json": "1198321a24b3be57a1b462b63b02d85a1c07eec280680718e9e3a97fb10ff011",
+      "run-empty-neighbor-boehm.log": "c7a618a3b629243931f67f8020b20f1e0206a1500ce322824805c4e7c7bafb1f",
+      "run-empty-neighbor-none-guard.json": "24bbedb8a752451213abda10bb09169162c38aedf17a7222847c252bfc018f93",
+      "run-empty-neighbor-none-result.json": "7e84b216b76f621717d6cf451a05ef1ba6110b184e4a9e5db1dac1d18678e6ba",
+      "run-empty-neighbor-none.log": "a7c35469e37aadc7eb5216a14a97e7cb64be2dfea5f4aa317c986672f4796cc2",
+      "run-final-boehm-guard.json": "c1ef19911438c32c49d0de2e0fd43e4280a94e3717dc73be713edae445ae8110",
+      "run-final-boehm-result.json": "b48b6a36be22f51a08f98c9693d87bf2634f630f0d1f2c7c42f279729df8931d",
+      "run-final-boehm.log": "02ccb3f57bf24b36320f23cd56dad727b6ba459f1868dd9bf27d4fed7e7aeb99",
+      "run-final-none-guard.json": "c7e2ccf94b490123d651ac84899e31a3fe14065c73e834d795a5e1db50a18c01",
+      "run-final-none-result.json": "58dd9a6a7dee9ab867aeacb74b304aee4e6b9d3bca99a5c7ed644fca1526ef78",
+      "run-final-none.log": "f84a0e5497236984fd4bd91260001cfbc0e446ad80e38e115de4f47a07efb02a",
+      "run-final-prealloc-guard.json": "15b1cdc6a5c82fda4c272581daf180f4ed32dbfd123698e36b966293ea0a3079",
+      "run-final-prealloc-result.json": "efc4a923c4e53b20929f19919cb55bba9853dc2ba13f54b6c4976e72a5457dca",
+      "run-final-prealloc.log": "78b503238a922dc4ac5f3c288f3569ec06500f2debbeb881fe942e4c6d3c5473",
+      "run-github-after-bindings.py": "2a962f4d30fff228e68f75467a66d0e9eef8053b12a13ba5ad68f15116c7c644",
+      "run-installed-integration.py": "b4a845eb04e31379ed0b5cfcdae545998d4ab5617899ef26728dcc02246fa9ae",
+      "run-installed-pipeline.py": "9928b197ee371c7a8bcfef7229e2ae73455708e1a912a07586e6c20408d04382",
+      "run-local-enabled.py": "4f266fc289be367470bfd51544ec7e0060f2f892357ca75d39e2bccd185fea0c",
+      "run-local.py": "1e8db7e4a7734d278f5e872cb92b81798cd40d94c1b52565ce609a7f67b96a7e",
+      "run-neighbor-boehm-guard.json": "57b9b13fd56ceaef67b39342bbd2d5f1f16cd64cddc21fea618824fa43f82110",
+      "run-neighbor-boehm-result.json": "46899c7a9b1d8917129178787a8b37ad60d6fcabde1a1045401a9e198b25a5be",
+      "run-neighbor-boehm.log": "a90e813d64e4e2ad5ab3b7e1d4bd6c5e190846dac4d02192fa854917da297a00",
+      "run-neighbor-none-guard.json": "ee9b0ca969ef010da0032f4115800cff70e2593599d6c2697fe513add8e86cfd",
+      "run-neighbor-none-result.json": "b7d428e60d704d5a08af20b239a6b505aca4c02ebf02af083ff065e91e319c64",
+      "run-neighbor-none.log": "880bb54d1767424d8c07f26d253bc7d79d07a5a91e03cdce04e603fc1d155b62",
+      "v1-audit-production-functions.py": "3d6289756805c15760639698f2781c0a8bbf2196fa0d8fd1e682d080bc9ac79b",
+      "v1-candidate-preaudit.json": "b9c20b4a521447ec0fe3ba2f9d2b8630858a6328fd9ac50c3bf3d016e3a4734e",
+      "v1-compile-before-boehm-command.json": "541eeaebdb59d2fbaf81b67ea0f16149b1c1850e1d71b74bb7878ebb0cc1c9e2",
+      "v1-compile-before-boehm-guard.json": "c93341535964c0f06e31ff39b9879938676e7ae754e761da5bad7f99ffcd26cd",
+      "v1-compile-before-boehm-result.json": "8ed82257599ef0c0c5de4931720ae89d5cced3af861fe22f2289cd42688da716",
+      "v1-compile-before-boehm.log": "31d329564992de59eb69a1eda76d1f475d8a7519855363a8cab768cae2032498",
+      "v1-compile-before-probe-command.json": "f7e2969699714797e6a95a60a5746d1b91b5959de3cb3aa2dc6d6371ca522ef6",
+      "v1-compile-before-probe-guard.json": "426a2a0f666729bb0ab307d96fdb287a889bf96314a0cae59ac20e56eec09299",
+      "v1-compile-before-probe-result.json": "961504d0d61e6340d510367380e92d24aed1850e0f1b29a889f4b35a95db7229",
+      "v1-compile-before-probe.log": "3378357f7cf10522deed107a38e6c3ada55bd4f4657fd4af09e6ec03d27e1bff",
+      "v1-fixture-correction.patch": "18faffb50f0db1fa7185909d37ca00d6648527f8e88076c8aa9806a54cecc866",
+      "v1-local-plan.json": "0c7e910338fbb1b46f63fbc5a567f0684bd315791f0cef456357f79812228501",
+      "write-evidence.py": "bed1421066a790696adaf920dceb653e907e0ec1cf479ceb4720ebb9f66fe5a3"
+    },
+    "path": "docs/performance/raw/github-empty-collector-20261103.tar.gz",
+    "readback_verified": true,
+    "sha256": "c0432aadde44acb257b7aada857fac0d5a0e80c5eacf75c0d91376f2fdebe3d4"
+  },
+  "feature": {
+    "blobs": {
+      "css/empty_rule_match_collection_test.v": "5ded1e6cd14463084a97a533b2a9c641cbe94435",
+      "css/style_scope_cache.v": "75878ff82954bd5b8cfbf04984282050cb36966d"
+    },
+    "commit": "0242fee33ec2711839c2e57ff97cfaaa63947890",
+    "parent": "6c39417abc12423968bd41f5564b80bbe8beb7d1",
+    "paths": [
+      "css/style_scope_cache.v",
+      "css/empty_rule_match_collection_test.v"
+    ]
+  },
+  "focused": {
+    "checks": [
+      {
+        "active_tests": [
+          "css__test_empty_match_collection_preserves_attempts_and_releases_candidate_scratch",
+          "css__test_empty_match_collection_distinguishes_no_candidates_from_nonmatching_selectors"
+        ],
+        "binary_sha256": "904be02d22e8bfea874e79ffb3911472a9fcb265c5faf88b09aff377c12af2ca",
+        "cases": 2,
+        "configuration": "before-boehm",
+        "generated_c_sha256": "b831dd408e9933c62578d9ffa2d57c651bacf83927f40108e7c5ba741a71b970",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-before-boehm",
+                "/Users/alex/code/vox2/css/empty_rule_match_collection_test.v"
+              ],
+              "elapsed_seconds": 36.743463167,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2720808960,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-before-boehm"
+              ],
+              "elapsed_seconds": 0.49554262499999996,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_empty_match_collection_preserves_attempts_and_releases_candidate_scratch",
+          "css__test_empty_match_collection_distinguishes_no_candidates_from_nonmatching_selectors"
+        ],
+        "binary_sha256": "10b0150fab552e803f5803847003e1dbe3a1bdabc863d7a1211a93214160bf99",
+        "cases": 2,
+        "configuration": "final-boehm",
+        "generated_c_sha256": "d510281fa087e1f4c884b83980ac9bc5aba0180aa330dce08a457587865bb3a6",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-boehm",
+                "/Users/alex/code/vox2/css/empty_rule_match_collection_test.v"
+              ],
+              "elapsed_seconds": 43.248504834,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2730377216,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-boehm"
+              ],
+              "elapsed_seconds": 0.5826122499999999,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_empty_match_collection_preserves_attempts_and_releases_candidate_scratch",
+          "css__test_empty_match_collection_distinguishes_no_candidates_from_nonmatching_selectors"
+        ],
+        "binary_sha256": "945fe44a34790dd16abd1c67a186e06ec41da2324299a00895a6e7ddb867e8ea",
+        "cases": 2,
+        "configuration": "final-none",
+        "generated_c_sha256": "f13d8c5ab0f5b71bfbfbcff88bf1638b349ca298937425acab1331f783c1fd25",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-none",
+                "/Users/alex/code/vox2/css/empty_rule_match_collection_test.v"
+              ],
+              "elapsed_seconds": 41.368107583,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2709618688,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-none"
+              ],
+              "elapsed_seconds": 0.49898083400000004,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_empty_match_collection_preserves_attempts_and_releases_candidate_scratch",
+          "css__test_empty_match_collection_distinguishes_no_candidates_from_nonmatching_selectors"
+        ],
+        "binary_sha256": "3f756ea550cc491218a9bcfe0c80689ad80c47f08baea5f168a5057b0d50be68",
+        "cases": 2,
+        "configuration": "final-prealloc",
+        "generated_c_sha256": "7438c71e6fd36baa9fd4ac6c1e306cc126b61b26373e932dcc1eff9db50255fe",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-prealloc",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-prealloc",
+                "/Users/alex/code/vox2/css/empty_rule_match_collection_test.v"
+              ],
+              "elapsed_seconds": 46.603491416999994,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2265333760,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-prealloc"
+              ],
+              "elapsed_seconds": 0.37534662500000004,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 20725760,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+          "css__test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+          "css__test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity"
+        ],
+        "binary_sha256": "b421533e96d7244bb1b3827b3749aead7a1cac28aae60578bdaa3d782dac0201",
+        "cases": 3,
+        "configuration": "neighbor-boehm",
+        "generated_c_sha256": "1745e4f8dc7cb61cc8f9f0c29c24d4b4ac7776f9b54dac127eac4a5e4acd4ebd",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-neighbor-boehm",
+                "/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v"
+              ],
+              "elapsed_seconds": 47.171634000000005,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2704441344,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-neighbor-boehm"
+              ],
+              "elapsed_seconds": 0.516237875,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 180224,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+          "css__test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+          "css__test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity"
+        ],
+        "binary_sha256": "1dff65e0f3d9e9a5dcad50b3d5b97b1e6ab1ba842e5fbe5a92dff34deb333f5a",
+        "cases": 3,
+        "configuration": "neighbor-none",
+        "generated_c_sha256": "84fabb5e8fe40cb3ba480dcca22ec7971fb6b8191750a4abeb84e11a16e2f29b",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-neighbor-none",
+                "/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v"
+              ],
+              "elapsed_seconds": 39.072199042,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2737094656,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-neighbor-none"
+              ],
+              "elapsed_seconds": 0.557051541,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_empty_rule_buckets_preserve_existing_candidates",
+          "css__test_empty_rule_buckets_observe_later_cache_population_and_removal"
+        ],
+        "binary_sha256": "9d34ce74ad043ef5d1829af9012fac798bdaafa76dd72634967b6ea558ca2977",
+        "cases": 2,
+        "configuration": "empty-neighbor-boehm",
+        "generated_c_sha256": "41d6b859798b73af866b161fbdecaf9386b398baf68f939d22acff359323001f",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-empty-neighbor-boehm",
+                "/Users/alex/code/vox2/css/empty_rule_bucket_entry_test.v"
+              ],
+              "elapsed_seconds": 35.841474041999994,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2752905216,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-empty-neighbor-boehm"
+              ],
+              "elapsed_seconds": 0.449814,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 28180480,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "css__test_empty_rule_buckets_preserve_existing_candidates",
+          "css__test_empty_rule_buckets_observe_later_cache_population_and_removal"
+        ],
+        "binary_sha256": "6876645c25108407ecf1597c70e074d2999a31ed68be3a32769b076aec05c6bc",
+        "cases": 2,
+        "configuration": "empty-neighbor-none",
+        "generated_c_sha256": "1f338eaeeabe45ac37929cac1c008e65f5147f81769e8b2dd38170ea8cf58e58",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-empty-neighbor-none",
+                "/Users/alex/code/vox2/css/empty_rule_bucket_entry_test.v"
+              ],
+              "elapsed_seconds": 33.382165084,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 2711928832,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-empty-neighbor-none"
+              ],
+              "elapsed_seconds": 1.071351292,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 32768,
+              "reason": "completed"
+            }
+          }
+        }
+      }
+    ],
+    "exit": 0,
+    "focused_case_executions": 18,
+    "local": {
+      "before_instructions": [
+        1175243,
+        1214055,
+        1186038
+      ],
+      "before_median": 1186038,
+      "broad_baseline_reset": false,
+      "exit": 0,
+      "final_instructions": [
+        911689,
+        907892,
+        907800
+      ],
+      "final_median": 907892,
+      "interpretation": "Fixed local mechanism diagnostic only; three pairs do not supply a repeatable whole-page confidence interval.",
+      "new_whole_page_credit": 0,
+      "observations": [
+        {
+          "actual_guard_exit": 0,
+          "arena_growth": 327696,
+          "checksum": 2048,
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-01-before.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-01-before-guard.json",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "90",
+            "--",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-before-probe"
+          ],
+          "finished_unix": 1793738479.9456902,
+          "host": {
+            "cpu_count": 18,
+            "load_average": [
+              54.37939453125,
+              66.97021484375,
+              81.71826171875
+            ],
+            "started_unix": 1793738479.770742
+          },
+          "instructions": 1175243,
+          "pair": 1,
+          "variant": "before"
+        },
+        {
+          "actual_guard_exit": 0,
+          "arena_growth": 2,
+          "checksum": 2048,
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-01-final.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-01-final-guard.json",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "90",
+            "--",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-probe"
+          ],
+          "finished_unix": 1793738480.4887319,
+          "host": {
+            "cpu_count": 18,
+            "load_average": [
+              54.37939453125,
+              66.97021484375,
+              81.71826171875
+            ],
+            "started_unix": 1793738480.05007
+          },
+          "instructions": 911689,
+          "pair": 1,
+          "variant": "final"
+        },
+        {
+          "actual_guard_exit": 0,
+          "arena_growth": 2,
+          "checksum": 2048,
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-02-final.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-02-final-guard.json",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "90",
+            "--",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-probe"
+          ],
+          "finished_unix": 1793738480.8421319,
+          "host": {
+            "cpu_count": 18,
+            "load_average": [
+              54.37939453125,
+              66.97021484375,
+              81.71826171875
+            ],
+            "started_unix": 1793738480.6371672
+          },
+          "instructions": 907892,
+          "pair": 2,
+          "variant": "final"
+        },
+        {
+          "actual_guard_exit": 0,
+          "arena_growth": 327696,
+          "checksum": 2048,
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-02-before.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-02-before-guard.json",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "90",
+            "--",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-before-probe"
+          ],
+          "finished_unix": 1793738481.239586,
+          "host": {
+            "cpu_count": 18,
+            "load_average": [
+              54.37939453125,
+              66.97021484375,
+              81.71826171875
+            ],
+            "started_unix": 1793738481.08431
+          },
+          "instructions": 1214055,
+          "pair": 2,
+          "variant": "before"
+        },
+        {
+          "actual_guard_exit": 0,
+          "arena_growth": 327696,
+          "checksum": 2048,
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-03-before.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-03-before-guard.json",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "90",
+            "--",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-before-probe"
+          ],
+          "finished_unix": 1793738481.525863,
+          "host": {
+            "cpu_count": 18,
+            "load_average": [
+              54.37939453125,
+              66.97021484375,
+              81.71826171875
+            ],
+            "started_unix": 1793738481.370222
+          },
+          "instructions": 1186038,
+          "pair": 3,
+          "variant": "before"
+        },
+        {
+          "actual_guard_exit": 0,
+          "arena_growth": 2,
+          "checksum": 2048,
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-03-final.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-03-final-guard.json",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "90",
+            "--",
+            "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-probe"
+          ],
+          "finished_unix": 1793738481.830751,
+          "host": {
+            "cpu_count": 18,
+            "load_average": [
+              54.37939453125,
+              66.97021484375,
+              81.71826171875
+            ],
+            "started_unix": 1793738481.6520178
+          },
+          "instructions": 907800,
+          "pair": 3,
+          "variant": "final"
+        }
+      ],
+      "observed_median_saving": 278146,
+      "observed_percent_saving": 23.451693790586813,
+      "paired_savings": [
+        263554,
+        306163,
+        278238
+      ],
+      "pairs": 3,
+      "scope": "Fixed local mechanism probe of 2048 complete empty collector calls; current V/preallocation/native C-O2, no internal function instrumentation. Setup, eight warmups, forced GC, validation and printing outside the hardware interval. Counter explicitly enabled with VOX_PROFILE_INSTRUCTIONS=1 in a clean environment.",
+      "wins": 3
+    },
+    "local_probe_processes": 6,
+    "probe_compiles_native_optimization": "C-O2",
+    "source_pins": {
+      "css/empty_rule_match_collection_test.v": "d6c808bab61cb0de52c92737286d7aa5d3ce830b4a7066ab9e5fd844ffe7be4e",
+      "css/style_scope_cache.v": "34d018a2a90fbd71446dc6a82e652cdf1c870bc41c39bd5d65fbecd18cc5ba2a"
+    }
+  },
+  "github": {
+    "actual_browser_exit": 0,
+    "broad_baseline_reset": false,
+    "browser_observations": 1,
+    "browser_pid": 90831,
+    "command": [
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "--enable-javascript",
+      "--window-width",
+      "1024",
+      "--window-height",
+      "852",
+      "--screenshot",
+      "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/github-after-empty-collector-01/document.png",
+      "https://github.com/vlang/v"
+    ],
+    "comparison_eligible": false,
+    "content_gate": {
+      "failures": [],
+      "passed": true
+    },
+    "environment_controls": {
+      "DYLD_INSERT_LIBRARIES": "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/native-diagnostic-01/network-deny.dylib",
+      "GC_MARKERS": "1",
+      "LADYBIRD_CACHE_DIR": "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/github-after-empty-collector-01/cache",
+      "LADYBIRD_SCREENSHOT_DELAY_SECONDS": ".5",
+      "LADYBIRD_SCREENSHOT_SCALE": "1",
+      "NO_PROXY": "",
+      "SSL_CERT_FILE": "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/github-after-empty-collector-01/replay/cert.pem",
+      "VOX_CAPTURE_AUDIT_CONFIG": "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/github-after-empty-collector-01/audit-config.json",
+      "VOX_CAPTURE_AUDIT_PATH": "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/github-after-empty-collector-01/audit.json",
+      "VOX_CAPTURE_DOCUMENT_ONLY": "1",
+      "VOX_COOKIE_FILE": "",
+      "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/github-after-empty-collector-01/profile",
+      "VOX_PROFILE_INSTRUCTIONS": "1",
+      "VOX_PROXY": "socks5h://127.0.0.1:57982",
+      "VOX_TEST_WINDOW": "1"
+    },
+    "exit": 0,
+    "host_after": {
+      "cpu_count": 18,
+      "load_average": [
+        64.13818359375,
+        56.7421875,
+        61.82275390625
+      ],
+      "unix": 1793739471.617484
+    },
+    "javascript_diagnostics": [
+      "Stylesheet https://github.githubassets.com/assets/kq9.534fad559fbed8f2.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/bv.b745c35cbc44f08d.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/jdp.78ec31cf68ea99a3.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/u2l.7871b60c0a7907d4.module.css: HTTP 404"
+    ],
+    "native": {
+      "phase_note": "adjacent cumulative checkpoint deltas; nested scopes overlap and must not be summed",
+      "phases": [
+        {
+          "cumulative_instructions": 442879401,
+          "instructions": 442879401,
+          "label": "startup"
+        },
+        {
+          "cumulative_instructions": 446033205,
+          "instructions": 3153804,
+          "label": "startup_page_model"
+        },
+        {
+          "cumulative_instructions": 446157799,
+          "instructions": 124594,
+          "label": "startup_browser_state"
+        },
+        {
+          "cumulative_instructions": 447354775,
+          "instructions": 1196976,
+          "label": "startup_input_bridge"
+        },
+        {
+          "cumulative_instructions": 447910823,
+          "instructions": 556048,
+          "label": "startup_context"
+        },
+        {
+          "cumulative_instructions": 448108954,
+          "instructions": 198131,
+          "label": "navigation_started"
+        },
+        {
+          "cumulative_instructions": 448677375,
+          "instructions": 568421,
+          "label": "startup_navigation"
+        },
+        {
+          "cumulative_instructions": 494864562,
+          "instructions": 46187187,
+          "label": "startup_filter_worker"
+        },
+        {
+          "cumulative_instructions": 1378897734,
+          "instructions": 884033172,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 1381019758,
+          "instructions": 2122024,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 1465752899,
+          "instructions": 84733141,
+          "label": "main_resource_fetch"
+        },
+        {
+          "cumulative_instructions": 1476202327,
+          "instructions": 10449428,
+          "label": "main_resource_cache"
+        },
+        {
+          "cumulative_instructions": 1761395699,
+          "instructions": 285193372,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 1763342210,
+          "instructions": 1946511,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 1810898828,
+          "instructions": 47556618,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 1818064278,
+          "instructions": 7165450,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2216602924,
+          "instructions": 398538646,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2223388985,
+          "instructions": 6786061,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2258979760,
+          "instructions": 35590775,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2260893930,
+          "instructions": 1914170,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2323853892,
+          "instructions": 62959962,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2335167023,
+          "instructions": 11313131,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2561918676,
+          "instructions": 226751653,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2565156932,
+          "instructions": 3238256,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2583459218,
+          "instructions": 18302286,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2587823027,
+          "instructions": 4363809,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2702380418,
+          "instructions": 114557391,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2711466759,
+          "instructions": 9086341,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2982419973,
+          "instructions": 270953214,
+          "label": "parse_document"
+        },
+        {
+          "cumulative_instructions": 4700627170,
+          "instructions": 1718207197,
+          "label": "preload_resources"
+        },
+        {
+          "cumulative_instructions": 4700785203,
+          "instructions": 158033,
+          "label": "install_styles"
+        },
+        {
+          "cumulative_instructions": 4708094773,
+          "instructions": 7309570,
+          "label": "install_video_frames"
+        },
+        {
+          "cumulative_instructions": 4954478154,
+          "instructions": 246383381,
+          "label": "javascript_native_bindings"
+        },
+        {
+          "cumulative_instructions": 5020536102,
+          "instructions": 66057948,
+          "label": "javascript_initial_state"
+        },
+        {
+          "cumulative_instructions": 5020777910,
+          "instructions": 241808,
+          "label": "javascript_bootstrap_source"
+        },
+        {
+          "cumulative_instructions": 5218567511,
+          "instructions": 197789601,
+          "label": "javascript_bootstrap_evaluated"
+        },
+        {
+          "cumulative_instructions": 5241057759,
+          "instructions": 22490248,
+          "label": "javascript_document_bindings"
+        },
+        {
+          "cumulative_instructions": 5245560656,
+          "instructions": 4502897,
+          "label": "javascript_adblock_scriptlets"
+        },
+        {
+          "cumulative_instructions": 5278388793,
+          "instructions": 32828137,
+          "label": "javascript_readiness_events"
+        },
+        {
+          "cumulative_instructions": 5278722695,
+          "instructions": 333902,
+          "label": "javascript_finalized"
+        },
+        {
+          "cumulative_instructions": 5279817295,
+          "instructions": 1094600,
+          "label": "run_javascript"
+        },
+        {
+          "cumulative_instructions": 5285002460,
+          "instructions": 5185165,
+          "label": "cookie_blocker"
+        },
+        {
+          "cumulative_instructions": 5288184581,
+          "instructions": 3182121,
+          "label": "script_inserted_stylesheets"
+        },
+        {
+          "cumulative_instructions": 5288838343,
+          "instructions": 653762,
+          "label": "unsized_script_images"
+        },
+        {
+          "cumulative_instructions": 8118929430,
+          "instructions": 2830091087,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 8123133862,
+          "instructions": 4204432,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 8123233094,
+          "instructions": 99232,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 10209527044,
+          "instructions": 2086293950,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 10287534679,
+          "instructions": 78007635,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 10287800108,
+          "instructions": 265429,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 10292712407,
+          "instructions": 4912299,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 10311914275,
+          "instructions": 19201868,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 10457765585,
+          "instructions": 145851310,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 10461738758,
+          "instructions": 3973173,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 10461838224,
+          "instructions": 99466,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 11623255408,
+          "instructions": 1161417184,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 11665733086,
+          "instructions": 42477678,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 11665949655,
+          "instructions": 216569,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 11670322507,
+          "instructions": 4372852,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 11689113692,
+          "instructions": 18791185,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 11755622897,
+          "instructions": 66509205,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 11755723080,
+          "instructions": 100183,
+          "label": "relayout"
+        },
+        {
+          "cumulative_instructions": 11756375847,
+          "instructions": 652767,
+          "label": "script_inserted_images"
+        },
+        {
+          "cumulative_instructions": 11756553076,
+          "instructions": 177229,
+          "label": "install_total"
+        },
+        {
+          "cumulative_instructions": 11867459302,
+          "instructions": 110906226,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 11871655246,
+          "instructions": 4195944,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 11871729530,
+          "instructions": 74284,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 13054877984,
+          "instructions": 1183148454,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 13103760958,
+          "instructions": 48882974,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 13103952625,
+          "instructions": 191667,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 13108338722,
+          "instructions": 4386097,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 13127060835,
+          "instructions": 18722113,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 13292834062,
+          "instructions": 165773227,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 13293058690,
+          "instructions": 224628,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 13301403226,
+          "instructions": 8344536,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 13727050521,
+          "instructions": 425647295,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 13730968513,
+          "instructions": 3917992,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 13731042801,
+          "instructions": 74288,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 15697347523,
+          "instructions": 1966304722,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 15761039080,
+          "instructions": 63691557,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 15761234255,
+          "instructions": 195175,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 15765694865,
+          "instructions": 4460610,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 15784955295,
+          "instructions": 19260430,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 15859710542,
+          "instructions": 74755247,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 15910113268,
+          "instructions": 50402726,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 15910280103,
+          "instructions": 166835,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 15910354323,
+          "instructions": 74220,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 15910661644,
+          "instructions": 307321,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 15910735021,
+          "instructions": 73377,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 15910807858,
+          "instructions": 72837,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 15910892143,
+          "instructions": 84285,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 15910994819,
+          "instructions": 102676,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 15925986841,
+          "instructions": 14992022,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 15926062107,
+          "instructions": 75266,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 15928294957,
+          "instructions": 2232850,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 16470452896,
+          "instructions": 542157939,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 17516320180,
+          "instructions": 1045867284,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 17533509018,
+          "instructions": 17188838,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 17533702786,
+          "instructions": 193768,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 17538203498,
+          "instructions": 4500712,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 17556791290,
+          "instructions": 18587792,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 17638726888,
+          "instructions": 81935598,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 17638800683,
+          "instructions": 73795,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17641037932,
+          "instructions": 2237249,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17649433657,
+          "instructions": 8395725,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17651682812,
+          "instructions": 2249155,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17719874120,
+          "instructions": 68191308,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 17724091562,
+          "instructions": 4217442,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 17724165334,
+          "instructions": 73772,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17726431806,
+          "instructions": 2266472,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 18018930984,
+          "instructions": 292499178,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 18021195894,
+          "instructions": 2264910,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 18992678803,
+          "instructions": 971482909,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 18994787435,
+          "instructions": 2108632,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19040732206,
+          "instructions": 45944771,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19043028109,
+          "instructions": 2295903,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19151088254,
+          "instructions": 108060145,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19153393354,
+          "instructions": 2305100,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19327976543,
+          "instructions": 174583189,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19330277672,
+          "instructions": 2301129,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 22025914181,
+          "instructions": 2695636509,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 22039297317,
+          "instructions": 13383136,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 22039415236,
+          "instructions": 117919,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 22041512460,
+          "instructions": 2097224,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 22545084501,
+          "instructions": 503572041,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 22548841979,
+          "instructions": 3757478,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 22548917456,
+          "instructions": 75477,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 24425997806,
+          "instructions": 1877080350,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 24489640174,
+          "instructions": 63642368,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 24489833268,
+          "instructions": 193094,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 24494446841,
+          "instructions": 4613573,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 24513516861,
+          "instructions": 19070020,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 25299511722,
+          "instructions": 785994861,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 25595631611,
+          "instructions": 296119889,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 25595856656,
+          "instructions": 225045,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 25600045598,
+          "instructions": 4188942,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 26012749867,
+          "instructions": 412704269,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 29152910403,
+          "instructions": 3140160536,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 29156766041,
+          "instructions": 3855638,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 29156852562,
+          "instructions": 86521,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 31076934442,
+          "instructions": 1920081880,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 31141038673,
+          "instructions": 64104231,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 31141238603,
+          "instructions": 199930,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 31145994221,
+          "instructions": 4755618,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 31165088997,
+          "instructions": 19094776,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 31240314430,
+          "instructions": 75225433,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 31308460230,
+          "instructions": 68145800,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 31308535350,
+          "instructions": 75120,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 31313336746,
+          "instructions": 4801396,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 31645615350,
+          "instructions": 332278604,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 31647929292,
+          "instructions": 2313942,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 31677450910,
+          "instructions": 29521618,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 31679731372,
+          "instructions": 2280462,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 32783539611,
+          "instructions": 1103808239,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 32787454843,
+          "instructions": 3915232,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 32787530256,
+          "instructions": 75413,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 34110529678,
+          "instructions": 1322999422,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 34157024465,
+          "instructions": 46494787,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 34157231231,
+          "instructions": 206766,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 34161731136,
+          "instructions": 4499905,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 34181609981,
+          "instructions": 19878845,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 34254485159,
+          "instructions": 72875178,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 34286586323,
+          "instructions": 32101164,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 34286662131,
+          "instructions": 75808,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 34288910243,
+          "instructions": 2248112,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 34497820210,
+          "instructions": 208909967,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 34502128751,
+          "instructions": 4308541,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 34502204354,
+          "instructions": 75603,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 34504300850,
+          "instructions": 2096496,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 35075004603,
+          "instructions": 570703753,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 35086258068,
+          "instructions": 11253465,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 35086350123,
+          "instructions": 92055,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 35088626635,
+          "instructions": 2276512,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 35090109154,
+          "instructions": 1482519,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 35092191506,
+          "instructions": 2082352,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 35199923977,
+          "instructions": 107732471,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 35203791187,
+          "instructions": 3867210,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 35203867333,
+          "instructions": 76146,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 36469288665,
+          "instructions": 1265421332,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 36511544603,
+          "instructions": 42255938,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 36511754620,
+          "instructions": 210017,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 36516428461,
+          "instructions": 4673841,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 36536267203,
+          "instructions": 19838742,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 36604007357,
+          "instructions": 67740154,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 39025582004,
+          "instructions": 2421574647,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 39029957449,
+          "instructions": 4375445,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 39030033517,
+          "instructions": 76068,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 41023678982,
+          "instructions": 1993645465,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 41087793713,
+          "instructions": 64114731,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 41088003769,
+          "instructions": 210056,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 41092787343,
+          "instructions": 4783574,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 41113346128,
+          "instructions": 20558785,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 41195498588,
+          "instructions": 82152460,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 41222513255,
+          "instructions": 27014667,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 41222588991,
+          "instructions": 75736,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 41224719690,
+          "instructions": 2130699,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 41306578917,
+          "instructions": 81859227,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 41310284648,
+          "instructions": 3705731,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 41310360091,
+          "instructions": 75443,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 42586045585,
+          "instructions": 1275685494,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 42628508122,
+          "instructions": 42462537,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 42628718116,
+          "instructions": 209994,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 42633275669,
+          "instructions": 4557553,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 42653127361,
+          "instructions": 19851692,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 42720866620,
+          "instructions": 67739259,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 45181835236,
+          "instructions": 2460968616,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 45185981982,
+          "instructions": 4146746,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 45186058221,
+          "instructions": 76239,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 47217144077,
+          "instructions": 2031085856,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 47283997439,
+          "instructions": 66853362,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 47284204059,
+          "instructions": 206620,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 47289018267,
+          "instructions": 4814208,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 47309400224,
+          "instructions": 20381957,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 47391580709,
+          "instructions": 82180485,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 47417857574,
+          "instructions": 26276865,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 47417933338,
+          "instructions": 75764,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 47420032187,
+          "instructions": 2098849,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 47426986781,
+          "instructions": 6954594,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 47429128470,
+          "instructions": 2141689,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 47499499889,
+          "instructions": 70371419,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 47501732403,
+          "instructions": 2232514,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 48563404423,
+          "instructions": 1061672020,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 48567849849,
+          "instructions": 4445426,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 48567925545,
+          "instructions": 75696,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 48570182602,
+          "instructions": 2257057,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 48704593149,
+          "instructions": 134410547,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 48706857161,
+          "instructions": 2264012,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 48844757797,
+          "instructions": 137900636,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 48844833586,
+          "instructions": 75789,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 48847081845,
+          "instructions": 2248259,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 48884727277,
+          "instructions": 37645432,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 48886966431,
+          "instructions": 2239154,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 48890748555,
+          "instructions": 3782124,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 48892917043,
+          "instructions": 2168488,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 49037064223,
+          "instructions": 144147180,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 49041173649,
+          "instructions": 4109426,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 49041249872,
+          "instructions": 76223,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 50303447630,
+          "instructions": 1262197758,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 50346012788,
+          "instructions": 42565158,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 50346219527,
+          "instructions": 206739,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 50350929754,
+          "instructions": 4710227,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 50370813743,
+          "instructions": 19883989,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 50438523563,
+          "instructions": 67709820,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 50470200502,
+          "instructions": 31676939,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 50470276244,
+          "instructions": 75742,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 51912395233,
+          "instructions": 1442118989,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 51996075949,
+          "instructions": 83680716,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 51999829268,
+          "instructions": 3753319,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 51999905231,
+          "instructions": 75963,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 53269025682,
+          "instructions": 1269120451,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 53311435841,
+          "instructions": 42410159,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 53311643078,
+          "instructions": 207237,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 53316426820,
+          "instructions": 4783742,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 53336349697,
+          "instructions": 19922877,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 53404790944,
+          "instructions": 68441247,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 55901768134,
+          "instructions": 2496977190,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 55905872242,
+          "instructions": 4104108,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 55905948912,
+          "instructions": 76670,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 57904468011,
+          "instructions": 1998519099,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 57968739093,
+          "instructions": 64271082,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 57968994079,
+          "instructions": 254986,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 57973770805,
+          "instructions": 4776726,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 57993925248,
+          "instructions": 20154443,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 58080505332,
+          "instructions": 86580084,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 58107854555,
+          "instructions": 27349223,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 58107929005,
+          "instructions": 74450,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 58406955984,
+          "instructions": 299026979,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 58407920814,
+          "instructions": 964830,
+          "label": "capture_started"
+        },
+        {
+          "cumulative_instructions": 58412402269,
+          "instructions": 4481455,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 58412725227,
+          "instructions": 322958,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 58417916937,
+          "instructions": 5191710,
+          "label": "capture_cached"
+        },
+        {
+          "cumulative_instructions": 58417961017,
+          "instructions": 44080,
+          "label": "capture_converted"
+        },
+        {
+          "cumulative_instructions": 58429387172,
+          "instructions": 11426155,
+          "label": "capture_document_encoded"
+        }
+      ],
+      "scopes": {
+        "document_install_to_first_native_layer_submission": [
+          49148555981
+        ],
+        "document_install_to_first_paint": [
+          10537397866
+        ],
+        "install_total": [
+          8992492188
+        ],
+        "navigation_to_first_document_paint": [
+          12853422390
+        ],
+        "navigation_to_first_native_layer_submission": [
+          51464580505
+        ]
+      },
+      "unavailable": []
+    },
+    "new_instruction_credit": 0,
+    "png": {
+      "bytes": 229614,
+      "dimensions": [
+        1024,
+        768
+      ],
+      "path": "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/github-after-empty-collector-01/document.png",
+      "sha256": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3"
+    },
+    "replay": {
+      "archive": "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/archive-resumed",
+      "ca": "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/github-after-empty-collector-01/replay/cert.pem",
+      "certificate_sha256": "5b4123b1e285d02f0fff74f2545c121fc9546c18bce76d452956157a89896ccb",
+      "forwarding": false,
+      "manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+      "proxy": "socks5h://127.0.0.1:57982",
+      "url": "https://github.com/vlang/v"
+    }
+  },
+  "github_errors": {
+    "javascript_diagnostics": [
+      "Stylesheet https://github.githubassets.com/assets/kq9.534fad559fbed8f2.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/bv.b745c35cbc44f08d.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/jdp.78ec31cf68ea99a3.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/u2l.7871b60c0a7907d4.module.css: HTTP 404"
+    ],
+    "native_reported_error_count": 0,
+    "native_reported_error_information": []
+  },
+  "historical_replacements": 0,
+  "installed": {
+    "actual_browser_exit": 0,
+    "build_requested": true,
+    "exit": 0,
+    "new_instruction_credit": 0,
+    "pid": 90484,
+    "requests": [
+      {
+        "path": "/integration.html",
+        "unix": 1793739456.886574
+      },
+      {
+        "path": "/favicon.ico",
+        "unix": 1793739456.977727
+      }
+    ],
+    "text": [
+      "PASS: empty candidate selector collection"
+    ],
+    "viewport": [
+      640,
+      480
+    ]
+  },
+  "installed_errors": {
+    "javascript_diagnostics": [],
+    "native_reported_error_count": 0
+  },
+  "limitations": [
+    "The 23.45% result is a fixed three-pair local C-O2 mechanism diagnostic of 2048 complete empty collector calls, not a page result or confidence interval.",
+    "The first local observation was retained as failed with the counter disabled; its cohort was aborted. The separately predeclared corrected diagnostic enables the counter explicitly, keeps all six observations and earns no whole-page credit.",
+    "Functional cases establish empty-path behavior and unchanged candidate metadata/lifetimes; per-page fast-path hit counts have not been instrumented.",
+    "The single ordinary GitHub capture establishes correctness for its pinned build and content, not a before/after page saving or Chrome parity.",
+    "Current production C-O3/preallocation differs from the local C-O2 probe and historical old-compiler/Boehm/C-O2 cohorts.",
+    "The changed collector matches tested candidate C. Six unchanged helper bodies match previous production because test-mode assertion reporting differs; no assertion code is ignored. These checks do not establish whole-program isolation from concurrent engine work.",
+    "The counter measures inclusive retired instructions across all threads in the current process; setup, warmups and assertions stay outside its fixed loop interval.",
+    "Sampled memory guards are not kernel limits; host contention remains in raw records."
+  ],
+  "local": {
+    "before_instructions": [
+      1175243,
+      1214055,
+      1186038
+    ],
+    "before_median": 1186038,
+    "broad_baseline_reset": false,
+    "exit": 0,
+    "final_instructions": [
+      911689,
+      907892,
+      907800
+    ],
+    "final_median": 907892,
+    "interpretation": "Fixed local mechanism diagnostic only; three pairs do not supply a repeatable whole-page confidence interval.",
+    "new_whole_page_credit": 0,
+    "observations": [
+      {
+        "actual_guard_exit": 0,
+        "arena_growth": 327696,
+        "checksum": 2048,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-01-before.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-01-before-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-before-probe"
+        ],
+        "finished_unix": 1793738479.9456902,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            54.37939453125,
+            66.97021484375,
+            81.71826171875
+          ],
+          "started_unix": 1793738479.770742
+        },
+        "instructions": 1175243,
+        "pair": 1,
+        "variant": "before"
+      },
+      {
+        "actual_guard_exit": 0,
+        "arena_growth": 2,
+        "checksum": 2048,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-01-final.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-01-final-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-probe"
+        ],
+        "finished_unix": 1793738480.4887319,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            54.37939453125,
+            66.97021484375,
+            81.71826171875
+          ],
+          "started_unix": 1793738480.05007
+        },
+        "instructions": 911689,
+        "pair": 1,
+        "variant": "final"
+      },
+      {
+        "actual_guard_exit": 0,
+        "arena_growth": 2,
+        "checksum": 2048,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-02-final.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-02-final-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-probe"
+        ],
+        "finished_unix": 1793738480.8421319,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            54.37939453125,
+            66.97021484375,
+            81.71826171875
+          ],
+          "started_unix": 1793738480.6371672
+        },
+        "instructions": 907892,
+        "pair": 2,
+        "variant": "final"
+      },
+      {
+        "actual_guard_exit": 0,
+        "arena_growth": 327696,
+        "checksum": 2048,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-02-before.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-02-before-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-before-probe"
+        ],
+        "finished_unix": 1793738481.239586,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            54.37939453125,
+            66.97021484375,
+            81.71826171875
+          ],
+          "started_unix": 1793738481.08431
+        },
+        "instructions": 1214055,
+        "pair": 2,
+        "variant": "before"
+      },
+      {
+        "actual_guard_exit": 0,
+        "arena_growth": 327696,
+        "checksum": 2048,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-03-before.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-03-before-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-before-probe"
+        ],
+        "finished_unix": 1793738481.525863,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            54.37939453125,
+            66.97021484375,
+            81.71826171875
+          ],
+          "started_unix": 1793738481.370222
+        },
+        "instructions": 1186038,
+        "pair": 3,
+        "variant": "before"
+      },
+      {
+        "actual_guard_exit": 0,
+        "arena_growth": 2,
+        "checksum": 2048,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-03-final.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/counter-enabled/local-03-final-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "90",
+          "--",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-probe"
+        ],
+        "finished_unix": 1793738481.830751,
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            54.37939453125,
+            66.97021484375,
+            81.71826171875
+          ],
+          "started_unix": 1793738481.6520178
+        },
+        "instructions": 907800,
+        "pair": 3,
+        "variant": "final"
+      }
+    ],
+    "observed_median_saving": 278146,
+    "observed_percent_saving": 23.451693790586813,
+    "paired_savings": [
+      263554,
+      306163,
+      278238
+    ],
+    "pairs": 3,
+    "scope": "Fixed local mechanism probe of 2048 complete empty collector calls; current V/preallocation/native C-O2, no internal function instrumentation. Setup, eight warmups, forced GC, validation and printing outside the hardware interval. Counter explicitly enabled with VOX_PROFILE_INSTRUCTIONS=1 in a clean environment.",
+    "wins": 3
+  },
+  "local_c_isolation": {
+    "changed_functions": [
+      "css__collect_matching_rules_with_storage"
+    ],
+    "complete_generated_c_sha256": [
+      "6358636aecfd62e4f2510a68a0f8739dc022a47d9d4765dc837e89b93ec89ed3",
+      "933efd674b602a0303934f5958e73cb5c28a495f110de3cbc0af5416167f4c06"
+    ],
+    "exit": 0,
+    "normalization": "Replace the single collector definition with an identical marker; no other code/constants/paths normalized or ignored.",
+    "outside_collector_byte_identical": true
+  },
+  "new_whole_page_credit": 0,
+  "ordinary_predeclared_plan": {
+    "broad_baseline_reset": false,
+    "created_unix": 1793738692.632868,
+    "expected_document_viewport": [
+      1024,
+      768
+    ],
+    "extensions": 0,
+    "observations": 1,
+    "retries": 0,
+    "scope": "One separate ordinary shared-production GitHub correctness diagnostic after empty collector guard; no paired before/after page cohort, saving attribution or fast-path hit-count claim.",
+    "source_contract": {
+      "images": 21,
+      "links": 66,
+      "responses": 193,
+      "rows": 33
+    },
+    "source_manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+    "whole_page_credit": 0
+  },
+  "original_invalid_local_cohort": {
+    "actual_first_guard_exit": 1,
+    "broad_baseline_reset": false,
+    "cohort_aborted": true,
+    "completed_observations": 1,
+    "exit": 1,
+    "new_whole_page_credit": 0,
+    "planned_pairs": 3,
+    "reason": "Counter enable environment omitted. Primary retained; no remaining observations launched and no instruction credit.",
+    "valid_counter_observations": 0
+  },
+  "paired_whole_page_comparison": false,
+  "pixel_comparison": {
+    "byte_identical": true,
+    "current_sha256": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+    "differing_pixels": 0,
+    "previous_sha256": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+    "unchanged_references": true
+  },
+  "production_attempts": [
+    {
+      "files": {
+        "build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+        "build.log": "10db43c9003749eff52bcc2bfe23fb57d1aa68dacaf5425592f63754dc9c5d6e",
+        "frozen-compile.json": "9119ded03c7298e175cb155b00825851d917085ada2419de3cccd0ddb26fa90e",
+        "inputs-before.json": "3ed5b6d3f563e961fd8a74df24adf457eb193d1531c65232d53a5655578ca9f3",
+        "memory.json": "8d65b618f36067e68fa44b3b75c18a9f07d7cbe03846f262c5b35fce8dff51f3",
+        "result.json": "417e33d7ba23daf67a913ace6bbf86f33e7061df3ffb1f11663d6035e86622e2",
+        "smoke-memory.json": "9ae3e74f680ad0216888c4bd789ca8de37238ae9a43b7626452976fec87157d8",
+        "smoke.log": "d1b914d42cad6409c69e7ad5c6708fc2ec2882920f461c56ae45dd735c635e67"
+      },
+      "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/result.json",
+      "record": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "de8cc0044d2999eed4ccf359f787ce99a30d4fa25206ecaa68c4094a659d0530",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "f45d88b5154e686461ff9c6608031e935dad1fad1974518eb44e29547a58f974",
+          "dirty": true,
+          "head": "6c39417abc12423968bd41f5564b80bbe8beb7d1",
+          "repository_sha256": "176e6f00ff560e481f1e36358634788ccbae69e244c7bfddb7707aa680bab35a"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "b9836c9912ab3b8e387f494d817660774762b772e6729fce65f5962120a02bed",
+          "dirty": true,
+          "head": "e264835144a0753238955d8789ae0a21c1fb5201",
+          "repository_sha256": "a8ce02a0de583a0b03170ea4f2f36064364971ad923bcfc12ca2c8c0d971b960"
+        },
+        "request": {
+          "head": "6c39417abc12423968bd41f5564b80bbe8beb7d1",
+          "id": "f372eba40d904f01996e04f04629d8e9"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "f45d88b5154e686461ff9c6608031e935dad1fad1974518eb44e29547a58f974",
+          "dirty": true,
+          "head": "6c39417abc12423968bd41f5564b80bbe8beb7d1",
+          "repository_sha256": "176e6f00ff560e481f1e36358634788ccbae69e244c7bfddb7707aa680bab35a"
+        }
+      }
+    }
+  ],
+  "production_build_requests": 1,
+  "production_function_audit": {
+    "complete_generated_c_sha256": [
+      "933efd674b602a0303934f5958e73cb5c28a495f110de3cbc0af5416167f4c06",
+      "b1d9655a45bcbbdaab4e951494242cad307deefd6d64f9306c7e42e1072b9a23",
+      "c09eef33f4f08fbeb862589d2dd263511525b0b7e05926949c7b94ed622665a8"
+    ],
+    "exit": 0,
+    "functions": [
+      {
+        "compared_paths": [
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-probe.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c"
+        ],
+        "comparison": "Tested candidate versus production",
+        "function": "css__collect_matching_rules_with_storage",
+        "match": true,
+        "normalized_sha256": "63e9370f1525277418e5871da2bc945c8a726a2e26d05e8031fa37885518b476"
+      },
+      {
+        "compared_paths": [
+          "Build/production-build/receipts/20261103-225602-1816d46b/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__StyleComputer__release_matching_rule_candidates",
+        "match": true,
+        "normalized_sha256": "c573e230ad0b2d99f1ba21b48714ed1d4407e98ded4c4a8a9608df3d77b10c7c"
+      },
+      {
+        "compared_paths": [
+          "Build/production-build/receipts/20261103-225602-1816d46b/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__StyleComputer__acquire_matching_rule_candidates",
+        "match": true,
+        "normalized_sha256": "9dbe9bdbca3d027a88a0326567dc4b50157d094dcf724fa67e9105018a3d62db"
+      },
+      {
+        "compared_paths": [
+          "Build/production-build/receipts/20261103-225602-1816d46b/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__match_repeated_rule_selector",
+        "match": true,
+        "normalized_sha256": "758d5a8de235f7ad52e9a55a8d4cc1c0490c357e398ca1d56f7c313ee688bf17"
+      },
+      {
+        "compared_paths": [
+          "Build/production-build/receipts/20261103-225602-1816d46b/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__style_scope_add_cached_rules_to_run",
+        "match": true,
+        "normalized_sha256": "820bd8897ff59043239098bb6a5f5f4cd51c635893dde46d1860674c71433c91"
+      },
+      {
+        "compared_paths": [
+          "Build/production-build/receipts/20261103-225602-1816d46b/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__style_scope_add_slotted_rules_for_available_scopes",
+        "match": true,
+        "normalized_sha256": "549898606adddc849c524f709c26aa54d2123c1cb0014854136c152ddddadf75"
+      },
+      {
+        "compared_paths": [
+          "Build/production-build/receipts/20261103-225602-1816d46b/generated/Vox.c",
+          "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c"
+        ],
+        "comparison": "Previous versus current production; unchanged helper",
+        "function": "css__style_scope_add_part_rules_for_available_scopes",
+        "match": true,
+        "normalized_sha256": "ba228bff466ec8e6e4e52abec925a6d5ca476c15c025c834684d685df351a72c"
+      }
+    ],
+    "normalization": "Resolve every referenced C string constant exactly; no code, assertion branches or symbol renames ignored.",
+    "paths": [
+      "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/checks-final-probe.c",
+      "Build/production-build/receipts/20261103-225602-1816d46b/generated/Vox.c",
+      "/Users/alex/code/vox2/Build/production-build/receipts/20261103-233616-8b529a6d/generated/Vox.c"
+    ],
+    "scope": "Changed collector body matches tested candidate. Six unchanged helper bodies match prior production; test-mode assertion reporting differs and is not normalized away. Not whole-program performance isolation."
+  },
+  "production_request": {
+    "actual_exit": 0,
+    "command": [
+      "python3",
+      "tools/rebuild_browser.py",
+      "--request"
+    ],
+    "request": {
+      "head": "6c39417abc12423968bd41f5564b80bbe8beb7d1",
+      "id": "f372eba40d904f01996e04f04629d8e9"
+    }
+  },
+  "source_sha256": {
+    "css/empty_rule_match_collection_test.v": "d6c808bab61cb0de52c92737286d7aa5d3ce830b4a7066ab9e5fd844ffe7be4e",
+    "css/style_scope_cache.v": "34d018a2a90fbd71446dc6a82e652cdf1c870bc41c39bd5d65fbecd18cc5ba2a"
+  },
+  "stages": {
+    "github-after-bindings": {
+      "guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/run-github-after-bindings.py"
+        ],
+        "elapsed_seconds": 13.53162825,
+        "limit_bytes": 12884901888,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 3181510656,
+        "reason": "completed"
+      },
+      "terminal": {
+        "actual_exit": 0,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/github-after-bindings.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/github-after-bindings-guard.json",
+          "--limit-gib",
+          "12",
+          "--timeout",
+          "240",
+          "--",
+          "python3",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/run-github-after-bindings.py"
+        ]
+      }
+    },
+    "installed-integration": {
+      "guard": {
+        "adopted_processes": {},
+        "adoption_error": null,
+        "child_exit_code": 0,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/run-installed-integration.py",
+          "--run"
+        ],
+        "elapsed_seconds": 4.311832625,
+        "limit_bytes": 3221225472,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+        "observed_peak_rss_bytes": 414547968,
+        "reason": "completed"
+      },
+      "terminal": {
+        "actual_exit": 0,
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/installed-integration.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/installed-integration-guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "240",
+          "--",
+          "python3",
+          "/Users/alex/code/vox2/Build/github-empty-collector-20261103-session4076/run-installed-integration.py",
+          "--run"
+        ]
+      }
+    }
+  },
+  "user_gui_stopped": false
+}
