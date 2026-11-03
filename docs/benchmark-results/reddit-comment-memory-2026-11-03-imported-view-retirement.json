@@ -1249,5 +1249,47 @@
     "A dedicated test rejects more than 16 MiB retained footprint with sixteen cached views; the pre-fix control fails at 67141680 B while the fixed uninstrumented run reports the recorded candidate count.",
     "Installed-production validation of ec312e50f remains pending.",
     "Polled page footprints can miss brief spikes/helpers, backing scale is not independently sampled, and these short runs do not establish bounded idle memory."
-  ]
+  ],
+  "replay_scratch_diagnostic": {
+    "sampled_bytes": 7520256,
+    "scope": "O0, non-inlined, flat executable derived from completed frozen compiler input; only native command replay arena sampled. Different filter-worker startup. No acceptance memory/performance credit.",
+    "artifacts": [
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/replay-profiler/commands.json",
+        "sha256": "bebfe0dcbb374e6191d5754a09eafc3d90c0a34ab4490a01b0a1717130df74ae"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/replay-profiler-page/result.json",
+        "sha256": "7de2e067168e3876dfd33235f7fc64ae5bb777cda30c977b1712dbc4eda6e800"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/replay-profiler-page/author-script-audit.json",
+        "sha256": "12f8904b828db0a413a26f9f9db49de7227e6b6e2860718d73f5562074686ad9"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/replay-profiler-page/replay-allocations.txt",
+        "sha256": "f86a6f7fbab1ffa9e8af0b65587ec1c55ef05100a6ed7c627eee1caec2d11fe2"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/replay-profiler-sites.txt",
+        "sha256": "b9f657d38eafb4d06d2bec2738956faf1ba761b24f7ed9c3dcba77994d461102"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/replay-profiler-build-guard.json",
+        "sha256": "7aba1e24f9cd804df848a048310f5b483e3a7df02c9961c72dd9376cd78cdb81"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/replay-profiler-guard.json",
+        "sha256": "5a6a791bfbdbde0926c4ae53100faeabca32772121310308e70dfc6deef1d663"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/build_replay_profiler.py",
+        "sha256": "e784de873ec90451615e3517dc490d8f46a6f28c425facb62532e749801e259f"
+      },
+      {
+        "path": "Build/reddit-comment-memory-20261103-dawn-shared/page_replay_profiler.py",
+        "sha256": "a18fb5b8207554d226513dfb9e176c336fcc7926f1e0954e7ae524332797b84f"
+      }
+    ]
+  }
 }
