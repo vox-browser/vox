@@ -4,6 +4,13 @@ set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 browser="$repo_dir/Build/v/Vox.app/Contents/MacOS/Vox"
 
+# macOS strips DYLD_* when starting its protected shell. Reestablish an
+# explicitly requested diagnostic backend here, before launching the browser.
+if [ -n "${SCREENSHOT_GRAPHICS_LIBRARY_DIR:-}" ]; then
+    DYLD_LIBRARY_PATH=$(CDPATH= cd -- "$SCREENSHOT_GRAPHICS_LIBRARY_DIR" && pwd -P)
+    export DYLD_LIBRARY_PATH
+fi
+
 if [ "$#" -lt 2 ] || [ "$#" -gt 4 ]; then
     echo "usage: capture_screenshot.sh SOURCE OUTPUT.png [WIDTH [HEIGHT]]" >&2
     exit 2
@@ -45,6 +52,14 @@ fi
 
 capture_tmp=$(mktemp -d /tmp/ladybird-v-screenshot.XXXXXX)
 cleanup() {
+    if [ -n "${SCREENSHOT_BROWSER_LOG_DIR:-}" ]; then
+        if mkdir -p "$SCREENSHOT_BROWSER_LOG_DIR"; then
+            for capture_log in "$capture_tmp"/*.log; do
+                [ -f "$capture_log" ] || continue
+                cp "$capture_log" "$SCREENSHOT_BROWSER_LOG_DIR/" || true
+            done
+        fi
+    fi
     rm -rf "$capture_tmp"
 }
 trap cleanup EXIT HUP INT TERM
