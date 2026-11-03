@@ -1638,6 +1638,9 @@ fn browser_decoded_image_data(resource_url dom.URL, bytes []u8) !html.DecodedIma
 
 fn browser_fetch_image_request(element &dom.HTMLImageElement, model &html.HTMLImageElementModel,
 	resource_url dom.URL) !html.DecodedImageData {
+	if resource_url.scheme() == 'blob' {
+		return browser_fetch_blob_image(element, model, resource_url)
+	}
 	if !browser_image_request_allows_cached_bytes(element, model, resource_url) {
 		// The compact byte cache does not retain CORS response headers. A
 		// CORS-mode request cannot approve an unverified cross-origin response.
