@@ -29,6 +29,9 @@ PATCH_INPUTS = {
         "f8e0e89321a5877e35e5ef7a9427299c91cd5a1999c40a64fc06025e13a00ec7"),
 }
 LEGACY_MSL_SHA256 = "761dc0b22373b425120adda011b9d74c40ca572ec7c179bfd3979c5c09554a23"
+HOST_STATIC_SOURCE = "src/gpu/graphite/BufferManager.cpp"
+HOST_STATIC_ORIGINAL = "f81fc38e9865febc986b57d60931315e89a4c610db068c35b32d3a9a7fa27065"
+HOST_STATIC_PATCHED = "91bd83a86b06e0930b2d09895650946b2e3f5513c9b97f229a1b6df89f59fbc6"
 
 
 def extract_skia_archive(archive, destination):
@@ -90,6 +93,31 @@ def executable(name, fallback=None):
     return value
 
 
+def prepare_host_static_patch(source, archive, patch):
+    """Authenticate the small Metal static-mesh upload patch before installing it."""
+    target = source / HOST_STATIC_SOURCE
+    actual = hashlib.sha256(target.read_bytes()).hexdigest()
+    if actual == HOST_STATIC_PATCHED:
+        return
+    if actual != HOST_STATIC_ORIGINAL:
+        raise SystemExit("Unexpected Skia static-buffer source")
+    with tempfile.TemporaryDirectory(prefix="vox-skia-host-static-") as temporary:
+        staged = Path(temporary)
+        with tarfile.open(archive) as bundle:
+            contents = bundle.extractfile(f"skia-{REVISION}/{HOST_STATIC_SOURCE}").read()
+        if hashlib.sha256(contents).hexdigest() != HOST_STATIC_ORIGINAL:
+            raise SystemExit("Unexpected original Skia static-buffer source")
+        candidate = staged / HOST_STATIC_SOURCE
+        candidate.parent.mkdir(parents=True)
+        candidate.write_bytes(contents)
+        subprocess.run(["patch", "--batch", "--fuzz=0", "-p1", "-i", str(patch)],
+                       cwd=staged, check=True)
+        contents = candidate.read_bytes()
+        if hashlib.sha256(contents).hexdigest() != HOST_STATIC_PATCHED:
+            raise SystemExit("Unexpected patched Skia static-buffer source")
+        target.write_bytes(contents)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
@@ -122,6 +150,7 @@ def main():
     # MSL together; changing just one corrupts shader bindings. The patch is
     # confined to this private, revision-pinned dependency.
     prepare_precision_patch(source, archive, repo / "tools/skia_chromium_metal.patch")
+    prepare_host_static_patch(source, archive, repo / "tools/skia_metal_host_static.patch")
 
     gn = executable("gn", args.skia_root / "tools/gn/gn")
     ninja = executable("ninja")

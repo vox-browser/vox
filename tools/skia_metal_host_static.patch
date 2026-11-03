@@ -1,0 +1,92 @@
+--- a/src/gpu/graphite/BufferManager.cpp
++++ b/src/gpu/graphite/BufferManager.cpp
+@@ -606,12 +606,20 @@
+         return true; // No buffer needed
+     }
+ 
++#if defined(SK_METAL)
++    // These immutable meshes contain less than 6 KiB. Initialize host-visible
++    // Metal buffers directly: a GPU blit can create a large driver context for
++    // this one copy, even on a unified-memory device.
++    constexpr AccessPattern gpuAccessPattern = AccessPattern::kHostVisible;
++#else
+     // The static buffer is always copyable when testing.
+     constexpr AccessPattern gpuAccessPattern =
+ #if defined(GPU_TEST_UTILS)
+         AccessPattern::kGpuOnlyCopySrc;
+ #else
+         AccessPattern::kGpuOnly;
++#endif
++
+ #endif
+ 
+     sk_sp<Buffer> staticBuffer = resourceProvider->findOrCreateNonShareableBuffer(
+@@ -625,6 +633,13 @@
+         return false;
+     }
+ 
++#if defined(SK_METAL)
++    auto* host = static_cast<char*>(staticBuffer->map());
++    if (!host) {
++        SKIA_LOG_E("Failed to map static Metal buffer.\n");
++        return false;
++    }
++#endif
+     uint32_t offset = 0;
+     for (const CopyRange& data : fData) {
+         // Each copy range's size should be aligned to the lcm of the required alignment and minimum
+@@ -638,6 +653,17 @@
+         data.fTarget->fOffset = offset;
+         data.fTarget->fSize = size;
+ 
++#if defined(SK_METAL)
++        // UploadBufferManager still owns these mapped source bytes. Retire its
++        // mappings only after both static buffers have copied their ranges.
++        auto* bytes = static_cast<const char*>(const_cast<Buffer*>(data.fSource.fBuffer)->map());
++        if (!bytes) {
++            staticBuffer->unmap();
++            SKIA_LOG_E("Failed to read static Metal upload bytes.\n");
++            return false;
++        }
++        std::memcpy(host + offset, bytes + data.fSource.fOffset, size);
++#else
+         auto copyTask = CopyBufferToBufferTask::Make(
+                 data.fSource.fBuffer, data.fSource.fOffset,
+                 sk_ref_sp(data.fTarget->fBuffer), data.fTarget->fOffset,
+@@ -651,9 +677,15 @@
+             return false;
+         }
+ 
++#endif
++
+         offset += size;
+     }
+ 
++#if defined(SK_METAL)
++    // Shared memory is coherent; managed memory flushes its CPU modifications.
++    staticBuffer->unmap();
++#endif
+     SkASSERT(offset == fTotalRequiredBytes);
+     globalCache->addStaticResource(std::move(staticBuffer));
+     return true;
+@@ -673,7 +705,9 @@
+         return FinishResult::kNoWork;
+     }
+ 
++#if !defined(SK_METAL)
+     queueManager->addUploadBufferManagerRefs(&fUploadManager, context->priv().resourceProvider());
++#endif
+ 
+     if (!fVertexBufferState.createAndUpdateBindings(fResourceProvider,
+                                                    context,
+@@ -704,6 +738,10 @@
+         return FinishResult::kFailure;
+     }
+ 
++#if defined(SK_METAL)
++    queueManager->addUploadBufferManagerRefs(&fUploadManager, context->priv().resourceProvider());
++#endif
++
+     // Reset the static buffer manager since the Recording's copy tasks now manage ownership of
+     // the transfer buffers and the GlobalCache owns the final static buffers.
+     fVertexBufferState.reset();
