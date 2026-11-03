@@ -4,6 +4,7 @@ import dom
 import browserjs
 import gg
 import html
+import layout
 import platform
 import time
 
@@ -171,4 +172,49 @@ window.savedClosure=(()=>{const text="retained λ";return()=>text})();
 	apply_javascript_runtime_state(document, state, runtime, mut messages)
 	assert messages == []string{}
 	assert document.get_element_by_id('kept')?.as_node().text_content()? == 'retained λ'
+}
+
+fn test_scripted_idle_trim_keeps_published_paint_hit_testing_and_later_script_layout() {
+	$if !prealloc { return }
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}#kept{width:100px;height:40px;background:green}</style><div id="kept">Original</div>')
+	document.enable_native_storage()
+	layout.enable_native_paint_tree_storage(document)
+	document.update_readiness(.complete)
+	mut runtime := browserjs.Runtime.create()
+	mut app := &BrowserApp{
+		document: document
+		js_runtime: runtime
+		ctx: &gg.Context{native_rendering:true}
+		document_presented: true
+	}
+	defer {
+		if app.memory_maintenance.cleanup_timer != unsafe { nil } { app.memory_maintenance.cleanup_timer.stop() }
+		runtime.close()
+		document.finalize()
+		document.release_native_storage()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'https://scripted-idle.test/layout', [], runtime, mut messages)
+	assert messages == []string{}
+	app.relayout(320, 200 + app.chrome_height())
+	list := app.paint_display_list
+	lease := layout.retain_display_list_scene(list)
+	defer { layout.release_display_list_scene(lease) }
+	commands := app.paint_commands
+	assert commands.any(it.text == 'Original')
+	assert document.element_from_point(5, 5)?.id()? == 'kept'
+	assert !app.uses_static_native_memory_policy()
+	app.memory_maintenance.document_changed(1_000_000_000)
+	app.release_unused_arena_caches_if_idle(3_000_000_000)
+	assert !app.memory_maintenance.pending_document_work
+	assert voidptr(app.paint_display_list) == voidptr(list)
+	assert app.paint_commands.data == commands.data
+	assert document.element_from_point(5, 5)?.id()? == 'kept'
+	assert runtime.evaluate_host('kept.getBoundingClientRect().width')! == '100'
+	runtime.evaluate_host('kept.style.width="140px";kept.textContent="After idle";0')!
+	app.poll_javascript_tasks()
+	app.relayout(320, 200 + app.chrome_height())
+	assert app.paint_commands.any(it.text == 'After idle')
+	assert commands.any(it.text == 'Original')
+	assert runtime.evaluate_host('kept.getBoundingClientRect().width')! == '140'
 }

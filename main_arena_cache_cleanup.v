@@ -1,10 +1,14 @@
 module main
 
+import os
+
 $if prealloc {
 	import platform
 	import time
 	import layout
 }
+
+const keep_scripted_layout_pages = os.getenv('VOX_KEEP_SCRIPTED_LAYOUT_PAGES') != ''
 
 fn (mut app BrowserApp) arm_arena_cache_cleanup() {
 	$if prealloc {
@@ -42,8 +46,12 @@ fn (mut app BrowserApp) release_unused_arena_caches_if_idle(now_ns i64) {
 		if app.memory_maintenance.cleanup_due(now_ns, 0) {
 			// Only caches with their own recyclable storage can release memory
 			// here. Dropping pointers into document arenas would just orphan it.
-			if app.uses_static_native_memory_policy() {
+			// This trim preserves every live allocation and only decommits empty
+			// spares or unused suffix pages, including on scripted documents.
+			if !keep_scripted_layout_pages || app.uses_static_native_memory_policy() {
 				layout.trim_unused_layout_pages(app.paint_display_list)
+			}
+			if app.uses_static_native_memory_policy() {
 				platform.release_unused_text_shaping()
 			}
 			if app.native_replay_scratch != unsafe { nil } {
