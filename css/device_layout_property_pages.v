@@ -57,9 +57,21 @@ fn (computer &StyleComputer) device_layout_page(page &ComputedPropertyPage, inde
 // Font-size has already been installed separately on the destination page.
 fn (computer &StyleComputer) retain_device_layout_page(source &ComputedPropertyPage,
 	mut target ComputedPropertyStore, index int, factor f64, mask u16) {
+	if layout_input_diagnostics { report_layout_font_page_diagnostic(computer, source, index) }
 	if source.device_layout_generation_ == 0 || !computer.can_retain_device_layout_page(source) { return }
 	font_page := (int(PropertyID.font_size) - int(first_longhand_property_id())) / computed_property_page_size
-	if index == font_page { return }
+	// The separately installed font-size is a pure function of this source
+	// page and factor too. Relative/untyped sizes still fail the checks below.
+	if index == font_page {
+		if disable_font_page_projection_reuse { return }
+		font_slot := (int(PropertyID.font_size) - int(first_longhand_property_id())) % computed_property_page_size
+		font_size := source.values[font_slot]
+		if font_size == unsafe { nil } || font_size.css_value_handle == unsafe { nil } { return }
+		box := unsafe { &TypedStyleValueBox(font_size.css_value_handle) }
+		if box.value is LengthStyleValue {
+			if !box.value.length_.is_px() { return }
+		} else { return }
+	}
 	ids := computed_interpolation_longhand_property_ids()
 	for slot in 0 .. computed_property_page_size {
 		position := index * computed_property_page_size + slot
@@ -74,7 +86,7 @@ fn (computer &StyleComputer) retain_device_layout_page(source &ComputedPropertyP
 		match box.value {
 			LengthStyleValue { if !box.value.length_.is_px() { return } }
 			KeywordStyleValue {} // Only border-width keywords need projection.
-			else { return }
+			else { if !device_layout_value_is_scale_only(&box.value) { return } }
 		}
 	}
 	mut owner := unsafe { &StyleComputer(computer) }

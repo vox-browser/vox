@@ -192,6 +192,22 @@ fn device_layout_edge_is_projection_invariant(value &EdgeStyleValue) bool {
 	return false
 }
 
+fn device_layout_grid_is_projection_invariant(value &GridTrackSizeListStyleValue) bool {
+	tracks := value.grid_track_size_list_
+	// Empty initial lists and plain auto tracks contain no lengths. Reject line
+	// names: absolutization can merge adjacent name sets while rebuilding them.
+	for item in tracks.list_ {
+		if item !is ExplicitGridTrack { return false }
+		track := item.value_
+		if track !is GridSize { return false }
+		size := track.value_
+		if size is Size {
+			if !size.is_auto() { return false }
+		} else { return false }
+	}
+	return true
+}
+
 // Only recognize values whose absolutized() result is already identical.
 // Compound initial values otherwise allocate wrappers and compare whole value
 // graphs, even when all their leaves are percentages, keywords or zero pixels.
@@ -201,7 +217,8 @@ fn device_layout_value_is_projection_invariant(value &StyleValue) bool {
 		KeywordStyleValue { value.keyword() == .currentcolor || !value.has_color() }
 		NumberStyleValue { value.number() == value.number() }
 		PercentageStyleValue { value.raw_value() == value.raw_value() }
-		ColorStyleValue, CustomIdentStyleValue, IntegerStyleValue, StringStyleValue { true }
+		ColorStyleValue, CustomIdentStyleValue, IntegerStyleValue, StringStyleValue,
+		RepeatStyleStyleValue { true }
 		StyleValueList {
 			mut invariant := true
 			for child in value.values_ {
@@ -234,6 +251,7 @@ fn device_layout_value_is_projection_invariant(value &StyleValue) bool {
 		TextIndentStyleValue {
 			device_layout_value_is_projection_invariant(&value.length_percentage_[0])
 		}
+		GridTrackSizeListStyleValue { device_layout_grid_is_projection_invariant(value) }
 		// Calculations, colors, transforms (including dimensionless matrix
 		// translations), and unknown containers retain ordinary absolutization.
 		else { false }
@@ -305,8 +323,19 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 			none
 		}
 	}
-	target.set_property_without_modifying_flags(.font_size,
-		dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(pixel_size)))))
+	font_page := (int(PropertyID.font_size) - int(first_longhand_property_id())) / computed_property_page_size
+	mut reused_font_page := false
+	if !source.has_animated_properties() && source.property_store_ != unsafe { nil } {
+		if page := style_computer.device_layout_page(source.property_store_.pages[font_page], font_page, factor) {
+			target.property_store_.pages[font_page] = page
+			target.property_store_.writable &= ~(u32(1) << font_page)
+			reused_font_page = true
+		}
+	}
+	if !reused_font_page {
+		target.set_property_without_modifying_flags(.font_size,
+			dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(pixel_size)))))
+	}
 	// Installing font-size invalidates the inherited font cache. Seed the
 	// scaled faces only after that setter, preserving the CSS optical axes.
 	target.cached_computed_font_list_ = scaled_fonts
@@ -364,7 +393,7 @@ pub fn computed_style_in_layout_coordinates(source &ComputedProperties,
 				// and nested values still resolve against the complete physical context.
 				needs_length_context := match typed {
 					LengthStyleValue { !typed.length_.is_absolute() }
-					else { true }
+					else { !device_layout_value_is_scale_only(typed) }
 				}
 				if needs_length_context && !has_length_context {
 					context.length_resolution_context = target.length_resolution_context()

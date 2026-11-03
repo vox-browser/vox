@@ -189,3 +189,88 @@ fn test_device_layout_page_reuse_does_not_publish_host_owned_pages_on_a_child_co
 	retained := computer.device_layout_page(source.property_store_.pages[index], index, 2) != none
 	assert !retained
 }
+
+struct ScaleOnlyProjectionCase {
+	text string
+	property PropertyID
+	expected bool
+}
+
+fn test_grid_projection_invariants_exclude_lengths_calculations_and_line_names() {
+	for input in [
+		ScaleOnlyProjectionCase{'none', .grid_template_columns, true},
+		ScaleOnlyProjectionCase{'auto', .grid_auto_columns, true},
+		ScaleOnlyProjectionCase{'auto auto', .grid_template_rows, true},
+		ScaleOnlyProjectionCase{'12px', .grid_auto_rows, false},
+		ScaleOnlyProjectionCase{'1em', .grid_template_columns, false},
+		ScaleOnlyProjectionCase{'minmax(auto, 1fr)', .grid_template_columns, false},
+		ScaleOnlyProjectionCase{'[a] auto [b]', .grid_template_columns, false},
+	] {
+		parsed := parse_css_value(ParsingParams{}, input.text, input.property) or { panic(input.text) }
+		box := unsafe { &TypedStyleValueBox(parsed.css_value_handle) }
+		assert device_layout_value_is_projection_invariant(&box.value) == input.expected, input.text
+		if input.expected {
+			projected := box.value.absolutized(ComputationContext{
+				length_resolution_context: LengthResolutionContext{absolute_length_scale: 2}
+			})
+			assert projected.equals(box.value), input.text
+		}
+	}
+}
+
+fn test_repeat_style_lists_are_unchanged_by_device_projection() {
+	for text in ['repeat', 'repeat-x', 'space round', 'repeat, no-repeat'] {
+		parsed := parse_css_value(ParsingParams{}, text, .mask_repeat) or { panic(text) }
+		box := unsafe { &TypedStyleValueBox(parsed.css_value_handle) }
+		assert device_layout_value_is_projection_invariant(&box.value)
+		projected := box.value.absolutized(ComputationContext{
+			length_resolution_context: LengthResolutionContext{absolute_length_scale: 2}
+		})
+		assert projected.equals(box.value)
+	}
+}
+
+fn test_scale_only_projection_recognizes_compound_absolute_lengths_and_rejects_font_context() {
+	for input in [
+		ScaleOnlyProjectionCase{'4px 25%', .background_size, true},
+		ScaleOnlyProjectionCase{'4px 2em', .background_size, false},
+		ScaleOnlyProjectionCase{'right 12px', .background_position_x, true},
+		ScaleOnlyProjectionCase{'right 1em', .background_position_x, false},
+		ScaleOnlyProjectionCase{'right 12px bottom 25%', .object_position, true},
+		ScaleOnlyProjectionCase{'right 1em bottom 25%', .object_position, false},
+		ScaleOnlyProjectionCase{'right 12px bottom 25%', .background_position, false},
+		ScaleOnlyProjectionCase{'right 1em bottom 25%', .background_position, false},
+		ScaleOnlyProjectionCase{'8px 25%', .border_top_left_radius, true},
+		ScaleOnlyProjectionCase{'1rem 25%', .border_top_left_radius, false},
+		ScaleOnlyProjectionCase{'calc(25% - 4px)', .width, false},
+	] {
+		value := parse_css_value(ParsingParams{}, input.text, input.property) or { panic(input.text) }
+		box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		assert device_layout_value_is_scale_only(&box.value) == input.expected, input.text
+	}
+}
+
+fn test_font_projection_page_reuses_only_matching_source_generation_and_scale() {
+	mut document, mut source := page_reuse_fixture('font:13.25px Arial;line-height:normal')
+	defer { document.finalize(); document.release_native_storage() }
+	document.set_layout_coordinate_scale(2)
+	first := computed_style_in_layout_coordinates(page_reuse_source(source), document)
+	second := computed_style_in_layout_coordinates(page_reuse_source(source), document)
+	index := page_reuse_index(.font_size)
+	assert voidptr(first.property_store_.pages[index]) == voidptr(second.property_store_.pages[index])
+	assert source.resolved_font_size_px() == 13.25
+	assert second.resolved_font_size_px() == 26.5
+	mut computer := css_style_computer_for(document)
+	cache := computer.device_layout_property_pages_
+	computer.device_layout_property_pages_ = unsafe { nil }
+	reference := computed_style_in_layout_coordinates(page_reuse_source(source), document)
+	computer.device_layout_property_pages_ = cache
+	assert_page_reuse_values_equal(second, reference)
+	source.set_property_without_modifying_flags(.font_size, page_reuse_value('17px'))
+	updated := computed_style_in_layout_coordinates(page_reuse_source(source), document)
+	assert updated.resolved_font_size_px() == 34
+	assert second.resolved_font_size_px() == 26.5
+	document.set_layout_coordinate_scale(1.25)
+	scaled := computed_style_in_layout_coordinates(page_reuse_source(source), document)
+	assert scaled.resolved_font_size_px() == 21.25
+}

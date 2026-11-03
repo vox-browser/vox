@@ -486,6 +486,12 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 	// Resolve counter definitions too before the pure geometry/color write
 	// scope: loading a custom registry can parse CSS and yield to native work.
 	resolved_list_style := style.list_style_type(document)
+	if layout_input_diagnostics { report_layout_input_diagnostic(style) }
+	if anonymous_source == none && consume_identical_layout_inputs(style, document) {
+		mut values := unsafe { &MutableComputedValues(style) }
+		values.set_list_style_type(resolved_list_style)
+		return unsafe { &ComputedValues(style) }
+	}
 	// Counter/font discovery can run callbacks. Check the saved raw/context
 	// proof only after discovery, immediately before the pure cache write.
 	reuse_compositor := anonymous_source == none
@@ -500,6 +506,7 @@ fn resolve_computed_values_for_document_impl(style &ComputedProperties, document
 		computed_style.publish_computed_geometry_provenance(previous_provenance)
 		computed_style.finish_computed_layout_cache_write(owns_cache_write)
 		initial_snapshot.publish(mut computed_style)
+		if anonymous_source == none { retain_identical_layout_inputs(style, document) }
 	}
 	if reuse_compositor {
 		mut values := unsafe { &MutableComputedValues(style) }

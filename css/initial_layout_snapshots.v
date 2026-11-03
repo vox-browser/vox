@@ -15,6 +15,8 @@ $if prealloc {
 struct InitialLayoutSnapshotPool {
 mut:
 	buckets map[u64][]&ComputedLayoutCache
+	identical_inputs map[u64][]IdenticalLayoutInputs
+	identical_pages map[u64]IdenticalLayoutPage
 }
 
 struct InitialLayoutSnapshot {
