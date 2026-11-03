@@ -34,6 +34,8 @@ fn (app &BrowserApp) browser_bookmark_ui_state(chrome BrowserChromeState) bookma
 // request or a platform-specific image control.
 fn (app &BrowserApp) browser_bookmark_icon_path(address string, image_id int) string {
 	if image_id < 0 { return '' }
+	scratch := platform.begin_thread_scratch('bookmark icon export')
+	defer { scratch.finish() }
 	bytes := app.background_image_bytes(app.cached_browser_bookmark_favicon_url(address)) or { return '' }
 	return app.browser_ui_icon_path(image_id, bytes)
 }
@@ -50,7 +52,7 @@ fn (app &BrowserApp) browser_ui_icon_path(image_id int, bytes []u8) string {
 	persistent := platform.enter_persistent()
 	cache.bookmark_icon_paths[image_id] = path.clone()
 	platform.leave_persistent(persistent)
-	return path
+	return cache.bookmark_icon_paths[image_id]
 }
 
 fn (app &BrowserApp) browser_chrome_ui_elements(chrome BrowserChromeState) []ui2.Element {
