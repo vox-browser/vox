@@ -12,6 +12,7 @@ pub fn (mut runtime Runtime) install_document_window_event_binding(document &dom
 	}
 	runtime.install_window_event_handler_binding()!
 	runtime.bind_event_target(document_wrapper, unsafe { &dom.EventTarget(document) })!
+	runtime.install_document_scrollend_handler(document_wrapper)!
 	factory := runtime.evaluate_host_value(document_window_event_method_factory())!
 	global := C.JSContextGetGlobalObject(runtime.context)
 	runtime.call_javascript_function(factory, global, [global, document_wrapper])!

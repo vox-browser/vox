@@ -31,36 +31,8 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
-	get_handler := runtime.make_native_value_host_function('get onwheel', 0, fn [handle] (receiver voidptr, _ []voidptr) !voidptr {
-		host := unsafe { &ElementWheelHost(handle) }
-		target := host.wheel_handler_target(receiver) or {
-			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
-		}
-		if replay := host.replay { replay(host.runtime)! }
-		return host.runtime.javascript_event_handler(target, 'wheel')!
-	})!
-	set_handler := runtime.make_native_value_host_function('set onwheel', 1, fn [handle] (receiver voidptr, args []voidptr) !voidptr {
-		mut host := unsafe { &ElementWheelHost(handle) }
-		target := host.wheel_handler_target(receiver) or {
-			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
-		}
-		mut value := voidptr(0)
-		if args.len == 0 {
-			value = C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
-		} else {
-			value = args[0]
-		}
-		// Capture callback settings before flushing queued content attributes;
-		// an earlier raw onwheel write must not overwrite this later IDL write.
-		callback := host.runtime.event_callback(value, true)!
-		if replay := host.replay { replay(host.runtime)! }
-		target.set_event_handler_attribute('wheel', if callback != unsafe { nil } {
-			?&dom.CallbackType(callback)
-		} else {
-			?&dom.CallbackType(none)
-		})
-		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
-	})!
+	get_handler, set_handler := host.element_event_handler_accessors('wheel')!
+	get_scrollend, set_scrollend := host.element_event_handler_accessors('scrollend')!
 	factory := runtime.evaluate_host_value(element_wheel_host_bootstrap())!
 	defer { runtime.release_javascript_value(factory) }
 	runtime.call_javascript_function(factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
@@ -69,6 +41,8 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		set_resolver,
 		get_handler,
 		set_handler,
+		get_scrollend,
+		set_scrollend,
 	])!
 	runtime.add_canvas_element_provider_with_identity_lookup(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &ElementWheelHost(handle) }
@@ -95,6 +69,41 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		host.records = {}
 		host.elements = {}
 	})
+}
+
+fn (mut host ElementWheelHost) element_event_handler_accessors(name string) !(voidptr, voidptr) {
+	handle := voidptr(&host)
+	get_handler := host.runtime.make_native_value_host_function('get on' + name, 0, fn [handle, name] (receiver voidptr, _ []voidptr) !voidptr {
+		host := unsafe { &ElementWheelHost(handle) }
+		target := host.wheel_handler_target(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+		if replay := host.replay { replay(host.runtime)! }
+		return host.runtime.javascript_event_handler(target, name)!
+	})!
+	set_handler := host.runtime.make_native_value_host_function('set on' + name, 1, fn [handle, name] (receiver voidptr, args []voidptr) !voidptr {
+		mut host := unsafe { &ElementWheelHost(handle) }
+		target := host.wheel_handler_target(receiver) or {
+			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
+		}
+		mut value := voidptr(0)
+		if args.len == 0 {
+			value = C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
+		} else {
+			value = args[0]
+		}
+		// Capture callback settings before flushing queued content attributes;
+		// an earlier raw content-attribute write must not overwrite this later IDL write.
+		callback := host.runtime.event_callback(value, true)!
+		if replay := host.replay { replay(host.runtime)! }
+		target.set_event_handler_attribute(name, if callback != unsafe { nil } {
+			?&dom.CallbackType(callback)
+		} else {
+			?&dom.CallbackType(none)
+		})
+		return C.vox_jsc_JSValueMakeUndefined(host.runtime.context)
+	})!
+	return get_handler, set_handler
 }
 
 fn element_exposes_wheel_handler(element &dom.Element) bool {
@@ -187,17 +196,20 @@ fn element_wheel_host_bootstrap() string {
 	// delivery. Arbitrary author event names must share the native listener
 	// list with dispatchEvent, including capture, cancellation and options.
 	legacy_types := window_event_handler_names().map(it.event)
-	return r'(function(bind,type,setResolver,getHandler,setHandler){
+	return r'(function(bind,type,setResolver,getHandler,setHandler,getScrollEnd,setScrollEnd){
  "use strict";
  const apply=Reflect.apply,define=Object.defineProperty,wrapped=new WeakSet(),has=WeakSet.prototype.has,add=WeakSet.prototype.add;
  const legacyTypes=new Set(' + json2.encode(legacy_types) + r'),legacyHas=Set.prototype.has;
  const nativeAdd=EventTarget.prototype.addEventListener,nativeRemove=EventTarget.prototype.removeEventListener,nativeDispatch=EventTarget.prototype.dispatchEvent;
- function nativeEvent(name){return name==="wheel"||name==="beforeinput"||name==="input"||name==="change"||name==="click"||name==="keydown"||name==="keyup"||name==="keypress"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid"||!apply(legacyHas,legacyTypes,[name]);}
+ function nativeEvent(name){return name==="wheel"||name==="scrollend"||name==="beforeinput"||name==="input"||name==="change"||name==="click"||name==="keydown"||name==="keyup"||name==="keypress"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid"||!apply(legacyHas,legacyTypes,[name]);}
  define(globalThis,"__ladybirdElementWheelSetResolver",{value:setResolver,configurable:true});
  define(globalThis,"__ladybirdElementWheelBind",{value:function(o,key,tag,namespace){
   const exposesHandler=apply(bind,undefined,[o,key,tag,namespace]);
   if(apply(has,wrapped,[o]))return;
-  if(exposesHandler)define(o,"onwheel",{get:getHandler,set:setHandler,enumerable:true,configurable:true});
+  if(exposesHandler){
+   define(o,"onwheel",{get:getHandler,set:setHandler,enumerable:true,configurable:true});
+   define(o,"onscrollend",{get:getScrollEnd,set:setScrollEnd,enumerable:true,configurable:true});
+  }
   const legacyAdd=o.addEventListener,legacyRemove=o.removeEventListener;
   define(o,"addEventListener",{value:function addEventListener(name,callback){
    if(arguments.length<2)return apply(nativeAdd,this,arguments);

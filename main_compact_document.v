@@ -9,6 +9,13 @@ import x.json2
 // Detached documents belong to this realm but have their own native tree,
 // URL, origin and DOMImplementation. Retain them until the realm closes.
 fn install_compact_document_binding(binding &CompactElementQueryBinding, mut runtime browserjs.Runtime) ! {
+	if runtime.engine == .javascriptcore {
+		runtime.install_document_event_target_resolver(fn [binding] (key string) ?&dom.Document {
+			if key == '' { return binding.document }
+			node := binding.nodes[key] or { return none }
+			return node.as_document()
+		})!
+	}
 	runtime.define_number_host_function('__ladybirdDOMTreeVersion', fn [binding] () f64 {
 		mut version := binding.document.dom_tree_version()
 		for _, document in binding.documents {
@@ -170,9 +177,11 @@ function __compactDocumentWrapper(state){
  if(state.bridgeKey==="")return document;if(state.__object)return state.__object;
  const object=Object.create(HTMLDocument.prototype);
  __elementApply(__elementRecordSet,__compactDocuments,[object,state]);__elementApply(__elementRecordSet,__compactNodeRecords,[object,state]);
+ if(typeof __ladybirdDocumentEventTargetBind==="function")__ladybirdDocumentEventTargetBind(object,state.bridgeKey);
  Object.defineProperty(state,"__object",{value:object});return object;
 }
 Object.setPrototypeOf(document,HTMLDocument.prototype);
+for(const name of ["addEventListener","removeEventListener","dispatchEvent"])Object.defineProperty(Document.prototype,name,{value:EventTarget.prototype[name],writable:true,enumerable:true,configurable:true});
 const __compactDocumentLegacyAdd=document.addEventListener;
 function __compactDocumentNativeEvent(name){return name==="click"||name==="keydown"||name==="keyup"||name==="keypress"||name==="beforeinput"||name==="input"||name==="change"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid";}
 document.addEventListener=function(name,callback,options){

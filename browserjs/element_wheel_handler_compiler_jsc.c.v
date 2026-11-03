@@ -11,7 +11,7 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 	mut document := unsafe { &dom.Document(host.document) }
 	document.set_inline_event_handler_compiler(dom.InlineEventHandlerCompiler{
 		supports_handler: fn [owner, settings] (target &dom.EventTarget, name string) bool {
-			if name == 'wheel' || (target.data.kind == .window
+			if name in ['wheel', 'scrollend'] || (target.data.kind == .window
 				&& voidptr(target) == voidptr(settings.global_object())) { return true }
 			// Most native pointer/focus dispatches query ordinary raw handlers.
 			// Reject unsupported names before resolving an element: resolution
@@ -55,7 +55,7 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 				|| (element.local_name() == 'track' && name in ['load', 'error']) {
 				return host.raw_media_or_track_handler_available(target, element, name)
 			}
-			return name == 'wheel'
+			return name in ['wheel', 'scrollend']
 		}
 		compile: fn [owner, settings] (target &dom.EventTarget, name string, body string, source string) ?&dom.CallbackType {
 			mut host := unsafe { &ElementWheelHost(owner) }
@@ -129,7 +129,7 @@ fn (runtime &Runtime) raw_wheel_handler_body_is_valid(handler_name string, body 
 
 fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget, name string, body string, source string) ?&dom.CallbackType {
 	mut runtime := host.runtime
-	if name !in ['wheel', 'load', 'play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error'] || !runtime.raw_wheel_handler_body_is_valid(name, body) { return none }
+	if name !in ['wheel', 'scrollend', 'load', 'play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error'] || !runtime.raw_wheel_handler_body_is_valid(name, body) { return none }
 	element := host.raw_wheel_handler_element(target) or { return none }
 	mut vm := runtime.agent_vm
 	mut context := runtime.realm_context

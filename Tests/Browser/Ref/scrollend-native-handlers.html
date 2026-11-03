@@ -1,0 +1,38 @@
+<!doctype html>
+<link rel="match" href="scrollend-native-handlers.ref.html">
+<style>
+html { overflow: hidden; background: red }
+body { margin: 0; height: 2000px }
+#area { width: 100px; height: 50px; overflow: hidden }
+#content { height: 300px }
+html.pass { background: green }
+</style>
+<div id="area"><div id="content"></div></div>
+<script>
+const area = document.getElementById("area");
+let documentEnded = false, elementEnded = false;
+document.documentElement.setAttribute("data-started", "true");
+function finish() {
+    if (documentEnded && elementEnded)
+        document.documentElement.className = "pass";
+}
+document.onscrollend = function(event) {
+    if (this !== document || event.target !== document || !event.bubbles)
+        throw new Error("Wrong document scrollend identity");
+    documentEnded = true;
+    document.documentElement.setAttribute("data-document-ended", "true");
+    finish();
+};
+area.onscrollend = function(event) {
+    if (this !== area || event.target !== area || event.bubbles)
+        throw new Error("Wrong element scrollend identity");
+    elementEnded = true;
+    document.documentElement.setAttribute("data-element-ended", "true");
+    finish();
+};
+setTimeout(() => {
+    area.scrollTop = 20;
+    document.documentElement.scrollTop = 30;
+    document.documentElement.setAttribute("data-offsets", area.scrollTop + "," + document.documentElement.scrollTop);
+}, 50);
+</script>

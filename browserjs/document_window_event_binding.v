@@ -1,6 +1,10 @@
 // Actual Document/Window event records at the compact facade boundary.
 module browserjs
 
+import dom
+
+pub type DocumentEventTargetResolver = fn (string) ?&dom.Document
+
 fn document_window_event_method_factory() string {
 	return r'(function(){
  const define=Object.defineProperty,prototype=EventTarget.prototype;
