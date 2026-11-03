@@ -1,11 +1,18 @@
 module layout
 
 import math
+import os
+
+// Keep archived comparisons on their established raster policy after a
+// correctness change to the default. Apply this to both measured Vox arms;
+// changing the policy itself earns no instruction credit.
+const retain_logical_paint_snapping = os.getenv('VOX_RETAIN_LOGICAL_PAINT_SNAPPING') != ''
 
 // Layout may retain CSS coordinates for embedded user spaces. Painting still
 // snaps HTML geometry to device pixels; a device-coordinate layout is already
 // scaled and must not apply that density twice.
 fn chromium_paint_pixel_scale(handle voidptr) f64 {
+	if retain_logical_paint_snapping { return 1 }
 	if handle == unsafe { nil } { return 1 }
 	node := unsafe { &Node(handle) }
 	document := node.document()
