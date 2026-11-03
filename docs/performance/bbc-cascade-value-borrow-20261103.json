@@ -1,0 +1,4423 @@
+{
+  "status": "Direct cascade reads retained; valid combined BBC cohort remains above Brave and has mixed optimization results",
+  "target_met": false,
+  "catalog_entry_added": false,
+  "history_cohorts": 70,
+  "history_browser_attempts": 1614,
+  "commits": [
+    "0818d915e",
+    "a549b58e7"
+  ],
+  "scope": "Exclusive fresh browser resource coalition creation through encoded document PNG; Vox before file write, Brave includes CDP delivery; audit and teardown excluded.",
+  "workload": "Unchanged 595-response BBC original-origin archive, author scripts, JSC/V8, original per-engine PNG references,1024x768 CSS,2x backing/capture,private fresh profiles/caches,retained OS filesystem/shader caches,original readiness/decode+2s settle,RGB paint policy.",
+  "behavior": "Read retained typed tags without copying the StyleValue union. Preserve unresolved/guaranteed-invalid and untyped fallback paths and use live box contents.",
+  "focused": {
+    "cases": 23,
+    "policies": 2,
+    "memory_modes": 3,
+    "executions": 138,
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "retained_preparation_attempts": {
+      "focused-css-v1": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 1
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 1
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 1
+        }
+      ],
+      "focused-css-v2": [
+        {
+          "name": "default-compile",
+          "exit": 1
+        },
+        {
+          "name": "none-compile",
+          "exit": 1
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 1
+        }
+      ],
+      "focused-css-v3": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 138
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 139
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 139
+        }
+      ],
+      "focused-css-v4": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 1
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 1
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 1
+        }
+      ],
+      "focused-css-v5": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        }
+      ]
+    },
+    "preparation_notes": [
+      "v1 revert-layer fixture chose layer incorrectly",
+      "v2 nonexistent computed color accessor",
+      "v3 existing inline optional-pointer compiler bug also crashes original control in all modes",
+      "v4 first optional local binding fixed, second original inline width converter still fails",
+      "v5 composed fixture binds both original optional-pointer arguments to locals; canonical tests unchanged, cases/assertions retained"
+    ],
+    "control_failure_receipt": [
+      {
+        "mode": "default",
+        "exit": 138
+      },
+      {
+        "mode": "none",
+        "exit": 139
+      },
+      {
+        "mode": "prealloc",
+        "exit": 139
+      }
+    ]
+  },
+  "tool_tests": 243,
+  "standalone": {
+    "diagnostic_only": true,
+    "bbc_instruction_credit": false,
+    "acceptance": false,
+    "executable_sha256": "5d61093a8efc7b46787a980e4e2c3a362b384f5e01a35bdcadd8b68409535e54",
+    "html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+    "rows": [
+      {
+        "pair": 0,
+        "arm": "witness",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 346638977,
+        "first_layout": 2703326455,
+        "mutation": 104524,
+        "second_layout": 1186100601,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "cascade_borrow": true
+        }
+      },
+      {
+        "pair": 1,
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 344538396,
+        "first_layout": 2736902077,
+        "mutation": 110687,
+        "second_layout": 1212641733,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "cascade_borrow": false
+        }
+      },
+      {
+        "pair": 1,
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 345284585,
+        "first_layout": 2694346969,
+        "mutation": 102669,
+        "second_layout": 1184315030,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "cascade_borrow": false
+        }
+      },
+      {
+        "pair": 2,
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 344040663,
+        "first_layout": 2689883000,
+        "mutation": 98076,
+        "second_layout": 1185269075,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "cascade_borrow": false
+        }
+      },
+      {
+        "pair": 2,
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0",
+        "startup_parse": 344740946,
+        "first_layout": 2717090838,
+        "mutation": 96056,
+        "second_layout": 1211870902,
+        "markers": {
+          "width": false,
+          "svg": false,
+          "edges": false,
+          "cascade_borrow": false
+        }
+      }
+    ],
+    "limitations": "Standalone C-O3 no-GC engine, frozen BBC HTML without scripts or resource replay, viewport1024x768/layout scale1. First layout and second update after appending a zero-size body child use process deltas. Includes synchronous native style/layout but no browser startup/window/PNG. Dumps and scalar geometry do not establish pixel equality or full-browser savings. Witness has diagnostic logging and supplies no timing credit."
+  },
+  "profile": {
+    "diagnostic_only": true,
+    "instrumentation": "V -profile - -profile-no-inline with explicit CSS scope entries",
+    "bbc_instruction_credit": false,
+    "executable_sha256": "5f3a7796bab86785571b783d318bf0787f17eaed93e83d725d524a54b78929fd",
+    "html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+    "rows": [
+      {
+        "arm": "control",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "profiled_rows": 53,
+        "selected": {
+          "css__apply_property_list_to_cascade": {
+            "calls": 30989,
+            "inclusive_ms": 138.8,
+            "self_ms": 28.723,
+            "mean_ns": 4479.0,
+            "name": "css__apply_property_list_to_cascade"
+          },
+          "css__opaque_is_revert": {
+            "calls": 235321,
+            "inclusive_ms": 20.177,
+            "self_ms": 8.865,
+            "mean_ns": 86.0,
+            "name": "css__opaque_is_revert"
+          },
+          "css__opaque_is_revert_layer": {
+            "calls": 235321,
+            "inclusive_ms": 19.98,
+            "self_ms": 8.808,
+            "mean_ns": 85.0,
+            "name": "css__opaque_is_revert_layer"
+          },
+          "css__opaque_is_pending_substitution": {
+            "calls": 235321,
+            "inclusive_ms": 9.305,
+            "self_ms": 5.648,
+            "mean_ns": 40.0,
+            "name": "css__opaque_is_pending_substitution"
+          },
+          "css__opaque_is_unresolved": {
+            "calls": 2,
+            "inclusive_ms": 0.0,
+            "self_ms": 0.0,
+            "mean_ns": 146.0,
+            "name": "css__opaque_is_unresolved"
+          },
+          "css__opaque_is_guaranteed_invalid": {
+            "name": "css__opaque_is_guaranteed_invalid",
+            "calls": 0,
+            "instrumented_entry_in_generated_C": true,
+            "scope_limited_zero": true
+          },
+          "css__resolve_cascade_declaration_value": {
+            "calls": 235321,
+            "inclusive_ms": 8.408,
+            "self_ms": 5.636,
+            "mean_ns": 36.0,
+            "name": "css__resolve_cascade_declaration_value"
+          },
+          "css__typed_style_value_logic_from_dom": {
+            "calls": 235323,
+            "inclusive_ms": 3.657,
+            "self_ms": 3.657,
+            "mean_ns": 16.0,
+            "name": "css__typed_style_value_logic_from_dom"
+          },
+          "css__style_value_logic_from_dom": {
+            "calls": 705963,
+            "inclusive_ms": 8.32,
+            "self_ms": 8.32,
+            "mean_ns": 12.0,
+            "name": "css__style_value_logic_from_dom"
+          }
+        },
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0"
+      },
+      {
+        "arm": "candidate",
+        "guard_exit": 0,
+        "native_exit": 0,
+        "profiled_rows": 52,
+        "selected": {
+          "css__apply_property_list_to_cascade": {
+            "calls": 30989,
+            "inclusive_ms": 123.843,
+            "self_ms": 29.824,
+            "mean_ns": 3996.0,
+            "name": "css__apply_property_list_to_cascade"
+          },
+          "css__opaque_is_revert": {
+            "calls": 235321,
+            "inclusive_ms": 14.616,
+            "self_ms": 5.881,
+            "mean_ns": 62.0,
+            "name": "css__opaque_is_revert"
+          },
+          "css__opaque_is_revert_layer": {
+            "calls": 235321,
+            "inclusive_ms": 14.601,
+            "self_ms": 5.912,
+            "mean_ns": 62.0,
+            "name": "css__opaque_is_revert_layer"
+          },
+          "css__opaque_is_pending_substitution": {
+            "calls": 235321,
+            "inclusive_ms": 3.196,
+            "self_ms": 3.196,
+            "mean_ns": 14.0,
+            "name": "css__opaque_is_pending_substitution"
+          },
+          "css__opaque_is_unresolved": {
+            "calls": 2,
+            "inclusive_ms": 0.0,
+            "self_ms": 0.0,
+            "mean_ns": 0.0,
+            "name": "css__opaque_is_unresolved"
+          },
+          "css__opaque_is_guaranteed_invalid": {
+            "name": "css__opaque_is_guaranteed_invalid",
+            "calls": 0,
+            "instrumented_entry_in_generated_C": true,
+            "scope_limited_zero": true
+          },
+          "css__resolve_cascade_declaration_value": {
+            "calls": 235321,
+            "inclusive_ms": 7.186,
+            "self_ms": 5.908,
+            "mean_ns": 31.0,
+            "name": "css__resolve_cascade_declaration_value"
+          },
+          "css__typed_style_value_logic_from_dom": {
+            "name": "css__typed_style_value_logic_from_dom",
+            "calls": 0,
+            "instrumented_entry_in_generated_C": true,
+            "scope_limited_zero": true
+          },
+          "css__style_value_logic_from_dom": {
+            "name": "css__style_value_logic_from_dom",
+            "calls": 0,
+            "instrumented_entry_in_generated_C": true,
+            "scope_limited_zero": true
+          }
+        },
+        "geometry": [
+          "SVG_SSR_RESULT nodes=2855 lines=902 extent=55212771"
+        ],
+        "paint_sha256": "fce6037dbce4aeb6200b66e82fb2633d23d54adb230dd3cb03defccd1a2e57a0"
+      }
+    ],
+    "limitations": "Instrumented frozen HTML, no scripts/resources/window/startup comparison/PNG; times and instruction snapshots are diagnostic only. The apply_property_list_to_cascade definition explicitly enables profiling, verified with an anchored function-definition extractor. All tracked callee entries are instrumented; missing rows mean zero calls only within that selected scope, not globally. C-O1 diagnostic flags differ from the unprofiled C-O3 binary. Child timings overlap."
+  },
+  "source_proof": {
+    "latest_receipt": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "161abd3cb0f3becfc75e651f9fb1d883b8f6c39177ac79b916b5917ea66fc008",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-080604-c0ca09de/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "753b92a4f695b59be291e5cea77ad66da5c5fe9371d6ded119f3840ea34db0a6",
+        "dirty": true,
+        "head": "ec9a9cc5e9aa17003256585cf30b5538021a0f4f",
+        "repository_sha256": "088594c26a5194f80c5dd2fc39bc0f5e3345652fb59558c60f6478f62d73ded2"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "c0bfc994fa4f64fc5be3d63887d65dd662c4c6acbeb4a0712127dc212debe4ad",
+        "dirty": true,
+        "head": "4c2b74fb16f1d489d9bd6d016e90a304db057241",
+        "repository_sha256": "66bd8877bc7d1a6e0f5985403393ba4402c44d840f70511a048b84b8b86c6966"
+      },
+      "request": {
+        "head": "ec9a9cc5e9aa17003256585cf30b5538021a0f4f",
+        "id": "db0dd17e9e9b42dfbbd2a927d59c5cb9"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "753b92a4f695b59be291e5cea77ad66da5c5fe9371d6ded119f3840ea34db0a6",
+        "dirty": true,
+        "head": "ec9a9cc5e9aa17003256585cf30b5538021a0f4f",
+        "repository_sha256": "088594c26a5194f80c5dd2fc39bc0f5e3345652fb59558c60f6478f62d73ded2"
+      }
+    },
+    "extraction": "Only unindented typed C definitions, excluding if/call sites",
+    "functions": [
+      {
+        "function": "css__opaque_is_revert",
+        "identical": true,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "fffe61a70a96014e250813ed182a8d38c47d02637554c07ed9c71d784bdffcda",
+        "standalone_sha256": "fffe61a70a96014e250813ed182a8d38c47d02637554c07ed9c71d784bdffcda"
+      },
+      {
+        "function": "css__opaque_is_revert_layer",
+        "identical": true,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "a087ea5cf30da9504210f81ceee823543b61282679367282b8cc57cb6604d29f",
+        "standalone_sha256": "a087ea5cf30da9504210f81ceee823543b61282679367282b8cc57cb6604d29f"
+      },
+      {
+        "function": "css__opaque_is_pending_substitution",
+        "identical": true,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "c8f86d7f6f6ed41082dad264f4edd3d98773008d6baf91d1405f697a74a64c77",
+        "standalone_sha256": "c8f86d7f6f6ed41082dad264f4edd3d98773008d6baf91d1405f697a74a64c77"
+      },
+      {
+        "function": "css__opaque_is_unresolved",
+        "identical": true,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "9f2de0ffad5f33f594178f309812c35ad96ec8656ab01f2e075e9b806e450aa0",
+        "standalone_sha256": "9f2de0ffad5f33f594178f309812c35ad96ec8656ab01f2e075e9b806e450aa0"
+      },
+      {
+        "function": "css__opaque_is_guaranteed_invalid",
+        "identical": true,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "d05029ce1d5057a8414e88595b2baf4465fe08e9aa379fbf427e0f000ccbcecd",
+        "standalone_sha256": "d05029ce1d5057a8414e88595b2baf4465fe08e9aa379fbf427e0f000ccbcecd"
+      },
+      {
+        "function": "css__resolve_cascade_declaration_value",
+        "identical": true,
+        "identical_after_string_literal_symbol_normalization": true,
+        "production_sha256": "ddc8398d4e336b223360902a5ed4a169caee54f59a5e2681730bde40a3e83ccf",
+        "standalone_sha256": "ddc8398d4e336b223360902a5ed4a169caee54f59a5e2681730bde40a3e83ccf"
+      }
+    ]
+  },
+  "diagnostics": [
+    [
+      {
+        "label": "candidate",
+        "driver_guard_exit": 0,
+        "diagnostic_only": true,
+        "no_instruction_credit": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "ownership": true,
+        "fast_path": true,
+        "jsc": [
+          "JSC_PROBE pid=28273 contexts=1 groups=1 evaluations=2002"
+        ],
+        "path_before_capture": true,
+        "zero_fast_path": true,
+        "zero_path_before_capture": true
+      },
+      {
+        "label": "control",
+        "driver_guard_exit": 0,
+        "diagnostic_only": true,
+        "no_instruction_credit": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "ownership": true,
+        "fast_path": false,
+        "jsc": [
+          "JSC_PROBE pid=28762 contexts=1 groups=1 evaluations=1951"
+        ],
+        "path_before_capture": true,
+        "zero_fast_path": false,
+        "zero_path_before_capture": true
+      }
+    ],
+    [
+      {
+        "label": "candidate",
+        "driver_guard_exit": 0,
+        "diagnostic_only": true,
+        "no_instruction_credit": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "ownership": true,
+        "fast_path": true,
+        "jsc": [
+          "JSC_PROBE pid=37796 contexts=1 groups=1 evaluations=1950"
+        ],
+        "path_before_capture": true,
+        "zero_fast_path": true,
+        "zero_path_before_capture": true
+      },
+      {
+        "label": "control",
+        "driver_guard_exit": 0,
+        "diagnostic_only": true,
+        "no_instruction_credit": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "ownership": true,
+        "fast_path": false,
+        "jsc": [
+          "JSC_PROBE pid=38202 contexts=1 groups=1 evaluations=1883"
+        ],
+        "path_before_capture": true,
+        "zero_fast_path": false,
+        "zero_path_before_capture": true
+      }
+    ]
+  ],
+  "cohorts": [
+    {
+      "cohort": 69,
+      "attempts": 17,
+      "complete_result_receipts": 17,
+      "complete_triples": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "history_cohorts": 69,
+      "history_cohort_attempts": 1593,
+      "cohort_valid": false,
+      "accepted": false,
+      "counts": {
+        "control": [
+          29450686900,
+          28731682526,
+          29348907515,
+          29817290265,
+          30124042104
+        ],
+        "vox": [
+          28676271577,
+          29868962308,
+          29013009255,
+          29191933446,
+          30545054676,
+          29342886226
+        ],
+        "brave": [
+          14944673926,
+          14961770745,
+          15095359454,
+          15258128445,
+          15093800948,
+          15156516030
+        ]
+      },
+      "medians": {
+        "control": 29450686900,
+        "vox": 29267409836.0,
+        "brave": 15094580201.0
+      },
+      "paired_reductions": [
+        774415323,
+        -1137279782,
+        335898260,
+        625356819,
+        -421012572
+      ],
+      "paired_median_reduction": 335898260,
+      "wins": 3,
+      "regressions": 2,
+      "numeric_gate": {
+        "left": 305450546760,
+        "right": 134502065334,
+        "passes": false,
+        "ratio": 2.04387561931741
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/bbc_browser_instructions.py",
+          "--archive",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/clock-archive",
+          "--output",
+          "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort",
+          "--memory-guard-registry",
+          "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort-pids.json",
+          "--vox-app",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--control-vox-app",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--brave-app",
+          "/Applications/Brave Browser.app",
+          "--expected-vox",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-vox/document.png",
+          "--expected-brave",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-brave/document.png",
+          "--repeat",
+          "7",
+          "--diff-tool",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+          "--retain-incremental-webp-paint-policy",
+          "--control-retain-cascade-value-copies",
+          "--control-retain-absolute-length-context"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "29222": "Tue Nov  3 08:19:09 2026    ",
+          "29226": "Tue Nov  3 08:19:09 2026    ",
+          "29486": "Tue Nov  3 08:19:15 2026    ",
+          "29490": "Tue Nov  3 08:19:16 2026    ",
+          "29701": "Tue Nov  3 08:19:21 2026    ",
+          "29703": "Tue Nov  3 08:19:21 2026    ",
+          "29709": "Tue Nov  3 08:19:22 2026    ",
+          "29710": "Tue Nov  3 08:19:22 2026    ",
+          "29713": "Tue Nov  3 08:19:22 2026    ",
+          "29806": "Tue Nov  3 08:19:26 2026    ",
+          "29810": "Tue Nov  3 08:19:26 2026    ",
+          "29821": "Tue Nov  3 08:19:26 2026    ",
+          "29822": "Tue Nov  3 08:19:26 2026    ",
+          "29823": "Tue Nov  3 08:19:26 2026    ",
+          "29922": "Tue Nov  3 08:19:31 2026    ",
+          "29924": "Tue Nov  3 08:19:31 2026    ",
+          "30142": "Tue Nov  3 08:19:37 2026    ",
+          "30145": "Tue Nov  3 08:19:37 2026    ",
+          "30356": "Tue Nov  3 08:19:43 2026    ",
+          "30359": "Tue Nov  3 08:19:43 2026    ",
+          "30563": "Tue Nov  3 08:19:49 2026    ",
+          "30566": "Tue Nov  3 08:19:49 2026    ",
+          "30782": "Tue Nov  3 08:19:55 2026    ",
+          "30784": "Tue Nov  3 08:19:55 2026    ",
+          "30789": "Tue Nov  3 08:19:56 2026    ",
+          "30790": "Tue Nov  3 08:19:56 2026    ",
+          "30792": "Tue Nov  3 08:19:56 2026    ",
+          "30891": "Tue Nov  3 08:20:00 2026    ",
+          "30893": "Tue Nov  3 08:20:00 2026    ",
+          "30897": "Tue Nov  3 08:20:00 2026    ",
+          "30898": "Tue Nov  3 08:20:00 2026    ",
+          "30899": "Tue Nov  3 08:20:00 2026    ",
+          "31030": "Tue Nov  3 08:20:05 2026    ",
+          "31034": "Tue Nov  3 08:20:05 2026    ",
+          "31246": "Tue Nov  3 08:20:11 2026    ",
+          "31250": "Tue Nov  3 08:20:11 2026    ",
+          "31465": "Tue Nov  3 08:20:17 2026    ",
+          "31467": "Tue Nov  3 08:20:17 2026    ",
+          "31669": "Tue Nov  3 08:20:23 2026    ",
+          "31671": "Tue Nov  3 08:20:23 2026    ",
+          "31879": "Tue Nov  3 08:20:29 2026    ",
+          "31881": "Tue Nov  3 08:20:29 2026    ",
+          "31887": "Tue Nov  3 08:20:29 2026    ",
+          "31888": "Tue Nov  3 08:20:29 2026    ",
+          "31890": "Tue Nov  3 08:20:29 2026    ",
+          "31989": "Tue Nov  3 08:20:34 2026    ",
+          "31992": "Tue Nov  3 08:20:34 2026    ",
+          "31998": "Tue Nov  3 08:20:34 2026    ",
+          "31999": "Tue Nov  3 08:20:34 2026    ",
+          "32000": "Tue Nov  3 08:20:34 2026    ",
+          "32115": "Tue Nov  3 08:20:38 2026    ",
+          "32117": "Tue Nov  3 08:20:38 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1425014784,
+        "elapsed_seconds": 96.816946958,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "guard_receipt_complete": true,
+      "rows": [
+        {
+          "pair": 1,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-1-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-1-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 14944673926,
+            "upper": 14945451046
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.02197265625,
+              8.81298828125,
+              10.9541015625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              7.93994140625,
+              8.78271484375,
+              10.9306640625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 1,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-1-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-1-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29450686900,
+            "upper": 29450686900
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              7.59130859375,
+              8.7568359375,
+              10.9599609375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.0244140625,
+              8.8271484375,
+              10.9716796875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 1,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-1-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-1-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28676271577,
+            "upper": 28676271577
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.0244140625,
+              8.8271484375,
+              10.9716796875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.02197265625,
+              8.81298828125,
+              10.9541015625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 2,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-2-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-2-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 14961770745,
+            "upper": 14996681582
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              7.93994140625,
+              8.78271484375,
+              10.9306640625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              7.7841796875,
+              8.736328125,
+              10.9013671875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 2,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-2-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-2-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28731682526,
+            "upper": 28731682526
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              9.08251953125,
+              8.9892578125,
+              10.97802734375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              9.07568359375,
+              8.9892578125,
+              10.96630859375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 2,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-2-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-2-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29868962308,
+            "upper": 29868962308
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              7.7841796875,
+              8.736328125,
+              10.9013671875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              9.08251953125,
+              8.9892578125,
+              10.97802734375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 3,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-3-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-3-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15095359454,
+            "upper": 15134592086
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.830078125,
+              8.939453125,
+              10.91357421875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.60302734375,
+              8.890625,
+              10.884765625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 3,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-3-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-3-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29348907515,
+            "upper": 29348907515
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.9892578125,
+              8.97265625,
+              10.94873046875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.98974609375,
+              8.97265625,
+              10.93701171875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 3,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-3-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-3-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29013009255,
+            "upper": 29013009255
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.98974609375,
+              8.97265625,
+              10.93701171875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.830078125,
+              8.939453125,
+              10.91357421875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 4,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-4-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-4-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15258128445,
+            "upper": 15270550143
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.60302734375,
+              8.890625,
+              10.884765625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.474609375,
+              8.85888671875,
+              10.86181640625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 4,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-4-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-4-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29817290265,
+            "upper": 29817290265
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.2763671875,
+              8.81103515625,
+              10.8330078125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.57421875,
+              8.86376953125,
+              10.83984375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 4,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-4-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-4-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29191933446,
+            "upper": 29191933446
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.474609375,
+              8.85888671875,
+              10.86181640625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.2763671875,
+              8.81103515625,
+              10.8330078125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 5,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-5-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-5-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15093800948,
+            "upper": 15109925142
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.2119140625,
+              8.77099609375,
+              10.77197265625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.27490234375,
+              8.7744140625,
+              10.76123046875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 5,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-5-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-5-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 30124042104,
+            "upper": 30124042104
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.57421875,
+              8.86376953125,
+              10.83984375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.44775390625,
+              8.83251953125,
+              10.81689453125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 5,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-5-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-5-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 30545054676,
+            "upper": 30545054676
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.49169921875,
+              8.8349609375,
+              10.80615234375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.2119140625,
+              8.77099609375,
+              10.77197265625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 6,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-6-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-6-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15156516030,
+            "upper": 15175299873
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.27490234375,
+              8.7744140625,
+              10.76123046875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.25244140625,
+              8.76123046875,
+              10.74462890625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 6,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-6-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-matched-cohort/pair-6-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29342886226,
+            "upper": 29342886226
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.25244140625,
+              8.76123046875,
+              10.74462890625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.71240234375,
+              8.84814453125,
+              10.763671875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": false,
+          "identity_failure": {
+            "changed_inputs": [
+              {
+                "expected": {
+                  "bytes": 30306752,
+                  "sha256": "161abd3cb0f3becfc75e651f9fb1d883b8f6c39177ac79b916b5917ea66fc008"
+                },
+                "observed": {
+                  "bytes": 30305648,
+                  "sha256": "7767fb7debf871753c91c958a2c9d642a6f5364f290b9a33d079959e11000e5a"
+                },
+                "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox"
+              }
+            ],
+            "invalidates_cohort": true
+          },
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": false
+        }
+      ],
+      "audited_unix": 1793683875.736504,
+      "limitations": "Unchanged launch-through-encoded-PNG protocol; the matched control retains cascade wrapper copies and pixel-zero rounding context. All attempted launches are retained; missing intervals are not inferred."
+    },
+    {
+      "cohort": 70,
+      "attempts": 21,
+      "complete_result_receipts": 21,
+      "complete_triples": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "history_cohorts": 70,
+      "history_cohort_attempts": 1614,
+      "cohort_valid": true,
+      "accepted": false,
+      "counts": {
+        "control": [
+          28835768721,
+          30611686309,
+          29400786868,
+          29584255288,
+          28660963305,
+          28699833697,
+          28777360645
+        ],
+        "vox": [
+          28492658592,
+          29292732921,
+          28813001738,
+          29686817963,
+          30193886811,
+          29172047727,
+          28134039390
+        ],
+        "brave": [
+          15132053734,
+          15069040151,
+          15053897964,
+          14992899831,
+          14972838715,
+          15068977546,
+          14891843646
+        ]
+      },
+      "medians": {
+        "control": 28835768721,
+        "vox": 29172047727,
+        "brave": 15053897964
+      },
+      "paired_reductions": [
+        343110129,
+        1318953388,
+        587785130,
+        -102562675,
+        -1532923506,
+        -472214030,
+        643321255
+      ],
+      "paired_median_reduction": 343110129,
+      "wins": 4,
+      "regressions": 3,
+      "numeric_gate": {
+        "left": 301938868110,
+        "right": 134026592814,
+        "passes": false,
+        "ratio": 2.027545247502661
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/bbc_browser_instructions.py",
+          "--archive",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/clock-archive",
+          "--output",
+          "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort",
+          "--memory-guard-registry",
+          "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort-pids.json",
+          "--vox-app",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--control-vox-app",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--brave-app",
+          "/Applications/Brave Browser.app",
+          "--expected-vox",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-vox/document.png",
+          "--expected-brave",
+          "/Users/alex/code/vox2/Build/bbc-home-instructions-20261101-054807/styled-references/pair-1-brave/document.png",
+          "--repeat",
+          "7",
+          "--diff-tool",
+          "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
+          "--retain-incremental-webp-paint-policy",
+          "--control-retain-cascade-value-copies",
+          "--control-retain-absolute-length-context"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "38631": "Tue Nov  3 08:24:26 2026    ",
+          "38635": "Tue Nov  3 08:24:26 2026    ",
+          "38867": "Tue Nov  3 08:24:32 2026    ",
+          "38869": "Tue Nov  3 08:24:32 2026    ",
+          "39077": "Tue Nov  3 08:24:38 2026    ",
+          "39081": "Tue Nov  3 08:24:39 2026    ",
+          "39094": "Tue Nov  3 08:24:39 2026    ",
+          "39095": "Tue Nov  3 08:24:39 2026    ",
+          "39096": "Tue Nov  3 08:24:39 2026    ",
+          "39202": "Tue Nov  3 08:24:43 2026    ",
+          "39205": "Tue Nov  3 08:24:43 2026    ",
+          "39209": "Tue Nov  3 08:24:43 2026    ",
+          "39210": "Tue Nov  3 08:24:43 2026    ",
+          "39211": "Tue Nov  3 08:24:43 2026    ",
+          "39307": "Tue Nov  3 08:24:48 2026    ",
+          "39309": "Tue Nov  3 08:24:48 2026    ",
+          "39514": "Tue Nov  3 08:24:54 2026    ",
+          "39516": "Tue Nov  3 08:24:54 2026    ",
+          "39734": "Tue Nov  3 08:25:00 2026    ",
+          "39736": "Tue Nov  3 08:25:00 2026    ",
+          "39940": "Tue Nov  3 08:25:07 2026    ",
+          "39943": "Tue Nov  3 08:25:07 2026    ",
+          "40166": "Tue Nov  3 08:25:13 2026    ",
+          "40168": "Tue Nov  3 08:25:13 2026    ",
+          "40174": "Tue Nov  3 08:25:13 2026    ",
+          "40176": "Tue Nov  3 08:25:13 2026    ",
+          "40177": "Tue Nov  3 08:25:13 2026    ",
+          "40274": "Tue Nov  3 08:25:17 2026    ",
+          "40278": "Tue Nov  3 08:25:18 2026    ",
+          "40281": "Tue Nov  3 08:25:18 2026    ",
+          "40283": "Tue Nov  3 08:25:18 2026    ",
+          "40284": "Tue Nov  3 08:25:18 2026    ",
+          "40384": "Tue Nov  3 08:25:22 2026    ",
+          "40386": "Tue Nov  3 08:25:22 2026    ",
+          "40623": "Tue Nov  3 08:25:29 2026    ",
+          "40625": "Tue Nov  3 08:25:29 2026    ",
+          "40894": "Tue Nov  3 08:25:35 2026    ",
+          "40899": "Tue Nov  3 08:25:35 2026    ",
+          "41157": "Tue Nov  3 08:25:41 2026    ",
+          "41161": "Tue Nov  3 08:25:42 2026    ",
+          "41429": "Tue Nov  3 08:25:48 2026    ",
+          "41431": "Tue Nov  3 08:25:48 2026    ",
+          "41440": "Tue Nov  3 08:25:48 2026    ",
+          "41441": "Tue Nov  3 08:25:48 2026    ",
+          "41443": "Tue Nov  3 08:25:48 2026    ",
+          "41583": "Tue Nov  3 08:25:53 2026    ",
+          "41589": "Tue Nov  3 08:25:53 2026    ",
+          "41598": "Tue Nov  3 08:25:53 2026    ",
+          "41599": "Tue Nov  3 08:25:53 2026    ",
+          "41601": "Tue Nov  3 08:25:53 2026    ",
+          "41617": "Tue Nov  3 08:25:54 2026    ",
+          "41618": "Tue Nov  3 08:25:54 2026    ",
+          "41737": "Tue Nov  3 08:25:58 2026    ",
+          "41741": "Tue Nov  3 08:25:58 2026    ",
+          "42026": "Tue Nov  3 08:26:05 2026    ",
+          "42028": "Tue Nov  3 08:26:05 2026    ",
+          "42293": "Tue Nov  3 08:26:11 2026    ",
+          "42296": "Tue Nov  3 08:26:11 2026    ",
+          "42573": "Tue Nov  3 08:26:18 2026    ",
+          "42576": "Tue Nov  3 08:26:18 2026    ",
+          "42833": "Tue Nov  3 08:26:24 2026    ",
+          "42839": "Tue Nov  3 08:26:24 2026    ",
+          "42844": "Tue Nov  3 08:26:24 2026    ",
+          "42845": "Tue Nov  3 08:26:24 2026    ",
+          "42846": "Tue Nov  3 08:26:24 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1387315200,
+        "elapsed_seconds": 125.153567958,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "guard_receipt_complete": true,
+      "rows": [
+        {
+          "pair": 1,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-1-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-1-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15132053734,
+            "upper": 15171200527
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.60791015625,
+              8.30859375,
+              10.03125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.60791015625,
+              8.30859375,
+              10.03125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 1,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-1-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-1-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28835768721,
+            "upper": 28835768721
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.20654296875,
+              8.2216796875,
+              10.03271484375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.10986328125,
+              8.201171875,
+              10.0146484375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 1,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-1-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-1-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28492658592,
+            "upper": 28492658592
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.10986328125,
+              8.201171875,
+              10.0146484375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.6611328125,
+              8.31396484375,
+              10.04345703125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 2,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-2-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-2-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15069040151,
+            "upper": 15106227940
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.39892578125,
+              8.27001953125,
+              10.00732421875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.39892578125,
+              8.27001953125,
+              10.00732421875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 2,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-2-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-2-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 30611686309,
+            "upper": 30611686309
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.4169921875,
+              8.27685546875,
+              9.9892578125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.46337890625,
+              8.28857421875,
+              9.9833984375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 2,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-2-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-2-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29292732921,
+            "upper": 29292732921
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.39892578125,
+              8.27001953125,
+              10.00732421875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.4169921875,
+              8.27685546875,
+              9.9892578125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 3,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-3-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-3-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15053897964,
+            "upper": 15068369617
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.46533203125,
+              8.294921875,
+              9.9658203125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.828125,
+              8.37255859375,
+              9.9833984375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 3,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-3-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-3-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29400786868,
+            "upper": 29400786868
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.46337890625,
+              8.28857421875,
+              9.9833984375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.50634765625,
+              8.30029296875,
+              9.9775390625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 3,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-3-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-3-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28813001738,
+            "upper": 28813001738
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.50634765625,
+              8.30029296875,
+              9.9775390625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.46533203125,
+              8.294921875,
+              9.9658203125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 4,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-4-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-4-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 14992899831,
+            "upper": 15026771324
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.828125,
+              8.37255859375,
+              9.9833984375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.681640625,
+              8.349609375,
+              9.9658203125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 4,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-4-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-4-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29584255288,
+            "upper": 29584255288
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              9.27783203125,
+              8.486328125,
+              9.9951171875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              9.73583984375,
+              8.59423828125,
+              10.0244140625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 4,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-4-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-4-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29686817963,
+            "upper": 29686817963
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              8.681640625,
+              8.349609375,
+              9.9658203125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              8.8671875,
+              8.3935546875,
+              9.9716796875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 5,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-5-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-5-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 14972838715,
+            "upper": 15009276252
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              10.1572265625,
+              8.72216796875,
+              10.052734375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              9.984375,
+              8.7099609375,
+              10.04052734375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 5,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-5-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-5-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28660963305,
+            "upper": 28660963305
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              9.73583984375,
+              8.59423828125,
+              10.0244140625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              9.9970703125,
+              8.6669921875,
+              10.04150390625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 5,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-5-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-5-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 30193886811,
+            "upper": 30193886811
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              9.9970703125,
+              8.6669921875,
+              10.04150390625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              10.1572265625,
+              8.72216796875,
+              10.052734375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 6,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-6-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-6-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 15068977546,
+            "upper": 15071833923
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              9.984375,
+              8.7099609375,
+              10.04052734375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              9.9853515625,
+              8.73095703125,
+              10.0400390625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 6,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-6-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-6-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28699833697,
+            "upper": 28699833697
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              10.13427734375,
+              8.80517578125,
+              10.05078125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              10.203125,
+              8.84130859375,
+              10.05615234375
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 6,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-6-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-6-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 29172047727,
+            "upper": 29172047727
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              9.9853515625,
+              8.73095703125,
+              10.0400390625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              10.13427734375,
+              8.80517578125,
+              10.05078125
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 7,
+          "arm": "brave",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-7-brave/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-7-brave/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 14891843646,
+            "upper": 14928682397
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              10.10791015625,
+              8.89501953125,
+              10.0546875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              10.10791015625,
+              8.89501953125,
+              10.0546875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "a97faca1a59cd0239cd32e553d1fb01c144398766cb68d4dec84fab38b5326d3",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 7,
+          "arm": "control",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-7-control/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-7-control/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28777360645,
+            "upper": 28777360645
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              10.203125,
+              8.84130859375,
+              10.05615234375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              10.5068359375,
+              8.9267578125,
+              10.0791015625
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        },
+        {
+          "pair": 7,
+          "arm": "vox",
+          "launch_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-7-vox/launch.json",
+          "raw_receipt": "/Users/alex/code/vox2/Build/bbc-cascade-value-borrow-20261103/cascade-zero-v2-matched-cohort/pair-7-vox/result.json",
+          "result_complete": true,
+          "native_exit": 0,
+          "driver_exit": 0,
+          "error": null,
+          "interval": {
+            "lower": 28134039390,
+            "upper": 28134039390
+          },
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              10.5068359375,
+              8.9267578125,
+              10.0791015625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              10.10791015625,
+              8.89501953125,
+              10.0546875
+            ]
+          },
+          "memory_adoption_verified": true,
+          "content_verified": true,
+          "post_trial_identity_verified": true,
+          "identity_failure": null,
+          "ownership_verified": true,
+          "png_sha256": "999a60305eea452159f456f8addde075029a4a00c7fcfc06b96b0fe1828be671",
+          "different_pixels": 0,
+          "instrumentation_absent": true,
+          "valid_trial": true
+        }
+      ],
+      "audited_unix": 1793683877.821756,
+      "limitations": "Unchanged launch-through-encoded-PNG protocol; the matched control retains cascade wrapper copies and pixel-zero rounding context. All attempted launches are retained; missing intervals are not inferred."
+    }
+  ],
+  "broad": {
+    "cases_per_mode": 490,
+    "passing_per_mode": 487,
+    "known_failing_per_mode": 3,
+    "full_pass": false,
+    "cadence_reset": false,
+    "known_failures": [
+      "text input baseline 13.5 vs13",
+      "radio baseline off by3",
+      "trailing collapsed margin root40 vs60"
+    ],
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0,
+        "executed": []
+      },
+      {
+        "name": "default-all",
+        "exit": 1,
+        "executed": [
+          "test_chromium_hacker_news_controls_match_brave_intrinsic_sizes",
+          "test_chromium_control_theme_preserves_author_borders_and_backgrounds",
+          "test_chromium_textarea_intrinsic_width_rounds_after_device_projection",
+          "test_chromium_definite_flex_basis_keeps_its_main_size_after_cross_axis_constraints",
+          "test_chromium_grid_flex_preserves_float_factor_subtraction_when_freezing",
+          "test_chromium_grid_flex_carries_fractional_layout_units_to_later_tracks",
+          "test_chromium_grid_flex_uses_the_same_rounding_for_columns_and_rows",
+          "test_chromium_inline_block_propagates_a_nested_block_flex_first_baseline",
+          "test_chromium_middle_alignment_retains_odd_subpixels_in_the_box_height",
+          "test_chromium_middle_inline_text_does_not_export_its_face_baseline_to_the_parent_line",
+          "test_chromium_middle_atomic_boxes_do_not_raise_the_line_by_their_internal_baseline",
+          "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+          "test_chromium_toggle_controls_align_their_border_box_with_the_baseline",
+          "test_layout_grid_data_defaults_and_empty_updates_do_not_allocate_payloads",
+          "test_layout_grid_data_replacement_preserves_value_copies_and_live_aliases",
+          "test_layout_grid_data_keeps_existing_nested_array_alias_semantics",
+          "test_layout_grid_data_retains_subgrid_and_line_name_only_records",
+          "test_dom_grid_bridge_resolved_tracks_follow_live_layout_and_keep_value_snapshots",
+          "test_dom_grid_bridge_reusing_a_placeholder_discards_retired_grid_payload",
+          "test_dominant_baseline_offset_matches_font_metrics",
+          "test_dominant_baseline_auto_resolves_from_writing_mode",
+          "test_explicit_dominant_baseline_overrides_writing_mode",
+          "test_all_frozen_empty_line_keeps_an_empty_owned_result",
+          "test_all_frozen_zero_factors_and_constraint_freezing_keep_hypotheticals",
+          "test_all_frozen_targets_own_storage_and_leave_source_arrays_unchanged",
+          "test_flex_work_inside_retained_inline_construction_retires_its_workspace",
+          "test_flex_does_not_shorten_an_existing_workspace_or_intrinsic_probe",
+          "test_inline_flex_rows_columns_and_nested_grid_remain_paintable_after_reflow",
+          "test_deep_auto_height_flex_layout_reuses_unchanged_item_geometry",
+          "test_flex_relayout_keeps_percentage_height_dependencies_through_wrappers",
+          "test_flex_relayout_still_lays_out_items_when_stretch_changes_their_height",
+          "test_block_flex_resolves_its_automatic_height_in_its_own_layout",
+          "test_deep_auto_height_column_flex_keeps_natural_geometry",
+          "test_column_flex_promotes_unchanged_height_for_percentage_descendants",
+          "test_column_flex_reruns_contents_when_flexing_changes_the_height",
+          "test_nested_column_flex_reuses_automatic_implicit_grid_rows",
+          "test_column_flex_keeps_definite_height_relayout_for_percentage_grid_rows",
+          "test_column_flex_reruns_automatic_grid_rows_when_height_changes",
+          "test_flex_formatting_context_grows_and_aligns_items",
+          "test_flex_intrinsic_height_accounts_for_line_clamping_and_nested_baselines",
+          "test_button_content_percentages_resolve_against_the_button",
+          "test_button_content_height_uses_clamped_border_box_height",
+          "test_button_layout_establishes_a_block_formatting_context",
+          "test_empty_button_content_is_skipped_by_flex_layout",
+          "test_inline_grid_whitespace_runs_do_not_acquire_used_values",
+          "test_fractional_calculated_flex_basis_does_not_wrap_the_third_item",
+          "test_large_percentage_width_retains_precision_before_saturation",
+          "test_inline_math_uses_completed_run_height_without_enclosing_margin",
+          "test_auto_width_text_input_stretches_in_nested_column_flex",
+          "test_text_input_padding_belongs_to_the_host_box",
+          "test_visible_input_placeholder_overlays_the_full_width_editor",
+          "test_live_input_placeholder_overlays_after_attribute_mutation",
+          "test_number_input_stepper_icons_keep_computed_path_geometry",
+          "test_native_input_min_max_height_clamps_are_definite_for_shadow_content",
+          "test_visible_textarea_placeholder_overlays_the_full_width_editor",
+          "test_text_input_auto_height_uses_selected_font_metrics",
+          "test_multiline_flex_align_content_distributes_cross_axis_space",
+          "test_flex_min_height_stretches_lines_before_centering_items",
+          "test_wrap_reverse_stretch_places_flex_lines_from_the_far_cross_edge",
+          "test_flex_auto_placement_uses_bucketed_order_modified_document_order",
+          "test_reverse_direction_sorts_order_keys_descending",
+          "test_rtl_row_counts_as_the_reverse_direction_for_order_keys",
+          "test_single_line_column_flex_swaps_cross_edges_for_wrap_reverse",
+          "test_rtl_and_wrap_reverse_cancel_each_other_on_the_column_cross_axis",
+          "test_indefinite_column_flex_uses_the_intrinsic_main_size_algorithm",
+          "test_indefinite_column_flex_intrinsic_main_size_counts_gaps_and_edges",
+          "test_wrapping_container_sizes_its_only_line_to_its_items",
+          "test_nowrap_container_still_stretches_its_line_to_the_definite_cross_size",
+          "test_negative_align_content_free_space_falls_back_to_center",
+          "test_only_normal_alignment_follows_a_wrap_reversed_cross_axis",
+          "test_column_cross_alignment_ignores_the_inline_direction",
+          "test_flex_percentage_gaps_resolve_against_their_axis_inner_size",
+          "test_automatic_flex_cross_size_uses_used_inner_size_for_percentage_gap",
+          "test_wrap_reverse_swaps_align_content_cross_start_and_end",
+          "test_row_flex_auto_margins_absorb_main_and_cross_axis_space",
+          "test_column_flex_auto_margins_absorb_main_and_cross_axis_space",
+          "test_row_reverse_places_flex_start_at_reversed_main_edge",
+          "test_row_flex_main_sizes_use_content_box_targets_for_border_box_items",
+          "test_flex_main_axis_minimum_clamps_border_box_target",
+          "test_row_flex_automatic_minimum_size_is_content_based",
+          "test_flex_automatic_minimum_size_is_capped_by_preferred_and_maximum_sizes",
+          "test_flex_length_resolution_redistributes_minimum_violations",
+          "test_flex_factors_below_one_leave_part_of_free_space_unfilled",
+          "test_definite_single_line_flex_skips_automatic_minimum_intrinsic_layout",
+          "test_definite_item_basis_skips_redundant_automatic_minimum_intrinsic_layout",
+          "test_per_item_skipped_minimum_is_restored_for_flex_violations",
+          "test_skipped_hypothetical_minimum_is_restored_for_flex_violations",
+          "test_flex_wrap_collects_lines_using_outer_hypothetical_sizes",
+          "test_column_flex_automatic_minimum_size_is_content_based",
+          "test_nested_flex_with_parent_resolved_size_still_runs_intrinsic_relayout",
+          "test_nested_grid_with_parent_resolved_size_skips_intrinsic_relayout",
+          "test_flex_automatic_minimum_uses_transferred_aspect_ratio_suggestion",
+          "test_auto_height_row_flex_ignores_unresolved_percentage_min_height_for_ratio_transfer",
+          "test_intrinsic_column_flex_width_does_not_create_a_cyclic_percentage_minimum_basis",
+          "test_flex_basis_intrinsic_sizing_keywords_choose_their_matching_contribution",
+          "test_svg_partial_intrinsic_height_sets_its_max_content_width",
+          "test_ratio_only_svg_cyclic_percentage_uses_replaced_max_content_fallback",
+          "test_ratio_only_replaced_max_content_transfers_constraints",
+          "test_column_flex_intrinsic_cross_size_keeps_cyclic_percentage_minimum_indefinite",
+          "test_wrapped_column_flex_max_content_cross_size_sums_flex_lines",
+          "test_abspos_max_content_width_sums_adjacent_floats",
+          "test_font_relative_width_uses_selected_face_metrics",
+          "test_flex_content_basis_uses_definite_cross_size_and_aspect_ratio",
+          "test_anchor_size_flex_basis_is_unresolvable_in_flex_formatting_context",
+          "test_column_flex_base_size_is_adjusted_through_natural_aspect_ratio",
+          "test_row_flex_baseline_alignment_uses_each_items_last_line_baseline",
+          "test_inline_flex_baseline_uses_its_wrapped_childs_first_line",
+          "test_intrinsic_inline_flex_resolves_auto_height_before_alignment_and_caches_baseline",
+          "test_overflow_clip_inline_block_keeps_its_content_baseline",
+          "test_inline_table_exports_its_first_row_baseline",
+          "test_table_row_baseline_ignores_middle_aligned_cells",
+          "test_table_row_grows_to_contain_shifted_baseline_aligned_cell",
+          "test_relative_insets_resolve_against_the_containing_block_without_changing_flow_offsets",
+          "test_multicol_used_column_count_and_width_follow_the_upstream_pseudo_algorithm",
+          "test_column_flex_main_size_uses_content_box_target_for_border_box_item",
+          "test_column_flex_stretched_cross_size_respects_border_box_max_width",
+          "test_row_reverse_flex_end_and_space_between_use_reversed_physical_offsets",
+          "test_column_reverse_places_flex_start_at_reversed_main_edge",
+          "test_row_reverse_justify_start_remains_physical_inline_start",
+          "test_rtl_column_flex_item_alignment_names_a_fixed_edge",
+          "test_wrapping_column_flex_forms_columns_and_stretches_line_cross_sizes",
+          "test_wrapping_column_flex_applies_column_gap_and_align_content",
+          "test_reversed_cross_axis_reverses_wrapping_column_flex_line_order",
+          "test_wrapping_column_reverse_places_each_line_from_bottom_main_edge",
+          "test_explicit_flex_start_is_not_flipped_within_a_wrap_reversed_line",
+          "test_intrinsic_width_keywords_relayout_content_under_constraints",
+          "test_huge_font_size_min_content_measurement_is_clamped_before_shaping",
+          "test_intrinsic_min_and_max_width_constraints_clamp_used_width",
+          "test_grid_intrinsic_measurement_does_not_apply_items_own_percentage_min_max_width",
+          "test_min_content_width_does_not_collapse_at_zero_minimum_descendant",
+          "test_grid_formatting_context_sizes_fr_tracks_and_gap",
+          "test_grid_formatting_context_sizes_calculated_fr_tracks",
+          "test_fr_track_sizing_truncates_like_a_css_pixel_fraction",
+          "test_auto_fit_collapse_looks_only_at_the_first_cell_of_a_track",
+          "test_auto_fit_collapse_keeps_a_track_whose_first_cell_is_taken",
+          "test_grid_max_content_flexible_track_accounts_for_spanning_item",
+          "test_grid_spanning_item_minimum_grows_flexible_track_before_expansion",
+          "test_flexible_grid_tracks_honor_intrinsic_minimum_phases",
+          "test_grid_spanning_intrinsic_distribution_freezes_at_growth_limits",
+          "test_grid_fixed_minimum_does_not_become_an_intrinsic_base_size",
+          "test_grid_explicit_item_minimum_contribution_includes_box_edges",
+          "test_grid_spanning_item_increases_intrinsic_growth_limits",
+          "test_grid_maximum_width_retries_track_maximization",
+          "test_grid_definite_available_height_limits_row_maximization",
+          "test_grid_indefinite_flexible_row_accounts_for_spanning_item",
+          "test_grid_multispan_flexible_row_uses_zero_automatic_minimum",
+          "test_grid_intrinsic_flexible_row_uses_limited_min_content_contribution",
+          "test_grid_percentage_height_items_contribute_auto_sizes_to_rows",
+          "test_grid_limited_contribution_is_clamped_by_fit_content_row",
+          "test_grid_percentage_gaps_resolve_against_their_axis_available_size",
+          "test_grid_auto_placement_expands_repeat_and_accommodates_largest_span",
+          "test_grid_auto_placement_uses_order_modified_document_order",
+          "test_grid_occupation_uses_distinct_packed_signed_coordinates",
+          "test_grid_dense_auto_placement_backfills_earlier_holes",
+          "test_grid_position_can_be_derived_from_definite_end_line",
+          "test_grid_auto_fill_repeats_definite_tracks_to_fill_available_width",
+          "test_grid_auto_fit_collapses_empty_flexible_repeated_tracks",
+          "test_grid_implicit_tracks_use_grid_auto_column_and_row_sizes",
+          "test_grid_spanning_items_grow_intrinsic_columns_and_rows",
+          "test_grid_default_content_alignment_stretches_auto_tracks",
+          "test_grid_item_with_definite_width_does_not_stretch_to_area",
+          "test_grid_content_alignment_positions_fixed_tracks_in_definite_container",
+          "test_grid_space_between_adds_free_space_between_tracks",
+          "test_grid_negative_and_reversed_line_numbers_resolve_against_explicit_grid",
+          "test_grid_negative_lines_before_explicit_grid_prepend_implicit_tracks",
+          "test_grid_start_span_can_create_multiple_implicit_tracks_before_explicit_grid",
+          "test_grid_named_lines_resolve_authored_start_and_end_names",
+          "test_grid_template_area_names_create_implicit_start_and_end_lines",
+          "test_grid_items_inherit_container_alignment_and_allow_self_overrides",
+          "test_grid_auto_margins_absorb_free_space_before_self_alignment",
+          "test_grid_normal_alignment_does_not_stretch_replaced_items",
+          "test_rtl_grid_places_logical_first_column_at_right_and_aligns_from_inline_start",
+          "test_rtl_grid_content_start_and_end_are_logical_while_left_is_physical",
+          "test_rtl_absolutely_positioned_grid_child_uses_physical_grid_area_rect",
+          "test_grid_item_percentages_and_border_box_resolve_against_grid_area",
+          "test_grid_forced_item_sizes_apply_min_max_with_border_box_sizing",
+          "test_absolutely_positioned_grid_child_uses_its_grid_area_as_containing_block",
+          "test_absolutely_positioned_grid_child_auto_insets_apply_self_alignment_in_grid_area",
+          "test_absolutely_positioned_grid_child_percentages_resolve_against_grid_area",
+          "test_absolute_descendant_of_grid_item_uses_ancestor_grid_area",
+          "test_positioned_grid_item_remains_nearer_abspos_containing_block",
+          "test_abspos_grid_line_at_end_uses_padding_edge_track_and_auto_axis_uses_padding_box",
+          "test_table_formatting_context_builds_columns_and_rows",
+          "test_rtl_table_places_logical_first_column_at_right",
+          "test_rtl_table_cell_spanning_logical_columns_uses_mirrored_range",
+          "test_fixed_table_cell_border_box_width_is_not_counted_twice",
+          "test_fixed_table_auto_columns_ignore_cell_padding_and_later_rows",
+          "test_fixed_table_percentage_cell_adds_content_box_offsets",
+          "test_fixed_table_cells_shrink_padding_to_stay_within_columns",
+          "test_fixed_table_cells_shrink_borders_after_padding",
+          "test_collapsed_table_odd_borders_split_between_table_and_cells",
+          "test_percentage_collapsed_table_resolves_border_box_from_split_outer_borders",
+          "test_inline_block_intrinsic_width_includes_anonymous_collapsed_table_outer_border",
+          "test_collapsed_table_uses_winning_outer_grid_borders",
+          "test_missing_collapsed_table_cells_take_no_border_share",
+          "test_table_cell_height_uses_content_box_except_for_border_box_and_quirks",
+          "test_collapsed_table_ignores_authored_padding",
+          "test_table_lays_out_first_header_first_and_first_footer_last",
+          "test_table_row_groups_span_their_rows_across_loose_rows",
+          "test_table_auto_layout_uses_definite_cell_width_contributions",
+          "test_table_min_content_measure_does_not_use_the_cells_preferred_width",
+          "test_constrained_table_column_uses_cell_min_content_for_its_max_measure",
+          "test_table_cell_margins_do_not_participate_in_grid_measurement_or_positioning",
+          "test_table_spanning_cell_distributes_its_minimum_width_over_columns",
+          "test_table_captions_are_laid_out_above_and_below_the_grid",
+          "test_table_cell_vertical_alignment_distributes_extra_row_height_to_padding",
+          "test_table_rowspan_zero_matches_upstream_unimplemented_downward_growth",
+          "test_percentage_table_cell_height_is_applied_during_second_layout_pass",
+          "test_percentage_table_cell_alignment_retains_signed_row_difference",
+          "test_collapsed_table_row_has_zero_height_and_does_not_advance_row_cursor",
+          "test_collapsed_table_column_has_zero_width_and_no_border_spacing",
+          "test_collapsed_table_column_hides_only_cells_wholly_inside_it_from_paint",
+          "test_block_container_vertical_align_does_not_shift_its_own_text",
+          "test_collapsed_table_column_group_collapses_its_columns",
+          "test_collapsed_table_row_group_spans_its_positioned_rows",
+          "test_table_auto_row_height_distribution_truncates_fractional_increment",
+          "test_percentage_height_rowspan_cell_is_relaid_out_in_second_pass",
+          "test_table_rowspan_height_uses_intrinsic_row_measure_contributions",
+          "test_table_cell_min_height_affects_row_measure_but_not_cell_content_height",
+          "test_table_caption_flows_inside_the_wrapper_with_its_outer_edges",
+          "test_table_caption_uses_its_content_width_to_lay_out_descendants",
+          "test_table_wrapper_flow_includes_bottom_captions_and_stretches_the_grid",
+          "test_table_caption_capmin_includes_outer_edges_and_definite_width",
+          "test_table_caption_capmin_resolves_intrinsic_and_border_box_widths",
+          "test_fixed_table_layout_uses_first_row_widths_and_shares_unassigned_space",
+          "test_fixed_table_equal_distribution_truncates_css_pixel_fractions",
+          "test_spanning_table_measure_zero_baseline_truncates_fraction",
+          "test_table_wrapper_and_percentage_table_share_final_width_before_centering",
+          "test_legacy_center_does_not_shift_an_oversized_table_before_the_containing_block",
+          "test_empty_table_row_is_retained_when_the_grid_has_no_columns",
+          "test_empty_table_row_group_uses_current_group_cursor",
+          "test_fixed_table_layout_distributes_excess_proportionally_when_all_columns_are_sized",
+          "test_specified_table_row_height_establishes_row_minimum",
+          "test_table_column_elements_constrain_fixed_layout_column_widths",
+          "test_table_column_constraints_receive_priority_in_auto_layout_excess_distribution",
+          "test_table_column_boxes_cover_their_grid_tracks",
+          "test_table_column_percentage_resolves_against_table_width",
+          "test_empty_column_group_does_not_create_a_grid_track",
+          "test_absolute_positioning_solves_inset_equations",
+          "test_css_anchor_positioning_resolves_names_sides_and_fallbacks",
+          "test_css_anchor_positioning_resolves_anchor_functions_in_calculations",
+          "test_span_all_position_area_unites_the_containing_block_and_centers_on_anchor",
+          "test_css_anchor_positioning_skips_ineligible_later_named_elements",
+          "test_css_anchor_positioning_resolves_logical_inside_and_percentage_sides",
+          "test_absolute_positioning_resolves_border_box_sizes_to_content_box",
+          "test_absolute_inset_size_and_min_max_constraints_respect_box_sizing",
+          "test_block_abspos_auto_insets_use_normal_flow_static_position",
+          "test_block_abspos_static_position_includes_pending_collapsed_margin",
+          "test_inline_abspos_auto_insets_follow_the_line_marker",
+          "test_baseline_aligned_inline_block_keeps_the_containing_strut_descent",
+          "test_line_box_baseline_comes_from_final_unshifted_text_fragment",
+          "test_atomic_inline_applies_calculated_vertical_align_offset",
+          "test_inline_display_native_inputs_are_atomic_inlines",
+          "test_text_bottom_atomic_inline_fits_the_parent_content_area",
+          "test_text_top_and_bottom_use_parent_inline_font_metrics",
+          "test_top_and_bottom_align_complete_inline_subtrees_to_line_edges",
+          "test_normal_heading_line_height_uses_selected_font_typo_metrics",
+          "test_abspos_static_position_is_converted_to_actual_containing_block_space",
+          "test_abspos_static_position_uses_final_atomic_inline_offset",
+          "test_flex_abspos_static_position_uses_main_and_cross_alignment",
+          "test_replaced_element_uses_intrinsic_dimensions",
+          "test_zero_canvas_dimensions_are_valid_intrinsic_dimensions",
+          "test_css_aspect_ratio_overrides_and_auto_falls_back_to_replaced_natural_ratio",
+          "test_ratio_only_content_replacement_uses_definite_width_for_max_content_size",
+          "test_non_replaced_auto_height_uses_preferred_aspect_ratio",
+          "test_intrinsic_height_keyword_relays_out_block_children",
+          "test_intrinsic_height_keywords_stay_indefinite_for_percentage_children",
+          "test_intrinsic_min_and_max_height_constraints_clamp_used_height",
+          "test_svg_formatting_context_keeps_geometry_in_viewport_user_units",
+          "test_svg_text_is_materialized_as_glyph_outline_path_like_cpp",
+          "test_svg_text_shapes_each_code_point_with_its_computed_font_cascade",
+          "test_svg_tspans_advance_from_shaped_run_width_instead_of_ink_bounds",
+          "test_svg_text_path_places_rotated_glyph_outlines_on_first_contour",
+          "test_svg_text_path_start_offset_resolves_against_first_contour_length",
+          "test_svg_text_path_text_anchor_adjusts_the_start_offset",
+          "test_svg_text_path_dom_node_retains_only_the_placed_glyph_geometry",
+          "test_svg_foreign_object_delegates_its_contents_to_block_layout",
+          "test_svg_foreign_object_geometry_is_not_a_definite_percentage_height_basis",
+          "test_svg_resource_attached_to_foreign_object_keeps_its_own_coordinate_space",
+          "test_svg_computed_geometry_properties_override_presentation_attributes_where_upstream_uses_them",
+          "test_svg_path_d_uses_the_css_cascade_and_presentation_attribute_syntax",
+          "test_svg_rect_uses_computed_geometry_and_used_corner_radii",
+          "test_svg_ellipse_uses_computed_geometry_and_auto_radii",
+          "test_svg_image_uses_computed_geometry_and_default_sizing",
+          "test_svg_use_translation_uses_computed_x_and_y",
+          "test_relative_positioning_does_not_move_following_flow_content",
+          "test_viewport_text_blocks_preserve_utf16_positions_and_find_in_page_boundaries",
+          "test_layout_node_stacking_context_rules_match_upstream",
+          "test_floats_are_positioned_at_available_edges_and_clearance_moves_blocks_below_them",
+          "test_clearance_moves_past_every_stacked_float",
+          "test_float_is_lowered_past_an_opposite_side_blocker",
+          "test_intrinsic_width_ignores_a_float_that_does_not_overlap_the_widest_line",
+          "test_auto_width_float_is_clamped_by_max_width",
+          "test_inline_lines_wrap_through_float_intrusion_bands",
+          "test_overflow_wrap_anywhere_splits_long_run_around_float",
+          "test_inline_line_uses_float_band_that_starts_midway_through_its_height",
+          "test_line_break_skips_crossing_opposite_float_bands",
+          "test_independent_formatting_context_avoids_preceding_float",
+          "test_container_type_establishes_an_independent_formatting_context",
+          "test_auto_height_flex_items_make_their_used_cross_size_definite_for_descendants",
+          "test_aspect_ratio_box_with_definite_height_transfers_through_the_ratio",
+          "test_aspect_ratio_transfer_applies_to_floats_and_absolute_positioning",
+          "test_block_level_replaced_border_box_width_is_converted_twice",
+          "test_inline_block_replaced_border_box_width_is_converted_once",
+          "test_aspect_ratio_box_with_two_automatic_axes_uses_the_stretch_fit_width",
+          "test_replaced_size_constraints_use_content_box_space",
+          "test_specified_axis_clamps_each_axis_through_the_box_sizing_conversion",
+          "test_replaced_constraints_compare_and_assign_converted_sizes",
+          "test_replaced_form_control_block_constraints_rerun_intrinsic_sizing",
+          "test_block_size_is_clamped_before_it_transfers_through_the_ratio",
+          "test_replaced_intrinsic_width_transfers_from_definite_height",
+          "test_unresolved_percentage_height_only_transfers_for_replaced_sizing",
+          "test_floating_border_box_ratio_transfer_converts_the_inline_size_twice",
+          "test_inline_table_honours_intrinsic_sizing_keywords",
+          "test_table_fit_content_distinguishes_zero_argument_from_keyword",
+          "test_over_constrained_block_keeps_the_right_edge_in_rtl",
+          "test_meter_builds_its_slider_track_and_fill",
+          "test_absolutely_positioned_boxes_record_their_solved_insets",
+          "test_split_inline_containing_blocks_include_block_descendants_and_valid_inline_triggers",
+          "test_inline_containing_block_lookup_crosses_shadow_roots",
+          "test_flex_fieldsets_apply_layout_to_the_anonymous_content_box",
+          "test_grid_containers_record_their_used_track_sizes",
+          "test_size_containment_uses_explicit_intrinsic_inner_sizes",
+          "test_grid_table_wrappers_use_table_constraints_and_grid_item_properties",
+          "test_wrapped_inline_blocks_preserve_strut_descent_between_lines",
+          "test_inline_end_static_position_survives_consecutive_forced_breaks",
+          "test_list_items_with_independent_formatting_contexts_lay_out_their_markers",
+          "test_outside_list_marker_aligns_with_the_list_item_first_baseline",
+          "test_list_item_marker_line_height_floors_only_automatic_heights",
+          "test_floating_list_item_remeasures_marker_after_fieldset_intrinsic_probe",
+          "test_inline_abspos_static_position_accounts_for_float_intrusion",
+          "test_range_input_keeps_intrinsic_inline_size_and_stretches_in_grid",
+          "test_unsupported_input_types_fall_back_to_text_input_layout",
+          "test_flex_item_baseline_ignores_vertical_align",
+          "test_zero_height_flex_and_grid_containers_stop_margin_collapse",
+          "test_subgrid_inherits_tracks_and_contributes_descendants_to_parent_sizing",
+          "test_subgrid_inherits_clipped_parent_grid_area_line_names",
+          "test_interrupting_block_is_laid_out_between_inline_lines",
+          "test_trailing_interrupting_block_margin_extends_bfc_root_height",
+          "test_float_after_interrupting_block_consumes_its_bottom_margin",
+          "test_inline_start_padding_attaches_after_interrupting_block",
+          "test_line_before_interrupting_block_is_not_justified",
+          "test_intrinsic_flex_basis_honors_border_box_sizing",
+          "test_inline_box_geometry_spans_atomic_inline_margin_boxes",
+          "test_inline_box_geometry_unites_pieces_across_lines",
+          "test_abspos_static_position_uses_line_marker_after_inline_content",
+          "test_block_level_abspos_static_position_follows_line_content",
+          "test_inline_containing_block_spans_atomic_inline_margin_box",
+          "test_inline_containing_block_inside_table_cell_uses_cell_coordinates",
+          "test_formatting_context_roots_clear_floats_they_would_overlap",
+          "test_grid_auto_repeat_floors_zero_tracks_and_collapses_gutters",
+          "test_grid_auto_repeat_count_subtracts_fixed_template_tracks",
+          "test_grid_auto_placement_cursor_keeps_the_row_of_spanning_items",
+          "test_auto_grid_item_block_cache_matches_an_independent_intrinsic_probe",
+          "test_grid_block_reuse_excludes_constraints_and_tracks_live_content_changes",
+          "test_flexible_grid_phases_measure_nested_breakable_content_and_live_changes",
+          "test_flexible_grid_row_contributions_keep_intrinsic_limits_and_scroll_minimums",
+          "test_unchanged_grid_item_height_preserves_nested_auto_rows_and_live_resizing",
+          "test_unchanged_grid_item_height_still_resolves_percentage_descendants",
+          "test_unchanged_grid_item_height_still_resolves_percentage_row_gaps",
+          "test_changed_grid_item_height_still_realigns_nested_flex_contents",
+          "test_shrink_wrapped_ancestors_apply_child_border_box_maximum_once",
+          "test_shrink_wrapped_border_box_minimum_and_minimum_precedence",
+          "test_border_box_intrinsic_maximum_cannot_remove_border_and_padding",
+          "test_intrinsic_column_keeps_first_pass_text_baseline_before_discarding_lines",
+          "test_intrinsic_column_still_resolves_percentage_descendants_after_height_promotion",
+          "test_intrinsic_column_still_lays_out_items_after_changed_flex_targets",
+          "test_external_seed_alone_copies_the_complete_deep_root_chain",
+          "test_external_seed_creates_missing_source_ancestors_and_hoisted_blocks",
+          "test_public_intrinsic_width_and_height_keep_external_percentage_geometry",
+          "test_intrinsic_seed_retains_external_blocks_with_shared_ancestor_chains",
+          "test_borrowed_intrinsic_width_matches_full_geometry",
+          "test_borrowed_runs_merge_without_modifying_source_glyphs",
+          "test_intrinsic_width_cache_keeps_both_height_axes_absent_without_allocating_reads",
+          "test_intrinsic_first_height_slot_preserves_none_zero_and_independent_axes",
+          "test_intrinsic_height_overflow_preserves_distinct_widths_optional_values_and_first_identity",
+          "test_intrinsic_height_reset_replaces_owner_and_keeps_retained_old_snapshot_after_gc",
+          "test_intrinsic_height_measurement_uses_cached_zero_and_recomputes_stored_none",
+          "test_intrinsic_soft_wrap_decisions_match_fully_measured_signed_advances",
+          "test_intrinsic_overflow_splitting_keeps_the_measured_width",
+          "test_disposable_intrinsic_lines_recycle_without_losing_earlier_widths",
+          "test_intrinsic_shape_miss_and_hit_consumers_keep_cached_owner_immutable",
+          "test_intrinsic_cache_owners_and_published_lines_survive_merging_and_collection",
+          "test_intrinsic_shape_order_matches_linear_search_and_keeps_equal_keys_stable",
+          "test_intrinsic_shape_order_handles_clearing_and_rebuilding_the_same_size",
+          "test_intrinsic_shape_order_preserves_every_shape_key_and_forks_owners",
+          "test_intrinsic_shape_order_normal_misses_do_not_populate_cache",
+          "test_disposable_width_matches_complete_intrinsic_layout",
+          "test_auto_grid_rows_include_a_block_childs_nested_grid_height",
+          "test_svg_intrinsic_scan_does_not_copy_the_document_tail",
+          "test_background_intrinsic_dimensions_use_the_retained_svg_resource",
+          "test_background_intrinsic_optional_dimensions_preserve_ratio_transfer",
+          "test_intrinsic_grid_rows_count_table_outer_borders_once",
+          "test_text_input_auto_size_tracks_style_and_size_attribute_changes",
+          "test_retained_inline_text_replaces_glyph_fonts_after_a_live_font_size_change",
+          "test_retained_inline_text_tracks_font_family_and_inherited_font_changes",
+          "test_retained_text_chunks_survive_font_generations_only_with_unchanged_faces_and_style",
+          "test_pending_text_chunks_and_shape_owners_survive_only_unrelated_font_changes",
+          "test_pending_text_chunks_expire_after_the_selected_face_loads_or_changes_descriptor",
+          "test_retained_flow_items_rewrap_in_new_grid_tracks_and_flex_sizes",
+          "test_retained_flow_items_rebuild_after_parent_role_and_text_changes",
+          "test_retained_flow_items_drop_old_roles_when_only_the_parent_display_changes",
+          "test_intrinsic_sizes_survive_unrelated_font_completion_without_changing_geometry",
+          "test_intrinsic_sizes_expire_when_a_descendant_cascade_was_already_replaced",
+          "test_intrinsic_sizes_expire_when_an_ancestor_font_supplies_changed_relative_metrics",
+          "test_intrinsic_sizes_reject_unknown_descendant_font_inputs",
+          "test_intrinsic_sizes_reject_containing_blocks_outside_the_parent_chain",
+          "test_intrinsic_sizes_with_unresolved_fonts_retain_original_geometry_until_selected_family_changes",
+          "test_completed_image_with_a_definite_size_repaints_without_layout",
+          "test_paint_only_image_frames_replace_shared_pixels_without_changing_old_commands",
+          "test_completed_image_sized_by_its_contents_needs_layout",
+          "test_fixed_size_image_with_a_new_source_needs_layout",
+          "test_positioned_image_source_replacement_keeps_geometry_only_with_the_same_natural_ratio",
+          "test_positioned_image_repaint_rejects_changed_ratio_and_intrinsic_constraints",
+          "test_positioned_image_repaint_preserves_pending_attribute_selector_relayout",
+          "test_retained_grid_layout_preserves_tracks_placement_and_baselines_after_movement",
+          "test_retained_grid_layout_rechecks_available_size_and_percentage_bases",
+          "test_retained_grid_layout_rechecks_text_order_spans_and_tracks",
+          "test_retained_grid_layout_keeps_nested_tracks_and_old_paint_immutable",
+          "test_retained_grid_layout_keeps_subgrid_and_positioned_descendants_on_full_path",
+          "test_retained_grid_track_vectors_detach_from_cached_and_previous_layouts",
+          "test_independent_flex_layout_reuses_rows_columns_and_reverse_directions_after_external_movement",
+          "test_retained_flex_descendants_keep_nested_inline_baselines_and_old_paint_immutable",
+          "test_retained_flex_layout_rechecks_available_width_and_percentage_height_bases",
+          "test_retained_flex_layout_rechecks_order_alignment_and_descendant_text_changes",
+          "test_retained_flex_layout_keeps_positioned_subgrid_and_floating_descendants_uncached",
+          "test_retained_independent_flow_reuses_descendants_after_preceding_comment_changes",
+          "test_retained_independent_flow_rechecks_width_height_inherited_style_and_content",
+          "test_retained_independent_flow_leaves_specialized_layout_and_float_dependencies_uncached",
+          "test_retained_independent_flow_keeps_atomic_action_menu_geometry_and_intrinsic_sizes",
+          "test_retained_independent_flow_observes_changed_available_space_without_tree_rebuilding",
+          "test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry",
+          "test_seed_visits_match_general_hoisted_chains_and_copy_current_source_values",
+          "test_seed_visits_wrap_clears_old_epochs_before_visiting_again",
+          "test_seed_visits_nested_measurements_keep_outer_geometry_independent",
+          "test_seed_visits_mutated_reindexed_and_closed_trees_use_general_fallback",
+          "test_measurement_chunk_pool_is_opt_in_and_preserves_public_unpooled_probe_lifetime",
+          "test_measurement_chunk_pool_clears_gc_edges_and_restores_complete_slot_defaults",
+          "test_measurement_chunk_pool_never_lends_live_parent_or_sibling_probe_chunks",
+          "test_measurement_chunk_pool_has_a_fixed_bound_and_explicitly_closes_at_layout_end",
+          "test_measurement_chunk_pool_preserves_retained_snapshots_after_probe_reuse_and_close",
+          "test_measurement_chunk_pool_isolated_passes_do_not_share_chunks_and_closed_arenas_stay_reusable",
+          "test_native_measurement_scratch_reuses_whole_probes_and_preserves_nested_results",
+          "test_native_intrinsic_caches_survive_probe_reuse_and_later_layout_passes",
+          "test_geometry_workspaces_retire_while_used_values_remain_document_owned",
+          "test_native_geometry_survives_retired_workspaces_for_text_grid_tables_and_svg",
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace",
+          "test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases",
+          "test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners",
+          "test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage",
+          "test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis",
+          "test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable",
+          "test_closed_inline_workspace_empty_return_restores_geometry_scope",
+          "test_block_width_auto",
+          "test_block_width_definite_auto_margins",
+          "test_block_width_percentage",
+          "test_block_flow_vertical_layout",
+          "test_width_min_max_clamp",
+          "test_height_min_max_clamp",
+          "test_adjacent_margin_collapse",
+          "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+          "test_parent_child_margin_collapse",
+          "test_percentage_height",
+          "test_percentage_height_indefinite_containing_block",
+          "test_definite_preferred_width_excludes_overflow_and_preserves_outer_edges",
+          "test_definite_intrinsic_preference_keeps_minimum_precedence_and_zero_content_floor",
+          "test_cyclic_percentage_preference_still_measures_content_with_definite_ancestor_basis",
+          "test_definite_preference_still_measures_intrinsic_minimum_and_maximum",
+          "test_svg_path_data_attribute_refreshes_committed_bounds_and_paint_without_rebuilding_the_tree",
+          "test_svg_css_path_data_changes_relayout_while_fill_changes_only_paint",
+          "test_static_svg_parent_grid_reuses_geometry_after_movement_and_keeps_old_paint",
+          "test_svg_attribute_inputs_reject_path_viewbox_transform_and_namespace_mutations",
+          "test_static_svg_cache_rechecks_css_geometry_and_parent_size",
+          "test_svg_resource_instances_text_animation_and_foreign_content_keep_the_full_path",
+          "test_svg_input_rejects_inserted_nonlayout_animation_children_and_reordered_shapes",
+          "test_svg_snapshot_bounds_and_css_resource_dependencies_keep_the_full_path",
+          "test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations",
+          "test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice",
+          "test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes",
+          "test_retained_formatting_trees_keep_replaced_generated_and_subgrid_content_on_the_builder_path",
+          "test_noop_restyles_preserve_closed_flow_grid_and_flex_layout_trees",
+          "test_restyled_retained_flow_observes_changed_text_color_width_and_tree_order",
+          "test_restyled_flow_keeps_replaced_and_generated_descendants_on_the_builder_path",
+          "test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint",
+          "test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes",
+          "test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands",
+          "test_unavailable_images_and_other_replaced_elements_reject_block_retention"
+        ]
+      },
+      {
+        "name": "none-compile",
+        "exit": 0,
+        "executed": []
+      },
+      {
+        "name": "none-0",
+        "exit": 0,
+        "executed": [
+          "test_chromium_hacker_news_controls_match_brave_intrinsic_sizes",
+          "test_chromium_control_theme_preserves_author_borders_and_backgrounds",
+          "test_chromium_textarea_intrinsic_width_rounds_after_device_projection",
+          "test_chromium_definite_flex_basis_keeps_its_main_size_after_cross_axis_constraints",
+          "test_chromium_grid_flex_preserves_float_factor_subtraction_when_freezing"
+        ]
+      },
+      {
+        "name": "none-1",
+        "exit": 0,
+        "executed": [
+          "test_chromium_grid_flex_carries_fractional_layout_units_to_later_tracks",
+          "test_chromium_grid_flex_uses_the_same_rounding_for_columns_and_rows",
+          "test_chromium_inline_block_propagates_a_nested_block_flex_first_baseline",
+          "test_chromium_middle_alignment_retains_odd_subpixels_in_the_box_height",
+          "test_chromium_middle_inline_text_does_not_export_its_face_baseline_to_the_parent_line"
+        ]
+      },
+      {
+        "name": "none-2",
+        "exit": 1,
+        "executed": [
+          "test_chromium_middle_atomic_boxes_do_not_raise_the_line_by_their_internal_baseline",
+          "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+          "test_chromium_toggle_controls_align_their_border_box_with_the_baseline",
+          "test_layout_grid_data_defaults_and_empty_updates_do_not_allocate_payloads",
+          "test_layout_grid_data_replacement_preserves_value_copies_and_live_aliases"
+        ]
+      },
+      {
+        "name": "none-3",
+        "exit": 0,
+        "executed": [
+          "test_layout_grid_data_keeps_existing_nested_array_alias_semantics",
+          "test_layout_grid_data_retains_subgrid_and_line_name_only_records",
+          "test_dom_grid_bridge_resolved_tracks_follow_live_layout_and_keep_value_snapshots",
+          "test_dom_grid_bridge_reusing_a_placeholder_discards_retired_grid_payload",
+          "test_dominant_baseline_offset_matches_font_metrics"
+        ]
+      },
+      {
+        "name": "none-4",
+        "exit": 0,
+        "executed": [
+          "test_dominant_baseline_auto_resolves_from_writing_mode",
+          "test_explicit_dominant_baseline_overrides_writing_mode",
+          "test_all_frozen_empty_line_keeps_an_empty_owned_result",
+          "test_all_frozen_zero_factors_and_constraint_freezing_keep_hypotheticals",
+          "test_all_frozen_targets_own_storage_and_leave_source_arrays_unchanged"
+        ]
+      },
+      {
+        "name": "none-5",
+        "exit": 0,
+        "executed": [
+          "test_flex_work_inside_retained_inline_construction_retires_its_workspace",
+          "test_flex_does_not_shorten_an_existing_workspace_or_intrinsic_probe",
+          "test_inline_flex_rows_columns_and_nested_grid_remain_paintable_after_reflow",
+          "test_deep_auto_height_flex_layout_reuses_unchanged_item_geometry",
+          "test_flex_relayout_keeps_percentage_height_dependencies_through_wrappers"
+        ]
+      },
+      {
+        "name": "none-6",
+        "exit": 0,
+        "executed": [
+          "test_flex_relayout_still_lays_out_items_when_stretch_changes_their_height",
+          "test_block_flex_resolves_its_automatic_height_in_its_own_layout",
+          "test_deep_auto_height_column_flex_keeps_natural_geometry",
+          "test_column_flex_promotes_unchanged_height_for_percentage_descendants",
+          "test_column_flex_reruns_contents_when_flexing_changes_the_height"
+        ]
+      },
+      {
+        "name": "none-7",
+        "exit": 0,
+        "executed": [
+          "test_nested_column_flex_reuses_automatic_implicit_grid_rows",
+          "test_column_flex_keeps_definite_height_relayout_for_percentage_grid_rows",
+          "test_column_flex_reruns_automatic_grid_rows_when_height_changes",
+          "test_flex_formatting_context_grows_and_aligns_items",
+          "test_flex_intrinsic_height_accounts_for_line_clamping_and_nested_baselines"
+        ]
+      },
+      {
+        "name": "none-8",
+        "exit": 0,
+        "executed": [
+          "test_button_content_percentages_resolve_against_the_button",
+          "test_button_content_height_uses_clamped_border_box_height",
+          "test_button_layout_establishes_a_block_formatting_context",
+          "test_empty_button_content_is_skipped_by_flex_layout",
+          "test_inline_grid_whitespace_runs_do_not_acquire_used_values"
+        ]
+      },
+      {
+        "name": "none-9",
+        "exit": 0,
+        "executed": [
+          "test_fractional_calculated_flex_basis_does_not_wrap_the_third_item",
+          "test_large_percentage_width_retains_precision_before_saturation",
+          "test_inline_math_uses_completed_run_height_without_enclosing_margin",
+          "test_auto_width_text_input_stretches_in_nested_column_flex",
+          "test_text_input_padding_belongs_to_the_host_box"
+        ]
+      },
+      {
+        "name": "none-10",
+        "exit": 0,
+        "executed": [
+          "test_visible_input_placeholder_overlays_the_full_width_editor",
+          "test_live_input_placeholder_overlays_after_attribute_mutation",
+          "test_number_input_stepper_icons_keep_computed_path_geometry",
+          "test_native_input_min_max_height_clamps_are_definite_for_shadow_content",
+          "test_visible_textarea_placeholder_overlays_the_full_width_editor"
+        ]
+      },
+      {
+        "name": "none-11",
+        "exit": 0,
+        "executed": [
+          "test_text_input_auto_height_uses_selected_font_metrics",
+          "test_multiline_flex_align_content_distributes_cross_axis_space",
+          "test_flex_min_height_stretches_lines_before_centering_items",
+          "test_wrap_reverse_stretch_places_flex_lines_from_the_far_cross_edge",
+          "test_flex_auto_placement_uses_bucketed_order_modified_document_order"
+        ]
+      },
+      {
+        "name": "none-12",
+        "exit": 0,
+        "executed": [
+          "test_reverse_direction_sorts_order_keys_descending",
+          "test_rtl_row_counts_as_the_reverse_direction_for_order_keys",
+          "test_single_line_column_flex_swaps_cross_edges_for_wrap_reverse",
+          "test_rtl_and_wrap_reverse_cancel_each_other_on_the_column_cross_axis",
+          "test_indefinite_column_flex_uses_the_intrinsic_main_size_algorithm"
+        ]
+      },
+      {
+        "name": "none-13",
+        "exit": 0,
+        "executed": [
+          "test_indefinite_column_flex_intrinsic_main_size_counts_gaps_and_edges",
+          "test_wrapping_container_sizes_its_only_line_to_its_items",
+          "test_nowrap_container_still_stretches_its_line_to_the_definite_cross_size",
+          "test_negative_align_content_free_space_falls_back_to_center",
+          "test_only_normal_alignment_follows_a_wrap_reversed_cross_axis"
+        ]
+      },
+      {
+        "name": "none-14",
+        "exit": 0,
+        "executed": [
+          "test_column_cross_alignment_ignores_the_inline_direction",
+          "test_flex_percentage_gaps_resolve_against_their_axis_inner_size",
+          "test_automatic_flex_cross_size_uses_used_inner_size_for_percentage_gap",
+          "test_wrap_reverse_swaps_align_content_cross_start_and_end",
+          "test_row_flex_auto_margins_absorb_main_and_cross_axis_space"
+        ]
+      },
+      {
+        "name": "none-15",
+        "exit": 0,
+        "executed": [
+          "test_column_flex_auto_margins_absorb_main_and_cross_axis_space",
+          "test_row_reverse_places_flex_start_at_reversed_main_edge",
+          "test_row_flex_main_sizes_use_content_box_targets_for_border_box_items",
+          "test_flex_main_axis_minimum_clamps_border_box_target",
+          "test_row_flex_automatic_minimum_size_is_content_based"
+        ]
+      },
+      {
+        "name": "none-16",
+        "exit": 0,
+        "executed": [
+          "test_flex_automatic_minimum_size_is_capped_by_preferred_and_maximum_sizes",
+          "test_flex_length_resolution_redistributes_minimum_violations",
+          "test_flex_factors_below_one_leave_part_of_free_space_unfilled",
+          "test_definite_single_line_flex_skips_automatic_minimum_intrinsic_layout",
+          "test_definite_item_basis_skips_redundant_automatic_minimum_intrinsic_layout"
+        ]
+      },
+      {
+        "name": "none-17",
+        "exit": 0,
+        "executed": [
+          "test_per_item_skipped_minimum_is_restored_for_flex_violations",
+          "test_skipped_hypothetical_minimum_is_restored_for_flex_violations",
+          "test_flex_wrap_collects_lines_using_outer_hypothetical_sizes",
+          "test_column_flex_automatic_minimum_size_is_content_based",
+          "test_nested_flex_with_parent_resolved_size_still_runs_intrinsic_relayout"
+        ]
+      },
+      {
+        "name": "none-18",
+        "exit": 0,
+        "executed": [
+          "test_nested_grid_with_parent_resolved_size_skips_intrinsic_relayout",
+          "test_flex_automatic_minimum_uses_transferred_aspect_ratio_suggestion",
+          "test_auto_height_row_flex_ignores_unresolved_percentage_min_height_for_ratio_transfer",
+          "test_intrinsic_column_flex_width_does_not_create_a_cyclic_percentage_minimum_basis",
+          "test_flex_basis_intrinsic_sizing_keywords_choose_their_matching_contribution"
+        ]
+      },
+      {
+        "name": "none-19",
+        "exit": 0,
+        "executed": [
+          "test_svg_partial_intrinsic_height_sets_its_max_content_width",
+          "test_ratio_only_svg_cyclic_percentage_uses_replaced_max_content_fallback",
+          "test_ratio_only_replaced_max_content_transfers_constraints",
+          "test_column_flex_intrinsic_cross_size_keeps_cyclic_percentage_minimum_indefinite",
+          "test_wrapped_column_flex_max_content_cross_size_sums_flex_lines"
+        ]
+      },
+      {
+        "name": "none-20",
+        "exit": 0,
+        "executed": [
+          "test_abspos_max_content_width_sums_adjacent_floats",
+          "test_font_relative_width_uses_selected_face_metrics",
+          "test_flex_content_basis_uses_definite_cross_size_and_aspect_ratio",
+          "test_anchor_size_flex_basis_is_unresolvable_in_flex_formatting_context",
+          "test_column_flex_base_size_is_adjusted_through_natural_aspect_ratio"
+        ]
+      },
+      {
+        "name": "none-21",
+        "exit": 0,
+        "executed": [
+          "test_row_flex_baseline_alignment_uses_each_items_last_line_baseline",
+          "test_inline_flex_baseline_uses_its_wrapped_childs_first_line",
+          "test_intrinsic_inline_flex_resolves_auto_height_before_alignment_and_caches_baseline",
+          "test_overflow_clip_inline_block_keeps_its_content_baseline",
+          "test_inline_table_exports_its_first_row_baseline"
+        ]
+      },
+      {
+        "name": "none-22",
+        "exit": 0,
+        "executed": [
+          "test_table_row_baseline_ignores_middle_aligned_cells",
+          "test_table_row_grows_to_contain_shifted_baseline_aligned_cell",
+          "test_relative_insets_resolve_against_the_containing_block_without_changing_flow_offsets",
+          "test_multicol_used_column_count_and_width_follow_the_upstream_pseudo_algorithm",
+          "test_column_flex_main_size_uses_content_box_target_for_border_box_item"
+        ]
+      },
+      {
+        "name": "none-23",
+        "exit": 0,
+        "executed": [
+          "test_column_flex_stretched_cross_size_respects_border_box_max_width",
+          "test_row_reverse_flex_end_and_space_between_use_reversed_physical_offsets",
+          "test_column_reverse_places_flex_start_at_reversed_main_edge",
+          "test_row_reverse_justify_start_remains_physical_inline_start",
+          "test_rtl_column_flex_item_alignment_names_a_fixed_edge"
+        ]
+      },
+      {
+        "name": "none-24",
+        "exit": 0,
+        "executed": [
+          "test_wrapping_column_flex_forms_columns_and_stretches_line_cross_sizes",
+          "test_wrapping_column_flex_applies_column_gap_and_align_content",
+          "test_reversed_cross_axis_reverses_wrapping_column_flex_line_order",
+          "test_wrapping_column_reverse_places_each_line_from_bottom_main_edge",
+          "test_explicit_flex_start_is_not_flipped_within_a_wrap_reversed_line"
+        ]
+      },
+      {
+        "name": "none-25",
+        "exit": 0,
+        "executed": [
+          "test_intrinsic_width_keywords_relayout_content_under_constraints",
+          "test_huge_font_size_min_content_measurement_is_clamped_before_shaping",
+          "test_intrinsic_min_and_max_width_constraints_clamp_used_width",
+          "test_grid_intrinsic_measurement_does_not_apply_items_own_percentage_min_max_width",
+          "test_min_content_width_does_not_collapse_at_zero_minimum_descendant"
+        ]
+      },
+      {
+        "name": "none-26",
+        "exit": 0,
+        "executed": [
+          "test_grid_formatting_context_sizes_fr_tracks_and_gap",
+          "test_grid_formatting_context_sizes_calculated_fr_tracks",
+          "test_fr_track_sizing_truncates_like_a_css_pixel_fraction",
+          "test_auto_fit_collapse_looks_only_at_the_first_cell_of_a_track",
+          "test_auto_fit_collapse_keeps_a_track_whose_first_cell_is_taken"
+        ]
+      },
+      {
+        "name": "none-27",
+        "exit": 0,
+        "executed": [
+          "test_grid_max_content_flexible_track_accounts_for_spanning_item",
+          "test_grid_spanning_item_minimum_grows_flexible_track_before_expansion",
+          "test_flexible_grid_tracks_honor_intrinsic_minimum_phases",
+          "test_grid_spanning_intrinsic_distribution_freezes_at_growth_limits",
+          "test_grid_fixed_minimum_does_not_become_an_intrinsic_base_size"
+        ]
+      },
+      {
+        "name": "none-28",
+        "exit": 0,
+        "executed": [
+          "test_grid_explicit_item_minimum_contribution_includes_box_edges",
+          "test_grid_spanning_item_increases_intrinsic_growth_limits",
+          "test_grid_maximum_width_retries_track_maximization",
+          "test_grid_definite_available_height_limits_row_maximization",
+          "test_grid_indefinite_flexible_row_accounts_for_spanning_item"
+        ]
+      },
+      {
+        "name": "none-29",
+        "exit": 0,
+        "executed": [
+          "test_grid_multispan_flexible_row_uses_zero_automatic_minimum",
+          "test_grid_intrinsic_flexible_row_uses_limited_min_content_contribution",
+          "test_grid_percentage_height_items_contribute_auto_sizes_to_rows",
+          "test_grid_limited_contribution_is_clamped_by_fit_content_row",
+          "test_grid_percentage_gaps_resolve_against_their_axis_available_size"
+        ]
+      },
+      {
+        "name": "none-30",
+        "exit": 0,
+        "executed": [
+          "test_grid_auto_placement_expands_repeat_and_accommodates_largest_span",
+          "test_grid_auto_placement_uses_order_modified_document_order",
+          "test_grid_occupation_uses_distinct_packed_signed_coordinates",
+          "test_grid_dense_auto_placement_backfills_earlier_holes",
+          "test_grid_position_can_be_derived_from_definite_end_line"
+        ]
+      },
+      {
+        "name": "none-31",
+        "exit": 0,
+        "executed": [
+          "test_grid_auto_fill_repeats_definite_tracks_to_fill_available_width",
+          "test_grid_auto_fit_collapses_empty_flexible_repeated_tracks",
+          "test_grid_implicit_tracks_use_grid_auto_column_and_row_sizes",
+          "test_grid_spanning_items_grow_intrinsic_columns_and_rows",
+          "test_grid_default_content_alignment_stretches_auto_tracks"
+        ]
+      },
+      {
+        "name": "none-32",
+        "exit": 0,
+        "executed": [
+          "test_grid_item_with_definite_width_does_not_stretch_to_area",
+          "test_grid_content_alignment_positions_fixed_tracks_in_definite_container",
+          "test_grid_space_between_adds_free_space_between_tracks",
+          "test_grid_negative_and_reversed_line_numbers_resolve_against_explicit_grid",
+          "test_grid_negative_lines_before_explicit_grid_prepend_implicit_tracks"
+        ]
+      },
+      {
+        "name": "none-33",
+        "exit": 0,
+        "executed": [
+          "test_grid_start_span_can_create_multiple_implicit_tracks_before_explicit_grid",
+          "test_grid_named_lines_resolve_authored_start_and_end_names",
+          "test_grid_template_area_names_create_implicit_start_and_end_lines",
+          "test_grid_items_inherit_container_alignment_and_allow_self_overrides",
+          "test_grid_auto_margins_absorb_free_space_before_self_alignment"
+        ]
+      },
+      {
+        "name": "none-34",
+        "exit": 0,
+        "executed": [
+          "test_grid_normal_alignment_does_not_stretch_replaced_items",
+          "test_rtl_grid_places_logical_first_column_at_right_and_aligns_from_inline_start",
+          "test_rtl_grid_content_start_and_end_are_logical_while_left_is_physical",
+          "test_rtl_absolutely_positioned_grid_child_uses_physical_grid_area_rect",
+          "test_grid_item_percentages_and_border_box_resolve_against_grid_area"
+        ]
+      },
+      {
+        "name": "none-35",
+        "exit": 0,
+        "executed": [
+          "test_grid_forced_item_sizes_apply_min_max_with_border_box_sizing",
+          "test_absolutely_positioned_grid_child_uses_its_grid_area_as_containing_block",
+          "test_absolutely_positioned_grid_child_auto_insets_apply_self_alignment_in_grid_area",
+          "test_absolutely_positioned_grid_child_percentages_resolve_against_grid_area",
+          "test_absolute_descendant_of_grid_item_uses_ancestor_grid_area"
+        ]
+      },
+      {
+        "name": "none-36",
+        "exit": 0,
+        "executed": [
+          "test_positioned_grid_item_remains_nearer_abspos_containing_block",
+          "test_abspos_grid_line_at_end_uses_padding_edge_track_and_auto_axis_uses_padding_box",
+          "test_table_formatting_context_builds_columns_and_rows",
+          "test_rtl_table_places_logical_first_column_at_right",
+          "test_rtl_table_cell_spanning_logical_columns_uses_mirrored_range"
+        ]
+      },
+      {
+        "name": "none-37",
+        "exit": 0,
+        "executed": [
+          "test_fixed_table_cell_border_box_width_is_not_counted_twice",
+          "test_fixed_table_auto_columns_ignore_cell_padding_and_later_rows",
+          "test_fixed_table_percentage_cell_adds_content_box_offsets",
+          "test_fixed_table_cells_shrink_padding_to_stay_within_columns",
+          "test_fixed_table_cells_shrink_borders_after_padding"
+        ]
+      },
+      {
+        "name": "none-38",
+        "exit": 0,
+        "executed": [
+          "test_collapsed_table_odd_borders_split_between_table_and_cells",
+          "test_percentage_collapsed_table_resolves_border_box_from_split_outer_borders",
+          "test_inline_block_intrinsic_width_includes_anonymous_collapsed_table_outer_border",
+          "test_collapsed_table_uses_winning_outer_grid_borders",
+          "test_missing_collapsed_table_cells_take_no_border_share"
+        ]
+      },
+      {
+        "name": "none-39",
+        "exit": 0,
+        "executed": [
+          "test_table_cell_height_uses_content_box_except_for_border_box_and_quirks",
+          "test_collapsed_table_ignores_authored_padding",
+          "test_table_lays_out_first_header_first_and_first_footer_last",
+          "test_table_row_groups_span_their_rows_across_loose_rows",
+          "test_table_auto_layout_uses_definite_cell_width_contributions"
+        ]
+      },
+      {
+        "name": "none-40",
+        "exit": 0,
+        "executed": [
+          "test_table_min_content_measure_does_not_use_the_cells_preferred_width",
+          "test_constrained_table_column_uses_cell_min_content_for_its_max_measure",
+          "test_table_cell_margins_do_not_participate_in_grid_measurement_or_positioning",
+          "test_table_spanning_cell_distributes_its_minimum_width_over_columns",
+          "test_table_captions_are_laid_out_above_and_below_the_grid"
+        ]
+      },
+      {
+        "name": "none-41",
+        "exit": 0,
+        "executed": [
+          "test_table_cell_vertical_alignment_distributes_extra_row_height_to_padding",
+          "test_table_rowspan_zero_matches_upstream_unimplemented_downward_growth",
+          "test_percentage_table_cell_height_is_applied_during_second_layout_pass",
+          "test_percentage_table_cell_alignment_retains_signed_row_difference",
+          "test_collapsed_table_row_has_zero_height_and_does_not_advance_row_cursor"
+        ]
+      },
+      {
+        "name": "none-42",
+        "exit": 0,
+        "executed": [
+          "test_collapsed_table_column_has_zero_width_and_no_border_spacing",
+          "test_collapsed_table_column_hides_only_cells_wholly_inside_it_from_paint",
+          "test_block_container_vertical_align_does_not_shift_its_own_text",
+          "test_collapsed_table_column_group_collapses_its_columns",
+          "test_collapsed_table_row_group_spans_its_positioned_rows"
+        ]
+      },
+      {
+        "name": "none-43",
+        "exit": 0,
+        "executed": [
+          "test_table_auto_row_height_distribution_truncates_fractional_increment",
+          "test_percentage_height_rowspan_cell_is_relaid_out_in_second_pass",
+          "test_table_rowspan_height_uses_intrinsic_row_measure_contributions",
+          "test_table_cell_min_height_affects_row_measure_but_not_cell_content_height",
+          "test_table_caption_flows_inside_the_wrapper_with_its_outer_edges"
+        ]
+      },
+      {
+        "name": "none-44",
+        "exit": 0,
+        "executed": [
+          "test_table_caption_uses_its_content_width_to_lay_out_descendants",
+          "test_table_wrapper_flow_includes_bottom_captions_and_stretches_the_grid",
+          "test_table_caption_capmin_includes_outer_edges_and_definite_width",
+          "test_table_caption_capmin_resolves_intrinsic_and_border_box_widths",
+          "test_fixed_table_layout_uses_first_row_widths_and_shares_unassigned_space"
+        ]
+      },
+      {
+        "name": "none-45",
+        "exit": 0,
+        "executed": [
+          "test_fixed_table_equal_distribution_truncates_css_pixel_fractions",
+          "test_spanning_table_measure_zero_baseline_truncates_fraction",
+          "test_table_wrapper_and_percentage_table_share_final_width_before_centering",
+          "test_legacy_center_does_not_shift_an_oversized_table_before_the_containing_block",
+          "test_empty_table_row_is_retained_when_the_grid_has_no_columns"
+        ]
+      },
+      {
+        "name": "none-46",
+        "exit": 0,
+        "executed": [
+          "test_empty_table_row_group_uses_current_group_cursor",
+          "test_fixed_table_layout_distributes_excess_proportionally_when_all_columns_are_sized",
+          "test_specified_table_row_height_establishes_row_minimum",
+          "test_table_column_elements_constrain_fixed_layout_column_widths",
+          "test_table_column_constraints_receive_priority_in_auto_layout_excess_distribution"
+        ]
+      },
+      {
+        "name": "none-47",
+        "exit": 0,
+        "executed": [
+          "test_table_column_boxes_cover_their_grid_tracks",
+          "test_table_column_percentage_resolves_against_table_width",
+          "test_empty_column_group_does_not_create_a_grid_track",
+          "test_absolute_positioning_solves_inset_equations",
+          "test_css_anchor_positioning_resolves_names_sides_and_fallbacks"
+        ]
+      },
+      {
+        "name": "none-48",
+        "exit": 0,
+        "executed": [
+          "test_css_anchor_positioning_resolves_anchor_functions_in_calculations",
+          "test_span_all_position_area_unites_the_containing_block_and_centers_on_anchor",
+          "test_css_anchor_positioning_skips_ineligible_later_named_elements",
+          "test_css_anchor_positioning_resolves_logical_inside_and_percentage_sides",
+          "test_absolute_positioning_resolves_border_box_sizes_to_content_box"
+        ]
+      },
+      {
+        "name": "none-49",
+        "exit": 0,
+        "executed": [
+          "test_absolute_inset_size_and_min_max_constraints_respect_box_sizing",
+          "test_block_abspos_auto_insets_use_normal_flow_static_position",
+          "test_block_abspos_static_position_includes_pending_collapsed_margin",
+          "test_inline_abspos_auto_insets_follow_the_line_marker",
+          "test_baseline_aligned_inline_block_keeps_the_containing_strut_descent"
+        ]
+      },
+      {
+        "name": "none-50",
+        "exit": 0,
+        "executed": [
+          "test_line_box_baseline_comes_from_final_unshifted_text_fragment",
+          "test_atomic_inline_applies_calculated_vertical_align_offset",
+          "test_inline_display_native_inputs_are_atomic_inlines",
+          "test_text_bottom_atomic_inline_fits_the_parent_content_area",
+          "test_text_top_and_bottom_use_parent_inline_font_metrics"
+        ]
+      },
+      {
+        "name": "none-51",
+        "exit": 0,
+        "executed": [
+          "test_top_and_bottom_align_complete_inline_subtrees_to_line_edges",
+          "test_normal_heading_line_height_uses_selected_font_typo_metrics",
+          "test_abspos_static_position_is_converted_to_actual_containing_block_space",
+          "test_abspos_static_position_uses_final_atomic_inline_offset",
+          "test_flex_abspos_static_position_uses_main_and_cross_alignment"
+        ]
+      },
+      {
+        "name": "none-52",
+        "exit": 0,
+        "executed": [
+          "test_replaced_element_uses_intrinsic_dimensions",
+          "test_zero_canvas_dimensions_are_valid_intrinsic_dimensions",
+          "test_css_aspect_ratio_overrides_and_auto_falls_back_to_replaced_natural_ratio",
+          "test_ratio_only_content_replacement_uses_definite_width_for_max_content_size",
+          "test_non_replaced_auto_height_uses_preferred_aspect_ratio"
+        ]
+      },
+      {
+        "name": "none-53",
+        "exit": 0,
+        "executed": [
+          "test_intrinsic_height_keyword_relays_out_block_children",
+          "test_intrinsic_height_keywords_stay_indefinite_for_percentage_children",
+          "test_intrinsic_min_and_max_height_constraints_clamp_used_height",
+          "test_svg_formatting_context_keeps_geometry_in_viewport_user_units",
+          "test_svg_text_is_materialized_as_glyph_outline_path_like_cpp"
+        ]
+      },
+      {
+        "name": "none-54",
+        "exit": 0,
+        "executed": [
+          "test_svg_text_shapes_each_code_point_with_its_computed_font_cascade",
+          "test_svg_tspans_advance_from_shaped_run_width_instead_of_ink_bounds",
+          "test_svg_text_path_places_rotated_glyph_outlines_on_first_contour",
+          "test_svg_text_path_start_offset_resolves_against_first_contour_length",
+          "test_svg_text_path_text_anchor_adjusts_the_start_offset"
+        ]
+      },
+      {
+        "name": "none-55",
+        "exit": 0,
+        "executed": [
+          "test_svg_text_path_dom_node_retains_only_the_placed_glyph_geometry",
+          "test_svg_foreign_object_delegates_its_contents_to_block_layout",
+          "test_svg_foreign_object_geometry_is_not_a_definite_percentage_height_basis",
+          "test_svg_resource_attached_to_foreign_object_keeps_its_own_coordinate_space",
+          "test_svg_computed_geometry_properties_override_presentation_attributes_where_upstream_uses_them"
+        ]
+      },
+      {
+        "name": "none-56",
+        "exit": 0,
+        "executed": [
+          "test_svg_path_d_uses_the_css_cascade_and_presentation_attribute_syntax",
+          "test_svg_rect_uses_computed_geometry_and_used_corner_radii",
+          "test_svg_ellipse_uses_computed_geometry_and_auto_radii",
+          "test_svg_image_uses_computed_geometry_and_default_sizing",
+          "test_svg_use_translation_uses_computed_x_and_y"
+        ]
+      },
+      {
+        "name": "none-57",
+        "exit": 0,
+        "executed": [
+          "test_relative_positioning_does_not_move_following_flow_content",
+          "test_viewport_text_blocks_preserve_utf16_positions_and_find_in_page_boundaries",
+          "test_layout_node_stacking_context_rules_match_upstream",
+          "test_floats_are_positioned_at_available_edges_and_clearance_moves_blocks_below_them",
+          "test_clearance_moves_past_every_stacked_float"
+        ]
+      },
+      {
+        "name": "none-58",
+        "exit": 0,
+        "executed": [
+          "test_float_is_lowered_past_an_opposite_side_blocker",
+          "test_intrinsic_width_ignores_a_float_that_does_not_overlap_the_widest_line",
+          "test_auto_width_float_is_clamped_by_max_width",
+          "test_inline_lines_wrap_through_float_intrusion_bands",
+          "test_overflow_wrap_anywhere_splits_long_run_around_float"
+        ]
+      },
+      {
+        "name": "none-59",
+        "exit": 0,
+        "executed": [
+          "test_inline_line_uses_float_band_that_starts_midway_through_its_height",
+          "test_line_break_skips_crossing_opposite_float_bands",
+          "test_independent_formatting_context_avoids_preceding_float",
+          "test_container_type_establishes_an_independent_formatting_context",
+          "test_auto_height_flex_items_make_their_used_cross_size_definite_for_descendants"
+        ]
+      },
+      {
+        "name": "none-60",
+        "exit": 0,
+        "executed": [
+          "test_aspect_ratio_box_with_definite_height_transfers_through_the_ratio",
+          "test_aspect_ratio_transfer_applies_to_floats_and_absolute_positioning",
+          "test_block_level_replaced_border_box_width_is_converted_twice",
+          "test_inline_block_replaced_border_box_width_is_converted_once",
+          "test_aspect_ratio_box_with_two_automatic_axes_uses_the_stretch_fit_width"
+        ]
+      },
+      {
+        "name": "none-61",
+        "exit": 0,
+        "executed": [
+          "test_replaced_size_constraints_use_content_box_space",
+          "test_specified_axis_clamps_each_axis_through_the_box_sizing_conversion",
+          "test_replaced_constraints_compare_and_assign_converted_sizes",
+          "test_replaced_form_control_block_constraints_rerun_intrinsic_sizing",
+          "test_block_size_is_clamped_before_it_transfers_through_the_ratio"
+        ]
+      },
+      {
+        "name": "none-62",
+        "exit": 0,
+        "executed": [
+          "test_replaced_intrinsic_width_transfers_from_definite_height",
+          "test_unresolved_percentage_height_only_transfers_for_replaced_sizing",
+          "test_floating_border_box_ratio_transfer_converts_the_inline_size_twice",
+          "test_inline_table_honours_intrinsic_sizing_keywords",
+          "test_table_fit_content_distinguishes_zero_argument_from_keyword"
+        ]
+      },
+      {
+        "name": "none-63",
+        "exit": 0,
+        "executed": [
+          "test_over_constrained_block_keeps_the_right_edge_in_rtl",
+          "test_meter_builds_its_slider_track_and_fill",
+          "test_absolutely_positioned_boxes_record_their_solved_insets",
+          "test_split_inline_containing_blocks_include_block_descendants_and_valid_inline_triggers",
+          "test_inline_containing_block_lookup_crosses_shadow_roots"
+        ]
+      },
+      {
+        "name": "none-64",
+        "exit": 0,
+        "executed": [
+          "test_flex_fieldsets_apply_layout_to_the_anonymous_content_box",
+          "test_grid_containers_record_their_used_track_sizes",
+          "test_size_containment_uses_explicit_intrinsic_inner_sizes",
+          "test_grid_table_wrappers_use_table_constraints_and_grid_item_properties",
+          "test_wrapped_inline_blocks_preserve_strut_descent_between_lines"
+        ]
+      },
+      {
+        "name": "none-65",
+        "exit": 0,
+        "executed": [
+          "test_inline_end_static_position_survives_consecutive_forced_breaks",
+          "test_list_items_with_independent_formatting_contexts_lay_out_their_markers",
+          "test_outside_list_marker_aligns_with_the_list_item_first_baseline",
+          "test_list_item_marker_line_height_floors_only_automatic_heights",
+          "test_floating_list_item_remeasures_marker_after_fieldset_intrinsic_probe"
+        ]
+      },
+      {
+        "name": "none-66",
+        "exit": 0,
+        "executed": [
+          "test_inline_abspos_static_position_accounts_for_float_intrusion",
+          "test_range_input_keeps_intrinsic_inline_size_and_stretches_in_grid",
+          "test_unsupported_input_types_fall_back_to_text_input_layout",
+          "test_flex_item_baseline_ignores_vertical_align",
+          "test_zero_height_flex_and_grid_containers_stop_margin_collapse"
+        ]
+      },
+      {
+        "name": "none-67",
+        "exit": 0,
+        "executed": [
+          "test_subgrid_inherits_tracks_and_contributes_descendants_to_parent_sizing",
+          "test_subgrid_inherits_clipped_parent_grid_area_line_names",
+          "test_interrupting_block_is_laid_out_between_inline_lines",
+          "test_trailing_interrupting_block_margin_extends_bfc_root_height",
+          "test_float_after_interrupting_block_consumes_its_bottom_margin"
+        ]
+      },
+      {
+        "name": "none-68",
+        "exit": 0,
+        "executed": [
+          "test_inline_start_padding_attaches_after_interrupting_block",
+          "test_line_before_interrupting_block_is_not_justified",
+          "test_intrinsic_flex_basis_honors_border_box_sizing",
+          "test_inline_box_geometry_spans_atomic_inline_margin_boxes",
+          "test_inline_box_geometry_unites_pieces_across_lines"
+        ]
+      },
+      {
+        "name": "none-69",
+        "exit": 0,
+        "executed": [
+          "test_abspos_static_position_uses_line_marker_after_inline_content",
+          "test_block_level_abspos_static_position_follows_line_content",
+          "test_inline_containing_block_spans_atomic_inline_margin_box",
+          "test_inline_containing_block_inside_table_cell_uses_cell_coordinates",
+          "test_formatting_context_roots_clear_floats_they_would_overlap"
+        ]
+      },
+      {
+        "name": "none-70",
+        "exit": 0,
+        "executed": [
+          "test_grid_auto_repeat_floors_zero_tracks_and_collapses_gutters",
+          "test_grid_auto_repeat_count_subtracts_fixed_template_tracks",
+          "test_grid_auto_placement_cursor_keeps_the_row_of_spanning_items",
+          "test_auto_grid_item_block_cache_matches_an_independent_intrinsic_probe",
+          "test_grid_block_reuse_excludes_constraints_and_tracks_live_content_changes"
+        ]
+      },
+      {
+        "name": "none-71",
+        "exit": 0,
+        "executed": [
+          "test_flexible_grid_phases_measure_nested_breakable_content_and_live_changes",
+          "test_flexible_grid_row_contributions_keep_intrinsic_limits_and_scroll_minimums",
+          "test_unchanged_grid_item_height_preserves_nested_auto_rows_and_live_resizing",
+          "test_unchanged_grid_item_height_still_resolves_percentage_descendants",
+          "test_unchanged_grid_item_height_still_resolves_percentage_row_gaps"
+        ]
+      },
+      {
+        "name": "none-72",
+        "exit": 0,
+        "executed": [
+          "test_changed_grid_item_height_still_realigns_nested_flex_contents",
+          "test_shrink_wrapped_ancestors_apply_child_border_box_maximum_once",
+          "test_shrink_wrapped_border_box_minimum_and_minimum_precedence",
+          "test_border_box_intrinsic_maximum_cannot_remove_border_and_padding",
+          "test_intrinsic_column_keeps_first_pass_text_baseline_before_discarding_lines"
+        ]
+      },
+      {
+        "name": "none-73",
+        "exit": 0,
+        "executed": [
+          "test_intrinsic_column_still_resolves_percentage_descendants_after_height_promotion",
+          "test_intrinsic_column_still_lays_out_items_after_changed_flex_targets",
+          "test_external_seed_alone_copies_the_complete_deep_root_chain",
+          "test_external_seed_creates_missing_source_ancestors_and_hoisted_blocks",
+          "test_public_intrinsic_width_and_height_keep_external_percentage_geometry"
+        ]
+      },
+      {
+        "name": "none-74",
+        "exit": 0,
+        "executed": [
+          "test_intrinsic_seed_retains_external_blocks_with_shared_ancestor_chains",
+          "test_borrowed_intrinsic_width_matches_full_geometry",
+          "test_borrowed_runs_merge_without_modifying_source_glyphs",
+          "test_intrinsic_width_cache_keeps_both_height_axes_absent_without_allocating_reads",
+          "test_intrinsic_first_height_slot_preserves_none_zero_and_independent_axes"
+        ]
+      },
+      {
+        "name": "none-75",
+        "exit": 0,
+        "executed": [
+          "test_intrinsic_height_overflow_preserves_distinct_widths_optional_values_and_first_identity",
+          "test_intrinsic_height_reset_replaces_owner_and_keeps_retained_old_snapshot_after_gc",
+          "test_intrinsic_height_measurement_uses_cached_zero_and_recomputes_stored_none",
+          "test_intrinsic_soft_wrap_decisions_match_fully_measured_signed_advances",
+          "test_intrinsic_overflow_splitting_keeps_the_measured_width"
+        ]
+      },
+      {
+        "name": "none-76",
+        "exit": 0,
+        "executed": [
+          "test_disposable_intrinsic_lines_recycle_without_losing_earlier_widths",
+          "test_intrinsic_shape_miss_and_hit_consumers_keep_cached_owner_immutable",
+          "test_intrinsic_cache_owners_and_published_lines_survive_merging_and_collection",
+          "test_intrinsic_shape_order_matches_linear_search_and_keeps_equal_keys_stable",
+          "test_intrinsic_shape_order_handles_clearing_and_rebuilding_the_same_size"
+        ]
+      },
+      {
+        "name": "none-77",
+        "exit": 0,
+        "executed": [
+          "test_intrinsic_shape_order_preserves_every_shape_key_and_forks_owners",
+          "test_intrinsic_shape_order_normal_misses_do_not_populate_cache",
+          "test_disposable_width_matches_complete_intrinsic_layout",
+          "test_auto_grid_rows_include_a_block_childs_nested_grid_height",
+          "test_svg_intrinsic_scan_does_not_copy_the_document_tail"
+        ]
+      },
+      {
+        "name": "none-78",
+        "exit": 0,
+        "executed": [
+          "test_background_intrinsic_dimensions_use_the_retained_svg_resource",
+          "test_background_intrinsic_optional_dimensions_preserve_ratio_transfer",
+          "test_intrinsic_grid_rows_count_table_outer_borders_once",
+          "test_text_input_auto_size_tracks_style_and_size_attribute_changes",
+          "test_retained_inline_text_replaces_glyph_fonts_after_a_live_font_size_change"
+        ]
+      },
+      {
+        "name": "none-79",
+        "exit": 0,
+        "executed": [
+          "test_retained_inline_text_tracks_font_family_and_inherited_font_changes",
+          "test_retained_text_chunks_survive_font_generations_only_with_unchanged_faces_and_style",
+          "test_pending_text_chunks_and_shape_owners_survive_only_unrelated_font_changes",
+          "test_pending_text_chunks_expire_after_the_selected_face_loads_or_changes_descriptor",
+          "test_retained_flow_items_rewrap_in_new_grid_tracks_and_flex_sizes"
+        ]
+      },
+      {
+        "name": "none-80",
+        "exit": 0,
+        "executed": [
+          "test_retained_flow_items_rebuild_after_parent_role_and_text_changes",
+          "test_retained_flow_items_drop_old_roles_when_only_the_parent_display_changes",
+          "test_intrinsic_sizes_survive_unrelated_font_completion_without_changing_geometry",
+          "test_intrinsic_sizes_expire_when_a_descendant_cascade_was_already_replaced",
+          "test_intrinsic_sizes_expire_when_an_ancestor_font_supplies_changed_relative_metrics"
+        ]
+      },
+      {
+        "name": "none-81",
+        "exit": 0,
+        "executed": [
+          "test_intrinsic_sizes_reject_unknown_descendant_font_inputs",
+          "test_intrinsic_sizes_reject_containing_blocks_outside_the_parent_chain",
+          "test_intrinsic_sizes_with_unresolved_fonts_retain_original_geometry_until_selected_family_changes",
+          "test_completed_image_with_a_definite_size_repaints_without_layout",
+          "test_paint_only_image_frames_replace_shared_pixels_without_changing_old_commands"
+        ]
+      },
+      {
+        "name": "none-82",
+        "exit": 0,
+        "executed": [
+          "test_completed_image_sized_by_its_contents_needs_layout",
+          "test_fixed_size_image_with_a_new_source_needs_layout",
+          "test_positioned_image_source_replacement_keeps_geometry_only_with_the_same_natural_ratio",
+          "test_positioned_image_repaint_rejects_changed_ratio_and_intrinsic_constraints",
+          "test_positioned_image_repaint_preserves_pending_attribute_selector_relayout"
+        ]
+      },
+      {
+        "name": "none-83",
+        "exit": 0,
+        "executed": [
+          "test_retained_grid_layout_preserves_tracks_placement_and_baselines_after_movement",
+          "test_retained_grid_layout_rechecks_available_size_and_percentage_bases",
+          "test_retained_grid_layout_rechecks_text_order_spans_and_tracks",
+          "test_retained_grid_layout_keeps_nested_tracks_and_old_paint_immutable",
+          "test_retained_grid_layout_keeps_subgrid_and_positioned_descendants_on_full_path"
+        ]
+      },
+      {
+        "name": "none-84",
+        "exit": 0,
+        "executed": [
+          "test_retained_grid_track_vectors_detach_from_cached_and_previous_layouts",
+          "test_independent_flex_layout_reuses_rows_columns_and_reverse_directions_after_external_movement",
+          "test_retained_flex_descendants_keep_nested_inline_baselines_and_old_paint_immutable",
+          "test_retained_flex_layout_rechecks_available_width_and_percentage_height_bases",
+          "test_retained_flex_layout_rechecks_order_alignment_and_descendant_text_changes"
+        ]
+      },
+      {
+        "name": "none-85",
+        "exit": 0,
+        "executed": [
+          "test_retained_flex_layout_keeps_positioned_subgrid_and_floating_descendants_uncached",
+          "test_retained_independent_flow_reuses_descendants_after_preceding_comment_changes",
+          "test_retained_independent_flow_rechecks_width_height_inherited_style_and_content",
+          "test_retained_independent_flow_leaves_specialized_layout_and_float_dependencies_uncached",
+          "test_retained_independent_flow_keeps_atomic_action_menu_geometry_and_intrinsic_sizes"
+        ]
+      },
+      {
+        "name": "none-86",
+        "exit": 0,
+        "executed": [
+          "test_retained_independent_flow_observes_changed_available_space_without_tree_rebuilding",
+          "test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry",
+          "test_seed_visits_match_general_hoisted_chains_and_copy_current_source_values",
+          "test_seed_visits_wrap_clears_old_epochs_before_visiting_again",
+          "test_seed_visits_nested_measurements_keep_outer_geometry_independent"
+        ]
+      },
+      {
+        "name": "none-87",
+        "exit": 0,
+        "executed": [
+          "test_seed_visits_mutated_reindexed_and_closed_trees_use_general_fallback",
+          "test_measurement_chunk_pool_is_opt_in_and_preserves_public_unpooled_probe_lifetime",
+          "test_measurement_chunk_pool_clears_gc_edges_and_restores_complete_slot_defaults",
+          "test_measurement_chunk_pool_never_lends_live_parent_or_sibling_probe_chunks",
+          "test_measurement_chunk_pool_has_a_fixed_bound_and_explicitly_closes_at_layout_end"
+        ]
+      },
+      {
+        "name": "none-88",
+        "exit": 0,
+        "executed": [
+          "test_measurement_chunk_pool_preserves_retained_snapshots_after_probe_reuse_and_close",
+          "test_measurement_chunk_pool_isolated_passes_do_not_share_chunks_and_closed_arenas_stay_reusable",
+          "test_native_measurement_scratch_reuses_whole_probes_and_preserves_nested_results",
+          "test_native_intrinsic_caches_survive_probe_reuse_and_later_layout_passes",
+          "test_geometry_workspaces_retire_while_used_values_remain_document_owned"
+        ]
+      },
+      {
+        "name": "none-89",
+        "exit": 0,
+        "executed": [
+          "test_native_geometry_survives_retired_workspaces_for_text_grid_tables_and_svg",
+          "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "test_inline_measurement_does_not_cache_discarded_whitespace"
+        ]
+      },
+      {
+        "name": "none-90",
+        "exit": 0,
+        "executed": [
+          "test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases",
+          "test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners",
+          "test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage",
+          "test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis",
+          "test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable"
+        ]
+      },
+      {
+        "name": "none-91",
+        "exit": 0,
+        "executed": [
+          "test_closed_inline_workspace_empty_return_restores_geometry_scope",
+          "test_block_width_auto",
+          "test_block_width_definite_auto_margins",
+          "test_block_width_percentage",
+          "test_block_flow_vertical_layout"
+        ]
+      },
+      {
+        "name": "none-92",
+        "exit": 1,
+        "executed": [
+          "test_width_min_max_clamp",
+          "test_height_min_max_clamp",
+          "test_adjacent_margin_collapse",
+          "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+          "test_parent_child_margin_collapse"
+        ]
+      },
+      {
+        "name": "none-93",
+        "exit": 0,
+        "executed": [
+          "test_percentage_height",
+          "test_percentage_height_indefinite_containing_block",
+          "test_definite_preferred_width_excludes_overflow_and_preserves_outer_edges",
+          "test_definite_intrinsic_preference_keeps_minimum_precedence_and_zero_content_floor",
+          "test_cyclic_percentage_preference_still_measures_content_with_definite_ancestor_basis"
+        ]
+      },
+      {
+        "name": "none-94",
+        "exit": 0,
+        "executed": [
+          "test_definite_preference_still_measures_intrinsic_minimum_and_maximum",
+          "test_svg_path_data_attribute_refreshes_committed_bounds_and_paint_without_rebuilding_the_tree",
+          "test_svg_css_path_data_changes_relayout_while_fill_changes_only_paint",
+          "test_static_svg_parent_grid_reuses_geometry_after_movement_and_keeps_old_paint",
+          "test_svg_attribute_inputs_reject_path_viewbox_transform_and_namespace_mutations"
+        ]
+      },
+      {
+        "name": "none-95",
+        "exit": 0,
+        "executed": [
+          "test_static_svg_cache_rechecks_css_geometry_and_parent_size",
+          "test_svg_resource_instances_text_animation_and_foreign_content_keep_the_full_path",
+          "test_svg_input_rejects_inserted_nonlayout_animation_children_and_reordered_shapes",
+          "test_svg_snapshot_bounds_and_css_resource_dependencies_keep_the_full_path",
+          "test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations"
+        ]
+      },
+      {
+        "name": "none-96",
+        "exit": 0,
+        "executed": [
+          "test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice",
+          "test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes",
+          "test_retained_formatting_trees_keep_replaced_generated_and_subgrid_content_on_the_builder_path",
+          "test_noop_restyles_preserve_closed_flow_grid_and_flex_layout_trees",
+          "test_restyled_retained_flow_observes_changed_text_color_width_and_tree_order"
+        ]
+      },
+      {
+        "name": "none-97",
+        "exit": 0,
+        "executed": [
+          "test_restyled_flow_keeps_replaced_and_generated_descendants_on_the_builder_path",
+          "test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint",
+          "test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes",
+          "test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands",
+          "test_unavailable_images_and_other_replaced_elements_reject_block_retention"
+        ]
+      }
+    ],
+    "receipt": "Build/bbc-cascade-value-borrow-20261103/broad-current-css-image-changes/results.json",
+    "compiled_before_selection_experiment": true,
+    "owned_inputs_unchanged": true,
+    "all_expected_cases_entered": true
+  },
+  "native_validations": {
+    "native-validation": {
+      "results": [
+        {
+          "name": "headless",
+          "exit": 0
+        },
+        {
+          "name": "smoke",
+          "exit": 0
+        },
+        {
+          "name": "svg",
+          "exit": 0
+        }
+      ],
+      "identity": {
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+          "bytes": 150024
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+          "bytes": 69928
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+          "bytes": 102592
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e",
+          "bytes": 5150944
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91",
+          "bytes": 882592
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+          "bytes": 181544
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+          "bytes": 335064
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+          "bytes": 768872
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+          "bytes": 33371048
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+          "bytes": 2158624
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912",
+          "bytes": 218040
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2",
+          "bytes": 202328
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366",
+          "bytes": 369272
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d",
+          "bytes": 64496
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+          "bytes": 245016
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+          "bytes": 5744128
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd",
+          "bytes": 981792
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+          "bytes": 106528
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91",
+          "bytes": 798160
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "sha256": "7767fb7debf871753c91c958a2c9d642a6f5364f290b9a33d079959e11000e5a",
+          "bytes": 30305648
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "sha256": "c56b6d3a1492d3aff87454f947627bbad2d9099166aece8eec922c62e456131c",
+          "bytes": 292976
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "sha256": "6a0805b0f98d62acf30b44e898505fb9847f88365c5efa8349e0349433c34694",
+          "bytes": 615312
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "sha256": "c56a4b2f3dc1c2cbc2415fd6925c65c4dbe3d4c84a4ba7e455752ebc2a029f09",
+          "bytes": 4398880
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d",
+          "bytes": 13037232
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "bytes": 2192096
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927",
+          "bytes": 150128
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962",
+          "bytes": 70128
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7",
+          "bytes": 661248
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58",
+          "bytes": 212080
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959",
+          "bytes": 1362736
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+          "bytes": 125264
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1",
+          "bytes": 1427648
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618",
+          "bytes": 33833472
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7",
+          "bytes": 1885104
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2",
+          "bytes": 191344
+        },
+        "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": {
+          "sha256": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d",
+          "bytes": 4813232
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd",
+          "bytes": 574096
+        }
+      },
+      "identity_unchanged": true,
+      "smoke_cases": 11,
+      "svg_guards": 8,
+      "removed_flow_image_and_pseudo_batch_markers_absent": true
+    },
+    "native-validation-v2": {
+      "results": [
+        {
+          "name": "headless",
+          "exit": 0
+        },
+        {
+          "name": "smoke",
+          "exit": 0
+        },
+        {
+          "name": "svg",
+          "exit": 0
+        }
+      ],
+      "identity": {
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+          "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+          "bytes": 150024
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+          "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+          "bytes": 69928
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+          "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+          "bytes": 102592
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+          "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e",
+          "bytes": 5150944
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+          "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91",
+          "bytes": 882592
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+          "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+          "bytes": 181544
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+          "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+          "bytes": 335064
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+          "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+          "bytes": 768872
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+          "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+          "bytes": 33371048
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+          "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+          "bytes": 2158624
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+          "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912",
+          "bytes": 218040
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+          "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2",
+          "bytes": 202328
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+          "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366",
+          "bytes": 369272
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+          "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d",
+          "bytes": 64496
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+          "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+          "bytes": 245016
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+          "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+          "bytes": 5744128
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+          "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd",
+          "bytes": 981792
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+          "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+          "bytes": 106528
+        },
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+          "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91",
+          "bytes": 798160
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+          "sha256": "7767fb7debf871753c91c958a2c9d642a6f5364f290b9a33d079959e11000e5a",
+          "bytes": 30305648
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+          "sha256": "c56b6d3a1492d3aff87454f947627bbad2d9099166aece8eec922c62e456131c",
+          "bytes": 292976
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+          "sha256": "6a0805b0f98d62acf30b44e898505fb9847f88365c5efa8349e0349433c34694",
+          "bytes": 615312
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+          "sha256": "c56a4b2f3dc1c2cbc2415fd6925c65c4dbe3d4c84a4ba7e455752ebc2a029f09",
+          "bytes": 4398880
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+          "sha256": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d",
+          "bytes": 13037232
+        },
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": {
+          "sha256": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+          "bytes": 2192096
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+          "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927",
+          "bytes": 150128
+        },
+        "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+          "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962",
+          "bytes": 70128
+        },
+        "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+          "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7",
+          "bytes": 661248
+        },
+        "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+          "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58",
+          "bytes": 212080
+        },
+        "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+          "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959",
+          "bytes": 1362736
+        },
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+          "bytes": 125264
+        },
+        "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+          "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1",
+          "bytes": 1427648
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+          "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618",
+          "bytes": 33833472
+        },
+        "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+          "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7",
+          "bytes": 1885104
+        },
+        "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2",
+          "bytes": 191344
+        },
+        "/opt/homebrew/Cellar/openssl@4/4.0.3/lib/libcrypto.4.dylib": {
+          "sha256": "5258d66dd91140ab48fdf294c4cfd752e2d99e7f93fc620d91a2226492518d4d",
+          "bytes": 4813232
+        },
+        "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd",
+          "bytes": 574096
+        }
+      },
+      "identity_unchanged": true,
+      "smoke_cases": 11,
+      "svg_guards": 8,
+      "removed_flow_image_and_pseudo_batch_markers_absent": true
+    }
+  },
+  "native_diagnostics": {
+    "cpu": {
+      "root": "Build/bbc-native-cpu-sample-20261103",
+      "main_thread_samples": 3117,
+      "other_thread_deliveries_omitted": 604,
+      "limitations": "SIGPROF signal sampling is biased around system calls; includes longer8s settlement and is diagnostic only. Actual executable found by image path, not image zero. Overlapping inclusive counts are not CPU percentages."
+    },
+    "copies": {
+      "root": "Build/bbc-native-copy-sample-20261103",
+      "sites": 5004,
+      "copies": 9972830,
+      "bytes": 3870634236,
+      "limitations": "Interposed main-thread memcpy/memmove>=256 bytes, up to exit including audit/teardown; instrumentation and longer8s settling, diagnostic only. Counts/bytes are not instruction savings."
+    }
+  },
+  "limitations": "Cohort69 retains all17 attempts and fails executable identity after shared publication. Cohort70 retains21 complete valid trials with exact original PNGs in all arms, all ownership/adoption/content/identity/exit checks. Its medians regress336279006 vs control while4 matched pairs improve and3 regress; paired median reduction343110129. No isolated optimization attribution, no live-site/rendering-time/FPS claim, no target acceptance.",
+  "evidence_root": "Build/bbc-cascade-value-borrow-20261103",
+  "compression_manifest": "Build/bbc-disk-recovery-20261103/compressed-cascade-and-zero-completed.json"
+}

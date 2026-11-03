@@ -4055,3 +4055,62 @@ helper confirms the same function bodies (allowing only diagnostic string
 symbol renumbering). Original proof files remain retained, with the corrected
 hashes linked from both durable ledgers. No counts, endpoints, references or
 performance credit change.
+
+### Zero lengths and direct cascade reads (2026-11-03)
+
+`ff990dbc8` skips the conversion/rounding context only for zero CSS pixel
+lengths; nonzero, relative, nonfinite and saturated inputs retain the original
+path. All 108 focused executions pass across both policies and three memory
+modes. A broader exact-length prototype was discarded; its retained results
+are not evidence for this narrower implementation. Two alternating standalone
+control/candidate pairs save 10,608,172.5 instructions across the first/second
+layout medians, with identical geometry and paint dumps. These script-free
+layout deltas exclude browser startup, resource replay and PNG capture and
+earn no BBC browser credit. See the [zero-length ledger](performance/bbc-exact-layout-lengths-20261103.json).
+
+`0818d915e` reads retained typed cascade tags directly and preserves the original
+unresolved, invalid and untyped-value paths. All 138 focused executions pass.
+Preparation failures remain recorded, including an existing compiler bug that
+also crashes the original control: the final composed fixture binds two
+optional pointer arguments to locals, preserving the original cases and
+assertions without modifying the canonical tests. All 243 instruction-tool
+tests pass. The requested separate `v -profile` run records 30,989 cascade-list
+calls and 235,321 declaration resolutions in each arm. Within that validated
+scope, direct reads eliminate 235,323 typed-wrapper and 705,963 generic-wrapper
+conversion calls. Profile timings earn no credit. Two unprofiled standalone
+pairs save 62,345,738 instructions across layout medians; geometry and paint
+dumps are unchanged. The generated-C proof checks actual typed function
+definitions, rather than call sites.
+
+Fresh original-origin diagnostics confirm both fast paths before encoded PNG,
+original content/pixels, ownership, normal exits and actual JavaScriptCore
+execution. Cohort 69 retains all 17 attempts and fails identity validation when
+a shared publication replaces the executable. Cohort 70 completes seven
+alternating control/Vox/Brave triples with **all 21 original PNG references
+exact**, successful content, ownership, memory adoption, identity and normal
+exit checks. Its medians are **28,835,768,721 control**, **29,172,047,727 Vox**
+and **15,053,897,964 Brave**. The candidate median regresses by **336,279,006**;
+four matched pairs improve and three regress, with paired median reduction
+343,110,129. This mixed result establishes no isolated BBC improvement for
+either change. The valid cohort fails the target:
+**301,938,868,110 > 134,026,592,814**, ratio **2.0275452475**.
+
+Broad verification enters all **490 selected cases per default/no-GC mode**,
+with **487 passing and the same three known failures** per mode. Owned inputs
+remain unchanged. This also supplies the pending broad check following the
+image-source reduction, but is not a full pass or cadence reset. Two pinned
+bundles pass headless startup, eleven smoke and eight SVG checks, with unchanged
+runtime identities and both removed image-tree/pseudo-batching experiments
+absent. This validates the earlier rollbacks on later completed bundles.
+
+Native statistical and copy probes are separate diagnostics with a longer
+eight-second settle period. The main-thread copy probe records 9,972,830 copies
+of at least 256 bytes (3,870,634,236 bytes), including work through exit, and
+motivated the cascade change. Its interposition overhead and endpoint prevent
+instruction credit. Signal samples are biased around system calls and do not
+establish CPU percentages. The [cascade ledger](performance/bbc-cascade-value-borrow-20261103.json)
+retains exact counts, all preparation/interruption/regression attempts,
+profiles, commands, guard exits, ownership, identities and local evidence.
+History reaches **70 cohorts / 1,614 browser attempts**. The **10% target
+remains open**, without a BBC homepage catalog entry, live-site, rendering-time
+or scrolling-FPS claim.
