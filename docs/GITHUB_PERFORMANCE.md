@@ -5,6 +5,63 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Select interface identity, November 3, 2026
+
+`b87d298b4` fixes the missing `HTMLSelectElement` reached by GitHub's behavior
+module. Compact HTML select wrappers now inherit through
+`HTMLSelectElement.prototype` and `HTMLElement.prototype`. Parser-created,
+script-created, prefixed and cloned selects use that interface; other namespaces
+and differently cased XML local names keep their existing classification. Native
+`value`, `selectedIndex` and option collection behavior remain on their existing
+paths. Direct HTML construction still throws; this is an interface identity fix,
+not a complete HTMLSelectElement IDL implementation or HTML-constructor runtime.
+
+Two focused cases pass in Boehm, GC-none and preallocation C-O0 builds: six
+actual executions. They check descriptors, inheritance, neighboring input/textarea
+types, namespace distinctions, shallow/deep clones, direct-construction errors,
+selection writes and native-to-JavaScript selected-index readback. All final
+compiler, test and guard terminal exits are zero. Builds retain the compiler's
+10G limit and 12 GiB aggregate guard; test processes use 3 GiB guards.
+
+Retained failed attempts include syntax errors in the initial fixture, two
+six-case root builds that reached the compiler's 10 GiB limit (parallel and
+serial), and the compatibility frontend rejecting the required memory-limit
+option. None started native tests. The final checks select just the two new
+cases and use the current shared-build compiler, preserving both memory limits.
+The four older neighboring cases from the failed batch receive no pass credit.
+
+The latest completed shared bundle at launch has executable SHA-256
+`fdea37c1dba1065fbea837f569e6cbb8ecc3c2fd395e31841a354bfbcc3e3afc`,
+receipt `20261103-184618-858a35b9`. It already contains the select interface;
+no duplicate build was requested. Its current compiler/preallocation/native-C-O3
+configuration is separate from the historical old-compiler/Boehm/C-O2 cohorts.
+A fresh 640×480 page executes the same two public script assertion bodies from
+the test source. Browser, controller and 3 GiB guard exit zero. The additional
+native V mutation/readback assertions execute in the unit binaries, not in that
+page fixture.
+
+One separately declared GitHub observation retains the unchanged 193-response
+archive and strict 33-row/66-link/21-image contract. Browser, controller and
+12 GiB guard exit zero, with the exact 1024×768 document viewport and unchanged
+PNG SHA-256 `65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`.
+The missing-select-interface error disappears. That module now reaches an absent
+`turbo-frame.delegate`, consistent with the still-unimplemented HTML constructor
+and custom-element reaction execution. The other script error comes from the
+popover polyfill spreading missing `document.adoptedStyleSheets`; the pinned
+asset at line 64 confirms that expression. Four unarchived CSS modules still
+receive sealed-replay 404s. No archive bytes or capture requirements changed.
+
+The main-task retired-instruction scopes are 12,778,940,809 at the legacy
+first-document-paint marker and 36,277,220,186 at first native-layer submission.
+They are separate endpoints. This unpaired shared-production observation does
+not isolate this fix from concurrent changes or newly executing script paths,
+and receives zero optimization credit. No broad baseline, historical primary
+or instruction ledger was replaced or reset; no matching median savings were
+added to the broad-check gate. Full hydration and Chrome parity remain open.
+
+See [the structured audit](performance/github-select-interface-20261103.json)
+and [durable checks and captures](performance/raw/github-select-interface-20261103.tar.gz).
+
 ## Native custom-element registration, November 3, 2026
 
 `7e9dfeadb` exposes Window `customElements`, `CustomElementRegistry`, and scoped
