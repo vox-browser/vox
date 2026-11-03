@@ -4,7 +4,8 @@ import html
 import layout
 
 fn test_native_device_layout_retains_css_layout_for_embedded_user_spaces() {
-	for markup in ['<svg></svg>', '<math></math>', '<iframe></iframe>', '<canvas></canvas>',
+	for markup in ['<svg><foreignObject><div>embedded</div></foreignObject></svg>',
+		'<math></math>', '<iframe></iframe>', '<canvas></canvas>',
 		'<video></video>'] {
 		mut document := html.parse_document('<!doctype html>${markup}')
 		assert !browser_document_supports_device_layout(document), markup
@@ -12,6 +13,27 @@ fn test_native_device_layout_retains_css_layout_for_embedded_user_spaces() {
 	}
 	mut document := html.parse_document('<!doctype html><div><img src="image.svg"><input type="checkbox"></div>')
 	defer { document.finalize() }
+	assert browser_document_supports_device_layout(document)
+}
+
+fn test_native_device_layout_accepts_svg_viewports_and_graphic_user_spaces() {
+	for markup in ['<svg></svg>',
+		'<svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 8L12 16L20 8"/></svg>',
+		'<svg><defs><linearGradient id="g"><stop offset="0" stop-color="red"/></linearGradient></defs><g><svg><rect width="20" height="20" fill="url(#g)"/></svg></g></svg>'] {
+		mut document := html.parse_document('<!doctype html>${markup}')
+		assert browser_document_supports_device_layout(document), markup
+		document.finalize()
+	}
+}
+
+fn test_native_device_layout_rechecks_svg_foreign_object_visibility() {
+	mut document := html.parse_document('<!doctype html><svg><foreignObject id="embedded" style="display:none"><div>embedded</div></foreignObject></svg>')
+	defer { document.finalize() }
+	mut embedded := document.get_element_by_id('embedded') or { panic('embedded') }
+	assert browser_document_supports_device_layout(document)
+	embedded.remove_attribute('style')
+	assert !browser_document_supports_device_layout(document)
+	embedded.set_attribute_value('style', 'display:none')
 	assert browser_document_supports_device_layout(document)
 }
 

@@ -3,10 +3,6 @@ module main
 import dom
 import html
 
-$if macos {
-	import os
-}
-
 fn browser_document_supports_device_layout(document &dom.Document) bool {
 	root := document.as_node()
 	mut current := root.first_child()
@@ -14,8 +10,10 @@ fn browser_document_supports_device_layout(document &dom.Document) bool {
 	for {
 		node := current or { break }
 		if element := node.as_element() {
-			if !element.is_html_element() || element.local_name() in ['iframe', 'object', 'embed',
-				'canvas', 'video', 'audio'] {
+			svg_user_space := element.is_svg_element() && element.local_name() != 'foreignObject'
+			if (!element.is_html_element() && !svg_user_space)
+				|| element.local_name() in ['iframe', 'object', 'embed', 'canvas', 'video', 'audio',
+				'foreignObject'] {
 				// display:none subtrees consume no layout coordinates. In particular,
 				// cosmetic filtering of an ad frame must not reduce the precision
 				// of text elsewhere in the document. Resolve current ancestor styles
@@ -30,17 +28,12 @@ fn browser_document_supports_device_layout(document &dom.Document) bool {
 	return true
 }
 
-// Native Chromium windows use display density for layout as well as raster.
-// Screenshot emulation retains its CSS-pixel layout unless explicitly asked
-// to exercise the native display path.
+// Display density is also the screenshot's requested raster scale (1 by
+// default). Both captures and windows use that density for eligible layout.
 fn browser_layout_coordinate_scale(document &dom.Document) f64 {
 	$if macos {
-		if os.getenv('LADYBIRD_SCREENSHOT_DELAY_SECONDS') != ''
-			&& os.getenv('VOX_SCREENSHOT_NATIVE_LAYOUT') != '1' {
-			return 1
-		}
-		// Embedded browsing contexts and SVG/MathML user-space layout still
-		// consume CSS-pixel geometry. Keep that path until it is converted too.
+		// SVG descendants retain user units inside their scaled viewport.
+		// Embedded documents, foreignObject and MathML retain CSS-pixel layout.
 		if browser_document_supports_device_layout(document) {
 			return C.native_display_device_pixel_ratio()
 		}
