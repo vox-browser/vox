@@ -376,6 +376,6 @@ with live scripting, scrolling and whole-site behavior outside that claim.
 | [Pikabu](https://pikabu.ru/) | Deferred in this pixel-parity session | [Original checkpoints](docs/ADBLOCK_POPULAR_SITES.md) |
 | [TechCrunch](https://techcrunch.com/) | Open: 34,710 native pixels; source fidelity passes | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
 | [Engadget](https://www.engadget.com/) | Open: pinned cold/complete native 0; source gap 221; earlier replay variation retained | [Engadget checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
-| [The Register](https://www.theregister.com/) | Open: initial native gap 6,786; source gap 110,180 pixels | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
+| [The Register](https://www.theregister.com/) | Open: fresh candidate source/replay 0; block-centering fix committed; production pixel validation pending | [Register checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
 | [Slate](https://slate.com/) | Open: initial native gap 221,448; source gap 19,064 pixels | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
 | [WIRED](https://www.wired.com/) | Open: frozen reference changes between captures | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |

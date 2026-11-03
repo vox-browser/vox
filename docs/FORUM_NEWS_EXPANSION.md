@@ -709,6 +709,53 @@ decoder's path in a particular frame.
 Older site checkpoints retain their recorded protocols; they do not
 retroactively establish agreement between fresh Brave processes.
 
+## The Register: block-content centering (2026-11-03)
+
+The Register is the next active site. Its registered archive remains unchanged
+(`44f76a95…`). On executable `fdea37c1…`, two fresh Brave references agree but
+the original source still differs by **110,180 pixels**; Vox differs by **6,786**.
+Of that native gap, **6,509 pixels** are in the header and **277** in the hero
+image. The logo's image box has the correct width and height but starts at
+`y=0` instead of Brave's `y=13`.
+
+Commit `51574b6dc` implements horizontal block-content alignment. The header's
+70px block uses `align-content:center` around its 44px child, requiring a 13px
+offset. The layout pass applies distribution after final sizing and before
+positioned descendants/relative insets; non-normal alignment establishes an
+independent formatting context so child margins and floats stay contained.
+The [CSS alignment rule](https://drafts.csswg.org/css-align-3/#distribution-block)
+aligns the contents as one unit, with positional fallbacks for distributed values.
+Flex/grid/table/multicol and vertical writing retain their separate paths.
+
+All **six focused layout tests pass with default GC and GC disabled**, including
+repeated layout, margins, minimum heights, inline content, floats and positioned
+children. All **315 existing formatting tests pass**. The new
+`block-content-alignment` browser regression is registered in the rendering
+suite. Its full-uBO source and two independent frozen Brave captures match at
+zero pixels; the pre-fix browser differs by **19,230 pixels**. Its expected PNG
+is a new authored regression reference; no existing golden changed.
+
+A new complete-cache acquisition through the current explicit HTTP proxy
+produces candidate manifest `4f343769…`. Both its **source/frozen and independent
+Brave replay comparisons pass at zero pixels**, unlike the old archive. On the
+pre-fix `6a0f6c5a…` browser its native gap is **7,465 pixels**, comprising **6,509
+header / 956 body pixels**. That candidate remains separate from the registered
+archive until the full gate passes. Live scripting and whole-site behavior are
+outside this frozen viewport result.
+
+Production pixel validation of the fix is pending. The shared compile receipt
+`20261103-192306-58b60ec7` contains the implementation; the currently published
+bundle predates it. A five-minute bounded validation job checks the new
+regression, candidate and Hacker News control if a qualified replacement is
+published during its observation window; its linked status records any timeout.
+Earlier failed builds rejected repository changes before C preprocessing.
+The initial fixture's uBO startup failure, SOCKS acquisition timeout and attempt
+using the retired HTTP proxy port are retained; none supplied reference credit.
+[Durable evidence](evidence/register-parity-20261103.json),
+[original baseline](../Build/register-parity-20261103-next/baseline/summary.json),
+[fresh candidate](../Build/register-parity-20261103-next/fresh-current-http/summary.json),
+[publication validation status](../Build/register-parity-20261103-next/published-validation.json).
+
 ## Run
 
 ```sh

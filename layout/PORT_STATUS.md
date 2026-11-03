@@ -4,6 +4,15 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Layout`
 
 Re-audited: 2026-09-08
 
+The 2026-11-03 Register compatibility slice adds horizontal block-content
+distribution in `block_content_alignment.v`, after final used sizing and before
+positioned descendants. Center/end alignment and distributed-value fallbacks
+move block/inline contents as a unit; non-normal block alignment contains child
+margins and floats. Six focused tests execute in both GC modes and 315 existing
+formatting tests pass. Table/multicol and vertical writing remain separate work;
+this does not establish complete CSS Align syntax or upstream method parity.
+See [the Register checkpoint](../docs/FORUM_NEWS_EXPANSION.md).
+
 All 50 upstream Layout `.cpp` units have filename-level homes in the typed V
 Layout package. That inventory does not establish body-level parity: the
 current semantic audit reports 4 unmatched Layout implementations, and the

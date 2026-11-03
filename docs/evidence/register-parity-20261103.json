@@ -1,0 +1,1211 @@
+{
+  "version": 1,
+  "status": "open; production validation pending",
+  "fix_commit": "51574b6dc",
+  "scope": "1024x768 scale-1 frozen guest viewport, matching pinned full uBlock Origin lists, original response bytes, zero RGBA tolerance.",
+  "registered_manifest_sha256": "44f76a95632bb3a7f85df273cf4fa4bb59b34cad8ee9ae2786d2b86750a68b66",
+  "new_candidate_manifest_sha256": "4f34376977c2fbd49024ced729fac4334a28d632307d2b2600a71b10c7c17376",
+  "checks": {
+    "layout-final-compile": {
+      "path": "Build/register-parity-20261103-next/layout-final-compile.guard.json",
+      "sha256": "e902ef9f6eb81ff36fb6d5856b9ab3780ca0043c84cebe4853bd69556e205bc3",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/register-parity-20261103-next/block_alignment_final_test",
+          "layout/block_content_alignment_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 10049634304,
+        "elapsed_seconds": 82.490265709,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "layout-final-runtime": {
+      "path": "Build/register-parity-20261103-next/layout-final-runtime.guard.json",
+      "sha256": "39ac7e527a4e11937a9c5ad705f191eb8be596bd42953106614082a35c732f24",
+      "data": {
+        "command": [
+          "Build/register-parity-20261103-next/block_alignment_final_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 23855104,
+        "elapsed_seconds": 0.6854652499999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "layout-none-compile": {
+      "path": "Build/register-parity-20261103-next/layout-none-compile.guard.json",
+      "sha256": "50794430d2c453e58b7eeb8696742d6a238fc323cd6e62ed9ef3b07a37e414e3",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-gc",
+          "none",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/register-parity-20261103-next/block_alignment_none_test",
+          "layout/block_content_alignment_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 10074308608,
+        "elapsed_seconds": 80.95444712499999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "layout-none-runtime": {
+      "path": "Build/register-parity-20261103-next/layout-none-runtime.guard.json",
+      "sha256": "9c43a444c1a28a3bd737ccf51625a7fa915e756a642a5fc83a2be93cd1f9cf94",
+      "data": {
+        "command": [
+          "Build/register-parity-20261103-next/block_alignment_none_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 53805056,
+        "elapsed_seconds": 0.511391792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "formatting-compile": {
+      "path": "Build/register-parity-20261103-next/formatting-compile.guard.json",
+      "sha256": "7db0fd115b4171847650005c1df2cd4f5207b320e93ebc53e07a7afe453a2993",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/register-parity-20261103-next/formatting_test",
+          "layout/formatting_contexts_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 10098851840,
+        "elapsed_seconds": 56.754802375000004,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "formatting-runtime": {
+      "path": "Build/register-parity-20261103-next/formatting-runtime.guard.json",
+      "sha256": "eff23ad7c119f7bc316abcba01f2a8cb4d04ad16196225683d68ecbbec14682f",
+      "data": {
+        "command": [
+          "Build/register-parity-20261103-next/formatting_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 257310720,
+        "elapsed_seconds": 2.7138145419999997,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  },
+  "focused_tests_per_gc_mode": 6,
+  "existing_formatting_tests": 315,
+  "comparisons": [
+    {
+      "name": "registered",
+      "browser_identity_before": {
+        "vox": "a28dbb182a06da378145e5e411dfe8c6c5625eaf22088aa5106b90c8ec19d4dc",
+        "brave": "a72094c568cb557027be70ae46e0d5b026b2fa26f2dcb47c246c7a0090915a3e"
+      },
+      "browser_identity_after": {
+        "vox": "a28dbb182a06da378145e5e411dfe8c6c5625eaf22088aa5106b90c8ec19d4dc",
+        "brave": "a72094c568cb557027be70ae46e0d5b026b2fa26f2dcb47c246c7a0090915a3e"
+      },
+      "unchanged_inputs": true,
+      "frames": [
+        {
+          "path": "Build/register-parity-20261103-next/baseline/theregister/brave.png",
+          "png_sha256": "d906d9c01b96762136ce213fef080caa677c3c1f9acc2cb475112cc2e0f81223",
+          "rgba_sha256": "578252dd9f08613d90a123e1f0f7cb5ba00f6547482a6f38ff5a6225b3279681"
+        },
+        {
+          "path": "Build/register-parity-20261103-next/baseline/theregister/brave-repeat.png",
+          "png_sha256": "d906d9c01b96762136ce213fef080caa677c3c1f9acc2cb475112cc2e0f81223",
+          "rgba_sha256": "578252dd9f08613d90a123e1f0f7cb5ba00f6547482a6f38ff5a6225b3279681"
+        },
+        {
+          "path": "Build/register-parity-20261103-next/baseline/theregister/vox.png",
+          "png_sha256": "96d392ed9c683dd1f0840561a3e4720e4246c1a6ad6a6b9bbebdae8034aaffb7",
+          "rgba_sha256": "e68f9d10d1441638e9694651f7f57779509e845416643e8196d0b22af25b5d18"
+        }
+      ],
+      "filters": {
+        "brave": {
+          "counts": {
+            "requests": 217,
+            "blocked": 0,
+            "allowed": 217,
+            "mismatches": 0,
+            "oracle_disagreements": 0
+          },
+          "common_stream": {
+            "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+            "population": "one shared captured stream; these are not browser popup totals",
+            "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+            "input_checks": 217,
+            "distinct_requests": 115,
+            "distinct_checks": 217,
+            "repeated_checks": 0,
+            "phases": {
+              "request": {
+                "checks": 115,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 115,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 115,
+                  "errors": 0
+                }
+              },
+              "response": {
+                "checks": 102,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 102,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 102,
+                  "errors": 0
+                }
+              }
+            },
+            "vox": {
+              "blocked": 0,
+              "allowed": 115,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 115,
+              "errors": 0
+            },
+            "equal_block_counts": true,
+            "decision_mismatches": 0,
+            "conflicting_duplicates": [],
+            "matches": true
+          },
+          "cosmetic": {
+            "css_matches": true,
+            "procedural_matches": true,
+            "scriptlet_filters_match": true
+          }
+        },
+        "brave-repeat": {
+          "counts": {
+            "requests": 215,
+            "blocked": 0,
+            "allowed": 215,
+            "mismatches": 0,
+            "oracle_disagreements": 0
+          },
+          "common_stream": {
+            "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+            "population": "one shared captured stream; these are not browser popup totals",
+            "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+            "input_checks": 215,
+            "distinct_requests": 114,
+            "distinct_checks": 215,
+            "repeated_checks": 0,
+            "phases": {
+              "request": {
+                "checks": 114,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 114,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 114,
+                  "errors": 0
+                }
+              },
+              "response": {
+                "checks": 101,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 101,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 101,
+                  "errors": 0
+                }
+              }
+            },
+            "vox": {
+              "blocked": 0,
+              "allowed": 114,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 114,
+              "errors": 0
+            },
+            "equal_block_counts": true,
+            "decision_mismatches": 0,
+            "conflicting_duplicates": [],
+            "matches": true
+          },
+          "cosmetic": {
+            "css_matches": true,
+            "procedural_matches": true,
+            "scriptlet_filters_match": true
+          }
+        },
+        "vox.ubo": {
+          "counts": {
+            "requests": 206,
+            "blocked": 0,
+            "allowed": 206,
+            "mismatches": 0,
+            "oracle_disagreements": 0
+          },
+          "common_stream": {
+            "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+            "population": "one shared captured stream; these are not browser popup totals",
+            "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+            "input_checks": 417,
+            "distinct_requests": 106,
+            "distinct_checks": 206,
+            "repeated_checks": 211,
+            "phases": {
+              "request": {
+                "checks": 106,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 106,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 106,
+                  "errors": 0
+                }
+              },
+              "response": {
+                "checks": 100,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 100,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 100,
+                  "errors": 0
+                }
+              }
+            },
+            "vox": {
+              "blocked": 0,
+              "allowed": 106,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 106,
+              "errors": 0
+            },
+            "equal_block_counts": true,
+            "decision_mismatches": 0,
+            "conflicting_duplicates": [],
+            "matches": true
+          },
+          "cosmetic": {}
+        }
+      },
+      "pixels": {
+        "path": "Build/register-parity-20261103-next/baseline/theregister/pixels.json",
+        "sha256": "bf932c1ab0425f0919b387be98454c948cae6d8342a29121d9d074ee0364a037",
+        "data": {
+          "exact": false,
+          "different_pixels": 6786,
+          "expected": "/Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/vox.png",
+          "diff": "/Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 6786 (0.8629%)\ndifference_bounds: 15,2 631x700\nmaximum_error_pixel: 464,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 465,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 466,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 467,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 468,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 469,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 470,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 471,3 expected=255,0,0,255 actual=255,255,255,255\npixels_over_3: 6493 (0.8256%)\npixels_over_10: 6488 (0.8250%)\npixels_over_25: 6483 (0.8244%)\npixels_over_50: 6483 (0.8244%)\nmaximum_channel_error: 255\nmean_absolute_error: 0.8975\nrmse: 14.6059\ndiff: /Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/diff.png\n"
+        }
+      },
+      "live-to-frozen": {
+        "path": "Build/register-parity-20261103-next/baseline/theregister/live-to-frozen.json",
+        "sha256": "711e0cc9ef8239fef1b2a6a7cac4d0382e24f8fe2647c6691d42debbf44e0a56",
+        "data": {
+          "exact": false,
+          "different_pixels": 110180,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/sites/theregister/live.png",
+          "actual": "/Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/brave.png",
+          "diff": "/Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/live-to-frozen.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 110180 (14.0101%)\ndifference_bounds: 11,203 490x499\nmaximum_error_pixel: 151,410 expected=240,192,200,255 actual=247,189,200,255\nmaximum_error_pixel: 163,420 expected=237,195,205,255 actual=244,193,206,255\npixels_over_3: 18 (0.0023%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 7\nmean_absolute_error: 0.0544\nrmse: 0.2341\ndiff: /Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/live-to-frozen.diff.png\n"
+        }
+      },
+      "reference-replay": {
+        "path": "Build/register-parity-20261103-next/baseline/theregister/reference-replay.json",
+        "sha256": "0dfd00f3b4d373b70a95b059f6b2cdf1efeff9a08bfa454b553a55a255c7c074",
+        "data": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/brave-repeat.png",
+          "diff": "/Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/reference-replay.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister/reference-replay.diff.png\n"
+        }
+      },
+      "summary": {
+        "path": "Build/register-parity-20261103-next/baseline/summary.json",
+        "sha256": "382bb6a414c51cf166b447aef2f539f08405102a5337acad669cb85250969e17",
+        "data": {
+          "started_at": "2026-11-03T19:03:39+0300",
+          "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+          "threshold": "zero differing RGBA pixels",
+          "cache_policy": "complete",
+          "sites": [
+            {
+              "id": "theregister",
+              "name": "The Register",
+              "url": "https://www.theregister.com/",
+              "status": "live-to-frozen-mismatch",
+              "cache_policy": "complete",
+              "different_pixels": 6786,
+              "artifacts": "/Users/alex/code/vox2/Build/register-parity-20261103-next/baseline/theregister",
+              "live_to_frozen_different_pixels": 110180,
+              "reference_replay_different_pixels": 0,
+              "manifest_sha256": "44f76a95632bb3a7f85df273cf4fa4bb59b34cad8ee9ae2786d2b86750a68b66"
+            }
+          ],
+          "passed": 0
+        }
+      }
+    },
+    {
+      "name": "fresh-http",
+      "browser_identity_before": {
+        "vox": "38c40cfc3aa5169a11ce7acb094851b579f3439bdba720f39aad109740b44d10",
+        "brave": "a72094c568cb557027be70ae46e0d5b026b2fa26f2dcb47c246c7a0090915a3e"
+      },
+      "browser_identity_after": {
+        "vox": "38c40cfc3aa5169a11ce7acb094851b579f3439bdba720f39aad109740b44d10",
+        "brave": "a72094c568cb557027be70ae46e0d5b026b2fa26f2dcb47c246c7a0090915a3e"
+      },
+      "unchanged_inputs": true,
+      "frames": [
+        {
+          "path": "Build/register-parity-20261103-next/fresh-current-http/theregister/brave.png",
+          "png_sha256": "ea945eecd51f3dabb7ce5a90aa3be0e0ee83a2e34abb8306fb80feda8e184a59",
+          "rgba_sha256": "a5630a3a2ed7e53ba063243a560b608a58a045ef663c5e7593a10e3c678bd616"
+        },
+        {
+          "path": "Build/register-parity-20261103-next/fresh-current-http/theregister/brave-repeat.png",
+          "png_sha256": "ea945eecd51f3dabb7ce5a90aa3be0e0ee83a2e34abb8306fb80feda8e184a59",
+          "rgba_sha256": "a5630a3a2ed7e53ba063243a560b608a58a045ef663c5e7593a10e3c678bd616"
+        },
+        {
+          "path": "Build/register-parity-20261103-next/fresh-current-http/theregister/vox.png",
+          "png_sha256": "a4bf08619fa1db876202154546aac2ec20211860b58b8be4596c6b24483c40a2",
+          "rgba_sha256": "1f39bb682044c14bdcd61b00ef9bb3b5d78c2bd2ada3d6e8bd750f2ef897216c"
+        }
+      ],
+      "filters": {
+        "brave": {
+          "counts": {
+            "requests": 224,
+            "blocked": 0,
+            "allowed": 224,
+            "mismatches": 0,
+            "oracle_disagreements": 0
+          },
+          "common_stream": {
+            "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+            "population": "one shared captured stream; these are not browser popup totals",
+            "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+            "input_checks": 224,
+            "distinct_requests": 113,
+            "distinct_checks": 224,
+            "repeated_checks": 0,
+            "phases": {
+              "request": {
+                "checks": 113,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 113,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 113,
+                  "errors": 0
+                }
+              },
+              "response": {
+                "checks": 111,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 111,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 111,
+                  "errors": 0
+                }
+              }
+            },
+            "vox": {
+              "blocked": 0,
+              "allowed": 113,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 113,
+              "errors": 0
+            },
+            "equal_block_counts": true,
+            "decision_mismatches": 0,
+            "conflicting_duplicates": [],
+            "matches": true
+          },
+          "cosmetic": {
+            "css_matches": true,
+            "procedural_matches": true,
+            "scriptlet_filters_match": true
+          }
+        },
+        "brave-repeat": {
+          "counts": {
+            "requests": 224,
+            "blocked": 0,
+            "allowed": 224,
+            "mismatches": 0,
+            "oracle_disagreements": 0
+          },
+          "common_stream": {
+            "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+            "population": "one shared captured stream; these are not browser popup totals",
+            "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+            "input_checks": 224,
+            "distinct_requests": 113,
+            "distinct_checks": 224,
+            "repeated_checks": 0,
+            "phases": {
+              "request": {
+                "checks": 113,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 113,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 113,
+                  "errors": 0
+                }
+              },
+              "response": {
+                "checks": 111,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 111,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 111,
+                  "errors": 0
+                }
+              }
+            },
+            "vox": {
+              "blocked": 0,
+              "allowed": 113,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 113,
+              "errors": 0
+            },
+            "equal_block_counts": true,
+            "decision_mismatches": 0,
+            "conflicting_duplicates": [],
+            "matches": true
+          },
+          "cosmetic": {
+            "css_matches": true,
+            "procedural_matches": true,
+            "scriptlet_filters_match": true
+          }
+        },
+        "vox.ubo": {
+          "counts": {
+            "requests": 220,
+            "blocked": 0,
+            "allowed": 220,
+            "mismatches": 0,
+            "oracle_disagreements": 0
+          },
+          "common_stream": {
+            "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+            "population": "one shared captured stream; these are not browser popup totals",
+            "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+            "input_checks": 447,
+            "distinct_requests": 110,
+            "distinct_checks": 220,
+            "repeated_checks": 227,
+            "phases": {
+              "request": {
+                "checks": 110,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 110,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 110,
+                  "errors": 0
+                }
+              },
+              "response": {
+                "checks": 110,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 110,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 110,
+                  "errors": 0
+                }
+              }
+            },
+            "vox": {
+              "blocked": 0,
+              "allowed": 110,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 110,
+              "errors": 0
+            },
+            "equal_block_counts": true,
+            "decision_mismatches": 0,
+            "conflicting_duplicates": [],
+            "matches": true
+          },
+          "cosmetic": {}
+        }
+      },
+      "pixels": {
+        "path": "Build/register-parity-20261103-next/fresh-current-http/theregister/pixels.json",
+        "sha256": "a4c8abf59018e0b5b3e9d06b9f3c50af9c17f99410d4c27a408c8b50bdb1b9b9",
+        "data": {
+          "exact": false,
+          "different_pixels": 7465,
+          "expected": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/vox.png",
+          "diff": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 7465 (0.9492%)\ndifference_bounds: 15,2 997x755\nmaximum_error_pixel: 464,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 465,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 466,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 467,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 468,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 469,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 470,3 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 471,3 expected=255,0,0,255 actual=255,255,255,255\npixels_over_3: 7200 (0.9155%)\npixels_over_10: 7139 (0.9078%)\npixels_over_25: 7049 (0.8963%)\npixels_over_50: 6968 (0.8860%)\nmaximum_channel_error: 255\nmean_absolute_error: 0.9653\nrmse: 14.9378\ndiff: /Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/diff.png\n"
+        }
+      },
+      "live-to-frozen": {
+        "path": "Build/register-parity-20261103-next/fresh-current-http/theregister/live-to-frozen.json",
+        "sha256": "d827e112f460f7b0d0434e7d02f0cc80e990d391939368869761e978af151fcb",
+        "data": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http-fixtures/theregister/live.png",
+          "actual": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/brave.png",
+          "diff": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/live-to-frozen.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/live-to-frozen.diff.png\n"
+        }
+      },
+      "reference-replay": {
+        "path": "Build/register-parity-20261103-next/fresh-current-http/theregister/reference-replay.json",
+        "sha256": "3888ce2c86caee06e53f33ed5560b67c1c223acb552259631ac50250dd267733",
+        "data": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/brave-repeat.png",
+          "diff": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/reference-replay.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister/reference-replay.diff.png\n"
+        }
+      },
+      "summary": {
+        "path": "Build/register-parity-20261103-next/fresh-current-http/summary.json",
+        "sha256": "ba1120d59d2bd63404e895bb37bf4a80f788fdfe5694539df118bbc4dee49ad5",
+        "data": {
+          "started_at": "2026-11-03T19:25:45+0300",
+          "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+          "threshold": "zero differing RGBA pixels",
+          "cache_policy": "complete",
+          "sites": [
+            {
+              "id": "theregister",
+              "name": "The Register",
+              "url": "https://www.theregister.com/",
+              "status": "pixel-mismatch",
+              "cache_policy": "complete",
+              "different_pixels": 7465,
+              "artifacts": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-current-http/theregister",
+              "live_to_frozen_different_pixels": 0,
+              "reference_replay_different_pixels": 0,
+              "manifest_sha256": "4f34376977c2fbd49024ced729fac4334a28d632307d2b2600a71b10c7c17376"
+            }
+          ],
+          "passed": 0
+        }
+      }
+    },
+    {
+      "name": "authored-fixture",
+      "browser_identity_before": {
+        "vox": "a28dbb182a06da378145e5e411dfe8c6c5625eaf22088aa5106b90c8ec19d4dc",
+        "brave": "a72094c568cb557027be70ae46e0d5b026b2fa26f2dcb47c246c7a0090915a3e"
+      },
+      "browser_identity_after": {
+        "vox": "a28dbb182a06da378145e5e411dfe8c6c5625eaf22088aa5106b90c8ec19d4dc",
+        "brave": "a72094c568cb557027be70ae46e0d5b026b2fa26f2dcb47c246c7a0090915a3e"
+      },
+      "unchanged_inputs": true,
+      "frames": [
+        {
+          "path": "Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/brave.png",
+          "png_sha256": "759d00ef51fa57316319be25c5c45870b6b4838bda71509498451540d6a52779",
+          "rgba_sha256": "e00877b0d69709c56dffb9da24d5d1d6fa73846e1551b849b6ba71778b2c4963"
+        },
+        {
+          "path": "Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/brave-repeat.png",
+          "png_sha256": "759d00ef51fa57316319be25c5c45870b6b4838bda71509498451540d6a52779",
+          "rgba_sha256": "e00877b0d69709c56dffb9da24d5d1d6fa73846e1551b849b6ba71778b2c4963"
+        },
+        {
+          "path": "Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/vox.png",
+          "png_sha256": "8747e857cedeebda9221ab231ae643d46690df4a739b7d15f97c581a69c89221",
+          "rgba_sha256": "060fb0a15e0395d761dbe7eb62fbf1a39d3432499032e79670caab2550cd664f"
+        }
+      ],
+      "filters": {
+        "brave": {
+          "counts": {
+            "requests": 7,
+            "blocked": 0,
+            "allowed": 7,
+            "mismatches": 0,
+            "oracle_disagreements": 0
+          },
+          "common_stream": {
+            "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+            "population": "one shared captured stream; these are not browser popup totals",
+            "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+            "input_checks": 7,
+            "distinct_requests": 6,
+            "distinct_checks": 7,
+            "repeated_checks": 0,
+            "phases": {
+              "request": {
+                "checks": 6,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 6,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 6,
+                  "errors": 0
+                }
+              },
+              "response": {
+                "checks": 1,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 1,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 1,
+                  "errors": 0
+                }
+              }
+            },
+            "vox": {
+              "blocked": 0,
+              "allowed": 6,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 6,
+              "errors": 0
+            },
+            "equal_block_counts": true,
+            "decision_mismatches": 0,
+            "conflicting_duplicates": [],
+            "matches": true
+          },
+          "cosmetic": {
+            "css_matches": true,
+            "procedural_matches": true,
+            "scriptlet_filters_match": true
+          }
+        },
+        "brave-repeat": {
+          "counts": {
+            "requests": 9,
+            "blocked": 0,
+            "allowed": 9,
+            "mismatches": 0,
+            "oracle_disagreements": 0
+          },
+          "common_stream": {
+            "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+            "population": "one shared captured stream; these are not browser popup totals",
+            "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+            "input_checks": 9,
+            "distinct_requests": 8,
+            "distinct_checks": 9,
+            "repeated_checks": 0,
+            "phases": {
+              "request": {
+                "checks": 8,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 8,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 8,
+                  "errors": 0
+                }
+              },
+              "response": {
+                "checks": 1,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 1,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 1,
+                  "errors": 0
+                }
+              }
+            },
+            "vox": {
+              "blocked": 0,
+              "allowed": 8,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 8,
+              "errors": 0
+            },
+            "equal_block_counts": true,
+            "decision_mismatches": 0,
+            "conflicting_duplicates": [],
+            "matches": true
+          },
+          "cosmetic": {
+            "css_matches": true,
+            "procedural_matches": true,
+            "scriptlet_filters_match": true
+          }
+        },
+        "vox.ubo": {
+          "counts": {
+            "requests": 4,
+            "blocked": 0,
+            "allowed": 4,
+            "mismatches": 0,
+            "oracle_disagreements": 0
+          },
+          "common_stream": {
+            "unit": "distinct URL, initiating-document URL, request type, and method tuples",
+            "population": "one shared captured stream; these are not browser popup totals",
+            "blocked_definition": "a resource tuple is blocked if any request or response check blocks it",
+            "input_checks": 6,
+            "distinct_requests": 2,
+            "distinct_checks": 4,
+            "repeated_checks": 2,
+            "phases": {
+              "request": {
+                "checks": 2,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 2,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 2,
+                  "errors": 0
+                }
+              },
+              "response": {
+                "checks": 2,
+                "vox": {
+                  "blocked": 0,
+                  "allowed": 2,
+                  "errors": 0
+                },
+                "full_ublock_origin": {
+                  "blocked": 0,
+                  "allowed": 2,
+                  "errors": 0
+                }
+              }
+            },
+            "vox": {
+              "blocked": 0,
+              "allowed": 2,
+              "errors": 0
+            },
+            "full_ublock_origin": {
+              "blocked": 0,
+              "allowed": 2,
+              "errors": 0
+            },
+            "equal_block_counts": true,
+            "decision_mismatches": 0,
+            "conflicting_duplicates": [],
+            "matches": true
+          },
+          "cosmetic": {}
+        }
+      },
+      "pixels": {
+        "path": "Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/pixels.json",
+        "sha256": "7d61e6671b39cb760f1169c5e1f3b40c8b3f7493f50d29dbbb8c7349518538f8",
+        "data": {
+          "exact": false,
+          "different_pixels": 19230,
+          "expected": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/vox.png",
+          "diff": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 19230 (2.4452%)\ndifference_bounds: 130,2 520x188\nmaximum_error_pixel: 375,2 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 376,2 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 377,2 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 378,2 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 379,2 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 380,2 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 381,2 expected=255,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 382,2 expected=255,0,0,255 actual=255,255,255,255\npixels_over_3: 19176 (2.4384%)\npixels_over_10: 19176 (2.4384%)\npixels_over_25: 19176 (2.4384%)\npixels_over_50: 19176 (2.4384%)\nmaximum_channel_error: 255\nmean_absolute_error: 3.1696\nrmse: 26.3675\ndiff: /Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/diff.png\n"
+        }
+      },
+      "live-to-frozen": {
+        "path": "Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/live-to-frozen.json",
+        "sha256": "d5f8f2de498e3f33a1b905c19d3564397691643b7983967bd542ca61c331f509",
+        "data": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/fixtures/block-content-alignment/live.png",
+          "actual": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/brave.png",
+          "diff": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/live-to-frozen.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/live-to-frozen.diff.png\n"
+        }
+      },
+      "reference-replay": {
+        "path": "Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/reference-replay.json",
+        "sha256": "05cbe5aa4248f07cb1b517c54279e4cb45adf12b0f5e88051e2264e5c80a3bd4",
+        "data": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/brave.png",
+          "actual": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/brave-repeat.png",
+          "diff": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/reference-replay.diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment/reference-replay.diff.png\n"
+        }
+      },
+      "summary": {
+        "path": "Build/register-parity-20261103-next/fixture-prepared/summary.json",
+        "sha256": "d0f6d5a394e400cc341ae09c565521f2ba21cb0d7c7d13b5ea94d98bdb7486b8",
+        "data": {
+          "status": "pixel-mismatch",
+          "cache_policy": "cold",
+          "different_pixels": 19230,
+          "artifacts": "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-prepared/comparison/block-content-alignment",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "d32315897ae3a0c56721027e1ec3026e5d686217b0b53cef759bcbda02727355"
+        }
+      }
+    }
+  ],
+  "browser_identity_sets": {
+    "a28dbb182a06da378145e5e411dfe8c6c5625eaf22088aa5106b90c8ec19d4dc": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "fdea37c1dba1065fbea837f569e6cbb8ecc3c2fd395e31841a354bfbcc3e3afc",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2caba726448ff8793d9ee96c0038b9f1b0facbbf3a249722405502b42ab53b66",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a0516f35c35068d436d88e74efdc0c182e832382b27016f89df83eebff8dd686",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "02a75881a54cc58bcf621044feed88cd2960af8f0d4bcd335b560913e61fc2bb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "e0a8c1587d058da10ffd67d9b6a370f3be9bcd90601745b5fc198d3966f70af5",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "a72094c568cb557027be70ae46e0d5b026b2fa26f2dcb47c246c7a0090915a3e": {
+      "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+      "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+    },
+    "38c40cfc3aa5169a11ce7acb094851b579f3439bdba720f39aad109740b44d10": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "6a0f6c5a18c761e988ea6d1a676b2ca8e1e205be53c69c7eed4d90954e785d7a",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2caba726448ff8793d9ee96c0038b9f1b0facbbf3a249722405502b42ab53b66",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a0516f35c35068d436d88e74efdc0c182e832382b27016f89df83eebff8dd686",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "02a75881a54cc58bcf621044feed88cd2960af8f0d4bcd335b560913e61fc2bb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "1c65a0d926b8e9ec31c66ffc8ddc0c1153b2e6dc149978d3106144ba75ce6531",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    }
+  },
+  "current_publication_status": {
+    "path": "Build/register-parity-20261103-next/published-validation.json",
+    "sha256": "124226dc18a0e3dc4f03c38ca59f94cb2e8b017f410db175a1b8dab092ef3f4c",
+    "data": {
+      "status": "waiting-for-qualified-bundle",
+      "sources": {
+        "layout/block_content_alignment.v": "ed2c7bbb0bc31b8c6897803e39e8a3cb8c8a1968f36a80a9c39bb6dc69c9c462",
+        "layout/absolute_positioning.v": "8fa8366509701bd997ffcb0c71819851a8b6097fa0fc37733cf844b22cab8361",
+        "layout/block_formatting_context.v": "b4b022cd74233357bcae8b3155888c50942d2d41db4e92ac937573d002c6eaff",
+        "tools/forum_news_pixels.py": "e58bd499dd775b58f2f9ecec000dc8b1c32d4946564b2ebe6a8601d0cb09e20b",
+        "tools/forum_news_inline_pixels_test.py": "448f33cbe43a2e49d976e854320a60780716780539c8736c1595258160bc3d87",
+        "Tests/Browser/Brave/input/block-content-alignment.html": "91d571f9ddae8e29b52871038f5841cb02b07d526b2b33fb741decab99d7685e",
+        "Tests/Browser/Brave/expected/block-content-alignment.png": "759d00ef51fa57316319be25c5c45870b6b4838bda71509498451540d6a52779"
+      },
+      "deadline_seconds": 300
+    }
+  },
+  "limitations": [
+    "Full-site/native validation of the committed alignment change awaits a published bundle containing it.",
+    "A source-exact new candidate does not replace the registered archive or establish full-site parity.",
+    "Table/multicol and nonhorizontal writing retain their existing algorithms; no complete CSS Align conformance claim.",
+    "Earlier failed acquisitions and startup attempts are retained without acceptance credit."
+  ],
+  "diagnostic_regions": {
+    "registered": {
+      "header": 6509,
+      "hero": 277
+    },
+    "fresh_http": {
+      "header": 6509,
+      "body": 956
+    },
+    "note": "Pre-fix image differences only; do not treat subtraction as a measured post-fix result."
+  },
+  "reference": {
+    "fixture_sha256": "91d571f9ddae8e29b52871038f5841cb02b07d526b2b33fb741decab99d7685e",
+    "png": {
+      "path": "Tests/Browser/Brave/expected/block-content-alignment.png",
+      "png_sha256": "759d00ef51fa57316319be25c5c45870b6b4838bda71509498451540d6a52779",
+      "rgba_sha256": "e00877b0d69709c56dffb9da24d5d1d6fa73846e1551b849b6ba71778b2c4963"
+    },
+    "source_and_frozen_and_independent_brave_different_pixels": 0
+  },
+  "failed_attempts": {
+    "fixture-startup": {
+      "path": "Build/register-parity-20261103-next/fixture-baseline/acquisition/capture.guard.json",
+      "sha256": "3ee13caf4b5274d3a0aab2e49dca7234ce56be4bae7ac99432b924ce89e21432",
+      "data": {
+        "command": [
+          "node",
+          "/Users/alex/code/vox2/tools/adblock/brave_parity.mjs",
+          "--url",
+          "https://www.theregister.com/__vox_regressions__/block-content-alignment.html",
+          "--extension",
+          "/Users/alex/code/vox2/Build/engadget-continue-20261103-1002/extension/uBlock0.chromium",
+          "--checker",
+          "/Users/alex/code/vox2/Build/engadget-continue-20261103-1002/adblock-check",
+          "--brave",
+          "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "--settle",
+          "2",
+          "--proxy-server",
+          "socks5://127.0.0.1:54244",
+          "--replay-spki",
+          "16At/76Mz5mMPBpz0DkHaxL9WgqXGrSP9fMvA0rWUyU=",
+          "--capture-dir",
+          "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-baseline/acquisition/capture",
+          "--output",
+          "/Users/alex/code/vox2/Build/register-parity-20261103-next/fixture-baseline/acquisition/capture.json"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1179353088,
+        "elapsed_seconds": 131.017448584,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "socks-source": {
+      "path": "Build/register-parity-20261103-next/fresh-capture/summary.json",
+      "sha256": "dbf96d6c3cd462985cf55e54af3e792ee4cc672246861d3b1e3805d656494139",
+      "data": {
+        "started_at": "2026-11-03T19:20:10+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "theregister",
+            "name": "The Register",
+            "url": "https://www.theregister.com/",
+            "status": "failure",
+            "error": "Command exited 2; see /Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-capture/theregister/capture.log"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    "retired-http-port": {
+      "path": "Build/register-parity-20261103-next/fresh-http/summary.json",
+      "sha256": "e63909ba8214e987b809ef95321f5ed43802d3854c200b97c0ff5e644207f948",
+      "data": {
+        "started_at": "2026-11-03T19:25:11+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "theregister",
+            "name": "The Register",
+            "url": "https://www.theregister.com/",
+            "status": "failure",
+            "error": "Command exited 1; see /Users/alex/code/vox2/Build/register-parity-20261103-next/fresh-http/theregister/capture-warmup/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    "socks-navigation": {
+      "requested_url": "https://www.theregister.com/",
+      "url": "https://www.theregister.com/",
+      "title": "Technology news and analysis | The Register",
+      "status": 200,
+      "ready_state": "loading",
+      "body_text_length": 0,
+      "body_text_sample": "",
+      "element_count": 27,
+      "challenge_detected": false,
+      "challenge_evidence": [],
+      "load_error": "net::ERR_TIMED_OUT",
+      "coverage": "error"
+    }
+  },
+  "build_containing_fix": {
+    "path": "Build/production-build/receipts/20261103-192306-58b60ec7",
+    "frozen_compile_sha256": "4dead7cc61a6c3e946c54abfac2d1d2b1132010ed95db3a28713cfee592874a3",
+    "confirmed_generated_symbols": [
+      "layout__align_block_contents",
+      "layout__block_alignment_float_bottom"
+    ]
+  }
+}
