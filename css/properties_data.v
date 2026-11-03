@@ -404,8 +404,10 @@ fn parse_substituted_property_value(property_id PropertyID, result []ComponentVa
 }
 
 pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &dom.StyleValue, important Important, origin CascadeOrigin, layer_name ?string, source voidptr, source_shadow_root ?&dom.ShadowRoot) {
-	entry := if c.scratch_arena_ != unsafe { nil } { c.scratch_arena_.enter() } else { platform.ArenaEntry{} }
-	defer { if c.scratch_arena_ != unsafe { nil } { c.scratch_arena_.leave(entry) } }
+	mut entry := platform.ArenaEntry{}
+	mut entered := c.scratch_arena_ != unsafe { nil } && retain_cascade_override_arena_entries
+	if entered { entry = c.scratch_arena_.enter() }
+	defer { if entered { c.scratch_arena_.leave(entry) } }
 	c.contained_properties_cache_[cascaded_property_index(property_id)] = 1
 	head := c.entry_heads_[property_id] or { -1 }
 	mut index := head
@@ -413,6 +415,7 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 		mut node := c.entry_node(index)
 		if node.entry.origin == origin && option_string_equal(node.entry.layer_name, layer_name) {
 			if node.entry.property.important == .yes && important == .no {
+				if !entered { report_cascade_override_without_allocation() }
 				return
 			}
 			node.entry.property = StyleProperty{
@@ -422,11 +425,12 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 			}
 			node.entry.source = source
 			node.entry.source_shadow_root = source_shadow_root
+			if !entered { report_cascade_override_without_allocation() }
 			return
 		}
 		index = node.previous
 	}
-	index = c.allocate_entry(CascadedPropertiesEntry{
+	new_entry := CascadedPropertiesEntry{
 		property: StyleProperty{
 			important: important
 			property_id: property_id
@@ -436,7 +440,15 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 		layer_name: layer_name
 		source: source
 		source_shadow_root: source_shadow_root
-	}, head)
+	}
+	if !entered && c.set_recycled_entry_without_allocation(property_id, new_entry, head) { return }
+	// A missing map key or exhausted chunk capacity can allocate. Keep that
+	// growth in the bookkeeping owner; retained slots above need no new scope.
+	if !entered && c.scratch_arena_ != unsafe { nil } {
+		entry = c.scratch_arena_.enter()
+		entered = true
+	}
+	index = c.allocate_entry(new_entry, head)
 	c.entry_heads_[property_id] = index
 }
 

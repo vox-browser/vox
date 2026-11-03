@@ -2,6 +2,34 @@ module css
 
 import dom
 
+fn test_cascade_scratch_overrides_keep_importance_layer_source_and_owner() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.enable_native_storage()
+	defer { document.release_native_storage() }
+	mut storage := document.enter_native_storage()
+	defer { storage.finish() }
+	computer := StyleComputer.new(document)
+	mut lease := computer.acquire_cascade_scratch()
+	defer { lease.finish() }
+	mut cascade := lease.properties
+	first := &dom.StyleValue{css_text:'first'}
+	second := &dom.StyleValue{css_text:'second'}
+	cascade.set_property(.color,first,.no,.author,'theme',voidptr(first),none)
+	used := computer.cascade_scratch_.slots[0].arena.usage().used
+	for _ in 0 .. 64 {
+		cascade.set_property(.color,second,.yes,.author,'theme',voidptr(second),none)
+		cascade.set_property(.color,first,.no,.author,'theme',voidptr(first),none)
+	}
+	assert cascade.style_property(.color)?.important == .yes
+	assert voidptr(cascade.property(.color)?) == voidptr(second)
+	assert cascade.property_source(.color) == voidptr(second)
+	assert computer.cascade_scratch_.slots[0].arena.usage().used == used
+	cascade.set_property(.color,first,.yes,.author,'override',voidptr(first),none)
+	assert voidptr(cascade.property(.color)?) == voidptr(first)
+	cascade.revert_layer_property(.color,.yes,'override')
+	assert voidptr(cascade.property(.color)?) == voidptr(second)
+}
+
 fn test_cascade_scratch_reuses_capacity_and_preserves_nested_callers() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.enable_native_storage()
