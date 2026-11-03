@@ -56,7 +56,7 @@ fn install_browser_adblock_styles(document &dom.Document, procedural_css string)
 	marker := '/* vox-adblock-start */'
 	user_style := existing.all_before(marker).trim_right('\n')
 	tokens := browser_adblock_tokens(document)
-	filters := adblock.document_filters(document.url.serialize(), tokens)!
+	filter_css := adblock.document_css(document.url.serialize(), tokens)!
 	// The procedural adapter returns its marker even when it emitted no rules.
 	// Keep that nonempty result for DOM mutation replay, but do not let the
 	// comment alone replace the user sheet and invalidate its unchanged rules.
@@ -67,8 +67,8 @@ fn install_browser_adblock_styles(document &dom.Document, procedural_css string)
 		}
 		''
 	} else { procedural_css }
-	source := if filters.css == '' && procedural_rules == '' { user_style }
-		else { '${user_style}\n${marker}\n${filters.css}\n${procedural_rules}' }
+	source := if filter_css == '' && procedural_rules == '' { user_style }
+		else { '${user_style}\n${marker}\n${filter_css}\n${procedural_rules}' }
 	// A new ID/class token can leave the emitted rules unchanged. Compare the
 	// actual stylesheet, so input bookkeeping cannot invalidate every style.
 	if existing == source { return }

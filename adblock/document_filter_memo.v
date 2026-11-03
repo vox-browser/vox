@@ -11,8 +11,13 @@ import sync
 const document_filter_memo_limit = 16
 const document_filter_memo_byte_limit = 2 * 1024 * 1024
 
+struct DocumentFilterMemoEntry {
+	encoded string
+	css ?string
+}
+
 __global (
-	document_filter_memo_       = map[string]string{}
+	document_filter_memo_       = map[string]DocumentFilterMemoEntry{}
 	document_filter_memo_bytes_ int
 	document_filter_memo_mutex_ = sync.new_mutex()
 )
@@ -20,7 +25,32 @@ __global (
 fn retained_document_filters(source string) ?string {
 	document_filter_memo_mutex_.@lock()
 	defer { document_filter_memo_mutex_.unlock() }
-	return document_filter_memo_[source] or { return none }
+	entry := document_filter_memo_[source] or { return none }
+	return entry.encoded
+}
+
+fn retained_document_filter_css(source string) ?string {
+	document_filter_memo_mutex_.@lock()
+	defer { document_filter_memo_mutex_.unlock() }
+	entry := document_filter_memo_[source] or { return none }
+	return entry.css
+}
+
+fn retain_document_filter_css(source string, css string) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	document_filter_memo_mutex_.@lock()
+	defer { document_filter_memo_mutex_.unlock() }
+	entry := document_filter_memo_[source] or { return }
+	if _ := entry.css { return }
+	if document_filter_memo_bytes_ + css.len > document_filter_memo_byte_limit { return }
+	// CSS is immutable. Unlike the full reply's arrays, refresh callers can
+	// share its process-owned bytes after a document arena has been released.
+	document_filter_memo_[source] = DocumentFilterMemoEntry{
+		encoded: entry.encoded
+		css: css.clone()
+	}
+	document_filter_memo_bytes_ += css.len
 }
 
 fn retain_document_filters(source string, result string) {
@@ -36,7 +66,7 @@ fn retain_document_filters(source string, result string) {
 		document_filter_memo_.clear()
 		document_filter_memo_bytes_ = 0
 	}
-	document_filter_memo_[source.clone()] = result.clone()
+	document_filter_memo_[source.clone()] = DocumentFilterMemoEntry{encoded: result.clone()}
 	document_filter_memo_bytes_ += bytes
 }
 

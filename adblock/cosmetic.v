@@ -19,6 +19,27 @@ pub fn document_filters(document_url string, tokens []string) !DocumentFilters {
 	}
 	source := 'JSON.stringify(voxDocumentFilters(${encode_transport_json(document_url)}, ${encode_transport_json(tokens)}))'
 	memo_enabled := os.getenv('VOX_DISABLE_DOCUMENT_FILTER_MEMO') != '1'
+	return query_document_filters(source, memo_enabled)
+}
+
+// Stylesheet refreshes need only CSS. Reusing its immutable memo avoids
+// decoding and copying the scriptlets and rule lists on every DOM refresh.
+pub fn document_css(document_url string, tokens []string) !string {
+	if !is_enabled() || (!document_url.starts_with('https://')
+		&& !document_url.starts_with('http://')) {
+		return ''
+	}
+	source := 'JSON.stringify(voxDocumentFilters(${encode_transport_json(document_url)}, ${encode_transport_json(tokens)}))'
+	memo_enabled := os.getenv('VOX_DISABLE_DOCUMENT_FILTER_MEMO') != '1'
+	if memo_enabled {
+		if css := retained_document_filter_css(source) { return css }
+	}
+	filters := query_document_filters(source, memo_enabled)!
+	if memo_enabled { retain_document_filter_css(source, filters.css) }
+	return filters.css
+}
+
+fn query_document_filters(source string, memo_enabled bool) !DocumentFilters {
 	if memo_enabled {
 		if result := retained_document_filters(source) {
 			record_document_filter_memo(true, source.len, result.len)
