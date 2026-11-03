@@ -47,7 +47,7 @@ fn retained_flow_validation_is_current(cache &RetainedFlowValidationCache) bool 
 		mirror := element.as_node().unsafe_layout_node() or { return false }
 		if mirror.real_layout_handle() == unsafe { nil } { return false }
 		typed := unsafe { &Node(mirror.real_layout_handle()) }
-		if voidptr(typed.computed_values()) != voidptr(computed) { return false }
+		if !retained_flow_style_matches(typed, computed) { return false }
 	}
 	for input in cache.inputs {
 		if dom_node := input.node.dom_node() {
@@ -106,6 +106,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 		&& retained_flow_validation_is_current(root.flow_validation_cache_) {
 		report_retained_flow_item(root)
 		report_retained_formatting_tree(root)
+		report_retained_flow_style_reuse(root, root.flow_validation_cache_.elements)
 		return RetainedFlowSubtree{root: root, elements: root.flow_validation_cache_.elements}
 	}
 	mut elements := []&dom.Element{}
@@ -120,6 +121,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 	}
 	report_retained_flow_item(root)
 	report_retained_formatting_tree(root)
+	report_retained_flow_style_reuse(root, elements)
 	return RetainedFlowSubtree{
 		root:     root
 		elements: elements
@@ -164,7 +166,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 		if !retained_flow_anonymous_layout_is_ordinary(child) { return false }
 	}
 	styled := typed.as_node_with_style() or { return false }
-	if voidptr(styled.computed_values()) != voidptr(computed)
+	if !retained_flow_style_matches(typed, computed)
 		|| typed.display() != computed.display() {
 		return false
 	}
