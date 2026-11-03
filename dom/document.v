@@ -3226,6 +3226,9 @@ pub mut:
 	state_   PromiseState
 	result_  JSValue
 	handled_ bool
+	// CSSOM View's ScrollResult is carried alongside the source snapshot's
+	// legacy undefined fulfillment, then converted by the JavaScript binding.
+	scroll_interrupted_ bool
 mut:
 	// Source-backed APIs expose this exact capability. The old standalone
 	// observer interface reads it directly, without copying settlement state.

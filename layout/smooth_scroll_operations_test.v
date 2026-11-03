@@ -12,7 +12,7 @@ fn smooth_scroll_document(source string) !(&dom.Document, &html.WindowModel, &ht
 	return document, window, window.navigable_model()
 }
 
-fn test_smooth_viewport_coalesces_and_resolves_after_final_sample_microtask() {
+fn test_same_destination_scroll_interrupts_earlier_promise_and_resolves_final_sample() {
 	document, mut window, mut model :=
 		smooth_scroll_document('<!doctype html><style>html,body{margin:0}body{height:1000px}</style><body></body>')!
 	mut first := window.scroll(html.ScrollToOptions{ top: 400, behavior: .smooth })
@@ -23,14 +23,17 @@ fn test_smooth_viewport_coalesces_and_resolves_after_final_sample_microtask() {
 	assert window.scroll_y() > 0 && window.scroll_y() < 400
 	second := window.scroll(html.ScrollToOptions{ top: 400, behavior: .smooth })
 	assert voidptr(second) != voidptr(first) && second.state() == .pending
+	html.perform_a_microtask_checkpoint()
+	assert first.state() == .fulfilled && first.scroll_interrupted_
 	time.sleep(250 * time.millisecond)
 	model.process_main_thread_smooth_scrolls()
 	assert window.scroll_y() == 400
-	assert first.state() == .pending && second.state() == .pending
+	assert second.state() == .pending
 	assert document.pending_scroll_events.filter(it.type_ == 'scroll').len == 1
 	assert document.pending_scroll_events.filter(it.type_ == 'scrollend').len == 1
 	html.perform_a_microtask_checkpoint()
 	assert first.state() == .fulfilled && second.state() == .fulfilled
+	assert !second.scroll_interrupted_
 }
 
 fn test_replacing_smooth_scroll_resolves_previous_without_an_extra_scrollend() {
@@ -47,6 +50,7 @@ fn test_replacing_smooth_scroll_resolves_previous_without_an_extra_scrollend() {
 	assert document.pending_scroll_events.filter(it.type_ == 'scrollend').len == 1
 	html.perform_a_microtask_checkpoint()
 	assert first.state() == .fulfilled
+	assert first.scroll_interrupted_
 }
 
 fn test_element_smooth_snap_keeps_intermediate_samples_and_adoption_resolves_pending_scroll() {

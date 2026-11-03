@@ -18,7 +18,7 @@ struct CompactScrollMethodQuery {
 	relative bool
 }
 
-fn compact_scroll_method(root &dom.Node, source string, viewport bool, runtime &browserjs.Runtime) !string {
+fn compact_scroll_method(root &dom.Node, source string, viewport bool, runtime &browserjs.Runtime) !&dom.Promise {
 	query := compact_decode_query[CompactScrollMethodQuery](source)!
 	mut document := unsafe { &dom.Document(root.document()) }
 	mut scope := platform.RetainedArenaScope{}
@@ -31,26 +31,27 @@ fn compact_scroll_method(root &dom.Node, source string, viewport bool, runtime &
 		'smooth' { dom.ScrollBehavior.smooth }
 		else { return error('TypeError: Invalid scroll behavior') }
 	}
+	mut promise := &dom.Promise(unsafe { nil })
 	if viewport {
-		window := document.get_window() or { return 'null' }
+		window := document.get_window() or { return dom.Promise.resolved(dom.js_undefined()) }
 		mut owner := unsafe { &html.WindowModel(window) }
 		options := html.ScrollToOptions{
 			left: query.left
 			top: query.top
 			behavior: match behavior { .auto_ { .auto_ } .instant { .instant } .smooth { .smooth } }
 		}
-		if query.relative { _ = owner.scroll_by(options) } else { _ = owner.scroll(options) }
+		promise = if query.relative { owner.scroll_by(options) } else { owner.scroll(options) }
 	} else {
 		mut element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
 		options := dom.ScrollToOptions_{left: query.left, top: query.top, behavior: behavior}
-		if query.relative { _ = element.scroll_by_with_options(options) } else { _ = element.el_scroll_with_options(options) }
+		promise = if query.relative { element.scroll_by_with_options(options) } else { element.el_scroll_with_options(options) }
 	}
 	if runtime != unsafe { nil } {
 		mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
 		mutable_runtime.mark_document_state_dirty()
 		mutable_runtime.mark_document_replay_effects()
 	}
-	return 'null'
+	return promise
 }
 
 fn compact_scroll_methods_bootstrap() string {
@@ -71,12 +72,14 @@ fn compact_scroll_methods_bootstrap() string {
  }
  for(const viewport of [false,true])for(const name of ["scroll","scrollTo","scrollBy"]){
   const method={ [name](){
+   try{
    const receiver=this==null?global:this;
    let key="";
    if(viewport){if(receiver!==global)throw new TypeError("Illegal Window receiver");}
    else{const record=apply(get,__elementRecords,[receiver]);if(!record)throw new TypeError("Illegal Element receiver");key=record.bridgeKey;}
    const value=options(arguments);value.relative=name==="scrollBy";
-   __queryElements(key,viewport?"windowScroll":"elementScroll",JSON.stringify(value));
+   return __ladybirdScrollPromise(__queryElements(key,viewport?"windowScroll":"elementScroll",JSON.stringify(value)));
+   }catch(error){return __ladybirdScrollPromise("",error);}
   }}[name];
   Object.defineProperty(viewport?global:Element.prototype,name,{value:method,writable:true,enumerable:true,configurable:true});
  }

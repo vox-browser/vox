@@ -24,6 +24,8 @@ mut:
 	css_rule_lists map[string]&css.CSSRuleList
 	radio_lists map[string]&html.RadioNodeList
 	next_key int
+	scroll_promises map[string]&dom.Promise
+	next_scroll_promise int
 	temporary_reply_enabled bool
 	reply_workspace platform.ThreadScratchScope
 }
@@ -36,6 +38,14 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 	}
 	install_compact_mutation_observer_binding(mut binding, mut runtime)!
 	install_compact_document_binding(binding, mut runtime)!
+	if runtime.engine == .javascriptcore {
+		runtime.install_scroll_promise_binding(fn [binding] (key string) ?&dom.Promise {
+			mut owner := unsafe { &CompactElementQueryBinding(binding) }
+			promise := owner.scroll_promises[key] or { return none }
+			owner.scroll_promises.delete(key)
+			return promise
+		})!
+	}
 	for index, element in elements {
 		key := '__element_${index}'
 		binding.elements[key] = element
@@ -261,7 +271,13 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'cachedParent' { return binding.cached_parent_query(root) }
 	if action == 'geometry' { return compact_element_geometry_query(root, selector) }
 	if action == 'setScroll' { return compact_element_set_scroll(root, selector, binding.runtime) }
-	if action in ['windowScroll', 'elementScroll'] { return compact_scroll_method(root, selector, action == 'windowScroll', binding.runtime) }
+	if action in ['windowScroll', 'elementScroll'] {
+		promise := compact_scroll_method(root, selector, action == 'windowScroll', binding.runtime)!
+		promise_key := 'scroll:${binding.next_scroll_promise}'
+		binding.next_scroll_promise++
+		binding.scroll_promises[promise_key] = promise
+		return json2.encode(promise_key)
+	}
 	if action == 'offsetParent' {
 		element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
 		if !element.is_html_element() { return 'null' }

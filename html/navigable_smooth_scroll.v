@@ -98,10 +98,11 @@ fn (model &NavigableModel) queue_scrollend_for(stable_node_id compositor.AsyncSc
 	}
 }
 
-fn queue_scroll_promise_resolution(promise &dom.Promise) {
-	queue_a_microtask(none, fn [promise] () {
-		steps := fn [promise] () {
+fn queue_scroll_promise_resolution(promise &dom.Promise, interrupted bool) {
+	queue_a_microtask(none, fn [promise, interrupted] () {
+		steps := fn [promise, interrupted] () {
 			mut mutable_promise := unsafe { &dom.Promise(promise) }
+			mutable_promise.scroll_interrupted_ = interrupted
 			mutable_promise.resolve(dom.js_undefined())
 		}
 		if native := promise.webidl_promise() {
@@ -113,7 +114,7 @@ fn queue_scroll_promise_resolution(promise &dom.Promise) {
 	})
 }
 
-fn (model &NavigableModel) finish_main_thread_scroll(scroll MainThreadSmoothScroll, report_scrollend bool) {
+fn (model &NavigableModel) finish_main_thread_scroll(scroll MainThreadSmoothScroll, report_scrollend bool, interrupted bool) {
 	if report_scrollend {
 		if final_offset := model.scroll_offset_for(scroll.stable_node_id) {
 			if final_offset != scroll.initial_scroll_offset {
@@ -122,7 +123,7 @@ fn (model &NavigableModel) finish_main_thread_scroll(scroll MainThreadSmoothScro
 		}
 	}
 	for promise in scroll.promises {
-		queue_scroll_promise_resolution(promise)
+		queue_scroll_promise_resolution(promise, interrupted)
 	}
 }
 
@@ -139,7 +140,7 @@ fn (mut model NavigableModel) replace_main_thread_scrolls(stable_node_id composi
 		}
 	}
 	for scroll in finished {
-		model.finish_main_thread_scroll(scroll, false)
+		model.finish_main_thread_scroll(scroll, false, true)
 	}
 }
 
@@ -161,8 +162,11 @@ fn (mut model NavigableModel) perform_main_thread_scroll(stable_node_id composit
 		for mut scroll in model.main_thread_smooth_scrolls_ {
 			if scroll.stable_node_id == stable_node_id
 				&& scroll.destination_scroll_offset == position {
+				// The geometry can reuse its animation, but a new invocation
+				// interrupts the earlier invocation's completion Promise.
+				for previous in scroll.promises { queue_scroll_promise_resolution(previous, true) }
 				promise := model.create_scroll_promise()
-				scroll.promises << promise
+				scroll.promises = [promise]
 				return promise
 			}
 		}
@@ -206,7 +210,7 @@ fn (mut model NavigableModel) process_main_thread_smooth_scrolls_at(now f64) {
 		mut scroll := &model.main_thread_smooth_scrolls_[i]
 		if model.scroll_offset_for(scroll.stable_node_id) == none {
 			for promise in scroll.promises {
-				queue_scroll_promise_resolution(promise)
+				queue_scroll_promise_resolution(promise, true)
 			}
 			model.main_thread_smooth_scrolls_.delete(i)
 			continue
@@ -226,7 +230,7 @@ fn (mut model NavigableModel) process_main_thread_smooth_scrolls_at(now f64) {
 		}
 	}
 	for scroll in finished {
-		model.finish_main_thread_scroll(scroll, true)
+		model.finish_main_thread_scroll(scroll, true, false)
 	}
 	if model.main_thread_smooth_scrolls_.len > 0 {
 		if document := model.active_document() {
@@ -268,6 +272,6 @@ pub fn (mut model NavigableModel) perform_a_scroll_of_an_element(element &dom.El
 fn (mut model NavigableModel) resolve_all_pending_main_thread_scrolls() {
 	for model.main_thread_smooth_scrolls_.len > 0 {
 		scroll := model.main_thread_smooth_scrolls_.pop()
-		model.finish_main_thread_scroll(scroll, true)
+		model.finish_main_thread_scroll(scroll, true, true)
 	}
 }
