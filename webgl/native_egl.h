@@ -17,6 +17,7 @@
 #include "angle_procedures_linux.h"
 #else
 #include <GLES2/gl2ext_angle.h>
+#include "angle_dispatch_darwin.h"
 #endif
 
 typedef struct {
@@ -30,6 +31,9 @@ typedef struct {
 
 static void* vox_egl_create(int version)
 {
+#ifdef __APPLE__
+    if (!vox_angle_prepare()) return NULL;
+#endif
 #ifdef __linux__
     // Keep ANGLE's WebGL compatibility and robust-buffer contract. An ordinary
     // Mesa installation reports WebGL unavailable instead of invoking missing

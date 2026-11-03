@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webgl
 
-#pkgconfig egl glesv2
+$if macos {
+	#pkgconfig --cflags egl glesv2
+} $else {
+	#pkgconfig egl glesv2
+}
 #flag darwin -Wl,-rpath,/opt/homebrew/lib
 #include "@DIR/native_egl.h"
 
