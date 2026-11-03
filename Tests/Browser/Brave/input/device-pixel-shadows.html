@@ -1,0 +1,14 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Shadow geometry on the presenting device grid</title>
+<style>
+html, body { margin: 0; background: white }
+.sample { position: absolute; left: 20.25px; width: 140.5px; height: 40.5px;
+  border-radius: 8.25px; background: white }
+.outer { top: 20.25px; box-shadow: .25px .75px 3.25px .25px #0004 }
+.translucent { top: 100.75px; background: #def8;
+  box-shadow: .25px .75px 3.25px .25px #0004 }
+</style>
+<div class="sample outer"></div>
+<div class="sample translucent"></div>
+<svg width="1" height="1"></svg>

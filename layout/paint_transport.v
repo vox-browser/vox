@@ -2199,9 +2199,9 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			&& !box.skip_background_paint && !empty_cell_hidden
 			&& box.decorations().background_color_clip in ['border-box', 'padding-box'] && box_shadows.any(!it.inset) {
 			outer_start := commands.len
-			paintable_box_paint_box_shadow(mut commands, box_shadows.filter(!it.inset),
+			paintable_box_paint_box_shadow_for_node(mut commands, box_shadows.filter(!it.inset),
 				box.border, effective_border_colors(box.border_colors, box.border_color),
-				box.border_styles, box_radii, border_rect, border_rect, opacity)
+				box.border_styles, box_radii, border_rect, border_rect, opacity, box.layout_handle)
 			chromium_inset_opaque_shadow_clips(mut commands, outer_start, box.layout_handle)
 			box_shadows = box_shadows.filter(it.inset)
 		}
@@ -2371,12 +2371,12 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			}
 		}
 		if !empty_cell_hidden {
-			paintable_box_paint_box_shadow(mut commands, box_shadows, box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles, box_radii, border_rect, LayoutRect{
+			paintable_box_paint_box_shadow_for_node(mut commands, box_shadows, box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles, box_radii, border_rect, LayoutRect{
 				x: border_left + box.border.left
 				y: border_top + box.border.top
 				width: non_negative(border_width - box.border.left - box.border.right)
 				height: non_negative(border_height - box.border.top - box.border.bottom)
-			}, opacity)
+			}, opacity, box.layout_handle)
 		}
 		foreground_replaced_start := commands.len
 		mut drew_image_fallback := false
@@ -4083,7 +4083,7 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmen
 		}
 		outer_shadows := fragment_shadows.filter(!it.inset)
 		outer_start := commands.len
-		paintable_box_paint_box_shadow(mut commands, outer_shadows, effective_border, first.border_colors, first.border_styles, fragment_radii, border_rect, border_rect, opacity)
+		paintable_box_paint_box_shadow_for_node(mut commands, outer_shadows, effective_border, first.border_colors, first.border_styles, fragment_radii, border_rect, border_rect, opacity, first.layout_handle)
 		first_is_chromium := if run := first.paintable_fragment.glyph_run {
 			run.font().font_rendering_policy == .chromium
 		} else {
