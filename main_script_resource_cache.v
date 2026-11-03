@@ -10,11 +10,15 @@ fn install_browser_script_resource_cache() {
 	requestserver.install_native_response_cache_provider(browser_cached_script_response)
 }
 
-// Reuse only explicitly public, fresh immutable script responses. API fetches,
-// credential-specific variants and revalidation modes keep their network path.
+// Reuse explicitly public, fresh responses. Scripts additionally require an
+// immutable declaration; ordinary Fetch entries require omitted credentials.
+// Credential-specific variants and revalidation modes keep their network path.
 fn browser_cached_script_response(request &fetch.Request) ?&fetch.Response {
-	if request.method != 'GET' || !request.destination_is_script_like()
+	script := request.destination_is_script_like()
+	anonymous_fetch := request.destination == none && request.credentials_mode == .omit
+	if request.method != 'GET' || (!script && !anonymous_fetch)
 		|| request.cache_mode != .default || request.header_list.contains('Authorization')
+		|| (anonymous_fetch && request.header_list.contains('Cookie'))
 		|| request.header_list.contains('Range')
 		|| request.current_url().scheme() !in ['http', 'https'] { return none }
 	if control := request.header_list.get('Cache-Control') {
@@ -22,7 +26,8 @@ fn browser_cached_script_response(request &fetch.Request) ?&fetch.Response {
 			|| http.contains_cache_control_directive(control, 'no-cache') { return none }
 	}
 	address := request.current_url().serialize()
-	for key in [resource_accept_cache_key(address, 'script'), address] {
+	keys := if script { [resource_accept_cache_key(address, 'script'), address] } else { [address] }
+	for key in keys {
 		path := browser_cache_entry_path(browser_cache_root(), 'resources', key)
 		if (read_browser_cache_entry(path + '.status') or { continue }) != '200' { continue }
 		if (read_browser_cache_entry(path + '.url') or { continue }) != address { continue }
@@ -33,7 +38,7 @@ fn browser_cached_script_response(request &fetch.Request) ?&fetch.Response {
 		for header in headers { fields.append(http.Header{name: header.name, value: header.value}) }
 		control := fields.get('Cache-Control') or { continue }
 		if !http.contains_cache_control_directive(control, 'public')
-			|| !http.contains_cache_control_directive(control, 'immutable')
+			|| (script && !http.contains_cache_control_directive(control, 'immutable'))
 			|| http.contains_cache_control_directive(control, 'private')
 			|| http.contains_cache_control_directive(control, 'no-store')
 			|| http.contains_cache_control_directive(control, 'no-cache')

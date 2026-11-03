@@ -82,6 +82,56 @@ mut:
 	body string
 }
 
+fn test_credentialless_fetch_reuses_only_fresh_public_unvaried_responses() {
+	previous := os.getenv_opt('LADYBIRD_CACHE_DIR')
+	cache := os.join_path(os.temp_dir(), 'vox-public-fetch-cache-${os.getpid()}-${time.sys_mono_now()}')
+	os.setenv('LADYBIRD_CACHE_DIR', cache, true)
+	defer {
+		if value := previous { os.setenv('LADYBIRD_CACHE_DIR',value,true) } else { os.unsetenv('LADYBIRD_CACHE_DIR') }
+		os.rmdir_all(cache) or {}
+	}
+	address := 'https://public-cache.example/catalog.json'
+	headers := [adblock.ResponseHeader{name:'Content-Type',value:'application/json'},
+		adblock.ResponseHeader{name:'Cache-Control',value:'public, max-age=604800'},
+		adblock.ResponseHeader{name:'Date',value:time.utc().http_header_string()}]
+	cache_resource_response_headers_with_status(address,address,'{"items":[42]}',headers,200)
+	mut request := fetch.Request.create()
+	request.set_url(dom.URL{value:address})
+	request.credentials_mode = .omit
+	response := browser_cached_script_response(request) or { panic('fresh public Fetch response') }
+	assert response.body?.bytes().bytestr() == '{"items":[42]}'
+	for credentials in [fetch.CredentialsMode.same_origin,.include] {
+		request.credentials_mode = credentials
+		assert browser_cached_script_response(request) == none
+	}
+	request.credentials_mode = .omit
+	for name in ['Cookie','Authorization','Range'] {
+		request.header_list.append(http.Header{name:name,value:'test'})
+		assert browser_cached_script_response(request) == none
+		request.header_list = http.HeaderList.create()
+	}
+	for mode in [fetch.CacheMode.no_store,.no_cache,.reload] {
+		request.cache_mode = mode
+		assert browser_cached_script_response(request) == none
+	}
+	request.cache_mode = .default
+	for extra in [adblock.ResponseHeader{name:'Vary',value:'Accept'},
+		adblock.ResponseHeader{name:'Vary',value:'Cookie'},
+		adblock.ResponseHeader{name:'Set-Cookie',value:'key=value'},
+		adblock.ResponseHeader{name:'Age',value:'604800'}] {
+		mut changed := headers.clone()
+		changed << extra
+		cache_resource_response_headers_with_status(address,address,'catalog',changed,200)
+		assert browser_cached_script_response(request) == none
+	}
+	for control in ['max-age=604800','private, max-age=604800','public, max-age=604800, no-cache','public, no-store'] {
+		mut changed := headers.clone()
+		changed[1] = adblock.ResponseHeader{name:'Cache-Control',value:control}
+		cache_resource_response_headers_with_status(address,address,'catalog',changed,200)
+		assert browser_cached_script_response(request) == none
+	}
+}
+
 fn test_cached_native_script_fetch_is_deferred_and_keeps_cors_and_filtering() {
 	previous := os.getenv_opt('LADYBIRD_CACHE_DIR')
 	cache := os.join_path(os.temp_dir(), 'vox-script-fetch-${os.getpid()}-${time.sys_mono_now()}')
@@ -92,7 +142,7 @@ fn test_cached_native_script_fetch_is_deferred_and_keeps_cors_and_filtering() {
 		if value := previous { os.setenv('LADYBIRD_CACHE_DIR',value,true) } else { os.unsetenv('LADYBIRD_CACHE_DIR') }
 		os.rmdir_all(cache) or {}
 	}
-	for index, address in ['https://module-cache.example/allowed.js','https://module-cache.example/denied.js','https://www.google-analytics.com/analytics.js'] {
+	for index, address in ['https://module-cache.example/allowed.js','https://module-cache.example/denied.js','https://www.google-analytics.com/analytics.js','https://catalog-cache.example/allowed.json','https://catalog-cache.example/denied.json'] {
 		mut document := html.parse_document_with_url('<!doctype html>',dom.URL{value:'https://owner-module-cache.example/'})
 		document.set_origin(document.url.origin())
 		_ := html.WindowModel.create_top_level(document,none,'cached-script')!
@@ -100,12 +150,16 @@ fn test_cached_native_script_fetch_is_deferred_and_keeps_cors_and_filtering() {
 		mut loop := settings.responsible_event_loop()
 		mut connection := requestserver.CurlConnection.create()!
 		mut headers := script_cache_test_headers()
-		if index != 1 { headers << adblock.ResponseHeader{name:'Access-Control-Allow-Origin',value:'*'} }
+		if index >= 3 {
+			headers[0] = adblock.ResponseHeader{name:'Content-Type',value:'application/json'}
+			headers[1] = adblock.ResponseHeader{name:'Cache-Control',value:'public, max-age=604800'}
+		}
+		if index !in [1,4] { headers << adblock.ResponseHeader{name:'Access-Control-Allow-Origin',value:'*'} }
 		cache_resource_response_headers_with_status(address,address,'export const answer=42;',headers,200)
 		mut request := fetch.Request.create()
 		request.set_url(dom.URL{value:address})
 		request.set_client(settings)
-		request.destination = .script
+		request.destination = if index >= 3 { ?fetch.Destination(none) } else { .script }
 		request.mode = .cors
 		request.credentials_mode = .omit
 		probe := &ScriptCacheFetchProbe{}
@@ -122,11 +176,11 @@ fn test_cached_native_script_fetch_is_deferred_and_keeps_cors_and_filtering() {
 		deadline := time.sys_mono_now()+4*time.second
 		loop.spin_until(fn [probe,deadline] () bool { return probe.finished || time.sys_mono_now() >= deadline })
 		assert probe.finished
-		if index == 0 {
+		if index in [0,3] {
 			assert !probe.error
 			assert probe.body == 'export const answer=42;'
-		} else if index == 1 {
-			assert probe.error, 'cross-origin script without an allow-origin header'
+		} else if index in [1,4] {
+			assert probe.error, 'cross-origin cached response without an allow-origin header'
 			assert probe.body == ''
 		} else {
 			// A filter may supply a harmless script replacement rather than an
