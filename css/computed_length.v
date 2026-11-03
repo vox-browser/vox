@@ -47,6 +47,16 @@ fn (c &ComputedProperties) absolute_layout_length_to_px(length Length) CSSPixels
 
 fn computed_properties_length_percentage_to_px(c &ComputedProperties, property_id PropertyID, percentage_basis_px f64) ?f64 {
 	value := c.property(property_id, .yes) or { return none }
+	// Layout frequently probes min/max sizes whose live computed value is
+	// auto/none or an intrinsic keyword. No keyword can produce a numeric
+	// LengthPercentage, so reject its retained tag before copying the union.
+	if !retain_keyword_length_resolution && value.css_value_handle != unsafe { nil } {
+		box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		if box.value is KeywordStyleValue {
+			c.report_keyword_length_rejection()
+			return none
+		}
+	}
 	typed := style_value_logic_from_dom(property_id, value) or { return none }
 	// SVG accepts a unitless <number> for these presentation properties. In
 	// user space that number is a CSS pixel, matching SVGLength::value() and
