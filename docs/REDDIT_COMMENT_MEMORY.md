@@ -1235,3 +1235,60 @@ after that tooling change. A fresh direct live request still returns HTTP 403.
 records exact component counts, registered tests and exits, sanitization,
 production identities, path eligibility, failed attempts and private artifact
 hashes under `Build/reddit-comment-memory-20261103-http-buffer/`.
+
+## Shared Metal uploads for immutable JPEG planes
+
+Commit `5f2edeb29` uploads supported, non-mipmapped JPEG Y/U/V planes directly
+into shared Metal R8 textures on unified-memory devices. Skia retains the plane
+textures and performs the original YUV conversion and sampling. Unsupported
+formats, discrete devices, mipmaps and allocation failures use the original
+factory. No generic Skia command-buffer or Dawn rendering change is included.
+
+Twenty-four focused comparisons cover three conversion matrices, two chroma
+subsampling modes, padded rows and mipmap fallback; an explicit disable-switch
+comparison also passes. Sources are overwritten and released before drawing to
+check ownership. Two fresh alternating control/candidate pairs produce identical
+pixel hashes. Physical-footprint growth after synchronous drawing and readback
+is 333,742,296/333,856,960 B for controls and 199,065,840/199,344,368 B for the
+shared uploads: a minimum observed component reduction of **134,397,928 B**.
+This is an isolated post-draw allocation measurement, not browser peak memory.
+
+The existing native bridge checks also pass: 2,112 region comparisons, 1,344
+tile comparisons and 76 cache/ordering checks. The final dual-library tests
+rename the control's Objective-C queue class and verify distinct function
+addresses; an earlier duplicate-class warning remains in the private evidence.
+All twelve canonical visual comparisons are pixel-exact with the explicit
+candidate native-library override and unchanged reference/input hashes.
+
+An instrumented replay confirms the helper executes for the page's three JPEG
+planes. The initial R8 alpha-mask hypothesis was incorrect: stack traces identify
+JPEG luminance/chroma uploads. Earlier generic CPU-upload and Metal-picture
+probes remain private diagnostics and supply no shipped optimization credit.
+
+Four uninstrumented, alternating page observations use completed executable
+`fbaea5f9…`, receipt `20261103-125410-688f64a7`, and explicit control/candidate
+native-library overrides. All content/script audits and identity checks pass;
+loaded-image records confirm the intended libraries. Each observation lasts
+20 seconds, with capture and endpoint audits afterward.
+
+| Attempt | Observed simultaneous peak (B) | Final two-second median (B) |
+| --- | ---: | ---: |
+| Control 1 | 682,822,416 | 236,734,504 |
+| Shared upload 1 | 687,131,408 | 237,799,464 |
+| Control 2 | 682,969,920 | 236,619,816 |
+| Shared upload 2 | 679,201,528 | 236,914,680 |
+
+There is **no consistent whole-page peak improvement**. Dawn picture rendering
+still performs GPU upload/readback, so removing the native JPEG upload's blit
+requirement alone does not remove the driver's startup cost. These overrides
+validate the new native path, not installation in a completed production bundle.
+The shared production build remains pending. Polling is a lower-bound
+observation, backing scale is not independently sampled, and these runs establish
+no new five-minute or idle-growth bound. A fresh live request returns HTTP 403.
+
+**The 500,000,000 B peak cap remains open.** The
+[YUV upload receipt](benchmark-results/reddit-comment-memory-2026-11-03-yuv-upload.json)
+records the focused checks, raw component counts, all page attempts, native
+library identities, visual checks and guard exits. Account-bearing page bytes,
+screenshots and logs remain private under
+`Build/reddit-comment-memory-20261103-gpu-upload/`.
