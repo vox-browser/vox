@@ -5,6 +5,86 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Public Performance marks, November 3, 2026
+
+The missing `performance.mark()` call found in the new archived GitHub run now
+has a native JavaScript binding. It and `new PerformanceMark()` use the owning
+global's native clock and constructor checks. Only `performance.mark()` queues
+and buffers its entry; direct construction leaves the timeline unchanged.
+Returned objects implement PerformanceMark and inherit PerformanceEntry, with
+the same wrapper reused by timeline queries and observer delivery.
+
+The binding converts the name and options in order, checks finite timestamps
+and Window-only reserved names, and clones actual engine `detail` values before
+allocating or publishing an entry. Its detail getter clones again, matching
+the pinned upstream C++ implementation. Cycles, shared references, Map,
+BigInt and typed-array bytes survive the clone. Failed conversion or cloning
+preserves the original exception and leaves timeline/observer buffers empty.
+The inherited four-field entry JSON serializer remains unchanged, following
+the upstream IDL and [WebIDL default serialization rules](https://webidl.spec.whatwg.org/#default-tojson-steps).
+
+Eight new cases cover marks, direct construction/subclasses, conversion/error
+ordering, cloning, observers after clear/collection, temporary-root release,
+and classic/module worker ownership. All 18 selected browser-binding cases
+pass in Boehm, GC-none and preallocation C-O0 builds: 54 case executions.
+The two existing native User Timing cases also pass in both GC modes with
+C-O2: four more executions. Compile jobs use the 12 GiB guard and 10G compiler
+limit; runtime jobs use 3 GiB. All final build and runtime guards actually exit
+zero. These are functional checks, not hardware-instruction comparisons.
+
+Retained unsuccessful attempts include an initial duplicate-file frontend
+failure, an intermediate C-O2 run with an expanded JSON serializer, and a C-O0
+run whose old observer assertion expected the generic PerformanceEntry tag.
+The serializer was restored and the assertion now requires PerformanceMark
+and its subtype. An obsolete GC-none build receives no runtime credit. A
+separate Brave behavior probe timed out at 45 seconds and was killed by its
+guard; it supplies no reference result. None of these attempts is counted as
+a passing final check.
+
+The nine tested feature paths landed in `a2baaa98a` when another session's
+idle-retirement commit consumed the staged files after the dedicated feature
+commit hit a shared index lock. Every path in that commit matches its tested
+SHA-256. The existing mixed-scope commit is preserved; no shared history was
+rewritten and no unrelated idle-retirement validation is claimed here.
+
+The initial available bundle (`5e3e9612`, receipt `20261103-145741`) predates the
+new factory. While checks and evidence preparation continued, the already
+running shared build completed. Its installed executable has SHA-256
+`928ebab161db15b7268b7ad984ef61a0da283e03599fcb889754dcf6d739667d`
+and matching successful receipt `20261103-154109-c5f589f6`. A fresh process of
+that bundle passes the page-level API integration at 640×480: native marks,
+cloned detail, direct construction, timeline queries and observer delivery.
+Browser, controller and 3 GiB memory guard all exit zero. No app copy or
+duplicate production build was requested, and the user's GUI browser remains
+untouched.
+
+A separately declared single GitHub diagnostic then uses that same installed
+bundle with the unchanged 193-response archive and strict 33-row/66-link/21-image
+contract. Browser, controller and 12 GiB guard actually exit zero; the document
+viewport is exactly 1024×768. Its PNG is byte-identical to the preceding new-input
+capture (`65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`).
+The main-task scopes report 12,726,824,481 instructions through the legacy
+document-paint marker and 23,155,451,847 through native layer submission. These
+are separate diagnostic scopes, not a paired saving or comparison with Chrome;
+the shared build includes other sessions' changes.
+
+All previous `performance.mark` errors disappear. The six remaining JavaScript
+diagnostics concern the absent `customElements` registry, in the GitHub
+environment, component and behavior modules. Scripts advance beyond their old
+mark failure but still do not establish hydrated-page equivalence. Runtime,
+tool/controller and fixture identities were checked, and no historical primary
+was replaced or replayed.
+
+The [structured audit](performance/github-performance-mark-20261103.json)
+records source/compiler/binary hashes, all final case names, actual exits and
+the commit-scope incident. The [durable evidence](performance/raw/github-performance-mark-20261103.tar.gz)
+retains 78 command/log/input/controller/image files, each read back and checked by
+SHA-256. Its archive hash is
+`168681a4e9daa0e1bc4e021b3bb93356ea0e598c0cbc8ea79e13733d7073fcfc`.
+This is one API prerequisite fix since the recovery checkpoint. There is no new
+instruction credit, historical-cohort replacement, broad-baseline reset or
+Chrome-parity claim; the original missing-evidence audit remains open.
+
 ## New archived GitHub input and native diagnostic, November 3, 2026
 
 Commit `c70134749` adds hash-pinned import of unfinished page captures into a
