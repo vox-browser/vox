@@ -2919,6 +2919,8 @@ evidence](docs/translation-audit/NATIVE_MEDIA_WHEEL_RAW_HANDLER.md).
   Handoff-only local94.43%/30pagepairs approximately53.52B→52.10B/CI includes0/repeatablecredit0;reported87bothGC/screenshots unfinished/custom-property diagnostic final audit pending;raw receipts unavailable, not independently reverified.
   Build/instructions plus round30 final audit and validation ledger absent;no sealed fixture or historical round artifacts found. Historical final audit blocked pending original hashed records/actual exits;no primary or completed focused/broad replay/no baseline reset/no new credit.
   Production receipt20261103-142818-b5138f54 build0/executable identity matches at inspection;identity-only/no runtime or historical validation/no build requested/canonical+GUI+foreign preserved. See docs/GITHUB_PERFORMANCE.md recovery checkpoint;Chrome parity open.
+  Shared-bundle GitHub driver November3 (`db88d5d99`):fresh open-n/shared GUI identities excluded byPID+start/executable paths verified/cleanup protects preexisting root/private Vox profiles/defaultchrome112/required common RSS-adoption registry;36driver+3guardchecks pass including actual reparented RSS-limit case;initial importfailure1 retained/corrected PYTHONPATH.
+  Independent current-GitHub inputpreparation entry200/88responses then requiredasset404/capture1;source33rows/21images fails unchanged32/13gate/no sealedfixture/no browserobservations/no instructioncredit/no broadreset/historicalaudit stillblocked/canonical+GUI+foreign preserved. See docs/GITHUB_PERFORMANCE.md.
 - Outside instruction-count optimization, run broad regression suites once per
   ten completed fixes, not after every fix.
   Broad suites include full translation/package test batches, the full LibJS AST

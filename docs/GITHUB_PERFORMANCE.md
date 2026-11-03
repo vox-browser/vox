@@ -5,6 +5,54 @@ shared offline capture diagnostic is below; the original October 13–14
 measurements and subsequent frozen first-frame optimization rounds follow.
 Chrome parity remains open.
 
+## Shared-bundle diagnostic launches, November 3, 2026
+
+Tooling commit `db88d5d99` lets the sealed GitHub diagnostic launch fresh
+instances of the installed Vox and Chrome bundles while their GUI instances
+remain open. Each observation records preexisting PID/creation identities,
+rejects those identities from the measured coalition, and verifies member
+executable paths. Failure cleanup can terminate only a verified new Vox root;
+a reused preexisting root is left untouched. Both engines register authenticated
+live roots and members with the RSS guard. This is tooling coverage, not an
+executed browser comparison or a new engine optimization.
+
+Pass the same private registry path to the outer guard's `--adopt-pids-from`
+and the diagnostic's new required `--memory-guard-registry`. The registry must
+be empty before the cohort. Every Vox observation now has an empty private
+`VOX_PROFILE_DIR`, in addition to its private cache. The default window chrome
+allowance is 112 pixels for current bookmark bars; an older bundle can still
+explicitly request 84. Actual document PNG and DOM viewport checks remain
+1024×768. No bundle copy or production build is needed. These profile/default
+changes define a new workload; they do not amend any completed historical run.
+
+All 36 focused driver tests pass under a 3 GiB guard. Three focused guard checks
+also pass, including a real reparented process exceeding its test RSS budget.
+Receipts: `Build/github-shared-launch-4076-focused3.json`
+(`db6c517cfe350dbd4cbb760f18eec35c689a4c0c55f53c42d7148de81a897f20`)
+and `Build/github-shared-launch-4076-adoption2.json`
+(`6e582752a8052f95b257784761b7c055199cc6d2436940535b166cf28be71125`).
+The initial guard-test invocation failed to import its module; its exit-1
+receipt remains separate. The corrected invocation adds `PYTHONPATH=tools`.
+
+A separately declared input-preparation attempt fetched the current GitHub
+entry with status 200 and retained 88 responses before capture actually exited
+1 on a required asset's 404:
+`https://github.githubassets.com/assets/images/modules/signup/icons/alert-fill-12.svg`.
+Its 432,422-byte entry body has SHA-256
+`6354faa8a7ae959043041c95cfc62fc2943f32bf89cde910795feb2dd1184f79`.
+It contains 33 repository rows and 21 images, so the unchanged historical
+32-row/13-image source gate rejects it. No browser observation was launched,
+and this incomplete capture is not a sealed or accepted fixture. A new workload
+needs its own complete fixture and explicit content contract; it cannot supply
+missing observations for the historical cohort.
+
+Preparation evidence:
+`Build/github-new-baseline-20261103-session4076/input-preparation-result.json`
+(`fccd141faf1799a00b41d2b4f1727729c615d2d6ccad021ea83d541bcae769a7`).
+The historical audit, broad baseline and all instruction credits are unchanged.
+The installed browser and GUI processes were preserved; Chrome parity remains
+unverified.
+
 ## Recovered selective-query checkpoint, November 3, 2026
 
 Session 4076 resumed the October 25 selective computed-style-query work after
