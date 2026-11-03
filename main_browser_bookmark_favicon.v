@@ -19,6 +19,20 @@ fn browser_bookmark_favicon_url(address string) string {
 	return (dom.dom_url_parse('/favicon.ico', page_url, 'UTF-8') or { return '' }).serialize()
 }
 
+fn (app &BrowserApp) cached_browser_bookmark_favicon_url(address string) string {
+	mut cache := app.browser_text_cache()
+	if resolved := cache.bookmark_favicon_urls[address] { return resolved }
+	scratch := platform.begin_thread_scratch('bookmark favicon URL')
+	defer { scratch.finish() }
+	resolved := browser_bookmark_favicon_url(address)
+	scratch.leave()
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	owned := resolved.clone()
+	cache.bookmark_favicon_urls[address.clone()] = owned
+	return owned
+}
+
 // Bookmark icons are browser chrome that every frame callback consults. This
 // lookup never performs synchronous network work: a remote icon is requested
 // once in the background, decoded from the retained response when it arrives,
@@ -62,6 +76,10 @@ fn (mut app BrowserApp) bookmark_favicon_image(address string) ?&gg.Image {
 }
 
 fn (app &BrowserApp) cached_browser_bookmark_favicons() []int {
+	// Settings snapshots and a changed icon list are temporary. Cache writes
+	// below explicitly enter persistent storage before publishing their bytes.
+	scratch := platform.begin_thread_scratch('bookmark icon lookup')
+	defer { scratch.finish() }
 	mut cache := app.browser_text_cache()
 	if !app.bookmark_bar_visible() { return cache.bookmark_favicons }
 	items := app.browser_bar_bookmarks()
@@ -69,7 +87,7 @@ fn (app &BrowserApp) cached_browser_bookmark_favicons() []int {
 	mut changed := icons.len != items.len
 	if changed { icons = []int{len: items.len, init: -1} }
 	for index, item in items {
-		address := browser_bookmark_favicon_url(item.url)
+		address := app.cached_browser_bookmark_favicon_url(item.url)
 		mut icon := -1
 		if address != '' && app.ctx != unsafe { nil } {
 			mut owner := unsafe { &BrowserApp(app) }

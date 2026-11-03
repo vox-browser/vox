@@ -4,6 +4,13 @@ import browserbookmarks
 import browsersettings
 import optimizedsites
 
+// All bar consumers read this fixed list. Keep its descriptor outside frame
+// workspaces instead of materializing an identical array on each lookup.
+const optimized_browser_bar_bookmarks = optimizedsites.bookmarked_sites.map(browserbookmarks.Bookmark{
+	url: it.address
+	title: it.title
+})
+
 fn (app &BrowserApp) optimized_sites_only() bool {
 	return app.restrict_to_optimized_sites && !browsersettings.current().allow_any_site
 }
@@ -33,7 +40,7 @@ fn (mut app BrowserApp) allow_browser_destination(address string) bool {
 
 fn (app &BrowserApp) browser_bar_bookmarks() []browserbookmarks.Bookmark {
 	if app.optimized_sites_only() {
-		return optimizedsites.bookmarked_sites.map(browserbookmarks.Bookmark{url: it.address, title: it.title})
+		return optimized_browser_bar_bookmarks
 	}
 	return app.bookmarks.items
 }

@@ -26,6 +26,10 @@ mut:
 	// Decoded icon per favicon address, or -1 once an address is known to
 	// supply no icon. Chrome never retries a failed icon during a frame.
 	bookmark_favicon_ids map[string]int
+	// Deriving an icon URL parses URL records. Memoize by the bookmark's raw
+	// address, including rejected addresses, rather than repeating that work
+	// in every native frame callback.
+	bookmark_favicon_urls map[string]string
 }
 
 fn (app &BrowserApp) browser_text_cache() &BrowserChromeTextCache {

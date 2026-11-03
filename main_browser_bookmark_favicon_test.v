@@ -1,16 +1,77 @@
 module main
 
 import browserbookmarks
+import browsersettings
 import dom
 import encoding.base64
 import gg
 import os
+import platform
+import time
 
 $if vox_ui2 ? {
 	import ui2
 }
 
 const bookmark_favicon_png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+
+fn test_bookmark_favicon_url_cache_owns_keys_and_values_after_caller_retires() {
+	mut app := &BrowserApp{}
+	mut caller := platform.new_arena('bookmark URL caller')
+	host := 'custom${os.getpid()}.example'
+	expected := 'https://${host}:8443/favicon.ico'
+	entry := caller.enter()
+	mut entered := true
+	defer {
+		if entered { caller.leave(entry) }
+		caller.release()
+	}
+	address := 'https://${host}:8443/path?q=old#fragment'
+	$if prealloc { assert caller.contains(address.str) }
+	resolved := app.cached_browser_bookmark_favicon_url(address)
+	assert resolved == expected
+	assert !caller.contains(resolved.str)
+	// Map iteration clones string keys into the caller. Verify the retained
+	// key through a lookup after this caller has actually retired instead.
+	caller.leave(entry)
+	entered = false
+	caller.reset()
+	assert resolved == expected
+	assert app.cached_browser_bookmark_favicon_url('https://${host}:8443/path?q=old#fragment') == resolved
+	assert app.cached_browser_bookmark_favicon_url('https://other.example/new') == 'https://other.example/favicon.ico'
+}
+
+fn test_warm_bookmark_icon_lookups_do_not_retain_per_frame_url_records() {
+	directory := os.join_path(os.temp_dir(), 'vox-bookmark-cache-${os.getpid()}-${time.sys_mono_now()}')
+	browsersettings.initialize(os.join_path(directory, 'settings.json'))!
+	defer { os.rmdir_all(directory) or {} }
+	mut app := bookmark_favicon_app()
+	defer { app.document.finalize() }
+	app.bookmarks.seed_optimized_sites()!
+	app.restrict_to_optimized_sites = true
+	assert app.optimized_sites_only()
+	before_icons := app.cached_browser_bookmark_favicons()
+	assert before_icons.len == app.browser_bar_bookmarks().len && before_icons.any(it >= 0)
+	addresses := ['https://custom.example/path?q=1', 'file:///private/icon.png',
+		'https://user:secret@custom.example/', 'javascript:void(0)']
+	for address in addresses { _ = app.cached_browser_bookmark_favicon_url(address) }
+	before := platform.thread_arena_usage().used
+	for _ in 0 .. 1024 {
+		assert app.cached_browser_bookmark_favicons() == before_icons
+		for address in addresses { _ = app.cached_browser_bookmark_favicon_url(address) }
+	}
+	cached_bytes := platform.thread_arena_usage().used - before
+	$if prealloc { assert cached_bytes < 1024 }
+	for address in addresses[1..] { assert app.cached_browser_bookmark_favicon_url(address) == '' }
+	control_before := platform.thread_arena_usage().used
+	for _ in 0 .. 1024 {
+		for address in addresses {
+			assert browser_bookmark_favicon_url(address) == app.cached_browser_bookmark_favicon_url(address)
+		}
+	}
+	control_bytes := platform.thread_arena_usage().used - control_before
+	eprintln('BOOKMARK_FAVICON_URL_CACHE cached_bytes=${cached_bytes} control_bytes=${control_bytes}')
+}
 
 fn bookmark_favicon_app() &BrowserApp {
 	return &BrowserApp{

@@ -34,7 +34,7 @@ fn (app &BrowserApp) browser_bookmark_ui_state(chrome BrowserChromeState) bookma
 // request or a platform-specific image control.
 fn (app &BrowserApp) browser_bookmark_icon_path(address string, image_id int) string {
 	if image_id < 0 { return '' }
-	bytes := app.background_image_bytes(browser_bookmark_favicon_url(address)) or { return '' }
+	bytes := app.background_image_bytes(app.cached_browser_bookmark_favicon_url(address)) or { return '' }
 	return app.browser_ui_icon_path(image_id, bytes)
 }
 
