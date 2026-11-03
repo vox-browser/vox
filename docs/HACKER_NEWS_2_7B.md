@@ -5,7 +5,44 @@ requires seven complete fresh default-production trials with both median and
 maximum observed coalition instructions at or below that ceiling. The earlier
 [3.2B result](HACKER_NEWS_3_2B.md) remains independently recorded.
 
-The latest complete default-production benchmark (`font-final-matched`,
+The latest complete default-production cohort (`static-harfbuzz-default`,
+executable `d69e4a67a9106adcdddf288df892c948d661389670b7098860debc5b7a6b8a7b`,
+receipt `20261103-124638-4d084d66`) measures **2,713,777,398 median /
+2,737,710,296 maximum**. Its seven counts are 2,737,710,296; 2,728,480,651;
+2,720,418,669; 2,711,657,906; 2,713,777,398; 2,709,555,330; 2,711,602,693.
+Every capture is exact and complete, ownership/identity/exit audits pass, and
+PID adoption succeeds. None of these trials excludes a concurrent capture under
+the newly edited driver. The target and deferred regression checks remain open.
+The installed executable statically links the same HarfBuzz 15.0.0 archive and
+retains its original FreeType and Graphite libraries; GLib/gettext/PCRE2 stay
+unloaded. This absolute result does not isolate that link change from other
+retained source and build differences.
+
+The new `quad-literals-matched` PNG diagnostic uses a pinned private native
+bridge in both arms, on executable
+`fbaea5f9769c07e6662c956889a3c80068afa372c5588e16d69e385521eb0c7b`.
+Seven matched pairs measure **2,730,007,292 → 2,717,566,254** medians, a
+**12,441,038** difference, with five improving pairs and two regressions. The
+candidate maximum is 2,727,133,214. All fourteen captures pass the pixel,
+content, PNG profile/density/metadata, identity, ownership and exit gates.
+A separate diagnostic proves this codec path runs. It batches four literal
+bytes, using two <=18-bit writes, and preserves the 20%-of-input plus 64KiB
+compressed-size ceiling and general-codec fallback. The tradeoff is a larger
+compressed stream: **1,087,545 → 1,181,961 bytes (+8.68%)** on this page. It
+remains lossless RGBA with unchanged row filters. Encoding-phase counters show
+roughly 9–10M fewer main-process instructions; the absolute target remains open.
+Authored codec/bounds/sanitizer checks have not been executed.
+
+A symmetric-channel text prototype executes 215 eligible draws and preserves
+exact pixels, but regresses by 3,399,761 between seven matched medians. Its source
+and unexecuted expanded checks are removed and retained as rejected evidence.
+A 0.1ms sampling attempt is rejected by macOS sample; the page capture is valid,
+but that attempt supplies no stacks or optimization credit. New optional frame
+phase markers and a compiler inlining threshold of 3,000 are pending a completed
+production build. Earlier concurrent paint-chunk compilation failures and a
+preprocessing input-change rejection are retained; no failed build is counted.
+
+The preceding complete default-production benchmark (`font-final-matched`,
 executable `7b96605d1ea4d26f7fa565202e6a7b5976a2ddf0064f2aa2ee2dafd346ca6fd9`,
 receipt `20261103-123257-90afe652`) measures **2,743,357,004 median /
 2,747,482,367 maximum**. All 21 captures in its three-arm comparison pass

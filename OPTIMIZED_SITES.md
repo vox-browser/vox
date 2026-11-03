@@ -46,18 +46,17 @@ separately from the historical paired Vox/Brave row above.
 | --- | ---: | ---: | ---: | --- | --- |
 | Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | 3.2B reached; **2.7B target open** | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
 
-The ongoing 2.7B work's latest complete default-production benchmark is
-**2,743,357,004 median / 2,747,482,367 maximum** (2026-11-03). All seven default
-launches retain exact original pixels, 30 stories, identity, ownership and normal
-exits. Its font-cache prototypes were removed after the matched controls showed
-little gain and a regression; restored-source validation remains pending. The
-last launch overlaps a loading diagnostic, which is recorded as contention.
-The earlier default cohort measured 2,732,796,959 / 2,761,467,363 and includes
-two later-rejected capture/font-keyword experiments. PNG profile/density/metadata
-are stable against a newly pinned control PNG; the historical Vox PNG and earlier
-raw directory are unavailable after shared Build cleanup. The **2.7B target
-remains open**, and regression suites remain deferred by the user's instruction.
-The fully validated row above stays unchanged. See the
+The ongoing 2.7B work's latest complete default-production cohort measures
+**2,713,777,398 median / 2,737,710,296 maximum** (2026-11-03), with exact original
+pixels, all 30 stories, identity, ownership and normal exits in seven launches.
+The **2.7B target remains open**. A separate seven-pair PNG diagnostic saves
+12.4M between medians, with two pair regressions; its lossless compressed stream
+is 8.68% larger and stays within the existing size bound. It has no final default
+build credit yet. Failed cohorts and rejected font/text/capture prototypes remain
+recorded. PNG metadata is stable against a newly pinned control PNG; the
+historical Vox PNG and earlier raw directory are unavailable after shared Build
+cleanup. Regression suites remain deferred by the user's instruction, so the
+fully validated row above stays unchanged. See the
 [fresh evidence](docs/performance/hn-2700-resume-20261103.json),
 [progress report](docs/HACKER_NEWS_2_7B.md) and
 [all retained attempts](docs/performance/hn-2700-progress-20261103.json).
