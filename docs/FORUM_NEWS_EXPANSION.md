@@ -508,6 +508,59 @@ crashes and provides no accepted PNG:
 [decoded-pixel comparison](../Build/engadget-parity-20261103/decoded-icc-probe.json),
 [rejected conversion probes](../Build/engadget-parity-20261103/icc-probe-comparison.json).
 
+## WebP color and large-layer publication (2026-11-03)
+
+Commits `c889fcc26` and `93da0f339` reduce Engadget from **1,246 to 87 native
+pixels** on production executable
+`92387cec83e3d3b5cf462f7e65b05f8d4978a5c6a8ec23bb2f0bc678692413db`.
+The remaining 87 pixels differ by one channel value around photo corners.
+The original archive and its reference remain unchanged; the separate
+**90,850-pixel saved-source fidelity failure remains open**.
+[Production results](../Build/engadget-continue-20261103-1002/production-checks/sites/summary.json),
+[complete input identities](../Build/engadget-continue-20261103-1002/production-checks/identity.json),
+[unchanged-input verdict](../Build/engadget-continue-20261103-1002/production-checks/summary.json).
+
+Representable WebP ICC profiles now retain their source pixels and numerical
+color space through GPU upload. The previous CPU conversion quantized colors
+before that upload. The original-curve fallback remains for unsupported profiles,
+and sRGB decoding retains libwebp's truncating alpha multiplication. The new
+`engadget-webp-icc` browser regression improves from **1,192 pixels to zero**.
+Two fresh full-uBO Brave references agree byte for byte; no existing reference
+or tolerance was changed. Focused V tests pass with default GC and GC disabled,
+and native profile, fallback, extraction, cache and retagging checks pass.
+[Color checks](../Build/engadget-continue-20261103-1002/icc-verification.json),
+[production source/replay/native comparison](../Build/engadget-continue-20261103-1002/icc-fixture-production/summary.json).
+
+The header's logical compositor extent is 1,024 by 40,320 pixels. The native
+recorder previously rejected it at the texture-size limit, although publication
+allocates only its bounded visible intersection. The logical extent now has the
+same finite coordinate cap as a root segment; the visible pixel and texture
+allocation limits remain enforced. The new `compositor-large-logical-layer`
+regression improves from **614 pixels to zero**. Sixteen extent/invalid-input
+cases pass optimized and under AddressSanitizer, and 144 existing compositor
+cases pass. Only the focused extent hunk was committed from the shared native
+header; other sessions' pending renderer edits were preserved.
+[Extent checks](../Build/engadget-continue-20261103-1002/large-layer-verification.json).
+
+On this pinned production build, **8 focused tests / 13 captures pass**, including
+both new regressions, existing WebP/YUV/alpha paths, rounded ICC images, masks,
+fixed metadata and SVG controls. BBC and Hacker News also pass the strict
+source/replay/native zero-pixel gates. This is a focused checkpoint; the earlier
+104-test broad result remains tied to its earlier build.
+[Focused captures](../Build/engadget-continue-20261103-1002/production-checks/focused-summary.json).
+
+The first extent interposer used an incorrect float signature and supplied no
+valid extent intervention. The corrected, exact-ABI diagnostic produced 87
+pixels; the production result above independently confirms that result without
+injection. Simple photo/background controls, including a root SVG trigger, are
+exact; the remaining publisher corner differences still need isolation.
+[Corrected diagnostic](../Build/engadget-continue-20261103-1002/layer-extent-probe3/sites/summary.json).
+
+Completed output profiles were losslessly archived and every regular file hash
+verified to relieve shared disk pressure. The prepared acquisition input profile,
+sealed responses, captures, logs and receipts remain available.
+[Archive receipt](../Build/engadget-continue-20261103-1002/closed-profile-compression.json).
+
 ## Run
 
 ```sh
