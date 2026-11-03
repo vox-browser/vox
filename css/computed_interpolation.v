@@ -11376,6 +11376,11 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 		mut value := keyframe.properties[property_id] or {
 			computed_properties.property(property_id, .no) or { continue }
 		}
+		if typed := typed_style_value_logic_from_dom(value) {
+			if typed is UnresolvedStyleValue && typed.substitution_functions_presence.has_any() {
+				value = resolve_unresolved_style_value_for_property(abstract_element, property_id, typed)
+			}
+		}
 		value = with_keyword_values_resolved_boundary(abstract_element.element(), property_id, value)
 		physical_property_id := map_logical_alias_to_physical_property(property_id, mapping_context)
 		specified_values[physical_property_id] = value

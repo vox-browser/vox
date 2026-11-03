@@ -1,0 +1,19 @@
+<!doctype html>
+<link rel="match" href="scroll-driven-keyframe-substitution.ref.html">
+<style>
+:root { --collapsed: 56px; --travel: 204px; --offset: calc(var(--collapsed) + var(--travel)) }
+html { overflow: hidden; background: white }
+body { margin: 0; width: 1000px; height: 200px; display: grid; grid-template-columns: 200px 100vw }
+@keyframes sizing {
+    from { width: calc(100vw - calc(var(--collapsed) + var(--travel))); inset-inline-start: calc(var(--collapsed) + var(--travel)) }
+    to { width: calc(100vw - var(--collapsed)); inset-inline-start: var(--collapsed) }
+}
+#target {
+    grid-area: 1 / 1 / 2 / 3; position: sticky; align-self: start; top: 20px;
+    width: calc(100vw - var(--offset)); inset-inline-start: var(--offset);
+    height: 100px; background: green;
+    animation: sizing auto linear both;
+    animation-timeline: scroll(root inline); animation-range: 0px 200px;
+}
+</style>
+<div id="target"></div>
