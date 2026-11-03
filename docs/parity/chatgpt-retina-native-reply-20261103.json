@@ -1,0 +1,65 @@
+{
+  "date": "2026-11-03",
+  "scope": "Live encrypted backend with archived original guest frontend; default Retina layout at 1024x768 CSS pixels and scale 2. Native mouse/key input after audited readiness. No live visual, signed-in, or performance claim.",
+  "implementation_commits": [
+    "876446e0b",
+    "9f8dd0c89"
+  ],
+  "assessment": {
+    "exit": 0,
+    "identity_stable": true,
+    "inputs_stable": true,
+    "guard_budget": "standard 12 GiB full-application guard",
+    "backend_responses_seeded": false,
+    "initial_native_cookie_jar_empty": true,
+    "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+    "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+    "ready": "complete",
+    "fully_active": true,
+    "reply_observed": true,
+    "native_error_count": 0,
+    "javascript_diagnostic_count": 0,
+    "native_input_started": true,
+    "passed": true,
+    "expected_native_loaded": true,
+    "conversation_url_observed": false
+  },
+  "identity": {
+    "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/source-33/browser": "9257f9decfb10d6109c1fdc3b517dd4c14d856f122b85cfc1937a234cc671e46"
+  },
+  "loaded_libraries": [
+    "dyld[37638]: <5EBBAC50-E121-3BB1-8E7C-052660A5741A> /Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27/libLadybirdVSkiaText.dylib",
+    "dyld[37638]: <5EBBAC50-E121-3BB1-8E7C-052660A5741A> /Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27/libLadybirdVSkiaText.dylib",
+    "dyld[37638]: <1B54AA0D-55F9-38AA-8C6A-14B3006BC322> /Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+    "dyld[37638]: <A124A2D3-DBB6-39C1-A639-1E8201FE9651> /Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+    "dyld[39128]: <5EBBAC50-E121-3BB1-8E7C-052660A5741A> /Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/native-local-space-27/libLadybirdVSkiaText.dylib"
+  ],
+  "guard": {
+    "command": [
+      "python3",
+      "-c",
+      "import os,json,sys;v=json.load(open(sys.argv[1]));os.execve(v['command'][0],v['command'],v['env'])",
+      "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/live-retina-43/launch.json"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 5383176192,
+    "elapsed_seconds": 130.720253416,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "evidence_files": {
+    "Build/chatgpt-responsive-20261103/retina-borders-24/live-retina-43/run.py": "c537e8dc7d374299ab599f05a57ed6f1163733e1bcd336bc9357c9b16809113a",
+    "Build/chatgpt-responsive-20261103/retina-borders-24/live-retina-43/inputs.json": "e2eb9f8147a4e9f7aac646f572bd1e72a33ebb68a03fd83ca1c3092e0cf477d4",
+    "Build/chatgpt-responsive-20261103/retina-borders-24/live-retina-43/audit.json.ready.json": "162af7b1650183f5be2db6309e797e6f7a1ab2eba3b4067bff3bdc7f5ce6d851",
+    "Build/chatgpt-responsive-20261103/retina-borders-24/live-retina-43/vox.png": "1526f01e27dff42f072ea1d3360a3f08e5b1b4103bb874e2dd2b3609902fc93b"
+  },
+  "privacy": "Session archive, native cookies and conversation URL remain private in Build.",
+  "limitations": [
+    "Source-qualified production/UI2/prealloc executable; a completed shared production bundle containing these inputs still needs validation.",
+    "No new Brave conversation image was collected at scale 2; this receipt establishes functionality only.",
+    "Frozen default Retina homepage remains 21 pixels from the unchanged Brave reference."
+  ]
+}

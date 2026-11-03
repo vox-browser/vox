@@ -3423,3 +3423,29 @@ and protocol corrections remain available. Obsolete focused-test executables
 were removed during disk pressure after recording their hashes; raw probe pixel
 buffers were gzip-compressed with verified lossless hashes. Commands, logs,
 receipts, accepted PNGs and references are preserved in the same evidence root.
+
+## Default Retina layout and native reply (2026-11-03)
+
+The default 1024×768 CSS-pixel, scale-2 frozen guest homepage now differs from
+the unchanged Brave reference in **21 physical pixels**, with maximum channel
+error 4. SVG viewport/user-space separation, animation sample projection and
+CSS specified-size font tracking are committed. The normal path requires no
+diagnostic SVG or screenshot-layout override. The three scale-1 sizes remain
+exact, and all nine SVG mutation comparisons remain exact at scale 2.
+See the [default rendering receipt](parity/chatgpt-retina-default-svg-20261103.json)
+and [SVG style receipt](parity/chatgpt-retina-svg-user-space-20261103.json).
+
+A fresh native process also completes Send/reply at Retina scale through SOCKS,
+with an empty initial cookie jar, native mouse/key input, a real backend reply
+and a conversation URL. Native and JavaScript errors are empty. This uses the
+archived original guest frontend with live backend traffic; no new live Retina
+visual comparison is claimed. The [functional receipt](parity/chatgpt-retina-native-reply-20261103.json)
+pins the source executable, actual native libraries, input hashes and memory guard.
+
+The remaining pixels and validation on a completed shared production bundle
+containing these changes remain open. Broader paint-metadata experiments in
+`retina-borders-24/native-metadata-36/`, `native-metadata-40/` and
+`native-atomic-metadata-42/` retained the same 21-pixel result and were removed.
+The run-36 compilation also records a native-source comment change during
+compilation; it supplies no stable build acceptance. Their raw evidence remains
+under `Build/chatgpt-responsive-20261103/`.
