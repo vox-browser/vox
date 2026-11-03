@@ -1067,9 +1067,10 @@
   },
   "current_publication_status": {
     "path": "Build/register-parity-20261103-next/published-validation.json",
-    "sha256": "124226dc18a0e3dc4f03c38ca59f94cb2e8b017f410db175a1b8dab092ef3f4c",
+    "sha256": "07994c1def7a79bf18f7cb97909d8f4723c85087760226e0c9ff4fe5e3400b3a",
     "data": {
-      "status": "waiting-for-qualified-bundle",
+      "status": "pending",
+      "reason": "No qualified replacement bundle published within five minutes",
       "sources": {
         "layout/block_content_alignment.v": "ed2c7bbb0bc31b8c6897803e39e8a3cb8c8a1968f36a80a9c39bb6dc69c9c462",
         "layout/absolute_positioning.v": "8fa8366509701bd997ffcb0c71819851a8b6097fa0fc37733cf844b22cab8361",
@@ -1078,8 +1079,7 @@
         "tools/forum_news_inline_pixels_test.py": "448f33cbe43a2e49d976e854320a60780716780539c8736c1595258160bc3d87",
         "Tests/Browser/Brave/input/block-content-alignment.html": "91d571f9ddae8e29b52871038f5841cb02b07d526b2b33fb741decab99d7685e",
         "Tests/Browser/Brave/expected/block-content-alignment.png": "759d00ef51fa57316319be25c5c45870b6b4838bda71509498451540d6a52779"
-      },
-      "deadline_seconds": 300
+      }
     }
   },
   "limitations": [
@@ -1207,5 +1207,22 @@
       "layout__align_block_contents",
       "layout__block_alignment_float_bottom"
     ]
+  },
+  "initial_publication_status": {
+    "path": "Build/register-parity-20261103-next/published-validation.json",
+    "sha256": "124226dc18a0e3dc4f03c38ca59f94cb2e8b017f410db175a1b8dab092ef3f4c",
+    "data": {
+      "status": "waiting-for-qualified-bundle",
+      "sources": {
+        "layout/block_content_alignment.v": "ed2c7bbb0bc31b8c6897803e39e8a3cb8c8a1968f36a80a9c39bb6dc69c9c462",
+        "layout/absolute_positioning.v": "8fa8366509701bd997ffcb0c71819851a8b6097fa0fc37733cf844b22cab8361",
+        "layout/block_formatting_context.v": "b4b022cd74233357bcae8b3155888c50942d2d41db4e92ac937573d002c6eaff",
+        "tools/forum_news_pixels.py": "e58bd499dd775b58f2f9ecec000dc8b1c32d4946564b2ebe6a8601d0cb09e20b",
+        "tools/forum_news_inline_pixels_test.py": "448f33cbe43a2e49d976e854320a60780716780539c8736c1595258160bc3d87",
+        "Tests/Browser/Brave/input/block-content-alignment.html": "91d571f9ddae8e29b52871038f5841cb02b07d526b2b33fb741decab99d7685e",
+        "Tests/Browser/Brave/expected/block-content-alignment.png": "759d00ef51fa57316319be25c5c45870b6b4838bda71509498451540d6a52779"
+      },
+      "deadline_seconds": 300
+    }
   }
 }
