@@ -66,6 +66,10 @@ static void checkPlayback(const char *url) {
 int main(int argc, const char **argv) {
     @autoreleasepool {
         assert(argc == 3);
+        void *loaded = dlopen("/System/Library/Frameworks/AVFoundation.framework/AVFoundation",
+            RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD);
+        assert((loaded != NULL) == (getenv("VOX_EAGER_AVFOUNDATION") != NULL));
+        if (loaded) dlclose(loaded);
         checkPlayback(argv[1]);
         checkPlayback(argv[2]);
         assert(!native_media_open("javascript:alert(1)"));

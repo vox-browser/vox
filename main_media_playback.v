@@ -9,7 +9,6 @@ $if macos {
 
 import painting
 
-#flag darwin -framework AVFoundation
 #flag darwin -framework CoreVideo
 #flag darwin -framework CoreMedia
 

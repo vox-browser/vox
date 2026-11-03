@@ -3,6 +3,7 @@
 #pragma once
 #import <AVFoundation/AVFoundation.h>
 #import <CoreVideo/CoreVideo.h>
+#include "native_avfoundation_darwin.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
@@ -38,16 +39,17 @@ static VoxMediaPlayback *native_media_for_handle(void *handle) {
 static void *native_media_open(const char *url) {
     NSURL *source = [NSURL URLWithString:[NSString stringWithUTF8String:url]];
     if (!source || ![@[@"https", @"http", @"file"] containsObject:source.scheme.lowercaseString]) return NULL;
+    if (!vox_prepare_avfoundation()) return NULL;
     VoxMediaPlayback *media = [[VoxMediaPlayback alloc] init];
-    AVPlayerItem *item = [AVPlayerItem playerItemWithURL:source];
-    AVPlayerItemVideoOutput *output = [[AVPlayerItemVideoOutput alloc] initWithPixelBufferAttributes:
+    AVPlayerItem *item = [vox_av_player_item playerItemWithURL:source];
+    AVPlayerItemVideoOutput *output = [[vox_av_video_output alloc] initWithPixelBufferAttributes:
         @{(__bridge id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA)}];
     media.output = output;
 #if !__has_feature(objc_arc)
     [output release];
 #endif
     [item addOutput:media.output];
-    media.player = [AVPlayer playerWithPlayerItem:item];
+    media.player = [vox_av_player playerWithPlayerItem:item];
     media.player.actionAtItemEnd = AVPlayerActionAtItemEndPause;
 #if __has_feature(objc_arc)
     return (__bridge_retained void *)media;
@@ -82,7 +84,7 @@ static double native_media_duration(void *handle) {
 }
 static int32_t native_media_audio(void *handle) {
     for (AVPlayerItemTrack *track in [native_media_for_handle(handle) player].currentItem.tracks)
-        if ([track.assetTrack.mediaType isEqualToString:AVMediaTypeAudio]) return 1;
+        if ([track.assetTrack.mediaType isEqualToString:vox_av_audio_type]) return 1;
     return 0;
 }
 static int32_t native_media_width(void *handle) {

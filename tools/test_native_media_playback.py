@@ -29,7 +29,7 @@ def main():
                     str(output / 'movie.m3u8')], check=True)
     binary = output / 'native-media-test'
     command = ['clang', '-fblocks', '-Wno-deprecated-declarations', '-framework',
-               'Foundation', '-framework', 'AVFoundation', '-framework', 'CoreVideo',
+               'Foundation', '-framework', 'CoreVideo',
                '-framework', 'CoreMedia', str(root / 'tools/native_media_playback_test.m'),
                '-o', str(binary)]
     subprocess.run(command, check=True)
