@@ -15,7 +15,7 @@ body { margin: 0; width: 1200px; height: 50px }
 <div id="target"></div>
 <script>
 setTimeout(() => {
-    document.documentElement.scrollLeft = 200;
+    window.scrollTo({ left: 200, behavior: "instant" });
     document.documentElement.setAttribute("data-offset", document.documentElement.scrollLeft);
 }, 50);
 </script>

@@ -125,5 +125,5 @@ Object.defineProperty(Element.prototype,"ownerDocument",{get:function(){
 Object.defineProperty(document,"defaultView",{get(){return globalThis;},enumerable:true,configurable:true});
 for(const [name,axis] of [["pageXOffset","scrollX"],["pageYOffset","scrollY"],["scrollX","scrollX"],["scrollY","scrollY"]]){
  Object.defineProperty(globalThis,name,{get(){return __queryElements("","geometry",axis);},enumerable:true,configurable:true});
-}'
+}' + compact_scroll_methods_bootstrap()
 }

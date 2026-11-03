@@ -31,8 +31,8 @@ area.onscrollend = function(event) {
     finish();
 };
 setTimeout(() => {
-    area.scrollTop = 20;
-    document.documentElement.scrollTop = 30;
+    area.scrollTo({ top: 20, behavior: "instant" });
+    window.scrollTo({ top: 30, behavior: "instant" });
     document.documentElement.setAttribute("data-offsets", area.scrollTop + "," + document.documentElement.scrollTop);
 }, 50);
 </script>

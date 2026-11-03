@@ -3995,10 +3995,10 @@ fn (mut e Element) el_scroll_with_snap_strategy(x_ f64, y_ f64, behavior ScrollB
 	mut document := unsafe { &Document(doc) }
 	document.update_layout(.element_scroll)
 	if e.is_document_element() {
-		return window.scroll_with_options(x, y, .auto_, snap_strategy or { ScrollSnapSelectionStrategy_{} })
+		return window.scroll_with_options(x, y, behavior, snap_strategy or { ScrollSnapSelectionStrategy_{} })
 	}
 	if e.is_document_body_element(doc) && doc.in_quirks_mode() && !e.is_potentially_scrollable() {
-		return window.scroll_with_options(x, y, .auto_, snap_strategy or { ScrollSnapSelectionStrategy_{} })
+		return window.scroll_with_options(x, y, behavior, snap_strategy or { ScrollSnapSelectionStrategy_{} })
 	}
 	layout_node := e.as_node().layout_node() or { return Promise.resolved(js_undefined()) }
 	if !layout_node.is_scroll_container_ { return Promise.resolved(js_undefined()) }
