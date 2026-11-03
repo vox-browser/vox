@@ -25,6 +25,13 @@ The [current live receipt](parity/chatgpt-live-20261103.json) records the new
 successful conversation, its production identity and the retained failures.
 Both receipts include hashes for committed PNG evidence under `parity/raw/`.
 
+The scale-2 follow-up remains open: the frozen 1024×768 Retina comparison
+improves from 47,705 to 31,350 differing pixels after device-aware paint
+snapping. Scale-1 parity remains exact at all three sizes. The
+[Retina receipt](parity/chatgpt-retina-20261103.json) retains both captures,
+identities, checks and rejected diagnostics; this is a focused source-browser
+result, without a new production or live Retina claim.
+
 The earlier continuation used `Build/chatgpt-css-error-lifetime-20261102/`.
 That homepage loaded suggestion cards and their Blob-backed icons, used Brave's
 actual heading font instance, and retains the correct raster bounds and opaque
@@ -43,6 +50,33 @@ reported passing in the stable `production-conformance-final-84/` batch on `9238
 failures, identities, references and protocol corrections remain below. These
 checks cover rendering and functionality for the recorded guest workflow and
 viewport; they supply no performance claim.
+
+## November 3: device-pixel snapping with CSS-coordinate layout
+
+`ae71352ba` snaps HTML backgrounds, uniform borders and text-line origins to
+the presenting device grid when inline SVG keeps layout in CSS coordinates.
+The ratio is display density divided by layout-coordinate scale, so an
+already scaled layout is not scaled twice. Uniform border recording now keeps
+fractional layout coordinates instead of losing half-CSS-pixel edges through
+an integer rectangle. Display-density changes invalidate retained paint caches;
+the focused regression changes density from 1 to 2 and back on one document.
+
+The standalone `device-pixel-paint-grid` fixture uses fractional fills, opaque
+and translucent rounded borders, text origins, and inline SVG. It matches the
+unchanged Brave reference at zero pixels across the full 1600×1200 capture
+(800×600 CSS pixels, scale 2). The full archived ChatGPT page improves by
+16,355 pixels, but its smaller text and shadows still differ. A broader
+device-layout diagnostic bypassed the SVG eligibility check and produced
+1,611,472 differing pixels; that experiment was removed rather than enabled.
+
+The three new tests pass under default GC, `-gc none`, and bounded
+`-prealloc -gc none`. Existing uniform-border, text-line-snapping and
+device-layout tests also pass. Fresh focused-browser captures retain exact
+scale-1 equality at 800×600, 1024×768 and 1280×800. Runtime checks use 3 GiB
+memory guards, compiles use the default 12 GiB guard, and executable/native
+library/resource identities remain unchanged throughout each accepted capture.
+The [Retina receipt](parity/chatgpt-retina-20261103.json) includes the retained
+failing tests, rejected font-changing Brave diagnostic and unstable baseline.
 
 ## November 3: fractional breakpoints and additional viewports
 

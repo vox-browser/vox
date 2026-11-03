@@ -957,6 +957,14 @@ and validation results.
 
 `device-layout-inline-precision` checks native scale 2 fractional form-control
 heights, fixed line heights, `ex` widths, middle alignment and soft line breaks.
+`device-pixel-paint-grid` checks device-pixel snapping while inline SVG keeps
+HTML layout in CSS coordinates. Fractional solid fills, opaque and translucent
+rounded borders, and text-line origins use the presenting grid. Its unchanged
+Brave reference is a raw 1600×1200 PNG for an 800×600 CSS viewport, scale 2
+(`--windowed --scale 2`). Compare native-resolution pixels without downsampling;
+the focused source browser matches exactly. The V regression also changes
+display density from 1 to 2 and back, exercising retained paint invalidation.
+
 `device-layout-display-density` checks resolution media queries at the same
 800×600 viewport and scale 2. Both references use Brave 156.1.98.60 and require
 exact RGBA equality.
