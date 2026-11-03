@@ -6,8 +6,10 @@ and **3,087,147,950 maximum**, preserving pixels, content, scripts and PNG metad
 The criterion, chosen before measurement, requires at least seven complete
 default-production trials with both median and highest upper count below 3.2B.
 The earlier [additional 15% result](HACKER_NEWS_VOX_REDUCTION.md) remains a
-separate historical result. [Exact progress counts](performance/hn-3200-progress-20261102.json)
-retain the new baseline, matched experiment and production diagnostic.
+separate historical result. [Current counts and receipts](performance/hn-3200-progress-20261103.json)
+retain all valid and rejected continuation cohorts; the
+[November 2 evidence](performance/hn-3200-progress-20261102.json) retains the
+earlier baseline and experiments.
 
 The workload retains fresh browser/resource-coalition creation through encoded
 document PNG availability, including window startup, original scripts, layout,
