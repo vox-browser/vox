@@ -10,6 +10,7 @@ $if vox_ui2 ? {
 	#include "native_browser_chrome_style_darwin.m"
 	fn C.native_browser_chrome_prepare_window(parent voidptr)
 	fn C.native_browser_chrome_restore_window()
+	fn C.native_browser_chrome_configure_window_host() bool
 }
 
 struct BrowserChromeState {

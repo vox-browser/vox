@@ -27,6 +27,11 @@ fn configure_native_browser_context(mut context gg.Context) {
 		if !context.native_rendering {
 			return
 		}
+		$if vox_ui2 ? {
+			// UI2 supplies the top row; retain native window capabilities without
+			// constructing AppKit's hidden title bar first.
+			context.window.borderless_window = C.native_browser_chrome_configure_window_host()
+		}
 		// The Cocoa child paints the browser. Its MetalKit parent still starts
 		// before our init callback, so avoid allocating its unused MSAA target.
 		context.window.sample_count = 1
@@ -112,8 +117,12 @@ fn initialize_native_browser_context(user_data voidptr) {
 			install_browser_history_swipe(sapp.macos_get_window(), context.user_data)
 		}
 	}
-	mut app := unsafe { &BrowserApp(context.user_data) }
-	app.start_process_tabs()
+	// A windowless GG lifecycle can have no BrowserApp owner (including the
+	// adapter tests). Process tabs require the live Sokol window in any case.
+	if context.user_data != unsafe { nil } && sapp.isvalid() {
+		mut app := unsafe { &BrowserApp(context.user_data) }
+		app.start_process_tabs()
+	}
 }
 
 fn cleanup_native_browser_context(user_data voidptr) {
