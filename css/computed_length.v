@@ -47,9 +47,6 @@ fn (c &ComputedProperties) absolute_layout_length_to_px(length Length) CSSPixels
 
 fn computed_properties_length_percentage_to_px(c &ComputedProperties, property_id PropertyID, percentage_basis_px f64) ?f64 {
 	value := c.property(property_id, .yes) or { return none }
-	if pixels := c.borrowed_scalar_layout_length_px(value, percentage_basis_px) {
-		return pixels
-	}
 	typed := style_value_logic_from_dom(property_id, value) or { return none }
 	// SVG accepts a unitless <number> for these presentation properties. In
 	// user space that number is a CSS pixel, matching SVGLength::value() and
