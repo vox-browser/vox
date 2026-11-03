@@ -46,6 +46,13 @@ separately from the historical paired Vox/Brave row above.
 | --- | ---: | ---: | ---: | --- | --- |
 | Archived homepage, fresh launch through encoded document PNG | 7 | **3,060,115,612** | **3,087,147,950** | 3.2B reached; **2.7B target open** | [Validated result](docs/HACKER_NEWS_3_2B.md), [2.7B continuation](docs/HACKER_NEWS_2_7B.md) |
 
+The ongoing 2.7B work has a newer complete production benchmark: **3,021,467,114
+median**, **3,025,561,110 maximum**, with exact pixels and all content, PNG,
+identity, ownership and exit audits passing in seven matched pairs. Regression
+suites are deferred until the requested goal is reached, so the fully validated
+row above remains unchanged. See the [progress report](docs/HACKER_NEWS_2_7B.md)
+and [all retained attempts](docs/performance/hn-2700-progress-20261103.json).
+
 **Old Reddit /r/worldnews, Linux Vox follow-up (2026-11-02):** typeface reuse
 reduced median **Cachegrind guest instruction references (Ir)** from
 **7,181,198,185** to **5,794,954,378**, a **19.30%** reduction. The conservative
