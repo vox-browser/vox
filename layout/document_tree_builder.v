@@ -648,6 +648,7 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 		paint_tree: paint_tree
 		paint_tree_storage: result.paint_tree_storage
 		paint_tree_pool: result.paint_tree_pool
+		equal_text_cache: if build_paint_tree { take_document_equal_text_cache(document) } else { unsafe { nil } }
 		resize_handle_states: resize_handle_states
 		record_scratch: take_document_recording_scratch(document)
 		paint_phase_commands: take_document_phase_command_storage(document)

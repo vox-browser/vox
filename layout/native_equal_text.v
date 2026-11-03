@@ -38,6 +38,16 @@ struct NativeEqualTextReplacement {
 	fresh &dom.Node
 }
 
+// This validation index belongs only to the current native layout result.
+// Move its reusable vector after replacement geometry has finished consuming
+// the old result; published paint/geometry snapshots never read this cache.
+fn take_document_equal_text_cache(document &dom.Document) &NativeEqualTextCache {
+	mut previous := document_layout_result(document) or { return unsafe { nil } }
+	cache := previous.equal_text_cache
+	previous.equal_text_cache = unsafe { nil }
+	return cache
+}
+
 fn collect_native_equal_text_inputs(node &Node, mut inputs []NativeEqualTextInput) {
 	// Viewport propagation can replace its synthetic style during an otherwise
 	// unchanged update. Its real root/body styles are checked independently.
@@ -81,16 +91,20 @@ fn (mut result DocumentLayoutResult) remember_native_equal_text_inputs(width f64
 	}
 	mut retained := platform.enter_retained_allocations()
 	defer { retained.finish() }
-	mut inputs := []NativeEqualTextInput{}
+	mut cache := result.equal_text_cache
+	if cache == unsafe { nil } { cache = &NativeEqualTextCache{} }
+	mut inputs := unsafe { cache.inputs }
+	inputs.clear()
 	collect_native_equal_text_inputs(result.root, mut inputs)
-	result.equal_text_cache = &NativeEqualTextCache{
+	unsafe { *cache = NativeEqualTextCache{
 		width:       width
 		height:      height
 		scale:       document.layout_coordinate_scale()
 		fonts:       css.css_style_computer_for(document).font_computer().environment_generation()
 		environment: document.style_environment_version()
 		inputs:      inputs
-	}
+	} }
+	result.equal_text_cache = cache
 }
 
 fn collect_native_equal_text_replacements(node &dom.Node,
