@@ -43,8 +43,8 @@ records the earlier source-browser result and clean worker shutdown. The
 the 3,615-pixel result on both the focused browser and the completed shared
 production bundle, including actual loaded native images. The subsequent
 [device-clip receipt](parity/chatgpt-retina-device-clips-20261103.json) records
-the current 2,117-pixel focused result; shared production validation of that
-last clip change remains pending.
+the current 2,117-pixel result on both the focused source browser and the
+completed shared production bundle.
 No new live Retina parity is claimed.
 
 The earlier continuation used `Build/chatgpt-css-error-lifetime-20261102/`.
@@ -95,8 +95,12 @@ The private source browser required serial compilation (`VJOBS=2`) after the
 parallel compiler reached its 10 GiB limit. The serial compile peaks below
 6.2 GiB without changing either memory limit or compiler frontend. The shared
 production bundle was reused for its native companions; a separate production
-build was not queued. Its earlier 3,615-pixel result does not validate this newer
-clip code. A current diagnostic bypass of the existing SVG device-layout
+build was not queued. The subsequently completed production bundle
+`fdba1913ee89acbda83a3dee895df0ff6a6f03f6f628084948e3b7132311f680`
+(receipt `20261103-165510-d4e2de0d`) now repeats the 2,117-pixel Retina result
+with a byte-identical PNG and all three exact scale-1 captures. Its normal
+library resolution and actual native images are audited; startup smoke passes.
+A current diagnostic bypass of the existing SVG device-layout
 guard still produces 1,611,472 differing pixels; the bypass was removed and
 the guard remains enabled. Full Retina text/control parity and a new live
 Retina check remain open.
