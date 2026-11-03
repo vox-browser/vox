@@ -2376,3 +2376,68 @@ actual parsing/storage and event behavior. Source resolution and active
 scroll-animation ranges remain incomplete in the translated runtime; a positive
 feature probe alone cannot establish those behaviors. The current frozen and
 reduced-scene exact results remain distinct from full live parity.
+
+## Native Document and Element scroll-end handlers
+
+`5f0ab980a` connects Document and HTML/SVG/MathML `onscrollend` accessors to
+the actual native EventTarget handler slots. Detached documents retain separate
+owners. Element listeners and raw content handlers use the same native event
+queue, including handler replacement, equal-text attribute writes, removal,
+callback identity and receiver checks. This does not change CSS feature queries.
+
+The three focused tests pass in default, no-GC and patched production prealloc
+modes. Existing compact Document, native wheel-owner, raw wheel-owner and
+browserjs wheel-handler tests also pass. `scrollend-focused-final/`,
+`scrollend-focused-recovery-2/`, `scrollend-regressions-2/` and
+`scrollend-regressions-recovery-2/` retain commands and guarded results. Earlier
+compile failures from concurrent retained-layout work remain in the preceding
+recovery directories; they are not counted as passes.
+
+`scrollend-native-visual-4/` verifies actual programmatic scrolling in fresh
+native and Brave processes. The element reaches offset 20, the root reaches
+offset 30, and both native handlers receive their correct target, receiver and
+bubbling flag. The page turns green and matches Brave and its unchanged green
+reference at zero differing pixels. Native errors are empty, all browser/guard
+exits are zero, and inputs/executables remain stable. The native executable is
+`d9ac8f02…`. The committed input and reference are
+`Tests/Browser/Ref/scrollend-native-handlers{,.ref}.html`.
+
+Earlier visual attempts are retained: attempt 1 used a comparison path that
+did not recognize repository-local reftests; attempts 2 and 3 called the
+separately unsupported JavaScript `window.scrollTo` method. Attempt 3's audit
+already showed the element handler firing. Attempt 4 uses the existing native
+root-element scrolling API and verifies both handlers. No reference or pixel
+tolerance changed.
+
+`conformance-scrollend-1/` passes the eleven screenshot smoke cases and all
+nine SVG/image mutation guards, including same-size image-source replacement
+and paint-resource lookup/invalidation. Every SVG comparison is pixel-exact;
+input and executable identities remain stable.
+
+Document and Element scroll-end exposure now agree with Brave. CSS
+`animation-range` parsing and active scroll-timeline source/range sampling
+remain incomplete, so ChatGPT still selects its fallback shell. The last valid
+full live pixel result remains 161 differing pixels with maximum channel error
+two; the exact scroll-handler fixture does not establish full ChatGPT parity.
+
+`production-scrollend-clean-18/` repeats the live conversation on executable
+`ea0fd8ca…`, using the unchanged session-14 original frontend/static archive,
+an empty initial native cookie jar and the live backend through SOCKS. Readiness,
+prompt, exact reply and conversation URL checks pass; native/script errors are
+empty. Browser/guard exits are zero, inputs/executables remain stable, and the
+sampled process-tree RSS peak is 2,743,484,416 bytes. The live screenshot still
+differs at 161 pixels with maximum channel error two against the session-14
+Brave image and retained `74279544…` reference. Backend responses are not seeded
+into the cache.
+
+The standard comparison command now recognizes repository-local browser
+reftests as well as upstream reftests:
+
+```sh
+SCREENSHOT_REUSE_PRODUCTION=1 VOX_CAPTURE_DOCUMENT_ACTIVE=1 \
+  ./compare_screenshots.sh Tests/Browser/Ref/scrollend-native-handlers.html
+```
+
+Run it through the required memory guard. `scrollend-canonical-reftest-1/`
+retains a successful invocation on `ea0fd8ca…`: zero differing pixels, normal
+guard/browser exits and stable input/executable identities.
