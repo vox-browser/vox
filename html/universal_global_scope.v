@@ -73,6 +73,11 @@ pub fn (scope &UniversalGlobalScopeMixin) atob(data string) !string {
 			return error('InvalidCharacterError: Input is not valid base64 data')
 		}
 	}
+	// The validated forgiving form may omit padding, while V's decoder
+	// requires complete four-character groups.
+	for stripped.len % 4 != 0 {
+		stripped << `=`
+	}
 	decoded := base64.decode(stripped.bytestr())
 	mut output := []rune{cap: decoded.len}
 	for byte in decoded {

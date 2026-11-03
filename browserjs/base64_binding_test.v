@@ -32,9 +32,9 @@ fn test_global_base64_uses_native_algorithms_and_binary_strings() {
  let conversions=0;const original={};
  const value={toString(){conversions++;return "Zg=="}};
  let preserved=false;try{atob({toString(){throw original}})}catch(error){preserved=error===original}
- let rejected=0;for(const f of [()=>atob(),()=>btoa(),()=>atob(Symbol()),()=>btoa.call({},"a"),()=>new btoa("a")]){try{f()}catch(error){if(error instanceof TypeError)rejected++}}
+ let bindingRejected=0;for(const f of [()=>atob(),()=>btoa(),()=>atob(Symbol()),()=>btoa.call({},"a"),()=>new btoa("a")]){try{f()}catch(error){if(error instanceof TypeError)bindingRejected++}}
  const descriptor=Object.getOwnPropertyDescriptor(globalThis,"atob");
- atob(value)==="f"&&conversions===1&&preserved&&rejected===5&&atob.name==="atob"&&atob.length===1&&descriptor.writable&&descriptor.enumerable&&descriptor.configurable;
+ atob(value)==="f"&&conversions===1&&preserved&&bindingRejected===5&&atob.name==="atob"&&atob.length===1&&descriptor.writable&&descriptor.enumerable&&descriptor.configurable;
  ')! == 'true'
 	assert runtime.evaluate_host('globalThis.atob=17;true')! == 'true'
 	runtime.install_base64_binding()!

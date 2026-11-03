@@ -36,7 +36,15 @@ pub fn (mut runtime Runtime) install_base64_binding() ! {
 fn (mut runtime Runtime) base64_operation(scope &html.UniversalGlobalScopeMixin, args []voidptr) !voidptr {
 	if args.len != 2 { return error('Missing base64 operation or argument') }
 	name := runtime.binding_dom_string(args[0])!
-	data := runtime.binding_dom_string(args[1])!
+	text := runtime.binding_dom_utf16(args[1])!
+	if text.code_units().any(it > 0xff) {
+		return error(if name == 'btoa' {
+			'InvalidCharacterError: Data contains characters outside U+0000 to U+00FF'
+		} else {
+			'InvalidCharacterError: Input is not valid base64 data'
+		})
+	}
+	data := text.str()
 	result := if name == 'btoa' { scope.btoa(data)! } else { scope.atob(data)! }
 	return runtime.binding_string(result)
 }
