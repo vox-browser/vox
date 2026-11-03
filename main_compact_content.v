@@ -96,6 +96,11 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 		apply_javascript_runtime_state(binding.document, state, binding.runtime, mut messages)
 		if messages.len != 0 { return error(messages.join('\n')) }
 	})!
+	runtime.install_document_name_collection_binding(fn [mut binding] (element &dom.Element) !voidptr {
+		_ = binding.element_key(element)
+		mut runtime := unsafe { &browserjs.Runtime(binding.runtime) }
+		return runtime.javascript_event_target(unsafe { &dom.EventTarget(element) }, none)
+	})!
 }
 
 fn (mut binding CompactElementQueryBinding) query_with_temporary_reply(input string) !browserjs.HostFunctionReply {
