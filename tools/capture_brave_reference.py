@@ -177,14 +177,14 @@ def resize_native_viewport(browser, cdp, target, width, height, scale):
     raise RuntimeError(f'Brave could not resize its native viewport to {width}x{height}')
 
 
-def scroll_viewport(cdp, scroll_y):
+def scroll_viewport(cdp, scroll_y, scroll_x=0):
     position = cdp.call('Runtime.evaluate', {
         'expression': 'new Promise(resolve => {scrollTo({top:' + json.dumps(scroll_y) +
-                      ',left:0,behavior:"instant"});requestAnimationFrame(() => '
+                      ',left:' + json.dumps(scroll_x) + ',behavior:"instant"});requestAnimationFrame(() => '
                       'requestAnimationFrame(() => resolve({x:scrollX,y:scrollY})));})',
         'awaitPromise': True, 'returnByValue': True})['result']['value']
-    if position['x'] != 0 or abs(position['y'] - scroll_y) > .001:
-        raise RuntimeError(f'Brave could not reach scroll Y {scroll_y}: {position}')
+    if abs(position['x'] - scroll_x) > .001 or abs(position['y'] - scroll_y) > .001:
+        raise RuntimeError(f'Brave could not reach scroll ({scroll_x}, {scroll_y}): {position}')
     return position
 
 
@@ -201,6 +201,7 @@ def main() -> None:
     parser.add_argument("--freeze", type=Path, help="write the scripted DOM as static HTML")
     parser.add_argument("--settle", type=float, default=2, help="seconds to wait after load")
     parser.add_argument("--scroll-y", type=float, default=0, help="document scroll position in CSS pixels")
+    parser.add_argument("--scroll-x", type=float, default=0, help="horizontal document scroll position in CSS pixels")
     parser.add_argument("--proxy-server", help="HTTP or SOCKS5 proxy for this isolated Brave process")
     parser.add_argument("--cookie-file", type=Path, help="private Netscape cookie jar to import")
     parser.add_argument("--metadata", type=Path, help="write final URL, title, login state and viewport")
@@ -219,6 +220,8 @@ def main() -> None:
         parser.error('--native-scale requires --windowed')
     if not math.isfinite(args.scroll_y) or args.scroll_y < 0:
         parser.error('--scroll-y must be finite and nonnegative')
+    if not math.isfinite(args.scroll_x):
+        parser.error('--scroll-x must be finite')
 
     with tempfile.TemporaryDirectory(prefix="brave-reference-") as profile:
         command = launch_command(args.binary, profile, args.proxy_server, args.windowed)
@@ -274,8 +277,8 @@ def main() -> None:
             cdp.call("Runtime.evaluate", {"expression": "document.fonts.ready.then(() => true)",
                                           "awaitPromise": True})
             time.sleep(args.settle)
-            position = scroll_viewport(cdp, args.scroll_y)
-            if args.scroll_y:
+            position = scroll_viewport(cdp, args.scroll_y, args.scroll_x)
+            if args.scroll_y or args.scroll_x:
                 # Newly visible tiles can first show an intermediate decode.
                 # Let their final raster settle just like the initial viewport.
                 time.sleep(args.settle)

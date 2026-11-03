@@ -11,6 +11,19 @@ from capture_brave_reference import BRAVE, imported_cookies, launch_command, mai
 
 
 class BraveReferenceTests(unittest.TestCase):
+    def test_horizontal_scroll_is_applied_and_observed_including_rtl(self):
+        for x in [200, -50]:
+            with self.subTest(x=x):
+                cdp = Mock()
+                cdp.call.return_value = {'result': {'value': {'x': x, 'y': 0}}}
+                self.assertEqual(scroll_viewport(cdp, 0, x), {'x': x, 'y': 0})
+                request = cdp.call.call_args.args[1]
+                self.assertIn(f'left:{x}', request['expression'])
+                self.assertTrue(request['awaitPromise'])
+                cdp.call.return_value = {'result': {'value': {'x': 0, 'y': 0}}}
+                with self.assertRaisesRegex(RuntimeError, 'could not reach scroll'):
+                    scroll_viewport(cdp, 0, x)
+
     def test_emulated_references_pin_process_scale_while_native_captures_use_the_display(self):
         for scale, native in [(1, False), (2, False), (2, True)]:
             with self.subTest(scale=scale, native=native):
