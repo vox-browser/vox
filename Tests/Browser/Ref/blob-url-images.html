@@ -1,0 +1,29 @@
+<!doctype html>
+<link rel="match" href="blob-url-images.ref.html">
+<style>
+  body { margin: 0; display: flex; gap: 4px; }
+  img, #status { display: block; width: 32px; height: 32px; }
+  #status { background: red; }
+</style>
+<img id="png"><img id="svg"><div id="status"></div>
+<script>
+  const png = document.getElementById('png');
+  const svg = document.getElementById('svg');
+  const indicator = document.getElementById('status');
+  const encoded = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const bytes = Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
+  const sources = [
+    [png, new Blob([bytes], {type: 'image/png'}), 1, 1],
+    [svg, new Blob(['<svg xmlns="http://www.w3.org/2000/svg" width="7" height="5"><rect width="7" height="5" fill="green"/></svg>'], {type: 'image/svg+xml'}), 7, 5],
+  ];
+  let loaded = 0;
+  for (const [image, blob, width, height] of sources) {
+    const address = URL.createObjectURL(blob);
+    image.addEventListener('load', () => {
+      URL.revokeObjectURL(address);
+      if (image.naturalWidth === width && image.naturalHeight === height && ++loaded === 2)
+        indicator.style.background = 'green';
+    });
+    image.src = address;
+  }
+</script>

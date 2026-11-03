@@ -229,11 +229,26 @@ pub fn (image &HTMLImageElementModel) event_target() &dom.EventTarget {
 
 fn (mut image HTMLImageElementModel) fire_event(name string) {
 	image.event_counts_[name]++
-	event := dom.Event.create(name, dom.EventInit{})
 	if element := image.element_ {
-		unsafe { &dom.EventTarget(element) }.dispatch_event(event)
+		// Source selection may complete inside an IDL setter or layout. Image
+		// events run as element tasks, after that native algorithm returns.
+		// Retain the selected request so a superseding source cannot deliver
+		// the old load/error event to the replacement image.
+		document := image.document_
+		request := image.current_request_
+		request_url := request.current_url()
+		request_state := request.state()
+		image_pointer := &image
+		queue_a_task(.dom_manipulation, image_decode_event_loop(document), document,
+			fn [image_pointer, element, document, request, request_url, request_state, name] () {
+				if voidptr(image_pointer.document_) != voidptr(document)
+					|| voidptr(image_pointer.current_request_) != voidptr(request)
+					|| request.current_url() != request_url || request.state() != request_state
+					|| !document.is_fully_active() { return }
+				unsafe { &dom.EventTarget(element) }.dispatch_event(dom.Event.create(name, dom.EventInit{}))
+			})
 	} else {
-		image.event_target_.dispatch_event(event)
+		image.event_target_.dispatch_event(dom.Event.create(name, dom.EventInit{}))
 	}
 }
 
