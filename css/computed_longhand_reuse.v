@@ -120,6 +120,7 @@ struct ComputedLonghandReuseEntry {
 struct ComputedLonghandReuseCache {
 mut:
 	entries map[u64]&ComputedLonghandReuseEntry
+	parent_hashes map[u64]ComputedLonghandParentHashHint
 }
 
 // Copy scalar payloads rather than retaining their mutable sum-type boxes.
@@ -518,21 +519,7 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 			return none
 		}
 	}
-	mut hash := u64(0x9e3779b97f4a7c15)
-	// Eligible cascades cannot explicitly inherit a non-inherited property or
-	// contain context-dependent substitutions. Only inherited parent inputs
-	// participate in this loop; element adjustments still run after every hit.
-	ensure_computed_interpolation_inherited_cache()
-	for index in 0 .. number_of_longhand_properties {
-		if computed_interpolation_inherited_cache[index] == 0 { continue }
-		value := parent.raw_property_at_index(index)
-		mut value_hash := u64(0)
-		if value != unsafe { nil } {
-			if value.css_value_handle == unsafe { nil } { return none }
-			value_hash = computed_longhand_reuse_value_hash(value) or { u64(voidptr(value.css_value_handle)) }
-		}
-		hash = (hash ^ value_hash) * u64(0x100000001b3)
-	}
+	mut hash := s.inherited_longhand_hash_hint(parent, element) or { return none }
 	if disable_longhand_eligibility_first {
 		cascade_key = computed_longhand_cascade_key(cascaded) or { return none }
 	}
@@ -675,6 +662,10 @@ fn (s &StyleComputer) remember_computed_longhands(key ComputedLonghandReuseKey,
 			parent_inputs << ComputedLonghandReuseInput{ id: id, value: unsafe { nil } }
 			continue
 		}
+		// A hash hint is not an eligibility or equality proof. A caller can
+		// mutate a DOM bridge directly without bumping its graph epoch. Exact
+		// restore guards reject that entry; do not publish an untyped snapshot.
+		if value.css_value_handle == unsafe { nil } { return }
 		parent_inputs << ComputedLonghandReuseInput{
 			id:           id
 			value:        value
