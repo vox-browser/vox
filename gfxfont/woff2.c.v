@@ -6,21 +6,27 @@ module gfxfont
 $if darwin {
 	$if arm64 {
 		#flag -I @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include
-		#flag -L @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
-		#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
+		$if !vox_filter_worker_minimal_links ? {
+			#flag -L @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
+			#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
+		}
 	} $else {
 		#flag -I @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/include
-		#flag -L @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib
-		#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib
+		$if !vox_filter_worker_minimal_links ? {
+			#flag -L @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib
+			#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib
+		}
 	}
 	#flag -lc++
 } $else {
 	#flag -lstdc++
 }
-#flag -lwoff2dec
-#flag -lwoff2common
-#flag -lbrotlidec
-#flag -lbrotlicommon
+$if !vox_filter_worker_minimal_links ? {
+	#flag -lwoff2dec
+	#flag -lwoff2common
+	#flag -lbrotlidec
+	#flag -lbrotlicommon
+}
 $if !linux {
 	#flag @DIR/woff2.o
 }

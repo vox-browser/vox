@@ -88,6 +88,7 @@ fn evaluate_default_worker(source string) !string {
 pub fn run_default_worker_role(arguments []string) ?int {
 	if arguments.len < 2 || arguments[1] != '--vox-adblock-worker-v1' { return none }
 	if arguments.len != 2 || C.vox_adblock_worker_begin_lifetime_watch() != 0 { return 64 }
+	configure_filter_worker_javascript_startup()
 	mut context := create_context(none) or {
 		message := err.msg()
 		_ = C.vox_adblock_worker_send_frame(4, 6, 0, message.str, uint(message.len), 0)

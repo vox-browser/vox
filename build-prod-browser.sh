@@ -292,7 +292,7 @@ fi
 # Keep the filter worker's entry point independent of browser/UI initialization.
 # It uses the same engine, snapshot resource and private transport as self-exec.
 helper_tmp="$compile_dir/VoxAdblockWorker"
-set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
+set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf -d vox_filter_worker_minimal_links \
     -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|@vmodules|@vlib"
 helper_cflags=-O2
 if [ "$gc_mode" = prealloc ]; then
@@ -309,7 +309,7 @@ else
 fi
 # Imported font/runtime modules may contribute link flags without any live
 # helper symbols. Do not initialize their unused native libraries at startup.
-"$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip_dylibs" \
+"$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
     -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini/main.v"
 chmod 755 "$helper_tmp"
 if command -v codesign >/dev/null 2>&1; then

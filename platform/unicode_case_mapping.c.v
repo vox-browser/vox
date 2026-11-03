@@ -8,7 +8,9 @@ $if linux {
 }
 #flag darwin -I/opt/homebrew/opt/icu4c/include
 #flag darwin -L/opt/homebrew/opt/icu4c/lib
-#flag darwin -licuuc
+$if !vox_filter_worker_minimal_links ? {
+	#flag darwin -licuuc
+}
 #flag darwin -lc++
 #flag linux -lstdc++
 $if linux {
