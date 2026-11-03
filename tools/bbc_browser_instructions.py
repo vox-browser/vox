@@ -17,6 +17,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import threading
+import time
 from urllib.parse import urlsplit
 
 import hacker_news_browser_instructions as browser
@@ -147,7 +148,7 @@ def trial_order(index, control=False):
 
 
 def verify_benchmark_inputs(paths, pinned, trial_folder):
-    """Retain the failing observation even if a concurrent write is restored."""
+    """Keep each post-trial observation, including later-superseded bundles."""
     try:
         observed = browser.fingerprint(paths)
     except OSError as error:
@@ -162,6 +163,8 @@ def verify_benchmark_inputs(paths, pinned, trial_folder):
         browser.write_json(trial_folder / 'input-identity-failure.json', dict(
             invalidates_cohort=True, changed_inputs=changed))
         browser.require(False, 'Pinned benchmark input changed')
+    browser.write_json(trial_folder / 'input-identity-after.json', dict(
+        passed=True, observed_unix=time.time(), files=observed))
 
 
 def audit_instruction_logging(row, log, diagnostic=False):

@@ -25,13 +25,19 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
-    def test_unchanged_input_identity_does_not_create_a_failure_receipt(self):
+    def test_verified_identity_survives_a_later_shared_bundle_replacement(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
             source = root / 'input.txt'
             source.write_text('original')
-            verify_benchmark_inputs({source}, fingerprint({source}), root)
+            pinned = fingerprint({source})
+            with patch('bbc_browser_instructions.time.time', return_value=12345):
+                verify_benchmark_inputs({source}, pinned, root)
             self.assertFalse((root / 'input-identity-failure.json').exists())
+            source.write_text('later production bundle')
+            receipt = json.loads((root / 'input-identity-after.json').read_text())
+            self.assertEqual(receipt, dict(passed=True, observed_unix=12345, files=pinned))
+            self.assertNotEqual(receipt['files'], fingerprint({source}))
 
     def test_transient_input_change_remains_recorded_after_original_bytes_return(self):
         with TemporaryDirectory() as directory:
@@ -49,6 +55,7 @@ class BBCInstructionTests(unittest.TestCase):
             self.assertTrue(receipt['invalidates_cohort'])
             self.assertEqual(receipt['changed_inputs'], [dict(path=str(source),
                 expected=pinned[str(source)], observed=changed[str(source)])])
+            self.assertFalse((root / 'input-identity-after.json').exists())
 
     def test_unavailable_input_is_recorded_and_still_rejected(self):
         with TemporaryDirectory() as directory:
@@ -62,6 +69,7 @@ class BBCInstructionTests(unittest.TestCase):
             receipt = json.loads((root / 'input-identity-failure.json').read_text())
             self.assertTrue(receipt['invalidates_cohort'])
             self.assertEqual(receipt['unavailable_input'], str(source))
+            self.assertFalse((root / 'input-identity-after.json').exists())
 
     def test_baseline_jit_settings_are_isolated_from_brave_and_restored_on_failure(self):
         environment = dict(VOX_PROXY='socks5h://fixture', VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY='1')
