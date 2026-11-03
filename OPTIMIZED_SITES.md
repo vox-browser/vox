@@ -27,6 +27,18 @@ claim remains frozen-page startup/capture work and establishes no rendering-time
 or scrolling-FPS gain. See the [report](docs/HACKER_NEWS_VOX_REDUCTION.md) and
 [raw counts](docs/performance/hn-vox-reduction-20261102.json).
 
+**Hacker News, 3.2B target (2026-11-03):** seven fresh default-production launches
+reach **3,060,115,612 median** and **3,087,147,950 maximum** observed coalition
+instructions through encoded document PNG availability. Every trial passes exact
+pixels, all 30 stories, PNG profile/density/metadata, ownership and normal-exit
+audits. A separate seven-pair control/default cohort measures 3,133,122,728 →
+3,061,561,124 medians; all fourteen output PNGs are byte-identical. Original
+scripts run through JavaScriptCore. These are frozen-page startup/capture
+results, with retained OS caches and excluded GPU/outside-service work, and
+provide no new Brave ratio, isolated rendering time or scrolling-fps claim.
+See the [report](docs/HACKER_NEWS_3_2B.md) and
+[pinned evidence](docs/performance/hn-3200-progress-20261103.json).
+
 **Old Reddit /r/worldnews, Linux Vox follow-up (2026-11-02):** typeface reuse
 reduced median **Cachegrind guest instruction references (Ir)** from
 **7,181,198,185** to **5,794,954,378**, a **19.30%** reduction. The conservative

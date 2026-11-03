@@ -1,8 +1,10 @@
 # Hacker News 3.2B instruction target
 
-The requested **3,200,000,000 instruction target remains open**. The criterion,
-chosen before the new cohort, is at least seven complete default production
-trials with both median and highest upper count at or below that ceiling.
+The **3,200,000,000 instruction target is reached**. Seven default production
+trials of the latest validated installed bundle have a **3,060,115,612 median**
+and **3,087,147,950 maximum**, preserving pixels, content, scripts and PNG metadata.
+The criterion, chosen before measurement, requires at least seven complete
+default-production trials with both median and highest upper count below 3.2B.
 The earlier [additional 15% result](HACKER_NEWS_VOX_REDUCTION.md) remains a
 separate historical result. [Exact progress counts](performance/hn-3200-progress-20261102.json)
 retain the new baseline, matched experiment and production diagnostic.
@@ -143,7 +145,7 @@ All 21 screenshots and separate signing, real startup, helper and live HTTPS
 checks pass. A first test compile lacking the metrics header is retained as a
 failed attempt. Evidence is under `file-font-manager-matched/`,
 `file-font-manager-path/`, `broad-file-font-manager/` and
-`file-font-manager-checks/`. The shared production build remains pending;
+`file-font-manager-checks/`. At that stage, the shared production build remained pending;
 these are native-library override results and do not meet the 3.2B criterion.
 
 ## Earlier background requests
@@ -190,7 +192,7 @@ had JIT disabled by macOS and is explicitly excluded from tuning evidence.
 Neither disabling JIT tiers nor changing author-script policy is shipped.
 
 The matched explicit-option cohort is not default acceptance of the new V
-startup setter. Its production validation remains pending. Raw evidence is in
+startup setter. Its production validation was pending at that stage. Raw evidence is in
 `jit-warmup-final/`, `jit-warmup-matched/`, `jit-warmup-proof/`,
 `broad-jit-warmup/`, `jit-warmup-live/`, the signed workload JSON files and the
 `hn-3200-javascript-startup-{build,run}` guards.
@@ -231,10 +233,187 @@ An RGBA glyph-scratch experiment changed reference pixels and was removed;
 window, Cocoa-host and font-registration prototypes supplied insufficient gains
 and have no retained production implementation. No pixel tolerance was changed.
 
-The shared publisher still has no completed production bundle newer than
+At the end of the November 2 work, the shared publisher had no completed production bundle newer than
 `0bb14e2f…`: source changes repeatedly supersede successful compilations, with
 additional retained shell-read failures before the separate build-script fix.
 The available older bundle supplies the explicit-option/native-library evidence
 above but cannot validate the new prefetch, startup setter or PNG consumer.
-No duplicate production build is queued by this session. The **3.2B target
-remains open**; component savings are not added to fabricate a production count.
+No duplicate production build is queued by this session. The **3.2B target was still open** at that stage; component savings were not
+added to fabricate a production count.
+
+## November 3 continuation
+
+The first default-production cohort to pass the 3.2B gate is
+`production-host-20261103`: **3,162,278,999 median**, **3,177,812,007 maximum**,
+seven fresh launches of executable SHA256
+`d3552ab31dbaa9d0baa3ab251fd8aff68d5aa68a801671161c5c450f4feae636`,
+receipt `20261103-025233-b769a022`. All seven retain exact reference pixels,
+all 30 story IDs, successful ownership/identity audits and normal exits.
+A separate PNG audit confirms unchanged profile, density and non-IDAT metadata.
+The [November 3 evidence](performance/hn-3200-progress-20261103.json) records
+all cohorts and raw counts, including invalid attempts.
+
+This retains the scope above: fresh exclusive resource-coalition creation
+through encoded document PNG availability, original scripts/resources, private
+profiles/caches, fixed viewport/scale/settle, retained OS caches and excluded
+GPU/outside-service work. These are observed coalition instructions for the
+frozen archive, without a new Brave comparison or scrolling claim.
+
+Intermediate seven-trial default medians were 3,626,156,796
+(`resume-production-v3-20261103`), 3,599,947,602
+(`production-builtins-20261103`) and 3,459,426,439
+(`production-combined-20261103`, maximum 3,468,792,946). No component savings
+are added to manufacture a default result.
+
+Retained changes and their separate matched evidence:
+
+- `1e50a6f22` defers uBO's full builtin scriptlet module until requested.
+  Indexed matching resources and original scriptlet functions/dependencies
+  remain available. Seven pairs save 17,811,768 instructions between medians;
+  every pair improves and all fourteen captures are exact. Thirty JS/native
+  checks and the complete boehm V filter suite passed before the test deferral;
+  the interrupted none-mode run is not reported as complete.
+- `da3dc2418` adds bounded fixed-Huffman distance-four pixel runs before the
+  existing libdeflate codec. Ineligible input and output overflow retain that
+  codec and the existing PNG fallbacks. Seven pairs reduce the median from
+  3,653,920,494 to 3,527,026,041 (126,894,453). All fourteen captures are exact.
+  Larger PNG output is a deliberate tradeoff: the archived image's IDAT grows
+  to about 1.09 MB, versus about 0.37 MB for the matched control, while decoded RGBA,
+  profile, density and non-IDAT metadata remain identical.
+- `199824be1` opens configured fallback document fonts only when needed.
+  Explicit-face replay can use its own bytes directly. Explicit configuration
+  still refreshes the same path; failed replacements keep the previous face.
+  Seven pairs save 16,668,615 instructions between medians, with one individual
+  pair regression retained.
+- `a79c8977a` extends baseline JSC warm-up from 5,000 to 10,000, preserving
+  explicit options and all JIT tiers. Seven pairs save 11,909,886 instructions
+  between medians; two individual regressions remain recorded. A signed runtime
+  check confirms baseline/DFG/JIT enabled, the selected option, real execution
+  and caller-option preservation. This remains startup tuning, not a claim
+  that arbitrary JavaScript runs faster.
+- `088355395` defers unused UA style declarations using the existing lazy
+  parser and process-lifetime ownership. Eager/lazy serializations and surviving
+  a materializing document's arena release pass. This has no isolated
+  whole-browser instruction attribution.
+- `6edd5fdc9` resolves eligible small direct SVG triangles on the CPU, with
+  the actual device sample-position guard, transactional rejection and the GPU
+  fallback. Seven pairs reduce the median from 3,517,310,874 to 3,362,668,977;
+  all fourteen captures are exact. The earlier clipped and ambiguous prototypes
+  remain separate diagnostics. Generic SVG picture batches retain their prior
+  convex-path policy.
+
+Commit `b7a9b7efb` avoids constructing a hidden native title bar in the UI2 host while
+retaining native focus, resize, close and fullscreen capabilities. Its seven
+injected diagnostic pairs have a 3,192,368,726 median but a 3,237,553,474 maximum,
+so they do not pass the gate. The default production cohort above does pass.
+Deferred checks found that AppKit's ordinary `performClose:` depends on its
+missing standard button; the host now forwards that request to the existing
+window delegate. The normal titled host remains a diagnostic fallback. A broader V lifecycle
+check also exposed an existing unconditional BrowserApp cast in windowless GG
+initialization; the adapter now waits for a live owned Sokol window before
+starting process tabs. The complete native-window adapter tests then pass.
+
+Commit `48f91cf77` adds direct immutable-frame capture. Its first seven
+pairs have a 3,142,416,357 candidate median and 3,152,525,570 maximum. A subsequent
+default-production cohort (`production-capture-20261103`, executable
+`107814245c9defc216e452388949a272894fd5a1b84ef4b8e53531ec7fcdb12f`) has a
+3,085,254,004 median and 3,099,808,329 maximum. Both preserve pixels, content and
+ownership, **but the extended PNG audit rejects them for final acceptance**:
+retaining logical bitmap size changed density/Exif metadata that the original
+color conversion discarded. Source now preserves that existing metadata and
+rejects unsupported overlays/layers, transforms, clipping, formats and oversized
+source buffers. The corrected production result is recorded below; the raw earlier
+cohorts and their original summaries are unchanged.
+
+The user requested tests only after the goal. Suites resumed after the seven
+valid default host trials passed. The retained changes pass 328 compressor
+round trips plus noisy/invalid/capacity/unaligned guards and sanitizers; 270 PNG
+pixel/profile/density/metadata comparisons under ARC/MRC with sanitizers;
+1,088 exact direct GPU triangle comparisons and 64 transactional fallbacks
+with sanitizers; 282 existing polygon comparisons and 742 fallbacks; native
+font refresh/failure tests; and native host/capture ARC/MRC and memory checks.
+The default `107814245…` bundle passes all 21 screenshot comparisons, signature,
+startup, filter-helper startup, and a fresh live HTTPS load with all 30 stories
+and no script/native errors. These functional checks do not erase its PNG
+metadata regression. Corrected capture fixtures compare actual Quartz replay,
+row orientation, cropped regions, density, overlays and stale-frame rejection.
+
+Rejected work remains recorded. Geometry-materialization reuse regressed its
+component probe and earned no whole-page credit. Glyph identity caching had
+small mixed results and was removed; direct glyph pixels changed the reference
+and were removed. The font-page projection experiment failed its eligibility
+assertion and was removed without attribution. Extra JSC threshold tuning hit
+an ownership failure and was not retained. Early native fixture compile failures
+(MRC weak references and an obsolete missing zlib link flag), host close failure,
+windowless high-density capture fixtures, and the superseded/ownership/pinned-
+input failures all remain under `Build/hn-3200-20261102/`.
+
+The benchmark's new `run-import-pins-20261103.py` pins imported executable tool
+modules and the guard instead of every unrelated site tool/test in `tools/`.
+App/native/runtime/service/fixture/reference pins and endpoints are unchanged.
+Earlier all-tools failures remain invalid under their original policy. The
+first narrowed-pin triangle attempt was also invalidated by bundle publication;
+the later complete cohort supplies its attribution. Host load and raw commands
+remain in each input and memory-guard receipt.
+
+The first corrected-build matched cohort is retained as invalid: independent
+Engadget and BBC launches appeared during pair 5, after its preexisting-task
+snapshot. The unchanged strict ownership audit rejected that trial. All fourteen
+PNG profile/density/metadata checks passed, but no samples are excluded to
+turn that failed cohort into acceptance. `final-cohort-contention-20261103.json`
+retains the observed command lines and the ownership failure.
+
+
+## Corrected production acceptance
+
+`production-final-matched-v2-20261103` uses the completed production executable
+SHA256 `2f0771f27b0993071f274965a240eded0393e899c482fd89b00cdee84454be2f`,
+receipt `20261103-031356-b4de7787`. Seven alternating control/default pairs
+retain every attempt. Control disables only presented-frame capture; the default
+variant has no diagnostic overrides. Median observed launch-through-PNG
+instructions fall from **3,133,122,728** to **3,061,561,124**, a **71,561,604**
+difference. Every pair improves, and the highest default count is
+**3,072,667,509**, below the 3.2B ceiling. All fourteen pass exact content,
+readiness, exclusive-coalition helper ownership, identity and normal-exit audits.
+The guard adopted the private PID registry, with no adoption error.
+
+The extended audit is now part of each acceptance trial and pins the original
+control PNG used for profile/density/non-IDAT metadata. All fourteen PNG files
+are byte-identical: SHA256
+`8350761c3f65d79b7d88610187dbe4d24cbd983c18951a9f1bc782e7c2fbff13`.
+The earlier metadata-regressed cohorts remain rejected and unchanged. Separate
+logging-only diagnostic captures prove 21 direct SVG triangle resolves and one
+2048×1536 presented-frame export; configured fallback fonts remain unopened.
+Those diagnostic counters supply no acceptance credit.
+
+The corrected production build contains the final metadata and layer/bounds
+guards, the close-delegate fix, the windowless lifecycle guard, and excludes the
+rejected font-page prototype. The final installed-bundle and broader checks are
+recorded below.
+
+
+The subsequently completed installed bundle also passes seven fresh default
+trials (`installed-final-20261103`): **3,060,115,612 median**,
+**3,087,147,950 maximum**. Executable SHA256 is
+`903ed05bc3aa460f6015fc465e3873a77d70fa601306c7bb46f18fd34aa95aeb`, receipt
+`20261103-031832-1710879f`. All seven pass exact pixels/content, PNG profile,
+density/metadata, ownership, identity and normal-exit checks. This supplies a
+second passing production build without replacing the matched attribution
+cohort. Both retain the original 3.2B median/maximum criterion.
+
+
+The installed `903ed05…` bundle passes all **21** final screenshot comparisons
+(11 smoke, eight SVG mutation guards and two turbulence cases), signature,
+non-windowed engine startup and isolated filter-helper startup. A fresh live
+HTTPS launch has the correct title/URL, complete readiness, 1024×768 viewport,
+all 30 stories and no script/native errors. Runtime diagnostics confirm all JIT
+tiers enabled and warm-up 10,000. The complete check uses unchanged input pins,
+normal browser/guard exits and a 12 GiB guard; raw commands, logs, actual PNGs
+and comparisons are in `production-final-v2-checks-20261103/` and its guard.
+This is functional live validation, without a live instruction-count claim.
+
+Implementation and focused tests are committed on shared `master`. All aborted,
+regressed, metadata-rejected and ownership-invalid cohorts remain retained.
+The raw evidence root is `Build/hn-3200-20261102/`; the durable JSON also embeds
+exact selected counts, executable/native/resource/reference pins, input-receipt
+hashes, extended PNG audits, verification guards and final functional results.
