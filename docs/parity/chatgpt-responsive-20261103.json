@@ -1,0 +1,425 @@
+{
+  "version": 1,
+  "feature_commit": "cca118e7c",
+  "scope": "Frozen original guest DOM and original static resources; CSS viewport parity at scale 1. This does not validate live application execution, responsive JavaScript, other routes, signed-in sessions, or performance.",
+  "viewport_baseline": {
+    "results": [
+      {
+        "viewport": [
+          800,
+          600
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 479849,
+        "max_channel_error": 247,
+        "bounds": [
+          0,
+          0,
+          800,
+          600
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 14,
+        "max_channel_error": 2,
+        "bounds": [
+          571,
+          452,
+          713,
+          459
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1280,
+          800
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 14,
+        "max_channel_error": 2,
+        "bounds": [
+          699,
+          468,
+          841,
+          475
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+  },
+  "viewport_production": {
+    "results": [
+      {
+        "viewport": [
+          800,
+          600
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 0,
+        "max_channel_error": 0,
+        "bounds": null,
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 14,
+        "max_channel_error": 2,
+        "bounds": [
+          571,
+          452,
+          713,
+          459
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      },
+      {
+        "viewport": [
+          1280,
+          800
+        ],
+        "exit": 0,
+        "stable": true,
+        "differing_pixels": 14,
+        "max_channel_error": 2,
+        "bounds": [
+          699,
+          468,
+          841,
+          475
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Original new guest frontend DOM frozen after archived-script execution; no live functionality or JS-responsive claim"
+  },
+  "fixture_baseline": {
+    "exit": 0,
+    "identity_stable": true,
+    "fixture_stable": true,
+    "fixture_sha256": "7e46abec3703bd269194ceefcc62aeb5f2cf4d91828e335891f953bad2d9945e",
+    "reference_stable": true,
+    "reference_sha256": "118a99e6efad3ed6fc7cd7f36a20b162b5465095a4f8aee2d1480de065b35dfe",
+    "differing_pixels": 23040,
+    "max_channel_error": 255,
+    "bounds": [
+      8,
+      8,
+      168,
+      192
+    ]
+  },
+  "fixture_production": {
+    "exit": 0,
+    "identity_stable": true,
+    "fixture_stable": true,
+    "fixture_sha256": "7e46abec3703bd269194ceefcc62aeb5f2cf4d91828e335891f953bad2d9945e",
+    "reference_stable": true,
+    "reference_sha256": "118a99e6efad3ed6fc7cd7f36a20b162b5465095a4f8aee2d1480de065b35dfe",
+    "differing_pixels": 0,
+    "max_channel_error": 0,
+    "bounds": null
+  },
+  "production_receipt": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "406aaa0e2a9130580d16bfcadc8ee08c8b0fa05f59cd9f0ec2ee18383b342808",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-110455-30b1ed31/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "8e3aba9a12514f254b3845f8e6e5ad305aaa2d8e6abeb5b6fbae9b07aea5ec06",
+      "dirty": true,
+      "head": "1942d8358395abd6644c3e12633a98f4dfd8acbb",
+      "repository_sha256": "646a062d860cac39301808026906154e4beafcebe2c5c6dd1b1df4e5db61095c"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "7a577326292adf0d72cd0a7e1c8e005ee745b647596f9ba52f5dcfa15e461576",
+      "dirty": true,
+      "head": "cca118e7c3f83f837bb0cb02287ed7970a51a6c1",
+      "repository_sha256": "822ed50d6a3d8a77daa5986015989321f6e4ec043ec630bd387af615b3bbc44b"
+    },
+    "request": {
+      "head": "1942d8358395abd6644c3e12633a98f4dfd8acbb",
+      "id": "46def683bb5543068481163089c5b70e"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "8e3aba9a12514f254b3845f8e6e5ad305aaa2d8e6abeb5b6fbae9b07aea5ec06",
+      "dirty": true,
+      "head": "79d1b09b485ba509145ad4a6246a49845691a50c",
+      "repository_sha256": "646a062d860cac39301808026906154e4beafcebe2c5c6dd1b1df4e5db61095c"
+    }
+  },
+  "production_identity": {
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "406aaa0e2a9130580d16bfcadc8ee08c8b0fa05f59cd9f0ec2ee18383b342808",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "50d6dfb5d1e51cae458b9d0ed86324eab4ab8eda32b6ae2c30a1169493556347",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "e0fea5d0e405d9fb3930f077881b08f1972bb0cf406b31d9bf7f9ba160e9bb9a",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "75a5c2f821b93622c91d0ff1182940327e91dac7ba40c25f88fa18a0f2da807d",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "3481c98e843c7e2eb5d13467ad121be8f4fe34ca330e8bd7d1e8b52b7b3e7560",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "5854522365d6d46dbe6d1eff338e8f3914bed10b0afc6eeedaea47005ad0c6de",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "d5e75ebad8c58bd64592e4478d630e2fe5fbdf64284b8895afd4bb87286bf899",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "6064b422d7b2c00d8851cecd5c9d1bb8e29deef3e871a388b0cf74b410c04b2c",
+    "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+    "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+    "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+    "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+    "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+    "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+    "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+    "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+    "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+    "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+    "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+    "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+    "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+    "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+    "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+    "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+    "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+  },
+  "brave_identity": {
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate": "ebc6875371b1420975ab976c5d3cfc15a5f4a9c778dc76fd9b9afbfdd3f3166e",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/fileop": "1d959c5d6292f4aab5a95852b47c6ef6141f70167377a351d4380ae5626e7a57",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Frameworks/Sparkle.framework/Versions/A/Sparkle": "d8379323197e3742cd686b5aa89c4519df479b70ce3e9ebfaa6c4ab7dacdcf40",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Alerts).app/Contents/MacOS/Brave Browser Helper (Alerts)": "a3594241966570ba7ca1f4dc00f81eb7b1e6115b92b89b57d4b8acfa20420e0e",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Alerts).app/Contents/MacOS/Brave Browser Helper (Aperitif Alerts)": "9cdd6c3a5e6e7f8120693fab4492c42548c8f34f46493fb23a54a68967ee1e13",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif GPU).app/Contents/MacOS/Brave Browser Helper (Aperitif GPU)": "9cae87633cf08dc672cd7e45fae461ba5b36171ae567a99aca045ff052653bc3",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif Renderer).app/Contents/MacOS/Brave Browser Helper (Aperitif Renderer)": "8acaf22ff4e577f8b8a362fd74a13b9fc0ba7953a31e1714e10b487e6ee1b93d",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Aperitif).app/Contents/MacOS/Brave Browser Helper (Aperitif)": "4b9ae62730bd5d5d7b782e3c3b63f09652c7513d83052dbb72af56abe1919f35",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (GPU).app/Contents/MacOS/Brave Browser Helper (GPU)": "3cd2b38ff5228ecccfd23252127c7c86fb3fbf2136ab64a582a0d06dda39e8b7",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)": "307d3220b9b43a00ec9bc360c405d4facd71127c691efbba62eb6f059c36a86f",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper": "c4a320f8c699d04e399ef9f1844e3c0d78977446ebd7ef7154aaedef4008fd14",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Helpers/ksinstall": "b5d9a1267030939ec2288818d2911294c64a380b7a327461edcf524ce1966a58",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/BraveSoftwareUpdate": "a33dc680feb439ea636f4486e0cda073648b856ead72aa5a50f76e4acf341ea4",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/MacOS/ksadmin": "8ceb066dc32b71fb7b0856f946424aace6f0a9229f75d0bcaf34bebdde1c6788",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/BraveSoftwareUpdate.bundle/Contents/Resources/BraveSoftwareUpdateAgent.app/Contents/MacOS/BraveSoftwareUpdateAgent": "8b3a8f3e67c803c4feded97b13d7c317e5a1bbf7044f56b84e654af930e862a7",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/Helpers/launcher": "2ba5689082bb3e4ca1844d36185702a6d4112202e8a980315d915a67ab392440",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/BraveUpdater.app/Contents/MacOS/BraveUpdater": "d54d7f60c28ef2f34698258adaeded810b2c2913f4598b7a5bb62db8c4e21140",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/app_mode_loader": "31e7599d4dcc9397e585a2f2c9080fa8a65892661fbc1a14ed84927333d7f3e2",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler": "38bc83e131977f982382654181dfda672088a496986c1702f450ae0415b07ae9",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/web_app_shortcut_copier": "a00f1bc59c7879ce73b4ec1e5a4faad1497928cbfc369a8aff7ce77a7b95bd28",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libaperitif.dylib": "263b95355d83757f40d20055335fa0bb1f7c240698fa1828b30aad9c5bfe5383",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvk_swiftshader.dylib": "a1b97bd24c5ae5fc4b34d8ffda819e118a018784545156603fdb0f59863a3145",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Libraries/libvulkan.dylib": "bdf5e8973f507008d19e9697d3c8afbd5271262e70d5357a4ce51eb24c1b9451",
+    "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/Current/Brave Browser Framework": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+  },
+  "compiler_proof": {
+    "compiler_input": "Build/production-build/receipts/20261103-110455-30b1ed31/frozen-compiler-inputs/0-Vox.c.i",
+    "sha256": "e956dbbb6d1d4d4a9abe621d29230f158af53a361016b5a179033a95366a2c2d",
+    "contains_length_precision": true,
+    "contains_policy": true
+  },
+  "focused_checks": {
+    "results": [
+      {
+        "mode": "default",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "default",
+        "stage": "runtime",
+        "exit": 0
+      },
+      {
+        "mode": "none",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "none",
+        "stage": "runtime",
+        "exit": 0
+      },
+      {
+        "mode": "prealloc",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "mode": "prealloc",
+        "stage": "runtime",
+        "exit": 0
+      }
+    ],
+    "sources": {
+      "stable": true,
+      "after": {
+        "css/media_queries.v": "5d066e09288a1a247b6f647fdc9d6272cf36da901a1e4efebd1bac6d43fe5bf1",
+        "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424"
+      }
+    },
+    "allocator": {
+      "bounded_realloc_symbol": true
+    }
+  },
+  "existing_media_checks": {
+    "results": [
+      {
+        "test": "css/media_evaluation_test.v",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "test": "css/media_evaluation_test.v",
+        "stage": "runtime",
+        "exit": 0
+      },
+      {
+        "test": "css/media_query_parse_retention_test.v",
+        "stage": "compile",
+        "exit": 0
+      },
+      {
+        "test": "css/media_query_parse_retention_test.v",
+        "stage": "runtime",
+        "exit": 0
+      }
+    ],
+    "sources": {
+      "stable": true,
+      "after": {
+        "css/media_queries.v": "5d066e09288a1a247b6f647fdc9d6272cf36da901a1e4efebd1bac6d43fe5bf1",
+        "css/media_evaluation_test.v": "9808b687eba34d06db09d71a85bc24b326b36e9f74cf7763bc32b49df2ed4dff",
+        "css/media_query_parse_retention_test.v": "f72196e0f99a52a64c8496794c3d5746f46779c71504fb00314b2bd8074d1716"
+      }
+    }
+  },
+  "fresh_capture": {
+    "assessment": {
+      "identity_stable": true,
+      "fresh_document_requests": 2,
+      "response_entries": 745,
+      "captured_frozen": false,
+      "reported_errors": 53
+    },
+    "documents": [
+      {
+        "url": "https://chatgpt.com/",
+        "sha256": "097f82f0ac14f0a090734fc49d82bcac0b6dbe68086e424e5f9491aa523b0677",
+        "bytes": 465942,
+        "status": 200
+      },
+      {
+        "url": "https://chatgpt.com/",
+        "sha256": "4d4adbb5ce186f584d70aec971fb208af6c9324f5763203f6444b8d314167155",
+        "bytes": 465942,
+        "status": 200
+      }
+    ],
+    "explanation": "The initial capture driver required the prior contenteditable editor and three suggestion images. This new guest variant uses a textarea; that readiness check timed out and no successful live screenshot is claimed. The frozen comparison DOM was subsequently obtained by executing the archived original frontend in Brave without forwarding cache misses."
+  },
+  "prior_evidence_loss": {
+    "note": "During this continuation an external cleanup removed Build/chatgpt-css-error-lifetime-20261102, including the completed viewport-parity-85 and breakpoint-probe-86 outputs. No deletion was submitted by this task. The following values are recovered only from tool outputs, not verifiable retained receipts.",
+    "reported_800x600_differing_pixels": 479831,
+    "reported_800x600_max_channel_error": 247,
+    "reported_1280x800_differing_pixels": 0,
+    "reported_brave_min_width_800_01_at_800": true,
+    "reported_brave_min_width_800_015625_at_800": true,
+    "reported_brave_min_width_800_016_at_800": false
+  },
+  "remaining_difference": {
+    "pixels": 14,
+    "max_channel_error": 2,
+    "viewports": [
+      [
+        1024,
+        768
+      ],
+      [
+        1280,
+        800
+      ]
+    ],
+    "description": "Bottom corner antialiasing of the What can you do? rounded button border. No tolerance or reference was changed. GPU multisample probes reproduce the edge difference, but no additional renderer fix has been established."
+  },
+  "evidence_directory": "Build/chatgpt-responsive-20261103",
+  "inputs": {
+    "archive-freeze/frozen.html": {
+      "sha256": "ae0edf7118bf02d811f42f431070f77c1bcc5827a022a6ddb5761287a2586a06",
+      "bytes": 203827
+    },
+    "fresh-capture/archive/manifest.json": {
+      "sha256": "30223364573900b18187a21bd689f245047f3cf4e0b0f4abfa7c44d1cd0fccdf",
+      "bytes": 1535297
+    },
+    "matrix-brave/800x600/brave.png": {
+      "sha256": "d68fb62c0b5b5270a615c3f28c5019348c6c6a823d7bdbd1d02d0706a0a8686c",
+      "bytes": 48414
+    },
+    "matrix-brave/1024x768/brave.png": {
+      "sha256": "b9e2580821127a1ee490babf2bf3aec18ca87521e96e476ea6cae2bde36101ca",
+      "bytes": 69737
+    },
+    "matrix-brave/1280x800/brave.png": {
+      "sha256": "8d13018ebbf6e375c7de7a84afd17c1102aae5557ddb3ed4acfa8f3fe67d781a",
+      "bytes": 70243
+    },
+    "matrix-vox-production/800x600/vox.png": {
+      "sha256": "c45cecf2844e4d07976cc4a62483a375261e0d68b9ac2718fcc0a70b31b9d3e4",
+      "bytes": 122110
+    },
+    "matrix-vox-production/1024x768/vox.png": {
+      "sha256": "749d7ad537f4e054f6130472cb31d0ed1b4a601eb38d2e4479bcb3dee1337255",
+      "bytes": 181660
+    },
+    "matrix-vox-production/1280x800/vox.png": {
+      "sha256": "96a234589f18d44c21b76a3347de017bc7d683ca568558100bb936691694d837",
+      "bytes": 190253
+    }
+  }
+}

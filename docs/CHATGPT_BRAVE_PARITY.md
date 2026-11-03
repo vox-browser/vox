@@ -1,15 +1,24 @@
 # ChatGPT rendering and startup against Brave
 
-The recorded guest homepage and live ChatGPT send/reply workflow are pixel-exact
-against Brave at 1024×768, scale 1. The complete frozen homepage matches its
-unchanged original reference at zero pixels. Ordinary live captures receive the
-exact reply with empty initial native cookie jars, no runtime errors and zero
-differing pixels. Original frontend/static captures use SOCKS and are replayed;
-backend, identity and telemetry requests stay live. Authorized fresh-session
-captures and their exact request counts are recorded separately below.
+The earlier guest homepage and live ChatGPT send/reply workflow were recorded
+as pixel-exact against Brave at 1024×768, scale 1. The November 3 follow-up fixes
+a fractional media-query breakpoint and makes a refreshed frozen guest homepage
+pixel-exact at 800×600. That refreshed page still differs at fourteen border
+pixels at 1024×768 and 1280×800; full parity remains open for that variant.
+Original frontend/static captures use SOCKS and are replayed; earlier ordinary
+conversation checks kept backend, identity and telemetry requests live.
+Fresh-session captures and their request counts are recorded separately below.
 
-The latest evidence is under `Build/chatgpt-css-error-lifetime-20261102/`.
-The homepage loads suggestion cards and their Blob-backed icons, uses Brave's
+An external cleanup removed `Build/chatgpt-css-error-lifetime-20261102/` during
+the follow-up, including the earlier raw receipts, archives and references.
+Results linked to that removed directory below are historical reports and
+cannot currently be independently rechecked. New evidence is under
+`Build/chatgpt-responsive-20261103/`; its principal results, input hashes and
+browser identities are also committed in the
+[responsive parity receipt](parity/chatgpt-responsive-20261103.json).
+
+The earlier continuation used `Build/chatgpt-css-error-lifetime-20261102/`.
+That homepage loaded suggestion cards and their Blob-backed icons, used Brave's
 actual heading font instance, and retains the correct raster bounds and opaque
 compositor continuation around the composer. These changes remove its final
 eight differing pixels. Suggestions are randomized; the homepage comparison
@@ -21,11 +30,72 @@ replies and exact conversation captures. The earlier missing-sprite result,
 layout re-entry assertion, debugger-only result and service unusual-activity
 response remain in the evidence; they are not silently retried or reclassified.
 
-All eleven screenshot smoke checks and nine exact SVG mutation guards pass in
-the stable `production-conformance-final-84/` batch on `92387cec…`. Earlier
+All eleven screenshot smoke checks and nine exact SVG mutation guards were
+reported passing in the stable `production-conformance-final-84/` batch on `92387cec…`. Earlier
 failures, identities, references and protocol corrections remain below. These
 checks cover rendering and functionality for the recorded guest workflow and
 viewport; they supply no performance claim.
+
+## November 3: fractional breakpoints and additional viewports
+
+`cca118e7c` fixes the desktop/mobile switch at an 800 CSS-pixel viewport.
+The site's `(width>=800.01px)` query matches in Brave but previously failed in
+Vox. Chromium allows one LayoutUnit (1/64 CSS pixel) for inclusive length
+comparisons and equality; strict comparisons retain their unrounded operands.
+The implementation follows that
+[Chromium comparison behavior](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/css/media_query_evaluator.cc#292)
+under the existing Chromium rendering policy. LibWeb-policy comparisons,
+non-length features and negative query values keep their previous behavior.
+
+The new standalone `media-query-length-precision` fixture compares nine colored
+blocks against a committed, unchanged Brave reference at 800×600. The existing
+production browser differed at 23,040 pixels; the production build containing
+the fix differs at zero pixels. Five focused V tests pass with default GC,
+`-gc none`, and the bounded `-prealloc -gc none` allocator. Existing media
+evaluation and parsed-query retention tests also pass. The focused tests cover
+both sides of the precision boundary, reversed and chained comparisons,
+calculated/rem lengths, fractional viewport sizes, display density, negative
+values, and stylesheet reevaluation after a resize.
+
+The fresh normal Brave session downloaded through
+`socks5h://127.0.0.1:1337`. Its frontend initiated two document requests, both
+HTTP 200 with 465,942-byte bodies; both hashes remain in the receipt. Its guest
+variant has a textarea, a “Where should we begin?” heading, cookie consent and
+a “What can you do?” button. The initial capture driver still required the
+previous variant's contenteditable editor and three suggestion images, so that
+readiness check timed out. Fifty-three response-body retrieval errors from the
+reload are retained; no successful live capture or live conversation is claimed
+from that attempt.
+
+Brave then executed the archived original frontend without forwarding missing
+resources and serialized its resulting DOM. Comparison launches remove scripts
+from that clone and use the same original archived styles and resources in both
+browsers. Fresh Brave references were captured for each viewport. They do not
+replace the earlier variant's references.
+
+| Document viewport | Previous production | Production with breakpoint fix |
+| --- | ---: | ---: |
+| 800×600 | 479,849 differing pixels | **0** |
+| 1024×768 | 14 differing pixels | 14 |
+| 1280×800 | 14 differing pixels | 14 |
+
+All three production captures completed with matching titles, document URLs,
+viewport and PNG dimensions, empty native error/JavaScript diagnostic arrays,
+and stable browser/resource/input identities. The selected executable is
+`406aaa0e2a9130580d16bfcadc8ee08c8b0fa05f59cd9f0ec2ee18383b342808`,
+from receipt `20261103-110455-30b1ed31`. Its frozen compiler input contains the
+precision fix although its recorded Git head predates the feature commit.
+The captures use scale 1, ten-second settling, private profiles, fresh browser
+processes, and separate 3 GiB runtime memory guards. This frozen comparison
+does not establish responsive JavaScript behavior or live application execution.
+
+The remaining fourteen pixels have maximum channel error 2 and lie along the
+bottom corners of the rounded “What can you do?” border. Independent Skia probes
+reproduce that difference when the border shares a multisampled surface. Moving
+the tile origin did not remove it. Native picture dumps and Brave paint logs
+retain the investigation; no speculative renderer change, reference adjustment
+or tolerance increase was shipped. The standalone regression fixture and its
+Brave PNG are committed with the breakpoint fix.
 
 ## Captured workload
 
