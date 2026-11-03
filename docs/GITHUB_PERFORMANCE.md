@@ -20399,3 +20399,80 @@ parity remain open.
 
 See [the structured audit](performance/github-meta-name-20261103.json) and
 [durable commands, checks, source audits and captures](performance/raw/github-meta-name-20261103.tar.gz).
+
+## Retained report-time exception information, November 3, 2026
+
+`88fa52ba113b36f423a3c859f507b4d80cd542bd` adds ordinary capture audit field
+`native_reported_error_information`, with
+message, filename, line and column retained when the native global scope reports
+an unhandled exception. The snapshot uses the existing extraction result, after
+muted-script redaction, and follows cancellation and recursive-report ordering.
+It is copied into retained storage so temporary allocations can retire safely.
+Dedicated-worker forwarding stays on its existing path. Capture reads the stored
+fields without another author-visible conversion; explicit
+`describe_native_errors=true` still converts raw values and remains a separate
+diagnostic option. Source locations can remain empty or zero: this change does
+not add JSC stack extraction.
+
+The fixed three-process exception-description diagnostic on the preceding build
+completed with zero native reports in all three observations. Each browser,
+controller and cohort guard exited zero, used the unchanged 193-response archive,
+passed strict 33-row/66-link/21-image checks and captured exactly 1024×768 pixels.
+All three PNGs preserve the earlier image hash. These instrumented processes do
+not identify the preceding ordinary process's single exception and do not replace
+or extend that observation.
+
+Four new focused cases cover actual JSC conversion, JSON round trips, read-only
+snapshot independence, scratch retirement, cancellation, recursion and muted
+errors. All four pass under Boehm, GC-disabled and preallocation current-V/C-O0
+builds: 12 final case executions with actual compiler, runtime and guard exits
+zero. A private-settings fixture compile failure and a native compile failure
+from platform-sized `uint` audit fields are retained, both without runtime test
+launches. Metadata source coordinates now use ErrorEvent's existing `u32`
+representation. The earlier passing HTML-only build predates that correction;
+all six final configurations were checked after it.
+
+The one shared production request has two retained attempts. The first stopped
+at the input-change guard before native compilation after the type correction;
+the same request resumed with corrected inputs. Successful receipt
+`20261103-215423-6222148b` publishes executable SHA-256
+`a2f0334a983b69e8bd14a411a07d97253c90d96d5c1e455228917b8857da5f7e`.
+Five relevant generated-C function bodies match the final preallocation test C,
+resolving every referenced string constant exactly. This establishes the
+specific implementation identity, not whole-program performance isolation.
+Production remains current V/preallocation/native C-O3, separate from the
+historical old-compiler/Boehm/C-O2 measurements.
+
+The fresh 640×480 loopback HTTP fixture passes with browser, controller and
+3 GiB guard exits zero. Its native timer throws an actual JSC object, then
+changes that object's converter. Ordinary capture retains the original message
+`Uncaught exception: report-time value` while raw descriptions stay empty.
+The first installed fixture incorrectly expected one total conversion across
+the timer callback path; its rendered marker observed two before capture. That
+browser exited zero, but its controller/guard exited one. The failed capture is
+retained, and the corrected fixture isolates conversions after reporting. The
+direct-report unit case independently verifies one initial conversion and none
+during ordinary capture. The initial bundle waiter also timed out with exit one
+and no browser observation; only pending checks resumed, without another build
+request or rerunning successful focused checks.
+
+A separately predeclared ordinary N=1 GitHub diagnostic uses the unchanged
+193-response archive, strict 33 rows/66 links/21 images and exactly 1024×768.
+Browser, controller and 12 GiB guard exits are zero. Its PNG is byte-identical
+to the preceding capture, SHA-256
+`65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`.
+It reports zero native exceptions and four unarchived CSS module 404s. This does
+not identify or fix the earlier intermittent exception. Main-task instructions
+are 12,742,816,694 at legacy paint and 63,334,201,359 at native submission,
+reported separately without attributing the difference or variation to this
+change. Both this ordinary observation and all three earlier exception probes
+have zero instruction credit.
+
+No instruction saving or Chrome parity is established by these diagnostics.
+Legacy paint and native-submission hardware scopes remain separate. No broad
+baseline or historical cohort is changed. Full hydration and the previously
+recorded custom-element upgrade/lifecycle and origin-relaxation limitations remain
+open.
+
+See [the structured audit](performance/github-error-information-20261103.json)
+and [retained commands, failures, logs and captures](performance/raw/github-error-information-20261103.tar.gz).
