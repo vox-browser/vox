@@ -20268,3 +20268,67 @@ receive replay 404s. Complete hydration and Chrome parity remain open. No paired
 cohort was replaced, extended or credited, and no broad baseline was reset.
 See [the structured audit](performance/github-custom-construction-20261103.json)
 and [durable checks, commands, logs and captures](performance/raw/github-custom-construction-20261103.tar.gz).
+
+## Native Document.domain binding, November 3, 2026
+
+Feature `e939a5ddd0463cc71943bf1d5f785652147d29e5` exposes the existing native
+Document domain getter and setter validation through actual JavaScriptCore
+accessors. The receiver must own a native Document. The getter reads its live
+origin, independent of the displayed URL; detached documents keep their inherited
+origin. The setter performs one actual engine string conversion, repairs lone
+surrogates for the USVString IDL type, preserves thrown author values and returns
+native SecurityError DOMExceptions for failed validation. Receiver checks precede
+author conversion, which precedes native browsing-context and sandbox checks.
+
+The native origin-relaxation step remains a stub, matching the pinned upstream
+Document implementation. This binding exposes existing behavior and does not
+add cross-origin access. Both focused cases pass in Boehm, GC-disabled and
+preallocation C-O0 builds: six final case executions and actual compiler,
+runtime and guard exits zero. Checks include descriptors, live origin changes,
+IPv6/opaque/inherited origins, brands, conversion order and identity, sandboxing,
+missing contexts and suffix validation. The initial failed fixture incorrectly
+expected createHTMLDocument() to have an opaque origin; upstream and this port
+inherit the owner's origin. That failure remains in the evidence.
+
+A single production build was requested because the completed bundle lacked the
+new accessor, and no production worker was running at the initial availability
+check. Shared receipt `20261103-204109-549322b6` completes successfully with
+executable SHA-256
+`2fa83df46decc8cbb840c476f4747a1f951edef2ae3c30467e9b951f3e519585`.
+Eight relevant generated-C bodies, including the actual getter/setter callbacks,
+match the tested preallocation build exactly after resolving string constants.
+This audit covers those functions and does not establish whole-program isolation.
+A fresh private-profile process passes the public API assertions at an exact
+640×480 viewport over loopback HTTP. Its domain is the serialized host
+`127.0.0.1`, independent of the ephemeral port; a detached document inherits that
+origin. The fixture also verifies receiver brands, actual conversion, original
+exceptions and native validation errors. Its browser, controller and 3 GiB guard
+exit zero; the retained audit has no JavaScript diagnostics or reported native
+errors. The private profile seeds only `allow_any_site=true`; it uses no replay
+proxy and does not alter the user's profile or GUI.
+
+The predeclared fixed N=1 ordinary GitHub diagnostic uses the unchanged
+193-response archive, strict 33-row/66-link/21-image gate and exact 1024×768
+viewport. Its browser, controller and 12 GiB guard exit zero. The PNG remains
+byte-identical, SHA-256
+`65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3`.
+Main-task retired instructions are **12,714,404,731** at the legacy paint marker
+and **38,844,713,619** at native submission. These overlapping scopes stay
+separate. An unpaired single observation cannot attribute a saving or regression,
+so instruction credit remains zero and no broad baseline is reset.
+
+The document-domain error is gone. The ordinary capture's JavaScript diagnostic
+list contains four unarchived CSS module 404s, but its native report count is
+six with descriptions disabled. Ordinary audits avoid invoking author-visible
+exception conversion. A separately declared exception-description diagnostic
+sets `describe_native_errors=true`; its browser/controller/12 GiB guard also
+exit zero. That fresh instrumented process records ten exceptions: nine missing
+`HTMLMetaElement` ReferenceErrors and one missing `getElementsByName` TypeError.
+Its count belongs to that separate run; it does not identify the individual six
+exceptions in the ordinary observation. The exception probe earns zero
+instruction credit and neither extends nor replaces the fixed N=1 observation.
+Both diagnostic captures preserve their own production identities and raw counts.
+Full hydration, remaining API prerequisites and Chrome parity remain open.
+
+See [the structured audit](performance/github-document-domain-20261103.json)
+and [durable checks, commands, logs and captures](performance/raw/github-document-domain-20261103.tar.gz).

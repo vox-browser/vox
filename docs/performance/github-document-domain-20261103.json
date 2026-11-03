@@ -1,0 +1,3889 @@
+{
+  "app_copied": false,
+  "broad_baseline_reset": false,
+  "capture_error_audit": {
+    "browser_replayed": false,
+    "exit": 0,
+    "installed": {
+      "javascript_diagnostics": [],
+      "native_reported_error_count": 0
+    },
+    "limitations": "Descriptions can execute author ToString. The fresh instrumented process has its own exception count; these values do not identify the individual exceptions in the ordinary primary.",
+    "primary": {
+      "javascript_diagnostics": [
+        "Stylesheet https://github.githubassets.com/assets/bv.b745c35cbc44f08d.module.css: HTTP 404",
+        "Stylesheet https://github.githubassets.com/assets/u2l.7871b60c0a7907d4.module.css: HTTP 404",
+        "Stylesheet https://github.githubassets.com/assets/kq9.534fad559fbed8f2.module.css: HTTP 404",
+        "Stylesheet https://github.githubassets.com/assets/jdp.78ec31cf68ea99a3.module.css: HTTP 404"
+      ],
+      "native_error_descriptions_enabled": false,
+      "native_reported_error_count": 6
+    },
+    "separate_instrumented_diagnostic": {
+      "actual_browser_controller_guard_exits": [
+        0,
+        0,
+        0
+      ],
+      "histogram": {
+        "ReferenceError: Can't find variable: HTMLMetaElement": 9,
+        "TypeError: e.getElementsByName is not a function. (In 'e.getElementsByName(t)', 'e.getElementsByName' is undefined)": 1
+      },
+      "instruction_credit": 0,
+      "javascript_diagnostics": [
+        "Stylesheet https://github.githubassets.com/assets/kq9.534fad559fbed8f2.module.css: HTTP 404",
+        "Stylesheet https://github.githubassets.com/assets/jdp.78ec31cf68ea99a3.module.css: HTTP 404",
+        "Stylesheet https://github.githubassets.com/assets/u2l.7871b60c0a7907d4.module.css: HTTP 404",
+        "Stylesheet https://github.githubassets.com/assets/bv.b745c35cbc44f08d.module.css: HTTP 404"
+      ],
+      "native_reported_error_count": 10,
+      "native_reported_errors": [
+        "ReferenceError: Can't find variable: HTMLMetaElement",
+        "ReferenceError: Can't find variable: HTMLMetaElement",
+        "ReferenceError: Can't find variable: HTMLMetaElement",
+        "ReferenceError: Can't find variable: HTMLMetaElement",
+        "ReferenceError: Can't find variable: HTMLMetaElement",
+        "TypeError: e.getElementsByName is not a function. (In 'e.getElementsByName(t)', 'e.getElementsByName' is undefined)",
+        "ReferenceError: Can't find variable: HTMLMetaElement",
+        "ReferenceError: Can't find variable: HTMLMetaElement",
+        "ReferenceError: Can't find variable: HTMLMetaElement",
+        "ReferenceError: Can't find variable: HTMLMetaElement"
+      ],
+      "not_a_primary_replacement": true
+    }
+  },
+  "chrome_parity": false,
+  "durable_evidence": {
+    "bytes": 322864,
+    "files": 106,
+    "generated_c_policy": "Full generated-C/binary hashes and active entrypoints retained; normalized relevant functions archived. Complete generated C and binaries stay at original Build paths.",
+    "index": {
+      "audit-capture-errors.py": "b0b0edf4d8dcd4421997d210632e6f8b6a693be8a3438138d60fa5d592d0fd15",
+      "audit-focused.py": "2ded5060bc0cada23f7435580b212d92146bf1480b29af19ada4b005854ef0eb",
+      "audit-production-functions.py": "c811b1d81b9b15e82f2ce5ae153d71e5b1473241f7ed7615f634ef5e2d2cfdef",
+      "cadence-addition.txt": "2f64e729896f5245fa89f0bee729cfd4926818f04d0f6f8018548738269524b2",
+      "candidate-function-audit.json": "12293c990f7645818e673df0277811f6b81a2288dac11cc68fd464e83d16bf96",
+      "candidate-verified-functions.c.txt": "1211ea1ee85c114e3b3cccfdcbd74b05a8ff439248d64e388ac305e241442feb",
+      "capture-error-audit.json": "e6db4e8c21b6752cfd1eb8c5315111c7d08101b1dabebd2e7188adeadc0fb9ce",
+      "checks-boehm-test-bodies.c.txt": "f4ef54a34950ef03cf6ee7abacf79ee35a87b554c6a0603fadb44c41b6d1f07d",
+      "checks-none-test-bodies.c.txt": "f4ef54a34950ef03cf6ee7abacf79ee35a87b554c6a0603fadb44c41b6d1f07d",
+      "checks-prealloc-test-bodies.c.txt": "f4ef54a34950ef03cf6ee7abacf79ee35a87b554c6a0603fadb44c41b6d1f07d",
+      "compile-base-command.json": "399b356fdc32a19647a9b743cc548b50c10c97fe5fd0ba8e507643ea0b202b7f",
+      "compile-boehm-command.json": "399b356fdc32a19647a9b743cc548b50c10c97fe5fd0ba8e507643ea0b202b7f",
+      "compile-boehm-guard.json": "7ca876f31af0e21123c66796c0851fae8fbf1a63c742a3bca505c6cf48a9a45a",
+      "compile-boehm-result.json": "8476d6d363a11983bd4bdd8b2cda20b9b63380027f807295ce1193ee26ae437e",
+      "compile-boehm.log": "affc310c03010449e49e88878e94acd3ef155896676cfc53619c8827a6e54aed",
+      "compile-none-command.json": "c8613c9e19524b661a199a44bfd680fc4d0e6dc0591125adc8a37490b79826f0",
+      "compile-none-guard.json": "224502122a8829442e2302d626aea98ff13bd874c4d7d146ba40baaa9c1fb7a4",
+      "compile-none-result.json": "d40d22ab5811a95bd5f507c32738baa551f843c8f1338b5293fd85d11b1afaf3",
+      "compile-none.log": "1a6b16b8b0d6d72e8876cef81eeed2aae3ab92976cf4eb056800ceb88dba3a37",
+      "compile-prealloc-command.json": "0581257034a0cb4ffc3a6194b0c4c3d83c4d6a70e61191c4ff858a501fa7aa5d",
+      "compile-prealloc-guard.json": "0cbff1828bef46ff0cdfd86ba1829a4e1c248eb6e16491ee87b79a43a2ac3feb",
+      "compile-prealloc-result.json": "b62afe32e32955da681cbad0740b62fee0aee52269301cf59f263ceff84706ce",
+      "compile-prealloc.log": "3e7bdc44d832f82e5b75328c9a3330bfd1907f7bf44cbf0e2311c314937c9dce",
+      "entrypoint-boehm.c.txt": "398bada1b295880c5b627f18bb9154a8f3f1c9f51b9ad3c908b83119e80a2587",
+      "entrypoint-none.c.txt": "398bada1b295880c5b627f18bb9154a8f3f1c9f51b9ad3c908b83119e80a2587",
+      "entrypoint-prealloc.c.txt": "398bada1b295880c5b627f18bb9154a8f3f1c9f51b9ad3c908b83119e80a2587",
+      "export-test-bodies.py": "8990114412f9ea77011e2b1ddca5aec439eb71deb62c21cabde5903ccc7c4119",
+      "feature-commit-config.json": "3cc7de4253bcb1f0bc53cc18c8d87693698f71e80e9e029f5a23a5798d5c0772",
+      "feature-commit.json": "f5472550bc50efffc99150a73107a0ac5d17fecafb7aa1ff2fda7a757ecc683c",
+      "feature-committed.patch": "aec91a35074a3e4671f8cc4924a8cd5032fb6209c6c6a80c81626367ab8fbc20",
+      "feature-sources.json": "8eac3beda9c74a8f63ddd4d44616277ff652f5f91ec013e9c6c5f17b8f87c489",
+      "final-audit.py": "8da67d4ad50a138a19725027e57c2a840f570b728a2b3b2d5de091494d63bc93",
+      "focused-audit.json": "33b8d9fc0f6e20391bf15e500d8c208dddc0c63ec68ad68e6c8b8f2b2d6881a0",
+      "github-after-domain-01/audit-config.json": "c0bb6f97b936f95af1b3108b9361507dca01ef4e17fb22f77f457237c4a243d6",
+      "github-after-domain-01/audit.json": "ea98dcd1a09ed17a0a1b7d309fd40647f9ea72db9430f62f93a46ad78cae9bab",
+      "github-after-domain-01/browser.log": "937a5033a273c676cb104dd8209aca63b6fccb5c73c36e913250d25f9cca1777",
+      "github-after-domain-01/document.png": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+      "github-after-domain-01/plan.json": "f1937c26949c9ff7e58e7c693c519432e8ded98def8a0349622cdcb75b019de1",
+      "github-after-domain-01/replay/openssl.log": "8d84984b4aced2c4d6ec0f120edd6fe2c7b090e3081277ca8c5c12d687029e5e",
+      "github-after-domain-01/replay/ready.json": "a48cad82d72f34422630c16219d262574d126cce48326d4c1a4a2c81a2b6e3f3",
+      "github-after-domain-01/result.json": "d2eca0914f892e2b8da142ea5f13a61f5216974810e4d6666d3fd1d7095c66c5",
+      "github-after-domain-controller.log": "74d001f1195bdd701bf2a268b66cb76e766da45585efb4e9a3e60fd98f1b9528",
+      "github-after-domain-guard.json": "a75f5f703e171d92bbd6e06beb29a67411a3c905420fbde2d4f4c5c9d558e6d1",
+      "github-after-domain-terminal.json": "4c2f87c561b04fcbc031ecef509ea4248706287463f6f08a4131116702c9ae95",
+      "github-native-errors-controller.log": "bc71d0cc44a7e15dcfaf5da8ddb2cf96901a71061b9c6ec746dfc59478998924",
+      "github-native-errors-diagnostic-01/audit-config.json": "79152e33811794f552f6c7d2fee3c943bf020e1035cc75dae0f00a6fed54f307",
+      "github-native-errors-diagnostic-01/audit.json": "49b06ec8e687ef41bbbe9d661f8769bb16a31a5a5abdb7b3c37767cbbd51e98d",
+      "github-native-errors-diagnostic-01/browser.log": "500f70596ec4c5ff3c52dc14e154efb3c56c322573a9c76430cd9c36e6e66705",
+      "github-native-errors-diagnostic-01/document.png": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+      "github-native-errors-diagnostic-01/plan.json": "6f2211918da68488397ef07fee9c6952914da2ba6c13d6c47796f8eef6a48ead",
+      "github-native-errors-diagnostic-01/replay/openssl.log": "073a7d661ad02400e768caf4d5091fc1218ce7f186c49c5b21857a081968d51a",
+      "github-native-errors-diagnostic-01/replay/ready.json": "77e0461bd6cae0d774c0aa8296377902f1911cabcea155791844aaab8d18cc62",
+      "github-native-errors-diagnostic-01/result.json": "f9713565cd71aad9d171b7b1146e3292322c6031c2738afd8d424284d58ad439",
+      "github-native-errors-guard.json": "50e190c3558dadf786e6b353896b2ab9c9dc17b27357a40ede450085394dd14c",
+      "github-native-errors-terminal.json": "a9c82fb649806e264f5b39977eed882b7462a441fe930ef1ccfc9c465e643e5d",
+      "github-predeclared-plan.json": "8fbc66c6b6f19bf29cc6cc78fc146a13245b00cc4063c1f03def81e15a0a886d",
+      "installed-availability-initial.json": "4fddc4fa90db1249a44dbff7d26be5bb603ea1328f4b47808bf965c78385303e",
+      "installed-availability.json": "c7b917a48036676be39da5d520ae9105973905624744168d1ef421e805c54a87",
+      "installed-integration-01/audit-config.json": "02edc79bd592077d50f954acf13affbaa8fd659fb47f0748e349278a5e1e7fc4",
+      "installed-integration-01/audit.json": "c2211ca7af89127d346f2986ea09c0c31aa069e79ff07a15de5d99c6e04b44ed",
+      "installed-integration-01/browser.log": "b68a713a34f811de3915c51b7f8622f8ccbf02f74a601200dc6a9e1906aec81b",
+      "installed-integration-01/document.png": "bdbcf9de7fd6fb5c401692bc4df96f03d419fcdb0d3718b0e859347f0d8f8e73",
+      "installed-integration-01/plan.json": "9159b89137e7c2d0fcd44b63cdc9beeaed8dda288d4878b3c6dc0e6d6eaa675d",
+      "installed-integration-01/result.json": "a3b7bb3d82ef2ffb15399c1fdb52dc54a2157929eb673101f1024f059d485af2",
+      "installed-integration-controller.log": "c6f1987eaab086187064e521334d7feedd8fa64d6ca67396266c2f468ed20e0a",
+      "installed-integration-guard.json": "94acc8bb795ca1c3b4469dff12475628e534417bab429ef918245dd8e462e992",
+      "installed-integration-terminal.json": "31085b8d09e9915dc38cfda54e9b385cf24ddab1bef2320f2df02607143dff29",
+      "integration-source.json": "c824dd5d11665340b8019baa15a02f62e855949a65ea64af6e26c0f505353421",
+      "integration.html": "ac95f1b54c3ad5d8eedd487d47634e6f20292d0c6448507f09a66e5ccd856607",
+      "production-function-audit.json": "12293c990f7645818e673df0277811f6b81a2288dac11cc68fd464e83d16bf96",
+      "production-functions-controller.log": "c62cc8b054b35deb2b6a8179cc1c5a7dad7331f700f056d720a768ec1c1947f6",
+      "production-functions-terminal.json": "fd7f4c7f02f1c60cc64f07a557f5f8d201b424b8a654b26c4f2b82758c02ca3b",
+      "production-receipts/20261103-204109-549322b6/build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+      "production-receipts/20261103-204109-549322b6/frozen-compile.json": "7448944e02d8c27ac2804e2dcbe50007b6b7a62f91b6689b98dd47784d198c60",
+      "production-receipts/20261103-204109-549322b6/inputs-before.json": "67b7e11d7232e7b600e6641934c04df13033958aede9013432059df6bd54ba1c",
+      "production-receipts/20261103-204109-549322b6/memory.json": "0e90c9d9e0c4a99f0c3a2127e83596b2d22b5b7b7243f86de6194669f862ed44",
+      "production-receipts/20261103-204109-549322b6/result.json": "ed8db4d415e86552cc5e96e1c067a09019008aaa5c3c142915fbbf59c2edd936",
+      "production-request.json": "dbea246f8b79df9d257de0bc5035bb829698fbd0d2c1e4c2b5af12ec062b70d1",
+      "production-request.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "production-verified-functions.c.txt": "1211ea1ee85c114e3b3cccfdcbd74b05a8ff439248d64e388ac305e241442feb",
+      "run-boehm-guard.json": "e92035efae3c0f6f01fad95c8b740c655af750fd9e0da846ca097e757188ccf0",
+      "run-boehm-result.json": "dac794e5ab8482a5dddb8048131eacce587d7ae1a8f33b8688baaa79f9715128",
+      "run-boehm.log": "049c5000ba3e405916671f28cfffab88dee263c1d11c6f69bd2f2856c67316af",
+      "run-checks.py": "881684127420f930ab436dbf13b5581eae8460db3978abae544efb770d586510",
+      "run-commit.py": "a49464c4d29689fd28e1681a13c891f9515b1429be7ed1c2fda4bce80674cc11",
+      "run-github-after-domain.py": "c9c36a0ab4edce53ac9d9a5adc092951f6cd6515a733dcc73ce949c5a2586657",
+      "run-github-native-errors.py": "17439f4bb238a5e034b9c5317f0d58b09843b6d088767ca7d6fc289b02c7bda7",
+      "run-installed-integration.py": "eb34202c24948b9e3fe06cceeb617f6c44c4b6a8125522bfc1d96ca9d1689b8f",
+      "run-installed-pipeline.py": "af593bd03f5cd017119563d1570a40afc02966fdb7994f51a5ed40097c22f2bb",
+      "run-none-guard.json": "a4e5c325be71eff8989b83f12171c900193328adf23afa76f1f01cb174128fe0",
+      "run-none-result.json": "7e3239e39b67db65c7ba2a53ad8712be5c4d08ff990e0180dfb23b67998b6584",
+      "run-none.log": "97a60393c0229fe1bf558fc0c300c871083f26f1b3508c9005e7786c415bd48d",
+      "run-prealloc-guard.json": "78fccc6204ef1a1342f309c0e0db33ede9fd53005ab0f71559451b0c5749995f",
+      "run-prealloc-result.json": "3e349448897bd4a32d6bba7ec385fe59ec2059214a1d61493dcc699e262e39bb",
+      "run-prealloc.log": "23a34d2f43ef25a83ab221990f4e8c6e677978fc29295c8fe14e56f0ee5633d8",
+      "upstream-sources.json": "b88dcb21721873955251e9a79fee55e51e809c8e79bbf8899cd6eac709ed23c7",
+      "v1-checks-boehm-test-bodies.c.txt": "7def7753b40a9c6cc9caf628f79b60b36b7618489b3eb49e371b12618e030e32",
+      "v1-compile-boehm-command.json": "399b356fdc32a19647a9b743cc548b50c10c97fe5fd0ba8e507643ea0b202b7f",
+      "v1-compile-boehm-guard.json": "9296713cf06bc17a50ac25e1a1fd4c1ad043936d8de57eec8080c0eba7449c10",
+      "v1-compile-boehm-result.json": "8476d6d363a11983bd4bdd8b2cda20b9b63380027f807295ce1193ee26ae437e",
+      "v1-compile-boehm.log": "b7d425991c572dec90f90a0b1a13922cbab20a651fb586dad08c9c8e56926b02",
+      "v1-feature-sources.json": "73367315caf8421be06229683786fe1ca6b19eeb02ff4e8f83fc650abbfa04cd",
+      "v1-run-boehm-guard.json": "3fcc0a50a1d6752b4855237c197216548d6993726f50b4b2f90e79c010bb52fe",
+      "v1-run-boehm-result.json": "898d8ad64fd6c9931d7f71ed43c3cb519bc76fc1efedd68e6119cfc30c67a54f",
+      "v1-run-boehm.log": "2fe8e3b7c7e59bcf196e8a6f27860c7f5eb6047695a8bc8d7ea848ca7acb51bf",
+      "write-evidence.py": "7658dcf574ebb8d22b9b6f983fd155d0329750f4454977a4827dcb0aaf9b8938"
+    },
+    "path": "docs/performance/raw/github-document-domain-20261103.tar.gz",
+    "readback_verified": true,
+    "sha256": "989d42d3ead56f50b6b254b20d2595df111a89af23538af6f5aa4a6b4712871a"
+  },
+  "earlier_attempts": [
+    {
+      "actual_guard_exits": {
+        "compile-boehm": 0,
+        "run-boehm": 1
+      },
+      "reason": "Initial fixture incorrectly expected createHTMLDocument() to have an opaque origin. Both the native port and pinned upstream inherit the owning origin. Corrected only the test expectation and retained the failure.",
+      "revision": "v1"
+    }
+  ],
+  "feature_commit": "e939a5ddd0463cc71943bf1d5f785652147d29e5",
+  "feature_paths": [
+    "browserjs/document_domain_binding_jsc.c.v",
+    "browserjs/document_window_event_binding_jsc.c.v",
+    "main_compact_document_domain_test.v"
+  ],
+  "final_composite_case_executions": 6,
+  "focused": {
+    "checks": [
+      {
+        "active_tests": [
+          "test_compact_document_domain_reads_live_native_origins_and_brands_receivers",
+          "test_compact_document_domain_setter_uses_native_validation_and_actual_webidl_conversion"
+        ],
+        "binary_sha256": "5b317653c30a98c87bf3090a6f031a3202dbf3018225a1e811884b3936b3963c",
+        "cases": 2,
+        "configuration": "boehm",
+        "generated_c_sha256": "4c0be0a3d7d24fb1b52151159a13f3ca943dca1e59f65e26334f79bae3f1fbbb",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/checks-boehm",
+                "/Users/alex/code/vox2/main_compact_document_domain_test.v"
+              ],
+              "elapsed_seconds": 47.430090625000005,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 6039224320,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/checks-boehm"
+              ],
+              "elapsed_seconds": 0.64097775,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 27541504,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "test_compact_document_domain_reads_live_native_origins_and_brands_receivers",
+          "test_compact_document_domain_setter_uses_native_validation_and_actual_webidl_conversion"
+        ],
+        "binary_sha256": "81b9748b846b89d1cf2570fd9e1f062809682c78db1b4c7ad41d5d8dcbebb029",
+        "cases": 2,
+        "configuration": "none",
+        "generated_c_sha256": "e9d0f690719e97066fe65bf6995b13622fde7a4ae41892335d68bc63dc3da00b",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/checks-none",
+                "/Users/alex/code/vox2/main_compact_document_domain_test.v"
+              ],
+              "elapsed_seconds": 42.769673667,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 5981388800,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/checks-none"
+              ],
+              "elapsed_seconds": 0.530181708,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 11632640,
+              "reason": "completed"
+            }
+          }
+        }
+      },
+      {
+        "active_tests": [
+          "test_compact_document_domain_reads_live_native_origins_and_brands_receivers",
+          "test_compact_document_domain_setter_uses_native_validation_and_actual_webidl_conversion"
+        ],
+        "binary_sha256": "50df0234868447e7780b1fce501137b1e68706315b12f321d351401b2180e049",
+        "cases": 2,
+        "configuration": "prealloc",
+        "generated_c_sha256": "118a9b46bfdc2e93a04dc99f95780e7e8ee32ed41230b755c03ced00dcdcaa84",
+        "native_optimization": "C-O0",
+        "stages": {
+          "compile": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6/compiler/v",
+                "-prealloc",
+                "-gc",
+                "none",
+                "-showcc",
+                "-keepc",
+                "-cflags",
+                "-O0",
+                "-d",
+                "vox_ui2",
+                "-b",
+                "c",
+                "-cc",
+                "clang",
+                "-memory-limit",
+                "10G",
+                "-exclude",
+                "@vlib/time/zoneinfo.native.v",
+                "-enable-globals",
+                "-d",
+                "vox_sparse_ttf",
+                "-path",
+                "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/e11d35a88585bbffc9fc2b6e1231e6390fde6d33da432bd254fe25d9b5c1eee6|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|@vmodules|@vlib",
+                "-w",
+                "-n",
+                "-skip-running",
+                "-o",
+                "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/checks-prealloc",
+                "/Users/alex/code/vox2/main_compact_document_domain_test.v"
+              ],
+              "elapsed_seconds": 42.657103584000005,
+              "limit_bytes": 12884901888,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 6052839424,
+              "reason": "completed"
+            }
+          },
+          "run": {
+            "actual_guard_exit": 0,
+            "guard": {
+              "adopted_processes": {},
+              "adoption_error": null,
+              "child_exit_code": 0,
+              "command": [
+                "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/checks-prealloc"
+              ],
+              "elapsed_seconds": 0.653279583,
+              "limit_bytes": 3221225472,
+              "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+              "observed_peak_rss_bytes": 35160064,
+              "reason": "completed"
+            }
+          }
+        }
+      }
+    ],
+    "exit": 0,
+    "final_case_executions": 6,
+    "focused_cases": 2,
+    "limitations": [
+      "The existing native setter validates inputs; origin relaxation remains unfinished and unchanged, matching pinned upstream.",
+      "No paired hardware-instruction cohort; instruction credit is zero."
+    ],
+    "source_sha256": {
+      "browserjs/document_domain_binding_jsc.c.v": "eedc9493242f61d14ecd64d896cfa05cadb1039ba42dc7b50017cd8dd164bafc",
+      "browserjs/document_window_event_binding_jsc.c.v": "3c9df4dee8b6b691358dbd365af44df746da87b08801bda478613bf6ec4239cb",
+      "main_compact_document_domain_test.v": "f70aa12fe8f0c5d93c0820eb996d6dcb2c99daba49d896674a256a718b49b6ba"
+    }
+  },
+  "github": {
+    "actual_browser_exit": 0,
+    "broad_baseline_reset": false,
+    "browser_observations": 1,
+    "browser_pid": 78729,
+    "command": [
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "--enable-javascript",
+      "--window-width",
+      "1024",
+      "--window-height",
+      "852",
+      "--screenshot",
+      "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-after-domain-01/document.png",
+      "https://github.com/vlang/v"
+    ],
+    "comparison_eligible": false,
+    "content_gate": {
+      "failures": [],
+      "passed": true
+    },
+    "environment_controls": {
+      "DYLD_INSERT_LIBRARIES": "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/native-diagnostic-01/network-deny.dylib",
+      "GC_MARKERS": "1",
+      "LADYBIRD_CACHE_DIR": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-after-domain-01/cache",
+      "LADYBIRD_SCREENSHOT_DELAY_SECONDS": ".5",
+      "LADYBIRD_SCREENSHOT_SCALE": "1",
+      "NO_PROXY": "",
+      "SSL_CERT_FILE": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-after-domain-01/replay/cert.pem",
+      "VOX_CAPTURE_AUDIT_CONFIG": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-after-domain-01/audit-config.json",
+      "VOX_CAPTURE_AUDIT_PATH": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-after-domain-01/audit.json",
+      "VOX_CAPTURE_DOCUMENT_ONLY": "1",
+      "VOX_COOKIE_FILE": "",
+      "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-after-domain-01/profile",
+      "VOX_PROFILE_INSTRUCTIONS": "1",
+      "VOX_PROXY": "socks5h://127.0.0.1:59762",
+      "VOX_TEST_WINDOW": "1"
+    },
+    "exit": 0,
+    "host_after": {
+      "cpu_count": 18,
+      "load_average": [
+        22.29931640625,
+        23.0107421875,
+        21.91455078125
+      ],
+      "unix": 1793728023.038959
+    },
+    "javascript_diagnostics": [
+      "Stylesheet https://github.githubassets.com/assets/bv.b745c35cbc44f08d.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/u2l.7871b60c0a7907d4.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/kq9.534fad559fbed8f2.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/jdp.78ec31cf68ea99a3.module.css: HTTP 404"
+    ],
+    "native": {
+      "phase_note": "adjacent cumulative checkpoint deltas; nested scopes overlap and must not be summed",
+      "phases": [
+        {
+          "cumulative_instructions": 441582967,
+          "instructions": 441582967,
+          "label": "startup"
+        },
+        {
+          "cumulative_instructions": 444758891,
+          "instructions": 3175924,
+          "label": "startup_page_model"
+        },
+        {
+          "cumulative_instructions": 444870491,
+          "instructions": 111600,
+          "label": "startup_browser_state"
+        },
+        {
+          "cumulative_instructions": 446011269,
+          "instructions": 1140778,
+          "label": "startup_input_bridge"
+        },
+        {
+          "cumulative_instructions": 446531456,
+          "instructions": 520187,
+          "label": "startup_context"
+        },
+        {
+          "cumulative_instructions": 446715369,
+          "instructions": 183913,
+          "label": "navigation_started"
+        },
+        {
+          "cumulative_instructions": 447136524,
+          "instructions": 421155,
+          "label": "startup_navigation"
+        },
+        {
+          "cumulative_instructions": 536544790,
+          "instructions": 89408266,
+          "label": "startup_filter_worker"
+        },
+        {
+          "cumulative_instructions": 1370369291,
+          "instructions": 833824501,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 1372510861,
+          "instructions": 2141570,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 1485970845,
+          "instructions": 113459984,
+          "label": "main_resource_fetch"
+        },
+        {
+          "cumulative_instructions": 1490568161,
+          "instructions": 4597316,
+          "label": "main_resource_cache"
+        },
+        {
+          "cumulative_instructions": 1751040865,
+          "instructions": 260472704,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 1753128172,
+          "instructions": 2087307,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2408577022,
+          "instructions": 655448850,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2410593397,
+          "instructions": 2016375,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2420119619,
+          "instructions": 9526222,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2422084216,
+          "instructions": 1964597,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2430461212,
+          "instructions": 8376996,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2432410533,
+          "instructions": 1949321,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2694329212,
+          "instructions": 261918679,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2707311312,
+          "instructions": 12982100,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2958291104,
+          "instructions": 250979792,
+          "label": "parse_document"
+        },
+        {
+          "cumulative_instructions": 4672121539,
+          "instructions": 1713830435,
+          "label": "preload_resources"
+        },
+        {
+          "cumulative_instructions": 4672273662,
+          "instructions": 152123,
+          "label": "install_styles"
+        },
+        {
+          "cumulative_instructions": 4679583984,
+          "instructions": 7310322,
+          "label": "install_video_frames"
+        },
+        {
+          "cumulative_instructions": 4967871861,
+          "instructions": 288287877,
+          "label": "javascript_native_bindings"
+        },
+        {
+          "cumulative_instructions": 5016384383,
+          "instructions": 48512522,
+          "label": "javascript_initial_state"
+        },
+        {
+          "cumulative_instructions": 5016639172,
+          "instructions": 254789,
+          "label": "javascript_bootstrap_source"
+        },
+        {
+          "cumulative_instructions": 5125633351,
+          "instructions": 108994179,
+          "label": "javascript_bootstrap_evaluated"
+        },
+        {
+          "cumulative_instructions": 5156070811,
+          "instructions": 30437460,
+          "label": "javascript_document_bindings"
+        },
+        {
+          "cumulative_instructions": 5162984870,
+          "instructions": 6914059,
+          "label": "javascript_adblock_scriptlets"
+        },
+        {
+          "cumulative_instructions": 5243612035,
+          "instructions": 80627165,
+          "label": "javascript_readiness_events"
+        },
+        {
+          "cumulative_instructions": 5243955634,
+          "instructions": 343599,
+          "label": "javascript_finalized"
+        },
+        {
+          "cumulative_instructions": 5245052477,
+          "instructions": 1096843,
+          "label": "run_javascript"
+        },
+        {
+          "cumulative_instructions": 5250244673,
+          "instructions": 5192196,
+          "label": "cookie_blocker"
+        },
+        {
+          "cumulative_instructions": 5253431143,
+          "instructions": 3186470,
+          "label": "script_inserted_stylesheets"
+        },
+        {
+          "cumulative_instructions": 5254105970,
+          "instructions": 674827,
+          "label": "unsized_script_images"
+        },
+        {
+          "cumulative_instructions": 8059079516,
+          "instructions": 2804973546,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 8063366715,
+          "instructions": 4287199,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 8063467732,
+          "instructions": 101017,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 10131868650,
+          "instructions": 2068400918,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 10209680589,
+          "instructions": 77811939,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 10209906359,
+          "instructions": 225770,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 10214435765,
+          "instructions": 4529406,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 10233508478,
+          "instructions": 19072713,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 10378965879,
+          "instructions": 145457401,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 10383189461,
+          "instructions": 4223582,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 10383291191,
+          "instructions": 101730,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 11531309262,
+          "instructions": 1148018071,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 11573582214,
+          "instructions": 42272952,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 11573800796,
+          "instructions": 218582,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 11578253176,
+          "instructions": 4452380,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 11596930339,
+          "instructions": 18677163,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 11658672762,
+          "instructions": 61742423,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 11658774787,
+          "instructions": 102025,
+          "label": "relayout"
+        },
+        {
+          "cumulative_instructions": 11659422665,
+          "instructions": 647878,
+          "label": "script_inserted_images"
+        },
+        {
+          "cumulative_instructions": 11659522993,
+          "instructions": 100328,
+          "label": "install_total"
+        },
+        {
+          "cumulative_instructions": 11771175065,
+          "instructions": 111652072,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 11775270709,
+          "instructions": 4095644,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 11775372561,
+          "instructions": 101852,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 12926028119,
+          "instructions": 1150655558,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 12968525208,
+          "instructions": 42497089,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 12968721799,
+          "instructions": 196591,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 12973139944,
+          "instructions": 4418145,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 12991868575,
+          "instructions": 18728631,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 13152551083,
+          "instructions": 160682508,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 13152786811,
+          "instructions": 235728,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 13160989862,
+          "instructions": 8203051,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 13586969279,
+          "instructions": 425979417,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 13590941165,
+          "instructions": 3971886,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 13591016901,
+          "instructions": 75736,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 15501851431,
+          "instructions": 1910834530,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 15565688392,
+          "instructions": 63836961,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 15565888329,
+          "instructions": 199937,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 15570251019,
+          "instructions": 4362690,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 15589838068,
+          "instructions": 19587049,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 15670744521,
+          "instructions": 80906453,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 15721092294,
+          "instructions": 50347773,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 15721260487,
+          "instructions": 168193,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 15721336030,
+          "instructions": 75543,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 15721606041,
+          "instructions": 270011,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 15721680735,
+          "instructions": 74694,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 15721754908,
+          "instructions": 74173,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 15721846595,
+          "instructions": 91687,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 15721945521,
+          "instructions": 98926,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 15736622743,
+          "instructions": 14677222,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 15736700190,
+          "instructions": 77447,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 15739066596,
+          "instructions": 2366406,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 16259650381,
+          "instructions": 520583785,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 17300563643,
+          "instructions": 1040913262,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 17315269022,
+          "instructions": 14705379,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 17315465564,
+          "instructions": 196542,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 17319700242,
+          "instructions": 4234678,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 17338158908,
+          "instructions": 18458666,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 17419415431,
+          "instructions": 81256523,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 17419490367,
+          "instructions": 74936,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17421762015,
+          "instructions": 2271648,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17425304362,
+          "instructions": 3542347,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17427421699,
+          "instructions": 2117337,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17453319185,
+          "instructions": 25897486,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17455583436,
+          "instructions": 2264251,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17671275188,
+          "instructions": 215691752,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 17675586366,
+          "instructions": 4311178,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 17675662239,
+          "instructions": 75873,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17677937312,
+          "instructions": 2275073,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17816685056,
+          "instructions": 138747744,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17819003478,
+          "instructions": 2318422,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 18845631423,
+          "instructions": 1026627945,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 18848108706,
+          "instructions": 2477283,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 18963292784,
+          "instructions": 115184078,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 18965486297,
+          "instructions": 2193513,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19072837996,
+          "instructions": 107351699,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19075120659,
+          "instructions": 2282663,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19093514433,
+          "instructions": 18393774,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19095766802,
+          "instructions": 2252369,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19102747994,
+          "instructions": 6981192,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19104973134,
+          "instructions": 2225140,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19195117907,
+          "instructions": 90144773,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 19195193870,
+          "instructions": 75963,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19197469412,
+          "instructions": 2275542,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19211087376,
+          "instructions": 13617964,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19213285154,
+          "instructions": 2197778,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19220567834,
+          "instructions": 7282680,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19222840564,
+          "instructions": 2272730,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19226137974,
+          "instructions": 3297410,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19228403827,
+          "instructions": 2265853,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19231155019,
+          "instructions": 2751192,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19233421279,
+          "instructions": 2266260,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19235637849,
+          "instructions": 2216570,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19237720003,
+          "instructions": 2082154,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19239454469,
+          "instructions": 1734466,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19241531049,
+          "instructions": 2076580,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19243598767,
+          "instructions": 2067718,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19245748889,
+          "instructions": 2150122,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19418216609,
+          "instructions": 172467720,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 19418292452,
+          "instructions": 75843,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19420578437,
+          "instructions": 2285985,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19422618387,
+          "instructions": 2039950,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19424882013,
+          "instructions": 2263626,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19426632041,
+          "instructions": 1750028,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19428865248,
+          "instructions": 2233207,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19430930571,
+          "instructions": 2065323,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19433046148,
+          "instructions": 2115577,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19435050341,
+          "instructions": 2004193,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19437128252,
+          "instructions": 2077911,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19439177031,
+          "instructions": 2048779,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19441274374,
+          "instructions": 2097343,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19454080198,
+          "instructions": 12805824,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19456195025,
+          "instructions": 2114827,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19458246209,
+          "instructions": 2051184,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19460371156,
+          "instructions": 2124947,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19632287946,
+          "instructions": 171916790,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 19632363794,
+          "instructions": 75848,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19634645716,
+          "instructions": 2281922,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19643129245,
+          "instructions": 8483529,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19645395163,
+          "instructions": 2265918,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19680226933,
+          "instructions": 34831770,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19682366201,
+          "instructions": 2139268,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19708959070,
+          "instructions": 26592869,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19711162048,
+          "instructions": 2202978,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19820888095,
+          "instructions": 109726047,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19823185572,
+          "instructions": 2297477,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 20239350928,
+          "instructions": 416165356,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 20241647049,
+          "instructions": 2296121,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 20606011033,
+          "instructions": 364363984,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 20608312621,
+          "instructions": 2301588,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 20974683969,
+          "instructions": 366371348,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 20978355231,
+          "instructions": 3671262,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 23675753613,
+          "instructions": 2697398382,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 23689156521,
+          "instructions": 13402908,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 23689232825,
+          "instructions": 76304,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 23691490693,
+          "instructions": 2257868,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 25225740784,
+          "instructions": 1534250091,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 25230117628,
+          "instructions": 4376844,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 25230194184,
+          "instructions": 76556,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 27109474794,
+          "instructions": 1879280610,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 27173379114,
+          "instructions": 63904320,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 27173580037,
+          "instructions": 200923,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 27178305508,
+          "instructions": 4725471,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 27197445034,
+          "instructions": 19139526,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 27314475318,
+          "instructions": 117030284,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 27513481273,
+          "instructions": 199005955,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 27513557565,
+          "instructions": 76292,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 27515857914,
+          "instructions": 2300349,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 28162289981,
+          "instructions": 646432067,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 28166417478,
+          "instructions": 4127497,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 28166494065,
+          "instructions": 76587,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 29459811942,
+          "instructions": 1293317877,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 29502402129,
+          "instructions": 42590187,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 29502612575,
+          "instructions": 210446,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 29507600929,
+          "instructions": 4988354,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 29527586200,
+          "instructions": 19985271,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 29596490285,
+          "instructions": 68904085,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 32839431632,
+          "instructions": 3242941347,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 32844611539,
+          "instructions": 5179907,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 32844688217,
+          "instructions": 76678,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 34838663975,
+          "instructions": 1993975758,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 34903058868,
+          "instructions": 64394893,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 34903272745,
+          "instructions": 213877,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 34908407779,
+          "instructions": 5135034,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 34928556986,
+          "instructions": 20149207,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 35009358080,
+          "instructions": 80801094,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 35160597550,
+          "instructions": 151239470,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 35160673718,
+          "instructions": 76168,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 35165527618,
+          "instructions": 4853900,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 36384077762,
+          "instructions": 1218550144,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 36388384376,
+          "instructions": 4306614,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 36388460983,
+          "instructions": 76607,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 37672979622,
+          "instructions": 1284518639,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 37715656135,
+          "instructions": 42676513,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 37715866617,
+          "instructions": 210482,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 37720447660,
+          "instructions": 4581043,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 37740512342,
+          "instructions": 20064682,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 37808460467,
+          "instructions": 67948125,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 37839571704,
+          "instructions": 31111237,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 37839647907,
+          "instructions": 76203,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 39291135463,
+          "instructions": 1451487556,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 39565025807,
+          "instructions": 273890344,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 39568885375,
+          "instructions": 3859568,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 39568962754,
+          "instructions": 77379,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 40828103283,
+          "instructions": 1259140529,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 40872604391,
+          "instructions": 44501108,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 40872812192,
+          "instructions": 207801,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 40877443083,
+          "instructions": 4630891,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 40897300148,
+          "instructions": 19857065,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 40964620632,
+          "instructions": 67320484,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 43450656714,
+          "instructions": 2486036082,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 43455368953,
+          "instructions": 4712239,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 43455446326,
+          "instructions": 77373,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 45472858966,
+          "instructions": 2017412640,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 45536981773,
+          "instructions": 64122807,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 45537192960,
+          "instructions": 211187,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 45542233040,
+          "instructions": 5040080,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 45562494046,
+          "instructions": 20261006,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 45647523858,
+          "instructions": 85029812,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 45673472933,
+          "instructions": 25949075,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 45673549800,
+          "instructions": 76867,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 45905111555,
+          "instructions": 231561755,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 46085697877,
+          "instructions": 180586322,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 46086023851,
+          "instructions": 325974,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 46100388939,
+          "instructions": 14365088,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 46100722902,
+          "instructions": 333963,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 46100941253,
+          "instructions": 218351,
+          "label": "capture_started"
+        },
+        {
+          "cumulative_instructions": 46106465990,
+          "instructions": 5524737,
+          "label": "capture_cached"
+        },
+        {
+          "cumulative_instructions": 46106512119,
+          "instructions": 46129,
+          "label": "capture_converted"
+        },
+        {
+          "cumulative_instructions": 46117984291,
+          "instructions": 11472172,
+          "label": "capture_document_encoded"
+        }
+      ],
+      "scopes": {
+        "document_install_to_first_native_layer_submission": [
+          36551487124
+        ],
+        "document_install_to_first_paint": [
+          10421178236
+        ],
+        "install_total": [
+          8919681356
+        ],
+        "navigation_to_first_document_paint": [
+          12714404731
+        ],
+        "navigation_to_first_native_layer_submission": [
+          38844713619
+        ]
+      },
+      "unavailable": []
+    },
+    "new_instruction_credit": 0,
+    "png": {
+      "bytes": 229614,
+      "dimensions": [
+        1024,
+        768
+      ],
+      "path": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-after-domain-01/document.png",
+      "sha256": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3"
+    },
+    "replay": {
+      "archive": "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/archive-resumed",
+      "ca": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-after-domain-01/replay/cert.pem",
+      "certificate_sha256": "794356362fbe1a78b0aa21ef1fd132d1a8da8e2a98f96bad0df248933121c4ff",
+      "forwarding": false,
+      "manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+      "proxy": "socks5h://127.0.0.1:59762",
+      "url": "https://github.com/vlang/v"
+    }
+  },
+  "github_predeclared_plan": {
+    "archive_manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+    "chrome_parity": false,
+    "content_gate": {
+      "filename_href_links": 66,
+      "images": 21,
+      "rows": 33
+    },
+    "feature_commit": "e939a5ddd0463cc71943bf1d5f785652147d29e5",
+    "instruction_credit": 0,
+    "observations": 1,
+    "paired_comparison": false,
+    "rerun_completed_observation": false,
+    "scope": "Fresh current-production main-task instruction diagnostic after document.domain binding, at native submission and legacy paint separately",
+    "viewport": [
+      1024,
+      768
+    ]
+  },
+  "historical_primary_replacements": 0,
+  "installed": {
+    "actual_browser_exit": 0,
+    "build_requested": true,
+    "exit": 0,
+    "new_instruction_credit": 0,
+    "pid": 78530,
+    "requests": [
+      {
+        "path": "/integration.html",
+        "unix": 1793728016.908277
+      },
+      {
+        "path": "/favicon.ico",
+        "unix": 1793728016.945735
+      }
+    ],
+    "text": [
+      "PASS: native document.domain owner and validation"
+    ],
+    "viewport": [
+      640,
+      480
+    ]
+  },
+  "instruction_credit": 0,
+  "limitations": [
+    "Primary capture retains six undescribed native exceptions; a separate instrumented diagnostic identifies HTMLMetaElement and getElementsByName gaps. Full hydration remains unproven.",
+    "The native setter still performs validation only; origin relaxation remains a stub matching pinned upstream. This binding does not add cross-origin access.",
+    "New single-observation hardware counts cannot establish a saving, regression, or Chrome parity. Legacy and native-submission scopes overlap and remain separate.",
+    "Focused C-O0 configurations and current shared preallocation C-O3 differ from historical old-compiler/Boehm C-O2 cohorts.",
+    "Eight generated-C matches are not whole-program performance isolation.",
+    "Sampled memory guards are not kernel allocation limits."
+  ],
+  "paired_comparison": false,
+  "pixel_comparison": {
+    "byte_identical": true,
+    "current_png_sha256": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+    "differing_pixels": 0,
+    "previous_png_sha256": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3",
+    "purpose": "Diagnostic comparison with unchanged previous capture; no reference or tolerance edits and no optimization acceptance."
+  },
+  "production_build_requested": true,
+  "production_function_audit": {
+    "complete_generated_c_sha256": [
+      "118a9b46bfdc2e93a04dc99f95780e7e8ee32ed41230b755c03ced00dcdcaa84",
+      "afb5624aac01b831ec49a2ccede63720d5cf42c7b506caec169a15b70bcf4312"
+    ],
+    "exit": 0,
+    "functions": [
+      {
+        "function": "browserjs__Runtime__document_domain_receiver",
+        "match": true,
+        "normalized_sha256": "cd674dc48b8e716944c352872d9fbeadca00a9dcb5d8cea2c112ae4efd84738b"
+      },
+      {
+        "function": "browserjs__Runtime__install_document_domain_attribute",
+        "match": true,
+        "normalized_sha256": "465d694efdb108d2e62732aed496bc3a6346051392432bea248e37ea8c88e41c"
+      },
+      {
+        "function": "browserjs__Runtime__install_document_window_event_binding",
+        "match": true,
+        "normalized_sha256": "928180b95ceeba4670367f9a7bb97f1701098d79f73811fd085ad4754b76f4a9"
+      },
+      {
+        "function": "dom__Document__domain",
+        "match": true,
+        "normalized_sha256": "0aa05000a311768ac5343128cac958e814d8c1dfd8ad3024bd2cd52d71de96ec"
+      },
+      {
+        "function": "dom__Document__set_domain",
+        "match": true,
+        "normalized_sha256": "5981edc9f9c137637abc45a618e585832504de7e33c535e72aa470d77d170ee4"
+      },
+      {
+        "function": "dom__Origin__effective_domain",
+        "match": true,
+        "normalized_sha256": "1b64a255106a3ec8ced209bb588ec5df5e52cace0331e3d6f120346c5f4f9051"
+      },
+      {
+        "function": "browserjs____anon_fn_190",
+        "match": true,
+        "normalized_sha256": "b56a0e0980b9bff97bed2942449c17aacbc146301ac9681200d99d27148a6c3d"
+      },
+      {
+        "function": "browserjs____anon_fn_191",
+        "match": true,
+        "normalized_sha256": "b9fc95457613fd7f1175bf1e8d5ced24fc273e5baeae3a5224ab47030d1e7b79"
+      }
+    ],
+    "normalization": "Resolve every referenced C string constant to its exact decoded contents; no code-body differences or anonymous renames were ignored.",
+    "paths": [
+      "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/checks-prealloc.c",
+      "/Users/alex/code/vox2/Build/production-build/receipts/20261103-204109-549322b6/generated/Vox.c"
+    ],
+    "scope": "Eight relevant functions only; not a whole-program performance isolation audit."
+  },
+  "production_receipts": [
+    {
+      "observation": "installed-integration-01",
+      "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-204109-549322b6/result.json",
+      "record": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "2fa83df46decc8cbb840c476f4747a1f951edef2ae3c30467e9b951f3e519585",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-204109-549322b6/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "ed9fbdee0067121a73b5a9e9542a2b00362cdae9a4abd531c6c24f08666247ae",
+          "dirty": true,
+          "head": "1c492b174f4da55747e651bdf1f8253baa0de234",
+          "repository_sha256": "94e56d69f4304fff507f5731a23173a2360d7bec3471cbe9c397f82a5693736a"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "ed9fbdee0067121a73b5a9e9542a2b00362cdae9a4abd531c6c24f08666247ae",
+          "dirty": true,
+          "head": "e939a5ddd0463cc71943bf1d5f785652147d29e5",
+          "repository_sha256": "c3d6c4f427251aa820c02c3990ec3dd8ea3799e66088773b57a6d7410766c8fc"
+        },
+        "request": {
+          "head": "1c492b174f4da55747e651bdf1f8253baa0de234",
+          "id": "99308a4bd76c4548b3ca27804d3fae22"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "ed9fbdee0067121a73b5a9e9542a2b00362cdae9a4abd531c6c24f08666247ae",
+          "dirty": true,
+          "head": "1c492b174f4da55747e651bdf1f8253baa0de234",
+          "repository_sha256": "94e56d69f4304fff507f5731a23173a2360d7bec3471cbe9c397f82a5693736a"
+        }
+      },
+      "record_sha256": {
+        "build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+        "frozen-compile.json": "7448944e02d8c27ac2804e2dcbe50007b6b7a62f91b6689b98dd47784d198c60",
+        "inputs-before.json": "67b7e11d7232e7b600e6641934c04df13033958aede9013432059df6bd54ba1c",
+        "memory.json": "0e90c9d9e0c4a99f0c3a2127e83596b2d22b5b7b7243f86de6194669f862ed44",
+        "result.json": "ed8db4d415e86552cc5e96e1c067a09019008aaa5c3c142915fbbf59c2edd936"
+      }
+    },
+    {
+      "observation": "github-after-domain-01",
+      "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-204109-549322b6/result.json",
+      "record": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "2fa83df46decc8cbb840c476f4747a1f951edef2ae3c30467e9b951f3e519585",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-204109-549322b6/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "ed9fbdee0067121a73b5a9e9542a2b00362cdae9a4abd531c6c24f08666247ae",
+          "dirty": true,
+          "head": "1c492b174f4da55747e651bdf1f8253baa0de234",
+          "repository_sha256": "94e56d69f4304fff507f5731a23173a2360d7bec3471cbe9c397f82a5693736a"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "ed9fbdee0067121a73b5a9e9542a2b00362cdae9a4abd531c6c24f08666247ae",
+          "dirty": true,
+          "head": "e939a5ddd0463cc71943bf1d5f785652147d29e5",
+          "repository_sha256": "c3d6c4f427251aa820c02c3990ec3dd8ea3799e66088773b57a6d7410766c8fc"
+        },
+        "request": {
+          "head": "1c492b174f4da55747e651bdf1f8253baa0de234",
+          "id": "99308a4bd76c4548b3ca27804d3fae22"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "ed9fbdee0067121a73b5a9e9542a2b00362cdae9a4abd531c6c24f08666247ae",
+          "dirty": true,
+          "head": "1c492b174f4da55747e651bdf1f8253baa0de234",
+          "repository_sha256": "94e56d69f4304fff507f5731a23173a2360d7bec3471cbe9c397f82a5693736a"
+        }
+      },
+      "record_sha256": {
+        "build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+        "frozen-compile.json": "7448944e02d8c27ac2804e2dcbe50007b6b7a62f91b6689b98dd47784d198c60",
+        "inputs-before.json": "67b7e11d7232e7b600e6641934c04df13033958aede9013432059df6bd54ba1c",
+        "memory.json": "0e90c9d9e0c4a99f0c3a2127e83596b2d22b5b7b7243f86de6194669f862ed44",
+        "result.json": "ed8db4d415e86552cc5e96e1c067a09019008aaa5c3c142915fbbf59c2edd936"
+      }
+    },
+    {
+      "observation": "github-native-errors-diagnostic-01",
+      "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-204109-549322b6/result.json",
+      "record": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "2fa83df46decc8cbb840c476f4747a1f951edef2ae3c30467e9b951f3e519585",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261103-204109-549322b6/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "ed9fbdee0067121a73b5a9e9542a2b00362cdae9a4abd531c6c24f08666247ae",
+          "dirty": true,
+          "head": "1c492b174f4da55747e651bdf1f8253baa0de234",
+          "repository_sha256": "94e56d69f4304fff507f5731a23173a2360d7bec3471cbe9c397f82a5693736a"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "ed9fbdee0067121a73b5a9e9542a2b00362cdae9a4abd531c6c24f08666247ae",
+          "dirty": true,
+          "head": "e939a5ddd0463cc71943bf1d5f785652147d29e5",
+          "repository_sha256": "c3d6c4f427251aa820c02c3990ec3dd8ea3799e66088773b57a6d7410766c8fc"
+        },
+        "request": {
+          "head": "1c492b174f4da55747e651bdf1f8253baa0de234",
+          "id": "99308a4bd76c4548b3ca27804d3fae22"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "ed9fbdee0067121a73b5a9e9542a2b00362cdae9a4abd531c6c24f08666247ae",
+          "dirty": true,
+          "head": "1c492b174f4da55747e651bdf1f8253baa0de234",
+          "repository_sha256": "94e56d69f4304fff507f5731a23173a2360d7bec3471cbe9c397f82a5693736a"
+        }
+      },
+      "record_sha256": {
+        "build-script.json": "0b0aab180cba6f4bba5bc22c4f18dcd570a36fb177eadec2c425df2fa99c0f85",
+        "frozen-compile.json": "7448944e02d8c27ac2804e2dcbe50007b6b7a62f91b6689b98dd47784d198c60",
+        "inputs-before.json": "67b7e11d7232e7b600e6641934c04df13033958aede9013432059df6bd54ba1c",
+        "memory.json": "0e90c9d9e0c4a99f0c3a2127e83596b2d22b5b7b7243f86de6194669f862ed44",
+        "result.json": "ed8db4d415e86552cc5e96e1c067a09019008aaa5c3c142915fbbf59c2edd936"
+      }
+    }
+  ],
+  "production_request": {
+    "actual_exit": 0,
+    "command": [
+      "python3",
+      "tools/rebuild_browser.py",
+      "--request"
+    ],
+    "reason": "Latest completed production executable lacks the native get domain binding; no production build or worker was running at the recorded initial availability check.",
+    "request": {
+      "head": "1c492b174f4da55747e651bdf1f8253baa0de234",
+      "id": "99308a4bd76c4548b3ca27804d3fae22"
+    },
+    "requested_unix": 1793727669.046924
+  },
+  "separate_exception_diagnostic": {
+    "actual_browser_exit": 0,
+    "broad_baseline_reset": false,
+    "browser_observations": 1,
+    "browser_pid": 79080,
+    "command": [
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "--enable-javascript",
+      "--window-width",
+      "1024",
+      "--window-height",
+      "852",
+      "--screenshot",
+      "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-native-errors-diagnostic-01/document.png",
+      "https://github.com/vlang/v"
+    ],
+    "comparison_eligible": false,
+    "content_gate": {
+      "failures": [],
+      "passed": true
+    },
+    "environment_controls": {
+      "DYLD_INSERT_LIBRARIES": "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/native-diagnostic-01/network-deny.dylib",
+      "GC_MARKERS": "1",
+      "LADYBIRD_CACHE_DIR": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-native-errors-diagnostic-01/cache",
+      "LADYBIRD_SCREENSHOT_DELAY_SECONDS": ".5",
+      "LADYBIRD_SCREENSHOT_SCALE": "1",
+      "NO_PROXY": "",
+      "SSL_CERT_FILE": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-native-errors-diagnostic-01/replay/cert.pem",
+      "VOX_CAPTURE_AUDIT_CONFIG": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-native-errors-diagnostic-01/audit-config.json",
+      "VOX_CAPTURE_AUDIT_PATH": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-native-errors-diagnostic-01/audit.json",
+      "VOX_CAPTURE_DOCUMENT_ONLY": "1",
+      "VOX_COOKIE_FILE": "",
+      "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-native-errors-diagnostic-01/profile",
+      "VOX_PROFILE_INSTRUCTIONS": "1",
+      "VOX_PROXY": "socks5h://127.0.0.1:59971",
+      "VOX_TEST_WINDOW": "1"
+    },
+    "exit": 0,
+    "host_after": {
+      "cpu_count": 18,
+      "load_average": [
+        20.61376953125,
+        22.4111328125,
+        21.81005859375
+      ],
+      "unix": 1793728121.906636
+    },
+    "javascript_diagnostics": [
+      "Stylesheet https://github.githubassets.com/assets/kq9.534fad559fbed8f2.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/jdp.78ec31cf68ea99a3.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/u2l.7871b60c0a7907d4.module.css: HTTP 404",
+      "Stylesheet https://github.githubassets.com/assets/bv.b745c35cbc44f08d.module.css: HTTP 404"
+    ],
+    "native": {
+      "phase_note": "adjacent cumulative checkpoint deltas; nested scopes overlap and must not be summed",
+      "phases": [
+        {
+          "cumulative_instructions": 445964778,
+          "instructions": 445964778,
+          "label": "startup"
+        },
+        {
+          "cumulative_instructions": 449020676,
+          "instructions": 3055898,
+          "label": "startup_page_model"
+        },
+        {
+          "cumulative_instructions": 449131176,
+          "instructions": 110500,
+          "label": "startup_browser_state"
+        },
+        {
+          "cumulative_instructions": 450270898,
+          "instructions": 1139722,
+          "label": "startup_input_bridge"
+        },
+        {
+          "cumulative_instructions": 450790413,
+          "instructions": 519515,
+          "label": "startup_context"
+        },
+        {
+          "cumulative_instructions": 450973261,
+          "instructions": 182848,
+          "label": "navigation_started"
+        },
+        {
+          "cumulative_instructions": 451316461,
+          "instructions": 343200,
+          "label": "startup_navigation"
+        },
+        {
+          "cumulative_instructions": 607670276,
+          "instructions": 156353815,
+          "label": "startup_filter_worker"
+        },
+        {
+          "cumulative_instructions": 1373290775,
+          "instructions": 765620499,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 1375895144,
+          "instructions": 2604369,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 1487868590,
+          "instructions": 111973446,
+          "label": "main_resource_fetch"
+        },
+        {
+          "cumulative_instructions": 1492475221,
+          "instructions": 4606631,
+          "label": "main_resource_cache"
+        },
+        {
+          "cumulative_instructions": 1752379623,
+          "instructions": 259904402,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 1754376252,
+          "instructions": 1996629,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2411661796,
+          "instructions": 657285544,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2414001204,
+          "instructions": 2339408,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2430699016,
+          "instructions": 16697812,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2432775764,
+          "instructions": 2076748,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2501397608,
+          "instructions": 68621844,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 2510614222,
+          "instructions": 9216614,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 2950938956,
+          "instructions": 440324734,
+          "label": "parse_document"
+        },
+        {
+          "cumulative_instructions": 4687014857,
+          "instructions": 1736075901,
+          "label": "preload_resources"
+        },
+        {
+          "cumulative_instructions": 4687200723,
+          "instructions": 185866,
+          "label": "install_styles"
+        },
+        {
+          "cumulative_instructions": 4694512398,
+          "instructions": 7311675,
+          "label": "install_video_frames"
+        },
+        {
+          "cumulative_instructions": 4981916722,
+          "instructions": 287404324,
+          "label": "javascript_native_bindings"
+        },
+        {
+          "cumulative_instructions": 5030707834,
+          "instructions": 48791112,
+          "label": "javascript_initial_state"
+        },
+        {
+          "cumulative_instructions": 5031023665,
+          "instructions": 315831,
+          "label": "javascript_bootstrap_source"
+        },
+        {
+          "cumulative_instructions": 5143681622,
+          "instructions": 112657957,
+          "label": "javascript_bootstrap_evaluated"
+        },
+        {
+          "cumulative_instructions": 5186221469,
+          "instructions": 42539847,
+          "label": "javascript_document_bindings"
+        },
+        {
+          "cumulative_instructions": 5214255029,
+          "instructions": 28033560,
+          "label": "javascript_adblock_scriptlets"
+        },
+        {
+          "cumulative_instructions": 5257345550,
+          "instructions": 43090521,
+          "label": "javascript_readiness_events"
+        },
+        {
+          "cumulative_instructions": 5257682716,
+          "instructions": 337166,
+          "label": "javascript_finalized"
+        },
+        {
+          "cumulative_instructions": 5258776283,
+          "instructions": 1093567,
+          "label": "run_javascript"
+        },
+        {
+          "cumulative_instructions": 5263973662,
+          "instructions": 5197379,
+          "label": "cookie_blocker"
+        },
+        {
+          "cumulative_instructions": 5267149763,
+          "instructions": 3176101,
+          "label": "script_inserted_stylesheets"
+        },
+        {
+          "cumulative_instructions": 5267815981,
+          "instructions": 666218,
+          "label": "unsized_script_images"
+        },
+        {
+          "cumulative_instructions": 8046221175,
+          "instructions": 2778405194,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 8051079470,
+          "instructions": 4858295,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 8051178874,
+          "instructions": 99404,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 10129189219,
+          "instructions": 2078010345,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 10203385525,
+          "instructions": 74196306,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 10203609505,
+          "instructions": 223980,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 10208127896,
+          "instructions": 4518391,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 10227246898,
+          "instructions": 19119002,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 10374004055,
+          "instructions": 146757157,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 10377797469,
+          "instructions": 3793414,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 10377897605,
+          "instructions": 100136,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 11525248306,
+          "instructions": 1147350701,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 11567707011,
+          "instructions": 42458705,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 11567927163,
+          "instructions": 220152,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 11572356457,
+          "instructions": 4429294,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 11591261708,
+          "instructions": 18905251,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 11652157207,
+          "instructions": 60895499,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 11652257397,
+          "instructions": 100190,
+          "label": "relayout"
+        },
+        {
+          "cumulative_instructions": 11652917039,
+          "instructions": 659642,
+          "label": "script_inserted_images"
+        },
+        {
+          "cumulative_instructions": 11653015529,
+          "instructions": 98490,
+          "label": "install_total"
+        },
+        {
+          "cumulative_instructions": 11760494710,
+          "instructions": 107479181,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 11764347730,
+          "instructions": 3853020,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 11764447867,
+          "instructions": 100137,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 12902998009,
+          "instructions": 1138550142,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 12945355810,
+          "instructions": 42357801,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 12945574093,
+          "instructions": 218283,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 12949962632,
+          "instructions": 4388539,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 12968590896,
+          "instructions": 18628264,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 13133031681,
+          "instructions": 164440785,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 13133265780,
+          "instructions": 234099,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 13141235383,
+          "instructions": 7969603,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 13562603939,
+          "instructions": 421368556,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 13566515417,
+          "instructions": 3911478,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 13566589323,
+          "instructions": 73906,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 15482450209,
+          "instructions": 1915860886,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 15546391681,
+          "instructions": 63941472,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 15546583233,
+          "instructions": 191552,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 15551183293,
+          "instructions": 4600060,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 15570329498,
+          "instructions": 19146205,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 15644181245,
+          "instructions": 73851747,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 15694810493,
+          "instructions": 50629248,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 15694977002,
+          "instructions": 166509,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 15695050964,
+          "instructions": 73962,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 15695278048,
+          "instructions": 227084,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 15695351158,
+          "instructions": 73110,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 15695423752,
+          "instructions": 72594,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 15695513813,
+          "instructions": 90061,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 15695611164,
+          "instructions": 97351,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 15709229873,
+          "instructions": 13618709,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 15709305628,
+          "instructions": 75755,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 15711561023,
+          "instructions": 2255395,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 16232104376,
+          "instructions": 520543353,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 17268032777,
+          "instructions": 1035928401,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 17282794445,
+          "instructions": 14761668,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 17282985813,
+          "instructions": 191368,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 17287242866,
+          "instructions": 4257053,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 17305710554,
+          "instructions": 18467688,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 17391730486,
+          "instructions": 86019932,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 17391803823,
+          "instructions": 73337,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17394099748,
+          "instructions": 2295925,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17397567576,
+          "instructions": 3467828,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17399656499,
+          "instructions": 2088923,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17491937993,
+          "instructions": 92281494,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 17496335245,
+          "instructions": 4397252,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 17496408502,
+          "instructions": 73257,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17498697366,
+          "instructions": 2288864,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 17845097047,
+          "instructions": 346399681,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 17853139767,
+          "instructions": 8042720,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 18815230977,
+          "instructions": 962091210,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 18817451170,
+          "instructions": 2220193,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 18849793969,
+          "instructions": 32342799,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 18851946925,
+          "instructions": 2152956,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 18966010975,
+          "instructions": 114064050,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 18968471016,
+          "instructions": 2460041,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19072974065,
+          "instructions": 104503049,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19075250054,
+          "instructions": 2275989,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19088203744,
+          "instructions": 12953690,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19090482062,
+          "instructions": 2278318,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19186766543,
+          "instructions": 96284481,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 19186840735,
+          "instructions": 74192,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19189105494,
+          "instructions": 2264759,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19193777927,
+          "instructions": 4672433,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19196063466,
+          "instructions": 2285539,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19202720693,
+          "instructions": 6657227,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19204909387,
+          "instructions": 2188694,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19209516205,
+          "instructions": 4606818,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19211845253,
+          "instructions": 2329048,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19222688348,
+          "instructions": 10843095,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19224849419,
+          "instructions": 2161071,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19228104342,
+          "instructions": 3254923,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19230198600,
+          "instructions": 2094258,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19232131959,
+          "instructions": 1933359,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19234374624,
+          "instructions": 2242665,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19236471731,
+          "instructions": 2097107,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19238616793,
+          "instructions": 2145062,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19323344996,
+          "instructions": 84728203,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 19323419107,
+          "instructions": 74111,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19325739567,
+          "instructions": 2320460,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19417269158,
+          "instructions": 91529591,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19419353865,
+          "instructions": 2084707,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19421065309,
+          "instructions": 1711444,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19423160943,
+          "instructions": 2095634,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19425185489,
+          "instructions": 2024546,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19427315701,
+          "instructions": 2130212,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19429170572,
+          "instructions": 1854871,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19431300491,
+          "instructions": 2129919,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19433642642,
+          "instructions": 2342151,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19435775802,
+          "instructions": 2133160,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19441401399,
+          "instructions": 5625597,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19443533612,
+          "instructions": 2132213,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19445603580,
+          "instructions": 2069968,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19447853985,
+          "instructions": 2250405,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19547170435,
+          "instructions": 99316450,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 19547244625,
+          "instructions": 74190,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19549523440,
+          "instructions": 2278815,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19643050628,
+          "instructions": 93527188,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19645339709,
+          "instructions": 2289081,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19675058329,
+          "instructions": 29718620,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19677364475,
+          "instructions": 2306146,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19734016212,
+          "instructions": 56651737,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19736313671,
+          "instructions": 2297459,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 19816791251,
+          "instructions": 80477580,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 19819103670,
+          "instructions": 2312419,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 20009849022,
+          "instructions": 190745352,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 20012001834,
+          "instructions": 2152812,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 20094710965,
+          "instructions": 82709131,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 20098133105,
+          "instructions": 3422140,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 20241227527,
+          "instructions": 143094422,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 20243528009,
+          "instructions": 2300482,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 20313397866,
+          "instructions": 69869857,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 20315670330,
+          "instructions": 2272464,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 21130740960,
+          "instructions": 815070630,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 21134689136,
+          "instructions": 3948176,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 21134763501,
+          "instructions": 74365,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 22274635272,
+          "instructions": 1139871771,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 22317003009,
+          "instructions": 42367737,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 22317201893,
+          "instructions": 198884,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 22321607923,
+          "instructions": 4406030,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 22340434933,
+          "instructions": 18827010,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 22436163729,
+          "instructions": 95728796,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 22531885165,
+          "instructions": 95721436,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 22532121168,
+          "instructions": 236003,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 22562013891,
+          "instructions": 29892723,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 25576397540,
+          "instructions": 3014383649,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 28741538152,
+          "instructions": 3165140612,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 28745897805,
+          "instructions": 4359653,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 28745972617,
+          "instructions": 74812,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 30660470340,
+          "instructions": 1914497723,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 30724233489,
+          "instructions": 63763149,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 30724425940,
+          "instructions": 192451,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 30728753353,
+          "instructions": 4327413,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 30747993665,
+          "instructions": 19240312,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 30827208550,
+          "instructions": 79214885,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 30927209714,
+          "instructions": 100001164,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 30927285647,
+          "instructions": 75933,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 30932157069,
+          "instructions": 4871422,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 32415479583,
+          "instructions": 1483322514,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 32419576678,
+          "instructions": 4097095,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 32419651429,
+          "instructions": 74751,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 33722415042,
+          "instructions": 1302763613,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 33765017520,
+          "instructions": 42602478,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 33765226133,
+          "instructions": 208613,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 33769982563,
+          "instructions": 4756430,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 33790132560,
+          "instructions": 20149997,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 33860917569,
+          "instructions": 70785009,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 34017614539,
+          "instructions": 156696970,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 34017688911,
+          "instructions": 74372,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 34019935349,
+          "instructions": 2246438,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 35796687620,
+          "instructions": 1776752271,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 35800588423,
+          "instructions": 3900803,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 35800663211,
+          "instructions": 74788,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 37068937385,
+          "instructions": 1268274174,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 37111189615,
+          "instructions": 42252230,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 37111394853,
+          "instructions": 205238,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 37115996502,
+          "instructions": 4601649,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 37135895971,
+          "instructions": 19899469,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 37213909014,
+          "instructions": 78013043,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 39708645085,
+          "instructions": 2494736071,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 39712899998,
+          "instructions": 4254913,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 39712974773,
+          "instructions": 74775,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 41747061848,
+          "instructions": 2034087075,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 41816168998,
+          "instructions": 69107150,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 41816374286,
+          "instructions": 205288,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 41821115982,
+          "instructions": 4741696,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 41841270843,
+          "instructions": 20154861,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 41922023273,
+          "instructions": 80752430,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 41950008430,
+          "instructions": 27985157,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 41950082777,
+          "instructions": 74347,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 41952368318,
+          "instructions": 2285541,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 42065300687,
+          "instructions": 112932369,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 42069190332,
+          "instructions": 3889645,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 42069264248,
+          "instructions": 73916,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 43321785556,
+          "instructions": 1252521308,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 43364431718,
+          "instructions": 42646162,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 43364643778,
+          "instructions": 212060,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 43369198069,
+          "instructions": 4554291,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 43389246925,
+          "instructions": 20048856,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 43457449556,
+          "instructions": 68202631,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 45912323540,
+          "instructions": 2454873984,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 45919412571,
+          "instructions": 7089031,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 45919503451,
+          "instructions": 90880,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 47919742419,
+          "instructions": 2000238968,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 47984185688,
+          "instructions": 64443269,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 47984411234,
+          "instructions": 225546,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 47989499969,
+          "instructions": 5088735,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 48009791451,
+          "instructions": 20291482,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 48093218076,
+          "instructions": 83426625,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 48120991200,
+          "instructions": 27773124,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 48121065592,
+          "instructions": 74392,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 48123365507,
+          "instructions": 2299915,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 48229569122,
+          "instructions": 106203615,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 48233457920,
+          "instructions": 3888798,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 48233531852,
+          "instructions": 73932,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 49494109802,
+          "instructions": 1260577950,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 49536635379,
+          "instructions": 42525577,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 49536847475,
+          "instructions": 212096,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 49541489951,
+          "instructions": 4642476,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 49561407323,
+          "instructions": 19917372,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 49628780856,
+          "instructions": 67373533,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 52084374112,
+          "instructions": 2455593256,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 52088765770,
+          "instructions": 4391658,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 52088840570,
+          "instructions": 74800,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 54080129491,
+          "instructions": 1991288921,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 54143998431,
+          "instructions": 63868940,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 54144256877,
+          "instructions": 258446,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 54149251534,
+          "instructions": 4994657,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 54169448951,
+          "instructions": 20197417,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 54251463620,
+          "instructions": 82014669,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 54278556813,
+          "instructions": 27093193,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 54278631205,
+          "instructions": 74392,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 54280960395,
+          "instructions": 2329190,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 54383730760,
+          "instructions": 102770365,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 54387610678,
+          "instructions": 3879918,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 54387684670,
+          "instructions": 73992,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 55638325145,
+          "instructions": 1250640475,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 55680637528,
+          "instructions": 42312383,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 55680846252,
+          "instructions": 208724,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 55685531246,
+          "instructions": 4684994,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 55705429268,
+          "instructions": 19898022,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 55772720237,
+          "instructions": 67290969,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 58226637740,
+          "instructions": 2453917503,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 58230917142,
+          "instructions": 4279402,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 58230993254,
+          "instructions": 76112,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 60228123750,
+          "instructions": 1997130496,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 60292656629,
+          "instructions": 64532879,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 60292865265,
+          "instructions": 208636,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 60297690822,
+          "instructions": 4825557,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 60318028426,
+          "instructions": 20337604,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 60400670307,
+          "instructions": 82641881,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 60428130176,
+          "instructions": 27459869,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 60428204537,
+          "instructions": 74361,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 60430485190,
+          "instructions": 2280653,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 60436859151,
+          "instructions": 6373961,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 60439000605,
+          "instructions": 2141454,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 60518212816,
+          "instructions": 79212211,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 60520496182,
+          "instructions": 2283366,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 60764219134,
+          "instructions": 243722952,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 60768138969,
+          "instructions": 3919835,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 60768213002,
+          "instructions": 74033,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 62019231641,
+          "instructions": 1251018639,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 62061742385,
+          "instructions": 42510744,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 62061947577,
+          "instructions": 205192,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 62066441424,
+          "instructions": 4493847,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 62086282888,
+          "instructions": 19841464,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 62153835075,
+          "instructions": 67552187,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 62186156405,
+          "instructions": 32321330,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 62186230733,
+          "instructions": 74328,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 63570996839,
+          "instructions": 1384766106,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 63578692098,
+          "instructions": 7695259,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 63579001582,
+          "instructions": 309484,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 64063272950,
+          "instructions": 484271368,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 64063602122,
+          "instructions": 329172,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 64256449256,
+          "instructions": 192847134,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 64260215542,
+          "instructions": 3766286,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 64260307446,
+          "instructions": 91904,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 65517169518,
+          "instructions": 1256862072,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 65559713779,
+          "instructions": 42544261,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 65559923129,
+          "instructions": 209350,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 65564698582,
+          "instructions": 4775453,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 65584550965,
+          "instructions": 19852383,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 65651864187,
+          "instructions": 67313222,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 68117326196,
+          "instructions": 2465462009,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 68121654583,
+          "instructions": 4328387,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 68121730125,
+          "instructions": 75542,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 70142582073,
+          "instructions": 2020851948,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 70210521869,
+          "instructions": 67939796,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 70210728575,
+          "instructions": 206706,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 70215285004,
+          "instructions": 4556429,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 70235477615,
+          "instructions": 20192611,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 70317133225,
+          "instructions": 81655610,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 70344910727,
+          "instructions": 27777502,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 70344985871,
+          "instructions": 75144,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 70576335434,
+          "instructions": 231349563,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 70581994466,
+          "instructions": 5659032,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 70582300819,
+          "instructions": 306353,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 70815897284,
+          "instructions": 233596465,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 70819653875,
+          "instructions": 3756591,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 70819728562,
+          "instructions": 74687,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 72070240332,
+          "instructions": 1250511770,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 72112685345,
+          "instructions": 42445013,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 72112891388,
+          "instructions": 206043,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 72117514478,
+          "instructions": 4623090,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 72137421193,
+          "instructions": 19906715,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 72204986240,
+          "instructions": 67565047,
+          "label": "capture_started"
+        },
+        {
+          "cumulative_instructions": 72216354565,
+          "instructions": 11368325,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 74679248069,
+          "instructions": 2462893504,
+          "label": "    build_boxes"
+        },
+        {
+          "cumulative_instructions": 74683766610,
+          "instructions": 4518541,
+          "label": "    tree_fixups"
+        },
+        {
+          "cumulative_instructions": 74683842128,
+          "instructions": 75518,
+          "label": "    build_tree_total"
+        },
+        {
+          "cumulative_instructions": 76704659413,
+          "instructions": 2020817285,
+          "label": "      formatting_contexts"
+        },
+        {
+          "cumulative_instructions": 76768496562,
+          "instructions": 63837149,
+          "label": "      absolute_descendants"
+        },
+        {
+          "cumulative_instructions": 76768705750,
+          "instructions": 209188,
+          "label": "      relative_insets"
+        },
+        {
+          "cumulative_instructions": 76773397880,
+          "instructions": 4692130,
+          "label": "      scrollable_overflow"
+        },
+        {
+          "cumulative_instructions": 76793635481,
+          "instructions": 20237601,
+          "label": "    attach_layout"
+        },
+        {
+          "cumulative_instructions": 76874791506,
+          "instructions": 81156025,
+          "label": "  layout_tree"
+        },
+        {
+          "cumulative_instructions": 76976882399,
+          "instructions": 102090893,
+          "label": "  paint_commands"
+        },
+        {
+          "cumulative_instructions": 76976957510,
+          "instructions": 75111,
+          "label": "frame_prepared"
+        },
+        {
+          "cumulative_instructions": 77189984041,
+          "instructions": 213026531,
+          "label": "frame_complete"
+        },
+        {
+          "cumulative_instructions": 77195648147,
+          "instructions": 5664106,
+          "label": "capture_cached"
+        },
+        {
+          "cumulative_instructions": 77195693831,
+          "instructions": 45684,
+          "label": "capture_converted"
+        },
+        {
+          "cumulative_instructions": 77207132275,
+          "instructions": 11438444,
+          "label": "capture_document_encoded"
+        }
+      ],
+      "scopes": {
+        "document_install_to_first_native_layer_submission": [
+          60837800383
+        ],
+        "document_install_to_first_paint": [
+          10407873894
+        ],
+        "install_total": [
+          8919624223
+        ],
+        "navigation_to_first_document_paint": [
+          12690390364
+        ],
+        "navigation_to_first_native_layer_submission": [
+          63120316853
+        ]
+      },
+      "unavailable": []
+    },
+    "new_instruction_credit": 0,
+    "png": {
+      "bytes": 229614,
+      "dimensions": [
+        1024,
+        768
+      ],
+      "path": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-native-errors-diagnostic-01/document.png",
+      "sha256": "65060cbfb12d212071f6a704f930dac8fb05f3fc45a1564860040bc12b2096f3"
+    },
+    "replay": {
+      "archive": "/Users/alex/code/vox2/Build/github-new-baseline-20261103-session4076/archive-resumed",
+      "ca": "/Users/alex/code/vox2/Build/github-document-domain-20261103-session4076/github-native-errors-diagnostic-01/replay/cert.pem",
+      "certificate_sha256": "722863d20a874642281ac53d8b2702ff77e1e803614b134fa5100ede67f663dd",
+      "forwarding": false,
+      "manifest_sha256": "902873620aa248a0d3c1f654f57cd8720a49b6ea3f8785d12b14d37400be6a3b",
+      "proxy": "socks5h://127.0.0.1:59971",
+      "url": "https://github.com/vlang/v"
+    }
+  },
+  "upstream": {
+    "commit": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+    "native_setter_scope": "Validation only; origin-keyed return and origin domain mutation remain upstream FIXME and are unchanged here.",
+    "sha256": {
+      "Libraries/LibWeb/DOM/DOMImplementation.cpp": "b3051568214f168473772c804b82211a55f8492f68605eecfcc39e50f9a54ae4",
+      "Libraries/LibWeb/DOM/Document.cpp": "b0d65053697cf57ba81c05eb029b974f10f8be8a4fe337a00136abd1a1c8914c",
+      "Libraries/LibWeb/DOM/Document.idl": "728b2bc536aca496fd48b72b00d0a1ce586089087ae36c7228cebaee6f4ad72c"
+    }
+  },
+  "user_gui_stopped": false
+}
