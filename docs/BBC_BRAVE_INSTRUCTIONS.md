@@ -4351,3 +4351,30 @@ the **10% target remains open**, without a BBC homepage catalog entry. Continuin
 the same acceptance workload requires restoring its sealed archive and fixed
 references; a fresh BBC acquisition would need an explicitly documented new
 control/reference baseline and no historical optimization credit.
+
+
+### Runtime-selected viewport V profile (2026-11-03)
+
+A follow-up uses the existing `v -profile - -profile-no-inline` diagnostic
+binary and recovered original HTML. LLDB verifies entry to the viewport/style
+root, enables the generated profiler state with memory readback, steps out of
+that root, then disables profiling before signature construction. The executable
+and native inputs remain unchanged. This makes the scope explicit at runtime;
+it does not rewrite the earlier incorrect compile-time selector as a success.
+
+The root executes once in each fresh arm. Property computations fall from
+**5,176 to 2,616**, style recomputations from **5,059 to 2,550**, and matching-rule
+collections from **22,492 to 11,384**. Both native processes and memory guards
+exit zero, and the final stored-value/inheritance/importance signature remains
+identical across all 2,550 styled elements. The initial debugger attempt stops
+during process exec and refuses to enable profiling outside the selected root;
+that failure is retained. An analysis correction reads root profiler row names
+with their `main__` prefixes; the successful raw runs are not repeated.
+
+Debugger stops and profiling overhead prevent timing or instruction credit.
+This diagnostic excludes resource replay, author scripts, native window setup
+and PNG capture. It supplies **no BBC acceptance cohort or catalog claim**.
+See the [profile ledger](performance/bbc-viewport-debugger-profile-20261103.json)
+and [authenticated raw evidence](performance/raw/bbc-viewport-debugger-profile-20261103.tar.gz).
+The original sealed replay and fixed pixel references are still missing; the
+10% instruction target remains open.

@@ -1,0 +1,357 @@
+{
+  "diagnostic_only": true,
+  "acceptance": false,
+  "bbc_instruction_credit": 0,
+  "instrumentation": "Previously compiled V -profile - -profile-no-inline C-O1 binary. LLDB verifies entry to the exact root, enables the V-generated profiling global, steps out of the root and disables it with memory readback. Executable/native inputs remain unchanged; no compiler fallback.",
+  "scope": "run_initial_viewport_style_probe: install initial resource viewport, synchronize style elements, evaluate media queries and update style. Parsing and post-scope signature construction are excluded.",
+  "rows": [
+    {
+      "arm": "control",
+      "profiled_rows": 2362,
+      "markers": [
+        "BBC_PROFILE_SCOPE mode=enable pid=39225 function=run_initial_viewport_style_probe address=103971aa0 verified=1",
+        "BBC_PROFILE_SCOPE mode=disable pid=39225 function=test_bbc_initial_resource_viewport_profile address=103971aa0 verified=1"
+      ],
+      "native_pid": 39225,
+      "native_exit": 0,
+      "lldb_guard_exit": 0,
+      "guard": {
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/lldb",
+          "--no-lldbinit",
+          "--batch",
+          "-o",
+          "settings set target.disable-aslr false",
+          "-o",
+          "settings set target.process.stop-on-exec false",
+          "-o",
+          "command script import /Users/alex/code/vox2/Build/bbc-initial-resource-viewport-20261103/debugger-profile-v2/bbc_profile_toggle.py",
+          "-o",
+          "target create /Users/alex/code/vox2/Build/bbc-initial-resource-viewport-20261103/viewport-profile-probe",
+          "-o",
+          "breakpoint set -n run_initial_viewport_style_probe",
+          "-o",
+          "run",
+          "-o",
+          "bbc-profile enable",
+          "-o",
+          "thread step-out",
+          "-o",
+          "bbc-profile disable",
+          "-o",
+          "continue"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1456783360,
+        "elapsed_seconds": 17.961871542,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "selected": {
+        "main__run_initial_viewport_style_probe": {
+          "calls": 1,
+          "inclusive_ms": 7307.502,
+          "self_ms": 0.003,
+          "mean_ns": 7307501792.0
+        },
+        "main__BrowserApp__prepare_initial_resource_viewport": {
+          "calls": 1,
+          "inclusive_ms": 3378.446,
+          "self_ms": 0.0,
+          "mean_ns": 3378446125.0
+        },
+        "css__StyleComputer__compute_properties": {
+          "calls": 5176,
+          "inclusive_ms": 3588.446,
+          "self_ms": 229.666,
+          "mean_ns": 693286.0
+        },
+        "css__StyleComputer__recompute_style_with_invalidation": {
+          "calls": 5059,
+          "inclusive_ms": 6912.96,
+          "self_ms": 22.392,
+          "mean_ns": 1366468.0
+        },
+        "css__StyleComputer__compute_style_impl": {
+          "calls": 5623,
+          "inclusive_ms": 5928.047,
+          "self_ms": 0.666,
+          "mean_ns": 1054250.0
+        },
+        "css__StyleComputer__compute_pseudo_element_style_if_needed_tracking_custom_property_changes": {
+          "calls": 564,
+          "inclusive_ms": 91.388,
+          "self_ms": 0.034,
+          "mean_ns": 162035.0
+        },
+        "css__collect_matching_rules_with_storage": {
+          "calls": 22492,
+          "inclusive_ms": 880.56,
+          "self_ms": 92.376,
+          "mean_ns": 39150.0
+        }
+      },
+      "style_computations": 5059,
+      "styled_elements": 2550,
+      "property_and_flag_signature": "6418e7fb9156ee28ae5add00cf8995008496fd4ab733065afc58797f0751545a"
+    },
+    {
+      "arm": "candidate",
+      "profiled_rows": 2291,
+      "markers": [
+        "BBC_PROFILE_SCOPE mode=enable pid=40223 function=run_initial_viewport_style_probe address=1051e9aa0 verified=1",
+        "BBC_PROFILE_SCOPE mode=disable pid=40223 function=test_bbc_initial_resource_viewport_profile address=1051e9aa0 verified=1"
+      ],
+      "native_pid": 40223,
+      "native_exit": 0,
+      "lldb_guard_exit": 0,
+      "guard": {
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/lldb",
+          "--no-lldbinit",
+          "--batch",
+          "-o",
+          "settings set target.disable-aslr false",
+          "-o",
+          "settings set target.process.stop-on-exec false",
+          "-o",
+          "command script import /Users/alex/code/vox2/Build/bbc-initial-resource-viewport-20261103/debugger-profile-v2/bbc_profile_toggle.py",
+          "-o",
+          "target create /Users/alex/code/vox2/Build/bbc-initial-resource-viewport-20261103/viewport-profile-probe",
+          "-o",
+          "breakpoint set -n run_initial_viewport_style_probe",
+          "-o",
+          "run",
+          "-o",
+          "bbc-profile enable",
+          "-o",
+          "thread step-out",
+          "-o",
+          "bbc-profile disable",
+          "-o",
+          "continue"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1443708928,
+        "elapsed_seconds": 13.714152375000001,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "selected": {
+        "main__run_initial_viewport_style_probe": {
+          "calls": 1,
+          "inclusive_ms": 3247.358,
+          "self_ms": 0.002,
+          "mean_ns": 3247357500.0
+        },
+        "main__BrowserApp__prepare_initial_resource_viewport": {
+          "calls": 1,
+          "inclusive_ms": 3227.411,
+          "self_ms": 0.0,
+          "mean_ns": 3227410875.0
+        },
+        "css__StyleComputer__compute_properties": {
+          "calls": 2616,
+          "inclusive_ms": 1347.667,
+          "self_ms": 106.392,
+          "mean_ns": 515163.0
+        },
+        "css__StyleComputer__recompute_style_with_invalidation": {
+          "calls": 2550,
+          "inclusive_ms": 3105.623,
+          "self_ms": 3.69,
+          "mean_ns": 1217891.0
+        },
+        "css__StyleComputer__compute_style_impl": {
+          "calls": 2846,
+          "inclusive_ms": 2773.694,
+          "self_ms": 0.359,
+          "mean_ns": 974594.0
+        },
+        "css__StyleComputer__compute_pseudo_element_style_if_needed_tracking_custom_property_changes": {
+          "calls": 296,
+          "inclusive_ms": 114.938,
+          "self_ms": 0.033,
+          "mean_ns": 388303.0
+        },
+        "css__collect_matching_rules_with_storage": {
+          "calls": 11384,
+          "inclusive_ms": 512.783,
+          "self_ms": 124.392,
+          "mean_ns": 45044.0
+        }
+      },
+      "style_computations": 2550,
+      "styled_elements": 2550,
+      "property_and_flag_signature": "6418e7fb9156ee28ae5add00cf8995008496fd4ab733065afc58797f0751545a"
+    }
+  ],
+  "stable_inputs": true,
+  "limitations": [
+    "Debugger stops and V instrumentation perturb execution; no timing or instruction credit.",
+    "Original recovered HTML only, without resource replay, author scripts, native window or PNG.",
+    "Inclusive profiler times overlap and cannot be summed.",
+    "Initial debugger attempt stopped at process exec and refused profiler enable; failure retained.",
+    "Explicit runtime scope selection does not make the original incorrect -profile-fns selector a successful compile-time scope.",
+    "Initial analysis used generated C names for root profiler rows; actual displayed rows retain main__ prefixes. Raw profile runs were not repeated."
+  ],
+  "input_identity": {
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+      "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+      "bytes": 150024
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+      "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+      "bytes": 69928
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+      "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+      "bytes": 102592
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+      "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e",
+      "bytes": 5150944
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+      "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91",
+      "bytes": 882592
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+      "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+      "bytes": 181544
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+      "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+      "bytes": 335064
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+      "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+      "bytes": 768872
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+      "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+      "bytes": 33371048
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+      "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+      "bytes": 2158624
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+      "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912",
+      "bytes": 218040
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+      "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2",
+      "bytes": 202328
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+      "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366",
+      "bytes": 369272
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+      "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d",
+      "bytes": 64496
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+      "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+      "bytes": 245016
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+      "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+      "bytes": 5744128
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+      "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd",
+      "bytes": 981792
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+      "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+      "bytes": 106528
+    },
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+      "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91",
+      "bytes": 798160
+    },
+    "/Users/alex/code/vox2/Build/bbc-initial-resource-viewport-20261103/debugger-profile-v2/bbc_profile_toggle.py": {
+      "sha256": "1859114980bc58ab1d1b0df13e3cf5997cebf300628ba6a345e76e9da9101f7d",
+      "bytes": 1695
+    },
+    "/Users/alex/code/vox2/Build/bbc-initial-resource-viewport-20261103/recovered-frozen-home.html": {
+      "sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+      "bytes": 642096
+    },
+    "/Users/alex/code/vox2/Build/bbc-initial-resource-viewport-20261103/viewport-profile-probe": {
+      "sha256": "0ae097a628bdf2412948689456aaa92bc4e299205aaedc14ac13d37a023f42b3",
+      "bytes": 26388960
+    },
+    "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlicommon.1.2.1.dylib": {
+      "sha256": "698009971733006eab6d9e441a61ea0856a72a8d23e4a61eb63fec785e89c927",
+      "bytes": 150128
+    },
+    "/opt/homebrew/Cellar/brotli/1.2.1/lib/libbrotlidec.1.2.1.dylib": {
+      "sha256": "f9512a0567d34e00af8dfc40cee8f020ecac2440113ab2861cbce419ee184962",
+      "bytes": 70128
+    },
+    "/opt/homebrew/Cellar/freetype/2.15.0/lib/libfreetype.6.dylib": {
+      "sha256": "9c99ad47dbf9f90b5cc1732a58fbcf62bc7b7175f75a431ddd7207e7457e00d7",
+      "bytes": 661248
+    },
+    "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib": {
+      "sha256": "c84dabdb4ece983eded000a677040666c8496cd55c07db9816bf4a3eb216da58",
+      "bytes": 212080
+    },
+    "/opt/homebrew/Cellar/glib/2.90.1/lib/libglib-2.0.0.dylib": {
+      "sha256": "e26ce5eb044e7420d616faf29cd2b4956b2a692cd0540aef92c35311b4fe0959",
+      "bytes": 1362736
+    },
+    "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+      "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+      "bytes": 125264
+    },
+    "/opt/homebrew/Cellar/harfbuzz/15.0.0_1/lib/libharfbuzz.0.dylib": {
+      "sha256": "4c2ba2b4f6780c7f799f661dd5a6c3121b393e1079a4b3e5103119775b094bc1",
+      "bytes": 1427648
+    },
+    "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicudata.79.1.dylib": {
+      "sha256": "69ca7d154be9a1828e7865a42ac9733938f014dd840fca766617fc605b2a3618",
+      "bytes": 33833472
+    },
+    "/opt/homebrew/Cellar/icu4c@79/79.1/lib/libicuuc.79.1.dylib": {
+      "sha256": "85efcbfcec58b06272ccf5b620a8bb8bfed336e9dc71a5c05f8015998f14c4a7",
+      "bytes": 1885104
+    },
+    "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib": {
+      "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2",
+      "bytes": 191344
+    },
+    "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib": {
+      "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd",
+      "bytes": 574096
+    }
+  },
+  "initial_rejected_attempt": [
+    {
+      "arm": "control",
+      "lldb_guard_exit": 1
+    }
+  ],
+  "raw_roots": [
+    "Build/bbc-initial-resource-viewport-20261103/debugger-profile-v1",
+    "Build/bbc-initial-resource-viewport-20261103/debugger-profile-v2"
+  ],
+  "profile_executable_sha256": "0ae097a628bdf2412948689456aaa92bc4e299205aaedc14ac13d37a023f42b3",
+  "html_sha256": "81cf44b6b1539aef724eda00a1e1034def2170162fcdfa84d9bb5608c06cf171",
+  "durable_raw_evidence": {
+    "path": "docs/performance/raw/bbc-viewport-debugger-profile-20261103.tar.gz",
+    "sha256": "db51ca5073c4d20befa4b0b5fc10add4e48ffc9341a47517cf09a46a638d73ab",
+    "bytes": 103923,
+    "files": 19,
+    "round_trip_verified": true
+  }
+}

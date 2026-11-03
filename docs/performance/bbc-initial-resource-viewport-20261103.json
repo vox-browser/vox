@@ -468,7 +468,29 @@
       "stable_inputs": true,
       "limitations": "Previously compiled C-O1 V-profile binary has its intended function scope disabled because of a missing main__ scope prefix. Only explicit style counters and signatures over all stored longhand css_text/inherited/important fields are used. Conditional instrumentation remains. Recovered exact frozen HTML, without resource replay, scripts, window setup or PNG. No instruction, timing or acceptance credit."
     },
-    "earlier_successful_v_profile": "The parent-hash key diagnostic in the committed parent-hash ledger remains a historical completed V-profile record; its Build raw files were removed concurrently."
+    "earlier_successful_v_profile": "The parent-hash key diagnostic in the committed parent-hash ledger remains a historical completed V-profile record; its Build raw files were removed concurrently.",
+    "runtime_scoped_profile_followup": {
+      "ledger": "docs/performance/bbc-viewport-debugger-profile-20261103.json",
+      "native_exits": [
+        0,
+        0
+      ],
+      "lldb_guard_exits": [
+        0,
+        0
+      ],
+      "compute_properties_calls": [
+        5176,
+        2616
+      ],
+      "style_recompute_calls": [
+        5059,
+        2550
+      ],
+      "final_signatures_equal": true,
+      "scope": "Verified runtime enable/disable of V-generated profiling at the exact viewport/style root; original compile-time selector remains recorded as incorrect.",
+      "bbc_instruction_credit": 0
+    }
   },
   "artifact_availability": {
     "event": "Concurrent Build cleanup removed the historical BBC archive, fixed references and completed benchmark/raw profiler directories around 11:04\u201311:12 local on 2026-11-03. This task did not perform those removals.",
