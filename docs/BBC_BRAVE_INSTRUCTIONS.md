@@ -3632,9 +3632,11 @@ restoring all four existing implementation files byte-for-byte to their
 pre-experiment revisions and deleting its helper/tests. **`2a0ad2f02`** removes
 the unused benchmark control. Fresh restoration checks pass all **17 cases
 in default, no-GC and production-preallocated modes (51 executions)**; all
-239 remaining instruction-tool tests pass. The on-disk production bundle
-can still contain the experiment until a later successful publication; its
-identity must be checked before claiming restored-default browser validation.
+239 remaining instruction-tool tests pass. A fresh later bundle, receipt
+`20261103-030003-83304384`, passes headless startup and eleven smoke/eight SVG
+checks with the experiment absent. Its executable is
+`107814245c9defc216e452388949a272894fd5a1b84ef4b8e53531ec7fcdb12f`;
+runtime identities remain unchanged throughout those checks.
 No broad verification checkpoint or cadence reset is claimed.
 
 ### Corrected preallocated test configuration
@@ -3656,3 +3658,59 @@ logs and guard exits are preserved under
 `Build/bbc-viewport-style-20261103/production-prealloc-v1/`. This corrects
 the preallocated-runtime coverage of cohorts 57 and 58 without changing any
 measured browser interval or earning performance credit.
+
+
+## Rejected ordinary grid-placement borrowing: cohort 60 (2026-11-03)
+
+**The 10% target remains unmet.** All seven alternating control/Vox/Brave
+triples are retained without retries or exclusions, bringing history to
+**60 cohorts / 1,439 attempts**. Vox4 and Brave1/3 fail the private-helper
+ownership assertion and have no selected launch count. Their cleanup exits
+are 15, 0 and 0 respectively. Eighteen attempts have selected counters; all
+nineteen completed document captures pass full content and original PNGs.
+The partial medians are **29,811,654,721.5 Vox (six)**,
+**29,740,784,365 control (seven)** and **15,051,486,755 Brave (five)**.
+Six matched control/candidate pairs regress by **189,233,679.5** instructions,
+with two improvements and four regressions. Even the partial conservative
+gate fails: **316,950,647,640 > 134,850,910,950**, ratio **2.1153404220**.
+This invalid cohort earns no BBC saving or broad-check cadence reset.
+
+Experiment `727447547` borrows the ordinary grid placement list for track
+sizing, retaining the collector for subgrid projection. Separate full-browser
+diagnostics witness the new path only in the candidate, after navigation and
+before PNG encoding. Both pass native exit zero, content, original pixels and
+exclusive ownership; JavaScriptCore creates one context and executes
+1,938 / 1,951 evaluations. The selected cohort receipt is
+`20261103-031356-b4de7787`, executable SHA-256
+`2f0771f27b0993071f274965a240eded0393e899c482fd89b00cdee84454be2f`.
+All fixture bytes, scripts, viewport/scale, settling, caches, RGB compatibility,
+references and measurement endpoints stay unchanged.
+
+The driver verifies pinned inputs after every trial and reports ownership
+failure rather than identity drift. A later shared production publication
+replaces the executable after cohort completion and before the independent
+audit; 1,638 other input files still rehash unchanged. The superseded
+executable cannot now be independently rehashed, and no bundle is copied.
+This later replacement is distinguished from drift during a trial. Headless,
+eleven smoke and eight SVG checks pass on the later candidate bundle
+`20261103-031832-1710879f` (`903ed05b…`), not the cohort executable.
+
+The static C-O3/no-GC two-layout probe preserves all geometry and its paint
+dump but gives no meaningful total saving. It omits scripts, resources,
+browser startup and PNG, and supplies no BBC credit. Experiment checks pass
+14 cases under both policies in all three memory modes (**84 executions**).
+With no reliable instruction benefit, `599b530` removes the engine change and
+`db83d41` removes its comparison switch. Restoration passes eleven retained
+cases in default, no-GC and the correct production-preallocated runtime
+(**33 executions**), plus all **239 instruction-tool tests**. The initial
+unittest import-path preparation failure is retained separately. Native
+validation of the restored grid default awaits a containing completed bundle.
+
+Exact raw intervals, commands, host telemetry, guard exits, diagnostics,
+standalone results and identity qualifications are preserved in the
+[tracked ledger](performance/bbc-grid-placement-20261103.json) and
+`Build/bbc-grid-placement-20261103/`. BBC remains outside the homepage
+instruction table. Its historical rendering/scripting limitations and earlier
+broad failures still apply. Console diagnostics in cohorts 59 and 60 contain
+the known `dotcom-bootstrap.js` CORS failure and no reported React hydration
+error; this alone does not establish full React conformance.

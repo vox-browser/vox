@@ -1785,5 +1785,25 @@
     "/Users/alex/code/vox2/Build/hn-home-instructions-20261031/pixel_diff",
     "--retain-incremental-webp-paint-policy",
     "--control-retain-late-viewport-setup"
-  ]
+  ],
+  "installed_restoration_validation": {
+    "receipt": "20261103-030003-83304384",
+    "executable_sha256": "107814245c9defc216e452388949a272894fd5a1b84ef4b8e53531ec7fcdb12f",
+    "headless_smoke_and_19_native_checks": [
+      {
+        "name": "headless",
+        "exit": 0
+      },
+      {
+        "name": "smoke",
+        "exit": 0
+      },
+      {
+        "name": "svg",
+        "exit": 0
+      }
+    ],
+    "identity_before_and_after_unchanged": true,
+    "evidence": "Build/bbc-viewport-style-20261103/restored-native-validation"
+  }
 }
