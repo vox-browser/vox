@@ -1,5 +1,17 @@
 # BBC homepage instruction comparison
 
+A fresh production **CPU sampling diagnostic** now captures the correct browser
+PID/start identity, verifies the sample's Vox UUID against dyld and checks all Vox
+frame addresses against the actual executable range. Native exit, original
+pixels/content, all 72 external scripts and actual native-image pins pass. The
+requested six-second/1-ms sample includes startup and can span PNG/audit/teardown;
+its actual cadence and CPU instruction shares are not established. Worker waits
+dominate the all-thread leaf summary, and recursive totals overlap. It provides
+investigative leads, including repeated grid/inline work and stylesheet-subtree
+invalidation, with no performance credit. See the
+[sample ledger](performance/bbc-current-production-sample-20261104.json) and
+[raw sample](performance/raw/bbc-current-production-sample-20261104.tar.gz).
+
 **Latest complete comparison — cohort 94:** seven alternating control/Vox/Brave
 triples complete on pinned executable
 `6c57297b8944be97201dec4dc929ac71a75f5be8272f8419830a81070942621b`.
