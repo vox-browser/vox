@@ -1506,3 +1506,77 @@ Working evidence is in `Build/parallel-raster-20261104-1800`.
 [Durable results](performance/vlang-parallel-raster-20261104.json) and
 [raw commands, logs, timestamps and receipts](performance/raw/vlang-parallel-raster-20261104.tar.gz)
 retain both the rejected and final cohorts independently of `Build/`.
+
+### Invisible clipped text and the root background (2026-11-04, evening)
+
+**The live 60 FPS goal remains open, but periodic complete repaints are gone.**
+In the `rQ` protocol's 10.6 s input window, ten complete repaints (median
+123 ms, up to 246 ms) took 26% of all replay time and caused the 200+ ms
+maxima. They were not carousel slide changes: slides last 10–25 s. A damage
+diagnostic showed 12 `draw_text` runs leaving and re-entering the recorded
+paint-interest area at each scroll reversal. That text overflows the demo
+card's `overflow: hidden` box and is clipped away entirely, but its scroll key
+used the whole clip rectangle as conservative ink. The card is 958x438, 55% of
+the viewport and above the 50% damage budget, so each change fell back to a
+complete repaint. Separately, the root background spans the viewport origin
+to the document height. Its key hashed that height, so a document-height
+change damaged the whole viewport, although only offscreen rows differ.
+
+- `fc0de2a61` gives a leaf clipped away entirely a 1x1 rectangle inside its
+  clip, nearest its ink. Ink within 2 CSS px of the clip keeps that sliver of
+  the clip, because a device pixel can straddle a sub-pixel gap.
+  `VOX_DISABLE_MINIMAL_CLIPPED_SCROLL_INK=1` restores whole-clip ink.
+- `34bd72f6d` omits a viewport-filling solid's geometry from its
+  translation-free key, with a domain marker. Color changes and a fill that
+  stops covering the viewport still damage it.
+  `VOX_DISABLE_VIEWPORT_FILL_EXTENT_REUSE=1` restores the geometry key.
+
+`main_scroll_raster_test.v` and `main_scroll_raster_damage_budget_test.v` pass
+with the production compiler, including new cases for invisible clipped text,
+the straddling sliver and the background's offscreen extent.
+
+Both run on production executable `b8701f74…` (receipt
+`20261104-181445-ed287358`), which also contains the multicore pixel pool of
+`c197d4355` with its default policy in every run. Separate damage diagnostics
+on that executable count complete repaints inside the input window: the
+control (both variables set) has ten `damage-too-large` fallbacks of 114–250
+ms; the candidate has none among 818 reused frames.
+
+Unprofiled cohort `rK2` (18:27–18:32 MSK) alternates the control and default on
+that executable, with the `rQ` protocol: live direct HTTPS, automatic scripts,
+empty private profile/cache, retained OS caches, 30 s settling after the
+matching title, 1024x768 at scale 2 with 112px chrome, and 600 precise delta-2
+wheel inputs at nominal 60 Hz, reversing every 60. Throughput spans the whole
+first-to-last input window and counts changed native layer publications with
+a changed scroll position, not physical scanout.
+
+| Run | Scroll FPS | Median / p95 / max interval | Over 16.67 ms | Inputs / scroll intervals / all publications | Input delivery |
+| --- | ---: | --- | ---: | --- | ---: |
+| control-1 | 50.6 | 16.6 / 30.9 / 223.2 ms | 47% | 600 / 521 / 943 | 58.2 Hz |
+| candidate-1 | 57.1 | 16.8 / 26.9 / 70.1 ms | 52% | 600 / 577 / 1070 | 59.3 Hz |
+| control-2 | 52.2 | 16.7 / 27.3 / 174.9 ms | 50% | 600 / 530 / 1044 | 59.0 Hz |
+| candidate-2 | 56.6 | 16.8 / 28.4 / 66.9 ms | 53% | 600 / 574 / 1039 | 59.1 Hz |
+| control-3 | 49.6 | 16.5 / 34.5 / 225.3 ms | 47% | 600 / 508 / 914 | 58.4 Hz |
+| candidate-3 | 53.0 | 16.7 / 32.5 / 85.3 ms | 50% | 600 / 549 / 862 | 57.8 Hz |
+
+Every browser and guard exited 0, and executable/native-library hashes were
+identical before and after the cohort. Leading/trailing scroll-publication gaps
+are 179/4, 167/10, 159/13, 172/9, 188/4 and 274/11 ms. One-minute host load fell
+from 20.2 to 12.0 on 18 logical CPUs; candidate-3 started at the same load as
+control-3. All three pairs improve throughput (+6.5, +4.4, +3.4 FPS) and the
+maximum interval falls from 175–225 ms to 67–85 ms. With input at a nominal
+60 Hz, the fraction over 16.67 ms stays near half from delivery jitter alone,
+so it does not separate the arms.
+
+The remaining long frames are one-off first draws (for example, 45 ms for the
+first strip of the DOOM screenshot) and animation-damage frames: the tab
+progress bar repaints the card's composited-layer shadow and the tab strip's
+border at about 2.2 ms each. Their cost is the per-leaf GPU target, submission
+and readback. Root-shadow region readback and a content-hole shadow skip were
+tried as native experiments; neither executed on this page, because every
+vlang.io shadow is drawn in a composited layer, so both were reverted and are
+not in the tree.
+
+Evidence is under `Build/vlang-fps-20261104` (`diagK-*`, `rK2-*`). The
+[raw summaries, logs, commands and guard reports](performance/raw/vlang-clipped-ink-20261104.tar.gz)
+are committed so deleting `Build/` does not erase them.
