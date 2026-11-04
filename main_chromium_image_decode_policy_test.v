@@ -4,6 +4,21 @@ import dom
 import html
 import layout
 
+fn test_large_data_images_keep_a_bounded_distinct_decode_identity() {
+	assert chromium_image_decode_resource_identity('') == ''
+	assert chromium_image_decode_resource_identity('https://image.test/a') == 'url:https://image.test/a'
+	boundary := 'x'.repeat(16380)
+	assert chromium_image_decode_resource_identity(boundary).len == 16384
+	data := 'data:image/avif;base64,' + 'A'.repeat(20000)
+	key := chromium_image_decode_resource_identity(data)
+	assert key.starts_with('sha256:') && key.len == 71
+	assert key == chromium_image_decode_resource_identity(data.clone())
+	assert key != chromium_image_decode_resource_identity(data + 'B')
+	assert key != chromium_image_decode_resource_identity(key)
+	assert key != chromium_image_decode_resource_identity(data.replace('image/avif', 'image/jpeg'))
+}
+
+
 fn decode_policy_test_document(markup string) &dom.Document {
 	address := dom.URL{ value: 'https://image.test/' }
 	return html.parse_navigation_document(markup, address, address.origin(), none) or { panic(err) }
