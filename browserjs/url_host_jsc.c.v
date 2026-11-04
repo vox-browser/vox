@@ -129,7 +129,7 @@ fn (host &URLHost) dom_string(value voidptr) !libjs.Utf16String {
 }
 
 fn (host &URLHost) usv_string(value voidptr) !string {
-	return host.dom_string(value)!.to_well_formed().str()
+	return host.dom_string(value)!.to_well_formed_utf8()
 }
 
 fn (mut host URLHost) string_value(text string) !voidptr {

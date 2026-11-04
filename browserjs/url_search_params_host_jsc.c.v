@@ -122,7 +122,7 @@ pub fn (runtime &Runtime) native_url_search_params(value voidptr) !&domurl.URLSe
 }
 
 fn (host &URLSearchParamsHost) usv_string(value voidptr) !string {
-	return host.runtime.url_binding_dom_string(host.to_dom_string, value)!.to_well_formed().str()
+	return host.runtime.url_binding_dom_string(host.to_dom_string, value)!.to_well_formed_utf8()
 }
 
 fn (mut host URLSearchParamsHost) string_value(text string) !voidptr {

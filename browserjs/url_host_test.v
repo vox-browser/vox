@@ -44,6 +44,15 @@ fn test_native_url_static_operations_keep_optional_base_and_usv_conversion_order
 	assert runtime.evaluate_host(r'(()=>{return [()=>new URL(),()=>URL.parse(),()=>URL.canParse(),()=>new URL(Symbol()),()=>URL.parse(Symbol()),()=>URL.canParse(Symbol()),()=>new URL("https://example.test/","bad base")].every(call=>{try{call();return false}catch(reason){return reason instanceof TypeError}})})()')! == 'true'
 }
 
+fn test_native_url_direct_usv_encoding_preserves_pairs_invalid_runs_and_coercion() {
+	$if !darwin { return }
+	mut runtime := native_url_runtime()
+	defer { runtime.close() }
+	assert runtime.evaluate_host(r'(()=>{const units=String.fromCharCode(0xd800,0xd800,0xdc00,0xdc00,0,0xd83d,0xde00),u=new URL("https://example.test/"+units);return u.pathname==="/%EF%BF%BD%F0%90%80%80%EF%BF%BD%00%F0%9F%98%80"&&URL.parse("/"+units,"https://example.test/").href===u.href&&URL.canParse(u.href)})()')! == 'true'
+	assert runtime.evaluate_host(r'(()=>{const units=String.fromCharCode(0xd800,0xd800,0xdc00,0xdc00,0,0xd83d,0xde00),p=new URLSearchParams([[units,units]]);return p.get(units)==="\uFFFD\u{10000}\uFFFD\u0000😀"&&p.toString()==="%EF%BF%BD%F0%90%80%80%EF%BF%BD%00%F0%9F%98%80=%EF%BF%BD%F0%90%80%80%EF%BF%BD%00%F0%9F%98%80"})()')! == 'true'
+	assert runtime.evaluate_host(r'(()=>{let calls=0;const key={toString(){calls++;return "x"}},value={toString(){calls++;return String.fromCharCode(0xd800)}};const p=new URLSearchParams();p.append(key,value);return calls===2&&p.get("x")==="�"})()')! == 'true'
+}
+
 fn test_native_url_same_object_query_and_live_iterator_share_genuine_owners() {
 	$if !darwin { return }
 	mut runtime := native_url_runtime()
