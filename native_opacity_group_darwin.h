@@ -119,11 +119,27 @@ static int native_opacity_layer_ink_bounds(const uint8_t *pixels, size_t pitch, 
         // empty blocks at either end without walking the painted interior.
         int first = left, last = right;
 #if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
+        // Transparent layers commonly have long empty margins. Test sixteen
+        // pixels with one reduction instead of branching after each vector.
+        while (right - first >= 16) {
+            uint32x4x4_t block = vld1q_u32_x4(row + first);
+            uint32x4_t ink = vorrq_u32(vorrq_u32(block.val[0], block.val[1]),
+                vorrq_u32(block.val[2], block.val[3]));
+            if (vmaxvq_u32(ink) != 0) break;
+            first += 16;
+        }
         while (right - first >= 4 && vmaxvq_u32(vld1q_u32(row + first)) == 0) first += 4;
 #endif
         while (first < right && row[first] == 0) ++first;
         if (first == right) continue;
 #if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
+        while (last - first >= 16) {
+            uint32x4x4_t block = vld1q_u32_x4(row + last - 16);
+            uint32x4_t ink = vorrq_u32(vorrq_u32(block.val[0], block.val[1]),
+                vorrq_u32(block.val[2], block.val[3]));
+            if (vmaxvq_u32(ink) != 0) break;
+            last -= 16;
+        }
         while (last - first >= 4 && vmaxvq_u32(vld1q_u32(row + last - 4)) == 0) last -= 4;
 #endif
         while (row[last - 1] == 0) --last;
