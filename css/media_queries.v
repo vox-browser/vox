@@ -789,9 +789,15 @@ pub mut:
 	text    string
 	matches bool
 mut:
-	parsed_query_ ?&MediaQuery
-	parsed_text_ string
-	has_parsed_query_ bool
+	parsed_query_             ?&MediaQuery
+	parsed_text_              string
+	has_parsed_query_         bool
+	viewport_query_cacheable_ bool
+	viewport_result_valid_    bool
+	viewport_result_          bool
+	viewport_width_           f64
+	viewport_height_          f64
+	viewport_chromium_        bool
 }
 
 @[heap]
@@ -984,11 +990,12 @@ pub fn serialize_a_media_query_list_entries(media_queries []MediaQueryListEntry)
 fn parse_media_query_entry(medium string) ?MediaQueryListEntry {
 	query := parse_media_query_from_text(medium) or { return none }
 	return MediaQueryListEntry{
-		text: query.to_string()
-		matches: query.matches()
-		parsed_query_: query
-		parsed_text_: query.to_string()
-		has_parsed_query_: true
+		text:                      query.to_string()
+		matches:                   query.matches()
+		parsed_query_:             query
+		parsed_text_:              query.to_string()
+		has_parsed_query_:         true
+		viewport_query_cacheable_: media_query_has_only_literal_viewport_input(query)
 	}
 }
 
@@ -999,20 +1006,72 @@ fn evaluate_media_query_entry(mut entry MediaQueryListEntry, document &dom.Docum
 		entry.parsed_query_ = parse_media_query_from_text(entry.text)
 		entry.parsed_text_ = entry.text
 		entry.has_parsed_query_ = true
+		entry.viewport_result_valid_ = false
+		entry.viewport_query_cacheable_ = if query := entry.parsed_query_ {
+			media_query_has_only_literal_viewport_input(query)
+		} else {
+			false
+		}
 	}
 	query := entry.parsed_query_ or { return false }
+	if entry.viewport_query_cacheable_ {
+		viewport := document.viewport_rect()
+		chromium := document.font_rendering_policy() == .chromium
+		if entry.viewport_result_valid_ && entry.viewport_width_ == viewport.width
+			&& entry.viewport_height_ == viewport.height && entry.viewport_chromium_ == chromium {
+			return entry.viewport_result_
+		}
+		result := query.evaluate(document)
+		entry.viewport_result_ = result
+		entry.viewport_width_ = viewport.width
+		entry.viewport_height_ = viewport.height
+		entry.viewport_chromium_ = chromium
+		entry.viewport_result_valid_ = true
+		return result
+	}
 	return query.evaluate(document)
+}
+
+// These parsed trees are private to MediaList entries. Only a single geometry
+// feature with literal absolute lengths or an orientation keyword is eligible;
+// relative/calculated lengths and preference callbacks keep ordinary evaluation.
+fn media_query_has_only_literal_viewport_input(query &MediaQuery) bool {
+	mut condition := query.media_condition or { return false }
+	for condition.kind == .in_parens && condition.children.len == 1 {
+		condition = condition.children[0]
+	}
+	if condition.kind != .general_enclosed || condition.style_feature_is_range
+		|| condition.style_feature_property != none || condition.size_feature_name != ''
+		|| condition.media_feature_name !in ['width', 'height', 'device-width', 'device-height',
+			'orientation'] {
+		return false
+	}
+	for candidate in [condition.media_feature_value, condition.media_feature_right_value] {
+		value := candidate or { continue }
+		if value.kind == .ident { continue }
+		if typed := value.typed_value {
+			if typed is LengthStyleValue {
+				if !typed.length().is_absolute() { return false }
+			} else {
+				return false
+			}
+		} else if value.kind !in [.ident, .length] {
+			return false
+		}
+	}
+	return true
 }
 
 fn media_query_entries_from_queries(queries []&MediaQuery) []MediaQueryListEntry {
 	mut entries := []MediaQueryListEntry{cap: queries.len}
 	for query in queries {
 		entries << MediaQueryListEntry{
-			text: query.to_string()
-			matches: query.matches()
-			parsed_query_: query
-			parsed_text_: query.to_string()
-			has_parsed_query_: true
+			text:                      query.to_string()
+			matches:                   query.matches()
+			parsed_query_:             query
+			parsed_text_:              query.to_string()
+			has_parsed_query_:         true
+			viewport_query_cacheable_: media_query_has_only_literal_viewport_input(query)
 		}
 	}
 	return entries
