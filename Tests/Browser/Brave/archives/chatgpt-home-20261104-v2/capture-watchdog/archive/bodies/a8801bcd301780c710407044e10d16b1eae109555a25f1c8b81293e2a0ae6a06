@@ -1,0 +1,1 @@
+function e(e){let t=globalThis.scheduler;if(typeof t?.postTask==`function`){t.postTask(e);return}if(typeof MessageChannel==`function`){let t=new MessageChannel;t.port1.onmessage=()=>{t.port1.close(),e()},t.port2.postMessage(null);return}setTimeout(e,0)}export{e as t};

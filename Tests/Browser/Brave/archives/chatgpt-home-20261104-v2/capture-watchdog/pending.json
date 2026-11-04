@@ -1,0 +1,70 @@
+{
+  "body_callbacks": 0,
+  "requests": [
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/smart-app-banner-client-B0Lgki8r.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/application-composer-BNtRDob_.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/application-composer-73EKkazO.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/trending-searches-surface-Cax4ZoSa.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/recurring-login-banner-DQFtWVoc.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/document-application-layout-BAkX8UR4.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/desktop-product-popover-DDYz8kgr.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/api/auth/account-picker",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/composer-height-resource-1-bafRWD.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-soft-login-rate-limit-BtSyZRpv.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-desktop-one-tap-Xh6oNSc6.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-composer-draft-bootstrap-DxXr0GPf.js",
+      "method": "GET",
+      "response_received": false
+    },
+    {
+      "url": "https://chatgpt.com/unauth-mweb/assets/native-performance-bootstrap-DnIgxW1S.js",
+      "method": "GET",
+      "response_received": false
+    }
+  ]
+}

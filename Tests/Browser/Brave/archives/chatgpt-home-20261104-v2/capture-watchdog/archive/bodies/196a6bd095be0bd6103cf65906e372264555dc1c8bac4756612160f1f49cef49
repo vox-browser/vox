@@ -1,0 +1,1 @@
+import{$r as e}from"./octane-shell-shared-E0Rom1b6.js";import{t}from"./a-Dgt8AZqD.js";var n=new WeakMap,r=(e,t)=>{t!==void 0&&n.set(e,t)},i=(e,t)=>{let r=n.get(e);r!==void 0&&n.set(t,r)},a=t=>{if(Object.keys(t).length===0)return!0;let r=n.get(t);return r!==void 0&&r===e()},o=e=>{for(let n of Object.keys(t))e.delete(n)};export{a as i,o as n,i as r,r as t};

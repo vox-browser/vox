@@ -1,0 +1,1 @@
+var t=t=>void 0!==(t=>{let e=/^lw-pr-(d(?:prod)?|)([1-9]\d*)\.chatgpt-staging\.com$/.exec(t);return e&&Number.isSafeInteger(Number(e[2]))?`${e[1]}${e[2]}`:void 0})(t),e=e=>"https:"===e.protocol&&""===e.port&&t(e.hostname),a=new Set(["m.chatgpt.com","m.chatgpt-staging.com"]),o=e=>a.has(e)||t(e);export{t as n,e as r,o as t};

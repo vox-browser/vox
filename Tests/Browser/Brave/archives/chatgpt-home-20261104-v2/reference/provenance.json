@@ -1,0 +1,13 @@
+{
+  "source_run": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/reference/run-0",
+  "validation_runs": 2,
+  "unfocused": true,
+  "viewport": [
+    1024,
+    768
+  ],
+  "scale": 2,
+  "manifest_sha256": "7b13757f970e2f615267938bd52f902b852da239962fa265660db813622923f7",
+  "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+  "new_baseline": true
+}

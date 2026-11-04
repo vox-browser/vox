@@ -1,0 +1,14 @@
+[
+  {
+    "url": "https://chatgpt.com/",
+    "error": "Response varied within the single capture"
+  },
+  {
+    "url": "https://chatgpt.com/unauth-mweb/sentinel/chat-requirements/prepare",
+    "error": "Response varied within the single capture"
+  },
+  {
+    "url": "https://chatgpt.com/unauth-mweb/conversation/prepare?lightweight_authenticated=0",
+    "error": "Response varied within the single capture"
+  }
+]

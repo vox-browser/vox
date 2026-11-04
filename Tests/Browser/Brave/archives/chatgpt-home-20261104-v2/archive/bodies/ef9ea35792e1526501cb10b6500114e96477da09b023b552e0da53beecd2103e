@@ -1,0 +1,1 @@
+import{_ as e}from"./octane-shell-shared-E0Rom1b6.js";var t=t=>{let n=e.get();if(!t||t.scope.retired||n.pending||n.requested)return!1;let r=t.scope.get(t.layout$),i=t.scope.get(t.controls$),a=t.scope.get(t.images$);return i.landing&&!i.authenticated&&!r.nonIdle&&!r.submitting&&!r.optimistic&&!i.initialSubmitting&&!a.hasPendingUpload};export{t};

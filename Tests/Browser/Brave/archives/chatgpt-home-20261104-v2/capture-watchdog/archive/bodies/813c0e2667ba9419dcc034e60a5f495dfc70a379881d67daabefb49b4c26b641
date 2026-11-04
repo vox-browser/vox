@@ -1,0 +1,1 @@
+import{M as e,l as a}from"./a-BalXqa4Y.js";import{t as o}from"./a-Ad8ZpCpb.js";a(1);var s=function(a,s,i){let l=s.block,[r,t,m,n,d]=a;e(s,0,l.parentNode,o,{model:r,dismissLabel:t.noAuthHomeBeacon?.dismissLabel??m?.dismissLabel??"",placement:n?"footer":"inline",owner$:d},"c:871fc06d",l.endMarker,2)};export{s as default};

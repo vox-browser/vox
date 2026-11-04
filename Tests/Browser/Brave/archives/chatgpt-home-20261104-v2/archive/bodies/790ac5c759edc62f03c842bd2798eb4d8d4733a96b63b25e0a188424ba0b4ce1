@@ -1,0 +1,1 @@
+var e=()=>{try{let e=performance.timeOrigin,t=Math.round(performance.now());if(Number.isFinite(e)&&e>0&&Number.isSafeInteger(t)&&t>=0&&t<864e5)return{document,origin:e,ms:t}}catch{}};export{e as t};

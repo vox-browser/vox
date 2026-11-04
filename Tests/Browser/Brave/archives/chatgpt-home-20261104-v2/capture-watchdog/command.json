@@ -1,0 +1,17 @@
+[
+  "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+  "--no-first-run",
+  "--no-default-browser-check",
+  "--disable-background-networking",
+  "--disable-sync",
+  "--remote-debugging-port=0",
+  "--hide-scrollbars",
+  "--force-color-profile=srgb",
+  "--lang=en-US",
+  "--user-data-dir=/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/capture-watchdog/profile",
+  "--proxy-server=socks5://127.0.0.1:1337",
+  "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+  "--no-startup-window",
+  "--disable-backgrounding-occluded-windows",
+  "--force-device-scale-factor=2"
+]

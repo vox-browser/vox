@@ -1,0 +1,1 @@
+function o(o){if(o.aborted)throw"reason"in o?o.reason:new DOMException("The operation was aborted","AbortError")}function t(){"function"!=typeof AbortSignal.prototype.throwIfAborted&&Object.defineProperty(AbortSignal.prototype,"throwIfAborted",{configurable:!0,writable:!0,value(){o(this)}})}export{o as n,t};

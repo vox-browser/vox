@@ -1,0 +1,1 @@
+function t(t){0===t.button&&t.preventDefault()}export{t};

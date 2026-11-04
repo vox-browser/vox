@@ -1,0 +1,1 @@
+function n(n){n.scope.dispose()}function a(a,o){return e("useSignal$",()=>{let n="function"==typeof a?a():a,e=s("octane/useSignal$");return{scope:e,signal$:e.signal$("value",n)}},n,o).signal$}import{c as s}from"./octane-signals-engine-B5VWQaSx.js";import{kn as e}from"./a-BalXqa4Y.js";export{a as t};

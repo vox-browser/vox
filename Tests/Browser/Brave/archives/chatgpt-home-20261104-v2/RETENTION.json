@@ -1,0 +1,6 @@
+{
+  "purpose": "New anonymous ChatGPT frozen-page baseline; one authorized replacement capture after old Build inputs were removed",
+  "network_captures_allowed": 1,
+  "author_scripts": "original",
+  "retain": "Keep archive bodies and references here; transient browser profiles and measurement outputs belong in Build"
+}

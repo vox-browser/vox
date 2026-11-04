@@ -1,0 +1,1 @@
+var e={chatRequirementsToken:`OpenAI-Sentinel-Chat-Requirements-Token`,chatRequirementsPrepareToken:`OpenAI-Sentinel-Chat-Requirements-Prepare-Token`,proofToken:`OpenAI-Sentinel-Proof-Token`,turnstileToken:`OpenAI-Sentinel-Turnstile-Token`,sessionObserverToken:`OpenAI-Sentinel-SO-Token`,telemetryToken:`OAI-Echo-Logs`,timingToken:`OAI-Telemetry`};export{e as t};

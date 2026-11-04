@@ -1,0 +1,1 @@
+var e=Symbol.for(`openai.lightweight-web.octane.early-shell-intent`),t=()=>Reflect.get(document,e);export{t};

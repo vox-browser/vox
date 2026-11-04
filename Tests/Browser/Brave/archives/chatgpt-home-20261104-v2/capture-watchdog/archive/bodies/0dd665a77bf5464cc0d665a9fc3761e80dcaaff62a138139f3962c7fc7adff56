@@ -1,0 +1,1 @@
+var e=e=>{let t=/^\/(?:([^/]+)\/)?translate(?:\/([^/]+))?\/?$/.exec(e);if(!t)return;let n=t[2];if(n!==`stream`)return{locale:t[1],slug:n}};export{e as t};

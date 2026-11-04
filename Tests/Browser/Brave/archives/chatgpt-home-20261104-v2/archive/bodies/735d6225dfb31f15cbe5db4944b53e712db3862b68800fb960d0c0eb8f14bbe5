@@ -1,0 +1,1 @@
+var e={narrow:`@media not all and (min-width: 800.01px), (pointer: coarse)`,wide:`@media (min-width: 800.01px) and (pointer: fine), (min-width: 800.01px) and (pointer: none)`,wideViewport:`@media (width > 800px)`},t=e.wide.slice(7);export{e as n,t};

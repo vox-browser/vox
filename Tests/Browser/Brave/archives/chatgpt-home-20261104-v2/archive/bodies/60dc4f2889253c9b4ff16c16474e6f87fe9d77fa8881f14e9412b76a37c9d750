@@ -1,0 +1,1 @@
+var t=t=>"string"==typeof t&&/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(t)&&!/^(?:pending|local|standalone)(?:-|$)/.test(t);export{t};

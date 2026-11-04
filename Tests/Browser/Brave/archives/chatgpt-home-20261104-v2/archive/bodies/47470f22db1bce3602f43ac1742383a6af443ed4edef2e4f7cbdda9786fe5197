@@ -1,0 +1,1 @@
+function t(t,n=t.conversationState){return!(!t.historyBootstrap||t.isConversationStreaming||t.conversation.isStreaming||"tpp"===n.workOrigin||t.conversation.sharedContent)}export{t};

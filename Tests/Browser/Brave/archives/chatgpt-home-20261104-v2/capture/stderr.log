@@ -1,0 +1,10 @@
+[1104/141407.960447:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:41] getxattr size org.chromium.crashpad.database.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+[1104/141407.965880:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:41] getxattr size com.googlecode.crashpad.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+[1104/141407.965938:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:66] setxattr org.chromium.crashpad.database.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+[1104/141407.967401:ERROR:third_party/crashpad/crashpad/util/file/file_io.cc:103] ReadExactly: expected 8, observed 0
+[1104/141407.968896:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:41] getxattr size org.chromium.crashpad.database.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+[1104/141407.968974:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:41] getxattr size com.googlecode.crashpad.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+[1104/141407.969016:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:66] setxattr org.chromium.crashpad.database.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+
+DevTools listening on ws://127.0.0.1:54382/devtools/browser/b0e174d5-26f0-4cf0-a1d2-9bba5d603bfd
+[45039:17937407:1104/141425.897051:ERROR:content/browser/gpu/gpu_process_host.cc:1046] GPU process exited unexpectedly: exit_code=15

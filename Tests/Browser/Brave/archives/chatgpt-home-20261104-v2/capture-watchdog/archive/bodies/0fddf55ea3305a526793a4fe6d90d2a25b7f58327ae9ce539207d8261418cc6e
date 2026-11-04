@@ -1,0 +1,1 @@
+function t(){let t=a(o);if(!t)throw Error("DS layout slots require DocumentLayout");return t}import{$t as r,tn as a}from"./a-BalXqa4Y.js";var o=r(null);export{t as n,o as t};

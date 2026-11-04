@@ -1,0 +1,1 @@
+function t(t){let e=()=>"function"==typeof t?t():t;return{_t:"condition",_d:()=>!e(),_s:({gate:t})=>{e()&&t?.resolve()}}}function e(){return n}var n={_t:"load",_d:()=>!1,_s:({gate:t,prefetch:e})=>{(e??t?.resolve)?.()}};export{t as n,e as t};

@@ -1,0 +1,1 @@
+var t=t=>{if("function"==typeof AbortSignal.timeout)return AbortSignal.timeout(t);let o=new AbortController;return window.setTimeout(()=>o.abort(),t),o.signal};export{t};

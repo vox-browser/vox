@@ -1,0 +1,1046 @@
+{
+  "javascript_diagnostics": [],
+  "ready": "complete",
+  "selections": [
+    {
+      "count": 1,
+      "elements": [
+        {
+          "attributes": {},
+          "rect": {
+            "height": 28,
+            "width": 255.046875,
+            "x": 514.4765625,
+            "y": 294
+          },
+          "text": "What are you working on?Where should we begin?"
+        }
+      ],
+      "name": "headings"
+    },
+    {
+      "count": 1,
+      "elements": [
+        {
+          "attributes": {
+            "contenteditable": null,
+            "id": "mobile-composer-prompt",
+            "placeholder": "Ask ChatGPT"
+          },
+          "rect": {
+            "height": 24,
+            "width": 590,
+            "x": 329,
+            "y": 367.5
+          },
+          "text": ""
+        }
+      ],
+      "name": "editors"
+    },
+    {
+      "count": 52,
+      "elements": [
+        {
+          "attributes": {
+            "aria-label": "Open sidebar"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": " "
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 44,
+            "width": 64.0234375,
+            "x": 807.1875,
+            "y": 8.5
+          },
+          "text": "Log in"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 44,
+            "width": 128.7890625,
+            "x": 879.2109375,
+            "y": 8.5
+          },
+          "text": "Sign up for free"
+        },
+        {
+          "attributes": {
+            "aria-label": "Open sidebar"
+          },
+          "rect": {
+            "height": 36,
+            "width": 40,
+            "x": 8,
+            "y": 8
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": "Deep research"
+          },
+          "rect": {
+            "height": 36,
+            "width": 247,
+            "x": 6,
+            "y": 240
+          },
+          "text": "Deep research"
+        },
+        {
+          "attributes": {
+            "aria-label": "Close sidebar"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": "Search chats"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": "Close sidebar"
+          },
+          "rect": {
+            "height": 44,
+            "width": 44,
+            "x": 210,
+            "y": 4
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": "Deep research"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Deep research"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Log in"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 44,
+            "width": 220,
+            "x": 20,
+            "y": 704
+          },
+          "text": "Log in"
+        },
+        {
+          "attributes": {
+            "aria-label": "What can you do?"
+          },
+          "rect": {
+            "height": 44,
+            "width": 148.4453125,
+            "x": 567.7734375,
+            "y": 418
+          },
+          "text": "What can you do?"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Log in"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Sign up for free"
+        },
+        {
+          "attributes": {
+            "aria-label": ""
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": ""
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": ""
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": "Add files and more"
+          },
+          "rect": {
+            "height": 44,
+            "width": 44,
+            "x": 279,
+            "y": 358
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Camera"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Photos"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Files"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Add photos"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Web search"
+        },
+        {
+          "attributes": {
+            "aria-label": "Create image. Log in to use."
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Create imageLog in"
+        },
+        {
+          "attributes": {
+            "aria-label": "Deep research. Log in to use."
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Deep researchLog in"
+        },
+        {
+          "attributes": {
+            "aria-label": "Add files. Log in to use."
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Add filesLog in"
+        },
+        {
+          "attributes": {
+            "aria-label": "Web search, click to remove"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Web search"
+        },
+        {
+          "attributes": {
+            "aria-label": "Expanded composer"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": "Start dictation"
+          },
+          "rect": {
+            "height": 44,
+            "width": 44,
+            "x": 919,
+            "y": 358
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": "Send message"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Retry"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 40,
+            "width": 167.0546875,
+            "x": 719.9375,
+            "y": 644.5390625
+          },
+          "text": "Reject non-essential"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 40,
+            "width": 96.0078125,
+            "x": 894.9921875,
+            "y": 644.5390625
+          },
+          "text": "Accept all"
+        },
+        {
+          "attributes": {
+            "aria-label": "Dismiss"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": "Close"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Sign up"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "log in"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Log in"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Log in"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Sign up for free"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Log in"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Sign up for free"
+        },
+        {
+          "attributes": {
+            "aria-label": "Dismiss"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": "Close"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Continue with phone"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Continue"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Continue with phone"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": "Remove account"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Log in to another account"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Create account"
+        },
+        {
+          "attributes": {
+            "aria-label": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Log in or create account"
+        }
+      ],
+      "name": "buttons"
+    },
+    {
+      "count": 27,
+      "elements": [
+        {
+          "attributes": {
+            "href": "/?noauth_recent_chat_failed=1"
+          },
+          "rect": {
+            "height": 36,
+            "width": 247,
+            "x": 6,
+            "y": 60
+          },
+          "text": " New chat"
+        },
+        {
+          "attributes": {
+            "href": "/images"
+          },
+          "rect": {
+            "height": 36,
+            "width": 247,
+            "x": 6,
+            "y": 96
+          },
+          "text": "   Images"
+        },
+        {
+          "attributes": {
+            "href": "/plugins?plugins_landing=1"
+          },
+          "rect": {
+            "height": 36,
+            "width": 247,
+            "x": 6,
+            "y": 132
+          },
+          "text": "Plugins"
+        },
+        {
+          "attributes": {
+            "href": "https://openai.com/chatgpt/pricing/"
+          },
+          "rect": {
+            "height": 36,
+            "width": 247,
+            "x": 6,
+            "y": 168
+          },
+          "text": " See plans and pricing "
+        },
+        {
+          "attributes": {
+            "href": "https://help.openai.com"
+          },
+          "rect": {
+            "height": 36,
+            "width": 247,
+            "x": 6,
+            "y": 204
+          },
+          "text": "Help "
+        },
+        {
+          "attributes": {
+            "href": "/settings"
+          },
+          "rect": {
+            "height": 36,
+            "width": 247,
+            "x": 6,
+            "y": 276
+          },
+          "text": " Settings"
+        },
+        {
+          "attributes": {
+            "href": "/?noauth_recent_chat_failed=1"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "href": "/images"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "   Images"
+        },
+        {
+          "attributes": {
+            "href": "/plugins?plugins_landing=1"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Plugins"
+        },
+        {
+          "attributes": {
+            "href": "https://openai.com/chatgpt/pricing/"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": " See plans and pricing"
+        },
+        {
+          "attributes": {
+            "href": "https://help.openai.com"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Help"
+        },
+        {
+          "attributes": {
+            "href": "/?noauth_recent_chat_failed=1"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Chat"
+        },
+        {
+          "attributes": {
+            "href": "/settings"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "href": "https://chatgpt.com/?mode=voice"
+          },
+          "rect": {
+            "height": 44,
+            "width": 44,
+            "x": 963,
+            "y": 358
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "href": "https://openai.com/terms"
+          },
+          "rect": {
+            "height": 14,
+            "width": 34.203125,
+            "x": 698.828125,
+            "y": 732.5
+          },
+          "text": "Terms"
+        },
+        {
+          "attributes": {
+            "href": "https://openai.com/privacy"
+          },
+          "rect": {
+            "height": 14,
+            "width": 76.1484375,
+            "x": 748.0234375,
+            "y": 732.5
+          },
+          "text": "Privacy Policy"
+        },
+        {
+          "attributes": {
+            "href": "https://help.openai.com/en/articles/5722486-how-your-data-is-used-to-improve-model-performance"
+          },
+          "rect": {
+            "height": 14,
+            "width": 62.8515625,
+            "x": 776.625,
+            "y": 748.5
+          },
+          "text": "Learn more"
+        },
+        {
+          "attributes": {
+            "href": "/privacy?returnTo=%2F"
+          },
+          "rect": {
+            "height": 16.5,
+            "width": 51.484375,
+            "x": 365.1875,
+            "y": 667.40625
+          },
+          "text": "Manage"
+        },
+        {
+          "attributes": {
+            "href": "https://openai.com/policies/cookie-policy/"
+          },
+          "rect": {
+            "height": 16.5,
+            "width": 83.6484375,
+            "x": 395.7578125,
+            "y": 687.9765625
+          },
+          "text": "cookie policy"
+        },
+        {
+          "attributes": {
+            "href": "/?noauth_recent_chat_failed=1"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Clear chat"
+        },
+        {
+          "attributes": {
+            "href": "https://chatgpt.com/auth/login"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "href": "https://chatgpt.com/auth/login_with?callback_path=%2F&connection=google-oauth2&screen_hint=login_or_signup&ext-web-mobile-direct-social-login=true"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Continue with Google"
+        },
+        {
+          "attributes": {
+            "href": "https://chatgpt.com/auth/login_with?callback_path=%2F&connection=windowslive&screen_hint=login_or_signup&ext-web-mobile-direct-social-login=true"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Continue with Microsoft"
+        },
+        {
+          "attributes": {
+            "href": "https://chatgpt.com/auth/login_with?callback_path=%2F&connection=apple&screen_hint=login_or_signup&ext-web-mobile-direct-social-login=true"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Continue with Apple"
+        },
+        {
+          "attributes": {
+            "href": "https://chatgpt.com/auth/login_with?callback_path=%2F&connection=google-oauth2&screen_hint=login_or_signup&ext-web-mobile-direct-social-login=true"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Continue with Google"
+        },
+        {
+          "attributes": {
+            "href": "https://chatgpt.com/auth/login_with?callback_path=%2F&connection=windowslive&screen_hint=login_or_signup&ext-web-mobile-direct-social-login=true"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Continue with Microsoft"
+        },
+        {
+          "attributes": {
+            "href": "https://chatgpt.com/auth/login_with?callback_path=%2F&connection=apple&screen_hint=login_or_signup&ext-web-mobile-direct-social-login=true"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": "Continue with Apple"
+        }
+      ],
+      "name": "links"
+    },
+    {
+      "count": 2,
+      "elements": [
+        {
+          "attributes": {
+            "src": "/unauth-mweb/images/drag-drop.svg"
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        },
+        {
+          "attributes": {
+            "src": null
+          },
+          "rect": {
+            "height": 0,
+            "width": 0,
+            "x": 0,
+            "y": 0
+          },
+          "text": ""
+        }
+      ],
+      "name": "images"
+    },
+    {
+      "count": 1,
+      "elements": [],
+      "name": "bootstrap"
+    },
+    {
+      "count": 0,
+      "elements": [],
+      "name": "performance_policy"
+    }
+  ],
+  "title": "ChatGPT: Chat, Work, Create & Code with AI",
+  "url": "https://chatgpt.com/",
+  "viewport_height": 768,
+  "viewport_width": 1024
+}

@@ -1,0 +1,1 @@
+function e(e,r=!0,o){a(()=>{let a=e?.current;if(!a)return;let l=!1,n=t(a);return Promise.all([n.ready,r?s():Promise.resolve()]).then(()=>{l||o?.()}).catch(()=>{l=!0,n.release()}),()=>{l=!0,n.release()}},[e?.current,r,o],l)}import{Dn as r,Fn as a}from"./a-BalXqa4Y.js";import{i as s,s as t}from"./client-polyfills-Cbp711bJ.js";var l=Symbol(r(1));export{e as t};

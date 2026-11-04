@@ -1,0 +1,11 @@
+[1104/141909.587871:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:41] getxattr size org.chromium.crashpad.database.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+[1104/141909.589621:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:41] getxattr size com.googlecode.crashpad.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+[1104/141909.589691:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:66] setxattr org.chromium.crashpad.database.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+[1104/141909.590664:ERROR:third_party/crashpad/crashpad/util/file/file_io.cc:103] ReadExactly: expected 8, observed 0
+[1104/141909.591431:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:41] getxattr size org.chromium.crashpad.database.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+[1104/141909.591556:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:41] getxattr size com.googlecode.crashpad.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+[1104/141909.591691:ERROR:third_party/crashpad/crashpad/util/mac/xattr.cc:66] setxattr org.chromium.crashpad.database.initialized on file /Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad: Operation not permitted (1)
+
+DevTools listening on ws://127.0.0.1:56854/devtools/browser/ddfd5ad0-63b1-496c-b1fd-784edab81bb5
+[53348:18012408:1104/141945.154710:ERROR:base/process/process_mac.cc:45] task_policy_set TASK_CATEGORY_POLICY: (os/kern) invalid argument (4)
+[53348:18012408:1104/141945.154765:ERROR:base/process/process_mac.cc:90] task_policy_set TASK_SUPPRESSION_POLICY: (os/kern) invalid argument (4)

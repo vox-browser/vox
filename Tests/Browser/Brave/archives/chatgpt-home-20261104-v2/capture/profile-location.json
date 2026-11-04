@@ -1,0 +1,5 @@
+{
+  "original": "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/capture/profile",
+  "retained_at": "Build/chatgpt-recapture-20261104-1415/failed-capture-profile",
+  "reason": "Transient private profile belongs with build evidence; archive bytes remain here"
+}

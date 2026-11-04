@@ -1,0 +1,1 @@
+var e={small:`@media (min-width: 600px)`,medium:`@media (min-width: 900px)`};export{e as t};
