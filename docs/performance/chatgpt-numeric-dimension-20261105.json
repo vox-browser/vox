@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "implementation_commit": "225685a15ae0640c32e1678d6861877e6a3e7187",
+  "feature": "Direct NumericType unit entry with early rejection and a scalar enum sentinel",
+  "profile_lead": {
+    "evidence": "docs/performance/chatgpt-v-profile-production-20261104.json",
+    "symbol": "css__NumericType__entry_with_value_1_while_all_others_are_0",
+    "calls": 1367119,
+    "self_ms": 249.414,
+    "inclusive_ms": 337.277,
+    "qualification": "V -profile diagnostic, C -O1; no instruction credit"
+  },
+  "focused_checks": {
+    "jobs": 33,
+    "test_function_executions": 124,
+    "all_pass": true,
+    "feature_sources_stable": true,
+    "compiler_sha256": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+    "modes": "Six files in poisoned prealloc/no-GC; new and existing numeric tests in ordinary GC and no-GC; ASAN/UBSAN new tests, candidate and original-loop controls in every selection."
+  },
+  "component_scope": "Current-process counters around rotated complete NumericType unit-entry passes, including comparison of every result against an independently computed oracle and checksum. Early rejection with a scalar enum sentinel, no exponent arithmetic. Six scenes: single-unit (all optional-zero masks and seven dimensions), dimensionless, invalid-first, invalid-last, two units, and all 5^7 optional/negative/zero/one/two combinations. V -prod source conditions, C -O2, production prealloc runtime, no GC; construction, oracle, startup and teardown excluded. Component only: no browser instruction or broad-cadence credit.",
+  "component_scenes": {
+    "single-unit": {
+      "control": [
+        97952510,
+        97766888
+      ],
+      "candidate": [
+        78402008,
+        78361602
+      ],
+      "control_median": 97859699.0,
+      "candidate_median": 78381805.0,
+      "median_reduction_fraction": 0.1990389731323412,
+      "conservative_component_reduction": 19364880
+    },
+    "dimensionless": {
+      "control": [
+        55666562,
+        55659781
+      ],
+      "candidate": [
+        41223025,
+        41216468
+      ],
+      "control_median": 55663171.5,
+      "candidate_median": 41219746.5,
+      "median_reduction_fraction": 0.259479016570229,
+      "conservative_component_reduction": 14436756
+    },
+    "first-invalid": {
+      "control": [
+        31020129,
+        31033765
+      ],
+      "candidate": [
+        31517148,
+        31517123
+      ],
+      "control_median": 31026947.0,
+      "candidate_median": 31517135.5,
+      "median_reduction_fraction": -0.015798799024602683,
+      "conservative_component_reduction": -497019
+    },
+    "last-invalid": {
+      "control": [
+        57394537,
+        57274415
+      ],
+      "candidate": [
+        42871205,
+        42789315
+      ],
+      "control_median": 57334476.0,
+      "candidate_median": 42830260.0,
+      "median_reduction_fraction": 0.25297546976796303,
+      "conservative_component_reduction": 14403210
+    },
+    "multiple-units": {
+      "control": [
+        46455405,
+        46424817
+      ],
+      "candidate": [
+        41574197,
+        41564586
+      ],
+      "control_median": 46440111.0,
+      "candidate_median": 41569391.5,
+      "median_reduction_fraction": 0.10488173682444468,
+      "conservative_component_reduction": 4850620
+    },
+    "exhaustive-mixed": {
+      "control": [
+        86868850,
+        86720605
+      ],
+      "candidate": [
+        83240666,
+        83034890
+      ],
+      "control_median": 86794727.5,
+      "candidate_median": 83137778.0,
+      "median_reduction_fraction": 0.04213331391587116,
+      "conservative_component_reduction": 3479939
+    }
+  },
+  "component_source_and_executable_pins": {
+    "/Users/alex/code/vox2/Build/chatgpt-numeric-dimension-20261105-r2/component.py": "8bf9bc1c0e8cbd0562d9ef1be50a7f332de87a839c108aa1fb95d4d9eae3bad2",
+    "/Users/alex/code/vox2/Build/chatgpt-numeric-dimension-20261105-r2/component_test.v": "4f204151ca067c319f1dcee4058e291c0d41b3df7bd00f28f5412397ef91f806",
+    "/Users/alex/code/vox2/Build/chatgpt-numeric-dimension-20261105-r2/component-files.txt": "f328a1b9770903ceafc71bca5c7776908cca4e914617a64951f2dec226303b89",
+    "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+    "/Users/alex/code/vox2/css/style_values_core.v": "0e69b467deeb34e9e0b4b0b4480ebe7c74a9355fc30db024083322e6c224bb0c",
+    "/Users/alex/code/vox2/css/numeric_dimension_diagnostics.v": "408873fb689ca99738f263bc4c84a24d300160246f59b9c596fd13d4b27f5ced",
+    "/Users/alex/code/vox2/css/numeric_dimension_entry_test.v": "d61bd08db515aabb86449fcf18add18931e9512179d86f5a4986715d523c4f4c",
+    "/Users/alex/code/vox2/platform/prealloc_arena.v": "ed0ea6f09c7c169e6aa449144149d99381aa62ca7881c1b8553592861ce0a516",
+    "/Users/alex/code/vox2/platform/thread_scratch.v": "ac880c7ace9b16e3ab79a174ea00c5acb824782253f29763e63829badff6890d",
+    "/Users/alex/code/vox2/Build/chatgpt-numeric-dimension-20261105-r2/component": "54f925801f52162c07a04bc3fdbea2ccb7c2b7a8ce65dfb94e0b4562e0afcc8b"
+  },
+  "first_prototype": {
+    "qualification": "Whole-vector OR/sum prototype preserved unpooled. It improved valid/dimensionless cases but regressed early rejection 44.44% and exhaustive mixed cases 20.18%; replaced before full validation. Initial compile failed on two missing option unwraps; attempted runtime had no executable and executed no tests. Fixed prototype passed four test functions in both branches. A later checks-controller source-proof regex rejected universal __v_option before running its selection; no full-suite credit."
+  },
+  "regression": "Final immediate-invalid scene costs 1.58% more; retained in the component comparison. No page gain is inferred from component data.",
+  "unchanged": {
+    "fixture": "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2",
+    "author_scripts": true,
+    "references": true,
+    "socks_downloads_this_slice": 0
+  },
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "broad_checkpoint_required": false,
+  "acceptance": false,
+  "target_fraction": "0.95",
+  "qualification": "Component measurements use process counters and exclude browser launch/rendering. The full startup-through-PNG and requested Brave advantage still require production validation. No live interaction or isolated rendering claim.",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-numeric-dimension-prototype-r1-20261105-evidence.zip",
+      "sha256": "3383f004e5c53dc15b34b5aa6eb7065022b392808618242b668bcab712d2a94d",
+      "bytes": 35486924
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-dimension-r2-20261105-evidence.zip",
+      "sha256": "4eec70eacec3be611eda73569e063ba7c8727246cd798ffa0198138129b34026",
+      "bytes": 145439
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-dimension-r2-20261105-component-evidence.zip",
+      "sha256": "f9e7ccb1b03051576141f82556ef738e83f5b520f1886411df4b9120c53dab63",
+      "bytes": 36676822
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-dimension-finalization-20261105-evidence.zip",
+      "sha256": "2aeb6cd89fa636dc2fb284699cc841ff1d64c791e666ecfec633b075b89960b5",
+      "bytes": 3095
+    }
+  ],
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-numeric-dimension-20261105-r2/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 25559040,
+    "elapsed_seconds": 2.1438657500000002,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "controller_exits": {
+    "component": 0,
+    "focused_checks": 0,
+    "finalizer": 0
+  }
+}

@@ -1489,3 +1489,49 @@ links every attempt, raw counter, PNG, audit, source proof, guard and identity
 change. The original author scripts, fixture, five-second settle and references
 remain unchanged, with no new live download. This frozen-page diagnostic
 establishes neither the requested 5% Brave advantage nor live interaction parity.
+
+## November 5: direct numeric unit checks
+
+`225685a15` replaces NumericType's seven-dimension dispatch loop with direct
+optional-exponent reads and a scalar unit sentinel. Invalid powers and duplicate
+units still reject immediately; missing entries, explicit zeros and percent hints
+retain their behavior. The original loop remains available through
+`VOX_RETAIN_NUMERIC_DIMENSION_ITERATION` for matched controls. A separate
+`VOX_NUMERIC_DIMENSION_DIAGNOSTICS` marker verifies execution during the complete
+startup-through-capture workload, without claiming document-local call counts.
+
+The retained production-condition V profile reported 1,367,119 calls to this
+method, with 249.414 ms self and 337.277 ms inclusive instrumented time. Those
+timings selected the work and receive no performance credit. All 33 focused jobs
+pass: 124 test-function executions across both branches, including poisoned
+preallocation, ordinary GC, no GC, AddressSanitizer and UndefinedBehaviorSanitizer.
+The new cases cover all 78,125 optional/negative/zero/one/two combinations, wide
+signed exponents, percent hints, immutability and allocation-free arena use.
+
+The final component uses V `-prod`, C `-O2`, the production preallocation runtime
+and current-process hardware counters. Every result is checked against an
+independent oracle. Construction, the oracle, startup and teardown lie outside
+the measured interval. Two control and two candidate observations run in
+control/candidate/candidate/control order, followed by separate diagnostics.
+
+| Component | Median instruction reduction |
+| --- | ---: |
+| Single unit, all seven dimensions and optional-zero masks | 19.904% |
+| Dimensionless | 25.948% |
+| Invalid first exponent | **−1.580%** |
+| Invalid final exponent | 25.298% |
+| Two nonzero unit entries | 10.488% |
+| Exhaustive mixed entries | 4.213% |
+
+The initial whole-vector OR/sum prototype improved some cases but regressed
+immediate rejection by 44.44% and mixed entries by 20.18%. Its raw results remain
+unpooled. Initial option-unwrapping compile errors, the consequent missing-binary
+run and a source-proof regex rejection also remain retained with no pass credit.
+The revised code avoids exponent arithmetic and preserves early rejection.
+
+The [numeric-dimension receipt](performance/chatgpt-numeric-dimension-20261105.json)
+links both prototypes, commands, counters, source/executable identities and every
+focused-check guard. These component results grant no whole-page instruction
+credit and do not advance the broad-check cadence. The original single SOCKS
+capture, author scripts and pixel references remain unchanged. The requested
+5% advantage over Brave remains open pending production browser measurements.
