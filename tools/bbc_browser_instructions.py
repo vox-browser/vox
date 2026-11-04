@@ -13,6 +13,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -180,6 +181,87 @@ def audit_instruction_logging(row, log, diagnostic=False):
         row['exit'] = 1
         row['error'] = '; '.join(filter(None, [row.get('error'), reason]))
     return row
+
+
+def loaded_native_images(log, root_pid, executable):
+    """Read a separate discovery run, including libraries opened with dlopen."""
+    browser.require(type(root_pid) is int and root_pid > 0, 'Missing runtime discovery PID')
+    endpoint = log.find('"label":"capture_document_encoded"')
+    browser.require(endpoint >= 0, 'Missing encoded PNG endpoint in runtime discovery')
+    pattern = rf'^dyld\[{root_pid}\]: <[^>]+> (.+)$'
+    images = {Path(match[1]).resolve() for match in re.finditer(pattern, log[:endpoint], re.M)
+              if not match[1].startswith(('/System/Library/', '/usr/lib/'))}
+    browser.require(executable.resolve() in images, 'Runtime discovery did not identify its executable')
+    browser.require(all(path.is_file() for path in images), 'Unavailable discovered runtime image')
+    return images
+
+
+def discover_runtime_libraries(args, apps, paths, pinned):
+    """Trace only diagnostic launches; acceptance runs keep their original environment."""
+    saved = args.vox_environment
+    discoveries = []
+    images = set()
+    manifest = args.output / 'runtime-libraries.json'
+    try:
+        for engine in ['vox'] + (['control'] if 'control' in apps else []):
+            folder = args.output / ('runtime-discovery-' + engine)
+            args.vox_environment = dict(saved, DYLD_PRINT_LIBRARIES='1')
+            row = run_trial(engine, apps[engine], folder, args)
+            row.update(acceptance=False, purpose='Separate runtime library discovery; no performance credit')
+            browser.write_json(folder / 'result.json', row)
+            verify_benchmark_inputs(paths, pinned, folder)
+            browser.require(row['exit'] == 0 and row.get('kernel_exit_status') == 0
+                            and row.get('pixels_exact') is True and row.get('content_exact') is True,
+                            'Runtime discovery requires a normal exit and exact original pixels/content')
+            root_pid = row.get('root', {}).get('pid')
+            found = loaded_native_images((folder / 'browser.log').read_text(errors='replace'),
+                                         root_pid, apps[engine] / 'Contents/MacOS/Vox')
+            images.update(found)
+            discoveries.append(dict(engine=engine, root_pid=root_pid,
+                                    images=[str(path) for path in sorted(found)]))
+        # Include load-command dependencies of late-bound images too. Their
+        # actual bytes are pinned before the first acceptance launch.
+        runtime_paths = set(images)
+        for image in sorted(images):
+            runtime_paths.update(browser.native_dependencies(image))
+        check_folder = args.output / 'runtime-discovery-input-check'
+        check_folder.mkdir()
+        verify_benchmark_inputs(paths, pinned, check_folder)
+        candidate_paths = paths | runtime_paths
+        candidate_pins = {**pinned, **browser.fingerprint(runtime_paths - paths)}
+        # The discovery run cannot pin previously unknown libraries before it
+        # loads them. Validate the observed set again in fresh traced processes
+        # with every discovered byte already pinned, without extending that set
+        # or silently accepting a later browser replacement.
+        for engine in ['vox'] + (['control'] if 'control' in apps else []):
+            folder = args.output / ('runtime-validation-' + engine)
+            args.vox_environment = dict(saved, DYLD_PRINT_LIBRARIES='1')
+            row = run_trial(engine, apps[engine], folder, args)
+            row.update(acceptance=False, purpose='Validate already pinned runtime images; no performance credit')
+            browser.write_json(folder / 'result.json', row)
+            verify_benchmark_inputs(candidate_paths, candidate_pins, folder)
+            browser.require(row['exit'] == 0 and row.get('kernel_exit_status') == 0
+                            and row.get('pixels_exact') is True and row.get('content_exact') is True,
+                            'Runtime validation requires a normal exit and exact original pixels/content')
+            root_pid = row.get('root', {}).get('pid')
+            found = loaded_native_images((folder / 'browser.log').read_text(errors='replace'),
+                                         root_pid, apps[engine] / 'Contents/MacOS/Vox')
+            browser.require(found <= runtime_paths, 'Previously unpinned image in runtime validation')
+            discoveries.append(dict(engine=engine, phase='validation', root_pid=root_pid,
+                                    images=[str(path) for path in sorted(found)]))
+        browser.write_json(manifest, dict(passed=True, acceptance=False, discoveries=discoveries,
+            libraries=browser.fingerprint(runtime_paths),
+            policy='Root images observed through PNG in separate traced launches, plus their '
+                   'transitive load commands. Application files and owned service binaries remain '
+                   'pinned. Fresh private caches/profiles; OS caches retained after diagnostics. '
+                   'No instruction credit from discovery or this protocol correction.'))
+        return candidate_paths | {manifest}, {**candidate_pins, **browser.fingerprint({manifest})}
+    except Exception as error:
+        browser.write_json(manifest, dict(passed=False, acceptance=False, discoveries=discoveries,
+                                         error=str(error)))
+        raise
+    finally:
+        args.vox_environment = saved
 
 
 def run_trial(engine, app, folder, args):
@@ -682,6 +764,15 @@ def main():
         args.vox_environment = replay_vox_environment(args, replay.ready)
         args.brave_proxy_argument = '--proxy-server=' + replay.ready['proxy'].replace('socks5h:', 'socks5:')
         args.brave_arguments = ['--ignore-certificate-errors-spki-list=' + spki]
+        if not args.capture_reference:
+            paths, pinned = discover_runtime_libraries(args, apps, paths, pinned)
+            inputs = json.loads((args.output / 'inputs.json').read_text())
+            inputs['files_before_runtime_discovery'] = inputs['files']
+            inputs['files'] = pinned
+            inputs['runtime_library_manifest'] = str(args.output / 'runtime-libraries.json')
+            inputs['runtime_library_policy'] = ('Late-bound libraries discovered in separate '
+                'diagnostic launches and pinned before acceptance; no dyld tracing in acceptance')
+            browser.write_json(args.output / 'inputs.json', inputs)
         for index in range(1 if args.capture_reference else args.repeat):
             pair = {}
             order = trial_order(index, bool(args.control_vox_app))

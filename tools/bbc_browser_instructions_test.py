@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from bbc_browser_instructions import URL, audit_instruction_logging, evaluate_cohort, jsc_baseline_environment, parse_args, replay_vox_environment, trial_order, run_trial, validate_document, verify_benchmark_inputs
+from bbc_browser_instructions import URL, audit_instruction_logging, discover_runtime_libraries, loaded_native_images, evaluate_cohort, jsc_baseline_environment, parse_args, replay_vox_environment, trial_order, run_trial, validate_document, verify_benchmark_inputs
 from types import SimpleNamespace
 from unittest.mock import patch
 from hacker_news_browser_instructions import evaluate_pairs
@@ -25,6 +25,103 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_runtime_images_belong_to_root_and_precede_png(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            executable = root / 'Vox'
+            library = root / 'library with spaces.dylib'
+            late = root / 'late.dylib'
+            for path in [executable, library, late]:
+                path.write_bytes(b'image')
+            log = (f'dyld[42]: <uuid> {executable}\n'
+                   f'dyld[43]: <uuid> {late}\n'
+                   f'dyld[42]: <uuid> /usr/lib/libSystem.B.dylib\n'
+                   f'dyld[42]: <uuid> {library}\n'
+                   'Vox coalition instructions: {"label":"capture_document_encoded"}\n'
+                   f'dyld[42]: <uuid> {late}\n')
+            self.assertEqual(loaded_native_images(log, 42, executable), {executable, library})
+            for pid, text in [(True, log), (0, log), (42, log.split('Vox coalition')[0]),
+                              (44, log), (42, log.replace(str(executable), str(root / 'missing')))]:
+                with self.subTest(pid=pid, text=text), self.assertRaises(RuntimeError):
+                    loaded_native_images(text, pid, executable)
+
+    def runtime_discovery_fixture(self, directory):
+        root = Path(directory).resolve()
+        apps = {name: root / name for name in ['vox', 'control']}
+        paths = set()
+        for app in apps.values():
+            executable = app / 'Contents/MacOS/Vox'
+            executable.parent.mkdir(parents=True)
+            executable.write_bytes(b'original browser')
+            paths.add(executable)
+        library, dependency = root / 'late.dylib', root / 'dependency.dylib'
+        library.write_bytes(b'dynamic library')
+        dependency.write_bytes(b'transitive library')
+        output = root / 'output'
+        output.mkdir()
+        args = SimpleNamespace(output=output, vox_environment={'VOX_PROXY': 'fixture'})
+        return args, apps, paths, library, dependency
+
+    def test_runtime_discovery_pins_transitive_libraries_and_restores_environment(self):
+        with TemporaryDirectory() as directory:
+            args, apps, paths, library, dependency = self.runtime_discovery_fixture(directory)
+            original = args.vox_environment
+            calls = []
+            def trial(engine, app, folder, options):
+                calls.append((engine, folder.name, dict(options.vox_environment)))
+                folder.mkdir()
+                executable = app / 'Contents/MacOS/Vox'
+                (folder / 'browser.log').write_text(
+                    f'dyld[42]: <uuid> {executable}\ndyld[42]: <uuid> {library}\n'
+                    '{"label":"capture_document_encoded"}\n')
+                return dict(exit=0, kernel_exit_status=0, pixels_exact=True, content_exact=True,
+                            root=dict(pid=42))
+            def dependencies(image):
+                return {image, dependency} if image == library else {image}
+            with patch('bbc_browser_instructions.run_trial', side_effect=trial), \
+                 patch('bbc_browser_instructions.browser.native_dependencies', side_effect=dependencies):
+                expanded, pins = discover_runtime_libraries(args, apps, paths, fingerprint(paths))
+            self.assertEqual([name for _, name, _ in calls], ['runtime-discovery-vox',
+                'runtime-discovery-control', 'runtime-validation-vox', 'runtime-validation-control'])
+            self.assertTrue(all(env == dict(original, DYLD_PRINT_LIBRARIES='1') for _, _, env in calls))
+            self.assertIs(args.vox_environment, original)
+            self.assertTrue({library, dependency} <= expanded)
+            self.assertEqual(pins, fingerprint(expanded))
+            manifest = json.loads((args.output / 'runtime-libraries.json').read_text())
+            self.assertTrue(manifest['passed'])
+            self.assertFalse(manifest['acceptance'])
+
+    def test_runtime_discovery_rejects_browser_replacement_and_validation_drift(self):
+        for failure in ['browser', 'library', 'new_image', 'pixels', 'exception']:
+            with self.subTest(failure=failure), TemporaryDirectory() as directory:
+                args, apps, paths, library, dependency = self.runtime_discovery_fixture(directory)
+                original = args.vox_environment
+                calls = []
+                def trial(engine, app, folder, options):
+                    calls.append(folder.name)
+                    if failure == 'exception':
+                        raise RuntimeError('browser failed')
+                    folder.mkdir()
+                    executable = app / 'Contents/MacOS/Vox'
+                    if failure == 'browser':
+                        executable.write_bytes(b'changed browser')
+                    if failure == 'library' and 'validation' in folder.name:
+                        library.write_bytes(b'changed library')
+                    extra = (f'dyld[42]: <uuid> {dependency}\n'
+                             if failure == 'new_image' and 'validation' in folder.name else '')
+                    (folder / 'browser.log').write_text(f'dyld[42]: <uuid> {executable}\n'
+                        f'dyld[42]: <uuid> {library}\n{extra}'
+                        '{"label":"capture_document_encoded"}\n')
+                    return dict(exit=0, kernel_exit_status=0,
+                                pixels_exact=failure != 'pixels', content_exact=True, root=dict(pid=42))
+                with patch('bbc_browser_instructions.run_trial', side_effect=trial), \
+                     patch('bbc_browser_instructions.browser.native_dependencies', side_effect=lambda p: {p}):
+                    with self.assertRaises(RuntimeError):
+                        discover_runtime_libraries(args, apps, paths, fingerprint(paths))
+                self.assertIs(args.vox_environment, original)
+                self.assertFalse(json.loads((args.output / 'runtime-libraries.json').read_text())['passed'])
+                self.assertTrue(calls)
+
     def test_compact_query_control_is_isolated_and_restored_on_failure(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         argv = ['--archive', 'archive', '--output', 'Build/result',
