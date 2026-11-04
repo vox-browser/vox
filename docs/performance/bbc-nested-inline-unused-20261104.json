@@ -1,0 +1,1499 @@
+{
+  "status": "Nested inline experiment removed: production native run preserves references but never reuses this path before PNG. No acceptance cohort89 launched; no performance credit.",
+  "target_met": false,
+  "catalog_entry_added": false,
+  "recorded_unix": 1793795531.981977,
+  "history": {
+    "attempted_acceptance_cohorts": 88,
+    "attempted_acceptance_browser_trials": 1961,
+    "latest_fully_valid_cohort": 88
+  },
+  "engine_experiment": "8cc7849e3",
+  "engine_removal": "1c6a6d7a6",
+  "control_tool": "dd8218f81",
+  "control_tool_removal": "160735ed5",
+  "focused": {
+    "passed": true,
+    "case_executions": 48,
+    "binaries": [
+      {
+        "mode": "default",
+        "sha256": "1dd90597bab9b7838b9be24537579ac269bf7bf4439fab17dbb54a41caf71fde",
+        "case_calls": [
+          "layout__test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "layout__test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "layout__test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "layout__test_inline_measurement_does_not_cache_discarded_whitespace",
+          "layout__test_nested_inline_measurement_owns_lines_and_geometry_after_scratch_retirement",
+          "layout__test_nested_inline_measurement_invalidates_actual_inputs_and_outer_bases",
+          "layout__test_nested_inline_measurement_invalidates_tree_and_keeps_committed_layout_uncached",
+          "layout__test_nested_inline_measurement_keeps_specialized_contexts_uncached"
+        ],
+        "actual_runtime_arms": [
+          "control",
+          "candidate"
+        ],
+        "all_runtime_exits": 0
+      },
+      {
+        "mode": "none",
+        "sha256": "c8f1ad461113352e6d9ae5be172543de39dacb21490abe22cda1bd61140cfc70",
+        "case_calls": [
+          "layout__test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "layout__test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "layout__test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "layout__test_inline_measurement_does_not_cache_discarded_whitespace",
+          "layout__test_nested_inline_measurement_owns_lines_and_geometry_after_scratch_retirement",
+          "layout__test_nested_inline_measurement_invalidates_actual_inputs_and_outer_bases",
+          "layout__test_nested_inline_measurement_invalidates_tree_and_keeps_committed_layout_uncached",
+          "layout__test_nested_inline_measurement_keeps_specialized_contexts_uncached"
+        ],
+        "actual_runtime_arms": [
+          "control",
+          "candidate"
+        ],
+        "all_runtime_exits": 0
+      },
+      {
+        "mode": "prealloc",
+        "sha256": "2b399a845a24b3630ee6933f57fb71aea4c3c3f53993192df5e071a0c4838a05",
+        "case_calls": [
+          "layout__test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "layout__test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "layout__test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "layout__test_inline_measurement_does_not_cache_discarded_whitespace",
+          "layout__test_nested_inline_measurement_owns_lines_and_geometry_after_scratch_retirement",
+          "layout__test_nested_inline_measurement_invalidates_actual_inputs_and_outer_bases",
+          "layout__test_nested_inline_measurement_invalidates_tree_and_keeps_committed_layout_uncached",
+          "layout__test_nested_inline_measurement_keeps_specialized_contexts_uncached"
+        ],
+        "actual_runtime_arms": [
+          "control",
+          "candidate"
+        ],
+        "all_runtime_exits": 0
+      }
+    ],
+    "source_inputs_unchanged": true
+  },
+  "removal_checks": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0,
+        "inputs_unchanged": true
+      },
+      {
+        "name": "default-run",
+        "exit": 0,
+        "inputs_unchanged": true
+      },
+      {
+        "name": "none-compile",
+        "exit": 0,
+        "inputs_unchanged": true
+      },
+      {
+        "name": "none-run",
+        "exit": 0,
+        "inputs_unchanged": true
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0,
+        "inputs_unchanged": true
+      },
+      {
+        "name": "prealloc-run",
+        "exit": 0,
+        "inputs_unchanged": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "938e8c2c61650d03b83e26ade529bac035f89f614ebbaad2315a5686ad608284",
+      "/Users/alex/code/vox2/layout/layout_state.v": "e9f53911dd25bac997ef7fb2bfaa1d6096a83c1887c13d2b2edf793d039b22a7",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout_test.v": "0a3e044891ea1ab6e966b8adbb50247ea881467184621147a233ef6cd48eac27"
+    },
+    "unchanged": true,
+    "case_executions": 12,
+    "execution_proof": [
+      {
+        "mode": "default",
+        "case_calls": [
+          "layout__test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "layout__test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "layout__test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "layout__test_inline_measurement_does_not_cache_discarded_whitespace"
+        ]
+      },
+      {
+        "mode": "none",
+        "case_calls": [
+          "layout__test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "layout__test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "layout__test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "layout__test_inline_measurement_does_not_cache_discarded_whitespace"
+        ]
+      },
+      {
+        "mode": "prealloc",
+        "case_calls": [
+          "layout__test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+          "layout__test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+          "layout__test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+          "layout__test_inline_measurement_does_not_cache_discarded_whitespace"
+        ]
+      }
+    ],
+    "passed": true
+  },
+  "native_diagnostic": [
+    {
+      "arm": "control",
+      "exit": 0,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/bbc-nested-inline-20261104-1450/production/native-diagnostic/pair-1-control/independent.diff.png\n",
+      "path_before_png": false,
+      "path_check": true,
+      "original_external_sources_exact": true,
+      "policy_witnesses_before_png": true
+    },
+    {
+      "arm": "vox",
+      "exit": 0,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/bbc-nested-inline-20261104-1450/production/native-diagnostic/pair-1-vox/independent.diff.png\n",
+      "path_before_png": false,
+      "path_check": false,
+      "original_external_sources_exact": true,
+      "policy_witnesses_before_png": true
+    }
+  ],
+  "native_coordinator_exit": {
+    "actual_exit_code": 1,
+    "reason": "Native trial driver completed both arms normally; coordinator rejects the candidate because no cache reuse witness appears before encoded PNG. Acceptance not launched."
+  },
+  "build": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "f77039aab243cb98afa3de679163424b99e1bde3948fc2c7741aa8de97f8e07a",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-151223-21d94207/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "f2beaba81eb692a8f9ea7ec7b910e1f408d3145e1c98fd13bcaf434232b8a67b",
+      "dirty": true,
+      "head": "6d335d14a33ef5ee8ba9b894a49faa556b20ccd5",
+      "repository_sha256": "c4afe7f83ca4caa543e601db142d1ac3b92ac3a0e364c5353f67e7362673d229"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "ca9ab671c7df907cd99761ef1aa548a576ba01222f1e3fbe5f9eb876ecd7774b",
+      "dirty": true,
+      "head": "b75a8b9ab8c24146b48d27978b2a93b0f80e6596",
+      "repository_sha256": "05fd513c6537a3c452b8c1308303792978663a5a52ee6cdb5430c57dcfc97f86"
+    },
+    "request": {
+      "head": "6d335d14a33ef5ee8ba9b894a49faa556b20ccd5",
+      "id": "a2107657597d47c0bb7d498b472458a0"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "f2beaba81eb692a8f9ea7ec7b910e1f408d3145e1c98fd13bcaf434232b8a67b",
+      "dirty": true,
+      "head": "6d335d14a33ef5ee8ba9b894a49faa556b20ccd5",
+      "repository_sha256": "c4afe7f83ca4caa543e601db142d1ac3b92ac3a0e364c5353f67e7362673d229"
+    }
+  },
+  "eligibility": {
+    "analysis": {
+      "entries": 400,
+      "validated": 400,
+      "reasons": {
+        "replaced": 6,
+        "committed": 172,
+        "positioned": 222
+      },
+      "examples": {
+        "replaced": {
+          "sequence": 1,
+          "validated": true,
+          "pid": 25655,
+          "mode": 1,
+          "subtree": true,
+          "containing": true,
+          "pool": "0x17221dd70",
+          "root": {
+            "node": "0x170f26070",
+            "children": 1,
+            "flags": {
+              "style": 1,
+              "inline_children": 1,
+              "shadow": 0,
+              "block": 1,
+              "inline": 0,
+              "break": 0,
+              "list": 0,
+              "replaced": 0,
+              "text": 0,
+              "generated_text": 0,
+              "svg": 0
+            },
+            "computed_cache": {
+              "position": 0,
+              "writing_mode": 0,
+              "display_bytes": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "descendants": [
+              {
+                "node": "0x170f285e0",
+                "children": 1,
+                "flags": {
+                  "style": 1,
+                  "inline_children": 1,
+                  "shadow": 0,
+                  "block": 0,
+                  "inline": 1,
+                  "break": 0,
+                  "list": 0,
+                  "replaced": 0,
+                  "text": 0,
+                  "generated_text": 0,
+                  "svg": 0
+                },
+                "computed_cache": {
+                  "position": 0,
+                  "writing_mode": 0,
+                  "display_bytes": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                "descendants": [
+                  {
+                    "node": "0x170f2af90",
+                    "children": 1,
+                    "flags": {
+                      "style": 1,
+                      "inline_children": 0,
+                      "shadow": 0,
+                      "block": 0,
+                      "inline": 0,
+                      "break": 0,
+                      "list": 0,
+                      "replaced": 1,
+                      "text": 0,
+                      "generated_text": 0,
+                      "svg": 0
+                    },
+                    "computed_cache": {
+                      "position": 0,
+                      "writing_mode": 0,
+                      "display_bytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                      ]
+                    },
+                    "descendants": [
+                      {
+                        "node": "0x170f2da80",
+                        "children": 0,
+                        "flags": {
+                          "style": 1,
+                          "inline_children": 0,
+                          "shadow": 0,
+                          "block": 0,
+                          "inline": 0,
+                          "break": 0,
+                          "list": 0,
+                          "replaced": 0,
+                          "text": 0,
+                          "generated_text": 0,
+                          "svg": 1
+                        },
+                        "computed_cache": {
+                          "position": 0,
+                          "writing_mode": 0,
+                          "display_bytes": [
+                            0,
+                            1,
+                            0,
+                            0,
+                            0,
+                            0
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "width": 0,
+          "height": 0,
+          "pool_closed": 0,
+          "cache_nodes": 0,
+          "prior_entries": 0
+        },
+        "committed": {
+          "sequence": 3,
+          "validated": true,
+          "pid": 25655,
+          "mode": 0,
+          "subtree": false,
+          "containing": true,
+          "pool": "0x17221dd70",
+          "root": {
+            "node": "0x170f26070",
+            "children": 1,
+            "flags": {
+              "style": 1,
+              "inline_children": 1,
+              "shadow": 0,
+              "block": 1,
+              "inline": 0,
+              "break": 0,
+              "list": 0,
+              "replaced": 0,
+              "text": 0,
+              "generated_text": 0,
+              "svg": 0
+            },
+            "computed_cache": {
+              "position": 0,
+              "writing_mode": 0,
+              "display_bytes": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "descendants": [
+              {
+                "node": "0x170f285e0",
+                "children": 1,
+                "flags": {
+                  "style": 1,
+                  "inline_children": 1,
+                  "shadow": 0,
+                  "block": 0,
+                  "inline": 1,
+                  "break": 0,
+                  "list": 0,
+                  "replaced": 0,
+                  "text": 0,
+                  "generated_text": 0,
+                  "svg": 0
+                },
+                "computed_cache": {
+                  "position": 0,
+                  "writing_mode": 0,
+                  "display_bytes": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                "descendants": [
+                  {
+                    "node": "0x170f2af90",
+                    "children": 1,
+                    "flags": {
+                      "style": 1,
+                      "inline_children": 0,
+                      "shadow": 0,
+                      "block": 0,
+                      "inline": 0,
+                      "break": 0,
+                      "list": 0,
+                      "replaced": 1,
+                      "text": 0,
+                      "generated_text": 0,
+                      "svg": 0
+                    },
+                    "computed_cache": {
+                      "position": 0,
+                      "writing_mode": 0,
+                      "display_bytes": [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                      ]
+                    },
+                    "descendants": [
+                      {
+                        "node": "0x170f2da80",
+                        "children": 0,
+                        "flags": {
+                          "style": 1,
+                          "inline_children": 0,
+                          "shadow": 0,
+                          "block": 0,
+                          "inline": 0,
+                          "break": 0,
+                          "list": 0,
+                          "replaced": 0,
+                          "text": 0,
+                          "generated_text": 0,
+                          "svg": 1
+                        },
+                        "computed_cache": {
+                          "position": 0,
+                          "writing_mode": 0,
+                          "display_bytes": [
+                            0,
+                            1,
+                            0,
+                            0,
+                            0,
+                            0
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "width": 8960,
+          "height": 0,
+          "pool_closed": 0,
+          "cache_nodes": 0,
+          "prior_entries": 0
+        },
+        "positioned": {
+          "sequence": 5,
+          "validated": true,
+          "pid": 25655,
+          "mode": 1,
+          "subtree": true,
+          "containing": true,
+          "pool": "0x17221dd70",
+          "root": {
+            "node": "0x171319e70",
+            "children": 2,
+            "flags": {
+              "style": 1,
+              "inline_children": 1,
+              "shadow": 0,
+              "block": 1,
+              "inline": 0,
+              "break": 0,
+              "list": 0,
+              "replaced": 0,
+              "text": 0,
+              "generated_text": 0,
+              "svg": 0
+            },
+            "computed_cache": {
+              "position": 1,
+              "writing_mode": 0,
+              "display_bytes": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "descendants": [
+              {
+                "node": "0x17131c590",
+                "children": 0,
+                "flags": {
+                  "style": 1,
+                  "inline_children": 0,
+                  "shadow": 0,
+                  "block": 0,
+                  "inline": 0,
+                  "break": 0,
+                  "list": 0,
+                  "replaced": 1,
+                  "text": 0,
+                  "generated_text": 0,
+                  "svg": 0
+                },
+                "computed_cache": {
+                  "position": 2,
+                  "writing_mode": 0,
+                  "display_bytes": [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                "descendants": []
+              },
+              {
+                "node": "0x1713207c0",
+                "children": 0,
+                "flags": {
+                  "style": 1,
+                  "inline_children": 0,
+                  "shadow": 0,
+                  "block": 0,
+                  "inline": 0,
+                  "break": 0,
+                  "list": 0,
+                  "replaced": 1,
+                  "text": 0,
+                  "generated_text": 0,
+                  "svg": 0
+                },
+                "computed_cache": {
+                  "position": 0,
+                  "writing_mode": 0,
+                  "display_bytes": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                "descendants": []
+              }
+            ]
+          },
+          "width": 0,
+          "height": 0,
+          "pool_closed": 0,
+          "cache_nodes": 0,
+          "prior_entries": 0
+        }
+      },
+      "scope": "Read-only first400functionentry observations, not complete call coverage and not instruction/timing credit."
+    },
+    "browser_exit": 0,
+    "native_exit_statuses": [
+      [
+        "25655",
+        "0"
+      ]
+    ],
+    "pixels_exact": true,
+    "content_exact": true,
+    "original_external_sources": 72,
+    "inputs_unchanged": true,
+    "guard": {
+      "command": [
+        "python3",
+        "Build/bbc-nested-inline-20261104-1450/eligibility/run-page.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "25015": "Wed Nov  4 15:24:17 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5117706240,
+      "elapsed_seconds": 36.072112666,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "limitations": "Only first400symbolentry observations, not complete inlined-call coverage, and subtree recursion is bounded. No instruction or timing credit."
+  },
+  "tool_tests": {
+    "before_removal": 301,
+    "after_removal": 300,
+    "all_passed": true
+  },
+  "fixture_corrections": {
+    "status": "Focused-v3 fixture bug, both control/candidate crash139, not engine acceptance evidence.",
+    "finding": "Current V lowers root.as_block_container()? used directly as an argument to &__opt_ref_1.value, a BlockContainer** where BlockContainer* is required. Generated C default.c lines431184-431190 preserve the incorrect call.",
+    "fix": "Bind the optional result to a checked local before passing it.",
+    "first_default_compile_attempt": "Detached subprocess did not survive headless command completion; no guard receipt or compile result exists, not counted as passed. Subsequent invocations awaited under memory guard."
+  },
+  "strict_C_comparison": {
+    "exact_whole_function_equivalence": false,
+    "reason": "Test builds and regular production have different assertion-failure reporting/transfer code and generated temporary numbering. The tested macro-expanded key also has a fortified memcpy while production has plain memcpy. The strict comparator correctly rejects these differences. No exact-C-equivalence claim is made.",
+    "verified_exact_functions": [
+      "layout__nested_inline_measurement_is_closed",
+      "layout__grid_measurement_inputs_are_current"
+    ],
+    "focused_runtime": "All48 actual case executions pass with guarded exits0 and unchanged source inputs. Test mode retains assertions and bounds checking.",
+    "native_validation": "Pending a completed production bundle with this change; no acceptance cohort89 launched yet."
+  },
+  "broad_verification": "No new observed instruction reduction from this unused path; no new broad acceptance or cadence reset. Prior cohort88 remains495entered/492passed with three known failures in each mode.",
+  "production_after_removal": "Focused source checks pass. The pinned f77039 bundle contains the now-removed experiment; it cannot establish native validation of removal. Use a newer completed shared bundle for the next native baseline.",
+  "raw_evidence": {
+    "path": "docs/performance/raw/bbc-nested-inline-unused-20261104.tar.gz",
+    "bytes": 55693952,
+    "sha256": "0b0f2e90de64349d77b8f8e8cb63ab5ab731f21e9979de35f3d4f0331b79e468",
+    "members": 210,
+    "roundtrip_verified": true
+  },
+  "files": {
+    "nested-inline/tool-tests.guard.json": {
+      "bytes": 427,
+      "sha256": "bc60b503fe5e6ffc111289c7f3c93bca8729990abef1efda82dc526056fd2d66"
+    },
+    "nested-inline/dd8218f81-removal.patch": {
+      "bytes": 7537,
+      "sha256": "fe0c1645cc2705e8f3f4c68e55536f3e79e07d9c3f061e61b473920c31572b2a"
+    },
+    "nested-inline/run-removal-checks.py": {
+      "bytes": 2174,
+      "sha256": "bfaf233644ee81c2383f604683aca52c220a609927d4387448219e59429f4844"
+    },
+    "nested-inline/default-v2-compile.log": {
+      "bytes": 5704,
+      "sha256": "cccb6353dc354eaaafb4d9232c1c5fa63b4ddcbc46c751b87d27de142f71d4a4"
+    },
+    "nested-inline/tool-removal-tests.guard.json": {
+      "bytes": 434,
+      "sha256": "15d0ca62c1844c59dccdf80be42f56988a5df955b9c31352d87d0c824d110c53"
+    },
+    "nested-inline/8cc7849e3-removal.patch": {
+      "bytes": 19326,
+      "sha256": "f671e0af9b2d41bf7cabfdabfbf6c1adcd2ad5d614969c1542c90ee44c99ad22"
+    },
+    "nested-inline/function-equivalence-macro-expanded.json": {
+      "bytes": 51261,
+      "sha256": "7a2828a1c2c452c664126c581dbc2e18f3b71db9dca4226570f36d80781f821c"
+    },
+    "nested-inline/default-v2-compile-exit.json": {
+      "bytes": 12,
+      "sha256": "5bc232b82de377a5655a39a2af9d7ae0fc868de5b9df957e18905cb914606c88"
+    },
+    "nested-inline/tool-tests.log": {
+      "bytes": 392495,
+      "sha256": "dc3faa1052c801eb3f06809aaf923b5fa7ac05c77443be9b39018410e01203ba"
+    },
+    "nested-inline/default-v2-run.guard.json": {
+      "bytes": 364,
+      "sha256": "c3b5379a1aa657038d41fca70a0e5d84d263ac34cee4b3c4e5a826912a63f7ae"
+    },
+    "nested-inline/run-acceptance.py": {
+      "bytes": 3572,
+      "sha256": "01bb88894002c509f9a0391a42437e320ca64bf23028d0e0e3817b96d4946169"
+    },
+    "nested-inline/run-focused.py": {
+      "bytes": 2757,
+      "sha256": "c45a22ad94be53a6a8de4e5044beb262133dc571db44ff38043ad3c8348899c7"
+    },
+    "nested-inline/archive.guard.json": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "nested-inline/production-frozen-observation.json": {
+      "bytes": 617,
+      "sha256": "1407b9d3759d5f9446b78e2914b2ca298f2868dc1fee8dbc5fedc7627df583b3"
+    },
+    "nested-inline/removal.json": {
+      "bytes": 315,
+      "sha256": "891cea422c3f11f939025a9ebe181b146a6a2280630bc19e6bdc184f74f85838"
+    },
+    "nested-inline/preprocess.guard.json": {
+      "bytes": 4629,
+      "sha256": "64a199941665b1a993e5ae4b110e18a963893acba4370f51189cc0a53a041386"
+    },
+    "nested-inline/default-v2-compile-command.json": {
+      "bytes": 977,
+      "sha256": "06a1f36b44b4a0ddc06c5676a518a81fb096cb4f1777c8c94253f6de8d9403a0"
+    },
+    "nested-inline/focused-v4.log": {
+      "bytes": 162,
+      "sha256": "fec4d9209db5edbf16ebad640995c1282a569a38c12c3f284ed5f193afdeab5c"
+    },
+    "nested-inline/default-compile.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "nested-inline/archive-evidence.py": {
+      "bytes": 4334,
+      "sha256": "0ad25f81b08a154c44f61bf4bacd21b2c986213102d8470a274a7073aca283fa"
+    },
+    "nested-inline/focused-v3.log": {
+      "bytes": 174,
+      "sha256": "ba02acc1c55c25b59515488a7050d32f5b08598cbf3b621f84cd2e2c0507df0e"
+    },
+    "nested-inline/preprocess-command.json": {
+      "bytes": 4301,
+      "sha256": "8ed41ba1ef3863920a419085ee25be33efc7d3f5c838b5dc51a82e2d763ad71e"
+    },
+    "nested-inline/broad-inventory499.json": {
+      "bytes": 76230,
+      "sha256": "ff3f336c72010317c393429a476c85d3280cc7b61b44a80814cbbe10fc05c71c"
+    },
+    "nested-inline/tool-removal-tests.log": {
+      "bytes": 381617,
+      "sha256": "1684cedc34d65034004291f74afcf7b4f1d877e7ff325369615d0f7b430270a3"
+    },
+    "nested-inline/default-v2-compile.guard.json": {
+      "bytes": 1100,
+      "sha256": "9ab38444f1beb906c0e9f3bc96c0d7102c0f7e16e211674eb7bab82ffc898760"
+    },
+    "nested-inline/default-compile-command.json": {
+      "bytes": 968,
+      "sha256": "606e4be4e6b310d283bcdce495f3c43a1f9b117392286f700640d3b5377cf796"
+    },
+    "nested-inline/fixture-corrections.json": {
+      "bytes": 638,
+      "sha256": "c940da20005b7ba557ebdeaf2d66cd2e7c1cf4c63b8dd593615e5f11b56c7900"
+    },
+    "nested-inline/post-removal.log": {
+      "bytes": 92,
+      "sha256": "8c10cef960120eeeba93ca84bc03e2061ad6e5cc92080d61fe0d9e1d9e2cb59e"
+    },
+    "nested-inline/run-focused-v4.py": {
+      "bytes": 2760,
+      "sha256": "8f24091296bba9bbc3a66f845078322949cc02f841be4bcd6eb084446013f578"
+    },
+    "nested-inline/run-broad-after-cohort89.py": {
+      "bytes": 4814,
+      "sha256": "1c1b22d4790c1ecf6eed24f1963d5e78d0a74317414e6427aab060516a0d0ca2"
+    },
+    "nested-inline/comparison-assessment.json": {
+      "bytes": 794,
+      "sha256": "8d9e698ab0cf3766daf37bde6c3eb92a8a1ba185f9ec100bee2e819b6bb47d14"
+    },
+    "nested-inline/validate-production.py": {
+      "bytes": 7195,
+      "sha256": "b0dfb6ee5b65182743a31db54fc2f63ec21c0189f27305e83e44a9ce01e93d15"
+    },
+    "nested-inline/default-v2-run.log": {
+      "bytes": 336,
+      "sha256": "62655e283bf400cdff66cd8acce5547fc2bed1e5e1075ff750a3958f52e30617"
+    },
+    "nested-inline/archive.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "nested-inline/preprocess.log": {
+      "bytes": 4105,
+      "sha256": "854470fc9664a3b0c3e0e1c64e908a82606910f6b6c69164fba486dd8bf369e2"
+    },
+    "nested-inline/default-v2.c": {
+      "bytes": 26119898,
+      "sha256": "46e90b0d1bbf5bc82d8373f7e985f59fb6d6dc36b80182a939da69132e0287da"
+    },
+    "nested-inline/native-diagnostic.py": {
+      "bytes": 1114,
+      "sha256": "bfa0b81bc1e0a33de8e793d0b91ad4a92d00ae9643bfdde0f6623a27746ce4e4"
+    },
+    "nested-inline/post-removal/default-run.log": {
+      "bytes": 368,
+      "sha256": "100f380128d77ec4cf72723314caa6da28a64ef4a99237e3a42175f11e525be9"
+    },
+    "nested-inline/post-removal/summary.json": {
+      "bytes": 2364,
+      "sha256": "2a0f69b8c46abe0d1940a36c4df3720d4c6842d3d41e10fd97703eaefb5b9a8f"
+    },
+    "nested-inline/post-removal/none-test-main-disassembly.txt": {
+      "bytes": 7518,
+      "sha256": "0a4f68200dd2370a8a39d9b38aae971ba5e44a02a90b0126d6f5c72f0478ac96"
+    },
+    "nested-inline/post-removal/prealloc-compile.log": {
+      "bytes": 8792,
+      "sha256": "e82de738788b5f026239d09b386e95ad32a6ad93f7f5fa4587cd495b068ce1f0"
+    },
+    "nested-inline/post-removal/prealloc-test-main-disassembly.txt": {
+      "bytes": 7554,
+      "sha256": "4bb232568663a516fb42600ef1106e562ae5d858975a53b39b5a7c8da32108f2"
+    },
+    "nested-inline/post-removal/default-run-command.json": {
+      "bytes": 413,
+      "sha256": "0f2942c8c324cae254bb96b194e6c2c5d270fa52eb343105c5a004438f2aa61d"
+    },
+    "nested-inline/post-removal/default-run.guard.json": {
+      "bytes": 396,
+      "sha256": "9f06940551e42e38a5cc6be131eeba502d6902400c7d8accbcda9780998c212f"
+    },
+    "nested-inline/post-removal/prealloc-compile-command.json": {
+      "bytes": 1327,
+      "sha256": "b7081dbe51cfcfd6969ad967aecc03fd941adc7ff7fb8ecd7e5594e5b3a97e66"
+    },
+    "nested-inline/post-removal/results.json": {
+      "bytes": 491,
+      "sha256": "f008f51f7fa1ca5da6f9517a50d0b1c47f5126137a7eeac02e311b76035af68c"
+    },
+    "nested-inline/post-removal/default-compile.log": {
+      "bytes": 5193,
+      "sha256": "afd7df7eb554e222a6c4408c9c01c3a17ace7e8bb8de1dd9db1066a00feec5c7"
+    },
+    "nested-inline/post-removal/default-compile.guard.json": {
+      "bytes": 1104,
+      "sha256": "cf0b255f26b7a1ffe0bcea8ffff8b0dd7379b214b054a43d1478660e6e99a193"
+    },
+    "nested-inline/post-removal/default.c": {
+      "bytes": 22118895,
+      "sha256": "2e69fddb4fd1197a2b0bf9184744fee90d14ee32b15d1784372d2d6d36e0cc9e"
+    },
+    "nested-inline/post-removal/default-test-main-disassembly.txt": {
+      "bytes": 7397,
+      "sha256": "5c70e13bfca5ee0ccbc5065592e409ad52631563a98b01fd1f9848443134c27f"
+    },
+    "nested-inline/post-removal/none-compile.log": {
+      "bytes": 6377,
+      "sha256": "a0fa0d2345d4caf7758f34523cbde92c8cd2693758ceb28b123f2b66e0cf3f5c"
+    },
+    "nested-inline/post-removal/default-compile-command.json": {
+      "bytes": 1076,
+      "sha256": "65b36967d5140e28a81894fafc6832aa9412d86d34c71287e5e045a4e660dc78"
+    },
+    "nested-inline/post-removal/none-run.log": {
+      "bytes": 360,
+      "sha256": "55c3c7151a8413e47b7033343acbdd54c9503b41b863f8ba284da868e09d7817"
+    },
+    "nested-inline/post-removal/none.c": {
+      "bytes": 22109535,
+      "sha256": "2e4b4a6520918be2c0da20cf5435865da78e6eaa9fa91371aeca4f188afe3c16"
+    },
+    "nested-inline/post-removal/prealloc-run.log": {
+      "bytes": 369,
+      "sha256": "eec0221485b7cacd584391e09d398e592ddab9b7278861f59586e999c7c2e752"
+    },
+    "nested-inline/post-removal/prealloc-compile.guard.json": {
+      "bytes": 1359,
+      "sha256": "2cb64ec99aa027409b532b4a74d6900b65bbaa1d01b322577a191bbae733d1c2"
+    },
+    "nested-inline/post-removal/none-run-command.json": {
+      "bytes": 404,
+      "sha256": "7f71b6934b44c9b5232135b3075c93e87f9f2223a0c2e01e01a087e0654a95e3"
+    },
+    "nested-inline/post-removal/none-compile.guard.json": {
+      "bytes": 1124,
+      "sha256": "efea4f70d522ec3acbcd6f5fad82ee7036ce1ca13c3a2881815456f47cbbf190"
+    },
+    "nested-inline/post-removal/none-run.guard.json": {
+      "bytes": 388,
+      "sha256": "b42ae679567b367f9f5a93a10c975e3d1cf606ab99c9ec7a2b84cc444ebca25c"
+    },
+    "nested-inline/post-removal/prealloc.c": {
+      "bytes": 22395681,
+      "sha256": "d941797ea7c59b358e0c3b8075d5d9be548befe4e09f61e11b78eb8b8224a9e9"
+    },
+    "nested-inline/post-removal/prealloc-run-command.json": {
+      "bytes": 416,
+      "sha256": "bb86b2080f3c434372f17cadf6e0b1d6aa05085d65acd124a96644df12897dbf"
+    },
+    "nested-inline/post-removal/prealloc-run.guard.json": {
+      "bytes": 397,
+      "sha256": "ca75b6b83bb17ada157c1cffae4e105c572d24cee44f5ed26405df1762aae178"
+    },
+    "nested-inline/post-removal/none-compile-command.json": {
+      "bytes": 1086,
+      "sha256": "1192fd8e11a4758da4de6de4d1d3c28c85acb1f7fa7d7a15a532f0ca5bd0c22c"
+    },
+    "nested-inline/eligibility/page-pids.json": {
+      "bytes": 59,
+      "sha256": "8a53ee0f0b20a84a7cb64dea6a95f852c8a7ee64973674e5c43b5231a17c9657"
+    },
+    "nested-inline/eligibility/production.json": {
+      "bytes": 1298,
+      "sha256": "8700b7a80559a4fb098d33ed48de1966b5e4eddc9a24f36e236d28538ef1acad"
+    },
+    "nested-inline/eligibility/entry_probe.py": {
+      "bytes": 2841,
+      "sha256": "448fc9d93690a5d5baf431e36fda740f170d105ca4cc0b7b18bf04c4c5e3f387"
+    },
+    "nested-inline/eligibility/layouts.guard.json": {
+      "bytes": 613,
+      "sha256": "47de563f563741dc616c8836ae7be87f3301168aa3244a493bc3ee2cdfd98ee0"
+    },
+    "nested-inline/eligibility/layouts.log": {
+      "bytes": 22583701,
+      "sha256": "a0000d0defccdd05a24940b5217e42515eeac7c6a43976dd3ace6ed4889580b4"
+    },
+    "nested-inline/eligibility/entry-analysis.json": {
+      "bytes": 9588,
+      "sha256": "2693c3e0988d342ae0f4c1c6e890fff69add2d73be1f654160c4b10338e8c0e7"
+    },
+    "nested-inline/eligibility/page.guard.json": {
+      "bytes": 443,
+      "sha256": "21b0f02dd53f92ef01e370d58148c299a5642c008bd27741009ccbb4dcf51ab9"
+    },
+    "nested-inline/eligibility/record-fields.json": {
+      "bytes": 26929,
+      "sha256": "6b4be439272f9a77856960613656e8044e151cfe3d25dd98d70840f1bf9ef958"
+    },
+    "nested-inline/eligibility/run-page.py": {
+      "bytes": 6148,
+      "sha256": "af37a4453799ae78afda7463c73605d3ae6f47fd65cf15ccafb3667fa734c217"
+    },
+    "nested-inline/eligibility/layouts-command.json": {
+      "bytes": 532,
+      "sha256": "c5520c1b9d88ab0281566f4b27d4dfa115b0f9734a57197d5f67d561b0587fb4"
+    },
+    "nested-inline/eligibility/controller.log": {
+      "bytes": 1401,
+      "sha256": "59a5949524f7d26737195247eee1b6369afda6eafc83422c85963a77800713f6"
+    },
+    "nested-inline/eligibility/page/inputs-after.json": {
+      "bytes": 160122,
+      "sha256": "5a858a7a8541fbdd5c629699d0253f8b17207adbc8646640ddb54df191e6592e"
+    },
+    "nested-inline/eligibility/page/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "nested-inline/eligibility/page/browser.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "nested-inline/eligibility/page/audit.json": {
+      "bytes": 363855,
+      "sha256": "e16a8a5ae466a4d1391a35ab945df458902569acfe7351d9245a873db74bbe61"
+    },
+    "nested-inline/eligibility/page/diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "nested-inline/eligibility/page/result.json": {
+      "bytes": 25052,
+      "sha256": "71c40392c2315f778692026ed866fae7e5491f9e50ac52db1f5b3183c47b75a7"
+    },
+    "nested-inline/eligibility/page/stdout.log": {
+      "bytes": 995961,
+      "sha256": "60f3cab0ab6f0c341691e95d4f0494257ffbfef9185f7fac982c43774b73ef98"
+    },
+    "nested-inline/eligibility/page/inputs-before.json": {
+      "bytes": 160122,
+      "sha256": "5a858a7a8541fbdd5c629699d0253f8b17207adbc8646640ddb54df191e6592e"
+    },
+    "nested-inline/eligibility/page/command.json": {
+      "bytes": 3713,
+      "sha256": "44a5d3bb2f4777ef81bf206c00e9436f9ea9e84a9faa25e01108a990ac73971e"
+    },
+    "nested-inline/eligibility/page/audit-config.json": {
+      "bytes": 358,
+      "sha256": "d2ef27a4a4ce73e2a863532950d15116bb8817141458fa1e441a0a8a36819d50"
+    },
+    "nested-inline/eligibility/page/root.json": {
+      "bytes": 91,
+      "sha256": "270cb29f663ee4dd453eba9310d9a452dc25402998419493d2ddd21c5da2fa51"
+    },
+    "nested-inline/eligibility/page/replay/openssl.log": {
+      "bytes": 890,
+      "sha256": "bcf979c3a0c79fcde94a09eedaa3afc46dc4fe32987a0df8e571acd4035881e9"
+    },
+    "nested-inline/eligibility/page/replay/ready.json": {
+      "bytes": 474,
+      "sha256": "3cfaedad75b740001025b157c308a7b4df6ba6898792f6fd4d29e3cc004f1c78"
+    },
+    "nested-inline/production/selected-production.json": {
+      "bytes": 1298,
+      "sha256": "8700b7a80559a4fb098d33ed48de1966b5e4eddc9a24f36e236d28538ef1acad"
+    },
+    "nested-inline/production/native-diagnostic.guard.json": {
+      "bytes": 1559,
+      "sha256": "9c1732aa1cad2f06f3b7ec1dfc0ba28274d204c6653b2585bc3d1ba98c568a01"
+    },
+    "nested-inline/production/native-diagnostic-pids.json": {
+      "bytes": 236,
+      "sha256": "712aa9080bbfaf978b661866aac81c5586d0e6b72db365e920dfe2f7286ee823"
+    },
+    "nested-inline/production/native-diagnostic-exit.json": {
+      "bytes": 16,
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2"
+    },
+    "nested-inline/production/source-proof-f77039aab243cb98afa3de679163424b99e1bde3948fc2c7741aa8de97f8e07a.json": {
+      "bytes": 10795,
+      "sha256": "59bbdf8184a7d8aba023e547baa0479d975a7f0178a8af5d06728bf12351be7c"
+    },
+    "nested-inline/production/protocol-before.json": {
+      "bytes": 1019,
+      "sha256": "891b62b8d11c0454f4bd6c70be473dbe22d04d6e80d541ef3c65bf26e62f9b46"
+    },
+    "nested-inline/production/headless.log": {
+      "bytes": 635,
+      "sha256": "17273a1ad74127f768db84c9af2fde5fd18d70240324f29bca2d15c9dc20aa43"
+    },
+    "nested-inline/production/production-observations.json": {
+      "bytes": 1554,
+      "sha256": "b93f8cfc8b59bf5e4dcff10915f2d6760187cc065f224c022a65a2f234de9b25"
+    },
+    "nested-inline/production/headless.guard.json": {
+      "bytes": 396,
+      "sha256": "ba1d3d1382dff702bac9c4dccbb9f04dbb0d561b3a1ccd84eac2cf6118c88be9"
+    },
+    "nested-inline/production/headless-command.json": {
+      "bytes": 401,
+      "sha256": "ec2d0c9d5e1bc3a34682a2691b8219691ae7ef69e0e430311e551654761df7ec"
+    },
+    "nested-inline/production/native-diagnostic.log": {
+      "bytes": 2116,
+      "sha256": "195b3ef31bdd0c53750e34b155b6c87d5b9d638170ea13ded25b7a906eb457da"
+    },
+    "nested-inline/production/native-diagnostic-checks.json": {
+      "bytes": 1282,
+      "sha256": "41026f5e1dbfdd7998f783a9876c533aa4fb76cfb3f9ba71a2497bde8102e884"
+    },
+    "nested-inline/production/headless-exit.json": {
+      "bytes": 16,
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2"
+    },
+    "nested-inline/production/coordinator-exit.json": {
+      "bytes": 202,
+      "sha256": "ee0444d703f6ec2893fa86bb5fc6f754f9530e8338cd8a15ffdc4e80d96cb059"
+    },
+    "nested-inline/production/native-diagnostic-command.json": {
+      "bytes": 1484,
+      "sha256": "73244b1f0e14eca2b6e2af301efe8ebf5a50a9f82c0be8e1c224ee01153bf790"
+    },
+    "nested-inline/production/native-diagnostic/summary.json": {
+      "bytes": 73,
+      "sha256": "8818fa71595aefab2290e09180ae046aa16e9e217d4bb510e4344a75c5bbd1e0"
+    },
+    "nested-inline/production/native-diagnostic/pairs.json": {
+      "bytes": 472312,
+      "sha256": "f0813bbeb1147d8889e1d53f826d6fe6c7d1cd4380a40d13234abdbadf2ba9e3"
+    },
+    "nested-inline/production/native-diagnostic/browser-apps.json": {
+      "bytes": 264,
+      "sha256": "8c987e49bdc405f8e7c0e0b4981e9e0ea1c062b9cec5b8a15bfa97cf9c906d84"
+    },
+    "nested-inline/production/native-diagnostic/inputs.json": {
+      "bytes": 647170,
+      "sha256": "37a362c1f22588202867e097c32014b87c6957d7aa89bdddc3f29e01f295d1b7"
+    },
+    "nested-inline/production/native-diagnostic/audit-config.json": {
+      "bytes": 550,
+      "sha256": "fad90a2afd34a887fe045ff63767cbc3d47a2fcbf4286af5e31a0ca905b83b36"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-vox/injected-probe.json": {
+      "bytes": 293,
+      "sha256": "a2349904e4329f910dc9dd60a2dc1db68460f7100dce57a13c42c3635fffb33d"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-vox/browser.log": {
+      "bytes": 43336,
+      "sha256": "f019d9eb19d3044778d763b8013301282e8526be76ff592e555900abe981b461"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-vox/audit.json": {
+      "bytes": 363721,
+      "sha256": "cb807d76902c1e1df520449ef8511e8a8814a4324408f71c073e61884fe4d481"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-vox/result.json": {
+      "bytes": 214488,
+      "sha256": "cf1a017b3902449d28f11cf7f0cec4a35b64c3ccbd3230b8219e8273b22d7bae"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-vox/independent.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-vox/stdout.log": {
+      "bytes": 149,
+      "sha256": "3a66b4d49379a36a0d00769a698d3c4ca5b19c6fa9c38535d1d095526fcc3778"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-vox/launch.json": {
+      "bytes": 3212,
+      "sha256": "fd042cb9c7d7fb988811822219606d306290535a2511817300d5b45e3d4ec886"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-vox/input-identity-after.json": {
+      "bytes": 459515,
+      "sha256": "6c62ca5219b052f180dfe4312e55dd06efa5f9a4cce91c3ee438daf083808edc"
+    },
+    "nested-inline/production/native-diagnostic/replay/openssl.log": {
+      "bytes": 2132,
+      "sha256": "178d5ecc7eed66180a6ff48c0aab3a1fc51edae8567b8b4faa47f330e7499055"
+    },
+    "nested-inline/production/native-diagnostic/replay/ready.json": {
+      "bytes": 486,
+      "sha256": "81b8d4e04f2d769132d8c013dd8cdb8869da9aecb873131d73b4f68edb95b061"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-control/injected-probe.json": {
+      "bytes": 293,
+      "sha256": "a2349904e4329f910dc9dd60a2dc1db68460f7100dce57a13c42c3635fffb33d"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-control/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-control/browser.log": {
+      "bytes": 48131,
+      "sha256": "16f6d03fcf690086d62e469e03a850baf66b6e053754364031ad8734dbe2856a"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-control/audit.json": {
+      "bytes": 363855,
+      "sha256": "6299935552d2d40bcd40a0af5cb280a1dc8abfd4e5e539b9cb5635726fb28b18"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-control/result.json": {
+      "bytes": 210749,
+      "sha256": "5b4bd75ecb197f08b8f6f5c9991cd53ebaceecd846ca27d0dbbc614b4fc0011a"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-control/independent.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-control/stdout.log": {
+      "bytes": 153,
+      "sha256": "96f22886bbd99cf7f8d1d0367fbf49ef26c3b89d8e89cde47a6fd267dfea1271"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-control/launch.json": {
+      "bytes": 2664,
+      "sha256": "222f9b03a6b8ce9ebafd7e5a19dc0dad36d79d566ccb53228e50c3bba50be3af"
+    },
+    "nested-inline/production/native-diagnostic/pair-1-control/input-identity-after.json": {
+      "bytes": 459516,
+      "sha256": "212051e74d1927c36429689c74b8cd2cf912c2393066d80f1b5f5d23ae7311f9"
+    },
+    "nested-inline/focused-v3/default-control.guard.json": {
+      "bytes": 403,
+      "sha256": "99dbc03d9e2626dda734fec343ffa4bf4b3b4eb1f50d9bcd8947dac98bc73262"
+    },
+    "nested-inline/focused-v3/default-candidate-command.json": {
+      "bytes": 483,
+      "sha256": "23ee435fe7ca6e00448e4a692837f7907024fb2ad65d003be58aea9b98aeefec"
+    },
+    "nested-inline/focused-v3/prealloc-candidate.guard.json": {
+      "bytes": 403,
+      "sha256": "c833335f7ce8c9f8a23f14feb67846d095fea82c39fe4da47bbf9e3e5d333cbc"
+    },
+    "nested-inline/focused-v3/default-candidate.log": {
+      "bytes": 975,
+      "sha256": "65f85554fe1ad178813815d5c7fa641edd260e03b6aefce146b0c13b0277455b"
+    },
+    "nested-inline/focused-v3/summary.json": {
+      "bytes": 1650,
+      "sha256": "5e671f721cdb0b741ff7370ba31f473a67ccca92b02adabc4a981788f3004094"
+    },
+    "nested-inline/focused-v3/prealloc-compile.log": {
+      "bytes": 8790,
+      "sha256": "5f489fe99f1641b37792639cdea589f8ca40d4f8b18c959246e7aaf5ab5cc1f0"
+    },
+    "nested-inline/focused-v3/prealloc-control.log": {
+      "bytes": 976,
+      "sha256": "c38c4cf878d7ebaa43ebe35679da3cd507fdbc54a03da9cf1fcc3e3e7e65f1e5"
+    },
+    "nested-inline/focused-v3/prealloc-compile-command.json": {
+      "bytes": 1441,
+      "sha256": "e6bc48368de036c8cbc50914425561cb7bfd1080839d31f370fe6c908f3c1409"
+    },
+    "nested-inline/focused-v3/default-control.log": {
+      "bytes": 982,
+      "sha256": "7d886978cdaf5c026ce399b5d1e48f495bc4fc7ef50cf5be86d238982105702d"
+    },
+    "nested-inline/focused-v3/results.json": {
+      "bytes": 774,
+      "sha256": "1cd75f666257f8a339926e7842e942b7aeb3d458756d2c37a094cca531c562da"
+    },
+    "nested-inline/focused-v3/default-compile.log": {
+      "bytes": 5197,
+      "sha256": "dec488988e55df16a2f70e26456db0eee4c8cb4947fd8c1e0958be080fd77442"
+    },
+    "nested-inline/focused-v3/default-compile.guard.json": {
+      "bytes": 1108,
+      "sha256": "e2c27fa67ee7dfa8936d1dbb04321a28351a48dae2c6e47dd1585b9393ceaae3"
+    },
+    "nested-inline/focused-v3/default.c": {
+      "bytes": 26176433,
+      "sha256": "e24148ce23259ed8850997cacd8171ce71a73743d639c6e1161eba8e7d7046da"
+    },
+    "nested-inline/focused-v3/composed-source.v.txt": {
+      "bytes": 19107,
+      "sha256": "a72b774089e97590b8ddb223dfeac355017392cb285d73235dfa252cf413a01b"
+    },
+    "nested-inline/focused-v3/prealloc-control-command.json": {
+      "bytes": 540,
+      "sha256": "2f00e679b85cbb4ca8763902ba9596a7a3d062a8eb05d19b7af8b707c4af58bd"
+    },
+    "nested-inline/focused-v3/none-compile.log": {
+      "bytes": 6375,
+      "sha256": "1eabaeb06a51b32f990d690ef46ad3218d6d75b1509b8545f355fb507ff7c10f"
+    },
+    "nested-inline/focused-v3/default-compile-command.json": {
+      "bytes": 1184,
+      "sha256": "fa90f955698659374afb1544f6e9c96d5574e2fabfcdf7b7f7f657e80f73eae8"
+    },
+    "nested-inline/focused-v3/none-candidate-command.json": {
+      "bytes": 474,
+      "sha256": "26f0d5f5c41e0aabea2b75480623d38c3513b8764389c2ab6a5d9ac1e30078e1"
+    },
+    "nested-inline/focused-v3/none-control.log": {
+      "bytes": 972,
+      "sha256": "57bd64f30b263dbdb3aa545d06e1ca74bb9f8c8fda743b7888b1aa77af44e247"
+    },
+    "nested-inline/focused-v3/inputs.json": {
+      "bytes": 1344,
+      "sha256": "d3dcfad00d250aceb1ae67247104ca30620eefc847acd1038c4c2430004076b8"
+    },
+    "nested-inline/focused-v3/none-candidate.guard.json": {
+      "bytes": 390,
+      "sha256": "192a7b52b2a8093c9ca1210051a9c72da94473cc5fd97dd67cc369eabc22f5ec"
+    },
+    "nested-inline/focused-v3/none.c": {
+      "bytes": 26166993,
+      "sha256": "c11c1314609cb7f9d57d475e0b3ead724fc1d790a6465cb91aa65bc404d85c0e"
+    },
+    "nested-inline/focused-v3/prealloc-compile.guard.json": {
+      "bytes": 1357,
+      "sha256": "01064cf0d31d3317bb340f23732d11d36d7f4f9f26d8073355b844cc810ba920"
+    },
+    "nested-inline/focused-v3/none-control.guard.json": {
+      "bytes": 393,
+      "sha256": "34e7acb877ceedc27cf96467250274face924a4769c3c35beb07507fe725b895"
+    },
+    "nested-inline/focused-v3/default-control-command.json": {
+      "bytes": 537,
+      "sha256": "cfafa52382cce1fdb39366948bb0ffe26927ef5d9693425504876a3e945c95f8"
+    },
+    "nested-inline/focused-v3/default-candidate.guard.json": {
+      "bytes": 396,
+      "sha256": "3778f813e80d56d52157fa2f515c48e0d287d0fa092f4542fc6a84dbd2baf6b9"
+    },
+    "nested-inline/focused-v3/none-control-command.json": {
+      "bytes": 528,
+      "sha256": "018da373bb77c1dff56e4a5eca136e87fe0e7cf2c90f3aa05d7b0a3821d4ea7d"
+    },
+    "nested-inline/focused-v3/prealloc-candidate-command.json": {
+      "bytes": 486,
+      "sha256": "f8c9b70c8603c9d67971f69a830b4c17eea8762f81a6fa9107870a0713a2367c"
+    },
+    "nested-inline/focused-v3/prealloc-control.guard.json": {
+      "bytes": 397,
+      "sha256": "e5b9317299a93212da6ef329350545c0622109ad4c69147244b9622795311885"
+    },
+    "nested-inline/focused-v3/none-compile.guard.json": {
+      "bytes": 1122,
+      "sha256": "0183942e099ae257e444e23442eabac894afff3d139bd0785d15f104e7f69e22"
+    },
+    "nested-inline/focused-v3/prealloc.c": {
+      "bytes": 26449366,
+      "sha256": "fdc682aa370e72c628a8ee8229bbb6834f1bd1b98f597aa781cfee681c22090b"
+    },
+    "nested-inline/focused-v3/none-compile-command.json": {
+      "bytes": 1198,
+      "sha256": "6d1a0c8fd80f8f4e5f5aaccd402c89bf1ba5f648f222c8dca9e9ca77fb7fae2f"
+    },
+    "nested-inline/focused-v3/none-candidate.log": {
+      "bytes": 969,
+      "sha256": "01f1b67c74409bcc1e5d15249ee76c173369ff1cb43798cb0140449decb2a3dc"
+    },
+    "nested-inline/focused-v3/prealloc-candidate.log": {
+      "bytes": 982,
+      "sha256": "b4a5845b245d116c8434c2afe2f8be18ae387e217128e016da6e0a00047144e9"
+    },
+    "nested-inline/focused-v4/default-control.guard.json": {
+      "bytes": 401,
+      "sha256": "5d2b7a701c8e350ab5b951bf650ca96a3a9d958b83309d6f3b44049d5b2c26e5"
+    },
+    "nested-inline/focused-v4/default-candidate-command.json": {
+      "bytes": 483,
+      "sha256": "269daabb1545acc051a2eb972b4aa8239d8d34a50dabacd8a2812c4fe2f80016"
+    },
+    "nested-inline/focused-v4/prealloc-candidate.guard.json": {
+      "bytes": 395,
+      "sha256": "1acae09e746430491b05bc01c77a4943063c4b8d2bea37cd4eb0c58c1abf7f32"
+    },
+    "nested-inline/focused-v4/default-candidate.log": {
+      "bytes": 373,
+      "sha256": "71e3b7171f1e9904072b2b34a751e851772ebf1f5f6d1e5c45e023634b36be25"
+    },
+    "nested-inline/focused-v4/summary.json": {
+      "bytes": 1633,
+      "sha256": "28f2b785e176c8c397bceb0a00bb11e3e1175a2dec5f414c9d2ea82b5bec2cdf"
+    },
+    "nested-inline/focused-v4/none-test-main-disassembly.txt": {
+      "bytes": 12229,
+      "sha256": "1d6f6721885af4e8c898d768cd18baab500bd654a73bb762e32bd5aed2ab77c3"
+    },
+    "nested-inline/focused-v4/prealloc-compile.log": {
+      "bytes": 8799,
+      "sha256": "2d3f7a49f3cd403c2a2d452e448c4043fbb4342ee1a3c4ab30a4659e3e012862"
+    },
+    "nested-inline/focused-v4/prealloc.c.i": {
+      "bytes": 33558124,
+      "sha256": "a9dbd7a21a96c172e81d154feeab721cebaea80e1ac0df28ba415e78cdee7ca4"
+    },
+    "nested-inline/focused-v4/prealloc-control.log": {
+      "bytes": 365,
+      "sha256": "61a2f7c2278ba6c77fb9a92aa124bfe07bbd80ad0e8b5d222201c2df0060b256"
+    },
+    "nested-inline/focused-v4/prealloc-test-main-disassembly.txt": {
+      "bytes": 12603,
+      "sha256": "bbea4e20ab14b41f02304ea0cb67bb6bb14e3680e93e9b0c76d4519d882f3488"
+    },
+    "nested-inline/focused-v4/prealloc-compile-command.json": {
+      "bytes": 1444,
+      "sha256": "63f74ae7a0a6be4fab2deb2f1bfe3df9e1dfafba0a2c2606764f98bc1b73c18b"
+    },
+    "nested-inline/focused-v4/default-control.log": {
+      "bytes": 373,
+      "sha256": "4e4c6304a726552875996598e938b2973f38e4f2ae3cb1e9b34b56f5a0996e2e"
+    },
+    "nested-inline/focused-v4/results.json": {
+      "bytes": 759,
+      "sha256": "106a981235c0ab69b6ef3463085675ebbea11c0b319451fbddb52c9e779d7292"
+    },
+    "nested-inline/focused-v4/default-compile.log": {
+      "bytes": 5194,
+      "sha256": "1d9d1fa1fc02b56605b11eea23a08681871e5f0663cad20fde0baf08e0e1b6e3"
+    },
+    "nested-inline/focused-v4/default-compile.guard.json": {
+      "bytes": 1105,
+      "sha256": "49289e0794de493ec9af134858e0e9554ea3cd23c2c2739ee017111161b2ce88"
+    },
+    "nested-inline/focused-v4/default.c": {
+      "bytes": 26176589,
+      "sha256": "5e528116c63f9eb0e8086b017bdfafc460ab505b509ce4356f57c34e81ab8dbf"
+    },
+    "nested-inline/focused-v4/composed-source.v.txt": {
+      "bytes": 19156,
+      "sha256": "a3df6f3f855c77a63ff367e79c24d9deb1436e520d6e4c68ef75044d01a56e8b"
+    },
+    "nested-inline/focused-v4/prealloc-control-command.json": {
+      "bytes": 540,
+      "sha256": "ee3b0ff2b9f5d028c19a9f673aea0b5a949b38c56d94a3622d0fc7a62e51bf23"
+    },
+    "nested-inline/focused-v4/default-test-main-disassembly.txt": {
+      "bytes": 12150,
+      "sha256": "2968ac1dd6bb6a56d7dfa3667540262a685fe53b8b14a6a2590aedd724db52ac"
+    },
+    "nested-inline/focused-v4/none-compile.log": {
+      "bytes": 6378,
+      "sha256": "37902e1bf01fa4ef1604ac48f6e691bd3df38413cc07cf1bccfcb20ce4bfe89c"
+    },
+    "nested-inline/focused-v4/default-compile-command.json": {
+      "bytes": 1187,
+      "sha256": "a5e27dde8e32927c9444b3680200a1a5da5639a9cdba6b079d104ed4fe80698a"
+    },
+    "nested-inline/focused-v4/none-candidate-command.json": {
+      "bytes": 474,
+      "sha256": "4bb968181842de49d72e5bcfc23d9c3249cb66ee0240888de0c1332a17c56ecf"
+    },
+    "nested-inline/focused-v4/none-control.log": {
+      "bytes": 363,
+      "sha256": "13c312f7dfdcdd6ec0f3497cb5737761cf92462db09a35a55292300ea4fd97d1"
+    },
+    "nested-inline/focused-v4/inputs.json": {
+      "bytes": 1344,
+      "sha256": "4e421ead4ba66572b940251656bf0135f2c31e8fec0ca657454faad53b806d43"
+    },
+    "nested-inline/focused-v4/none-candidate.guard.json": {
+      "bytes": 400,
+      "sha256": "fcd82c3c57417c0647295bb0ed7683e9980f46af0948c6e270cfcec03a4b5c71"
+    },
+    "nested-inline/focused-v4/none.c": {
+      "bytes": 26167149,
+      "sha256": "6fd71db44043e9fee6f587ba5a1768fdf0fe210ab3d856515188932bbd119053"
+    },
+    "nested-inline/focused-v4/prealloc-compile.guard.json": {
+      "bytes": 1366,
+      "sha256": "f60bdd237da8207ab6f2971f4fba41ba8cc24f5c97c91dc2ba4046c79d4a24d2"
+    },
+    "nested-inline/focused-v4/none-control.guard.json": {
+      "bytes": 391,
+      "sha256": "95f8c4234256db9083076bfb79880da30dff9376e63f98a8207527a1d4be5c1d"
+    },
+    "nested-inline/focused-v4/default-control-command.json": {
+      "bytes": 537,
+      "sha256": "b513d782e737d9d3ac461d1b631fde5c6533e4a60c6e79ac18eab8aa14a88824"
+    },
+    "nested-inline/focused-v4/default-candidate.guard.json": {
+      "bytes": 401,
+      "sha256": "14133ef855f9d1330fc0f330af9f9df1520eed05299fd9031f23b3e96cf8a2cf"
+    },
+    "nested-inline/focused-v4/execution-proof.json": {
+      "bytes": 3117,
+      "sha256": "51af13d548aedf8eb5734f074454524de6aeca32e0b7464e617a733ba55a30de"
+    },
+    "nested-inline/focused-v4/none-control-command.json": {
+      "bytes": 528,
+      "sha256": "39ec4fc8c219f663e5782e25b9ea31ba353ba04237348b04feeba9eb94bf7b33"
+    },
+    "nested-inline/focused-v4/prealloc-candidate-command.json": {
+      "bytes": 486,
+      "sha256": "e9f133d0e0b3ed30cf5015517bc6e8ba59ac6b72c0c4e1a626dcc71245898ae5"
+    },
+    "nested-inline/focused-v4/prealloc-control.guard.json": {
+      "bytes": 393,
+      "sha256": "7a624926b074a4122364e241df7cd57b3a77e6b2e6320add7ffece5d3502ce9e"
+    },
+    "nested-inline/focused-v4/none-compile.guard.json": {
+      "bytes": 1125,
+      "sha256": "1e9d3e8ad3bf594d672845a7007f4e247074e6833cf850ff062e3cad770b8af9"
+    },
+    "nested-inline/focused-v4/prealloc.c": {
+      "bytes": 26449522,
+      "sha256": "98eac5614e583dd69231db500d0c2cb40925f30b924938133e1fd96c45147c0e"
+    },
+    "nested-inline/focused-v4/none-compile-command.json": {
+      "bytes": 1201,
+      "sha256": "1ac9ef2b2eac9c0707b89b6b3b73a61ae7005c8f208b3273b24977fef2aae671"
+    },
+    "nested-inline/focused-v4/none-candidate.log": {
+      "bytes": 372,
+      "sha256": "71f45632f64ef7b1f55d28fd3e9b5075379960ef420fd686367706fb616ea1e7"
+    },
+    "nested-inline/focused-v4/prealloc-candidate.log": {
+      "bytes": 367,
+      "sha256": "772c6730aa83ac679629da89af7803611fc0794669df732fff7d516e09dccc38"
+    },
+    "production-receipt/result.json": {
+      "bytes": 1298,
+      "sha256": "8700b7a80559a4fb098d33ed48de1966b5e4eddc9a24f36e236d28538ef1acad"
+    },
+    "production-receipt/memory.json": {
+      "bytes": 420,
+      "sha256": "d5c354423664df19f75e7a7ac117c3455cc789dcdd0e32dcc626239ea6a5ac67"
+    },
+    "production-receipt/frozen-compile.json": {
+      "bytes": 132557,
+      "sha256": "893b7862551eafe03d312db82450d03bba2c5d5d52a7e2aca6a857e0c2f56471"
+    },
+    "production-receipt/preprocess-commands.json": {
+      "bytes": 13044,
+      "sha256": "13e3f56be82e9a641c71b49bc7daf03e74d5c6877b8d7e3061d37ae31bde6cb1"
+    },
+    "production-receipt/smoke.log": {
+      "bytes": 661,
+      "sha256": "ac81648707ff84722bdbd81113adc10214fa2c094cdf655405b5d52b45a3001a"
+    },
+    "production-receipt/smoke-memory.json": {
+      "bytes": 422,
+      "sha256": "5a47c76f033005218533787e9d9f94d5adc20b65514aa6bf0f221174023bf9fd"
+    },
+    "production-receipt/inputs-before.json": {
+      "bytes": 258,
+      "sha256": "e8f3384a38ebec56da61a12e3a92ec5170a2ea0238b2faf1fcaff05074e2cad3"
+    },
+    "production-receipt/build-script.json": {
+      "bytes": 196,
+      "sha256": "b690108073d5a5177153c5b0cf6b5f43d47b97b8ec6d779a4813a5f7d471bf29"
+    },
+    "production-receipt/build.log": {
+      "bytes": 18850,
+      "sha256": "f075782c410f086fcbac6f9e9b30755c417c484bffa92cc861db6947a5f6b514"
+    },
+    "production-receipt/0-Vox.c.i": {
+      "bytes": 60954786,
+      "sha256": "953603aea598c0e00c07d4a227842a082959bd0638da1a28d1a2b26511871e24"
+    }
+  }
+}

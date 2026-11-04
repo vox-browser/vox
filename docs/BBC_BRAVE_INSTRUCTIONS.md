@@ -34,6 +34,26 @@ and [verified raw evidence](performance/raw/bbc-cohort88-query-envelope-20261104
 These remain frozen-page observations with the rendering and scripting
 limitations below; no new live-site fix is claimed.
 
+A nested inline measurement experiment (`8cc7849e3`) passes 48 focused case
+executions and 301 instruction-tool tests. Both native production arms preserve
+the original pixels, complete content and all 72 external scripts, but the cache
+never reuses a result before PNG. A read-only debugger trace validates 400 bounded
+entry observations: 172 are committed layouts, while the measured subtrees contain
+positioned, replaced or atomic content excluded by this cache. This is a bounded
+diagnostic, not complete inlined-call coverage or performance evidence.
+
+The experiment is removed (`1c6a6d7a6`), with its isolated benchmark control also
+removed (`160735ed5`). All 12 existing inline-cache case executions pass after
+removal across default, no-GC and preallocation modes, as do all 300 remaining
+instruction-tool tests. The initial fixture's optional-pointer argument compiler
+failure and the strict C comparator's expected test/production assertion and
+fortification differences remain retained. No exact whole-function C equivalence
+is claimed. **Cohort 89 is not launched**, and the historical total remains 88
+cohorts / 1,961 attempted acceptance browser trials. A newer production bundle
+must validate the removal; the pinned experiment bundle is only historical
+evidence. See the [unused-path ledger](performance/bbc-nested-inline-unused-20261104.json)
+and [verified raw evidence](performance/raw/bbc-nested-inline-unused-20261104.tar.gz).
+
 Earlier cohort 87 completes all seven alternating matched
 control/Vox/Brave triples. All 21 original pixel, complete-content, ownership,
 input-identity and normal native-exit checks pass. Vox's median is
