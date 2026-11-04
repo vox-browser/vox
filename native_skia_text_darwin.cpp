@@ -5321,6 +5321,33 @@ static bool svg_batch_has_complete_raster_clips(CGContextRef destination,
     return true;
 }
 
+// A clip that contains the leaf's coverage cannot soften its pixels twice. Keep
+// those leaves on the ordinary sparse raster path instead of starting a GPU
+// picture just because their SVG viewport installed a clip. Test in each
+// clip's local space so rounded corners, translations and reflected scales
+// retain the batch path whenever they can cut the leaf.
+static bool svg_leaf_intersects_raster_clip(CGContextRef destination, SkRect const& bounds,
+    float scale = 1)
+{
+    auto found = s_shared_clips.find(destination);
+    if (found == s_shared_clips.end()) return false;
+    if (!(scale > 0) || !std::isfinite(scale) || !bounds.isFinite()) return true;
+    // Separate geometric edges can still contribute to the same device pixel.
+    // Preserve the joint GPU coverage until a whole pixel separates them.
+    auto coverage = bounds.makeOutset(1 / scale, 1 / scale);
+    bool intersects = false;
+    for (auto const& clip : found->second.clips) {
+        SkMatrix inverse;
+        if (!clip.matrix.invert(&inverse)) return true;
+        auto local = inverse.mapRect(coverage);
+        // Another clip can exclude the leaf altogether, even if an earlier
+        // edge crossed it. No visible coverage then needs joint rasterization.
+        if (!SkRect::Intersects(clip.rect.rect(), local)) return false;
+        intersects |= !clip.rect.contains(local);
+    }
+    return intersects;
+}
+
 static bool solid_svg_has_standard_samples()
 {
     static bool const supported = [] {
@@ -5710,9 +5737,12 @@ extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destinatio
     // SVG picture. Applying Quartz's clip to an already resolved leaf bitmap
     // attenuates its edge samples again. The batch bridge retains the real
     // clips and publishes without that second application when fully audited.
+    // Fully contained leaves do not meet an edge and keep the cheap path.
     if (s_chromium_painting && has_fill && !has_stroke && fill_alpha == 255
         && (!fill_components || fill_components[3] == 1)
         && !shared_recording_canvas(destination)
+        && svg_leaf_intersects_raster_clip(destination, device_bounds,
+            raster_scale_for_context(destination))
         && svg_batch_has_complete_raster_clips(destination, canvas_width, canvas_height,
             raster_scale_for_context(destination))) {
         RasterRegion bounds;
