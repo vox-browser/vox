@@ -142,8 +142,29 @@ int main()
     check(cache.select("huge", invalid, 1) == -1, "size overflow is rejected before reading memory");
     invalid = image; invalid.pitch = 1;
     check(cache.select("stride", invalid, 2) == -1, "short rows are rejected");
-    invalid = image; invalid.flags = 4;
-    check(cache.select("planar", invalid, 2) == -1, "planar inputs retain their own path");
+    for (int flags : {4, 12, 28, 12 | VOX_GRAPHITE_IMAGE_YUV422}) {
+        Cache planar_cache;
+        auto planar = image; planar.width = 17; planar.height = 13; planar.pitch = 68;
+        planar.flags = flags; planar.nearest = 1;
+        int cw = flags & 16 ? 17 : 9, ch = flags & (16 | VOX_GRAPHITE_IMAGE_YUV422) ? 13 : 7;
+        std::vector<uint8_t> planes(17 * 13 + 2 * cw * ch, 91); planar.pixels = planes.data();
+        check(planar_cache.select("planes", planar, 0) == 0, "original planar decode");
+        check(planar_cache.select("planes", planar, 2) == 0, "planar draw reuses larger decode");
+        planes.back()++;
+        check(planar_cache.select("planes", planar, 2) == 2, "last chroma byte invalidates decode");
+        planes.back()--;
+        check(planar_cache.select("planes", planar, 3) == 3, "returning chroma cannot revive old decode");
+        planar.nearest = 0;
+        check(planar_cache.select("planes", planar, 4) == 3, "nearest decode is compatible with smoothing");
+        planar_cache.clear();
+        check(planar_cache.select("planes", planar, 0) == 0, "full-size smooth decode");
+        planar.nearest = 1;
+        check(planar_cache.select("planes", planar, 2) == 0, "unscaled smooth source is compatible with nearest");
+        planar_cache.clear(); planar.nearest = 0;
+        check(planar_cache.select("planes", planar, 1) == 1, "scaled smooth planes");
+        planar.nearest = 1;
+        check(planar_cache.select("planes", planar, 2) == 2, "nearest draw replaces scaled smooth planes");
+    }
     invalid = image; invalid.flags = 64;
     check(cache.select("repeat", invalid, 2) == -1, "repeated inputs retain their own path");
     check(cache.select("level", image, 31) == -1, "invalid mip levels are rejected");

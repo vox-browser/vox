@@ -560,6 +560,13 @@ int main(int argc, char** argv)
         assert(upload.pending);
         uploads.finish(std::move(upload), texture);
         assert(uploads.prepare(yuv, 3, 3, false).texture == texture);
+        auto nearest = yuv; nearest.nearest = 1;
+        assert(uploads.prepare(nearest, 3, 3, false).texture == texture);
+        upload = uploads.prepare(yuv, 2, 2, false);
+        uploads.finish(std::move(upload), texture);
+        assert(!uploads.prepare(nearest, 2, 2, false).texture);
+        upload = uploads.prepare(yuv, 3, 3, false);
+        uploads.finish(std::move(upload), texture);
         // Do not turn a planar upload into an RGBA copy while adding mips.
         auto planar_mips = uploads.prepare(yuv, 3, 3, true);
         assert(!planar_mips.texture && planar_mips.pending && !planar_mips.needs_mipmaps);

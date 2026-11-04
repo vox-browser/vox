@@ -58,6 +58,8 @@ public:
             auto const& prior = entry.image;
             if (entry.upload_width != upload_width || entry.upload_height != upload_height
                 || prior.width != image.width || prior.height != image.height
+                || ((image.flags & 4) && (upload_width != image.width || upload_height != image.height)
+                    && prior.nearest != image.nearest)
                 || prior.flags != image.flags || prior.has_color_profile != image.has_color_profile
                 || (image.has_color_profile && std::memcmp(prior.color_profile, image.color_profile, sizeof(image.color_profile)))) continue;
             bool equal = true;

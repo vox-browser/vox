@@ -2201,7 +2201,7 @@ static void retain_compatible_image_decode(VoxGraphiteImage& image,
     float width = image.width * sx, height = image.height * sy;
     if (!std::isfinite(width) || !std::isfinite(height) || width <= 0 || height <= 0) return;
     int requested = 0;
-    if (!image.nearest) {
+    if (!image.nearest || (image.flags & 4)) {
         for (int level = 1; level <= 30; ++level) {
             int w = vox_image_decode_axis(image.width, level);
             int h = vox_image_decode_axis(image.height, level);

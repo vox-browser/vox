@@ -50,7 +50,8 @@ def main():
         args.graphite_library = args.graphite_library.resolve()
         paths += [args.graphite_library, REPO / 'tools/native_avif_yuv_test.cpp',
                   REPO / 'native_graphite_bridge.h',
-                  REPO / 'Tests/Browser/Brave/expected/avif-yuv-sampling.png']
+                  REPO / 'Tests/Browser/Brave/expected/avif-yuv-sampling.png',
+                  REPO / 'Tests/Browser/Brave/expected/avif-image-paths.png']
     pins = lambda: {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
     before = pins()
     (output / 'identities.json').write_text(json.dumps(before, indent=2) + '\n')
@@ -70,7 +71,8 @@ def main():
             '-framework', 'ImageIO', '-framework', 'CoreFoundation', '-o', str(pixel_test)], 12),
             ('pixel-runtime', [str(pixel_test), str(args.graphite_library),
                 str(resources / 'slate-hero.jpeg'),
-                str(REPO / 'Tests/Browser/Brave/expected/avif-yuv-sampling.png')], 3)]
+                str(REPO / 'Tests/Browser/Brave/expected/avif-yuv-sampling.png'),
+                str(REPO / 'Tests/Browser/Brave/expected/avif-image-paths.png')], 3)]
     results = []
     environment = dict(os.environ, ASAN_OPTIONS='detect_leaks=0')
     for phase, command, limit in commands:

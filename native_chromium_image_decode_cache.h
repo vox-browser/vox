@@ -117,16 +117,24 @@ public:
         if (identity.empty() || identity.size() > 16384 || !entry_limit
             || !image.pixels || image.width <= 0 || image.height <= 0
             || image.pitch <= 0 || level < 0 || level > 30
-            || (image.flags & (4 | 64 | 128))
+            || (image.flags & (64 | 128))
             || size_t(image.width) > limit / size_t(image.height) / 4) {
             forget(identity);
             return -1;
         }
         size_t row_bytes = size_t(image.width) * 4;
-        size_t source_bytes = row_bytes * size_t(image.height);
+        size_t rows = image.height, pitch = image.pitch;
+        if (image.flags & 4) {
+            size_t w = image.width, h = image.height;
+            size_t uv_w = image.flags & 16 ? w : (w + 1) / 2;
+            size_t uv_h = image.flags & (16 | VOX_GRAPHITE_IMAGE_YUV422) ? h : (h + 1) / 2;
+            row_bytes = w * h + 2 * uv_w * uv_h;
+            rows = 1; pitch = row_bytes;
+        }
+        size_t source_bytes = row_bytes * rows;
         size_t cost = source_bytes + identity.size() + sizeof(Entry)
             + request_limit * sizeof(Request);
-        if (row_bytes > size_t(image.pitch) || cost > limit) {
+        if (row_bytes > pitch || cost > limit) {
             forget(identity);
             return -1;
         }
@@ -134,15 +142,24 @@ public:
             if (it->identity != identity) continue;
             auto const& prior = it->image;
             bool same = prior.width == image.width && prior.height == image.height
-                && (prior.flags & 1) == (image.flags & 1)
+                && (prior.flags & (1 | 4 | 8 | 16 | VOX_GRAPHITE_IMAGE_YUV422))
+                    == (image.flags & (1 | 4 | 8 | 16 | VOX_GRAPHITE_IMAGE_YUV422))
                 && prior.has_color_profile == image.has_color_profile
                 && (!image.has_color_profile || !std::memcmp(prior.color_profile,
                     image.color_profile, sizeof(image.color_profile)));
-            for (int y = 0; same && y < image.height; ++y)
+            for (size_t y = 0; same && y < rows; ++y)
                 same = !std::memcmp(it->source.data() + size_t(y) * row_bytes,
-                    image.pixels + size_t(y) * image.pitch, row_bytes);
+                    image.pixels + size_t(y) * pitch, row_bytes);
             if (!same) { erase(it); break; }
             int selected = std::min(level, it->completed_level);
+            // A complete source is compatible with every filter. A scaled
+            // planar decode retains the CPU filter used to prepare its planes.
+            if ((image.flags & 4) && image.nearest && !prior.nearest) {
+                bool original = it->completed_level == 0;
+                for (auto const& request : it->requests)
+                    original |= request.scope == scope && request.selected == 0;
+                if (!original) { erase(it); break; }
+            }
             for (auto const& request : it->requests) {
                 // A retained picture keeps its in-use result even if another
                 // picture subsequently decodes the resource at a larger size.
@@ -170,9 +187,9 @@ public:
         entry.requests.push_back({scope, level, level});
         entry.cost = cost;
         entry.source.resize(source_bytes);
-        for (int y = 0; y < image.height; ++y)
+        for (size_t y = 0; y < rows; ++y)
             std::memcpy(entry.source.data() + size_t(y) * row_bytes,
-                image.pixels + size_t(y) * image.pitch, row_bytes);
+                image.pixels + size_t(y) * pitch, row_bytes);
         bytes += cost;
         entries.push_front(std::move(entry));
         return level;

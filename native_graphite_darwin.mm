@@ -461,11 +461,12 @@ static void plan_image_draw(VoxGraphiteImage const* image, PreparedImageDraw& pr
         * image->destination[2] / image->source[2];
     float sy = std::hypot(image->matrix[1], image->matrix[4])
         * image->destination[3] / image->source[3];
-    int decode_level = image->nearest ? 0 : vox_image_decode_level(image->flags);
+    bool planar_nearest = image->nearest && (image->flags & 4);
+    int decode_level = image->nearest && !planar_nearest ? 0 : vox_image_decode_level(image->flags);
     if (decode_level >= 0) {
         upload_width = vox_image_decode_axis(image->width, decode_level);
         upload_height = vox_image_decode_axis(image->height, decode_level);
-    } else if (!image->nearest) {
+    } else if (!image->nearest || planar_nearest) {
         int target_width = std::max(1, static_cast<int>(std::ceil(image->width * sx)));
         int target_height = std::max(1, static_cast<int>(std::ceil(image->height * sy)));
         for (int level = 1; level < 31; ++level) {
@@ -548,7 +549,8 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
                     kGray_8_SkColorType, kOpaque_SkAlphaType),
                     scaled_planes.data() + plane_size * index, upload_width);
                 if (!planes[index].scalePixels(scaled,
-                        SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest))) return false;
+                        image->nearest ? SkSamplingOptions(SkFilterMode::kNearest)
+                            : SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNearest))) return false;
                 planes[index] = scaled;
             }
             prepared.source_scale_x = static_cast<float>(upload_width) / image->width;
