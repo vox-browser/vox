@@ -166,7 +166,10 @@ fn (mut host URLHost) construct(args []voidptr) !voidptr {
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	if count < 1 { return error('TypeError: URL requires at least 1 argument') }
 	converted := host.input(args, 1)!
-	url := domurl.DOMURL.create_from_url(converted.input, converted.base)!
+	record := host.base_parser.parse(converted.input, converted.base) or {
+		return error('TypeError: Invalid URL')
+	}
+	url := domurl.DOMURL.create(record)
 	object := host.wrap(url)!
 	C.JSObjectSetPrototype(host.runtime.context, object, host.argument(args, 0))
 	return object
@@ -235,11 +238,11 @@ fn (mut host URLHost) operate(name string, receiver voidptr, args []voidptr) !vo
 	}
 	converted := host.input(args, 0)!
 	if name == 'canParse' {
-		return C.vox_jsc_JSValueMakeBoolean(host.runtime.context, domurl.DOMURL.can_parse(converted.input,
-			converted.base))
+		return C.vox_jsc_JSValueMakeBoolean(host.runtime.context,
+			host.base_parser.parse(converted.input, converted.base) != none)
 	}
-	if parsed := domurl.DOMURL.parse_for_bindings(converted.input, converted.base) {
-		return host.wrap(parsed)
+	if parsed := host.base_parser.parse(converted.input, converted.base) {
+		return host.wrap(domurl.DOMURL.create(parsed))
 	}
 	return C.vox_jsc_JSValueMakeNull(host.runtime.context)
 }

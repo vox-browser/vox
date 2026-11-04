@@ -24,6 +24,7 @@ mut:
 	to_dom_string voidptr
 	records       map[voidptr]&URLHostRecord
 	by_wrapper    map[voidptr]&URLHostRecord
+	base_parser   domurl.URLBaseParser
 	closed        bool
 }
 
@@ -46,6 +47,7 @@ pub fn URLHost.create_for_settings(settings &html.EnvironmentSettingsObject) !&U
 pub fn (mut host URLHost) close() {
 	if host.closed { return }
 	host.closed = true
+	host.base_parser.clear()
 	host.records = {}
 	host.by_wrapper = {}
 }

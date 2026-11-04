@@ -53,6 +53,19 @@ fn test_native_url_direct_usv_encoding_preserves_pairs_invalid_runs_and_coercion
 	assert runtime.evaluate_host(r'(()=>{let calls=0;const key={toString(){calls++;return "x"}},value={toString(){calls++;return String.fromCharCode(0xd800)}};const p=new URLSearchParams();p.append(key,value);return calls===2&&p.get("x")==="�"})()')! == 'true'
 }
 
+fn test_native_url_base_cache_preserves_coercion_reentry_and_fresh_objects() {
+	$if !darwin { return }
+	mut runtime := native_url_runtime()
+	defer { runtime.close() }
+	assert runtime.evaluate_host(r'(()=>{let calls=0;const base={toString(){calls++;return "https://base.test/a/"}};const first=new URL("child",base),second=URL.parse("child",base);first.pathname="/changed";return calls===2&&first!==second&&second.href==="https://base.test/a/child"&&URL.canParse("child",base)&&calls===3})()')! == 'true'
+	assert runtime.evaluate_host(r'(()=>{const marker={};let count=0;const base={toString(){if(++count===2)throw marker;return "https://base.test/"}};new URL("one",base);try{new URL("two",base)}catch(e){return e===marker&&count===2}return false})()')! == 'true'
+	assert runtime.evaluate_host(r'(()=>{const base={toString(){new URL("inside","https://inner.test/");return "https://outer.test/"}};return new URL("outside",base).href==="https://outer.test/outside"&&URL.parse("https://absolute.test/","bad base")===null&&!URL.canParse("https://absolute.test/","bad base")})()')! == 'true'
+	actual := runtime.evaluate_host_value('new URL("../survivor","https://user:pass@escaped.test:8443/a/")')!
+	native := runtime.native_url(actual)!
+	runtime.close()
+	assert native.href() == 'https://user:pass@escaped.test:8443/survivor'
+}
+
 fn test_native_url_same_object_query_and_live_iterator_share_genuine_owners() {
 	$if !darwin { return }
 	mut runtime := native_url_runtime()
