@@ -1,0 +1,136 @@
+{
+  "status": "Fresh production candidate/control captures pass native exits, original content/pixels,72original external sources and all actual native-image pins, but decoded-image flex reuse never fires. No workload eligibility or performance credit. Cohort93 remains unlaunched.",
+  "checks": [
+    {
+      "arm": "vox",
+      "passed": false,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": false,
+      "runtime_images_pinned": true
+    },
+    {
+      "arm": "control",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": false,
+      "runtime_images_pinned": true
+    }
+  ],
+  "production": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "7ce37121784a00da11f4099f0df0fbabc8a68cc48a948625d1b40739457bc552",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-223228-0f7e2e46/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "7e3543dd67b6c6420b05b3cbba818b0b0762839ba17f3f5e7dd828f0d8cf6fdb",
+      "dirty": true,
+      "head": "c98a5bcf453d4f3c26b8a16d25a60e3dfcb62079",
+      "repository_sha256": "b5d7066c835cb0100b013ce4febeb88c1d8ff0bf9eefb1dd281d9cc96eeb71e8"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "101a2c94c0d4f788c9b67467f220189d8b10284c4884b45263c398e6f0c74bed",
+      "dirty": true,
+      "head": "55b404beb37ff61a230fbc1e9b0aa912f6c96f9c",
+      "repository_sha256": "efe26961a31066979afa7120d53c2926f2965885c1b8321a584b6486eb7fd57b"
+    },
+    "request": {
+      "head": "c98a5bcf453d4f3c26b8a16d25a60e3dfcb62079",
+      "id": "59fc933e9ae547e3b59cd5f255b209ed"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "7e3543dd67b6c6420b05b3cbba818b0b0762839ba17f3f5e7dd828f0d8cf6fdb",
+      "dirty": true,
+      "head": "c98a5bcf453d4f3c26b8a16d25a60e3dfcb62079",
+      "repository_sha256": "0f643aa2427fa78457357497125796fb77b5ba7f7f44a8cf7d49f8985128156b"
+    }
+  },
+  "source_proof": {
+    "preserved_source": "/Users/alex/code/vox2/Build/bbc-flex-images-20261104-2225/production/native-diagnostic/production-compilation/7ce37121784a00da11f4099f0df0fbabc8a68cc48a948625d1b40739457bc552/0-0-Vox.c.i",
+    "sha256": "b67cfa005dc0ca8f943ca84f17b6729b220a6de5aa34363fe2a97abaf1d2b408",
+    "witnesses": {
+      "Vox flex images: reused decoded image measurement": true,
+      "layout__grid_measurement_inputs_are_current": true,
+      "layout__retained_block_image_input": true,
+      "disable_flex_image_measurement_reuse": true
+    },
+    "hash_matches": true
+  },
+  "native_controller_exit": {
+    "exit": 1
+  },
+  "native_guard": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/Build/bbc-flex-images-20261104-2225/native-diagnostic.py",
+      "--capture-reference",
+      "--output",
+      "/Users/alex/code/vox2/Build/bbc-flex-images-20261104-2225/production/native-diagnostic",
+      "--archive",
+      "/Users/alex/code/vox2/Build/bbc-flex-images-20261104-2225/fixture/clock-archive-v3",
+      "--memory-guard-registry",
+      "/Users/alex/code/vox2/Build/bbc-flex-images-20261104-2225/production/native-pids.json",
+      "--diff-tool",
+      "Build/pixel-tools/pixel_diff",
+      "--expected-vox",
+      "/Users/alex/code/vox2/Build/bbc-flex-images-20261104-2225/fixture/reference-complete/pair-1-vox/document.png",
+      "--expected-brave",
+      "/Users/alex/code/vox2/Build/bbc-flex-images-20261104-2225/fixture/reference-complete/pair-1-brave/document.png",
+      "--preserve-inputs",
+      "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+      "--control-vox-app",
+      "Build/v/Vox.app",
+      "--control-disable-flex-image-measurement-reuse",
+      "--retain-logical-paint-snapping",
+      "--retain-css-layout-for-svg"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "38904": "Wed Nov  4 22:44:12 2026    ",
+      "38908": "Wed Nov  4 22:44:12 2026    ",
+      "39893": "Wed Nov  4 22:44:19 2026    ",
+      "39899": "Wed Nov  4 22:44:19 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1331658752,
+    "elapsed_seconds": 16.911866250000003,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "history": {
+    "cohorts": 92,
+    "browser_attempts": 2022
+  },
+  "target_met": false,
+  "catalog_entry_added": false,
+  "archive": {
+    "path": "docs/performance/raw/bbc-flex-image-native-20261104.tar.gz",
+    "bytes": 10375658,
+    "sha256": "03d69dcbb6cbc11a5350ed8e2f289f85a43d5af82ddfa2fe8e5967edfa1205f9",
+    "members": 52,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793821651.408538,
+  "archive_completion_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-flex-images-20261104-2225/archive-native.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 84443136,
+    "elapsed_seconds": 2.427721042,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

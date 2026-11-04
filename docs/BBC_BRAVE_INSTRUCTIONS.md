@@ -1,5 +1,26 @@
 # BBC homepage instruction comparison
 
+**Unshifted-relative measurement follow-up:** `f9cfbc509` extends grid/flex
+measurement reuse to relative boxes whose insets are all `auto`, using the shared
+closed-flow proof. Out-of-flow descendants, shifted/sticky positions and SVG
+remain excluded. Root/descendant geometry, glyphs, ancestor bases and live inset
+changes match independent uncached layout in **189 focused executions**, across
+three GC modes and three control arms. All 21 executable case calls are verified.
+Isolated tool control is `472936232`; **278 browser-instruction tests** pass.
+Native eligibility still requires the next completed production bundle. No
+instruction saving or target acceptance is credited. See the
+[focused ledger](performance/bbc-relative-measurement-focus-20261104.json) and
+[raw evidence](performance/raw/bbc-relative-measurement-focus-20261104.tar.gz).
+
+The preceding decoded-image change now has two fresh production captures on
+`7ce37121784a00da11f4099f0df0fbabc8a68cc48a948625d1b40739457bc552`.
+Both pass original pixels/content, all 72 original external scripts, actual native
+image pins and normal exits, but the new reuse marker never fires. It has **no
+verified BBC workload eligibility and no performance credit**. Cohort 93 remains
+unlaunched; history stays at 92 cohorts / 2,022 browser attempts. See the
+[native ledger](performance/bbc-flex-image-native-20261104.json) and
+[raw captures](performance/raw/bbc-flex-image-native-20261104.tar.gz).
+
 **Decoded-image flex follow-up:** `3e85d7380` lets closed within-pass flex
 measurements include available non-SVG HTML images. The existing live validator
 checks source and natural size before replay. Source replacements, changed aspect
