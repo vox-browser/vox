@@ -7730,6 +7730,11 @@ fn (mut app BrowserApp) draw() {
 			return
 		}
 		$if macos { C.native_cancel_capture_retry() }
+		if app.restore_capture_focus_if_requested() {
+			request_browser_frame()
+			$if macos { C.native_schedule_capture_retry(capture_scroll_retry_needs_frame, voidptr(&app)) }
+			return
+		}
 		app.screenshot_scheduled = true
 		if os.getenv('VOX_CAPTURE_DOCUMENT_ONLY') == '1' {
 			$if macos {

@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { captureArchive, captureEncodedResponseCache } from './capture_archive.mjs';
 import { createOracleProfile, saveClosedOracleProfile } from './oracle_profile.mjs';
 import {closeOracleBrowser} from './oracle_shutdown.mjs';
+import {parseArchiveFocus,restoreArchiveFocus} from './archive_focus.mjs';
 import { capturePixelReference, referenceLaunchArguments, waitForPixelDocument } from './pixel_reference.mjs';
 import { navigationObservation } from './navigation.mjs';
 import { hasHeaderFilter, requestIdentity, summarizeRequestParity } from './request_stream.mjs';
@@ -32,6 +33,7 @@ const options = {
     'capture-dir': '',
     'cache-preparation-dir': '',
     'cached-response-headers': '',
+    'focus-state': '',
     'profile-template': '',
     'profile-output': '',
     'pixel-reference': '',
@@ -46,6 +48,7 @@ for (let i = 2; i < process.argv.length; i += 2) {
     options[key] = process.argv[i + 1];
 }
 options.settle = Number(options.settle);
+const archiveFocus=parseArchiveFocus(options['focus-state']);
 if (!(options.settle > 0 && options.settle <= 120)) throw new Error('--settle must be 1..120 seconds');
 const recordedVox = options['vox-log']
     ? (await fs.readFile(options['vox-log'], 'utf8')).split(/\r?\n/).filter(line => line.trim()).map(JSON.parse)
@@ -259,6 +262,7 @@ try {
         if (!result.errorText && (options['capture-dir'] || options['pixel-reference'])
             && !await waitForPixelDocument(page,options.url)) result.errorText = 'Pixel capture document did not complete loading';
         await pause(options.settle * 1000);
+        await restoreArchiveFocus(page,archiveFocus);
         const snapshot = await page.evaluate(`({url:location.href,title:document.title,ready_state:document.readyState,body_text_length:document.body?.innerText.length||0,body_text_sample:document.body?.innerText.slice(0,4000)||'',element_count:document.querySelectorAll('*').length})`);
         navigation = navigationObservation(options.url, result, snapshot, page.events);
     }

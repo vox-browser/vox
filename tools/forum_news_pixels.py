@@ -116,12 +116,23 @@ def seal_capture(capture, archive, report_file):
     # Keep the complete full-uBO evidence, including the engine and list hashes.
     write_json(archive / 'capture.json', report)
     shutil.copyfile(capture / 'live.png', archive / 'live.png')
+    focus = captured_focus_state(metadata)
     write_json(archive / 'manifest.json', dict(version=1, url=metadata['url'],
+        **(dict(focus_state=focus) if focus else {}),
         source_document_request_method=metadata.get('document_request_method', 'GET'),
         sealed_unix=time.time(), responses=entries, workload='Frozen guest DOM; scripts removed; original resource bytes',
         live_png_sha256=digest((archive / 'live.png').read_bytes()),
         capture_report_sha256=digest((archive / 'capture.json').read_bytes())))
     load_archive(archive)
+
+
+def captured_focus_state(metadata):
+    focus = metadata.get('active_element')
+    if not focus or focus.get('tag') in ('BODY', 'HTML'):
+        return None
+    if not focus.get('id') or focus.get('focus_visible') is not True:
+        raise RuntimeError('Archive focus state cannot be replayed exactly')
+    return dict(id=focus['id'], tag=focus['tag'], focus_visible=True)
 
 
 def executable_identity(binary):
@@ -177,6 +188,10 @@ def native_capture_environment(profile, certificate, cache, audit, config, reque
 
 
 def check_native(audit, reference):
+    focus = reference.get('active_element') or {}
+    if focus.get('id') and focus.get('tag') not in ('BODY', 'HTML'):
+        if audit.get('active_element') != focus:
+            raise RuntimeError('Native capture did not preserve recorded focus identity')
     if (audit.get('url') != reference['url'] or audit.get('title') != reference['title']
             or audit.get('ready') != 'complete'
             or (audit.get('viewport_width'), audit.get('viewport_height')) != (1024, 768)):
@@ -317,6 +332,9 @@ def capture_case(site, args, output):
         unavailable = read_json(archive / 'status.json')
         raise RuntimeError('Site fixture unavailable: ' + unavailable['reason'])
     manifest = load_archive(archive)
+    focus = manifest.get('focus_state')
+    if focus:
+        common += ['--focus-state', json.dumps(focus, separators=(',', ':'))]
     provenance = archive / 'capture.json'
     if digest(provenance.read_bytes()) != manifest['capture_report_sha256']:
         raise RuntimeError('Capture provenance changed')
@@ -360,6 +378,8 @@ def capture_case(site, args, output):
         actual = output / 'vox.png'
         environment = native_capture_environment(profile, replay.ready['ca'], output / 'vox-cache',
             audit, config, requests, args.settle)
+        if focus:
+            environment.update(VOX_CAPTURE_FOCUS_ID=focus['id'], VOX_CAPTURE_DOCUMENT_ACTIVE='1')
         before = executable_identity(args.vox)
         write_json(output / 'identity.json', before)
         if cache_policy == 'complete':

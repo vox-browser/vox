@@ -7,12 +7,28 @@ from unittest.mock import patch
 
 from forum_news_pixels import (CATALOG, VOX_BUNDLED_ADBLOCK_ASSETS, VOX_RUNTIME_ASSETS, brave_identity, capture_replay_references, capture_site_archive, check_filters, check_native,
                                executable_identity,
+                               captured_focus_state,
                                native_capture_environment, oracle_command, pixel_status, run_case, seal_capture,
                                warm_native_cache, warm_oracle_cache, write_json)
 from page_archive import digest, load_archive
 
 
 class ForumNewsPixelTests(unittest.TestCase):
+    def test_source_focus_is_retained_as_interaction_metadata(self):
+        self.assertIsNone(captured_focus_state({}))
+        self.assertIsNone(captured_focus_state(dict(active_element=dict(tag='BODY',id='',focus_visible=False))))
+        focus=dict(id='consent-banner',tag='DIV',focus_visible=True)
+        self.assertEqual(captured_focus_state(dict(active_element=focus)),focus)
+        for unsupported in [dict(id='',tag='DIV',focus_visible=True),
+                            dict(id='banner',tag='DIV',focus_visible=False)]:
+            with self.assertRaisesRegex(RuntimeError,'cannot be replayed exactly'):
+                captured_focus_state(dict(active_element=unsupported))
+
+    def test_native_capture_rejects_lost_focus_before_pixel_acceptance(self):
+        with self.assertRaisesRegex(RuntimeError,'focus identity'):
+            check_native(dict(active_element=dict(id='',tag='BODY',focus_visible=False)),
+                         dict(active_element=dict(id='banner',tag='DIV',focus_visible=True)))
+
     def test_reference_replays_use_separate_process_commands_with_the_same_cache_template(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary)

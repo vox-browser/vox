@@ -60,6 +60,22 @@ struct CaptureAuditPaintGeometry {
 	path_segments int
 }
 
+struct CaptureAuditActiveElement {
+	id            string
+	tag           string
+	focus_visible bool
+}
+
+fn capture_audit_active_element(document &dom.Document) CaptureAuditActiveElement {
+	if node := document.focused_area() {
+		if element := node.as_element() {
+			return CaptureAuditActiveElement{element.get_attribute_value('id'),
+				element.local_name().to_upper(), element.should_indicate_focus()}
+		}
+	}
+	return CaptureAuditActiveElement{tag: 'BODY'}
+}
+
 struct CaptureAuditImage {
 	model_present  bool
 	complete       bool
@@ -155,6 +171,7 @@ struct CaptureAudit {
 	font_faces             []CaptureAuditFontFace
 	paint_commands         int
 	paint_geometry         []CaptureAuditPaintGeometry
+	active_element         CaptureAuditActiveElement
 	javascript_diagnostics []string
 	// Native HTML timer/event exceptions bypass the compact bridge log.
 	native_reported_error_count int
@@ -302,6 +319,7 @@ fn (app &BrowserApp) collect_capture_audit(config CaptureAuditConfig) !CaptureAu
 		font_faces:                  font_faces
 		paint_commands:              app.paint_commands.len
 		paint_geometry:              paint_geometry
+		active_element:              capture_audit_active_element(app.document)
 		javascript_diagnostics:      app.js_messages.clone()
 		native_reported_error_count: native_reported_error_count
 		native_reported_errors:      native_reported_errors
