@@ -4167,8 +4167,912 @@
           "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
           "bytes": 441
         }
+      },
+      {
+        "folder": "Build/chatgpt-full-production-20261104-1017",
+        "notes": "Seven complete alternating unprofiled production pairs with the corrected snapshot-disabled, unfocused protocol. Executable 69b3556c contains both CSS features and font packet serialization cache. All fourteen browser exits/content/pixels pass, all inputs stable, target fails. No exclusions or retries.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "brave_median_lower_bound_instructions": 20854408914,
+          "diagnostic_only": false,
+          "instruction_scope": "launch",
+          "minimum_pairs": 7,
+          "optimization_credit": false,
+          "pairs": 7,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+          "target_vox_fraction": 0.95,
+          "vox_median_instructions": 36938985119,
+          "worst_vox_over_best_brave": 1.8800279737809684
+        },
+        "observations": [
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 20757880165,
+              "upper": 20804705096
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15351,
+            "started_unix": 1793776571.5420501,
+            "finished_unix": 1793776578.69679,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                3.49267578125,
+                8.2734375,
+                19.3896484375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                3.61328125,
+                8.21875,
+                19.30517578125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-1-brave/result.json",
+              "sha256": "e360d8003ad448ef1c22527f6ee1b1d701248de1dcf40caf8f058880950550ac",
+              "bytes": 114277
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-1-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 37063606802,
+              "upper": 37063606802
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15349,
+            "started_unix": 1793776564.316294,
+            "finished_unix": 1793776570.732994,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                3.44873046875,
+                8.345703125,
+                19.48046875
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                3.49267578125,
+                8.2734375,
+                19.3896484375
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-1-vox/result.json",
+              "sha256": "8fa4bab5fe9363d8c4bc2cec6298ff490ad96217dbea435c78cccf985ae13afe",
+              "bytes": 302350
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-1-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 20118909279,
+              "upper": 20233525628
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15353,
+            "started_unix": 1793776579.5183098,
+            "finished_unix": 1793776586.697373,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                3.56396484375,
+                8.1318359375,
+                19.20947265625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                3.4384765625,
+                8.02978515625,
+                19.1083984375
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-2-brave/result.json",
+              "sha256": "86ae2f4e3c6276deba6063f37f24d69bd35c78963dd869d7f2fb8fed9f8ce941",
+              "bytes": 114366
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-2-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 37041278986,
+              "upper": 37041278986
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15355,
+            "started_unix": 1793776587.519742,
+            "finished_unix": 1793776594.019257,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                3.4384765625,
+                8.02978515625,
+                19.1083984375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                3.88623046875,
+                7.9775390625,
+                18.96044921875
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-2-vox/result.json",
+              "sha256": "72f2aa054ec2e888c417dba0f03a8bab0405319cac6e0746f3925ee49a63530f",
+              "bytes": 295532
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-2-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 20945197492,
+              "upper": 20981371544
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15359,
+            "started_unix": 1793776602.176789,
+            "finished_unix": 1793776609.3556108,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                3.89501953125,
+                7.9111328125,
+                18.87255859375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                4.13818359375,
+                7.83154296875,
+                18.7158203125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-3-brave/result.json",
+              "sha256": "314a6590a65ba289ae44620c34ed7b46b32b3588621f0b7ad93ff1088f8c5091",
+              "bytes": 131609
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-3-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 37263268810,
+              "upper": 37263268810
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15357,
+            "started_unix": 1793776594.838737,
+            "finished_unix": 1793776601.354629,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                3.88623046875,
+                7.9775390625,
+                18.96044921875
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                3.89501953125,
+                7.9111328125,
+                18.87255859375
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-3-vox/result.json",
+              "sha256": "851f5b11b02acc6ad60a20e883912192d28088f4c02588e6734bcfc289786b7f",
+              "bytes": 300603
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-3-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 20854408914,
+              "upper": 20866668459
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15361,
+            "started_unix": 1793776610.180615,
+            "finished_unix": 1793776617.340312,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                4.13818359375,
+                7.83154296875,
+                18.7158203125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                3.966796875,
+                7.734375,
+                18.61767578125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-4-brave/result.json",
+              "sha256": "ea2d7f224bd6a77be3dc4af6886f7d7ad0ed0d4979b218f08e37fdf203d0444e",
+              "bytes": 114367
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-4-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 36495526429,
+              "upper": 36495526429
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15363,
+            "started_unix": 1793776618.155995,
+            "finished_unix": 1793776624.68397,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                3.966796875,
+                7.734375,
+                18.61767578125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                3.7314453125,
+                7.5615234375,
+                18.4287109375
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-4-vox/result.json",
+              "sha256": "c8b828639f65eb66e217f5ca47d0493c52ce178a792748c19470c4aa3f4d9188",
+              "bytes": 307303
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-4-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 21451914467,
+              "upper": 21453284509
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15367,
+            "started_unix": 1793776632.802725,
+            "finished_unix": 1793776640.013932,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                3.5927734375,
+                7.46875,
+                18.33203125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                4.029296875,
+                7.43603515625,
+                18.193359375
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-5-brave/result.json",
+              "sha256": "8635c0a37418278bd89080272814a01b2c48de6df89d76a6caffee340bc606f4",
+              "bytes": 114316
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-5-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 36802194006,
+              "upper": 36802194006
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15365,
+            "started_unix": 1793776625.488915,
+            "finished_unix": 1793776631.9818208,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                3.7314453125,
+                7.5615234375,
+                18.4287109375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                3.5927734375,
+                7.46875,
+                18.33203125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-5-vox/result.json",
+              "sha256": "8af2d65cfc06c2817935e15143dc3ad6664cca74cb8baa9f50052c135c15fa64",
+              "bytes": 307975
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-5-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 21814505349,
+              "upper": 21837037559
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15369,
+            "started_unix": 1793776640.86309,
+            "finished_unix": 1793776648.01348,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                4.029296875,
+                7.43603515625,
+                18.193359375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                4.02685546875,
+                7.37890625,
+                18.10986328125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-6-brave/result.json",
+              "sha256": "df6258dc60ffadb1c15ea5777eade3a72e38db2b7b884735b68024f856acc1ee",
+              "bytes": 114345
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-6-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 36644727478,
+              "upper": 36644727478
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15371,
+            "started_unix": 1793776648.873891,
+            "finished_unix": 1793776655.296305,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                4.02685546875,
+                7.37890625,
+                18.10986328125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                4.10205078125,
+                7.2841796875,
+                17.9501953125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-6-vox/result.json",
+              "sha256": "5a24b61800f19a26dca672379dbbf95dbdf99a2d9e476c4ecc097c727212fb70",
+              "bytes": 285234
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-6-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 19820592741,
+              "upper": 19838520691
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15375,
+            "started_unix": 1793776663.352334,
+            "finished_unix": 1793776670.567903,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                4.09375,
+                7.2294921875,
+                17.8681640625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                4.37353515625,
+                7.18798828125,
+                17.72900390625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-7-brave/result.json",
+              "sha256": "0af077a426e056c2b48a75a16e0c4deb1775b419ed634c46bd4749ebed3296f6",
+              "bytes": 114353
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-7-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 36938985119,
+              "upper": 36938985119
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15373,
+            "started_unix": 1793776656.140413,
+            "finished_unix": 1793776662.514723,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                4.10205078125,
+                7.2841796875,
+                17.9501953125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                4.09375,
+                7.2294921875,
+                17.8681640625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-full-production-20261104-1017/pair-7-vox/result.json",
+              "sha256": "af76dddb563058a860893de64c6ca908f22ec8ea0fbc10c92a89401482f5a065",
+              "bytes": 296894
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-full-production-20261104-1017/pair-7-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "tools/chatgpt_browser_instructions.py",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-full-production-20261104-1017",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-full-production-20261104-1017-pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "7",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "52671": "Wed Nov  4 10:16:04 2026    ",
+            "52674": "Wed Nov  4 10:16:04 2026    ",
+            "52961": "Wed Nov  4 10:16:11 2026    ",
+            "52967": "Wed Nov  4 10:16:11 2026    ",
+            "52969": "Wed Nov  4 10:16:11 2026    ",
+            "52970": "Wed Nov  4 10:16:11 2026    ",
+            "52971": "Wed Nov  4 10:16:11 2026    ",
+            "53197": "Wed Nov  4 10:16:19 2026    ",
+            "53208": "Wed Nov  4 10:16:19 2026    ",
+            "53212": "Wed Nov  4 10:16:19 2026    ",
+            "53213": "Wed Nov  4 10:16:19 2026    ",
+            "53215": "Wed Nov  4 10:16:19 2026    ",
+            "53472": "Wed Nov  4 10:16:27 2026    ",
+            "53475": "Wed Nov  4 10:16:27 2026    ",
+            "53808": "Wed Nov  4 10:16:34 2026    ",
+            "53810": "Wed Nov  4 10:16:34 2026    ",
+            "54108": "Wed Nov  4 10:16:42 2026    ",
+            "54113": "Wed Nov  4 10:16:42 2026    ",
+            "54122": "Wed Nov  4 10:16:42 2026    ",
+            "54123": "Wed Nov  4 10:16:42 2026    ",
+            "54125": "Wed Nov  4 10:16:42 2026    ",
+            "54270": "Wed Nov  4 10:16:50 2026    ",
+            "54273": "Wed Nov  4 10:16:50 2026    ",
+            "54276": "Wed Nov  4 10:16:50 2026    ",
+            "54277": "Wed Nov  4 10:16:50 2026    ",
+            "54278": "Wed Nov  4 10:16:50 2026    ",
+            "54369": "Wed Nov  4 10:16:58 2026    ",
+            "54372": "Wed Nov  4 10:16:58 2026    ",
+            "54599": "Wed Nov  4 10:17:05 2026    ",
+            "54602": "Wed Nov  4 10:17:05 2026    ",
+            "54871": "Wed Nov  4 10:17:12 2026    ",
+            "54874": "Wed Nov  4 10:17:12 2026    ",
+            "54878": "Wed Nov  4 10:17:13 2026    ",
+            "54879": "Wed Nov  4 10:17:13 2026    ",
+            "54880": "Wed Nov  4 10:17:13 2026    ",
+            "55190": "Wed Nov  4 10:17:20 2026    ",
+            "55194": "Wed Nov  4 10:17:20 2026    ",
+            "55201": "Wed Nov  4 10:17:21 2026    ",
+            "55202": "Wed Nov  4 10:17:21 2026    ",
+            "55203": "Wed Nov  4 10:17:21 2026    ",
+            "55495": "Wed Nov  4 10:17:28 2026    ",
+            "55500": "Wed Nov  4 10:17:28 2026    ",
+            "55813": "Wed Nov  4 10:17:36 2026    ",
+            "55816": "Wed Nov  4 10:17:36 2026    ",
+            "56087": "Wed Nov  4 10:17:43 2026    ",
+            "56091": "Wed Nov  4 10:17:43 2026    ",
+            "56096": "Wed Nov  4 10:17:43 2026    ",
+            "56097": "Wed Nov  4 10:17:43 2026    ",
+            "56098": "Wed Nov  4 10:17:43 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1756332032,
+          "elapsed_seconds": 109.607819667,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-full-production-20261104-1017/inputs.json",
+          "sha256": "49861b972944cde9a925b2347639ce15f8ae698a6ef49c4a22c0020514606149",
+          "bytes": 378825
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-full-production-20261104-1017/pairs.json",
+          "sha256": "a061d954b8e8dfe468acc56e23fd583036e2040d665b5bc7b98726c6185e52fe",
+          "bytes": 3183769
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-full-production-20261104-1017/replay.json",
+          "sha256": "bbdfceb5969a01bcf8763e903798a581b9c7c9a6e11d6cb5453d1d47e62dc85f",
+          "bytes": 458
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-full-production-20261104-1017/cross-engine-reference.json",
+          "sha256": "9606390b2d5e0bdbb6d6f0960dd724c1d8230b9195b4301c6fc49194f26ba52b",
+          "bytes": 738
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-full-production-20261104-1017/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
       }
     ],
+    "valid_complete_pairs_in_latest_cohort": 7,
+    "qualifying_cohort": false,
+    "latest_acceptance_attempt": {
+      "author_scripts": "original, enabled",
+      "brave_median_lower_bound_instructions": 20854408914,
+      "diagnostic_only": false,
+      "instruction_scope": "launch",
+      "minimum_pairs": 7,
+      "optimization_credit": false,
+      "pairs": 7,
+      "passed": false,
+      "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+      "target_vox_fraction": 0.95,
+      "vox_median_instructions": 36938985119,
+      "worst_vox_over_best_brave": 1.8800279737809684
+    },
     "profiles": [
       {
         "receipt": {
