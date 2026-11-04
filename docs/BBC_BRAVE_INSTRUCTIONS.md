@@ -1,5 +1,19 @@
 # BBC homepage instruction comparison
 
+**Decoded-image flex follow-up:** `3e85d7380` lets closed within-pass flex
+measurements include available non-SVG HTML images. The existing live validator
+checks source and natural size before replay. Source replacements, changed aspect
+ratios, scratch release and copy-on-write match uncached layout in **153 focused
+executions** across default, no-GC and preallocation modes, with 17 executable
+case calls verified in every arm. Isolated control `c98a5bcf4` disables only image
+eligibility; all **277 browser-instruction tool tests** pass. A separate unchanged
+input-preservation suite has ten passes and one assertion-wording failure; its raw
+failure remains recorded. No native workload eligibility or instruction saving is
+yet credited: the latest completed production bundle lacks the new path, while
+an existing shared production build is running. Cohort 93 is still unlaunched.
+See the [focused ledger](performance/bbc-flex-image-focus-20261104.json) and
+[raw focused evidence](performance/raw/bbc-flex-image-focus-20261104.tar.gz).
+
 **Latest box-edge validation, cohorts 91–92 and coarse profile:** the fresh
 production builds now execute `99ee0f99f`, with isolated control `0dd85ac67`.
 Candidate-only reuse is verified before PNG in separate diagnostics. Original
