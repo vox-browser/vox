@@ -175,7 +175,7 @@ fn test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry() {
 
 fn test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached() {
 	for contents in ['<div style="position:absolute">Positioned.</div>',
-		'<div style="position:relative">Relative.</div>', '<div><div style="float:left">Float in ordinary flow.</div></div>',
+		'<div style="position:relative;left:2px">Shifted relative.</div>', '<div><div style="float:left">Float in ordinary flow.</div></div>',
 		'<svg width="20" height="20"><rect width="10" height="10"/></svg>',
 		'<p style="max-lines:1;continue:collapse">Clamped content.</p>', '<input value="Control">',
 		'<img width="20" height="20">', '<p>Plain content.</p>'] {
@@ -273,5 +273,45 @@ fn test_flex_measurement_revalidates_decoded_image_source_and_natural_size() {
 		assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
 		assert flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') == (!disable_flex_measurement_reuse && !disable_flex_image_measurement_reuse)
 	}
+	source.release_measurement_chunk_pool()
+}
+
+fn test_flex_measurement_replays_unshifted_relative_root_and_descendants() {
+	for root_style in ['', 'position:relative;'] {
+		for rules in ['gap:7px', 'flex-direction:column;gap:3px'] {
+			mut document := html.parse_document('<!doctype html><main><section id="flex" style="${root_style}display:flex;${rules}"><div style="position:relative"><p style="position:relative">Wrapping alpha beta gamma 😀.</p></div><p>Other text.</p></section></main>')
+			document.enable_native_storage()
+			mut owner := document.enter_native_storage()
+			defer { owner.finish(); document.finalize(); document.release_native_storage() }
+			_ = layout_document_typed_in_viewport(document, 500, 400)
+			root := flex_measurement_test_node(document, 'flex')
+			mut source := LayoutState.new()
+			source.enable_measurement_chunk_pool()
+			source.measurement_chunk_pool_.scratch_enabled_ = true
+			for height in [0, 160] {
+				assert !flex_measurement_test_compare(mut source, root, 180, height, .normal, '')
+				for _ in 0 .. 3 {
+					assert flex_measurement_test_compare(mut source, root, 180, height, .normal, '') == (!disable_flex_measurement_reuse && !disable_relative_measurement_reuse && !disable_relative_flow_layout_reuse)
+				}
+			}
+			source.release_measurement_chunk_pool()
+		}
+	}
+}
+
+fn test_flex_measurement_rejects_relative_geometry_after_insets_change() {
+	mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex;gap:7px"><div id="item" style="position:relative"><p>Wrapping alpha beta gamma.</p></div><p>Other text.</p></section></main>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 500, 400)
+	root := flex_measurement_test_node(document, 'flex')
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
+	assert flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') == (!disable_flex_measurement_reuse && !disable_relative_measurement_reuse && !disable_relative_flow_layout_reuse)
+	mut element := document.create_element('div')!
+	element.set_attribute_value('style', 'display:block;position:relative;left:3px')
+	mut item := flex_measurement_test_node(document, 'item').as_node_with_style() or { panic('item') }
+	item.apply_style(css.css_style_computer_for(document).compute_style(dom.AbstractElement.new(element, none)))
+	for _ in 0 .. 2 { assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') }
 	source.release_measurement_chunk_pool()
 }

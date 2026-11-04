@@ -82,6 +82,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			flex_image_measurement_reuse_reported = true
 			eprintln('Vox flex images: reused decoded image measurement')
 		}
+		report_relative_measurement_reuse(cached.inputs)
 		return cached.result
 	}
 	mut retained_inputs := platform.enter_retained_allocations()

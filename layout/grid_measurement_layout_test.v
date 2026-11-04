@@ -199,7 +199,7 @@ fn test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree() {
 
 fn test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached() {
 	for contents in ['<div style="position:absolute">Positioned.</div>',
-		'<div style="position:relative">Relative.</div>', '<div style="float:left">Float.</div>',
+		'<div style="position:relative;left:2px">Shifted relative.</div>', '<div style="float:left">Float.</div>',
 		'<div style="display:grid;grid-template-columns:subgrid">Subgrid.</div>',
 		'<svg width="20" height="20"><rect width="10" height="10"/></svg>',
 		'<p style="max-lines:1;continue:collapse">Clamped content.</p>', '<input value="Control">'] {
@@ -432,4 +432,42 @@ fn test_committed_grid_preserves_outer_heights_for_dependent_subtrees() {
 		oracle.release_measurement()
 		source.release_measurement_chunk_pool()
 	}
+}
+
+fn test_grid_measurement_replays_unshifted_relative_root_and_descendants() {
+	for root_style in ['', 'position:relative;'] {
+		mut document := html.parse_document('<!doctype html><main><section id="grid" style="${root_style}display:grid;grid-template-columns:1fr 1fr;gap:7px"><div style="position:relative"><p style="position:relative">Wrapping alpha beta gamma 😀.</p></div><p>Other text.</p></section></main>')
+		document.enable_native_storage()
+		mut owner := document.enter_native_storage()
+		defer { owner.finish(); document.finalize(); document.release_native_storage() }
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := grid_measurement_test_node(document, 'grid')
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		source.measurement_chunk_pool_.scratch_enabled_ = true
+		for height in [0, 160] {
+			assert !grid_measurement_test_compare(mut source, root, 180, height, 500)
+			for _ in 0 .. 3 {
+				assert grid_measurement_test_compare(mut source, root, 180, height, 500) == (!disable_grid_measurement_reuse && !disable_relative_measurement_reuse && !disable_relative_flow_layout_reuse)
+			}
+		}
+		source.release_measurement_chunk_pool()
+	}
+}
+
+fn test_grid_measurement_rejects_relative_geometry_after_insets_change() {
+	mut document := html.parse_document('<!doctype html><main><section id="grid" style="display:grid;grid-template-columns:1fr 1fr"><div id="item" style="position:relative"><p>Wrapping alpha beta gamma.</p></div><p>Other text.</p></section></main>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 500, 400)
+	root := grid_measurement_test_node(document, 'grid')
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	assert !grid_measurement_test_compare(mut source, root, 180, 0, 500)
+	assert grid_measurement_test_compare(mut source, root, 180, 0, 500) == (!disable_grid_measurement_reuse && !disable_relative_measurement_reuse && !disable_relative_flow_layout_reuse)
+	mut element := document.create_element('div')!
+	element.set_attribute_value('style', 'display:block;position:relative;left:3px')
+	mut item := grid_measurement_test_node(document, 'item').as_node_with_style() or { panic('item') }
+	item.apply_style(css.css_style_computer_for(document).compute_style(dom.AbstractElement.new(element, none)))
+	for _ in 0 .. 2 { assert !grid_measurement_test_compare(mut source, root, 180, 0, 500) }
+	source.release_measurement_chunk_pool()
 }
