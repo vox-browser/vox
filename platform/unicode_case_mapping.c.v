@@ -6,10 +6,22 @@ $if linux {
 } $else {
 	#flag @DIR/unicode_case_mapping.o
 }
-#flag darwin -I/opt/homebrew/opt/icu4c/include
-#flag darwin -L/opt/homebrew/opt/icu4c/lib
-$if !vox_filter_worker_minimal_links ? {
-	#flag darwin -licuuc
+// Use the ICU that LibJS's property bridge and the vcpkg FFmpeg/Skia tree
+// already load. Homebrew's ICU headers would select a second major version's
+// versioned API for every Unicode caller, mapping another libicuuc/libicudata
+// pair into every launch.
+$if arm64 {
+	#flag darwin -I@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include
+	$if !vox_filter_worker_minimal_links ? {
+		#flag darwin @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.dylib
+		#flag darwin -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
+	}
+} $else {
+	#flag darwin -I@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/include
+	$if !vox_filter_worker_minimal_links ? {
+		#flag darwin @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib/libicuuc.dylib
+		#flag darwin -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib
+	}
 }
 #flag darwin -lc++
 #flag linux -lstdc++
