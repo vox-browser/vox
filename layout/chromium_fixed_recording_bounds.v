@@ -1,5 +1,15 @@
 module layout
 
+fn chromium_fixed_paint_bounds(chunk ChromiumRasterChunk) LayoutRect {
+	if chunk.draws_content && chunk.state.fixed_to_viewport && !chunk.state.legacy_effect
+		&& chunk.state.effect_scope == 0 && chunk.state.scroll_frame == 0
+		&& chunk.state.sticky_frame == 0 && chunk.recorded_bounds.width > 0
+		&& chunk.recorded_bounds.height > 0 {
+		return chunk.recorded_bounds
+	}
+	return chunk.bounds
+}
+
 // Fixed containers can contribute hit-test geometry before any descendant
 // paints. Insert those bounds without regrouping ordinary drawing clients.
 fn chromium_layerize_fixed_container_metadata(command_count int,

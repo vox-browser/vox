@@ -97,6 +97,7 @@ mut:
 	sticky_scroll_parents map[int]int
 	fixed_bounds       map[u64]LayoutRect
 	fixed_raster_groups map[u64]int
+	fixed_metadata_owners map[u64]u64
 	compositor_bounds  map[u64]LayoutRect
 	compositor_fixed_raster_owners map[u64]u64
 	compositor_unbounded_animations map[u64]bool
@@ -210,7 +211,17 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 	plan.append_layer(false)
 	states.clear()
 	states << ChromiumRasterPropertyState{}
-	for chunk in chunks {
+	mut scratch := unsafe { &chromium_raster_plan_scratch_ }
+	scratch.fixed_metadata_owners.clear()
+	for original in chunks {
+		owner := original.state.fixed_raster_owner
+		// Compatible empty fixed containers can merge into an earlier owner's
+		// layer. Later drawing from that container must not claim its complete
+		// extent again. An owner which kept its metadata retains its raster grid.
+		chunk := if owner in scratch.fixed_metadata_owners
+			&& scratch.fixed_metadata_owners[owner] != owner {
+			ChromiumRasterChunk{ ...original, bounds: chromium_fixed_paint_bounds(original) }
+		} else { original }
 		mut merged := -1
 		mut separated_by_overlap := false
 		for index := plan.layers.len - 1; index >= 0; index-- {
@@ -250,6 +261,10 @@ fn chromium_layerize_chunks_into(chunks []ChromiumRasterChunk, count int, device
 			plan.append_layer(chunk.state.legacy_effect)
 			plan.layers[merged].composited_contents = separated_by_overlap && !chunk.state.legacy_effect
 			states << chunk.state
+		}
+		// Synthetic fixed-container metadata has no display-list command.
+		if !chunk.draws_content && chunk.command_index < 0 && owner != 0 {
+			scratch.fixed_metadata_owners[owner] = states[merged].fixed_raster_owner
 		}
 		plan.layers[merged].unbounded_sticky_overlap = plan.layers[merged].unbounded_sticky_overlap
 			|| chunk.unbounded_sticky_overlap
