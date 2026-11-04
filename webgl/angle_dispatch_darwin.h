@@ -7,6 +7,7 @@
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../platform/native_state.h"
 #define VOX_ANGLE_FUNCTIONS(X) \
     X(eglChooseConfig) \
     X(eglCreateContext) \
@@ -257,10 +258,10 @@ typedef struct {
     void *egl_library, *gles_library;
     int ready;
 } VoxANGLEAPI;
-static VoxANGLEAPI vox_angle_api;
+VOX_NATIVE_STATE VoxANGLEAPI vox_angle_api;
+VOX_NATIVE_STATE dispatch_once_t vox_angle_once;
 static int vox_angle_prepare(void) {
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
+    dispatch_once(&vox_angle_once, ^{
         VoxANGLEAPI *api = &vox_angle_api;
         api->egl_library = dlopen("@rpath/libEGL.dylib", RTLD_LAZY | RTLD_LOCAL);
         api->gles_library = dlopen("@rpath/libGLESv2.dylib", RTLD_LAZY | RTLD_LOCAL);

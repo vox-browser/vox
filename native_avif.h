@@ -5,6 +5,7 @@
 #if defined(__APPLE__) || defined(__linux__)
 #include <dlfcn.h>
 #include <pthread.h>
+#include "platform/native_state.h"
 #if defined(__linux__)
 #include <limits.h>
 #include <stdio.h>
@@ -17,7 +18,8 @@ typedef struct {
     uint8_t *(*decode_yuv)(const uint8_t *, uint64_t, int32_t *, int32_t *, int32_t *, int32_t *);
     void (*release)(uint8_t *);
 } VoxAVIFAPI;
-static VoxAVIFAPI vox_avif_api;
+VOX_NATIVE_STATE VoxAVIFAPI vox_avif_api;
+VOX_NATIVE_STATE pthread_once_t vox_avif_load_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
 static void vox_avif_load(void)
 {
 #if defined(__APPLE__)
@@ -50,8 +52,7 @@ static void vox_avif_load(void)
 }
 static int vox_avif_available(void)
 {
-    static pthread_once_t once = PTHREAD_ONCE_INIT;
-    pthread_once(&once, vox_avif_load);
+    pthread_once(&vox_avif_load_once, vox_avif_load);
     return vox_avif_api.decode != NULL;
 }
 static int vox_avif_is_avif(const uint8_t *bytes, uint64_t length)

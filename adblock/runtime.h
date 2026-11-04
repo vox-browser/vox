@@ -3,18 +3,19 @@
 #define VOX_ADBLOCK_RUNTIME_H
 #include <pthread.h>
 #include <string.h>
-static pthread_mutex_t vox_adblock_mutex = PTHREAD_MUTEX_INITIALIZER;
+#include "../platform/native_state.h"
+VOX_NATIVE_STATE pthread_mutex_t vox_adblock_mutex VOX_NATIVE_STATE_INIT(PTHREAD_MUTEX_INITIALIZER);
 // The compatibility JSON codec lazily publishes per-type field metadata.
 // Protect conversion separately; never hold this mutex while entering JSC.
-static pthread_mutex_t vox_adblock_json_mutex = PTHREAD_MUTEX_INITIALIZER;
+VOX_NATIVE_STATE pthread_mutex_t vox_adblock_json_mutex VOX_NATIVE_STATE_INIT(PTHREAD_MUTEX_INITIALIZER);
 static void vox_adblock_json_lock(void) { pthread_mutex_lock(&vox_adblock_json_mutex); }
 static void vox_adblock_json_unlock(void) { pthread_mutex_unlock(&vox_adblock_json_mutex); }
-static pthread_mutex_t vox_adblock_log_mutex = PTHREAD_MUTEX_INITIALIZER;
+VOX_NATIVE_STATE pthread_mutex_t vox_adblock_log_mutex VOX_NATIVE_STATE_INIT(PTHREAD_MUTEX_INITIALIZER);
 static void vox_adblock_log_lock(void) { pthread_mutex_lock(&vox_adblock_log_mutex); }
 static void vox_adblock_log_unlock(void) { pthread_mutex_unlock(&vox_adblock_log_mutex); }
-static void *vox_adblock_context_value = NULL;
-static int vox_adblock_enabled_value = 1;
-static char *vox_adblock_error_value = NULL;
+VOX_NATIVE_STATE void *vox_adblock_context_value VOX_NATIVE_STATE_INIT(NULL);
+VOX_NATIVE_STATE int vox_adblock_enabled_value VOX_NATIVE_STATE_INIT(1);
+VOX_NATIVE_STATE char *vox_adblock_error_value VOX_NATIVE_STATE_INIT(NULL);
 static char *vox_adblock_get_error(void) { return vox_adblock_error_value; }
 static void vox_adblock_set_error(const char *message) { vox_adblock_error_value = strdup(message); }
 static void vox_adblock_lock(void) { pthread_mutex_lock(&vox_adblock_mutex); }

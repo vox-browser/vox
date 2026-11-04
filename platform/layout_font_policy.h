@@ -1,10 +1,11 @@
 #ifndef VOX_LAYOUT_FONT_POLICY_H
 #define VOX_LAYOUT_FONT_POLICY_H
+#include "native_state.h"
 
 // A synchronous layout pass uses one environment/filesystem policy snapshot.
 // Other threads and calls outside that pass continue to query live settings.
-static _Thread_local unsigned vox_layout_font_policy_depth;
-static _Thread_local int vox_layout_font_policy_configured;
+VOX_NATIVE_STATE _Thread_local unsigned vox_layout_font_policy_depth;
+VOX_NATIVE_STATE _Thread_local int vox_layout_font_policy_configured;
 
 static inline int vox_layout_font_policy_cached(void)
 {

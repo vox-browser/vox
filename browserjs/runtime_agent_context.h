@@ -3,14 +3,15 @@
 
 #include <JavaScriptCore/JavaScript.h>
 #include <pthread.h>
+#include "../platform/native_state.h"
 
 // A context group owns the VM, including reusable parsed code. Keep one per
 // agent thread, while every Runtime still gets a new global object and realm.
 // JSC binds deferred VM work to the creating thread's run loop; never share
 // this cache across threads. Release it when a worker thread exits.
-static pthread_once_t vox_browserjs_agent_key_once = PTHREAD_ONCE_INIT;
-static pthread_key_t vox_browserjs_agent_key;
-static int vox_browserjs_agent_key_ready;
+VOX_NATIVE_STATE pthread_once_t vox_browserjs_agent_key_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
+VOX_NATIVE_STATE pthread_key_t vox_browserjs_agent_key;
+VOX_NATIVE_STATE int vox_browserjs_agent_key_ready;
 
 static void vox_browserjs_release_agent_group(void *group)
 {

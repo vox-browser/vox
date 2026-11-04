@@ -23,6 +23,7 @@ typedef struct {
 #ifdef __APPLE__
 #include <dlfcn.h>
 #include <pthread.h>
+#include "../platform/native_state.h"
 #include <stdio.h>
 // Documents, subresources and images load through browsernet; only script
 // fetches, workers and web fonts use curl. Linking it would map libcurl with
@@ -30,7 +31,8 @@ typedef struct {
 // into the allocator restart's first image), so resolve it on first use.
 // Production rpaths name the same vcpkg library the linker selected; a test
 // binary without them uses the system library that -lcurl linked before.
-static VoxCurlApi vox_curl_loaded_api;
+VOX_NATIVE_STATE VoxCurlApi vox_curl_loaded_api;
+VOX_NATIVE_STATE pthread_once_t vox_curl_load_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
 static void vox_curl_load_api(void) {
     void* library = dlopen("@rpath/libcurl.4.dylib", RTLD_NOW | RTLD_LOCAL);
     if (!library) library = dlopen("/usr/lib/libcurl.4.dylib", RTLD_NOW | RTLD_LOCAL);
@@ -61,8 +63,7 @@ static void vox_curl_load_api(void) {
 #undef VOX_CURL_RESOLVE
 }
 static const VoxCurlApi* vox_curl_api(void) {
-    static pthread_once_t once = PTHREAD_ONCE_INIT;
-    pthread_once(&once, vox_curl_load_api);
+    pthread_once(&vox_curl_load_once, vox_curl_load_api);
     return &vox_curl_loaded_api;
 }
 // Test observation: whether a caller has made this process resolve libcurl.

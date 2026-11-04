@@ -3,9 +3,25 @@
 #import <QuartzCore/QuartzCore.h>
 #import <objc/runtime.h>
 #include <stdint.h>
+// Shared native state; see platform/native_state.h in Vox. The adapter is staged
+// outside the repository, so it repeats those definitions.
+#ifndef VOX_NATIVE_STATE_H
+#define VOX_NATIVE_STATE_H
+#if defined(V_PARALLEL_CC) && !defined(V_PARALLEL_CC_OUT_0)
+#define VOX_NATIVE_STATE extern
+#define VOX_NATIVE_STATE_INIT(...)
+#elif defined(V_PARALLEL_CC)
+#define VOX_NATIVE_STATE
+#define VOX_NATIVE_STATE_INIT(...) = __VA_ARGS__
+#else
+#define VOX_NATIVE_STATE static
+#define VOX_NATIVE_STATE_INIT(...) = __VA_ARGS__
+#endif
+#endif
 
 // UI2 backend primitive only: no browser geometry, control classes or actions.
-static char ui2_vector_layer_key, ui2_vector_points_key, ui2_vector_closed_key;
+// Their addresses are associated-object keys, so all units must use the same objects.
+VOX_NATIVE_STATE char ui2_vector_layer_key, ui2_vector_points_key, ui2_vector_closed_key;
 static CGColorRef ui2_vector_color(uint32_t rgb) {
     return CGColorCreateSRGB(((rgb >> 16) & 255) / 255.0,
         ((rgb >> 8) & 255) / 255.0, (rgb & 255) / 255.0, 1);

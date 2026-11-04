@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "native_state.h"
 
 typedef struct VoxThreadScratchLease {
     void *scope;
@@ -22,8 +23,8 @@ typedef struct VoxThreadScratchLeaseChunk {
     VoxThreadScratchLease slots[16];
 } VoxThreadScratchLeaseChunk;
 
-static pthread_key_t vox_thread_scratch_key;
-static pthread_once_t vox_thread_scratch_once = PTHREAD_ONCE_INIT;
+VOX_NATIVE_STATE pthread_key_t vox_thread_scratch_key;
+VOX_NATIVE_STATE pthread_once_t vox_thread_scratch_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
 
 static int32_t vox_thread_scratch_matches_poison_configuration(int32_t poison,
     const char *names, const unsigned char *label, int64_t length) {
@@ -46,10 +47,10 @@ static int32_t vox_thread_scratch_poison_enabled(const unsigned char *label, int
         poison && strcmp(poison, "1") == 0, names ? names : "", label, length);
 }
 
-static pthread_once_t vox_thread_scratch_configuration_once = PTHREAD_ONCE_INIT;
-static int32_t vox_thread_scratch_configuration_poison;
-static int32_t vox_thread_scratch_configuration_uncached;
-static const char *vox_thread_scratch_configuration_names;
+VOX_NATIVE_STATE pthread_once_t vox_thread_scratch_configuration_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
+VOX_NATIVE_STATE int32_t vox_thread_scratch_configuration_poison;
+VOX_NATIVE_STATE int32_t vox_thread_scratch_configuration_uncached;
+VOX_NATIVE_STATE const char *vox_thread_scratch_configuration_names;
 
 // Like the reusable arena policy, scratch policy is launch configuration. Own
 // the selected-label bytes so later environment storage changes cannot dangle.

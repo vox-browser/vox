@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdatomic.h>
 #include <execinfo.h>
+#include "native_state.h"
 
 typedef struct {
 	char *start;
@@ -15,9 +16,9 @@ typedef struct {
 } VoxPoisonedRange;
 
 #define VOX_POISONED_RANGE_LIMIT 65536
-static VoxPoisonedRange vox_poisoned_ranges[VOX_POISONED_RANGE_LIMIT];
-static _Atomic int vox_poisoned_range_count;
-static _Atomic int vox_poisoned_range_ready[VOX_POISONED_RANGE_LIMIT];
+VOX_NATIVE_STATE VoxPoisonedRange vox_poisoned_ranges[VOX_POISONED_RANGE_LIMIT];
+VOX_NATIVE_STATE _Atomic int vox_poisoned_range_count;
+VOX_NATIVE_STATE _Atomic int vox_poisoned_range_ready[VOX_POISONED_RANGE_LIMIT];
 
 static void vox_note_poisoned_range(void *start, void *end, const char *label) {
 	int index = atomic_fetch_add_explicit(&vox_poisoned_range_count, 1, memory_order_relaxed);

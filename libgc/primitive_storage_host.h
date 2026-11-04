@@ -7,7 +7,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdint.h>
-static uintptr_t vox_gc_primitive_storage_cage_base;
+#include "../platform/native_state.h"
+VOX_NATIVE_STATE uintptr_t vox_gc_primitive_storage_cage_base;
 static void vox_gc_set_primitive_storage_cage_base(void* value) { vox_gc_primitive_storage_cage_base = (uintptr_t)value; }
 static uintptr_t vox_gc_get_primitive_storage_cage_base(void) { return vox_gc_primitive_storage_cage_base; }
 static size_t vox_gc_storage_page_size(void) { return (size_t)sysconf(_SC_PAGESIZE); }

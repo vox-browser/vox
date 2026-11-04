@@ -20,7 +20,7 @@ static int vox_kdf_derive(int pbkdf2, const char* hash, const unsigned char* key
 {
     if (!vox_crypto_prepare()) return 0;
     int success = 0;
-    static unsigned char empty_salt = 0;
+    static const unsigned char empty_salt = 0;
     EVP_KDF* kdf = EVP_KDF_fetch(NULL, pbkdf2 ? "PBKDF2" : "HKDF", NULL);
     EVP_KDF_CTX* ctx = kdf ? EVP_KDF_CTX_new(kdf) : NULL;
     OSSL_PARAM params[5] = { OSSL_PARAM_END, OSSL_PARAM_END, OSSL_PARAM_END, OSSL_PARAM_END, OSSL_PARAM_END };

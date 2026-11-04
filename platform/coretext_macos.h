@@ -30,6 +30,7 @@ typedef struct {
 #include <string.h>
 #include <strings.h>
 #include <os/lock.h>
+#include "native_state.h"
 
 
 
@@ -220,9 +221,9 @@ static int vox_ct_collection_index(const char *path, CTFontRef font) {
 // and the collection lookup opens the font file; both are repeated for every
 // new point size of the same face. Metrics and variations are still read from
 // a font created at each requested size. A lock covers concurrent queries.
-static os_unfair_lock vox_ct_cache_lock = OS_UNFAIR_LOCK_INIT;
-static CFMutableDictionaryRef vox_ct_selection_cache;
-static CFMutableDictionaryRef vox_ct_collection_cache;
+VOX_NATIVE_STATE os_unfair_lock vox_ct_cache_lock VOX_NATIVE_STATE_INIT(OS_UNFAIR_LOCK_INIT);
+VOX_NATIVE_STATE CFMutableDictionaryRef vox_ct_selection_cache;
+VOX_NATIVE_STATE CFMutableDictionaryRef vox_ct_collection_cache;
 
 static const void *vox_ct_cache_copy(CFMutableDictionaryRef *cache, CFStringRef key) {
 	os_unfair_lock_lock(&vox_ct_cache_lock);

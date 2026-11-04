@@ -6,13 +6,15 @@
 #if !defined(_WIN32)
 #include <dlfcn.h>
 #include <pthread.h>
+#include "platform/native_state.h"
 typedef struct {
     uint32_t (*version)(void);
     uint8_t *(*decode)(const uint8_t *, uint64_t, int32_t *, int32_t *, int32_t *);
     uint8_t *(*decode_paint)(const uint8_t *, uint64_t, int32_t *, int32_t *, int32_t *);
     void (*release)(uint8_t *, uint64_t);
 } VoxJPEGXLAPI;
-static VoxJPEGXLAPI vox_jxl_api;
+VOX_NATIVE_STATE VoxJPEGXLAPI vox_jxl_api;
+VOX_NATIVE_STATE pthread_once_t vox_jpegxl_load_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
 static void vox_jpegxl_load(void)
 {
     // Prefer the helper beside the pinned executable over mutable build outputs.
@@ -37,8 +39,7 @@ static void vox_jpegxl_load(void)
 }
 static int vox_jpegxl_available(void)
 {
-    static pthread_once_t once = PTHREAD_ONCE_INIT;
-    pthread_once(&once, vox_jpegxl_load);
+    pthread_once(&vox_jpegxl_load_once, vox_jpegxl_load);
     return vox_jxl_api.decode != NULL;
 }
 static uint8_t *vox_jpegxl_decode_rgba(const uint8_t *bytes, uint64_t length,

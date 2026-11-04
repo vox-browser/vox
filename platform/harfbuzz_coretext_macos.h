@@ -8,6 +8,7 @@
 #include <hb.h>
 #include <stdlib.h>
 #include <string.h>
+#include "native_state.h"
 
 // Blink's HarfBuzzGetGlyph also asks Skia/CoreText for U+2010 and U+2011
 // when the OpenType cmap has no glyph. CoreText synthesizes these even for
@@ -58,7 +59,8 @@ typedef struct {
     hb_codepoint_t glyphs[2];
 } vox_hb_coretext_hyphens;
 
-static hb_user_data_key_t vox_hb_coretext_hyphens_key;
+// Its address is the key, so all units must use the same object.
+VOX_NATIVE_STATE hb_user_data_key_t vox_hb_coretext_hyphens_key;
 
 // The native probe always uses the selected face at 12pt, without variations.
 // Its nominal glyph IDs therefore belong to the face, independently of the

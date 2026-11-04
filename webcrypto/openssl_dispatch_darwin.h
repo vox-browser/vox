@@ -16,6 +16,7 @@
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../platform/native_state.h"
 
 #define VOX_CRYPTO_STRING_(value) #value
 #define VOX_CRYPTO_STRING(value) VOX_CRYPTO_STRING_(value)
@@ -176,8 +177,8 @@ typedef struct {
     void* library;
     int ready;
 } VoxCryptoAPI;
-static VoxCryptoAPI vox_crypto_api;
-static pthread_once_t vox_crypto_once = PTHREAD_ONCE_INIT;
+VOX_NATIVE_STATE VoxCryptoAPI vox_crypto_api;
+VOX_NATIVE_STATE pthread_once_t vox_crypto_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
 static void vox_crypto_load(void)
 {
     VoxCryptoAPI* api = &vox_crypto_api;
