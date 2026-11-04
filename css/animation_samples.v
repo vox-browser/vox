@@ -310,12 +310,20 @@ fn (mut storage AnimationSampleStorage) retire_unreachable(document &dom.Documen
 }
 
 fn (retiring &RetiringAnimationSamples) styles_reference_arena() bool {
+	scratch := platform.begin_thread_scratch('animation reference inspection')
+	defer { scratch.finish() }
+	mut scan := AnimationSampleReferenceScan{retiring: retiring}
+	return scan.styles_reference_arena()
+}
+
+fn (mut scan AnimationSampleReferenceScan) styles_reference_arena() bool {
+	retiring := scan.retiring
 	for target in retiring.targets {
-		if retiring.element_style_references_arena(target.element) {
+		if scan.element_style_references_arena(target.element) {
 			return true
 		}
 		if target.inherited
-			&& retiring.descendant_styles_reference_arena(target.element.element().as_node()) {
+			&& scan.descendant_styles_reference_arena(target.element.element().as_node()) {
 			return true
 		}
 	}
@@ -324,13 +332,14 @@ fn (retiring &RetiringAnimationSamples) styles_reference_arena() bool {
 
 // The element's style, the style its layout node last applied, and its
 // animated custom-property overlay.
-fn (retiring &RetiringAnimationSamples) element_style_references_arena(target dom.AbstractElement) bool {
+fn (mut scan AnimationSampleReferenceScan) element_style_references_arena(target dom.AbstractElement) bool {
+	retiring := scan.retiring
 	if dom_computed := target.computed_properties() {
 		if retiring.arena.contains(voidptr(dom_computed)) {
 			return true
 		}
 		if computed := computed_properties_from_dom(dom_computed) {
-			if retiring.computed_references_arena(computed) {
+			if scan.computed_references_arena_at_depth(computed, 0) {
 				return true
 			}
 		}
@@ -341,7 +350,7 @@ fn (retiring &RetiringAnimationSamples) element_style_references_arena(target do
 				return true
 			}
 			if computed := computed_properties_from_dom(applied) {
-				if retiring.computed_references_arena(computed) {
+				if scan.computed_references_arena_at_depth(computed, 0) {
 					return true
 				}
 			}
@@ -367,18 +376,18 @@ fn (retiring &RetiringAnimationSamples) element_style_references_arena(target do
 	return false
 }
 
-fn (retiring &RetiringAnimationSamples) descendant_styles_reference_arena(node &dom.Node) bool {
+fn (mut scan AnimationSampleReferenceScan) descendant_styles_reference_arena(node &dom.Node) bool {
 	mut child := node.first_child()
 	for {
 		current := child or { break }
 		if element := current.as_element() {
-			if retiring.element_style_references_arena(dom.AbstractElement.new(element, none))
-				|| retiring.element_style_references_arena(dom.AbstractElement.new(element, dom.PseudoElement.before))
-				|| retiring.element_style_references_arena(dom.AbstractElement.new(element, dom.PseudoElement.after)) {
+			if scan.element_style_references_arena(dom.AbstractElement.new(element, none))
+				|| scan.element_style_references_arena(dom.AbstractElement.new(element, dom.PseudoElement.before))
+				|| scan.element_style_references_arena(dom.AbstractElement.new(element, dom.PseudoElement.after)) {
 				return true
 			}
 		}
-		if retiring.descendant_styles_reference_arena(current) {
+		if scan.descendant_styles_reference_arena(current) {
 			return true
 		}
 		child = current.next_sibling()
@@ -401,10 +410,14 @@ fn (retiring &RetiringAnimationSamples) value_references_arena(value &dom.StyleV
 // can share as slices. The snapshot is scanned word by word: it holds copies of
 // typed values whose own pointers may lead into a sample.
 fn (retiring &RetiringAnimationSamples) computed_references_arena(computed &ComputedProperties) bool {
-	return retiring.computed_references_arena_at_depth(computed, 0)
+	scratch := platform.begin_thread_scratch('animation reference inspection')
+	defer { scratch.finish() }
+	mut scan := AnimationSampleReferenceScan{retiring: retiring}
+	return scan.computed_references_arena_at_depth(computed, 0)
 }
 
-fn (retiring &RetiringAnimationSamples) computed_references_arena_at_depth(computed &ComputedProperties, depth int) bool {
+fn (mut scan AnimationSampleReferenceScan) computed_references_arena_at_depth(computed &ComputedProperties, depth int) bool {
+	retiring := scan.retiring
 	if computed == unsafe { nil } { return false }
 	// Density projections normally form a single derived snapshot. Retain an
 	// arena conservatively if a malformed or unusually deep chain appears.
@@ -427,9 +440,17 @@ fn (retiring &RetiringAnimationSamples) computed_references_arena_at_depth(compu
 			}
 		}
 	}
-	for index in 0 .. computed.raw_property_count() {
-		if retiring.value_references_arena(computed.raw_property_at_index(index)) {
-			return true
+	if scan.use_property_pages && computed.property_store_ != unsafe { nil } {
+		for index, page in computed.property_store_.pages {
+			remaining := number_of_longhand_properties - index * computed_property_page_size
+			count := if remaining < computed_property_page_size { remaining } else { computed_property_page_size }
+			if scan.property_page_references_arena(page, count) { return true }
+		}
+	} else {
+		for index in 0 .. computed.raw_property_count() {
+			if retiring.value_references_arena(computed.raw_property_at_index(index)) {
+				return true
+			}
 		}
 	}
 	if computed.animated_property_storage_ != unsafe { nil } {
@@ -467,7 +488,7 @@ fn (retiring &RetiringAnimationSamples) computed_references_arena_at_depth(compu
 		if retiring.struct_references_arena(voidptr(projection), int(sizeof(DeviceLayoutStyleProjection)))
 			|| (projection.provenance != unsafe { nil }
 				&& retiring.struct_references_arena(voidptr(projection.provenance), int(sizeof(ComputedGeometryProvenance))))
-			|| retiring.computed_references_arena_at_depth(projection.style, depth + 1) {
+			|| scan.computed_references_arena_at_depth(projection.style, depth + 1) {
 			if os.getenv('VOX_ANIMATION_SAMPLE_PAGE_DIAGNOSTICS') != '' {
 				eprintln('VOX_ANIMATION_SAMPLE_PROJECTION_HOLD depth=${depth}')
 			}
