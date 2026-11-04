@@ -1,5 +1,59 @@
 # BBC homepage instruction comparison
 
+**Latest box-edge validation, cohorts 91–92 and coarse profile:** the fresh
+production builds now execute `99ee0f99f`, with isolated control `0dd85ac67`.
+Candidate-only reuse is verified before PNG in separate diagnostics. Original
+pixels, complete content, all 72 external scripts, actual native-image pins and
+normal browser exits pass in both Vox arms.
+
+Cohort **91** is invalid after **12 browser attempts** because a shared production
+publication changes the executable during the fourth triple. All attempts and
+the earlier disk preflight rejection remain recorded. Cohort **92** completes
+**seven alternating triples / 21 trials** with stable input identities. All 14
+Vox/control audits pass, but Brave pair 6 differs from its original pixel
+reference, invalidating acceptance. References and tolerances remain unchanged.
+Observed medians are **27,532,694,809 Vox**, **27,741,927,552 control** and
+**17,423,879,058 Brave lower bound** instructions. The control point difference
+is 209,232,743 (0.7542%), with four improvements and three regressions;
+conservative control ratio **1.0465803788543335** fails. No robust saving is
+credited. The observed target gate also fails
+`284848068570 > 155752619580`; these counts cannot qualify the invalid cohort.
+See [cohort 91](performance/bbc-edge-cohort91-20261104.json),
+[raw 91](performance/raw/bbc-edge-cohort91-20261104.tar.gz),
+[cohort 92](performance/bbc-edge-cohort92-20261104.json) and
+[raw 92](performance/raw/bbc-edge-cohort92-20261104.tar.gz).
+
+The broader cadence again exercises **504 unique cases / 501 passes** in each
+default and no-GC mode, with exactly the same three baseline failures and unchanged
+checked inputs. No full pass or cadence reset is claimed. Two separate style
+diagnostics pass the original capture audits. Ordinary dirty flags dominate the
+logged recomputations; only six font-refresh fallbacks appear before PNG in the
+first run. These counters do not establish instruction costs. See the
+[broad/style ledger](performance/bbc-edge-broad-style-20261104.json) and
+[raw evidence](performance/raw/bbc-edge-broad-style-20261104.tar.gz).
+
+A fresh **`v -profile` diagnostic** also passes original pixels/content, verifies
+all 72 original external scripts and pins every actual native image. After V
+instrumentation, generated C retains 21 declared coarse timing scopes and disables
+25,977 others. The exact transformation, inputs, actual exits and raw rows are
+retained. Grid and inline layout, style matching and JSC dominate these selected
+timers; box-edge resolution is smaller. Coarse self includes unselected/native
+callees and waits; recursive inclusive intervals overlap, and main's unfinished
+exit timer is zero. This separate instrumented run supplies no instruction saving
+or unprofiled acceptance credit. See the
+[profile ledger](performance/bbc-coarse-profile-20261104.json) and
+[raw profile](performance/raw/bbc-coarse-profile-20261104.tar.gz).
+
+Acceptance history is **92 attempted cohorts / 2,022 attempted browser trials**,
+plus separately recorded runtime diagnostics. Cohort 90 remains the latest fully
+valid target comparison, with conservative ratio **1.8101137514618793**, failing
+0.9. Frozen original-origin replay, startup through encoded PNG, retained OS caches
+and the scripting/font/rendering limitations below still apply. BBC **homepage
+instruction optimization** remains unqualified for `OPTIMIZED_SITES.md`; the
+separate BBC News screenshot entry does not establish this target.
+
+The following sections preserve earlier follow-up states.
+
 **Latest box-edge follow-up:** `99ee0f99f` reuses resolved absolute and
 percentage margin/padding/border edges. Percentage bases remain quantized to
 `CSSPixels`; the memo also checks the actual rounding policy. Every typed edge

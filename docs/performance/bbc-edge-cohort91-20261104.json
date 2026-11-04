@@ -1,0 +1,1545 @@
+{
+  "status": "Cohort91 invalid: executable published during fourth triple; stopped after12browser attempts. All12capture audits pass but inputs changed. No accepted target or marginal saving. No catalog entry.",
+  "engine_commit": "99ee0f99f",
+  "control_commit": "0dd85ac67",
+  "native": [
+    {
+      "arm": "vox",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": true,
+      "runtime_images_pinned": true
+    },
+    {
+      "arm": "control",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": false,
+      "runtime_images_pinned": true
+    }
+  ],
+  "production": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "f9e8791b9c275d6e6185485f58d8866f09816dabe45aa38f9dcc3e9abe001e6f",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-210655-e584b5ee/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "9c93a2cf19ebdf479971322cd52fb1a60f2c40935e83a6cb29dedd0e84e2cbea",
+      "dirty": true,
+      "head": "7b1ce125c66dbe10c28dce0c526c9fa2ab51091e",
+      "repository_sha256": "26b8a8bd05bf49ccc2dd452894ed932d6b4042fa7f4f896b436452ac7f5afb77"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "8a0a3eae27d4278ae0cc7023d8e80eb81198a0de8bcf9f0a3cf22e6a4ceff16f",
+      "dirty": true,
+      "head": "6f1b280b2b0fa3643d3796aae23f4490729e7408",
+      "repository_sha256": "accb33d819273fb0d0cc4756d5b2fd6ccebee98e47e43b1fcee31f19b19b5705"
+    },
+    "request": {
+      "head": "7b1ce125c66dbe10c28dce0c526c9fa2ab51091e",
+      "id": "ad2ceff613ae487d9b37178acf333216"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "9c93a2cf19ebdf479971322cd52fb1a60f2c40935e83a6cb29dedd0e84e2cbea",
+      "dirty": true,
+      "head": "09aab7a754107f5da84ddc2b8769f438d2de75f4",
+      "repository_sha256": "3f1cf6058c18b0b04a2b51f6a8a35b2f59d3f45e7e69fafc2e8b908535aedd41"
+    }
+  },
+  "source_proof": {
+    "preserved_source": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/resume-native-213233/production/native-diagnostic/production-compilation/f9e8791b9c275d6e6185485f58d8866f09816dabe45aa38f9dcc3e9abe001e6f/0-0-Vox.c.i",
+    "sha256": "c73f197aa579f7b03612dfcb545aa25ee36ac8318359e9bac89a466d18003d47",
+    "witnesses": {
+      "Vox box edges: reused resolved absolute/percentage snapshot": true,
+      "css__ComputedValues__uncached_resolved_box_model_edges": true,
+      "css__resolved_box_edge_kind": true,
+      "resolved_edge_memo_": true
+    },
+    "hash_matches": true
+  },
+  "disk_preflight": {
+    "status": "pending; acceptance not launched",
+    "reason": "Predeclared host gate failed",
+    "host": {
+      "cpu_count": 18,
+      "load_average": [
+        51.9052734375,
+        71.43798828125,
+        81.8212890625
+      ],
+      "unix": 1793817236.757159,
+      "disk_free_bytes": 1111273472
+    }
+  },
+  "cohort": {
+    "number": 91,
+    "actual_attempts": 12,
+    "complete_triples_written": 3,
+    "fourth_triple_rows_retained": 3,
+    "rows": [
+      {
+        "trial": "pair-1-brave",
+        "engine": "brave",
+        "interval": {
+          "lower": 17760015294,
+          "upper": 17783605457
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      },
+      {
+        "trial": "pair-1-control",
+        "engine": "control",
+        "interval": {
+          "lower": 29192176522,
+          "upper": 29192176522
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      },
+      {
+        "trial": "pair-1-vox",
+        "engine": "vox",
+        "interval": {
+          "lower": 27040140832,
+          "upper": 27040140832
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      },
+      {
+        "trial": "pair-2-brave",
+        "engine": "brave",
+        "interval": {
+          "lower": 17522181145,
+          "upper": 17526150612
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      },
+      {
+        "trial": "pair-2-control",
+        "engine": "control",
+        "interval": {
+          "lower": 26549811111,
+          "upper": 26549811111
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      },
+      {
+        "trial": "pair-2-vox",
+        "engine": "vox",
+        "interval": {
+          "lower": 28005634332,
+          "upper": 28005634332
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      },
+      {
+        "trial": "pair-3-brave",
+        "engine": "brave",
+        "interval": {
+          "lower": 18014763062,
+          "upper": 18035951947
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      },
+      {
+        "trial": "pair-3-control",
+        "engine": "control",
+        "interval": {
+          "lower": 28497491703,
+          "upper": 28497491703
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      },
+      {
+        "trial": "pair-3-vox",
+        "engine": "vox",
+        "interval": {
+          "lower": 27158277776,
+          "upper": 27158277776
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      },
+      {
+        "trial": "pair-4-brave",
+        "engine": "brave",
+        "interval": {
+          "lower": 17589412451,
+          "upper": 17599887798
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      },
+      {
+        "trial": "pair-4-control",
+        "engine": "control",
+        "interval": {
+          "lower": 27066773822,
+          "upper": 27066773822
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": true,
+        "ownership": true
+      },
+      {
+        "trial": "pair-4-vox",
+        "engine": "vox",
+        "interval": {
+          "lower": 27653209549,
+          "upper": 27653209549
+        },
+        "exit": 0,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "input_failure": false,
+        "ownership": true
+      }
+    ],
+    "identity_failure": {
+      "changed_inputs": [
+        {
+          "expected": {
+            "bytes": 32670544,
+            "sha256": "f9e8791b9c275d6e6185485f58d8866f09816dabe45aa38f9dcc3e9abe001e6f"
+          },
+          "observed": {
+            "bytes": 32670576,
+            "sha256": "d6a6dae54d504858b95fe7c67ebe56324a1470778cc97776db31d99e29bc39ca"
+          },
+          "path": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox"
+        }
+      ],
+      "invalidates_cohort": true
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/resume-native-213233/cohort-with-host.py",
+        "--output",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/resume-native-213233/cohort91-after-disk/cohort-91",
+        "--repeat",
+        "7",
+        "--control-vox-app",
+        "Build/v/Vox.app",
+        "--control-disable-resolved-edge-reuse",
+        "--archive",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/resume-native-213233/fixture/clock-archive-v3",
+        "--memory-guard-registry",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/resume-native-213233/cohort91-after-disk/cohort91-pids.json",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--expected-vox",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/resume-native-213233/fixture/reference-complete/pair-1-vox/document.png",
+        "--expected-brave",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/resume-native-213233/fixture/reference-complete/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+        "--retain-logical-paint-snapping",
+        "--retain-css-layout-for-svg"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "60489": "Wed Nov  4 21:37:21 2026    ",
+        "60493": "Wed Nov  4 21:37:21 2026    ",
+        "61084": "Wed Nov  4 21:37:29 2026    ",
+        "61087": "Wed Nov  4 21:37:29 2026    ",
+        "61940": "Wed Nov  4 21:37:40 2026    ",
+        "61944": "Wed Nov  4 21:37:40 2026    ",
+        "62639": "Wed Nov  4 21:37:47 2026    ",
+        "62643": "Wed Nov  4 21:37:47 2026    ",
+        "63356": "Wed Nov  4 21:37:56 2026    ",
+        "63362": "Wed Nov  4 21:37:56 2026    ",
+        "63926": "Wed Nov  4 21:38:04 2026    ",
+        "63928": "Wed Nov  4 21:38:04 2026    ",
+        "64468": "Wed Nov  4 21:38:12 2026    ",
+        "64472": "Wed Nov  4 21:38:12 2026    ",
+        "64498": "Wed Nov  4 21:38:12 2026    ",
+        "64499": "Wed Nov  4 21:38:12 2026    ",
+        "64501": "Wed Nov  4 21:38:12 2026    ",
+        "64922": "Wed Nov  4 21:38:19 2026    ",
+        "64925": "Wed Nov  4 21:38:19 2026    ",
+        "64936": "Wed Nov  4 21:38:19 2026    ",
+        "64937": "Wed Nov  4 21:38:19 2026    ",
+        "64939": "Wed Nov  4 21:38:19 2026    ",
+        "64978": "Wed Nov  4 21:38:19 2026    ",
+        "64979": "Wed Nov  4 21:38:19 2026    ",
+        "65019": "Wed Nov  4 21:38:20 2026    ",
+        "65316": "Wed Nov  4 21:38:25 2026    ",
+        "65320": "Wed Nov  4 21:38:25 2026    ",
+        "65919": "Wed Nov  4 21:38:33 2026    ",
+        "65927": "Wed Nov  4 21:38:33 2026    ",
+        "66753": "Wed Nov  4 21:38:41 2026    ",
+        "66755": "Wed Nov  4 21:38:41 2026    ",
+        "67228": "Wed Nov  4 21:38:49 2026    ",
+        "67230": "Wed Nov  4 21:38:49 2026    ",
+        "67836": "Wed Nov  4 21:38:57 2026    ",
+        "67845": "Wed Nov  4 21:38:57 2026    ",
+        "67873": "Wed Nov  4 21:38:57 2026    ",
+        "67874": "Wed Nov  4 21:38:57 2026    ",
+        "67875": "Wed Nov  4 21:38:57 2026    ",
+        "68292": "Wed Nov  4 21:39:03 2026    ",
+        "68295": "Wed Nov  4 21:39:04 2026    ",
+        "68303": "Wed Nov  4 21:39:04 2026    ",
+        "68304": "Wed Nov  4 21:39:04 2026    ",
+        "68306": "Wed Nov  4 21:39:04 2026    ",
+        "68712": "Wed Nov  4 21:39:10 2026    ",
+        "68717": "Wed Nov  4 21:39:10 2026    ",
+        "69414": "Wed Nov  4 21:39:18 2026    ",
+        "69419": "Wed Nov  4 21:39:18 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1439596544,
+      "elapsed_seconds": 128.244118375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "exit": {
+      "driver_guard_exit": 1
+    },
+    "runtime_preflights": 4,
+    "scope": {
+      "cohort": 91,
+      "comparison": "Seven alternating matched control/Vox/Brave triples. Same executable in both Vox arms, only resolved-edge memo disabled in control. Target evaluates Vox/Brave; marginal edge comparison reported separately. Separate traced runtime discovery and pinned-set validation precede acceptance. Every attempt retained; no profiler/probe/dyld tracing in acceptance. No credit from protocol corrections or historical cross-build differences.",
+      "scope": "Exclusive coalition creation through encoded document PNG; startup and native window/target setup included. Vox endpoint before filewrite; Brave includes CDP delivery. Content audits and teardown follow endpoint. GPU/outside services excluded.",
+      "workload": "Unchanged609response replay, originalauthor scripts,1024x768CSS,DPR/capture2,two-second settle after identity/readiness/visibledecode,fresh profiles/caches,OSfilesystem/shadercaches retained. Fixed original references; historical logical font/paint and CSS SVG fallback common to both Voxarms.",
+      "host_gate": "Record variable host load without a launch-load cap; free disk>=2GiB before launch. Native exits, ownership, content, exact pixels and all pinned inputs required. Strict goal10maxVoxUpper<=9minBraveLower.",
+      "engine_commit": "99ee0f99f",
+      "control_tool_commit": "0dd85ac67",
+      "runtime_tool_commits": [
+        "cd836ed37",
+        "2b7c4428f"
+      ],
+      "production": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "f9e8791b9c275d6e6185485f58d8866f09816dabe45aa38f9dcc3e9abe001e6f",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-210655-e584b5ee/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "9c93a2cf19ebdf479971322cd52fb1a60f2c40935e83a6cb29dedd0e84e2cbea",
+          "dirty": true,
+          "head": "7b1ce125c66dbe10c28dce0c526c9fa2ab51091e",
+          "repository_sha256": "26b8a8bd05bf49ccc2dd452894ed932d6b4042fa7f4f896b436452ac7f5afb77"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "8a0a3eae27d4278ae0cc7023d8e80eb81198a0de8bcf9f0a3cf22e6a4ceff16f",
+          "dirty": true,
+          "head": "6f1b280b2b0fa3643d3796aae23f4490729e7408",
+          "repository_sha256": "accb33d819273fb0d0cc4756d5b2fd6ccebee98e47e43b1fcee31f19b19b5705"
+        },
+        "request": {
+          "head": "7b1ce125c66dbe10c28dce0c526c9fa2ab51091e",
+          "id": "ad2ceff613ae487d9b37178acf333216"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "9c93a2cf19ebdf479971322cd52fb1a60f2c40935e83a6cb29dedd0e84e2cbea",
+          "dirty": true,
+          "head": "09aab7a754107f5da84ddc2b8769f438d2de75f4",
+          "repository_sha256": "3f1cf6058c18b0b04a2b51f6a8a35b2f59d3f45e7e69fafc2e8b908535aedd41"
+        }
+      }
+    },
+    "diagnostic_all_attempt_medians": {
+      "vox": 27405743662.5,
+      "control": 27782132762.5,
+      "brave_lower": 17674713872.5,
+      "point_reduction_for_cadence_only": 376389100.0,
+      "qualification": "Four attempted triples, including the identity-failing last control. Invalid exploratory statistics; neither seven-pair statistics nor optimization credit. Point difference still triggers broad cadence."
+    }
+  },
+  "rejected_profile": {
+    "controller_exit": {
+      "exit": 2
+    },
+    "rejection": {
+      "reason": "Build inputs changed during V profile codegen",
+      "performance_credit": 0
+    },
+    "input_changes": {
+      "changed_source_inputs": [
+        "tools/url_input_buffer_benchmark.v"
+      ],
+      "generated_C_object_outputs_before": {
+        "skia/bitmap_export.o": "6c2e3be1044ad35616ada677eeede70b9a2054a0bc06d4293192508fbade42cd",
+        "skia/canvas_raster.o": "0b0f6a53f518949e3673560c76993590c3aeab5f5601973d37bcb91dc68e8bac",
+        "skia/shadow_raster.o": "a138290da00b83d5cce0f021ca17fbce83629f28f8db5d18a3e8a462438eb4ea",
+        "skia/font_typeface.o": "f8c1c4fc219ed84f30819446b55cbb7b847ca59db2d5cae0254c0374d490cbcf"
+      },
+      "generated_C_object_outputs_after": {
+        "skia/bitmap_export.o": "6c2e3be1044ad35616ada677eeede70b9a2054a0bc06d4293192508fbade42cd",
+        "skia/canvas_raster.o": "0b0f6a53f518949e3673560c76993590c3aeab5f5601973d37bcb91dc68e8bac",
+        "skia/shadow_raster.o": "a138290da00b83d5cce0f021ca17fbce83629f28f8db5d18a3e8a462438eb4ea",
+        "skia/font_typeface.o": "f8c1c4fc219ed84f30819446b55cbb7b847ca59db2d5cae0254c0374d490cbcf"
+      },
+      "policy": "Pin every production repository input except four named V-generated Skia C object outputs. Freeze those actual outputs as link inputs after codegen; do not exclude V/C/native source, headers, scripts, libraries or resources."
+    },
+    "qualification": "V -profile C codegen completed, then source-pin mismatch rejected it before C compile or browser execution. Earlier valid main-thread V profile remains investigative basis."
+  },
+  "disk_cleanup": {
+    "started_unix": 1793817398.6739242,
+    "disk_before": {
+      "total": 1995165736960,
+      "used": 1992256917504,
+      "free": 2908819456
+    },
+    "archives": [
+      {
+        "path": "docs/performance/raw/bbc-committed-grid-20261104.tar.gz",
+        "bytes": 47163162,
+        "sha256": "582ec3cea4ef51336ced331520ec44b4cf47e54590d1df96a769e7cc083916e5",
+        "members": 641,
+        "roundtrip_verified": true
+      },
+      {
+        "path": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "sha256": "4181f23cc307394f72569c036eeb3529ec1d46009c7cbada260105aebb8673ea",
+        "bytes": 54896093,
+        "members": 461,
+        "all_members_verified": true
+      },
+      {
+        "path": "docs/performance/raw/bbc-flex-matched-control-20261104.tar.gz",
+        "sha256": "5554744040fa2f5cedce335c460248ccaf98664194f702ef727b39d3063a502d",
+        "bytes": 14702482,
+        "members": 238,
+        "all_members_verified": true
+      },
+      {
+        "path": "docs/performance/raw/bbc-flex-broad-20261104.tar.gz",
+        "sha256": "046e9ef7411b6ef3f6bcebd16b8d36925fae3af76a3017e7aad67f87f1ebf4d1",
+        "bytes": 8990153,
+        "members": 324,
+        "all_members_verified": true
+      },
+      {
+        "path": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "sha256": "eb50b7b1cb41ae3128beb244fca44fecfaaa2acb3f596cd0e40f8877edbdf9ee",
+        "bytes": 32460383,
+        "members": 243,
+        "all_members_verified": true
+      }
+    ],
+    "removed": [
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/compile-evidence-check-b870/production-compilation/b8701f740c8b57a0137d71bfece6ca3c1ae623d3abbc552fe4f70f067c82d446/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-committed-grid-20261104.tar.gz",
+        "member": "committed-grid/compile-evidence-check-b870/production-compilation/b8701f740c8b57a0137d71bfece6ca3c1ae623d3abbc552fe4f70f067c82d446/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/compile-evidence-check-b870/production-compilation/b8701f740c8b57a0137d71bfece6ca3c1ae623d3abbc552fe4f70f067c82d446/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-committed-grid-20261104.tar.gz",
+        "member": "committed-grid/compile-evidence-check-b870/production-compilation/b8701f740c8b57a0137d71bfece6ca3c1ae623d3abbc552fe4f70f067c82d446/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/compile-evidence-check-b870/production-compilation/b8701f740c8b57a0137d71bfece6ca3c1ae623d3abbc552fe4f70f067c82d446/0-0-Vox.c.i",
+        "bytes": 60992691,
+        "sha256": "33112d2b70f52d60a2c9abf339e37943a0ed831154c79dde7762de8992c88a63",
+        "durable_archive": "docs/performance/raw/bbc-committed-grid-20261104.tar.gz",
+        "member": "committed-grid/compile-evidence-check-b870/production-compilation/b8701f740c8b57a0137d71bfece6ca3c1ae623d3abbc552fe4f70f067c82d446/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/default.c",
+        "bytes": 26282605,
+        "sha256": "e15a2d64bd17a9a519ed528532034ae9d2ad8adb99f60ed837d7fb86866822a5",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "default.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/none.c",
+        "bytes": 26273222,
+        "sha256": "ac99f34425db87de3542e1af72b0af71e3c8794125d0a6fde7a0cf57e9b28f2c",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "none.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/prealloc.c",
+        "bytes": 26556595,
+        "sha256": "9160b55cca931c04336d8ab981bb13e3af1ad6e98fcc9c279bad029a5aa4ed22",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "prealloc.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/production/native-diagnostic/production-compilation/62b566b5d18cc6658acf55c2d23b9605aad23ee1fe1ea08ee8ecd1a58147f62c/0-0-Vox.c.i",
+        "bytes": 61012396,
+        "sha256": "a9e84fb1befded3339f33012483658d8dd774ce3591be6c1338b1579f3dba307",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "production/native-diagnostic/production-compilation/62b566b5d18cc6658acf55c2d23b9605aad23ee1fe1ea08ee8ecd1a58147f62c/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/production/native-diagnostic/production-compilation/62b566b5d18cc6658acf55c2d23b9605aad23ee1fe1ea08ee8ecd1a58147f62c/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "production/native-diagnostic/production-compilation/62b566b5d18cc6658acf55c2d23b9605aad23ee1fe1ea08ee8ecd1a58147f62c/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/production/native-diagnostic/production-compilation/62b566b5d18cc6658acf55c2d23b9605aad23ee1fe1ea08ee8ecd1a58147f62c/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "production/native-diagnostic/production-compilation/62b566b5d18cc6658acf55c2d23b9605aad23ee1fe1ea08ee8ecd1a58147f62c/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/0-0-Vox.c.i",
+        "bytes": 61012396,
+        "sha256": "e792691fb2b8c1391b89f31104c2ffb1d3b68040ca16d0434378924c8a878dfa",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "recorded-load-195049/acceptance/cohort-90/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "recorded-load-195049/acceptance/cohort-90/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "recorded-load-195049/acceptance/cohort-90/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/production/native-diagnostic/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/0-0-Vox.c.i",
+        "bytes": 61012396,
+        "sha256": "e792691fb2b8c1391b89f31104c2ffb1d3b68040ca16d0434378924c8a878dfa",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "recorded-load-195049/production/native-diagnostic/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/production/native-diagnostic/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "recorded-load-195049/production/native-diagnostic/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/production/native-diagnostic/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "recorded-load-195049/production/native-diagnostic/production-compilation/e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/refined-float-fixture/default.c",
+        "bytes": 26282835,
+        "sha256": "a9bd7a0d06ac11fd907a78b316e2278cb2c11fabf72d1ea837af382ccc5fe0a8",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "refined-float-fixture/default.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/refined-float-fixture/none.c",
+        "bytes": 26273451,
+        "sha256": "c738f796486c6228fb11658aeb481bfc57ba3644acc0b4e12ea94351b6e6c48f",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "refined-float-fixture/none.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/refined-float-fixture/prealloc.c",
+        "bytes": 26556824,
+        "sha256": "51b4465d4e197ec8a425986ec3ac04260f63a678b619b089c426be8279d75aeb",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "refined-float-fixture/prealloc.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/target-epoch-194232/production/native-diagnostic/production-compilation/4eb56074784f880e3245713097e11e76d50187d1dc779974f94122517c140b04/0-0-Vox.c.i",
+        "bytes": 61012396,
+        "sha256": "14d9ac4c77c05532106810a5c72faded476dde0959fbd7c72b7bd24e3a56ed5a",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "target-epoch-194232/production/native-diagnostic/production-compilation/4eb56074784f880e3245713097e11e76d50187d1dc779974f94122517c140b04/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/target-epoch-194232/production/native-diagnostic/production-compilation/4eb56074784f880e3245713097e11e76d50187d1dc779974f94122517c140b04/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "target-epoch-194232/production/native-diagnostic/production-compilation/4eb56074784f880e3245713097e11e76d50187d1dc779974f94122517c140b04/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/target-epoch-194232/production/native-diagnostic/production-compilation/4eb56074784f880e3245713097e11e76d50187d1dc779974f94122517c140b04/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+        "member": "target-epoch-194232/production/native-diagnostic/production-compilation/4eb56074784f880e3245713097e11e76d50187d1dc779974f94122517c140b04/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/0-0-Vox.c.i",
+        "bytes": 61014272,
+        "sha256": "ae3e8f9c612058c9ac53c874fe5335b605cf7fa7b1d96d1ba1821ed496a110c0",
+        "durable_archive": "docs/performance/raw/bbc-flex-matched-control-20261104.tar.gz",
+        "member": "matched-control-201038/measurement/matched-flex/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-flex-matched-control-20261104.tar.gz",
+        "member": "matched-control-201038/measurement/matched-flex/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-flex-matched-control-20261104.tar.gz",
+        "member": "matched-control-201038/measurement/matched-flex/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/production/native-diagnostic/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/0-0-Vox.c.i",
+        "bytes": 61014272,
+        "sha256": "ae3e8f9c612058c9ac53c874fe5335b605cf7fa7b1d96d1ba1821ed496a110c0",
+        "durable_archive": "docs/performance/raw/bbc-flex-matched-control-20261104.tar.gz",
+        "member": "matched-control-201038/production/native-diagnostic/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/production/native-diagnostic/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-flex-matched-control-20261104.tar.gz",
+        "member": "matched-control-201038/production/native-diagnostic/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/production/native-diagnostic/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-flex-matched-control-20261104.tar.gz",
+        "member": "matched-control-201038/production/native-diagnostic/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/broad-after-flex/default.c",
+        "bytes": 30906119,
+        "sha256": "c12d45f93c1890c7079d1eaa07dd28e2bfc0638f3a70fa47379585c6cf8dd999",
+        "durable_archive": "docs/performance/raw/bbc-flex-broad-20261104.tar.gz",
+        "member": "broad-after-flex/default.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/broad-after-flex/none.c",
+        "bytes": 30892558,
+        "sha256": "81a21304d38b8babe89102a9bba1a0ce6c8b721ab6fadf53b99b7486e67f10c5",
+        "durable_archive": "docs/performance/raw/bbc-flex-broad-20261104.tar.gz",
+        "member": "broad-after-flex/none.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic2/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/0-0-Vox.c.i",
+        "bytes": 61014272,
+        "sha256": "ae3e8f9c612058c9ac53c874fe5335b605cf7fa7b1d96d1ba1821ed496a110c0",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic2/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic2/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic2/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic2/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic2/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic3/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/0-0-Vox.c.i",
+        "bytes": 61014272,
+        "sha256": "ae3e8f9c612058c9ac53c874fe5335b605cf7fa7b1d96d1ba1821ed496a110c0",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic3/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic3/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic3/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic3/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic3/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic4/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/0-0-Vox.c.i",
+        "bytes": 61014272,
+        "sha256": "ae3e8f9c612058c9ac53c874fe5335b605cf7fa7b1d96d1ba1821ed496a110c0",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic4/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic4/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic4/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic4/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic4/page/production-compilation/b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic5/page/production-compilation/487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e/0-0-Vox.c.i",
+        "bytes": 61014758,
+        "sha256": "6306182335f7da956ad2498a7bd831ea6a1b50005dcd46a2d5c4d678be10b0c9",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic5/page/production-compilation/487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e/0-0-Vox.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic5/page/production-compilation/487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e/1-1-module_loader_darwin.m.i",
+        "bytes": 4750441,
+        "sha256": "b2dec47375e1975f066b5246f3b6a5e64c565eeeb12d644a93718498f58114cf",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic5/page/production-compilation/487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e/1-1-module_loader_darwin.m.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/baseline-sampled-diagnostic5/page/production-compilation/487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e/2-2-fontstash_impl.c.i",
+        "bytes": 273473,
+        "sha256": "a8a94ede8a70001ccc3ff336e3dd86cf97d5e6867eb26555d2369c9f9109c6e9",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "baseline-sampled-diagnostic5/page/production-compilation/487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e/2-2-fontstash_impl.c.i"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/default.c",
+        "bytes": 15473446,
+        "sha256": "7520001f552de56f787ff949aac6893baec745f87be789c88ef83dbb9c7c8ae0",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "default.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/none.c",
+        "bytes": 15460507,
+        "sha256": "14307fc2302161965f15c3a550d98d9eb6a4a95c0626cae6c21d1bd1dcce8429",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "none.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/prealloc.c",
+        "bytes": 15667196,
+        "sha256": "ce51b32685ee38855498efa3ebe16678fbf77239d67e35bda6161bc19ccaa765",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "prealloc.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/refined-optional-fixture/default.c",
+        "bytes": 15473531,
+        "sha256": "8b5dc86d4b2b9a469dd61043d982d163045b84de1d374dd30df1d7a152958654",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "refined-optional-fixture/default.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/refined-optional-fixture/none.c",
+        "bytes": 15460592,
+        "sha256": "71a3bfd84b41eba1386538e32d95eade409bd01c2e412c457f029cdb2c67f15b",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "refined-optional-fixture/none.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/refined-optional-fixture/prealloc.c",
+        "bytes": 15667281,
+        "sha256": "f6b61d5bdde49e0ee1744e502ad1551c544dba4032e2cf4a3b6e52c1ad2f045f",
+        "durable_archive": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+        "member": "refined-optional-fixture/prealloc.c"
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/prealloc",
+        "bytes": 12825984,
+        "sha256": "04b1b2e24b81e9107e884cedbab2adb32e1ca2c65d0936aef9d08a74fff6df55",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/default",
+        "bytes": 12836112,
+        "sha256": "7c467724a498fff315215dc96f87be382219f7e02a8908efcb404227247247d4",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/none",
+        "bytes": 12729648,
+        "sha256": "90cdc27ef2439b47c317daf54892dcbe7bb01dfe6f4f5e2708bb8dd067f6d333",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/refined-float-fixture/prealloc",
+        "bytes": 12842496,
+        "sha256": "e2248ebac551140f0d6f010d78bc54e83a7df3adf17610c442318996236521ab",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/refined-float-fixture/default",
+        "bytes": 12836112,
+        "sha256": "5ee9368157ca78abf08c3fa6eed498604d4b301383710e07b0e1530bc67886fa",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/refined-float-fixture/none",
+        "bytes": 12729648,
+        "sha256": "adae37b1ce308a38b33f96f2a8e32277bb8ffb699a3f2c5819d65ab5ed99b768",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/broad-after-flex/default",
+        "bytes": 15363856,
+        "sha256": "2a325211771411915cf9d090da7d2dfc141576f425620a09f19bf1da81c1070e",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/broad-after-flex/none",
+        "bytes": 15273680,
+        "sha256": "8b49446d635b7683f31362d2a83a6c2e4b7bcfbcf29f1198405f991aebdda662",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/prealloc",
+        "bytes": 8893664,
+        "sha256": "d5e6024a64ce166a983199062a663b6595129bd4ba9e3838cb0b4f47199ec379",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/default",
+        "bytes": 8938352,
+        "sha256": "e9b24af51ce05faf7273a19ae2f4edc4fd659051b0747db343a16faefb21197a",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/none",
+        "bytes": 8793648,
+        "sha256": "dd1d4a7d2aeaf1e30d76b4ab1a9cd6cf3b8c16ef8d3c7fcf33b3a3d3d5d6a3b1",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/refined-optional-fixture/prealloc",
+        "bytes": 8893664,
+        "sha256": "aad2256e2652883bddaa59b15eee90f06926b06ec3bc59eae2960b90de6973de",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/refined-optional-fixture/default",
+        "bytes": 8938352,
+        "sha256": "0acabd7a597431db371a0b6373c731f362ab37fab4d94beb20b143035d0de0d8",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/refined-optional-fixture/none",
+        "bytes": 8793648,
+        "sha256": "2b10221e30b0677cfeba1ecffe423dd6104210c479508230ea9cb98e51e12d6e",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/prealloc",
+        "bytes": 12789728,
+        "sha256": "369659d91e4343eaed09cf3838a43ec8daed3e5938629669113f575013b8f104",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/default",
+        "bytes": 12799856,
+        "sha256": "2254f379ef4a05c22bb1b1de2d15a6f14121850c19eeccdc4ea7fba7f24293f4",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/none",
+        "bytes": 12693392,
+        "sha256": "dc1b508dc1586eca0a8f4307227ca60e72be9cae5e16cb7f3650e602fad785de",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/broad-after-grid/default",
+        "bytes": 15327168,
+        "sha256": "edcfc3df102c069d029a9f1d6289d267d57a497ec8d40249ccc58b5feffebc8e",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/broad-after-grid/none",
+        "bytes": 15220512,
+        "sha256": "9a0374b3ec2037c3a3f350dccac148965b46828b85ba2968d83af473dd1c9426",
+        "reason": "Completed focused test executable; retained generated source/commands/disassembly reproduce it."
+      }
+    ],
+    "profiles": [
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/production/native-diagnostic/pair-1-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/production/native-diagnostic/pair-1-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/production/native-diagnostic/pair-1-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/production/native-diagnostic/pair-1-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-5-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-5-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/runtime-validation-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/runtime-validation-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-4-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-4-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/runtime-validation-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/runtime-validation-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-6-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-6-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-7-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-7-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-1-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-1-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-2-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-2-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-2-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-2-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/runtime-discovery-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/runtime-discovery-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-3-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-3-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-7-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-7-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-6-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-6-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-4-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-4-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-3-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-3-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-5-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-5-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-1-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/pair-1-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/runtime-discovery-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/runtime-discovery-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/production/native-diagnostic/pair-1-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/production/native-diagnostic/pair-1-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/production/native-diagnostic/pair-1-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/production/native-diagnostic/pair-1-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-4-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-4-brave/profile",
+        "bytes": 19480726
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-6-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-6-brave/profile",
+        "bytes": 19458247
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/runtime-validation-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/runtime-validation-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-2-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-2-brave/profile",
+        "bytes": 19458281
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-7-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-7-brave/profile",
+        "bytes": 19456932
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-5-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-5-brave/profile",
+        "bytes": 19458283
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-1-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-1-brave/profile",
+        "bytes": 19457042
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-3-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-3-brave/profile",
+        "bytes": 19456932
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-1-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-1-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-2-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-2-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/runtime-discovery-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/runtime-discovery-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-3-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-3-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-7-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-7-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-6-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-6-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-4-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-4-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-5-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/pair-5-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/production/native-diagnostic/pair-1-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/production/native-diagnostic/pair-1-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/production/native-diagnostic/pair-1-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/production/native-diagnostic/pair-1-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/target-epoch-194232/production/native-diagnostic/pair-1-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/target-epoch-194232/production/native-diagnostic/pair-1-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/target-epoch-194232/production/native-diagnostic/pair-1-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/target-epoch-194232/production/native-diagnostic/pair-1-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-4-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-4-brave/profile",
+        "bytes": 19458230
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-6-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-6-brave/profile",
+        "bytes": 19458157
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-5-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-5-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/runtime-validation-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/runtime-validation-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-4-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-4-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-2-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-2-brave/profile",
+        "bytes": 19458157
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-7-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-7-brave/profile",
+        "bytes": 19480653
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/runtime-validation-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/runtime-validation-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-6-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-6-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-5-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-5-brave/profile",
+        "bytes": 19573356
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-1-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-1-brave/profile",
+        "bytes": 19458230
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-3-brave/cache",
+        "bytes": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-3-brave/profile",
+        "bytes": 19458231
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-7-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-7-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-1-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-1-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-2-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-2-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-2-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-2-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/runtime-discovery-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/runtime-discovery-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-3-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-3-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-7-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-7-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-6-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-6-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-4-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-4-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-3-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-3-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-5-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-5-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-1-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/pair-1-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/runtime-discovery-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/contended-diagnostic/observations/runtime-discovery-control/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/production/native-diagnostic/pair-1-vox/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/production/native-diagnostic/pair-1-vox/profile",
+        "bytes": 304
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/production/native-diagnostic/pair-1-control/cache",
+        "bytes": 4407163
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/production/native-diagnostic/pair-1-control/profile",
+        "bytes": 304
+      }
+    ],
+    "policy": "Only hash-verified generated C/preprocessed outputs already in durable committed archives, reproducible completed test binaries, and completed private browser profiles/caches. Keep app bundles, fixtures, receipts, counters, PNGs and current native epoch intact.",
+    "finished_unix": 1793817410.47296,
+    "disk_after": {
+      "total": 1995165736960,
+      "used": 1985999306752,
+      "free": 9166430208
+    }
+  },
+  "phase_partition_qualification": "Root-process checkpoint labels partition preceding work; build_boxes includes work before first tree-builder checkpoint, so8.55B must not be attributed to box construction alone.",
+  "history": {
+    "attempted_acceptance_cohorts": 91,
+    "attempted_acceptance_browser_trials": 2001
+  },
+  "broad_due": true,
+  "target_met": false,
+  "catalog_entry_added": false,
+  "archive": {
+    "path": "docs/performance/raw/bbc-edge-cohort91-20261104.tar.gz",
+    "sha256": "7967601debd06526fe7234d2fa95407c66bc6f1ea5aba594a0ca4f3db8faa7cc",
+    "bytes": 23928918,
+    "members": 248,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793817839.968568,
+  "archive_completion": [
+    {
+      "path": "Build/bbc-edge-reuse-20261104-2030/archive91.guard.json",
+      "report": {
+        "command": [
+          "python3",
+          "Build/bbc-edge-reuse-20261104-2030/archive-cohort91.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 201752576,
+        "elapsed_seconds": 7.518215208,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/bbc-edge-reuse-20261104-2030/archive91-finalize.guard.json",
+      "report": {
+        "command": [
+          "python3",
+          "Build/bbc-edge-reuse-20261104-2030/archive-cohort91-finalize.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 220954624,
+        "elapsed_seconds": 2.9250316670000003,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "archive_completion_correction": {
+    "reason": "Original archiver verified raw members but its ledger assertion treated the canonical driver control engine field as control, although it is vox. Finalizer groups by the explicit trial-directory arm. No raw samples changed.",
+    "finalizer_sha256": "827af17fec9c1c6dd064d2f4997b46fa208f5b9430580f87cffb26e432eaf449",
+    "finalizer_source": "from pathlib import Path\nimport json,hashlib,tarfile,time,statistics\nrepo=Path.cwd();r=Path(__file__).resolve().parent;e=Path(json.loads((r/'active-resume-native.json').read_text())['path']);coarse=Path(json.loads((r/'active-coarse-profile.json').read_text())['path']);base=e/'cohort91-after-disk/cohort-91';out=repo/'docs/performance/raw/bbc-edge-cohort91-20261104.tar.gz'\nwith tarfile.open(out)as t:\n manifest=json.load(t.extractfile('MANIFEST.json'))['files']\n for name,x in manifest.items():\n  data=t.extractfile(name).read();assert len(data)==x['bytes']and hashlib.sha256(data).hexdigest()==x['sha256'],name\nrows=[];by={e:[]for e in ['vox','control','brave']}\nfor p in sorted(base.glob('pair-*/result.json')):\n d=json.loads(p.read_text());arm=p.parent.name.rsplit('-',1)[1];interval=d['launch_instruction_interval'];by[arm].append(interval);assert d['exit']==0 and d['kernel_exit_status']==0 and d['content_exact']and d['pixels_exact'];rows.append(dict(trial=p.parent.name,engine=arm,interval=interval,exit=d['exit'],native_exit=d['kernel_exit_status'],content_exact=d['content_exact'],pixels_exact=d['pixels_exact'],input_failure=(p.parent/'input-identity-failure.json').exists(),ownership=d.get('capture_ownership_audit',{}).get('passed')if d['engine']!='brave'else bool(d.get('membership_before')and d.get('membership_after'))))\nassert len(rows)==12 and all(len(x)==4 for x in by.values());v=statistics.median(x['upper']for x in by['vox']);c=statistics.median(x['lower']for x in by['control']);b=statistics.median(x['lower']for x in by['brave']);failure=json.loads((base/'pair-4-control/input-identity-failure.json').read_text())\nledger=dict(status='Cohort91 invalid: executable published during fourth triple; stopped after12browser attempts. All12capture audits pass but inputs changed. No accepted target or marginal saving. No catalog entry.',engine_commit='99ee0f99f',control_commit='0dd85ac67',native=json.loads((e/'production/native-diagnostic-checks.json').read_text()),production=json.loads((e/'production/selected-production.json').read_text()),source_proof=json.loads((e/'production/source-proof.json').read_text()),disk_preflight=json.loads((e/'cohort91/validation.json').read_text()),cohort=dict(number=91,actual_attempts=12,complete_triples_written=3,fourth_triple_rows_retained=3,rows=rows,identity_failure=failure,guard=json.loads((base.parent/'cohort91.guard.json').read_text()),exit=json.loads((base.parent/'exit.json').read_text()),runtime_preflights=4,scope=json.loads((base.parent/'protocol-before.json').read_text()),diagnostic_all_attempt_medians=dict(vox=v,control=c,brave_lower=b,point_reduction_for_cadence_only=c-v,qualification='Four attempted triples, including the identity-failing last control. Invalid exploratory statistics; neither seven-pair statistics nor optimization credit. Point difference still triggers broad cadence.')),rejected_profile=dict(controller_exit=json.loads((coarse/'controller-exit.json').read_text()),rejection=json.loads((coarse/'codegen-rejection.json').read_text()),input_changes=json.loads((coarse/'codegen-input-comparison.json').read_text()),qualification='V -profile C codegen completed, then source-pin mismatch rejected it before C compile or browser execution. Earlier valid main-thread V profile remains investigative basis.'),disk_cleanup=json.loads((r/'prune-receipt.json').read_text()),phase_partition_qualification='Root-process checkpoint labels partition preceding work; build_boxes includes work before first tree-builder checkpoint, so8.55B must not be attributed to box construction alone.',history=dict(attempted_acceptance_cohorts=91,attempted_acceptance_browser_trials=2001),broad_due=True,target_met=False,catalog_entry_added=False,archive=dict(path=str(out.relative_to(repo)),sha256=hashlib.sha256(out.read_bytes()).hexdigest(),bytes=out.stat().st_size,members=len(manifest)+1,all_members_verified=True),recorded_unix=time.time());(repo/'docs/performance/bbc-edge-cohort91-20261104.json').write_text(json.dumps(ledger,indent=2)+'\\n');print(json.dumps(dict(archive=ledger['archive'],point_difference=c-v)),flush=True)\n"
+  }
+}

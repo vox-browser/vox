@@ -1,0 +1,608 @@
+{
+  "status": "Cohort92 completes7triples but Brave pair6 fails original pixels; no acceptance. All14Vox/control captures pass. Median point difference209232743(0.7542%),4improvements3regressions; conservative control comparison fails, no robust saving credited. Target integer gate also fails. BBC homepage not cataloged.",
+  "engine_commit": "99ee0f99f",
+  "control_commit": "0dd85ac67",
+  "native_checks": [
+    {
+      "arm": "vox",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": true,
+      "runtime_images_pinned": true
+    },
+    {
+      "arm": "control",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": false,
+      "runtime_images_pinned": true
+    }
+  ],
+  "production": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "d6a6dae54d504858b95fe7c67ebe56324a1470778cc97776db31d99e29bc39ca",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-212956-b9ab8b6c/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "8a0a3eae27d4278ae0cc7023d8e80eb81198a0de8bcf9f0a3cf22e6a4ceff16f",
+      "dirty": true,
+      "head": "6f1b280b2b0fa3643d3796aae23f4490729e7408",
+      "repository_sha256": "accb33d819273fb0d0cc4756d5b2fd6ccebee98e47e43b1fcee31f19b19b5705"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "8a0a3eae27d4278ae0cc7023d8e80eb81198a0de8bcf9f0a3cf22e6a4ceff16f",
+      "dirty": true,
+      "head": "6f1b280b2b0fa3643d3796aae23f4490729e7408",
+      "repository_sha256": "accb33d819273fb0d0cc4756d5b2fd6ccebee98e47e43b1fcee31f19b19b5705"
+    },
+    "request": {
+      "head": "6f1b280b2b0fa3643d3796aae23f4490729e7408",
+      "id": "f882b0b271ca465fa75ab50cc43bbac4"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "8a0a3eae27d4278ae0cc7023d8e80eb81198a0de8bcf9f0a3cf22e6a4ceff16f",
+      "dirty": true,
+      "head": "6f1b280b2b0fa3643d3796aae23f4490729e7408",
+      "repository_sha256": "accb33d819273fb0d0cc4756d5b2fd6ccebee98e47e43b1fcee31f19b19b5705"
+    }
+  },
+  "source_proof": {
+    "preserved_source": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/production/native-diagnostic/production-compilation/d6a6dae54d504858b95fe7c67ebe56324a1470778cc97776db31d99e29bc39ca/0-0-Vox.c.i",
+    "sha256": "d9ceb776e5026dc269883dede83aae4da82e42798e0afc5b567e9ce6a2ce100c",
+    "witnesses": {
+      "Vox box edges: reused resolved absolute/percentage snapshot": true,
+      "css__ComputedValues__uncached_resolved_box_model_edges": true,
+      "css__resolved_box_edge_kind": true,
+      "resolved_edge_memo_": true
+    },
+    "hash_matches": true
+  },
+  "scope": {
+    "cohort": 92,
+    "comparison": "Seven alternating matched control/Vox/Brave triples. Same executable in both Vox arms, only resolved-edge memo disabled in control. Target evaluates Vox/Brave; marginal edge comparison reported separately. Separate traced runtime discovery and pinned-set validation precede acceptance. Every attempt retained; no profiler/probe/dyld tracing in acceptance. No credit from protocol corrections or historical cross-build differences.",
+    "scope": "Exclusive coalition creation through encoded document PNG; startup and native window/target setup included. Vox endpoint before filewrite; Brave includes CDP delivery. Content audits and teardown follow endpoint. GPU/outside services excluded.",
+    "workload": "Unchanged609response replay, originalauthor scripts,1024x768CSS,DPR/capture2,two-second settle after identity/readiness/visibledecode,fresh profiles/caches,OSfilesystem/shadercaches retained. Fixed original references; historical logical font/paint and CSS SVG fallback common to both Voxarms.",
+    "host_gate": "Record variable host load without a launch-load cap; free disk>=2GiB before launch. Native exits, ownership, content, exact pixels and all pinned inputs required. Strict goal10maxVoxUpper<=9minBraveLower.",
+    "engine_commit": "99ee0f99f",
+    "control_tool_commit": "0dd85ac67",
+    "runtime_tool_commits": [
+      "cd836ed37",
+      "2b7c4428f"
+    ],
+    "production": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "d6a6dae54d504858b95fe7c67ebe56324a1470778cc97776db31d99e29bc39ca",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-212956-b9ab8b6c/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "8a0a3eae27d4278ae0cc7023d8e80eb81198a0de8bcf9f0a3cf22e6a4ceff16f",
+        "dirty": true,
+        "head": "6f1b280b2b0fa3643d3796aae23f4490729e7408",
+        "repository_sha256": "accb33d819273fb0d0cc4756d5b2fd6ccebee98e47e43b1fcee31f19b19b5705"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "8a0a3eae27d4278ae0cc7023d8e80eb81198a0de8bcf9f0a3cf22e6a4ceff16f",
+        "dirty": true,
+        "head": "6f1b280b2b0fa3643d3796aae23f4490729e7408",
+        "repository_sha256": "accb33d819273fb0d0cc4756d5b2fd6ccebee98e47e43b1fcee31f19b19b5705"
+      },
+      "request": {
+        "head": "6f1b280b2b0fa3643d3796aae23f4490729e7408",
+        "id": "f882b0b271ca465fa75ab50cc43bbac4"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "8a0a3eae27d4278ae0cc7023d8e80eb81198a0de8bcf9f0a3cf22e6a4ceff16f",
+        "dirty": true,
+        "head": "6f1b280b2b0fa3643d3796aae23f4490729e7408",
+        "repository_sha256": "accb33d819273fb0d0cc4756d5b2fd6ccebee98e47e43b1fcee31f19b19b5705"
+      }
+    }
+  },
+  "cohort": {
+    "number": 92,
+    "triples": 7,
+    "actual_attempts": 21,
+    "runtime_preflights": 4,
+    "capture_checks": [
+      {
+        "pair": 1,
+        "arm": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 17480045760,
+          "upper": 17499239644
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 1,
+        "arm": "control",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 27521259502,
+          "upper": 27521259502
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 1,
+        "arm": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 27398054672,
+          "upper": 27398054672
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 2,
+        "arm": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 17554225303,
+          "upper": 17560076729
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 2,
+        "arm": "control",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 27741927552,
+          "upper": 27741927552
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 2,
+        "arm": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 28076070212,
+          "upper": 28076070212
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 3,
+        "arm": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 17448993453,
+          "upper": 17470901430
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 3,
+        "arm": "control",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 27217027409,
+          "upper": 27217027409
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 3,
+        "arm": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 26581625668,
+          "upper": 26581625668
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 4,
+        "arm": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 17331896639,
+          "upper": 17336667584
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 4,
+        "arm": "control",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 29046825436,
+          "upper": 29046825436
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 4,
+        "arm": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 27532694809,
+          "upper": 27532694809
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 5,
+        "arm": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 17305846620,
+          "upper": 17323455668
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 5,
+        "arm": "control",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 28503470500,
+          "upper": 28503470500
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 5,
+        "arm": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 28484806857,
+          "upper": 28484806857
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 6,
+        "arm": "brave",
+        "exit": 1,
+        "native_exit": 0,
+        "pixels_exact": false,
+        "content_exact": true,
+        "interval": {
+          "lower": 17406210160,
+          "upper": 17421518274
+        },
+        "error": "Captured document differs from its unchanged pixel reference",
+        "capture_valid": false
+      },
+      {
+        "pair": 6,
+        "arm": "control",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 27843516446,
+          "upper": 27843516446
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 6,
+        "arm": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 28014296937,
+          "upper": 28014296937
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 7,
+        "arm": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 17423879058,
+          "upper": 17435666787
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 7,
+        "arm": "control",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 27236704583,
+          "upper": 27236704583
+        },
+        "error": null,
+        "capture_valid": true
+      },
+      {
+        "pair": 7,
+        "arm": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "interval": {
+          "lower": 27335861166,
+          "upper": 27335861166
+        },
+        "error": null,
+        "capture_valid": true
+      }
+    ],
+    "original_summary": {
+      "cross_browser_pixels": {
+        "actual": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-vox/document.png",
+        "diff": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/cohort92/cohort-92/cross-browser.diff.png",
+        "different_pixels": 2602001,
+        "exact": false,
+        "expected": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/cohort92/cohort-92/cross-browser.diff.png\n"
+      },
+      "error": "Every observation must exit successfully and match pixels and full row identity",
+      "pairs": 7,
+      "passed": false
+    },
+    "observed_medians": {
+      "vox_upper": 27532694809,
+      "control_lower": 27741927552,
+      "brave_lower": 17423879058
+    },
+    "matched_control": {
+      "valid": true,
+      "median_point_difference": 209232743,
+      "median_point_fraction": 0.00754211265990116,
+      "paired_improvements": 4,
+      "paired_regressions": 3,
+      "worst_vox_over_best_control": 1.0465803788543335,
+      "conservative_any_saving": false
+    },
+    "brave_comparison": {
+      "acceptance": false,
+      "reason": "Pair6pixels differ",
+      "strict_gate": {
+        "left": 284848068570,
+        "right": 155752619580,
+        "passed": false
+      },
+      "worst_vox_over_best_brave": 1.6459643658277148,
+      "pixels": {
+        "actual": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/cohort92/cohort-92/pair-6-brave/document.png",
+        "diff": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/cohort92/cohort-92/pair-6-brave/document.diff.png",
+        "different_pixels": 224973,
+        "exact": false,
+        "expected": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 224973 (7.1517%)\ndifference_bounds: 32,882 1480x504\nmaximum_error_pixel: 1110,995 expected=215,40,70,255 actual=192,51,75,255\npixels_over_3: 1483 (0.0471%)\npixels_over_10: 170 (0.0054%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 23\nmean_absolute_error: 0.0257\nrmse: 0.1847\ndiff: /Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/cohort92/cohort-92/pair-6-brave/document.diff.png\n"
+      }
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/cohort-with-host.py",
+        "--output",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/cohort92/cohort-92",
+        "--repeat",
+        "7",
+        "--control-vox-app",
+        "Build/v/Vox.app",
+        "--control-disable-resolved-edge-reuse",
+        "--archive",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/fixture/clock-archive-v3",
+        "--memory-guard-registry",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/cohort92/cohort92-pids.json",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--expected-vox",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/fixture/reference-complete/pair-1-vox/document.png",
+        "--expected-brave",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/cohort92-native-214130/fixture/reference-complete/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+        "--retain-logical-paint-snapping",
+        "--retain-css-layout-for-svg"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "92045": "Wed Nov  4 21:44:24 2026    ",
+        "92054": "Wed Nov  4 21:44:24 2026    ",
+        "92606": "Wed Nov  4 21:44:31 2026    ",
+        "92609": "Wed Nov  4 21:44:31 2026    ",
+        "93689": "Wed Nov  4 21:44:41 2026    ",
+        "93696": "Wed Nov  4 21:44:41 2026    ",
+        "94506": "Wed Nov  4 21:44:49 2026    ",
+        "94511": "Wed Nov  4 21:44:49 2026    ",
+        "95260": "Wed Nov  4 21:44:58 2026    ",
+        "95262": "Wed Nov  4 21:44:58 2026    ",
+        "95832": "Wed Nov  4 21:45:06 2026    ",
+        "95837": "Wed Nov  4 21:45:06 2026    ",
+        "96338": "Wed Nov  4 21:45:15 2026    ",
+        "96342": "Wed Nov  4 21:45:15 2026    ",
+        "96357": "Wed Nov  4 21:45:16 2026    ",
+        "96358": "Wed Nov  4 21:45:16 2026    ",
+        "96360": "Wed Nov  4 21:45:16 2026    ",
+        "96389": "Wed Nov  4 21:45:16 2026    ",
+        "96390": "Wed Nov  4 21:45:16 2026    ",
+        "96412": "Wed Nov  4 21:45:17 2026    ",
+        "96667": "Wed Nov  4 21:45:22 2026    ",
+        "96672": "Wed Nov  4 21:45:22 2026    ",
+        "96678": "Wed Nov  4 21:45:22 2026    ",
+        "96679": "Wed Nov  4 21:45:22 2026    ",
+        "96683": "Wed Nov  4 21:45:22 2026    ",
+        "96706": "Wed Nov  4 21:45:23 2026    ",
+        "96707": "Wed Nov  4 21:45:23 2026    ",
+        "96734": "Wed Nov  4 21:45:24 2026    ",
+        "97036": "Wed Nov  4 21:45:29 2026    ",
+        "97038": "Wed Nov  4 21:45:29 2026    ",
+        "97379": "Wed Nov  4 21:45:37 2026    ",
+        "97382": "Wed Nov  4 21:45:37 2026    ",
+        "97715": "Wed Nov  4 21:45:44 2026    ",
+        "97717": "Wed Nov  4 21:45:44 2026    ",
+        "98051": "Wed Nov  4 21:45:52 2026    ",
+        "98054": "Wed Nov  4 21:45:52 2026    ",
+        "98571": "Wed Nov  4 21:45:59 2026    ",
+        "98573": "Wed Nov  4 21:45:59 2026    ",
+        "98586": "Wed Nov  4 21:45:59 2026    ",
+        "98587": "Wed Nov  4 21:45:59 2026    ",
+        "98588": "Wed Nov  4 21:45:59 2026    ",
+        "99007": "Wed Nov  4 21:46:06 2026    ",
+        "99011": "Wed Nov  4 21:46:06 2026    ",
+        "99023": "Wed Nov  4 21:46:06 2026    ",
+        "99024": "Wed Nov  4 21:46:06 2026    ",
+        "99032": "Wed Nov  4 21:46:06 2026    ",
+        "99068": "Wed Nov  4 21:46:07 2026    ",
+        "99503": "Wed Nov  4 21:46:13 2026    ",
+        "99507": "Wed Nov  4 21:46:13 2026    ",
+        "246": "Wed Nov  4 21:46:21 2026    ",
+        "251": "Wed Nov  4 21:46:21 2026    ",
+        "765": "Wed Nov  4 21:46:29 2026    ",
+        "767": "Wed Nov  4 21:46:29 2026    ",
+        "1211": "Wed Nov  4 21:46:37 2026    ",
+        "1221": "Wed Nov  4 21:46:37 2026    ",
+        "1570": "Wed Nov  4 21:46:45 2026    ",
+        "1572": "Wed Nov  4 21:46:45 2026    ",
+        "1579": "Wed Nov  4 21:46:45 2026    ",
+        "1580": "Wed Nov  4 21:46:45 2026    ",
+        "1582": "Wed Nov  4 21:46:45 2026    ",
+        "1939": "Wed Nov  4 21:46:51 2026    ",
+        "1946": "Wed Nov  4 21:46:51 2026    ",
+        "1956": "Wed Nov  4 21:46:52 2026    ",
+        "1957": "Wed Nov  4 21:46:52 2026    ",
+        "1961": "Wed Nov  4 21:46:52 2026    ",
+        "2687": "Wed Nov  4 21:46:58 2026    ",
+        "2689": "Wed Nov  4 21:46:58 2026    ",
+        "3324": "Wed Nov  4 21:47:06 2026    ",
+        "3329": "Wed Nov  4 21:47:06 2026    ",
+        "3744": "Wed Nov  4 21:47:14 2026    ",
+        "3752": "Wed Nov  4 21:47:14 2026    ",
+        "4329": "Wed Nov  4 21:47:21 2026    ",
+        "4336": "Wed Nov  4 21:47:21 2026    ",
+        "4879": "Wed Nov  4 21:47:28 2026    ",
+        "4893": "Wed Nov  4 21:47:28 2026    ",
+        "4904": "Wed Nov  4 21:47:28 2026    ",
+        "4905": "Wed Nov  4 21:47:28 2026    ",
+        "4908": "Wed Nov  4 21:47:28 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1441857536,
+      "elapsed_seconds": 194.76618270900002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "exit": {
+      "driver_guard_exit": 1
+    }
+  },
+  "history": {
+    "attempted_acceptance_cohorts": 92,
+    "attempted_acceptance_browser_trials": 2022
+  },
+  "broad_due": true,
+  "target_met": false,
+  "catalog_entry_added": false,
+  "limitations": "Frozen original-origin replay with original scripts; fresh profiles/caches, retained OS filesystem/shader caches. Launch through encoded PNG, startup/native target included. Vox endpoint before filewrite; Brave includes CDP delivery. Audits/teardown after endpoint. Exclusive coalition exited-task aggregate included, GPU/outside services excluded. Per-engine reference stability differs from cross-engine equality(82.7154% different). Unsupported performance.measure, incomplete DOM/script coverage and local Arial/Bold fallbacks remain disclosed.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-edge-cohort92-20261104.tar.gz",
+    "sha256": "0fd049c31727a30ca4d3237063ebe80d8b57aeb1c46e8594001f0fb3571bd0eb",
+    "bytes": 16807224,
+    "members": 304,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793818249.3903291,
+  "archive_completion": [
+    {
+      "path": "Build/bbc-edge-reuse-20261104-2030/archive92.guard.json",
+      "report": {
+        "command": [
+          "python3",
+          "Build/bbc-edge-reuse-20261104-2030/archive-cohort92.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 108544000,
+        "elapsed_seconds": 8.932502667,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ]
+}

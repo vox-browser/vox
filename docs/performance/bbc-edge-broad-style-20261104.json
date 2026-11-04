@@ -1,0 +1,123 @@
+{
+  "status": "Broad cadence completed; both modes504unique/501passes with exactly3known failures and unchanged checked inputs. No full pass/reset. Two separate style diagnostics pass original pixels/content/scripts/native-image identity; six font-refresh fallbacks in first capture, ordinary dirty flags dominate. Investigative only; no new engine optimization credit.",
+  "broad": {
+    "default": {
+      "unique_cases": 504,
+      "passes": 501,
+      "failures": [
+        "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+        "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+        "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+      ],
+      "inputs_unchanged": true
+    },
+    "none": {
+      "unique_cases": 504,
+      "passes": 501,
+      "failures": [
+        "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+        "test_chromium_toggle_controls_align_their_border_box_with_the_baseline",
+        "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin"
+      ],
+      "inputs_unchanged": true
+    }
+  },
+  "style_diagnostics": [
+    {
+      "name": "style-reasons",
+      "driver_guard_exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "external_sources": 72,
+      "source_hashes_exact": true,
+      "actual_images_pinned": true,
+      "edge_reuse_before_png": true,
+      "font_guard_counts": {
+        "2": 3,
+        "10": 3
+      },
+      "style_cause_counts": {
+        "0": 5148,
+        "1": 7016,
+        "6": 1181,
+        "7": 6
+      },
+      "source_traces": [],
+      "qualification": "Separate traced production diagnostic. Process-wide cumulative counters beforePNG, not instructions or isolated CPU costs; source trace caps each source/reason at8. No optimization credit."
+    },
+    {
+      "name": "style-invalidation",
+      "driver_guard_exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "external_sources": 72,
+      "source_hashes_exact": true,
+      "actual_images_pinned": true,
+      "edge_reuse_before_png": true,
+      "font_guard_counts": {
+        "2": 3,
+        "10": 3
+      },
+      "style_cause_counts": {
+        "0": 5148,
+        "1": 7016,
+        "6": 1181,
+        "7": 6
+      },
+      "source_traces": [
+        "Vox style invalidation source: node NodeInsertBefore document=false",
+        "Vox style invalidation source: node NodeInsertBefore document=false",
+        "Vox style invalidation source: node NodeInsertBefore document=false",
+        "Vox style invalidation source: node NodeInsertBefore document=false",
+        "Vox style invalidation source: node NodeInsertBefore document=false",
+        "Vox style invalidation source: node NodeInsertBefore document=false",
+        "Vox style invalidation source: node NodeInsertBefore document=false",
+        "Vox style invalidation source: node NodeInsertBefore document=false",
+        "Vox style invalidation source: node MediaQueryChangedMatchState document=true",
+        "Vox style invalidation source: node ElementSetShadowRoot input id=:R35tbdm: class=SearchInput-styles__SearchInputStyled-sc-50f6a0bc-1 fiGGev",
+        "Vox style invalidation source: node NodeRemove document=false",
+        "Vox style invalidation source: node NodeRemove document=false",
+        "Vox style invalidation source: node StyleSheetInsertRule document=true",
+        "Vox style invalidation source: node NodeRemove style id= class=",
+        "Vox style invalidation source: node StyleSheetListRemoveSheet document=true",
+        "Vox style invalidation source: node NodeRemove document=false",
+        "Vox style invalidation source: attribute(class) ElementAttributeChange div id= class=Backdrop-styles__BackdropStyled-sc-9f7d4825-0 dya-dBg",
+        "Vox style invalidation source: attribute(class) ElementAttributeChange div id= class=Drawer-styles__DrawerBackgroundStyled-sc-211ba7ec-0 bNHlia",
+        "Vox style invalidation source: node NodeRemove div id=content-setter class=",
+        "Vox style invalidation source: node NodeRemove img id= class=Image-styles__ImageStyled-sc-8c99a12b-0 fjCDYB hide-when-no-script",
+        "Vox style invalidation source: node NodeRemove img id= class=Image-styles__ImageStyled-sc-8c99a12b-0 fjCDYB hide-when-no-script",
+        "Vox style invalidation source: node NodeRemove img id= class=Image-styles__ImageStyled-sc-8c99a12b-0 fjCDYB hide-when-no-script"
+      ],
+      "qualification": "Separate traced production diagnostic. Process-wide cumulative counters beforePNG, not instructions or isolated CPU costs; source trace caps each source/reason at8. No optimization credit."
+    }
+  ],
+  "archive": {
+    "path": "docs/performance/raw/bbc-edge-broad-style-20261104.tar.gz",
+    "bytes": 27428585,
+    "sha256": "7832e5786d6f4e90139dfe086e63469e9e1358938a2d635f4635821419f9ca0a",
+    "members": 386,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793818792.850246,
+  "archive_completion": [
+    {
+      "path": "Build/bbc-edge-reuse-20261104-2030/archive-broad-style.guard.json",
+      "report": {
+        "command": [
+          "python3",
+          "Build/bbc-edge-reuse-20261104-2030/archive-broad-style.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 127238144,
+        "elapsed_seconds": 10.716953417000001,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ]
+}
