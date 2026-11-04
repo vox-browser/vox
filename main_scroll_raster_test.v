@@ -332,11 +332,9 @@ fn test_scroll_raster_admits_translating_effects_and_media() {
 		[blur_filter_begin(10), effect_begin, ordinary, filter_end, effect_end]] {
 		assert !layout.viewport_scroll_raster_reusable(document, commands, 200, 200)
 	}
-	// A blur layer is rasterized at its device position, so its key never
-	// matches a retained frame and the whole layer is repainted each frame;
-	// a pointwise filter layer keeps a stable key.
+	// Unchanged filters retain their pixels at the same device position.
 	blur_keys := scroll_raster_frame_keys([blur_filter_begin(10), ordinary, filter_end], 0, 1, 1024, 768)
-	assert scroll_raster_frame_keys([blur_filter_begin(10), ordinary, filter_end], 0, 1, 1024, 768)[0].hash != blur_keys[0].hash
+	assert scroll_raster_frame_keys([blur_filter_begin(10), ordinary, filter_end], 0, 1, 1024, 768)[0].hash == blur_keys[0].hash
 	gray_keys := scroll_raster_frame_keys([grayscale_begin, ordinary, filter_end], 0, 1, 1024, 768)
 	assert scroll_raster_frame_keys([grayscale_begin, ordinary, filter_end], 0, 1, 1024, 768)[0].hash == gray_keys[0].hash
 	svg_filter := layout.PaintCommand{
@@ -586,15 +584,17 @@ fn test_scroll_raster_gradient_blur_keys_translate_with_content() {
 		}
 	}
 	assert chromium_gradient_blur_content_key(restopped, begin, 0) != key
-	// Nested inside another group, the layer may composite through another
-	// path; other blurred content keeps repainting every frame.
+	// Nested and ordinary blurs retain stationary pixels, while translated
+	// native filter layers keep their position-dependent raster identity.
 	mut nested := [layout.PaintCommand{ kind: 'begin_css_effect_layer' }]
 	nested << commands[begin..]
 	nested << layout.PaintCommand{ kind: 'end_css_effect_layer' }
-	assert scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash != scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash
+	assert scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash == scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash
+	assert scroll_raster_frame_keys(scroll_raster_scrolled_commands(nested, 5), 5, 1, 1024, 768)[1].hash
+		!= scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash
 	plain := [blur_filter_begin(10), layout.PaintCommand{ kind: 'fill_rect', x: 10, y: 10, width: 20, height: 20, color: 'red' },
 		layout.PaintCommand{ kind: 'end_css_filter_layer' }]
-	assert scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash != scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash
+	assert scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash == scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash
 }
 
 fn test_root_scroll_snaps_to_device_pixels_in_both_directions() {

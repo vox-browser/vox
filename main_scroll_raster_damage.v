@@ -38,6 +38,7 @@ const scroll_raster_max_damage_fraction = 0.5
 // Match the bounded native damage list, after merging overlapping ink.
 const scroll_raster_max_damage_rects = 48
 const disable_coalesced_scroll_damage = os.getenv('VOX_DISABLE_COALESCED_SCROLL_DAMAGE') != ''
+const disable_stationary_filter_reuse = os.getenv('VOX_DISABLE_STATIONARY_FILTER_REUSE') != ''
 
 // One command's retained identity. The hash covers every pixel-affecting field
 // after removing the viewport scroll translation, so the same content at a
@@ -628,6 +629,8 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 	mut group_bounded := []bool{}
 	mut group_has_ink := []bool{}
 	mut group_ink := []layout.LayoutRect{}
+	mut group_content := []u64{}
+	mut group_position_dependent := []bool{}
 	trailing_start := layout.scroll_raster_trailing_scrollbar_start(commands)
 	for index in 0 .. commands.len {
 		command := unsafe { &commands[index] }
@@ -658,21 +661,18 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 			key.hash = srk_f64(key.hash, scrollbar_opacity)
 		}
 		if layout.scroll_raster_group_begin(command.kind) {
-			if command.kind == 'begin_css_filter_layer' && !layout.scroll_raster_filter_is_pointwise(command)
-				&& !(begins.len == 0 && chromium_gradient_blur_input_supported(commands, index)) {
-				// A blur or drop shadow is rasterized under its clipped device
-				// layer, and rows retained from another position differ by a
-				// few levels. Repaint the whole layer every frame instead: its
-				// key never matches, its inflated ink becomes damage, and the
-				// plan replays a touched layer completely. A top-level blur of
-				// one gradient rasterizes anchored to its content, so it
-				// translates exactly and keeps its ordinary identity.
+			position_dependent := command.kind == 'begin_css_filter_layer' && !layout.scroll_raster_filter_is_pointwise(command)
+				&& !(begins.len == 0 && chromium_gradient_blur_input_supported(commands, index))
+			if position_dependent && disable_stationary_filter_reuse {
+				// Same-binary control for the unconditional per-frame damage.
 				key.hash = srk_mix(key.hash, scroll_raster_canvas_nonce)
 			}
 			begins << index
 			group_bounded << true
 			group_has_ink << false
 			group_ink << layout.LayoutRect{}
+			group_content << u64(0xcbf29ce484222325)
+			group_position_dependent << position_dependent
 			keys[index] = key
 			continue
 		}
@@ -681,7 +681,17 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 			bounded := group_bounded.pop()
 			has_ink := group_has_ink.pop()
 			ink := group_ink.pop()
+			content := group_content.pop()
+			position_dependent := group_position_dependent.pop()
 			begin_command := unsafe { &commands[begin] }
+			if !disable_stationary_filter_reuse && begin_command.kind == 'begin_css_filter_layer'
+				&& !layout.scroll_raster_filter_is_pointwise(begin_command) {
+				// A stationary filter with identical ordered inputs has the same
+				// raster origin and pixels. Changing any descendant damages its
+				// complete inflated output, including nested groups and live media.
+				keys[begin].hash = srk_mix(keys[begin].hash, content)
+				if position_dependent { keys[begin].hash = srk_f64(keys[begin].hash, scroll) }
+			}
 			mut group := ?layout.LayoutRect(none)
 			if bounded && has_ink { group = ink }
 			if bounded && !has_ink {
@@ -731,6 +741,8 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 			key.ink = layout.LayoutRect{0, 0, 0, 0}
 			keys[index] = key
 			if begins.len > 0 {
+				last := group_content.len - 1
+				group_content[last] = srk_mix(group_content[last], srk_mix(keys[begin].hash, content))
 				scroll_raster_accumulate_group_ink(mut group_bounded, mut group_has_ink, mut group_ink, group)
 			}
 			continue
@@ -742,6 +754,8 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 		}
 		keys[index] = key
 		if begins.len > 0 {
+			last := group_content.len - 1
+			group_content[last] = srk_mix(group_content[last], key.hash)
 			scroll_raster_accumulate_group_ink(mut group_bounded, mut group_has_ink, mut group_ink, ink)
 		}
 	}
