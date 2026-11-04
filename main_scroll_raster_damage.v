@@ -287,6 +287,35 @@ fn srk_image_paintable(h u64, paintable &painting.ImagePaintable) u64 {
 	return x
 }
 
+// Layout rebuilds a nested viewport's paintable record with equal values
+// whenever its box is rebuilt; its fields, not its address, identify the
+// nested clip and placement.
+fn srk_nested_viewport(h u64, paintable &painting.NavigableContainerViewportPaintable) u64 {
+	mut x := srk_f64(h, paintable.viewport_rect.x)
+	x = srk_f64(x, paintable.viewport_rect.y)
+	x = srk_f64(x, paintable.viewport_rect.width)
+	x = srk_f64(x, paintable.viewport_rect.height)
+	if rect := paintable.nested_rect {
+		x = srk_f64(srk_f64(srk_f64(srk_f64(srk_bool(x, true), rect.x), rect.y), rect.width), rect.height)
+	} else {
+		x = srk_bool(x, false)
+	}
+	if size := paintable.nested_layout_size {
+		x = srk_f64(srk_f64(srk_bool(x, true), size.width), size.height)
+	} else {
+		x = srk_bool(x, false)
+	}
+	radii := paintable.border_radii
+	for radius in [radii.top_left, radii.top_right, radii.bottom_right, radii.bottom_left] {
+		x = srk_f64(srk_f64(x, radius.horizontal), radius.vertical)
+	}
+	widths := paintable.border_widths
+	for value in [widths.top, widths.right, widths.bottom, widths.left] {
+		x = srk_f64(x, value)
+	}
+	return x
+}
+
 fn srk_local_border(h u64, data &layout.PaintLocalBorderData) u64 {
 	if data == unsafe { nil } { return srk_bool(h, false) }
 	mut x := srk_bool(srk_bool(h, true), data.has_local_geometry)
@@ -452,7 +481,7 @@ fn scroll_raster_command_hash_ex(command &layout.PaintCommand, scroll f64, trans
 		h = srk_mix(h, scroll_raster_command_hash(nested, 0))
 	}
 	if paintable := command.nested_viewport_paintable {
-		h = srk_ptr(h, voidptr(paintable))
+		h = srk_nested_viewport(h, paintable)
 	}
 	h = srk_int(h, command.text_clip_runs.len)
 	for run in command.text_clip_runs {

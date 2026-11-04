@@ -612,3 +612,23 @@ fn test_root_scroll_snaps_to_device_pixels_in_both_directions() {
 	assert app.scroll_y <= maximum
 	assert app.scroll_y * 2 == math.round(app.scroll_y * 2)
 }
+
+fn test_scroll_raster_keys_identify_nested_viewports_by_value() {
+	first := &painting.NavigableContainerViewportPaintable{
+		viewport_rect: painting.Rect{10, 20, 120, 70}
+		nested_rect:   painting.Rect{10, 20, 120, 70}
+	}
+	// Layout rebuilds an equal record at a new address.
+	rebuilt := &painting.NavigableContainerViewportPaintable{
+		viewport_rect: painting.Rect{10, 20, 120, 70}
+		nested_rect:   painting.Rect{10, 20, 120, 70}
+	}
+	moved := &painting.NavigableContainerViewportPaintable{
+		viewport_rect: painting.Rect{10, 24, 120, 70}
+		nested_rect:   painting.Rect{10, 24, 120, 70}
+	}
+	nested := layout.PaintCommand{ kind: 'paint_nested_display_list', x: 10, y: 20, width: 120, height: 70 }
+	key := scroll_raster_frame_keys([layout.PaintCommand{ ...nested, nested_viewport_paintable: first }], 0, 1, 1024, 768)[0].hash
+	assert scroll_raster_frame_keys([layout.PaintCommand{ ...nested, nested_viewport_paintable: rebuilt }], 0, 1, 1024, 768)[0].hash == key
+	assert scroll_raster_frame_keys([layout.PaintCommand{ ...nested, nested_viewport_paintable: moved }], 0, 1, 1024, 768)[0].hash != key
+}
