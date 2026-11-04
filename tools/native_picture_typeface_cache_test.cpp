@@ -118,6 +118,21 @@ int main(int argc, char** argv)
     SkMemoryStream oversized(packets[0]);
     assert(tiny.decode_stream(oversized) && tiny.entry_count() == 0);
     auto raw = faces[0]->serialize(SkTypeface::SerializeBehavior::kDoIncludeData);
+    // Equal-length keys can share every byte except the last. Keep complete
+    // identity checks even when Skia accepts trailing bytes after its font.
+    std::vector<uint8_t> suffix_key(static_cast<uint8_t const*>(raw->data()),
+        static_cast<uint8_t const*>(raw->data()) + raw->size());
+    suffix_key.push_back(1);
+    VoxPictureTypefaceCache suffix_cache;
+    auto suffix_first = suffix_cache.decode(suffix_key.data(), suffix_key.size());
+    assert(suffix_first && suffix_cache.entry_count() == 1);
+    suffix_key.back() = 2;
+    assert(suffix_cache.decode(suffix_key.data(), suffix_key.size()));
+    assert(suffix_cache.entry_count() == 2);
+    suffix_key.back() = 1;
+    auto suffix_reused = suffix_cache.decode(suffix_key.data(), suffix_key.size());
+    assert(suffix_reused && suffix_reused->uniqueID() == suffix_first->uniqueID());
+    assert(suffix_cache.entry_count() == 2);
     SkMemoryStream legacy(raw);
     assert(tiny.decode_stream(legacy) && legacy.isAtEnd());
     assert(!tiny.decode(nullptr, 0) && !vox_serialize_picture_typeface(nullptr, nullptr));

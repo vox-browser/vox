@@ -33,7 +33,6 @@ inline SkSerialReturnType vox_serialize_picture_typeface(SkTypeface* face, void*
 // a caller can release or reuse its picture buffer immediately after replay.
 class VoxPictureTypefaceCache {
     struct Entry {
-        uint64_t hash;
         sk_sp<SkData> encoded;
         sk_sp<SkTypeface> face;
     };
@@ -47,11 +46,11 @@ public:
     sk_sp<SkTypeface> decode(void const* data, size_t size)
     {
         if (!data || !size || size > 64 * 1024 * 1024) return nullptr;
-        uint64_t hash = 14695981039346656037ull;
-        auto* input = static_cast<uint8_t const*>(data);
-        for (size_t i = 0; i < size; ++i) hash = (hash ^ input[i]) * 1099511628211ull;
+        // This small LRU already verifies every byte before reusing a face.
+        // Compare directly: hashing a multi-megabyte embedded font first
+        // repeats the whole scan for every picture tile, including cache hits.
         for (auto it = entries.begin(); it != entries.end(); ++it) {
-            if (it->hash != hash || it->encoded->size() != size
+            if (it->encoded->size() != size
                 || std::memcmp(it->encoded->data(), data, size)) continue;
             auto face = it->face;
             entries.splice(entries.begin(), entries, it);
@@ -70,7 +69,7 @@ public:
             bytes -= entries.back().encoded->size() * 2;
             entries.pop_back();
         }
-        entries.push_front({hash, std::move(encoded), face});
+        entries.push_front({std::move(encoded), face});
         bytes += cost;
         return face;
     }
