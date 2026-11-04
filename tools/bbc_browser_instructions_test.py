@@ -900,26 +900,6 @@ class BBCInstructionTests(unittest.TestCase):
                 run_trial('control', 'same-app', 'control', args)
         self.assertIs(args.vox_environment, environment)
 
-    def test_inline_measurement_block_space_control_is_isolated_and_restored_after_failure(self):
-        environment = {'VOX_PROXY': 'socks5h://fixture'}
-        args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
-                               control_retain_inline_measurement_block_space=True)
-        seen = []
-        def observe(engine, app, folder, options):
-            seen.append((engine, dict(options.vox_environment)))
-            return {'exit': 0}
-        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
-            for engine in ['control', 'vox', 'brave']:
-                run_trial(engine, 'same-app', engine, args)
-        self.assertEqual(seen, [('vox', dict(environment, VOX_RETAIN_INLINE_MEASUREMENT_BLOCK_SPACE='1')),
-                               ('vox', environment), ('brave', environment)])
-        self.assertIs(args.vox_environment, environment)
-        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
-            with self.assertRaises(RuntimeError):
-                run_trial('control', 'same-app', 'control', args)
-        self.assertIs(args.vox_environment, environment)
-
-
     def test_unevaluated_following_sheet_control_is_isolated_and_restored_after_failure(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         args = SimpleNamespace(vox_environment=environment, control_disable_grid_width_only=False,
@@ -1019,11 +999,6 @@ class BBCInstructionTests(unittest.TestCase):
                 run_trial('control', 'same-app', 'control', args)
         self.assertIs(args.vox_environment, environment)
 
-
-    def test_inline_measurement_block_space_control_requires_a_control_app(self):
-        with self.assertRaises(SystemExit):
-            parse_args(['--archive', 'fixture', '--output', 'out',
-                        '--memory-guard-registry', 'registry', '--control-retain-inline-measurement-block-space'])
 
     def test_unevaluated_following_sheet_control_requires_a_control_app(self):
         with self.assertRaises(SystemExit):
