@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><title>Flex rows enclose aligned baselines</title>
+<style>
+body{margin:0;background:white;color:#222}
+.container{position:absolute;left:24px;top:24px;width:200px;height:80px;display:flex;align-items:center;background:#ddd}
+.row{display:flex;align-items:baseline;width:180px;background:#bde}
+.a,.b{width:40px;font:20px/20px Arial;background:#fbb}.b{font-size:10px;background:#bfb}
+.wrap{top:124px}.wrap .row{flex-wrap:wrap}
+.auto{top:224px}.auto .a{font-size:10px}.auto .b{font-size:20px;margin-top:auto}
+.definite{top:324px}.definite .row{height:20px}
+footer{position:absolute;top:1800px}
+</style>
+<div class="container"><div class="row"><div class="a">A</div><div class="b">B</div></div></div>
+<div class="container wrap"><div class="row"><div class="a">A</div><div class="b">B</div></div></div>
+<div class="container auto"><div class="row"><div class="a">A</div><div class="b">B</div></div></div>
+<div class="container definite"><div class="row"><div class="a">A</div><div class="b">B</div></div></div>
+<footer>
+Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. Flex rows must enclose the separately largest ascent and descent of baseline aligned items. </footer>

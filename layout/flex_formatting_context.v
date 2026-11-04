@@ -1134,8 +1134,25 @@ fn flex_line_max_baseline(state &LayoutState, container &Node, line FlexLine) CS
 }
 
 fn flex_item_participates_in_baseline_alignment(container &Node, item &Node) bool {
+	row_axis := container.computed_values().effective_flex_direction() in [.row, .row_reverse]
 	return effective_flex_cross_alignment(container, item) == .baseline
 		&& item.computed_values().writing_mode() == .horizontal_tb
+		&& !property_is_auto(item.computed_values(), if row_axis { .margin_top } else { .margin_left })
+		&& !property_is_auto(item.computed_values(), if row_axis { .margin_bottom } else { .margin_right })
+}
+
+fn flex_line_row_baseline_cross_size(state &LayoutState, container &Node, line FlexLine) CSSPixels {
+	mut ascent := CSSPixels.new(0)
+	mut descent := CSSPixels.new(0)
+	for item in line.items {
+		if !flex_item_participates_in_baseline_alignment(container, item) { continue }
+		styled := item.as_node_with_style() or { continue }
+		used := state.get(styled)
+		baseline := layout_box_baseline(state, item, .first)
+		ascent = css_pixels_max(ascent, baseline)
+		descent = css_pixels_max(descent, used.margin_box_height().minus(baseline))
+	}
+	return ascent.plus(descent)
 }
 
 fn flex_static_main_axis_alignment(container &Node, direction css.FlexDirection) StaticPositionAlignment {
@@ -1439,6 +1456,10 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			cross_size = css_pixels_max(cross_size, item_state.margin_box_height())
 			used_main = used_main.plus(item_state.margin_box_width())
 		}
+		// Baseline alignment can shift a shorter item below the tallest one.
+		// The line must enclose the largest ascent and descent independently.
+		cross_size = css_pixels_max(cross_size, flex_line_row_baseline_cross_size(state,
+			container, current_line))
 		// calculate_cross_size_of_each_flex_line(): "If the flex container is single-line and
 		// has a definite cross size, the cross size of the flex line is the flex container's
 		// inner cross size." is_single_line() is `flex-wrap: nowrap`, not "only one line came
