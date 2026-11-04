@@ -886,7 +886,11 @@ fn flex_physical_leading_offset(container &Node, justify css.JustifyContent, fre
 			else {}
 		}
 	}
-	if !reversed {
+	if !reversed || (justify == .center
+		&& container.document().font_rendering_policy() == .chromium) {
+		// Blink centers from the physical start using the truncated LayoutUnit
+		// half-space. Mirroring an already truncated half gives its remainder
+		// to the opposite edge and shifts an odd-subpixel row/column by 1/64px.
 		return logical_leading
 	}
 	distributed_space := distributed_gap.scaled(f64(if item_count > 0 {

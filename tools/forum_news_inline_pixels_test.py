@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_reversed_flex_rows_center_from_the_same_fractional_physical_origin(self):
+        self.compare_fixture('flex-reverse-fractional-center', width=1024, height=768)
+
     def test_downloaded_fonts_keep_the_platform_renderers_vertical_metrics(self):
         self.compare_fixture('downloaded-font-metrics-policy', width=1024, height=768,
                              settle_seconds=5)
