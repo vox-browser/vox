@@ -224,6 +224,23 @@ class ChatGPTInstructionsTests(unittest.TestCase):
             self.assertEqual([c[0] for c in calls], ['Fetch.continueRequest'])
             self.assertEqual(client.events[0]['response_error'], 'ConnectionClosed')
 
+    def test_capture_socket_uses_remaining_watchdog_instead_of_generic_timeout(self):
+        client = capture.Capture.__new__(capture.Capture)
+        client.sock, client.deadline = mock.Mock(), 100
+        client.request = mock.Mock(return_value=5)
+        client.receive = mock.Mock(return_value=dict(id=5, result=dict(done=True)))
+        with mock.patch.object(capture.time, 'monotonic', return_value=10):
+            self.assertEqual(client.call('Page.navigate', dict(url=capture.URL)), dict(done=True))
+        client.sock.settimeout.assert_called_with(90)
+
+    def test_expired_capture_watchdog_does_not_issue_a_command(self):
+        client = capture.Capture.__new__(capture.Capture)
+        client.sock, client.deadline, client.request = mock.Mock(), 5, mock.Mock()
+        with mock.patch.object(capture.time, 'monotonic', return_value=10):
+            with self.assertRaisesRegex(TimeoutError, 'watchdog'):
+                client.call('Page.navigate', dict(url=capture.URL))
+        client.request.assert_not_called()
+
     def audit(self):
         groups = [dict(name=name, count=1, elements=[dict(rect=dict(width=50, height=20))])
                   for name in ['headings', 'editors', 'buttons', 'links']]

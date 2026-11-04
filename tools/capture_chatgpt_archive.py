@@ -53,6 +53,7 @@ class Capture(CDP):
         self.callbacks, self.requests, self.responses = {}, {}, {}
         self.events, self.errors = [], []
         self.capture_paused_responses = False
+        self.deadline = None
 
     def request(self, method, params, callback=None):
         self.sequence += 1
@@ -143,13 +144,26 @@ class Capture(CDP):
         return result
 
     def call(self, method, params=None):
+        self.apply_watchdog(method)
         ident = self.request(method, params or {})
         while True:
+            self.apply_watchdog(method)
             result = self.receive()
             if result.get('id') == ident:
                 if 'error' in result:
                     raise RuntimeError(result['error'])
                 return result.get('result', {})
+
+    def apply_watchdog(self, method):
+        deadline = getattr(self, 'deadline', None)
+        if deadline is None:
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError('Capture command exceeded its watchdog: ' + method)
+        # The generic CDP socket defaults to fifteen seconds. A slow SOCKS
+        # navigation must use the configured capture deadline instead.
+        self.sock.settimeout(remaining)
 
 
 def capture(args):
@@ -181,6 +195,7 @@ def capture(args):
         target = browser.call('Target.createTarget', dict(url='about:blank', newWindow=True,
             background=True, left=x, top=y, width=1104, height=908))['targetId']
         client = Capture(f'ws://127.0.0.1:{port}/devtools/page/{target}', archive)
+        client.deadline = deadline
         for method in ['Page.enable', 'Network.enable', 'Runtime.enable']:
             # Keep response bodies across the site's own document replacement.
             params = dict(maxTotalBufferSize=256 * 1024 * 1024,
@@ -234,6 +249,9 @@ def capture(args):
             write(archive / ('manifest.json' if success else 'capture-progress.json'), manifest)
             write(out / 'requests.json', client.events)
             write(out / 'errors.json', client.errors)
+            write(out / 'pending.json', dict(body_callbacks=len(client.callbacks), requests=[
+                dict(url=r.get('url'), method=r.get('method'), response_received='response' in r)
+                for r in client.requests.values()]))
         if browser:
             try:
                 browser.call('Browser.close')
