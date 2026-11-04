@@ -212,6 +212,9 @@ pub mut:
 	owner_rule        ?&CSSRule
 	owner_style_sheet ?&CSSStyleSheet
 	on_change         ?fn ()
+mut:
+	media_evaluation_candidates_ []&CSSRule
+	media_evaluation_generation_ u64
 }
 
 pub fn CSSRuleList.create(rules []&CSSRule) &CSSRuleList {
@@ -492,7 +495,7 @@ pub fn (rule_list &CSSRuleList) for_each_effective_rule_with_context(order Trave
 pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document) bool {
 	mut any_media_queries_changed_match_state := false
 
-	for mut rule in rule_list.rules {
+	for mut rule in rule_list.media_evaluation_candidates() {
 		match rule.type_ {
 			.container_rule {
 				if mut child_rules := rule.rules {
@@ -599,6 +602,7 @@ fn (rule_list &CSSRuleList) has_rule_of_type_at_or_after_index(type_ CSSRuleType
 }
 
 fn (mut rule_list CSSRuleList) did_change() {
+	invalidate_media_evaluation_candidates()
 	if on_change := rule_list.on_change {
 		on_change()
 	}
