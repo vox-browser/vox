@@ -162,6 +162,10 @@ pub fn (mut a Attr_) set_owner_element(element ?&Element) {
 }
 
 pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, new_value ?string) {
+	if element.document() != unsafe { nil } {
+		mut owner := unsafe { &Document(element.document()) }
+		owner.bump_attribute_version()
+	}
 	if new_value != none && element.document() != unsafe { nil } {
 		mut owner := unsafe { &Document(element.document()) }
 		owner.note_element_attribute_name(element.local_name(), a.local_name_)

@@ -20,6 +20,15 @@ mut:
 	favicon_image_id    int = -1
 	favicon_complete    bool
 	favicon_fallback    bool
+	favicon_discovery_valid bool
+	favicon_discovery_document_id dom.UniqueNodeID
+	favicon_discovery_tree_version u64
+	favicon_discovery_attribute_version u64
+	favicon_discovery_document_url string
+	favicon_discovery_base_url string
+	favicon_discovery_encoding string
+	favicon_declared_url string
+	favicon_default_url string
 	tab_favicons        []int
 	bookmark_icon_paths map[int]string
 	bookmark_favicons   []int

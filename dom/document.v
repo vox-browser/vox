@@ -5268,6 +5268,7 @@ pub mut:
 
 	// Version tracking
 	dom_tree_version                         u64
+	attribute_version_                       u64
 	// Local names are immutable. Keep a conservative history without retaining
 	// elements, so an absent tag can rule out document-wide selector walks.
 	seen_element_local_names_                map[string]u64
@@ -6051,6 +6052,16 @@ pub fn (d &Document) dom_tree_version() u64 {
 
 pub fn (mut d Document) bump_dom_tree_version() {
 	d.dom_tree_version++
+}
+
+// Attribute edits do not change tree structure. Consumers caching discoveries
+// from both inputs must observe this version as well as dom_tree_version().
+pub fn (d &Document) attribute_version() u64 {
+	return d.attribute_version_
+}
+
+pub fn (mut d Document) bump_attribute_version() {
+	d.attribute_version_++
 }
 
 pub fn (mut d Document) note_element_local_name(local_name string) {
