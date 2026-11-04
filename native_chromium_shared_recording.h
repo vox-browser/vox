@@ -631,11 +631,11 @@ void finish_shared_recording()
                     {size_t(x), size_t(y), size_t(x + width), size_t(y + height)})) return;
             swap_red_blue_pixels(reinterpret_cast<uint8_t*>(prefix.data()),
                 reinterpret_cast<uint8_t const*>(prefix.data()), prefix.size());
-            for (int row = 0; row < height; ++row) {
-                auto* output = reinterpret_cast<uint8_t*>(pixels.data() + size_t(row) * width);
-                auto* background = reinterpret_cast<uint8_t const*>(prefix.data() + size_t(row) * width);
-                native_composite_opacity_pixels(output, background, output, width, 1);
-            }
+            vox_raster::parallel_pixels(pixels.size(), [&](size_t begin, size_t end) {
+                auto* output = reinterpret_cast<uint8_t*>(pixels.data() + begin);
+                auto* background = reinterpret_cast<uint8_t const*>(prefix.data() + begin);
+                native_composite_opacity_pixels(output, background, output, end - begin, 1);
+            }, "prefix-composite");
         } else if (!group->backdrop.empty()) {
             // Each compositor picture blends over the pixels present before
             // its fallback leaves ran. Combining pictures on transparency first
@@ -643,12 +643,14 @@ void finish_shared_recording()
             int x = std::lround(left * group->scale), y = std::lround(top * group->scale);
             if (x < 0 || y < 0 || x + width > group->backdrop_width
                 || size_t(y + height) * group->backdrop_width > group->backdrop.size()) return;
-            for (int row = 0; row < height; ++row) {
-                auto* output = reinterpret_cast<uint8_t*>(pixels.data() + size_t(row) * width);
-                auto* backdrop = reinterpret_cast<uint8_t const*>(group->backdrop.data()
-                    + size_t(y + row) * group->backdrop_width + x);
-                native_composite_opacity_pixels(output, backdrop, output, width, 1);
-            }
+            vox_raster::parallel_rows(width, height, [&](size_t begin, size_t end) {
+                for (size_t row = begin; row < end; ++row) {
+                    auto* output = reinterpret_cast<uint8_t*>(pixels.data() + row * width);
+                    auto* backdrop = reinterpret_cast<uint8_t const*>(group->backdrop.data()
+                        + (size_t(y) + row) * group->backdrop_width + x);
+                    native_composite_opacity_pixels(output, backdrop, output, width, 1);
+                }
+            }, "layer-composite");
         }
         publication.published = composite_pixels(group->destination, std::move(pixels), width, height, left,
             group->canvas_height - top - height / group->scale,

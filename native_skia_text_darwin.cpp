@@ -5,6 +5,7 @@
 #include "native_allocator_policy_darwin.h"
 #include "native_glyph_flags.h"
 #include "native_raster_buffer_pool.h"
+#include "native_parallel_pixels.h"
 #include "native_raster_snapshot.h"
 #include "native_immutable_rgba_image.h"
 #include "native_rgba_alpha_bounds.h"
@@ -547,19 +548,7 @@ SkTypeface* select_typeface(char const* path, int face_index, int font_weight, i
 
 void swap_red_blue_pixels(uint8_t* destination, uint8_t const* source, size_t count)
 {
-    size_t i = 0;
-#if defined(__aarch64__)
-    uint8_t const indices[] {2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15};
-    auto order = vld1q_u8(indices);
-    for (; count - i >= 4; i += 4)
-        vst1q_u8(destination + i * 4, vqtbl1q_u8(vld1q_u8(source + i * 4), order));
-#endif
-    for (; i < count; ++i) {
-        uint32_t p;
-        std::memcpy(&p, source + i * 4, sizeof(p));
-        p = (p & 0xff00ff00u) | ((p & 0xffu) << 16) | ((p >> 16) & 0xffu);
-        std::memcpy(destination + i * 4, &p, sizeof(p));
-    }
+    vox_swap_red_blue_pixels(destination, source, count);
 }
 
 bool rgba_bitmap(CGContextRef destination)
@@ -878,16 +867,8 @@ Backdrop read_backdrop(CGContextRef destination, RasterRegion const& region,
 void copy_backdrop_pixels(Backdrop source, int width, int height, std::vector<uint32_t>& pixels,
     RasterRegion covered = {})
 {
-    for (int y = 0; y < height; ++y) {
-        auto* row = source.pixels + size_t(y) * source.pitch;
-        auto copy = [&](int left, int right) {
-            swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.data() + size_t(y) * width + left),
-                row + size_t(left) * 4, size_t(right - left));
-        };
-        if (y >= covered.top && y < covered.bottom) {
-            copy(0, covered.left); copy(covered.right, width);
-        } else copy(0, width);
-    }
+    vox_copy_backdrop_pixels(reinterpret_cast<uint8_t*>(pixels.data()), source.pixels, source.pitch,
+        width, height, covered.left, covered.top, covered.right, covered.bottom);
 }
 
 bool copy_backdrop(CGContextRef destination, RasterRegion const& region,
