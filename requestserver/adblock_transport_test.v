@@ -43,7 +43,7 @@ fn test_response_header_gate_rejects_curl_payload_before_receiver_delivery() {
 		pending_: pending
 		body_: body
 		receiver_: fetch.FetchedDataReceiver.create(params, body.stream())
-		easy_: C.curl_easy_init()
+		easy_: C.vox_curl_easy_init()
 		response_headers_: headers
 	}
 	defer { native.stop() }

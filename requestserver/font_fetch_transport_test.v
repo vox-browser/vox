@@ -66,11 +66,12 @@ fn test_font_set_load_uses_real_curl_stream_and_owning_source_tasks() {
 	owner.spin_until(fn [promise, deadline] () bool {
 		return promise.state != .pending || time.sys_mono_now() >= deadline
 	})
-	assert promise.state == .fulfilled, 'face=${face.status()}, active=${transport.connection.active_request_count()}, queue_empty=${owner.task_queue().is_empty()}'
+	assert promise.state == .fulfilled, 'face=${face.status()}, active=${transport.active_request_count()}, queue_empty=${owner.task_queue().is_empty()}'
 	assert face.status() == .loaded
 	assert face.parsed_font != unsafe { nil }
 	assert promise.result.sequence_value.map(it.opaque_id) == [u64(voidptr(face))]
-	assert transport.connection.active_request_count() == 0
+	assert transport.active_request_count() == 0
+	assert transport.has_connection()
 	server.wait()
 }
 
@@ -80,6 +81,7 @@ fn test_document_font_file_transport_remains_deferred_and_uses_fetch_body_sniffi
 		native_font_document(native_transport_fixture_document_url())
 	mut transport := NativeFontFetchTransport.create()!
 	defer { transport.close() }
+	assert !transport.has_connection()
 	computer.set_fetch_host(transport.fetch_host())
 	mut face := css.FontFaceObject.construct_impl('Native file font',
 		css.FontFaceSource.from_string('url("${os.file_name(native_transport_fixture_font())}")'), css.FontFaceDescriptors{})
@@ -93,6 +95,8 @@ fn test_document_font_file_transport_remains_deferred_and_uses_fetch_body_sniffi
 	})
 	assert promise.state == webidl.PromiseState.fulfilled
 	assert face.status() == .loaded
+	// File fonts never need the curl connection or its native libraries.
+	assert !transport.has_connection()
 }
 
 fn test_unavailable_native_font_transport_reports_failure_instead_of_reading_standalone_file() {
@@ -114,4 +118,5 @@ fn test_unavailable_native_font_transport_reports_failure_instead_of_reading_sta
 	assert promise.state == .rejected
 	assert face.status() == .error
 	assert face.parsed_font == unsafe { nil }
+	assert !transport.has_connection()
 }

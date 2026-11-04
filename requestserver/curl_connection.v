@@ -28,10 +28,10 @@ mut:
 pub fn CurlConnection.create() !&CurlConnection {
 	entry := platform.enter_persistent()
 	defer { platform.leave_persistent(entry) }
-	if C.curl_global_init(C.CURL_GLOBAL_ALL) != C.CURLE_OK {
+	if C.vox_curl_global_init(C.CURL_GLOBAL_ALL) != C.CURLE_OK {
 		return error('Failed to initialize libcurl')
 	}
-	mut connection := &CurlConnection{ multi_: C.curl_multi_init() }
+	mut connection := &CurlConnection{ multi_: C.vox_curl_multi_init() }
 	if connection.multi_ == unsafe { nil } {
 		return error('Failed to initialize curl multi handle')
 	}
@@ -116,7 +116,7 @@ fn (mut connection CurlConnection) socket_action(socket int, flags int) {
 	if connection.closed_ { return }
 	mut running := i32(0)
 	connection.in_curl_call_ = true
-	check_curl_result(C.curl_multi_socket_action(connection.multi_, i32(socket), i32(flags), &running), C.CURLM_OK)
+	check_curl_result(C.vox_curl_multi_socket_action(connection.multi_, i32(socket), i32(flags), &running), C.CURLM_OK)
 	connection.in_curl_call_ = false
 	for {
 		mut result := i32(0)
@@ -138,6 +138,6 @@ pub fn (mut connection CurlConnection) close() {
 		for _, descriptor in connection.sockets_ { C.vox_curl_socket_destroy(descriptor) }
 	}
 	connection.sockets_.clear()
-	check_curl_result(C.curl_multi_cleanup(connection.multi_), C.CURLM_OK)
+	check_curl_result(C.vox_curl_multi_cleanup(connection.multi_), C.CURLM_OK)
 	connection.multi_ = unsafe { nil }
 }

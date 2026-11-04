@@ -81,7 +81,7 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 		body_: body
 		receiver_: fetch.FetchedDataReceiver.create(params, body.stream())
 		id_: connection.next_id_
-		easy_: C.curl_easy_init()
+		easy_: C.vox_curl_easy_init()
 	}
 	connection.next_id_++
 	if native.easy_ == unsafe { nil } {
@@ -149,14 +149,14 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	mut plugin := connection.deferred_
 	plugin.deferred_invoke(fn [mut native] () {
 		if native.finished_ || native.stop_requested_ { return }
-		check_curl_result(C.curl_multi_add_handle(native.connection_.multi_, native.easy_), C.CURLM_OK)
+		check_curl_result(C.vox_curl_multi_add_handle(native.connection_.multi_, native.easy_), C.CURLM_OK)
 		native.in_multi_ = true
 	})
 	return pending
 }
 
 fn (mut request CurlRequest) append_curl_header(value string) {
-	request.headers_ = C.curl_slist_append(request.headers_, value.str)
+	request.headers_ = C.vox_curl_slist_append(request.headers_, value.str)
 	assert request.headers_ != unsafe { nil }
 }
 
@@ -166,10 +166,10 @@ fn (request &CurlRequest) request_handle() fetch.RequestServerRequest {
 		stop: fn [request] () { mut native := unsafe { &CurlRequest(request) }; native.stop() }
 		set_body_delivery_paused: fn [request] (paused bool) {
 			if request.finished_ { return }
-			check_curl_result(C.curl_easy_pause(request.easy_, if paused { C.CURLPAUSE_RECV } else { C.CURLPAUSE_CONT }), C.CURLE_OK)
+			check_curl_result(C.vox_curl_easy_pause(request.easy_, if paused { C.CURLPAUSE_RECV } else { C.CURLPAUSE_CONT }), C.CURLE_OK)
 		}
 		resume_body_delivery: fn [request] () {
-			if !request.finished_ { check_curl_result(C.curl_easy_pause(request.easy_, C.CURLPAUSE_CONT), C.CURLE_OK) }
+			if !request.finished_ { check_curl_result(C.vox_curl_easy_pause(request.easy_, C.CURLPAUSE_CONT), C.CURLE_OK) }
 		}
 	}
 }
@@ -308,12 +308,12 @@ fn (mut request CurlRequest) free_curl_structs() {
 	if request.finished_ { return }
 	request.finished_ = true
 	if request.in_multi_ {
-		check_curl_result(C.curl_multi_remove_handle(request.connection_.multi_, request.easy_), C.CURLM_OK)
+		check_curl_result(C.vox_curl_multi_remove_handle(request.connection_.multi_, request.easy_), C.CURLM_OK)
 		request.in_multi_ = false
 	}
-	C.curl_easy_cleanup(request.easy_)
+	C.vox_curl_easy_cleanup(request.easy_)
 	request.easy_ = unsafe { nil }
-	if request.headers_ != unsafe { nil } { C.curl_slist_free_all(request.headers_); request.headers_ = unsafe { nil } }
+	if request.headers_ != unsafe { nil } { C.vox_curl_slist_free_all(request.headers_); request.headers_ = unsafe { nil } }
 	mut owner := unsafe { &CurlConnection(request.connection_) }
 	owner.requests_.delete(request.id_)
 }
