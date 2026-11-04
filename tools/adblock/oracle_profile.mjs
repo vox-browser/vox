@@ -42,6 +42,15 @@ export async function createOracleProfile(template = '') {
         preferences.profile ??= {};
         preferences.profile.default_content_setting_values ??= {};
         preferences.profile.default_content_setting_values.braveShields = 2;
+        // Restore encoded HTTP/extension state, with no unmeasured page
+        // navigation before the oracle target is sized and filtering is ready.
+        // A restored tab can populate the shared image decode cache first.
+        preferences.profile.exit_type = 'Normal';
+        preferences.session ??= {};
+        preferences.session.restore_on_startup = 5;
+        preferences.session.startup_urls = [];
+        for (const name of ['Sessions', 'Current Session', 'Current Tabs', 'Last Session', 'Last Tabs'])
+            await fs.rm(path.join(defaults,name), {recursive:true,force:true});
         await fs.writeFile(preferencesPath, JSON.stringify(preferences));
         return profile;
     } catch (error) {

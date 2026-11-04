@@ -70,3 +70,26 @@ test('invalid prepared preferences fail instead of silently replacing them', asy
         assert.equal(await fs.readFile(path.join(template, 'Default/Preferences'), 'utf8'), 'invalid JSON');
     } finally { await fs.rm(template, { recursive: true, force: true }); }
 });
+
+test('prepared caches cannot restore a page before the measured navigation', async t=>{
+    const template=await fs.mkdtemp(path.join(os.tmpdir(),'vox-oracle-startup-'));
+    t.after(()=>fs.rm(template,{recursive:true,force:true}));
+    await fs.mkdir(path.join(template,'Default/Sessions'),{recursive:true});
+    await fs.mkdir(path.join(template,'Default/Cache/Cache_Data'),{recursive:true});
+    const preferences={session:{restore_on_startup:1,startup_urls:['https://example.com/']},
+        profile:{exit_type:'Crashed'}};
+    await fs.writeFile(path.join(template,'Default/Preferences'),JSON.stringify(preferences));
+    await fs.writeFile(path.join(template,'Default/Sessions/Tabs_123'),'restored tabs');
+    await fs.writeFile(path.join(template,'Default/Current Session'),'legacy restored tab');
+    await fs.writeFile(path.join(template,'Default/Cache/Cache_Data/response'),'original encoded bytes');
+    const profile=await createOracleProfile(template);
+    t.after(()=>fs.rm(profile,{recursive:true,force:true}));
+    const actual=JSON.parse(await fs.readFile(path.join(profile,'Default/Preferences')));
+    assert.equal(actual.profile.exit_type,'Normal');
+    assert.deepEqual(actual.session,{restore_on_startup:5,startup_urls:[]});
+    for(const name of ['Sessions','Current Session'])
+        await assert.rejects(fs.stat(path.join(profile,'Default',name)),{code:'ENOENT'});
+    assert.equal(await fs.readFile(path.join(profile,'Default/Cache/Cache_Data/response'),'utf8'),'original encoded bytes');
+    assert.equal(await fs.readFile(path.join(template,'Default/Sessions/Tabs_123'),'utf8'),'restored tabs');
+    assert.deepEqual(JSON.parse(await fs.readFile(path.join(template,'Default/Preferences'))),preferences);
+});
