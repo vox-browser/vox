@@ -1081,3 +1081,75 @@ links both execution diagnostics, the rejected attempt, the later cohort,
 source proofs, raw counts, PNGs and actual guards. It earns zero conservative
 page credit and leaves the broad cadence at zero. Four pairs do not establish
 seven-pair acceptance, and the 5% Brave target remains unmet.
+
+## Direct USV string encoding
+
+Commit `afeca8bd5` makes URL and URLSearchParams bindings encode UTF-16 directly
+with replacement of unpaired surrogates. This replaces their
+`to_well_formed().str()` composition, avoiding a separate validation pass and,
+for malformed input, an intermediate repaired UTF-16 allocation. It preserves
+the unchecked ASCII byte-view contract and leaves JavaScript coercion, exception
+ordering and the other string callers unchanged.
+
+The retained separate V profile recorded 96,381 `is_well_formed` calls. That
+instrumented row supplies the lead; the browser still executes page scripts
+through JavaScriptCore. The optimization does not substitute the translated
+LibJS VM.
+
+All **116 focused test-function executions** pass: 56 pure UTF-16 executions
+across GC modes and control/candidate paths, poisoned preallocation arenas and
+AddressSanitizer/UndefinedBehaviorSanitizer; plus 60 actual JavaScriptCore
+binding executions. Cases include every UTF-16 unit and valid surrogate pair,
+589,824 two-unit adjacency combinations, prefix boundaries, nulls, unchecked
+bytes, stale metadata, independent output ownership, URL components,
+URLSearchParams conversion, object coercion and original exceptions.
+
+Complete LibJS selections finish at **236/238 files passing in each GC mode**.
+The same `regex_matching_corpus_test.v` and `string_case_test.v` Greek casing
+mismatches remain. Their independent system-ICU reproduction is retained in the
+earlier encoder evidence. Actual nonzero module/guard exits are preserved; no
+fixture changes, skipped cases or full-suite pass is claimed. All one hundred
+upstream AST fixtures match exactly in each GC mode.
+
+Tooling commit `cf766a1dd` compares complete output against the existing
+repair-then-encode path, after constructing and warming the input. Both variants
+keep the prior ASCII-prefix encoder enabled. Two unprofiled observations per
+variant run in control/candidate/candidate/control order, with separate positive
+and negative execution diagnostics.
+
+| Component scene | Repair control median | Direct median | Median reduction |
+| --- | ---: | ---: | ---: |
+| 39,808 archived URL encodes | 101,748,826.5 | 72,700,084.5 | 28.549% |
+| Long ASCII | 112,575,130.5 | 66,110,142.5 | 41.275% |
+| Unicode first | 123,850,749.5 | 113,492,062.5 | 8.364% |
+| ASCII with surrogate tail | 78,896,209.5 | 21,204,546 | 73.123% |
+| Empty | 16,395,408.5 | 10,103,990 | 38.373% |
+| Unchecked byte storage | 23,882,526 | 20,873,575.5 | 12.599% |
+
+All serialized references, encode counts and checksums match. These are
+current-process conversion/reference/checksum intervals, including allocation
+and GC, rather than whole-page costs.
+
+Sealed executable
+`c71667cf92e9fb20f67cf74e5f172c00fc80f41251f786cdb3a2a104ee8f6c37`
+contains this helper and both binding callers before the source commit. Its
+function excerpts identify the implementation independently of the dirty build
+head. Four separate production diagnostic captures pass exact pixels, content
+and bootstrap checks; the execution marker occurs only with direct encoding.
+
+An unprofiled four-pair comparison on that same executable passes all eight
+captures with unchanged inputs, successful PID adoption and zero browser/kernel
+exits. The repair-control median is **32,927,840,011** instructions; direct
+encoding measures **32,759,483,554.5**, a **0.511%** observed reduction. Ranges
+overlap, with a conservative reduction of **−63,243,445**. Frame checkpoints are
+386, 385, 380 and 380, with eleven box-building passes each. Starting load ranges
+from 17.1 to 21.0 on 18 CPUs. No conservative page saving is credited; the broad
+cadence remains zero.
+
+The [USV encoding receipt](performance/chatgpt-usv-encoding-20261104.json)
+links all focused/full selections, actual failures, AST logs, component controls,
+sealed source proofs, raw page counters, PNGs, host conditions and guards.
+Original author scripts and the single SOCKS fixture remain unchanged, with no
+new live download. This frozen replay does not establish live sign-in or chat
+submission support. Four pairs do not establish acceptance; the requested 5%
+advantage over Brave remains unmet.

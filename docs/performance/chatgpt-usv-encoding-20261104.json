@@ -1,0 +1,653 @@
+{
+  "version": 1,
+  "implementation_commit": "afeca8bd59a6e7f135a6c27cf28d42d68e3b848b",
+  "implementation_source_hashes": {
+    "libjs/utf16_well_formed_utf8.v": "ddf513b10d0615f95e511c51e83fb7aa8b223186a67264ce3853db7617d90ad4",
+    "libjs/utf16_well_formed_utf8_test.v": "f406e22089d3b032889f90de3ade216f4312e9da81cdbce065dd91d43b21800c",
+    "browserjs/url_host_jsc.c.v": "8b83f6b9f7d9b18debff982071116742340f46b1b68d40c23d7579f16a06bf84",
+    "browserjs/url_search_params_host_jsc.c.v": "12c856b390c4d4dac722b6d733c16aac225d2037c6a0531a04da3c59dce7551e",
+    "browserjs/url_host_test.v": "169fe3b466cfd83373cad784974a0a7039f85a5bde07259dfed74f0c8f708e84"
+  },
+  "tooling_source": "tools/utf16_usv_benchmark.v",
+  "profile_lead": "Retained separate v -profile refresh: 96,381 Utf16String.is_well_formed calls; instrumented time is a lead, not a production CPU partition.",
+  "focused_test_function_executions": 116,
+  "pure_utf16_focused_executions": 56,
+  "javascriptcore_binding_executions": 60,
+  "focused_prealloc_poison_and_sanitizers_pass": true,
+  "full_libjs_module": {
+    "files_per_gc": 238,
+    "passing_per_gc": 236,
+    "failing_per_gc": 2,
+    "failing_files": [
+      "regex_matching_corpus_test.v",
+      "string_case_test.v"
+    ],
+    "all_pass": false,
+    "qualification": "Same Greek casing fixture mismatches as prior complete baseline selections, independently reproduced with literal system ICU probes. Preserve actual nonzero exits. No fixture edits or skips."
+  },
+  "ast_fixtures_per_gc": 100,
+  "all_ast_comparisons_exact": true,
+  "guards": [
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-utf16_well_formed_utf8-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 450117632,
+      "elapsed_seconds": 5.782260833
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_well_formed_utf8-default-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 6291456,
+      "elapsed_seconds": 1.917364584
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_well_formed_utf8-default-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 6291456,
+      "elapsed_seconds": 1.522152834
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-utf16_ascii_storage-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 424525824,
+      "elapsed_seconds": 5.6906659170000005
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_ascii_storage-default-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.358332
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_ascii_storage-default-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 0,
+      "elapsed_seconds": 0.086958875
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-utf16_byte_boundary-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 425230336,
+      "elapsed_seconds": 6.0779921660000005
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_byte_boundary-default-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.48159120899999996
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_byte_boundary-default-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 0,
+      "elapsed_seconds": 0.079454625
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-string_well_formed-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 523059200,
+      "elapsed_seconds": 8.153352250000001
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-string_well_formed-default-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.346058875
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-string_well_formed-default-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 6684672,
+      "elapsed_seconds": 0.2269545
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-utf16_well_formed_utf8-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 445480960,
+      "elapsed_seconds": 11.102505542
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_well_formed_utf8-none-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 444121088,
+      "elapsed_seconds": 2.242098542
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_well_formed_utf8-none-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 145276928,
+      "elapsed_seconds": 11.63129425
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-utf16_ascii_storage-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 455278592,
+      "elapsed_seconds": 2.462100958
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_ascii_storage-none-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.303273
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_ascii_storage-none-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 0,
+      "elapsed_seconds": 0.05613983299999999
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-utf16_byte_boundary-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 430030848,
+      "elapsed_seconds": 2.281319
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_byte_boundary-none-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.301335125
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_byte_boundary-none-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 0,
+      "elapsed_seconds": 0.048146958000000004
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-string_well_formed-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 538476544,
+      "elapsed_seconds": 3.138779166
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-string_well_formed-none-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.28923245799999997
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-string_well_formed-none-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 5177344,
+      "elapsed_seconds": 0.170367834
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-utf16_well_formed_utf8-prealloc-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 482836480,
+      "elapsed_seconds": 1.657167833
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_well_formed_utf8-prealloc-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 440811520,
+      "elapsed_seconds": 0.8969145000000001
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-utf16_well_formed_utf8-prealloc-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 402522112,
+      "elapsed_seconds": 0.6572950000000001
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-sanitized-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 612974592,
+      "elapsed_seconds": 3.562746791
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-sanitized-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 715538432,
+      "elapsed_seconds": 1.609421209
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-sanitized-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 709263360,
+      "elapsed_seconds": 1.47645325
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/component-compile-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 574865408,
+      "elapsed_seconds": 2.563440792
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/component-0-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.281917
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/component-1-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4784128,
+      "elapsed_seconds": 0.162744
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/component-2-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4702208,
+      "elapsed_seconds": 0.162181
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/component-3-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4800512,
+      "elapsed_seconds": 0.16544733299999997
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/component-4-diagnostic-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4784128,
+      "elapsed_seconds": 0.162310625
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/component-5-diagnostic-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4702208,
+      "elapsed_seconds": 0.166062291
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-url_host-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4584341504,
+      "elapsed_seconds": 28.8784455
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_host-default-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.396806458
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_host-default-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.173608625
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-url_search_params_host-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4560797696,
+      "elapsed_seconds": 28.208746124999998
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_search_params_host-default-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.6494705000000001
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_search_params_host-default-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 589824,
+      "elapsed_seconds": 0.166376834
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-url_string_conversion-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4560896000,
+      "elapsed_seconds": 28.018583292
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_string_conversion-default-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 8749056,
+      "elapsed_seconds": 0.417222125
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_string_conversion-default-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 688128,
+      "elapsed_seconds": 0.17798545799999999
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-url_host-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4583456768,
+      "elapsed_seconds": 37.749046083
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_host-none-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.423017541
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_host-none-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 655360,
+      "elapsed_seconds": 0.17680320900000002
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-url_search_params_host-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4577705984,
+      "elapsed_seconds": 42.662727708
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_search_params_host-none-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.474552084
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_search_params_host-none-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 688128,
+      "elapsed_seconds": 0.201655625
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-url_string_conversion-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4559323136,
+      "elapsed_seconds": 38.184341375
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_string_conversion-none-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.437212375
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-url_string_conversion-none-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 6717440,
+      "elapsed_seconds": 0.0668
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/libjs-default-guard.json",
+      "exit": 1,
+      "peak_rss_bytes": 5652201472,
+      "elapsed_seconds": 167.73728675
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-ast-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 548634624,
+      "elapsed_seconds": 1.7985954579999999
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-ast-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 9535488,
+      "elapsed_seconds": 0.404501417
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/libjs-none-guard.json",
+      "exit": 1,
+      "peak_rss_bytes": 5160501248,
+      "elapsed_seconds": 186.857496
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/compile-ast-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 541442048,
+      "elapsed_seconds": 2.699468917
+    },
+    {
+      "path": "Build/chatgpt-usv-encoding-20261104-2220/run-ast-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 26968064,
+      "elapsed_seconds": 0.467228625
+    }
+  ],
+  "component_scenes": {
+    "archived-urls": {
+      "control": [
+        102044053,
+        101453600
+      ],
+      "candidate": [
+        73739728,
+        71660441
+      ],
+      "control_median": 101748826.5,
+      "candidate_median": 72700084.5,
+      "median_reduction_fraction": 0.28549461452511204,
+      "conservative_component_reduction": 27713872
+    },
+    "long-ascii": {
+      "control": [
+        113167148,
+        111983113
+      ],
+      "candidate": [
+        66319519,
+        65900766
+      ],
+      "control_median": 112575130.5,
+      "candidate_median": 66110142.5,
+      "median_reduction_fraction": 0.41274647245467777,
+      "conservative_component_reduction": 45663594
+    },
+    "unicode-first": {
+      "control": [
+        123974383,
+        123727116
+      ],
+      "candidate": [
+        114663590,
+        112320535
+      ],
+      "control_median": 123850749.5,
+      "candidate_median": 113492062.5,
+      "median_reduction_fraction": 0.08363846841314437,
+      "conservative_component_reduction": 9063526
+    },
+    "surrogate-tail": {
+      "control": [
+        79647928,
+        78144491
+      ],
+      "candidate": [
+        21294682,
+        21114410
+      ],
+      "control_median": 78896209.5,
+      "candidate_median": 21204546.0,
+      "median_reduction_fraction": 0.73123492073469,
+      "conservative_component_reduction": 56849809
+    },
+    "empty": {
+      "control": [
+        16395396,
+        16395421
+      ],
+      "candidate": [
+        10104015,
+        10103965
+      ],
+      "control_median": 16395408.5,
+      "candidate_median": 10103990.0,
+      "median_reduction_fraction": 0.38373051211258324,
+      "conservative_component_reduction": 6291381
+    },
+    "unchecked-bytes": {
+      "control": [
+        23864301,
+        23900751
+      ],
+      "candidate": [
+        21169228,
+        20577923
+      ],
+      "control_median": 23882526.0,
+      "candidate_median": 20873575.5,
+      "median_reduction_fraction": 0.12598962521803603,
+      "conservative_component_reduction": 2695073
+    }
+  },
+  "component_scope": "Current-process C -O2 Boehm encode/full-reference-equality/checksum intervals after input construction and warm validation. Control uses existing to_well_formed().str(); candidate encodes directly with replacement. Both use the existing ASCII prefix encoder. Includes allocation and GC; not a whole-page cost.",
+  "component_variant_diagnostics": "Separate positive candidate marker and absent control marker. All complete output references, encode counts and checksums match.",
+  "production_executable_sha256": "c71667cf92e9fb20f67cf74e5f172c00fc80f41251f786cdb3a2a104ee8f6c37",
+  "production_source_qualification": "Sealed shared production source and both URL/URLSearchParams caller excerpts contain the helper before its source commit. Runtime marker verifies execution independently. Dirty build head is not an attribution of all binary changes to this feature.",
+  "production_diagnostic_captures": 4,
+  "unprofiled_captures": 8,
+  "all_collected_pixels_and_content_exact": true,
+  "all_browser_and_kernel_exits_zero": true,
+  "scope": "Fresh canonical production browser, original author scripts, frozen single SOCKS capture, launch through encoded document PNG; direct well-formed UTF16-to-byte encoding control/candidate/candidate/control comparison. Four pairs are below seven-pair acceptance.",
+  "control": [
+    {
+      "lower": 33155201415,
+      "upper": 33155201415
+    },
+    {
+      "lower": 32700478607,
+      "upper": 32700478607
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 32755245057,
+      "upper": 32755245057
+    },
+    {
+      "lower": 32763722052,
+      "upper": 32763722052
+    }
+  ],
+  "control_median": 32927840011.0,
+  "candidate_median": 32759483554.5,
+  "median_reduction_fraction": 0.005112890989623309,
+  "conservative_page_instruction_reduction": -63243445,
+  "page_instruction_credit": 0,
+  "work": [
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 386,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          17.08154296875,
+          20.1806640625,
+          37.01123046875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          19.86474609375,
+          20.68212890625,
+          36.99267578125
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 385,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          20.95263671875,
+          20.95751953125,
+          36.6240234375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          20.6357421875,
+          20.8916015625,
+          36.5087890625
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 380,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          20.02392578125,
+          20.76025390625,
+          36.37060546875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          20.42236328125,
+          20.83056640625,
+          36.3037109375
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 380,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          19.40625,
+          20.580078125,
+          35.76611328125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          19.21337890625,
+          20.5205078125,
+          35.65576171875
+        ]
+      }
+    }
+  ],
+  "acceptance": false,
+  "target_fraction": "0.95",
+  "broad_cadence_after": 0,
+  "workload": {
+    "fixture": "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2",
+    "manifest_sha256": "7b13757f970e2f615267938bd52f902b852da239962fa265660db813622923f7",
+    "author_scripts": "original",
+    "new_live_downloads": 0,
+    "scripting_backend": "JavaScriptCore",
+    "bootstrap_executed": true,
+    "qualification": "Frozen original-origin replay, not a live sign-in or chat-submission validation. Page scripting does not use the translated LibJS VM."
+  },
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-usv-encoding-20261104-evidence.zip",
+      "sha256": "13cdb86351f6b11f6ced2ce761564a8b5f2bb74d5474830b2505e3362ac9bd20",
+      "bytes": 2412128
+    },
+    {
+      "path": "docs/performance/chatgpt-usv-encoding-diagnostic-20261104.json",
+      "sha256": "5d2adab4bafd0f51efd146605ab1e837ad7c61437531cdb8aa5a94d5fa27fdcd",
+      "bytes": 1468826
+    },
+    {
+      "path": "docs/performance/chatgpt-usv-encoding-diagnostic-20261104-evidence.zip",
+      "sha256": "1c4395210dc81ef72dbe5e3214e60b10467e3af8ecb8882d6a8bc50499369216",
+      "bytes": 1285603
+    },
+    {
+      "path": "docs/performance/chatgpt-usv-encoding-diagnostic-20261104-guard.json",
+      "sha256": "175fa533e13fe2627c39a3e7ebc4e5be1719f3f71d908cf740ac4342beb0eb30",
+      "bytes": 1026
+    },
+    {
+      "path": "docs/performance/chatgpt-usv-encoding-matched-20261104.json",
+      "sha256": "05116b0508f225998f3dce4c79c7e95619738a13584aafef2d481abc0d518c59",
+      "bytes": 2144469
+    },
+    {
+      "path": "docs/performance/chatgpt-usv-encoding-matched-20261104-evidence.zip",
+      "sha256": "37fe9f0fc40acf3d8ba11ebcc2aba51d1e8c07447f8694ef8599d2a011f84638",
+      "bytes": 2573310
+    },
+    {
+      "path": "docs/performance/chatgpt-usv-encoding-matched-20261104-guard.json",
+      "sha256": "635e72751e77ad88052814d55c9d330e0302d9d79190a9bf66c839390e0602e8",
+      "bytes": 1751
+    }
+  ]
+}

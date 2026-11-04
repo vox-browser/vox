@@ -1,0 +1,29 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-usv-encoding-20261104-2220/diagnostic/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {
+    "80482": "Wed Nov  4 22:30:02 2026    ",
+    "80484": "Wed Nov  4 22:30:02 2026    ",
+    "81159": "Wed Nov  4 22:30:11 2026    ",
+    "81164": "Wed Nov  4 22:30:12 2026    ",
+    "81174": "Wed Nov  4 22:30:12 2026    ",
+    "81175": "Wed Nov  4 22:30:12 2026    ",
+    "81177": "Wed Nov  4 22:30:12 2026    ",
+    "81777": "Wed Nov  4 22:30:21 2026    ",
+    "81781": "Wed Nov  4 22:30:21 2026    ",
+    "81792": "Wed Nov  4 22:30:22 2026    ",
+    "81794": "Wed Nov  4 22:30:22 2026    ",
+    "81797": "Wed Nov  4 22:30:22 2026    ",
+    "82386": "Wed Nov  4 22:30:32 2026    ",
+    "82389": "Wed Nov  4 22:30:32 2026    "
+  },
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 1921073152,
+  "elapsed_seconds": 45.662500709,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}
