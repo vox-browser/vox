@@ -49,7 +49,7 @@ static void draw_leaves(CGContextRef context, bool canvas)
 
 static unsigned s_draws, s_uploads, s_flushes, s_declined;
 
-static std::vector<uint8_t> render(bool canvas)
+static std::vector<uint8_t> render(bool canvas, bool shared = false)
 {
     auto pixels = backdrop();
     auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
@@ -63,11 +63,15 @@ static std::vector<uint8_t> render(bool canvas)
     CGContextClipToRect(context, CGRectMake(0, css_height - (strip_top + strip_height) / float(scale),
         css_width, strip_height / float(scale)));
     ladybird_v_skia_set_chromium_painting(1);
+    // Root raster layer: a frame-wide shared recording.
+    ladybird_v_skia_set_shared_recording(shared, css_width, css_height);
     if (canvas) {
         int rect[] {0, strip_top, width, strip_height};
         assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
     }
     draw_leaves(context, canvas);
+    ladybird_v_skia_finish_shared_recording();
+    ladybird_v_skia_set_shared_recording(0, 0, 0);
     if (canvas) {
         s_draws = s_gpu_canvas->draws;
         s_uploads = s_gpu_canvas->uploads;
@@ -128,6 +132,15 @@ int main()
             << " (" << differing << " channels)\n";
         return 1;
     }
+    // A layer recording its leaves into a shared compositor picture publishes
+    // them later; the canvas leaves that layer to the ordinary path entirely.
+    auto shared_reference = render(false, true);
+    auto shared_candidate = render(true, true);
+    if (s_draws != 0 || s_declined == 0 || shared_candidate != shared_reference) {
+        std::cerr << "GPU canvas drew during a shared recording: draws=" << s_draws
+            << " declined=" << s_declined << '\n';
+        return 1;
+    }
     std::cout << "GPU canvas matches per-leaf replay within " << max_error << " levels ("
-        << differing << " channels differ); outside pixels and CPU paint order preserved\n";
+        << differing << " channels differ); outside pixels, CPU paint order and shared recordings preserved\n";
 }

@@ -24,6 +24,7 @@ struct GpuCanvasFrame {
     int max_error = 0;
     // Per-leaf verification (VOX_GPU_CANVAS_VERIFY=2): the leaf whose GPU draw
     // is pending comparison, and that comparison's own counts.
+    char leaf_worst[96] {};
     char leaf[96] = {};
     // The command being replayed was approved for the GPU canvas. Leaves of
     // other commands use the CPU canvas so their own CPU drawing stays ordered.
@@ -143,6 +144,12 @@ void gpu_canvas_flush()
                             error = std::max(error, std::abs(int(cpu[column * 4 + channel])
                                 - int(gpu[column * 4 + order[channel]])));
                         ++frame->compared;
+                        if (error > 20 && gpu_canvas_verify_leaves() && error > frame->leaf_error)
+                            std::snprintf(frame->leaf_worst, sizeof frame->leaf_worst,
+                                " worst=%d,%d cpu=%d,%d,%d,%d gpu=%d,%d,%d,%d", rect.left() + column,
+                                rect.top() + row, cpu[column * 4], cpu[column * 4 + 1], cpu[column * 4 + 2],
+                                cpu[column * 4 + 3], gpu[column * 4 + 2], gpu[column * 4 + 1],
+                                gpu[column * 4], gpu[column * 4 + 3]);
                         if (error) { ++frame->differing; ++frame->leaf_differing; }
                         frame->max_error = std::max(frame->max_error, error);
                         frame->leaf_error = std::max(frame->leaf_error, error);
@@ -160,8 +167,9 @@ void gpu_canvas_flush()
             }
         }
         if (gpu_canvas_verify_leaves() && frame->leaf[0] && frame->leaf_differing)
-            std::fprintf(stderr, "VOX_GPU_CANVAS_LEAF %s differing=%llu max_error=%d\n", frame->leaf,
-                (unsigned long long)frame->leaf_differing, frame->leaf_error);
+            std::fprintf(stderr, "VOX_GPU_CANVAS_LEAF %s differing=%llu max_error=%d%s\n", frame->leaf,
+                (unsigned long long)frame->leaf_differing, frame->leaf_error, frame->leaf_worst);
+        frame->leaf_worst[0] = 0;
         frame->leaf[0] = 0;
         frame->leaf_differing = 0;
         frame->leaf_error = 0;
@@ -211,6 +219,18 @@ void gpu_canvas_note_miss(CGContextRef destination, char const* leaf, bool msaa)
     ++frame->leaf_misses[std::string(leaf) + ":" + reason];
 }
 
+// Whether leaves on `destination` are being recorded into a shared compositor
+// picture (or would start one). That picture reaches the CPU canvas later, in
+// one publication; a GPU leaf drawn meanwhile would land beneath recorded leaves
+// that precede it, and the next readback would erase the publication.
+bool gpu_canvas_shared_recording(CGContextRef destination)
+{
+    if (s_shared_root_recording && s_shared_root_recording->destination == destination) return true;
+    if (s_isolated_input_recordings.count(destination)) return true;
+    return s_chromium_painting && (s_speculative_layer_enabled
+        || (s_raster_layer_is_root ? s_shared_root_enabled : s_shared_layer_enabled));
+}
+
 // The canvas for `destination`, ready for a GPU leaf, with its clips in device
 // space. Returns null (after flushing) when this leaf must use the CPU canvas.
 GpuCanvasFrame* gpu_canvas_for_leaf(CGContextRef destination,
@@ -218,6 +238,13 @@ GpuCanvasFrame* gpu_canvas_for_leaf(CGContextRef destination,
 {
     auto* frame = s_gpu_canvas.get();
     if (!frame || frame->destination != destination || !frame->in_gpu_command) return nullptr;
+    if (gpu_canvas_shared_recording(destination)) {
+        if (gpu_canvas_diagnostics()) ++frame->flush_reasons["(shared-recording)"];
+        frame->in_gpu_command = false;
+        gpu_canvas_flush();
+        ++frame->declined;
+        return nullptr;
+    }
     // Compare the previous leaf by itself before this one draws.
     if (gpu_canvas_verify_leaves() && frame->cpu_stale) gpu_canvas_flush();
     auto found = s_shared_clips.find(destination);
