@@ -47,7 +47,7 @@ static void test_composite(void)
                     source[d * 4] = value; source[d * 4 + 1] = 255 - value;
                     source[d * 4 + 2] = value / 2; source[d * 4 + 3] = alpha;
                     backdrop[d * 4] = d; backdrop[d * 4 + 1] = 255 - d;
-                    backdrop[d * 4 + 2] = d / 2; backdrop[d * 4 + 3] = 255;
+                    backdrop[d * 4 + 2] = d / 2; backdrop[d * 4 + 3] = d;
                 }
                 reference_composite(source, backdrop, expected, 256, opacities[o]);
                 native_composite_opacity_pixels(source, backdrop, actual, 256, opacities[o]);
@@ -71,7 +71,7 @@ static void test_composite(void)
     // Arbitrary float opacities, unaligned byte buffers, vector tails and
     // exact in-place output. Guards expose writes outside the requested span.
     for (int iteration = 0; iteration < 4096; ++iteration) {
-        float opacity = (float)(random_value() & 0xffffff) / 16777215.0f;
+        float opacity = iteration % 4 == 0 ? 1.0f : (float)(random_value() & 0xffffff) / 16777215.0f;
         for (size_t i = 0; i < sizeof(source); ++i) {
             source[i] = random_value(); backdrop[i] = random_value();
         }
@@ -81,6 +81,11 @@ static void test_composite(void)
         reference_composite(source + 1, backdrop + 3, expected + 5, count, opacity);
         native_composite_opacity_pixels(source + 1, backdrop + 3, actual + 5, count, opacity);
         assert(!memcmp(expected, actual, sizeof(expected)));
+        // The original float SIMD path remains the matched control.
+        setenv("VOX_DISABLE_UNIT_OPACITY_INTEGER", "1", 1);
+        native_composite_opacity_pixels(source + 1, backdrop + 3, actual + 5, count, opacity);
+        assert(!memcmp(expected, actual, sizeof(expected)));
+        unsetenv("VOX_DISABLE_UNIT_OPACITY_INTEGER");
         memcpy(actual, backdrop, sizeof(actual));
         reference_composite(source, backdrop, expected, count, opacity);
         native_composite_opacity_pixels(source, actual, actual, count, opacity);

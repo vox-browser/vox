@@ -5,6 +5,8 @@
 #include <fenv.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
 #include <arm_neon.h>
@@ -64,6 +66,8 @@ static void native_composite_opacity_pixels(const uint8_t *layer, const uint8_t 
     // The explicit vector conversion rounds to nearest. Other rounding modes
     // and out-of-range opacities retain the established scalar arithmetic.
     if (count >= 8 && opacity >= 0.0f && opacity <= 1.0f && fegetround() == FE_TONEAREST) {
+        const char *disabled = opacity == 1.0f ? getenv("VOX_DISABLE_UNIT_OPACITY_INTEGER") : NULL;
+        int unit_opacity = opacity == 1.0f && (!disabled || !*disabled), used_unit = 0;
         float32x4_t alpha = vdupq_n_f32(opacity);
         for (; count - index >= 8; index += 8) {
             uint8x8x4_t source = vld4_u8(layer + index * 4);
@@ -78,6 +82,23 @@ static void native_composite_opacity_pixels(const uint8_t *layer, const uint8_t 
             }
             if (opacity == 1.0f && vminv_u8(source.val[3]) == 255) {
                 vst4_u8(result + index * 4, source);
+                continue;
+            }
+            if (unit_opacity) {
+                // At unit opacity every byte is round(s + d*(255-a)/255).
+                // Division by odd 255 has no half-level ties. Exhaustive byte
+                // comparisons preserve the float32/FMA oracle's rounding,
+                // including invalid premultiplication and saturated output.
+                uint16x8_t remaining = vsubq_u16(vdupq_n_u16(255), vmovl_u8(source.val[3]));
+                uint8x8x4_t output;
+                for (int channel = 0; channel < 4; ++channel) {
+                    uint16x8_t product = vmulq_u16(vmovl_u8(destination.val[channel]), remaining);
+                    uint16x8_t biased = vaddq_u16(product, vdupq_n_u16(128));
+                    uint8x8_t rounded = vshrn_n_u16(vaddq_u16(biased, vshrq_n_u16(biased, 8)), 8);
+                    output.val[channel] = vqadd_u8(source.val[channel], rounded);
+                }
+                vst4_u8(result + index * 4, output);
+                used_unit = 1;
                 continue;
             }
             uint16x8_t coverage = vmovl_u8(source.val[3]);
@@ -99,6 +120,14 @@ static void native_composite_opacity_pixels(const uint8_t *layer, const uint8_t 
                     vmovn_u32(native_opacity_quantize(low)), vmovn_u32(native_opacity_quantize(high))));
             }
             vst4_u8(result + index * 4, output);
+        }
+        if (used_unit) {
+            static int reported;
+            if (!__atomic_exchange_n(&reported, 1, __ATOMIC_RELAXED)) {
+                const char *diagnostics = getenv("VOX_UNIT_OPACITY_INTEGER_DIAGNOSTICS");
+                if (diagnostics && *diagnostics)
+                    fprintf(stderr, "Vox unit opacity integer: mixed-alpha span executed pixels=%zu\n", count);
+            }
         }
     }
 #endif
