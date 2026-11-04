@@ -838,3 +838,80 @@ guards and per-observation evidence journals. The four-pair cohort remains
 diagnostic; it neither supplies seven-pair acceptance nor meets the 5% Brave
 goal. Original author scripts, the single SOCKS capture and all references and
 tolerances remain unchanged. No additional live download was performed.
+
+## UTF-16 ASCII-prefix encoding
+
+Commit `b92a8c9f1` copies the current ASCII prefix directly into a length-sized
+byte buffer, then preserves the existing Unicode/WTF-8 encoding loop for the
+remaining units. An empty input returns immediately. The bounded copy does not
+depend on mutable storage metadata. Raw unchecked ASCII storage retains its
+existing separate byte-preservation behavior.
+
+The retained V profile reports 96,954 `encode_utf16` calls. This is a shared
+string utility used by JavaScriptCore bindings; the browser's scripting backend
+has not changed to LibJS. The instrumented row identifies the lead without
+establishing exclusive CPU cost or runtime parity.
+
+Sixty-four focused test-function executions pass: normal GC and no-GC runs
+with both paths, plus AddressSanitizer/UndefinedBehaviorSanitizer and
+preallocation runs with both paths. They exercise all 65,536 individual UTF-16
+units, all 1,048,576 valid surrogate pairs in both encoding modes, nulls, prefix
+boundaries, mixed tails, stale private units and returned-byte ownership.
+The canonical AST driver also matches all one hundred upstream fixtures in
+each GC mode, with no case overrides.
+
+Both complete LibJS selections finish at **235/237 files passing**. The failing
+files are `regex_matching_corpus_test.v` and `string_case_test.v`; both Greek
+casing mismatches reproduce with the ASCII path enabled and disabled. A
+separate C probe using literal bytes and units, without this encoder, reproduces
+the same system-ICU results under `en_US_POSIX`. These are independent
+ICU/retained-fixture mismatches. Actual nonzero test and guard exits remain
+retained; no full-suite pass, skipped case or reference correction is claimed.
+
+Tooling commit `4c5139eb8` measures conversions after input construction using
+current V, C `-O2` and Boehm. The scalar control uses the same buffer setup and
+trim while disabling prefix copying and the empty return. The result isolates
+those paths within the shared entrypoint; it is not an earlier-release
+allocation baseline. Two observations per variant run in
+control/candidate/candidate/control order, followed by a separate diagnostic.
+
+| Component scene | Scalar control median | Candidate median | Conservative reduction |
+| --- | ---: | ---: | ---: |
+| 311 archived URLs, 39,808 conversions | 95,520,547 | 56,272,888.5 | 38,458,289 |
+| Long ASCII | 134,255,906 | 60,565,502 | 71,647,888 |
+| Unicode first | 92,659,174 | 97,495,762 | −11,084,285 |
+| ASCII with surrogate tail | 42,269,415.5 | 25,776,870 | 15,196,165 |
+| Empty | 17,689,206.5 | 8,989,923 | 8,402,720 |
+
+The archived-URL median falls 41.088%, and long ASCII falls 54.888%. All encode
+counts and checksums match. The Unicode-first median is 5.220% higher, with
+overlapping observation ranges; that regression remains in the report. These
+are current-process conversion/checksum intervals including allocator and GC
+work, excluding input construction, launch and teardown. They provide no
+whole-page credit.
+
+The initial prototype's empty-string median regressed 8.732%. Its in-progress
+LibJS selection was deliberately stopped before adding the explicit empty
+return. The prototype measurements, completed focused checks and actual
+interrupted exit remain retained separately from the complete final selections.
+A continuation-wrapper path error occurred before any additional test launch;
+that failed preflight is retained too.
+
+The [production prefix diagnostic](performance/chatgpt-utf16-prefix-diagnostic-20261104.json)
+pins completed executable
+`b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb`.
+Its enabled Vox process reports prefix execution, while its control does not.
+All four captures pass exact pixels, content, bootstrap and browser/kernel exits
+with stable inputs and successful guard PID adoption. The sealed encoder still
+lacks the final empty-return branch. This validates the present nonempty copier
+only; final production integration and an unprofiled matched page comparison
+remain pending a completed bundle containing the final branch. The existing
+shared build worker remains active; no separate build was launched for this
+experiment.
+
+The [UTF-16 receipt](performance/chatgpt-utf16-prefix-20261104.json) links complete
+module selections, focused and AST checks, native ICU reproductions, both
+component revisions and the qualified production journal. Original author
+scripts, fixture bytes and references remain unchanged, with no additional
+live download. Whole-page credit and the broad-check cadence remain zero.
+The 5% Brave target remains unmet.

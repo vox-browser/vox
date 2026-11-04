@@ -1,0 +1,29 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-utf16-prefix-20261104-1955/production-prefix/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {
+    "94957": "Wed Nov  4 20:26:30 2026    ",
+    "94964": "Wed Nov  4 20:26:30 2026    ",
+    "99471": "Wed Nov  4 20:27:01 2026    ",
+    "99478": "Wed Nov  4 20:27:01 2026    ",
+    "99503": "Wed Nov  4 20:27:01 2026    ",
+    "99505": "Wed Nov  4 20:27:01 2026    ",
+    "99507": "Wed Nov  4 20:27:01 2026    ",
+    "5258": "Wed Nov  4 20:27:34 2026    ",
+    "5279": "Wed Nov  4 20:27:34 2026    ",
+    "5317": "Wed Nov  4 20:27:34 2026    ",
+    "5318": "Wed Nov  4 20:27:34 2026    ",
+    "5325": "Wed Nov  4 20:27:34 2026    ",
+    "10464": "Wed Nov  4 20:28:05 2026    ",
+    "10468": "Wed Nov  4 20:28:05 2026    "
+  },
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 1840758784,
+  "elapsed_seconds": 159.31921275000002,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

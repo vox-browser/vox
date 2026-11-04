@@ -2301,3 +2301,16 @@ receivers, missing callbacks, abrupt completion and host-hook ordering.
 Class/function execution, private-expression bytecode generation, DefineField,
 InitializeInstanceElements, Proxy, eval and disposable-resource algorithms
 remain pending; this slice does not close the whole JS-05 finding.
+
+## UTF-16 encoding performance maintenance
+
+`b92a8c9f1` copies ASCII prefixes directly and returns immediately for empty
+input, preserving the scalar Unicode/WTF-8 tail and unchecked ASCII storage.
+Sixty-four focused executions pass across normal, no-GC, sanitizer and
+preallocation variants; all 100 upstream AST fixtures match in both GC modes.
+Both full current-V selections finish at 235/237 files passing: the two Greek
+case-mapping failures reproduce with both encoding paths and independent
+system-ICU probes. Their references remain unchanged, and no full-suite pass
+or additional VM/runtime parity is claimed. See the
+[encoding evidence](../docs/performance/chatgpt-utf16-prefix-20261104.json)
+for exact counts, retained failures and production-validation limits.
