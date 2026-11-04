@@ -1,0 +1,627 @@
+{
+  "status": "Read-only tracking-script detection implemented; additional script suppression not enabled",
+  "commit": "8e7d9a3ad",
+  "url": "https://chatgpt.com/",
+  "command": [
+    "node",
+    "tools/adblock/audit_scripts.mjs",
+    "--archive",
+    "Build/chatgpt-instructions-input-20261104-0830",
+    "--requests",
+    "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3/replay/requests.jsonl",
+    "--output",
+    "Build/chatgpt-tracking-audit-20261104-1300/final-report.json"
+  ],
+  "findings": {
+    "totals": {
+      "scripts": 292,
+      "script_bytes": 3600633,
+      "blocked_scripts": 0,
+      "blocked_original_bytes": 0,
+      "name_candidates": 4,
+      "parse_errors": 0,
+      "unresolved_imports": 379
+    },
+    "candidates": [
+      {
+        "url": "https://chatgpt.com/unauth-mweb/assets/analytics-ces-business-context-CFFp1oc-.js",
+        "sha256": "b15449623bf870fc5eca152f8f607443e8d6f84543fe041c4102c90e3d066640",
+        "bytes": 112410,
+        "name_hint": "analytics",
+        "decision": {
+          "blocked": false,
+          "exception": false,
+          "rule": "",
+          "redirect_url": "",
+          "error": ""
+        },
+        "imports": [
+          {
+            "specifier": "./octane-shell-shared-BfZUEhnh.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/octane-shell-shared-BfZUEhnh.js"
+          },
+          {
+            "specifier": "./a-DzblMKsW.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-DzblMKsW.js"
+          },
+          {
+            "specifier": "./a-DGU5ufDp.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-DGU5ufDp.js"
+          },
+          {
+            "specifier": "./a-BFH5HeuZ.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-BFH5HeuZ.js"
+          },
+          {
+            "specifier": "./a-rXBllHPV.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-rXBllHPV.js"
+          },
+          {
+            "specifier": "./a-DhScj3yr.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-DhScj3yr.js"
+          },
+          {
+            "specifier": "./a-D_j2xaw0.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-D_j2xaw0.js"
+          },
+          {
+            "specifier": "./a-Dp9oJqXz.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-Dp9oJqXz.js"
+          }
+        ],
+        "exports": [
+          "reportCesBusinessEvent"
+        ],
+        "static_importers": [],
+        "dynamic_importers": [],
+        "action": "review_only",
+        "skip_safety": "not_established"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/assets/analytics-CX6Qe517.js",
+        "sha256": "2cd41d1a01f3141d4acaa23bd583ab7e9a06715a5ec7081c58f7e2c014344835",
+        "bytes": 4141,
+        "name_hint": "analytics",
+        "decision": {
+          "blocked": false,
+          "exception": false,
+          "rule": "",
+          "redirect_url": "",
+          "error": ""
+        },
+        "imports": [
+          {
+            "specifier": "./rolldown-runtime-BflCKaFw.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/rolldown-runtime-BflCKaFw.js"
+          },
+          {
+            "specifier": "./octane-shell-shared-BfZUEhnh.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/octane-shell-shared-BfZUEhnh.js"
+          },
+          {
+            "specifier": "./a-CHdHD6_3.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-CHdHD6_3.js"
+          },
+          {
+            "specifier": "./a-rXBllHPV.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-rXBllHPV.js"
+          }
+        ],
+        "exports": [
+          "a",
+          "c",
+          "i",
+          "l",
+          "n",
+          "o",
+          "r",
+          "s",
+          "t"
+        ],
+        "static_importers": [
+          "https://chatgpt.com/unauth-mweb/assets/application-presentation-runtime-AmZtXNvB.js",
+          "https://chatgpt.com/unauth-mweb/assets/conversation-followup-dom-controller-Ycp8Fe8P.js",
+          "https://chatgpt.com/unauth-mweb/assets/native-initial-composer-sentinel-runtime-Cd9akVPC.js",
+          "https://chatgpt.com/unauth-mweb/assets/native-sidebar-navigation-metrics-CqM0-s0j.js",
+          "https://chatgpt.com/unauth-mweb/assets/native-telemetry-Uuu2LhGj.js",
+          "https://chatgpt.com/unauth-mweb/assets/page-load-performance-DD6Tid9J.js",
+          "https://chatgpt.com/unauth-mweb/assets/performance-metrics-CTWtwSle.js",
+          "https://chatgpt.com/unauth-mweb/assets/trending-searches-surface-DVuotd_b.js"
+        ],
+        "dynamic_importers": [],
+        "action": "review_only",
+        "skip_safety": "not_established"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/assets/native-telemetry-Uuu2LhGj.js",
+        "sha256": "72bcfba09ec8597824d32f763300c0bdf50660d391ce85a6e2da1c74865c104b",
+        "bytes": 10679,
+        "name_hint": "telemetry",
+        "decision": {
+          "blocked": false,
+          "exception": false,
+          "rule": "",
+          "redirect_url": "",
+          "error": ""
+        },
+        "imports": [
+          {
+            "specifier": "./octane-shell-shared-BfZUEhnh.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/octane-shell-shared-BfZUEhnh.js"
+          },
+          {
+            "specifier": "./a-JddWuP4i.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-JddWuP4i.js"
+          },
+          {
+            "specifier": "./a-DgBmhq2g.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-DgBmhq2g.js"
+          },
+          {
+            "specifier": "./a-rXBllHPV.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-rXBllHPV.js"
+          },
+          {
+            "specifier": "./analytics-CX6Qe517.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/analytics-CX6Qe517.js"
+          },
+          {
+            "specifier": "./a-sJiJ2CiI.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-sJiJ2CiI.js"
+          },
+          {
+            "specifier": "./a-D6M84_e5.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-D6M84_e5.js"
+          },
+          {
+            "specifier": "./page-load-performance-DD6Tid9J.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/page-load-performance-DD6Tid9J.js"
+          },
+          {
+            "specifier": null,
+            "kind": "dynamic",
+            "url": null
+          },
+          {
+            "specifier": null,
+            "kind": "dynamic",
+            "url": null
+          },
+          {
+            "specifier": null,
+            "kind": "dynamic",
+            "url": null
+          },
+          {
+            "specifier": null,
+            "kind": "dynamic",
+            "url": null
+          },
+          {
+            "specifier": null,
+            "kind": "dynamic",
+            "url": null
+          }
+        ],
+        "exports": [
+          "installOctaneNativeTelemetry"
+        ],
+        "static_importers": [],
+        "dynamic_importers": [],
+        "action": "review_only",
+        "skip_safety": "not_established"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/assets/performance-metrics-CTWtwSle.js",
+        "sha256": "8b9576c5ddcb9c907f04826e6fba00b24206f17223787355778535d305df00f3",
+        "bytes": 46391,
+        "name_hint": "performance_metrics",
+        "decision": {
+          "blocked": false,
+          "exception": false,
+          "rule": "",
+          "redirect_url": "",
+          "error": ""
+        },
+        "imports": [
+          {
+            "specifier": "./octane-shell-shared-BfZUEhnh.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/octane-shell-shared-BfZUEhnh.js"
+          },
+          {
+            "specifier": "./a-JddWuP4i.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-JddWuP4i.js"
+          },
+          {
+            "specifier": "./a-PGm_m9Xx.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-PGm_m9Xx.js"
+          },
+          {
+            "specifier": "./a-9K5BsTgq.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-9K5BsTgq.js"
+          },
+          {
+            "specifier": "./a-BFH5HeuZ.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-BFH5HeuZ.js"
+          },
+          {
+            "specifier": "./a-CHdHD6_3.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-CHdHD6_3.js"
+          },
+          {
+            "specifier": "./a-DgBmhq2g.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-DgBmhq2g.js"
+          },
+          {
+            "specifier": "./a-B8doc-Ub.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-B8doc-Ub.js"
+          },
+          {
+            "specifier": "./analytics-CX6Qe517.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/analytics-CX6Qe517.js"
+          },
+          {
+            "specifier": "./ces-page-diagnostics-oPHWVjt6.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/ces-page-diagnostics-oPHWVjt6.js"
+          },
+          {
+            "specifier": "./a-D2V09_uO.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-D2V09_uO.js"
+          },
+          {
+            "specifier": "./a-CEvJVXy1.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-CEvJVXy1.js"
+          },
+          {
+            "specifier": "./a-Bs5EKwpb.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-Bs5EKwpb.js"
+          },
+          {
+            "specifier": "./a-CDyzhwgl.js",
+            "kind": "static",
+            "url": "https://chatgpt.com/unauth-mweb/assets/a-CDyzhwgl.js"
+          },
+          {
+            "specifier": null,
+            "kind": "dynamic",
+            "url": null
+          },
+          {
+            "specifier": null,
+            "kind": "dynamic",
+            "url": null
+          },
+          {
+            "specifier": null,
+            "kind": "dynamic",
+            "url": null
+          }
+        ],
+        "exports": [
+          "getClsInpTarget",
+          "reportPerformanceMetrics"
+        ],
+        "static_importers": [],
+        "dynamic_importers": [],
+        "action": "review_only",
+        "skip_safety": "not_established"
+      }
+    ],
+    "request_hints": [
+      {
+        "url": "https://chatgpt.com/unauth-mweb/assets/analytics-ces-business-context-CFFp1oc-.js",
+        "source_url": "https://chatgpt.com/",
+        "method": "GET",
+        "observations": 14,
+        "request_type": null,
+        "type_policy": "probes_only; replay logs do not distinguish Fetch from Beacon",
+        "decisions": [
+          {
+            "request_type": "xmlhttprequest",
+            "blocked": false,
+            "exception": false,
+            "rule": "",
+            "redirect_url": "",
+            "error": ""
+          },
+          {
+            "request_type": "ping",
+            "blocked": false,
+            "exception": false,
+            "rule": "",
+            "redirect_url": "",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/assets/analytics-CX6Qe517.js",
+        "source_url": "https://chatgpt.com/",
+        "method": "GET",
+        "observations": 14,
+        "request_type": null,
+        "type_policy": "probes_only; replay logs do not distinguish Fetch from Beacon",
+        "decisions": [
+          {
+            "request_type": "xmlhttprequest",
+            "blocked": false,
+            "exception": false,
+            "rule": "",
+            "redirect_url": "",
+            "error": ""
+          },
+          {
+            "request_type": "ping",
+            "blocked": false,
+            "exception": false,
+            "rule": "",
+            "redirect_url": "",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/assets/native-telemetry-Uuu2LhGj.js",
+        "source_url": "https://chatgpt.com/",
+        "method": "GET",
+        "observations": 14,
+        "request_type": null,
+        "type_policy": "probes_only; replay logs do not distinguish Fetch from Beacon",
+        "decisions": [
+          {
+            "request_type": "xmlhttprequest",
+            "blocked": false,
+            "exception": false,
+            "rule": "",
+            "redirect_url": "",
+            "error": ""
+          },
+          {
+            "request_type": "ping",
+            "blocked": false,
+            "exception": false,
+            "rule": "",
+            "redirect_url": "",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/assets/performance-metrics-CTWtwSle.js",
+        "source_url": "https://chatgpt.com/",
+        "method": "GET",
+        "observations": 13,
+        "request_type": null,
+        "type_policy": "probes_only; replay logs do not distinguish Fetch from Beacon",
+        "decisions": [
+          {
+            "request_type": "xmlhttprequest",
+            "blocked": false,
+            "exception": false,
+            "rule": "",
+            "redirect_url": "",
+            "error": ""
+          },
+          {
+            "request_type": "ping",
+            "blocked": false,
+            "exception": false,
+            "rule": "",
+            "redirect_url": "",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/business",
+        "source_url": "https://chatgpt.com/",
+        "method": "POST",
+        "observations": 29,
+        "request_type": null,
+        "type_policy": "probes_only; replay logs do not distinguish Fetch from Beacon",
+        "decisions": [
+          {
+            "request_type": "xmlhttprequest",
+            "blocked": true,
+            "exception": false,
+            "rule": "||chatgpt.com/unauth-mweb/events/$xhr",
+            "redirect_url": "",
+            "error": ""
+          },
+          {
+            "request_type": "ping",
+            "blocked": true,
+            "exception": false,
+            "rule": "||chatgpt.com/unauth-mweb/events/$ping",
+            "redirect_url": "",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/performance?lightweight_authenticated=0",
+        "source_url": "https://chatgpt.com/",
+        "method": "POST",
+        "observations": 14,
+        "request_type": null,
+        "type_policy": "probes_only; replay logs do not distinguish Fetch from Beacon",
+        "decisions": [
+          {
+            "request_type": "xmlhttprequest",
+            "blocked": true,
+            "exception": false,
+            "rule": "||chatgpt.com/unauth-mweb/events/$xhr",
+            "redirect_url": "",
+            "error": ""
+          },
+          {
+            "request_type": "ping",
+            "blocked": true,
+            "exception": false,
+            "rule": "||chatgpt.com/unauth-mweb/events/$ping",
+            "redirect_url": "",
+            "error": ""
+          }
+        ]
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/events/statsc/flush?lightweight_authenticated=0",
+        "source_url": "https://chatgpt.com/",
+        "method": "POST",
+        "observations": 15,
+        "request_type": null,
+        "type_policy": "probes_only; replay logs do not distinguish Fetch from Beacon",
+        "decisions": [
+          {
+            "request_type": "xmlhttprequest",
+            "blocked": true,
+            "exception": false,
+            "rule": "||chatgpt.com/unauth-mweb/events/$xhr",
+            "redirect_url": "",
+            "error": ""
+          },
+          {
+            "request_type": "ping",
+            "blocked": true,
+            "exception": false,
+            "rule": "||chatgpt.com/unauth-mweb/events/$ping",
+            "redirect_url": "",
+            "error": ""
+          }
+        ]
+      }
+    ],
+    "analytics_review": "The 4,141-byte analytics module has nine exports and eight direct static importers. Blocking its URL can prevent those application modules from loading.",
+    "native_telemetry_review": "The 10,679-byte native-telemetry installer returns a markBehaviorReady method and starts retired-service-worker cleanup. Its name alone does not establish that the entire module is disposable. Removing it also changes more than event delivery.",
+    "existing_policy": "Current pinned EasyPrivacy rules already block /unauth-mweb/events/ for both Fetch/XHR and Beacon/ping. Known standalone analytics scripts such as Google Analytics already receive a uBO block/replacement; the integration test verifies this.",
+    "captured_script_scope": "None of the 292 scripts present in this archive is blocked by the current rules. The archive contains responses captured by Brave; blocked or unfetched resources are absent. This is not a claim that filtering blocks no scripts generally.",
+    "graph_scope": "379 computed/bare imports remain unresolved. A module with zero recognized importers may still be reached through an import map, computed URL, document entry point or worker. No automatic safe-to-skip verdict is inferred.",
+    "traffic_scope": "The request log covers both browsers across seven pairs. Counts are aggregate observations, not Vox-only traffic or evidence of a Vox filtering bypass. Its request types are absent, so XHR and Beacon decisions are explicitly labeled offline probes."
+  },
+  "engine": {
+    "filter_count": 276172,
+    "list_count": 10,
+    "inputs": {
+      "adblock/engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "adblock/engine.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "adblock/engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "adblock/lists/manifest.json": "5ee0e65c221da574f5559393dc39e4480a6d693f7da7e13659cc4000f8e1cc4d"
+    }
+  },
+  "tool_inputs": {
+    "tools/adblock/audit_scripts.mjs": "ee29d85d6c0d253f683ce156f99fd0fe0c44b6b4b4a6b96af1bbfca6d2e16779",
+    "browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7"
+  },
+  "evidence": {
+    "raw_report": {
+      "path": "Build/chatgpt-tracking-audit-20261104-1300/final-report.json",
+      "sha256": "a6dd60ffece56c21fa28a41da27a0b6d0da41a2e15d9a03c78f409f0e0578696",
+      "bytes": 542803
+    },
+    "manifest": {
+      "path": "Build/chatgpt-instructions-input-20261104-0830/manifest.json",
+      "sha256": "5c59adf716301d5a32484f67343db29ba026fa3f8527daa1c8c14c6ae78d9a59",
+      "bytes": 605675
+    },
+    "request_log": {
+      "path": "/Users/alex/code/vox2/Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3/replay/requests.jsonl",
+      "sha256": "90baf1c5123f89378eb7e1e059139dce790807936f7423356c054e97c06eb28d"
+    },
+    "guard": {
+      "command": [
+        "node",
+        "tools/adblock/audit_scripts.mjs",
+        "--archive",
+        "Build/chatgpt-instructions-input-20261104-0830",
+        "--requests",
+        "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3/replay/requests.jsonl",
+        "--output",
+        "Build/chatgpt-tracking-audit-20261104-1300/final-report.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 196313088,
+      "elapsed_seconds": 0.640769167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "tests_guard": {
+      "command": [
+        "node",
+        "--test",
+        "tools/adblock/audit_scripts_test.mjs"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 173260800,
+      "elapsed_seconds": 0.548148541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "tests_log": {
+      "path": "Build/chatgpt-tracking-audit-20261104-1300/final-tests.log",
+      "sha256": "5960fd97872ce4e5d25d0a8a4c846744a4c10cc571480e5836283c660de40390",
+      "bytes": 1251
+    }
+  },
+  "validation": {
+    "tests": 10,
+    "passed": 10,
+    "authors_executed": false,
+    "new_network_downloads": 0,
+    "cases": [
+      "Pinned full uBO tracker decision and allowed application script",
+      "Real ES module imports/re-exports, dynamic imports, comments and ordinary strings",
+      "Imported analytics exports remain review-only",
+      "Blocked scripts, replacements and explicit exceptions remain distinct",
+      "No evaluation of author scripts",
+      "Computed imports and parse errors remain visible",
+      "Archive hash/byte-count integrity",
+      "Filter evaluation failures fail closed",
+      "Request method, type uncertainty and duplicate observation counts"
+    ]
+  },
+  "decision": "Keep maintained filter rules as the execution gate. Use this audit to select narrowly reviewed interventions; do not skip shared bundles based on filename or lack of observed use.",
+  "performance": {
+    "instruction_credit": 0,
+    "goal_5_percent_over_brave": "still open",
+    "rationale": "Detection is not a browser optimization result. Any later tracking policy change needs page functionality/readiness/pixel checks and matched unprofiled measurements with the same blocking policy in Brave."
+  }
+}
