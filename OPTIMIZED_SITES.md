@@ -10,7 +10,7 @@ Provisional entries retain unresolved acceptance checks.
 | --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | Lobsters homepage | 2026-11-02 | 7 | Median | 8,082,180,934 | 27,446,683,211 | **70.55%** | 535.2 | 992.4 | — | — | [Comparison](docs/LOBSTERS_BRAVE_INSTRUCTIONS.md) |
 | Hacker News homepage | 2026-11-04 | 7 | Median | 2,477,573,492 | 8,124,779,792 | **69.51%** | 559.7 | 639.2 | 59.7–59.8 | 59.78–59.79 | [Comparison](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [ledger](docs/benchmark-results/hacker-news-window-indexing-2026-11-04.json), [scrolling](docs/HACKER_NEWS_SCROLLING.md) |
-| Old Reddit /r/programming/ | 2026-11-03 | 7 | Median | 3,953,436,832 | 9,327,192,427 | **57.61%** | 607.1 | 608.3 | 39.2–53.0 | 59.56–59.78 | [Recheck](docs/OLD_REDDIT_PROGRAMMING_RECHECK.md), [earlier cohort](docs/OLD_REDDIT_PROGRAMMING_INSTRUCTIONS.md) |
+| Old Reddit /r/programming/ | 2026-11-04 | 7 | Median | 3,060,307,260 | 9,374,680,561 | **67.36%** | — | — | — | — | [Reduction](docs/OLD_REDDIT_PROGRAMMING_REDUCTION.md), [ledger](docs/benchmark-results/old-reddit-programming-reduction-2026-11-04.json), [2026-11-03 recheck](docs/OLD_REDDIT_PROGRAMMING_RECHECK.md) (RAM 607.1/608.3 MiB, scroll 39.2–53.0/59.56–59.78 FPS on its earlier fixture) |
 | CNN homepage (provisional) | 2026-11-01 | 7 | Median | 21,805,542,771 | 32,665,051,523 | **33.25%** | 1,234.0 | 1,031.5 | — | — | [Comparison](docs/CNN_INSTRUCTIONS.md), [receipts](docs/benchmark-results/cnn-home-thirty-percent-2026-11-01.json) |
 | Wikipedia portal (www.wikipedia.org) | 2026-11-01 | 7 | Median | 6,686,475,010 | 9,702,898,348 | **31.09%** | 515.1 | 614.2 | 3.1–3.6 | 59.57–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/WIKIPEDIA_BRAVE_INSTRUCTIONS.md) |
 | vlang.io (CLI protocol) | 2026-11-01 | 7 | Mean | 8.630 billion | 10.500 billion | **17.81%** | 709.6 | 668.9 | 0.8–0.9 | 59.49–59.79 | [Audit](docs/OPTIMIZED_SITES_AUDIT.md), [comparison](docs/VLANG_RENDERING_INSTRUCTIONS.md) |
@@ -269,7 +269,16 @@ its own matched measurement.
 
 ## Workload and rendering scope
 
-- **Old Reddit /r/programming/:** cached account-bearing markup, 17 executable
+- **Old Reddit /r/programming/ (2026-11-04):** a refreshed frozen page fetched
+  with the imported session, all 17 script elements removed and 20 sealed
+  responses replayed offline. Vox and Brave differ in two wrapped title lines
+  (2,046 pixels), so captures are checked against fixed per-engine references;
+  all 25 post IDs are preserved. Medians fall from 3,430,344,655 to
+  3,060,307,260 (10.79%); the worst-final/best-baseline bound is 9.996%. About
+  200M comes from four committed launch/paint changes and the rest from
+  concurrent commits; RAM and scrolling were not remeasured on this fixture. See
+  the [reduction report](docs/OLD_REDDIT_PROGRAMMING_REDUCTION.md).
+- **Old Reddit /r/programming/ (earlier fixture):** cached account-bearing markup, 17 executable
   script elements removed, normal scripting policy retained, 120 sealed
   successful resource responses and fresh profiles/caches. All 14 captures
   match the same Brave reference exactly and preserve all 25 post IDs. The
