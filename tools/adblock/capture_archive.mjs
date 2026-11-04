@@ -102,46 +102,7 @@ function isCompleteMediaRange(response, length) {
         && total>0 && end===total-1 && length===total;
 }
 
-export async function captureArchive(page, directory, expectedURL, {mainFrameID,headerCache}={}) {
-    await fs.mkdir(directory, {mode: 0o700}); // Never overwrite a prior workload.
-    const cache = path.join(directory, 'cache');
-    await fs.mkdir(path.join(cache, 'resources'), {recursive: true});
-    await fs.mkdir(path.join(cache, 'pages'));
-    const snapshotExpression = `(async()=>{
-        await document.fonts.ready;
-        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-        return (${freezeDocument.toString()})();
-    })()`;
-    const snapshot = await page.evaluate(snapshotExpression);
-    if (snapshot.width !== 1024 || snapshot.height !== 768 || snapshot.scale !== 1
-        || snapshot.text.length < 1000 || !isExpectedSiteURL(expectedURL, snapshot.url)) {
-        throw new Error('Capture requires the loaded requested site at 1024x768 and device scale 1');
-    }
-    await fs.writeFile(path.join(directory, 'frozen.html'), snapshot.html);
-    await fs.writeFile(path.join(directory, 'live.txt'), snapshot.text);
-    // The live source is a reference too. Require the same loaded fonts,
-    // visible resources and consecutive-frame stability as frozen replay;
-    // otherwise an incomplete or moving source can never qualify its archive.
-    const sourcePixels = await capturePixelReference(page, path.join(directory, 'live.png'),
-        {coverage:'page', url:snapshot.url});
-    // A stable pair of PNGs does not prove that the DOM serialized before it
-    // was the one painted. Bracket the source capture with the replayable DOM
-    // and text identities, retaining both versions when a live page changes.
-    const after = await page.evaluate(snapshotExpression);
-    const identity = value => ({html_sha256:digest(value.html), text_sha256:digest(value.text),
-        url:value.url,base:value.base,compat_mode:value.compat_mode,
-        width:value.width,height:value.height,scale:value.scale});
-    const documentSnapshot = {before:identity(snapshot),after:identity(after)};
-    documentSnapshot.stable = JSON.stringify(documentSnapshot.before) === JSON.stringify(documentSnapshot.after);
-    await fs.writeFile(path.join(directory, 'document-snapshot.json'),
-        JSON.stringify(documentSnapshot,null,2)+'\n');
-    if(!documentSnapshot.stable) {
-        await fs.writeFile(path.join(directory, 'frozen-after.html'),after.html);
-        await fs.writeFile(path.join(directory, 'capture-failure.json'),JSON.stringify({
-            status:'failed',reason:'Live document changed during source capture',
-            document_snapshot:documentSnapshot,source_pixels:sourcePixels},null,2)+'\n');
-        throw new Error('Live document changed during source capture; see document-snapshot.json');
-    }
+async function captureNetworkResources(page,cache,documentURL,{mainFrameID,headerCache}={}) {
     const requests = new Map(page.events.filter(e => e.method === 'Network.requestWillBeSent')
         .map(e => [e.params.requestId, e.params.request]));
     const responses = new Map(page.events.filter(e => e.method === 'Network.responseReceived')
@@ -157,12 +118,12 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID,
         let response=archiveResponseWithExtraHeaders(entry.response,extra);
         const request=requests.get(id)||{};
         const method=request.method;
-        const isMain=type==='Document' && response.url===snapshot.url
+        const isMain=type==='Document' && response.url===documentURL
             && mainFrameID && entry.frameId===mainFrameID;
         const supportedStatus=response.status===200 || (type==='Media' && response.status===206);
         if (!/^https?:/.test(response.url) || !supportedStatus
             || (method!=='GET' && !(method==='POST' && isMain)) || !completed.has(id)) continue;
-        if(type==='Document' && response.url===snapshot.url && mainFrameID && !isMain) continue;
+        if(type==='Document' && response.url===documentURL && mainFrameID && !isMain) continue;
         const requestOrigin=Object.entries(request.headers||{}).find(([name])=>name.toLowerCase()==='origin')?.[1]||'';
         const row = {url: response.url, type, status: response.status, method,
             request_origin:requestOrigin,from_disk_cache:Boolean(entry.response.fromDiskCache)};
@@ -203,6 +164,60 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID,
         }
         resources.push(row);
     }
+    return {resources,requests,responses,completed};
+}
+
+export async function captureEncodedResponseCache(page,directory,expectedURL,{mainFrameID}={}) {
+    await fs.mkdir(directory,{mode:0o700});
+    const cache=path.join(directory,'cache');
+    await fs.mkdir(path.join(cache,'resources'),{recursive:true});
+    const {resources}=await captureNetworkResources(page,cache,expectedURL,{mainFrameID});
+    const metadata={url:expectedURL,resources,workload:'Original encoded responses for a completed cache-preparation visit; no frozen document.'};
+    await fs.writeFile(path.join(directory,'archive.json'),JSON.stringify(metadata,null,2)+'\n');
+    return {directory,resources:resources.filter(row=>!row.error).length};
+}
+
+export async function captureArchive(page, directory, expectedURL, {mainFrameID,headerCache}={}) {
+    await fs.mkdir(directory, {mode: 0o700}); // Never overwrite a prior workload.
+    const cache = path.join(directory, 'cache');
+    await fs.mkdir(path.join(cache, 'resources'), {recursive: true});
+    await fs.mkdir(path.join(cache, 'pages'));
+    const snapshotExpression = `(async()=>{
+        await document.fonts.ready;
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        return (${freezeDocument.toString()})();
+    })()`;
+    const snapshot = await page.evaluate(snapshotExpression);
+    if (snapshot.width !== 1024 || snapshot.height !== 768 || snapshot.scale !== 1
+        || snapshot.text.length < 1000 || !isExpectedSiteURL(expectedURL, snapshot.url)) {
+        throw new Error('Capture requires the loaded requested site at 1024x768 and device scale 1');
+    }
+    await fs.writeFile(path.join(directory, 'frozen.html'), snapshot.html);
+    await fs.writeFile(path.join(directory, 'live.txt'), snapshot.text);
+    // The live source is a reference too. Require the same loaded fonts,
+    // visible resources and consecutive-frame stability as frozen replay;
+    // otherwise an incomplete or moving source can never qualify its archive.
+    const sourcePixels = await capturePixelReference(page, path.join(directory, 'live.png'),
+        {coverage:'page', url:snapshot.url});
+    // A stable pair of PNGs does not prove that the DOM serialized before it
+    // was the one painted. Bracket the source capture with the replayable DOM
+    // and text identities, retaining both versions when a live page changes.
+    const after = await page.evaluate(snapshotExpression);
+    const identity = value => ({html_sha256:digest(value.html), text_sha256:digest(value.text),
+        url:value.url,base:value.base,compat_mode:value.compat_mode,
+        width:value.width,height:value.height,scale:value.scale});
+    const documentSnapshot = {before:identity(snapshot),after:identity(after)};
+    documentSnapshot.stable = JSON.stringify(documentSnapshot.before) === JSON.stringify(documentSnapshot.after);
+    await fs.writeFile(path.join(directory, 'document-snapshot.json'),
+        JSON.stringify(documentSnapshot,null,2)+'\n');
+    if(!documentSnapshot.stable) {
+        await fs.writeFile(path.join(directory, 'frozen-after.html'),after.html);
+        await fs.writeFile(path.join(directory, 'capture-failure.json'),JSON.stringify({
+            status:'failed',reason:'Live document changed during source capture',
+            document_snapshot:documentSnapshot,source_pixels:sourcePixels},null,2)+'\n');
+        throw new Error('Live document changed during source capture; see document-snapshot.json');
+    }
+    const {resources,requests,responses,completed}=await captureNetworkResources(page,cache,snapshot.url,{mainFrameID,headerCache});
     const main = resources.find(r => r.url === snapshot.url && r.type === 'Document' && !r.error);
     if (!main) {
         const {html, text, ...metadata} = snapshot;

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
-import {archiveHeaders, archiveResponseWithExtraHeaders, captureArchive, freezeDocument, imageAccept, reuseArchivedResponseHeaders} from './capture_archive.mjs';
+import {archiveHeaders, archiveResponseWithExtraHeaders, captureArchive, captureEncodedResponseCache, freezeDocument, imageAccept, reuseArchivedResponseHeaders} from './capture_archive.mjs';
 
 const ready = snapshot => ({ready:'complete',fonts:'loaded',images:[],styles:[],rects:[],...snapshot});
 
@@ -87,6 +87,27 @@ test('cached headers require the prepared encoded body, matching request origin 
         assert.equal(await reuseArchivedResponseHeaders(directory,req,res,data),res);
     await fs.writeFile(base+'.headers.json','[]');
     await assert.rejects(reuseArchivedResponseHeaders(directory,request,response,body),/Prepared response cache changed/);
+});
+
+test('encoded cache preparation retains original responses without claiming a frozen source document',async t=>{
+    const root=await fs.mkdtemp(path.join(os.tmpdir(),'vox-response-preparation-'));
+    t.after(()=>fs.rm(root,{recursive:true,force:true}));
+    const directory=path.join(root,'capture'),url='https://news.example/';
+    const body=Buffer.from('<html>original scripted document</html>');
+    const page={events:[
+        {method:'Network.requestWillBeSent',params:{requestId:'page',request:{url,method:'GET',headers:{Origin:'https://news.example'}}}},
+        {method:'Network.responseReceived',params:{requestId:'page',type:'Document',response:{url,status:200,headers:{'Content-Type':'text/html'}}}},
+        {method:'Network.loadingFinished',params:{requestId:'page'}},
+    ],evaluate:async()=>{throw Error('Cache preparation must not serialize a DOM');},
+    send:async method=>{assert.equal(method,'Network.getResponseBody');return {body:body.toString('base64'),base64Encoded:true};}};
+    const result=await captureEncodedResponseCache(page,directory,url);
+    assert.equal(result.resources,1);
+    const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+    assert.deepEqual(await fs.readFile(path.join(directory,'cache/resources',hash(url))),body);
+    const metadata=JSON.parse(await fs.readFile(path.join(directory,'archive.json'),'utf8'));
+    assert.equal(metadata.resources[0].sha256,hash(body));
+    assert.equal(metadata.frozen_html_sha256,undefined);
+    await assert.rejects(fs.stat(path.join(directory,'frozen.html')),{code:'ENOENT'});
 });
 
 async function captureMediaRange(t, range, bytes) {

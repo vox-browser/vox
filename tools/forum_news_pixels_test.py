@@ -276,25 +276,24 @@ class ForumNewsPixelTests(unittest.TestCase):
             with patch('forum_news_pixels.guarded', side_effect=capture):
                 with self.assertRaisesRegex(RuntimeError, 'closed profile'):
                     warm_oracle_cache(['oracle'], [], output, 60)
-
-    def test_live_cache_preparation_retains_response_provenance_for_cached_headers(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            output = Path(temporary)
-            common = ['oracle', '--url', 'https://news.example/']
-            def capture(command, prefix, timeout):
-                self.assertEqual(Path(command[command.index('--capture-dir') + 1]), output / 'capture')
-                Path(command[command.index('--profile-output') + 1]).mkdir()
-                write_json(output / 'brave-warm.json', self.report())
-            with patch('forum_news_pixels.guarded', side_effect=capture):
-                prepared = warm_oracle_cache(common, [], output, 60, capture_archive=True)
-            self.assertEqual(prepared[prepared.index('--cached-response-headers') + 1], str(output / 'capture'))
-            self.assertEqual(common, ['oracle', '--url', 'https://news.example/'])
             report = self.report()
             report['cosmetic']['css_matches'] = False
             with patch('forum_news_pixels.guarded'), patch('forum_news_pixels.read_json', return_value=report):
                 with self.assertRaisesRegex(RuntimeError, 'cosmetic'):
                     warm_oracle_cache(['oracle'], [], output, 60)
 
+    def test_live_cache_preparation_retains_response_provenance_for_cached_headers(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            common = ['oracle', '--url', 'https://news.example/']
+            def capture(command, prefix, timeout):
+                self.assertEqual(Path(command[command.index('--cache-preparation-dir') + 1]), output / 'capture')
+                Path(command[command.index('--profile-output') + 1]).mkdir()
+                write_json(output / 'brave-warm.json', self.report())
+            with patch('forum_news_pixels.guarded', side_effect=capture):
+                prepared = warm_oracle_cache(common, [], output, 60, capture_archive=True)
+            self.assertEqual(prepared[prepared.index('--cached-response-headers') + 1], str(output / 'capture'))
+            self.assertEqual(common, ['oracle', '--url', 'https://news.example/'])
     def test_complete_cache_uses_a_discarded_process_with_separate_profile_and_audit(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary)

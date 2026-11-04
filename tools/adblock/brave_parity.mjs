@@ -7,7 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { captureArchive } from './capture_archive.mjs';
+import { captureArchive, captureEncodedResponseCache } from './capture_archive.mjs';
 import { createOracleProfile, saveClosedOracleProfile } from './oracle_profile.mjs';
 import { capturePixelReference, referenceLaunchArguments, waitForPixelDocument } from './pixel_reference.mjs';
 import { navigationObservation } from './navigation.mjs';
@@ -28,6 +28,7 @@ const options = {
     'document-fixture': '',
     'visibility-probe': '',
     'capture-dir': '',
+    'cache-preparation-dir': '',
     'cached-response-headers': '',
     'profile-template': '',
     'profile-output': '',
@@ -233,7 +234,7 @@ try {
         };
     })()`);
     await page.send('Page.enable');
-    await page.send('Network.enable', options['capture-dir'] ? {maxTotalBufferSize: 128 * 1024 * 1024, maxResourceBufferSize: 16 * 1024 * 1024} : {});
+    await page.send('Network.enable', options['capture-dir'] || options['cache-preparation-dir'] ? {maxTotalBufferSize: 128 * 1024 * 1024, maxResourceBufferSize: 16 * 1024 * 1024} : {});
     if (options['capture-dir'] || options['pixel-reference']) {
         await page.send('Emulation.setDeviceMetricsOverride', {width:1024,height:768,deviceScaleFactor:1,mobile:false});
         await page.send('Emulation.setFocusEmulationEnabled', {enabled:true});
@@ -279,6 +280,8 @@ try {
     }
     const pixelReference = options['pixel-reference']
         ? await capturePixelReference(page, path.resolve(options['pixel-reference']), navigation) : null;
+    const cachePreparation=options['cache-preparation-dir'] && navigation?.coverage==='page' && pixelReference
+        ? await captureEncodedResponseCache(page,path.resolve(options['cache-preparation-dir']),options.url,{mainFrameID}) : null;
     // Retain the navigation/filter report for inaccessible sites as well. A
     // challenge must fail coverage without replacing a previously valid archive.
     const archive = options['capture-dir'] && navigation?.coverage === 'page'
@@ -403,6 +406,7 @@ try {
             initial_url:oracleTarget.initial_url,removed_tab_ids:oracleTarget.removed_tab_ids},
         navigation,
         ...(pixelReference ? {pixel_reference:pixelReference} : {}),
+        ...(cachePreparation ? {cache_preparation:cachePreparation} : {}),
         document_fixture: documentFixture,
         ...(archive ? {archive} : {}),
         visibility,

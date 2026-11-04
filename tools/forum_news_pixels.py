@@ -228,7 +228,7 @@ def warm_oracle_cache(common, route, output, timeout, *, capture_archive=False):
     """Close the warmup browser before copying its encoded cache to a fresh one."""
     profile = output / 'brave-warm-profile'
     report = output / 'brave-warm.json'
-    archive_options = ['--capture-dir', output / 'capture'] if capture_archive else []
+    archive_options = ['--cache-preparation-dir', output / 'capture'] if capture_archive else []
     guarded([*common, *route, *archive_options, '--pixel-reference', output / 'brave-warm.png',
              '--output', report, '--profile-output', profile], output / 'brave-warm', timeout)
     check_filters(read_json(report))
