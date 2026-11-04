@@ -5,9 +5,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef VOX_SCROLL_RASTER_DIAGNOSTICS
 #include <stdio.h>
-#endif
+#include "native_raster_row_ranges.h"
 
 #define VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS 48
 
@@ -118,6 +117,43 @@ static void native_scroll_raster_copy_rows(VoxScrollRaster *cache,
         }
         first += run;
         count -= run;
+    }
+}
+
+// Different damage rectangles can cover the same device rows, even when the
+// rectangles do not overlap horizontally. Each store copies the complete row;
+// publish its final canvas bytes to the ring once, including exposed rows.
+static void native_scroll_raster_store_rows(VoxScrollRaster *cache, uint8_t *pixels, size_t pitch) {
+    const char *disabled = NULL;
+    if (cache->damage_row_count > 1 || (cache->damage_row_count && cache->dirty_rows))
+        disabled = getenv("VOX_DISABLE_SCROLL_RASTER_ROW_UNION");
+    if (!cache->damage_row_count || (cache->damage_row_count == 1 && !cache->dirty_rows)
+        || (disabled && *disabled)) {
+        native_scroll_raster_copy_rows(cache, pixels, pitch, cache->dirty_first, cache->dirty_rows, 1);
+        for (int index = 0; index < cache->damage_row_count; ++index)
+            native_scroll_raster_copy_rows(cache, pixels, pitch,
+                cache->damage_rows[index][0], cache->damage_rows[index][1], 1);
+        return;
+    }
+    VoxRasterRowRange ranges[VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS + 1];
+    size_t count = 0, original_rows = cache->dirty_rows;
+    ranges[count++] = (VoxRasterRowRange){cache->dirty_first, cache->dirty_rows};
+    for (int index = 0; index < cache->damage_row_count; ++index) {
+        ranges[count++] = (VoxRasterRowRange){cache->damage_rows[index][0], cache->damage_rows[index][1]};
+        original_rows += cache->damage_rows[index][1];
+    }
+    size_t merged = vox_union_raster_rows(ranges, count, cache->height), stored_rows = 0;
+    for (size_t index = 0; index < merged; ++index) {
+        native_scroll_raster_copy_rows(cache, pixels, pitch, ranges[index].first, ranges[index].count, 1);
+        stored_rows += ranges[index].count;
+    }
+    static int reported;
+    const char *diagnostics = getenv("VOX_SCROLL_RASTER_ROW_UNION_DIAGNOSTICS");
+    if (!reported && diagnostics && *diagnostics && stored_rows < original_rows) {
+        reported = 1;
+        fprintf(stderr, "Vox scroll raster row union: avoided_rows=%zu ranges=%zu merged=%zu owner=%llu width=%zu height=%zu\n",
+            original_rows - stored_rows, count, merged, (unsigned long long)cache->owner,
+            cache->width, cache->height);
     }
 }
 
@@ -317,11 +353,7 @@ static void native_end_scroll_raster(void) {
     size_t pitch = CGBitmapContextGetBytesPerRow(context);
     if (pixels) {
         if (cache->damage_optimized) {
-            native_scroll_raster_copy_rows(cache, pixels, pitch,
-                cache->dirty_first, cache->dirty_rows, 1);
-            for (int index = 0; index < cache->damage_row_count; ++index)
-                native_scroll_raster_copy_rows(cache, pixels, pitch,
-                    cache->damage_rows[index][0], cache->damage_rows[index][1], 1);
+            native_scroll_raster_store_rows(cache, pixels, pitch);
         } else {
             for (size_t y = 0; y < cache->height; ++y)
                 memcpy(cache->pixels + y * cache->width * 4,
