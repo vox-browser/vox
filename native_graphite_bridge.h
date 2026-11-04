@@ -183,6 +183,9 @@ int vox_graphite_draw_path_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *path);
 int vox_graphite_draw_path_region_pixels(const VoxGraphitePixelRegion *region,
     int surface_width, int surface_height, int has_background, const VoxGraphitePath *path);
+// The complete shadow target; only the caller's region is transferred.
+int vox_graphite_draw_shadow_region_pixels(const VoxGraphitePixelRegion *region,
+    int surface_width, int surface_height, int has_background, const VoxGraphiteShadow *shadow);
 // Disjoint views of one unchanged solid fill, resolved in one GPU submission.
 // Failure leaves all CPU views untouched.
 int vox_graphite_draw_path_parts_pixels(const VoxGraphitePixelRegion *regions, int count,

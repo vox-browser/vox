@@ -45,14 +45,14 @@ static std::vector<uint8_t> draw_card_shadow(float scroll, float strip_top, floa
     }
     if (!clips.empty()) CGContextClipToRects(context, clips.data(), clips.size());
     // A reused frame publishes the same rectangles it clips to.
-    ladybird_v_skia_set_scroll_damage_rects(published.data(), int(published.size() / 4));
+    ladybird_v_skia_set_scroll_damage_rects(context, published.data(), int(published.size() / 4));
     s_root_raster_scroll_y = scroll;
     // vlang.io-like card: 0 20px 50px #0009 around a 16px rounded box.
     float x = 64.25f, y = 120.5f, w = 896, h = 520;
     assert(ladybird_v_skia_draw_outer_box_shadow(context, x, y + 20, w, h, 16, 16, 16, 16,
         16, 16, 16, 16, x, y, w, h, 16, 16, 16, 16, 16, 16, 16, 16, 1, 0, 0, 1, 0, 0, 0, 0,
         0, css_width, css_height, 50, 0, 0, 0, 153, 1));
-    ladybird_v_skia_set_scroll_damage_rects(nullptr, 0);
+    ladybird_v_skia_set_scroll_damage_rects(nullptr, nullptr, 0);
     CGContextFlush(context); CGContextRelease(context);
     return pixels;
 }
@@ -110,5 +110,53 @@ int main()
         }
     }
     ++cases;
-    std::cout << cases << " clipped root shadow strips match complete replays exactly\n";
+    // An independent composited layer rasterizes the whole shadow region on a
+    // transparent target; its crops keep that target and transfer one strip.
+    s_raster_layer_is_root = false;
+    s_raster_origin_x = 16;
+    s_raster_origin_y = 96;
+    for (float scroll : {0.f, 37.5f}) {
+        auto full = draw_card_shadow(scroll, 0, 0);
+        for (float strip_top : {42.f, 620.f, 740.f}) {
+            auto before = s_test_clipped_layer_shadows;
+            auto strip = draw_card_shadow(scroll, strip_top, 20);
+            assert(s_test_clipped_layer_shadows == before + 1);
+            int first = int(strip_top * scale), last = int((strip_top + 20) * scale);
+            for (int y = 0; y < css_height * scale; ++y) {
+                auto const& expected = y >= first && y < last ? full : untouched;
+                if (!std::equal(strip.begin() + size_t(y) * pitch, strip.begin() + size_t(y + 1) * pitch,
+                        expected.begin() + size_t(y) * pitch)) {
+                    std::cerr << "Clipped layer shadow row differs: scroll=" << scroll
+                        << " strip=" << strip_top << " row=" << y << '\n';
+                    return 1;
+                }
+            }
+            ++cases;
+        }
+    }
+    // Damage rectangles describe the canvas they were published for; an
+    // offscreen layer has no clip of its own and is never cropped by them.
+    {
+        auto pixels = backdrop();
+        auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        auto context = CGBitmapContextCreate(pixels.data(), width, css_height * scale, 8, pitch, color,
+            static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast)
+                | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big));
+        CGColorSpaceRelease(color);
+        CGContextScaleCTM(context, scale, scale);
+        float published[] {0, 700, float(css_width), 20};
+        ladybird_v_skia_set_scroll_damage_rects(context, published, 1);
+        auto offscreen = CGBitmapContextCreate(nullptr, width, css_height * scale, 8, pitch,
+            CGBitmapContextGetColorSpace(context), CGBitmapContextGetBitmapInfo(context));
+        CGContextScaleCTM(offscreen, scale, scale);
+        RasterRegion region {64, 100, 960, 700}, visible;
+        assert(visible_raster_region(context, css_height, region, visible));
+        assert(visible.top >= 698 && visible.bottom <= 700);
+        assert(!visible_raster_region(offscreen, css_height, region, visible));
+        ladybird_v_skia_set_scroll_damage_rects(nullptr, nullptr, 0);
+        CGContextRelease(offscreen);
+        CGContextRelease(context);
+        ++cases;
+    }
+    std::cout << cases << " clipped root and layer shadow strips match complete replays exactly\n";
 }

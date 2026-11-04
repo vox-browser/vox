@@ -291,6 +291,22 @@ void vox_graphite_release_unused_graphics_memory()
     gpu_context_attempted = false;
 }
 
+static void draw_shadow_on_canvas(SkCanvas* canvas, VoxGraphiteShadow const& shadow)
+{
+    SkMatrix matrix;
+    matrix.set9(shadow.matrix);
+    canvas->setMatrix(matrix);
+    canvas->clipRRect(rounded_rect(shadow.content), SkClipOp::kDifference, true);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setColor(SkColorSetARGB(shadow.alpha, shadow.red, shadow.green, shadow.blue));
+    if (shadow.has_float_color)
+        paint.setColor4f({shadow.float_color[0], shadow.float_color[1],
+            shadow.float_color[2], shadow.float_color[3]}, nullptr);
+    paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, std::max(shadow.blur, 0.0f) / 2.0f));
+    canvas->drawRRect(rounded_rect(shadow.shadow), paint);
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
     int pitch, int has_background, VoxGraphiteShadow const* shadow)
@@ -311,21 +327,65 @@ int vox_graphite_draw_shadow_pixels(uint8_t* pixels, int width, int height,
     auto* canvas = surface->getCanvas();
     if (has_background) vox_shared_write(gpu, surface, SkPixmap(info, pixels, pitch), 0, 0);
     else canvas->clear(SK_ColorTRANSPARENT);
-    SkMatrix matrix;
-    matrix.set9(shadow->matrix);
-    canvas->setMatrix(matrix);
-    canvas->clipRRect(rounded_rect(shadow->content), SkClipOp::kDifference, true);
-    SkPaint paint;
-    paint.setAntiAlias(true);
-    paint.setColor(SkColorSetARGB(shadow->alpha, shadow->red, shadow->green, shadow->blue));
-    if (shadow->has_float_color)
-        paint.setColor4f({shadow->float_color[0], shadow->float_color[1],
-            shadow->float_color[2], shadow->float_color[3]}, nullptr);
-    paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, std::max(shadow->blur, 0.0f) / 2.0f));
-    canvas->drawRRect(rounded_rect(shadow->shadow), paint);
+    draw_shadow_on_canvas(canvas, *shadow);
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
     if (result) shadow_cache.finish(std::move(cached), pixels, pitch);
     return result;
+}
+
+// The complete shadow target, so its analytic blur interpolates exactly as in
+// vox_graphite_draw_shadow_pixels, while only the caller's view is transferred.
+// The remainder of the input backdrop is transparent.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_shadow_region_pixels(VoxGraphitePixelRegion const* region,
+    int width, int height, int has_background, VoxGraphiteShadow const* shadow)
+{
+    if (!region || !region->pixels || !shadow
+        || width <= 0 || height <= 0 || width > 16384 || height > 16384
+        || region->x < 0 || region->y < 0 || region->width <= 0 || region->height <= 0
+        || region->width > width || region->height > height || region->pitch <= 0
+        || region->x > width - region->width || region->y > height - region->height
+        || size_t(region->pitch) < size_t(region->width) * 4) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu) return 0;
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    std::unique_ptr<skgpu::graphite::Recorder> temporary_recorder;
+    sk_sp<SkSurface> temporary_surface;
+    auto* surface = region_target(gpu, info);
+    auto* recorder = region_recorder.get();
+    if (!surface) {
+        temporary_recorder = gpu->makeRecorder();
+        recorder = temporary_recorder.get();
+        temporary_surface = vox_shared_surface(recorder, info);
+        surface = temporary_surface.get();
+    }
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    SkAutoCanvasRestore state(canvas, true);
+    canvas->clear(SK_ColorTRANSPARENT);
+    auto view_info = info.makeWH(region->width, region->height);
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(view_info, region->pixels,
+            region->pitch), region->x, region->y);
+    draw_shadow_on_canvas(canvas, *shadow);
+    auto recording = recorder->snap();
+    skgpu::graphite::InsertRecordingInfo insertion;
+    insertion.fRecording = recording.get();
+    if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
+    std::unique_ptr<const SkImage::AsyncReadResult> result;
+    vox_shared_readback(gpu, surface, view_info,
+        SkIRect::MakeXYWH(region->x, region->y, region->width, region->height),
+        SkImage::RescaleGamma::kSrc, SkImage::RescaleMode::kNearest,
+        [](void* target, std::unique_ptr<const SkImage::AsyncReadResult> data) {
+            *static_cast<std::unique_ptr<const SkImage::AsyncReadResult>*>(target) = std::move(data);
+        }, &result);
+    if (!gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes)) || !result) return 0;
+    for (int row = 0; row < region->height; ++row)
+        std::memcpy(region->pixels + size_t(row) * region->pitch,
+            static_cast<uint8_t const*>(result->data(0)) + size_t(row) * result->rowBytes(0),
+            size_t(region->width) * 4);
+    return 1;
 }
 
 // A PNG tagged by its gAMA and cHRM chunks keeps that color space until the

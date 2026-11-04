@@ -363,6 +363,16 @@ auto graphite_rounded_parts_draw()
     return draw;
 }
 
+auto graphite_shadow_region_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_shadow_region_pixels)>(
+            dlsym(library, "vox_graphite_draw_shadow_region_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 auto graphite_shape_region_draw()
 {
     static auto draw = [] {
@@ -3217,13 +3227,18 @@ static bool s_raster_layer_is_root = true;
 // separate damage rectangles. Quartz reports only their common bounding box,
 // which spans most of the viewport once a strip and an in-page change are
 // far apart. The frame publishes the rectangles themselves, top-left canvas
-// coordinates, so a leaf crops to the ones it actually intersects.
+// coordinates, so a leaf crops to the ones it actually intersects. They
+// describe that canvas only: a full-canvas offscreen layer has no clip of its
+// own, and a filter can sample its pixels outside the rectangles.
 static std::vector<SkRect> s_scroll_damage_rects;
+static CGContextRef s_scroll_damage_canvas = nullptr;
 
-extern "C" void ladybird_v_skia_set_scroll_damage_rects(float const* rects, int count)
+extern "C" void ladybird_v_skia_set_scroll_damage_rects(CGContextRef canvas,
+    float const* rects, int count)
 {
     s_scroll_damage_rects.clear();
-    for (int index = 0; rects && index < count; ++index) {
+    s_scroll_damage_canvas = rects && count > 0 ? canvas : nullptr;
+    for (int index = 0; s_scroll_damage_canvas && index < count; ++index) {
         auto rect = SkRect::MakeXYWH(rects[index * 4], rects[index * 4 + 1],
             rects[index * 4 + 2], rects[index * 4 + 3]);
         if (rect.isFinite() && !rect.isEmpty()) s_scroll_damage_rects.push_back(rect);
@@ -3239,7 +3254,7 @@ static bool visible_raster_region(CGContextRef destination, float canvas_height,
         || !std::isfinite(CGRectGetMinY(clip)) || !std::isfinite(CGRectGetMaxY(clip))) return false;
     double left = CGRectGetMinX(clip), top = double(canvas_height) - CGRectGetMaxY(clip);
     double right = CGRectGetMaxX(clip), bottom = double(canvas_height) - CGRectGetMinY(clip);
-    if (s_raster_layer_is_root && !s_scroll_damage_rects.empty()) {
+    if (destination == s_scroll_damage_canvas && !s_scroll_damage_rects.empty()) {
         // The published rectangles contain the root clip; nested clips can
         // only shrink it further.
         SkRect hit = SkRect::MakeEmpty();
@@ -4789,7 +4804,7 @@ extern "C" int ladybird_v_skia_prefetch_plain_rects(CGContextRef destination,
 #include "native_skia_inner_shadow.h"
 
 #ifdef VOX_TEST_CLIPPED_ROOT_SHADOWS
-static unsigned s_test_clipped_root_shadows;
+static unsigned s_test_clipped_root_shadows, s_test_clipped_layer_shadows;
 #endif
 extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     float shadow_x, float shadow_y, float shadow_width, float shadow_height,
@@ -4941,6 +4956,32 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
+    // An independent layer renders its shadow on one transparent target of the
+    // whole region. Keep that target and its blur interpolation; transfer and
+    // composite only the part a strip or damage repaint can show.
+    if (auto draw = graphite_shadow_region_draw(); draw && s_chromium_painting && !s_raster_layer_is_root
+        && !screenshot_uses_logical_pixels() && !std::getenv("VOX_DISABLE_CLIPPED_LAYER_SHADOWS")
+        && destination_scale == std::round(destination_scale) && destination_scale >= 1) {
+        RasterRegion visible;
+        if (visible_raster_region(destination, canvas_height, region, visible)) {
+            int width = raster_dimension(visible.width(), destination_scale);
+            int height = raster_dimension(visible.height(), destination_scale);
+            std::vector<uint32_t> pixels(size_t(width) * height);
+            auto descriptor = shadow_descriptor();
+            raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
+            VoxGraphitePixelRegion view {int((visible.left - region.left) * destination_scale),
+                int((visible.top - region.top) * destination_scale), width, height, width * 4,
+                reinterpret_cast<uint8_t*>(pixels.data())};
+            if (draw(&view, raster_width, raster_height, 0, &descriptor)) {
+#ifdef VOX_TEST_CLIPPED_ROOT_SHADOWS
+                ++s_test_clipped_layer_shadows;
+#endif
+                return composite_pixels(destination, std::move(pixels), width, height,
+                    float(visible.left), canvas_height - float(visible.bottom),
+                    float(visible.width()), float(visible.height()), false);
+            }
+        }
+    }
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
         * static_cast<size_t>(raster_height));
     // Independent layers rasterize their shadows against transparency, then
@@ -5901,10 +5942,17 @@ static bool draw_chromium_root_gradient_tiles(
 // A clipped root gradient keeps its full GPU target, AA and dither phase.
 // Reduce only the CPU backdrop, readback and CoreGraphics image to its visible
 // rectangle, with two logical pixels of guard around the destination clip.
+#ifdef VOX_TEST_CLIPPED_GRADIENTS
+static unsigned s_test_clipped_gradients;
+#endif
+// An independent composited layer keeps its ordered-dither phase by
+// offsetting the same GPU target that its complete leaf raster would use.
 static bool draw_clipped_root_gradient(CGContextRef destination, RasterRegion const& region,
-    float scale, float canvas_height, int width, int height, VoxGraphitePath const& path)
+    float scale, float canvas_height, int width, int height, VoxGraphitePath const& path,
+    float page_x, float page_y, float scroll_y)
 {
-    if (scale != 2 || !s_raster_layer_is_root) return false;
+    if (scale != 2 || (!s_raster_layer_is_root && std::getenv("VOX_DISABLE_CLIPPED_LAYER_GRADIENTS")))
+        return false;
     auto draw = graphite_path_region_draw();
     if (!draw) return false;
     RasterRegion visible;
@@ -5912,14 +5960,25 @@ static bool draw_clipped_root_gradient(CGContextRef destination, RasterRegion co
     int view_width = raster_dimension(visible.width(), scale);
     int view_height = raster_dimension(visible.height(), scale);
     if (size_t(view_width) * view_height * 2 > size_t(width) * height) return false;
+    int phase_x = 0, phase_y = 0;
+    auto shifted = path;
+    if (!s_raster_layer_is_root) {
+        phase_x = vox_chromium_dither_phase(region.left - page_x, s_raster_origin_x, scale);
+        phase_y = vox_chromium_dither_phase(region.top - page_y + scroll_y, s_raster_origin_y, scale);
+        shifted.matrix[2] += phase_x;
+        shifted.matrix[5] += phase_y;
+    }
     auto backdrop = read_backdrop(destination, visible, scale, view_width, view_height);
     if (!backdrop.pixels) return false;
     std::vector<uint32_t> pixels(size_t(view_width) * view_height);
     copy_backdrop_pixels(backdrop, view_width, view_height, pixels);
-    VoxGraphitePixelRegion view {int((visible.left - region.left) * scale),
-        int((visible.top - region.top) * scale), view_width, view_height, view_width * 4,
+    VoxGraphitePixelRegion view {int((visible.left - region.left) * scale) + phase_x,
+        int((visible.top - region.top) * scale) + phase_y, view_width, view_height, view_width * 4,
         reinterpret_cast<uint8_t*>(pixels.data())};
-    if (!draw(&view, width, height, 1, &path)) return false;
+    if (!draw(&view, width + phase_x, height + phase_y, 1, &shifted)) return false;
+#ifdef VOX_TEST_CLIPPED_GRADIENTS
+    ++s_test_clipped_gradients;
+#endif
     return composite_pixels(destination, std::move(pixels), view_width, view_height,
         visible.left, canvas_height - visible.bottom, visible.width(), visible.height(), true);
 }
@@ -6104,7 +6163,8 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         gradient_matrix.get9(descriptor.gradient_matrix);
         if (!picture_pattern && opaque_backdrop && draw_clipped_root_gradient(destination, region,
-                destination_scale, canvas_height, raster_width, raster_height, descriptor)) return 1;
+                destination_scale, canvas_height, raster_width, raster_height, descriptor,
+                page_x, page_y, scroll_y)) return 1;
         pixels.resize(size_t(raster_width) * raster_height);
         // The caller can supply a readable isolated canvas as well as the
         // root canvas. Blend with that canvas's existing pixels in the GPU;
