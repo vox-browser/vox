@@ -805,14 +805,6 @@ mut:
 	viewport_height_          f64
 	viewport_chromium_        bool
 	viewport_font_relative_   bool
-	viewport_font_metrics_    MediaQueryInitialFontMetrics
-}
-
-// Media queries resolve font units against initial font metrics, independently
-// of author styles. Own only those values; never retain a document or element.
-struct MediaQueryInitialFontMetrics {
-	font LengthFontMetrics
-	root LengthFontMetrics
 }
 
 @[heap]
@@ -1037,22 +1029,8 @@ fn evaluate_media_query_entry(mut entry MediaQueryListEntry, document &dom.Docum
 	if entry.viewport_query_cacheable_ {
 		viewport := document.viewport_rect()
 		chromium := document.font_rendering_policy() == .chromium
-		mut initial_fonts_match := true
-		if entry.viewport_font_relative_ {
-			context := LengthResolutionContext.for_document(document)
-			initial_fonts_match = entry.viewport_result_valid_
-				&& entry.viewport_font_metrics_.font == context.font_metrics
-				&& entry.viewport_font_metrics_.root == context.root_font_metrics
-			if !initial_fonts_match {
-				entry.viewport_font_metrics_ = MediaQueryInitialFontMetrics{
-					font: context.font_metrics
-					root: context.root_font_metrics
-				}
-			}
-		}
 		if entry.viewport_result_valid_ && entry.viewport_width_ == viewport.width
-			&& entry.viewport_height_ == viewport.height && entry.viewport_chromium_ == chromium
-			&& initial_fonts_match {
+			&& entry.viewport_height_ == viewport.height && entry.viewport_chromium_ == chromium {
 			if literal_media_cache_diagnostics && entry.viewport_font_relative_
 				&& !literal_media_font_cache_reported {
 				literal_media_font_cache_reported = true
@@ -1074,6 +1052,9 @@ fn evaluate_media_query_entry(mut entry MediaQueryListEntry, document &dom.Docum
 // These parsed trees are private to MediaList entries. Cache only expressions
 // whose complete environment is known here. Live preferences, calculated
 // values, container units and unsupported expressions keep ordinary evaluation.
+// LengthResolutionContext.for_document() currently uses fixed initial font
+// metrics, including rem units; author styles do not affect media-query fonts.
+// Wiring configurable initial fonts must also add their generation to this key.
 fn literal_media_query_dependencies(query &MediaQuery) (bool, bool) {
 	condition := query.media_condition or { return !disable_extended_literal_media_cache, false }
 	return literal_media_condition_dependencies(condition)
