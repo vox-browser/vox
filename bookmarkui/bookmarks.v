@@ -39,7 +39,8 @@ pub fn visible_count(state State) int {
 fn bookmark_button(index int, item Item, frame ui2.Rect) ui2.Element {
 	return ui2.Element{
 		...ui2.button_with_image('bookmark-open:${index}', if item.icon == '' {
-			'◎ ${item.title}'
+			// U+25CB is in the system font; U+25CE needed CoreText's fallback cascade.
+			'○ ${item.title}'
 		} else {
 			item.title
 		}, item.icon, frame,

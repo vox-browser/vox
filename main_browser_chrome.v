@@ -2,6 +2,7 @@ module main
 
 import gg
 import browsertabs
+import browserui
 import browsersettings
 import platform
 import ui2
@@ -153,6 +154,18 @@ fn chrome_navigation_button(id string, title string, x f64, enabled bool) ui2.El
 	}
 }
 
+// System-font labels measure glyphs the face lacks through CoreText's complete
+// fallback cascade, which is built on first use. Keep the toolbar's symbols on
+// faces that contain them: the history clock names Menlo, the face that cascade
+// selects, and browserui draws the native information mark (see its comment).
+fn chrome_history_text_style() ui2.TextStyle {
+	$if macos {
+		return ui2.TextStyle{ size: 17, color: 0x7d7d7d, font_family: 'Menlo' }
+	} $else {
+		return ui2.TextStyle{ size: 17, color: 0x7d7d7d }
+	}
+}
+
 fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 	width := f64(chrome.width)
 	address_width := if width > 162 { width - 138 } else { 24.0 }
@@ -164,7 +177,7 @@ fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 		} else {
 			0.0
 		}), ui2.BoxStyle{ bg: 0xf7f7f7 }, [
-			ui2.label('address-info', 'ⓘ', ui2.rect(78, tab_strip_height + 6, 18, 20), ui2.TextStyle{ size: 13, color: 0x888888 }),
+			browserui.address_info_mark('address-info', ui2.rect(78, tab_strip_height + 6, 18, 20), 0x888888),
 			ui2.Element{ ...chrome_navigation_button('back', '‹', 5, chrome.back), tooltip: 'Back', accessibility_label: 'Back' },
 			ui2.Element{ ...chrome_navigation_button('forward', '›', 27, chrome.forward), tooltip: 'Forward', accessibility_label: 'Forward' },
 			ui2.Element{ ...chrome_navigation_button('reload', '↻', 49, chrome.reload), tooltip: 'Reload', accessibility_label: 'Reload' },
@@ -188,6 +201,7 @@ fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 			},
 			ui2.Element{
 				...chrome_navigation_button('history', '◷', width - 32, true)
+				text_style:          chrome_history_text_style()
 				tooltip:             'History'
 				accessibility_label: 'History'
 			},

@@ -77,7 +77,8 @@ def main():
             )
             text = text.replace(
                 "\tapply_common_native_state(native, el)\n\treturn native",
-                "\tapply_common_native_state(native, el)\n\tapply_embedded_vector_path(native, el)\n\tapply_embedded_button_image(native, el)\n\treturn native",
+                "\tapply_common_native_state(native, el)\n\tapply_embedded_vector_path(native, el)\n\tapply_embedded_button_image(native, el)\n"
+                "\tapply_embedded_text_font(native, el)\n\treturn native",
             )
             # A native-styled transparent button is flat at rest. Let UI2's
             # backend supply the hover/pressed bezel, without browser subclasses.
@@ -108,6 +109,16 @@ def main():
                 "\t\tmacos.msg_void_bool(button_view, 'setShowsBorderOnlyWhileMouseInside:', true)",
                 "\t\tif disable_embedded_button_bezel_coalescing {\n"
                 "\t\t\tmacos.msg_void_bool(button_view, 'setShowsBorderOnlyWhileMouseInside:', true)\n\t\t}",
+            )
+            # Label and button updates reinstall the system face; keep a declared family.
+            # Creation's match arms are values, so patch only the update function.
+            head, marker, tail = text.partition("fn native_update_element(")
+            text = head + marker + tail.replace(
+                "label_needs_container(el))\n\t\t}\n\t\t.image {",
+                "label_needs_container(el))\n\t\t\tapply_embedded_text_font(native, el)\n\t\t}\n\t\t.image {", 1,
+            ).replace(
+                "el.image_path, el.native_style)\n\t\t}\n\t\t.checkbox {",
+                "el.image_path, el.native_style)\n\t\t\tapply_embedded_text_font(native, el)\n\t\t}\n\t\t.checkbox {", 1,
             )
             text = text.replace(
                 "\tnode_kinds          map[string]Kind",
@@ -213,7 +224,7 @@ def main():
     adapter.mkdir(exist_ok=True)
     # Remove the previous single-control adapter when refreshing an old stage.
     (adapter / "embedded_textbox_darwin.v").unlink(missing_ok=True)
-    for name in ("embedded_browser_darwin.v", "embedded_elements_custom.c.v", "embedded_input_darwin.v", "embedded_input_darwin.h", "embedded_panel_darwin.v", "embedded_host_linux.v", "embedded_host_linux.h", "button_image.v", "button_image_darwin.v", "button_image_custom.c.v", "button_style_darwin.v", "native_visual_inputs_darwin.v", "native_visual_inputs_test.v", "vector_path.v", "vector_path_darwin.v", "vector_path_darwin.h", "vector_path_custom.c.v"):
+    for name in ("embedded_browser_darwin.v", "embedded_elements_custom.c.v", "embedded_input_darwin.v", "embedded_input_darwin.h", "embedded_panel_darwin.v", "embedded_host_linux.v", "embedded_host_linux.h", "button_image.v", "button_image_darwin.v", "button_image_custom.c.v", "button_style_darwin.v", "native_visual_inputs_darwin.v", "native_visual_inputs_test.v", "vector_path.v", "vector_path_darwin.v", "vector_path_darwin.h", "vector_path_custom.c.v", "embedded_text_font_darwin.v"):
         write_if_changed(adapter / name, (repo / "tools/ui2" / name).read_text())
     write_if_changed(
         target / "v.mod",
