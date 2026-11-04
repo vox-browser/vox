@@ -3647,3 +3647,33 @@ succeed. Session contents remain private under `Build/`.
 Literal Retina equality, native live service compatibility and updated production
 validation remain open. The completed production bundle still has the previously
 recorded input crash; the snapshot guard must be validated in a build containing it.
+
+
+## November 4: production reply and remaining input failure
+
+Production receipt `20261104-014100-e011d913`, executable SHA-256
+`b6e4b22293623dcf219d4163c50f899b635a8b395662c2a938da13333345c49d`,
+contains the calculated-dimension guard in its frozen compiler input. A new
+anonymous Brave session fetched through SOCKS receives the expected reply.
+Using its matching session, a fresh production Vox process also completes
+native mouse/key Send and receives `Vox ready.` with zero reported native or
+script errors, no service block, and browser/guard exit zero. Backend responses
+are live; only the initial SSR response and static resources are reused.
+The [checkpoint receipt](parity/chatgpt-production-calculated-checkpoint-20261104.json)
+pins the bundle, loaded libraries, unchanged references, inputs and raw logs.
+
+The older frozen reply still differs at one physical pixel. A new frozen
+Brave/Vox pair made from the fresh successful session independently has the
+same one-pixel cookie-panel difference, maximum channel error one. The live
+pair differs at 41 pixels, maximum error two: 40 around the prompt bubble and
+the same cookie-panel pixel. Frozen and live results remain separate; neither
+establishes literal Retina equality.
+
+Replaying the older archived input case on this production bundle exits 1
+after native Return, failing `Document.update_layout`'s layout re-entry
+assertion. It does not reproduce the previous calculated range-map read, but
+it prevents declaring the input crash work complete. A passive exit probe is
+validated against an intentional exit-1 control before tracing this failure;
+all attempts, including a traced normal exit with a service block, are retained.
+No layout invariant or pixel tolerance is relaxed. General live functionality
+and literal pixel parity remain open.

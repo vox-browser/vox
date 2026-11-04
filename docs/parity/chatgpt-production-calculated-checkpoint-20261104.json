@@ -1,0 +1,283 @@
+{
+  "date": "2026-11-04",
+  "snapshot_guard_commit": "4c6cadd80",
+  "production_build_receipt": "20261104-014100-e011d913",
+  "production_identity": {
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "b6e4b22293623dcf219d4163c50f899b635a8b395662c2a938da13333345c49d",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d73cbbe67c7fde9e9acca29dcb96c317302d1ddb4d8ad10856e7a0416293a8ed",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a0516f35c35068d436d88e74efdc0c182e832382b27016f89df83eebff8dd686",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "02a75881a54cc58bcf621044feed88cd2960af8f0d4bcd335b560913e61fc2bb",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "1c65a0d926b8e9ec31c66ffc8ddc0c1153b2e6dc149978d3106144ba75ce6531",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+    "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+    "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+    "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+    "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+    "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+    "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+    "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+    "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+    "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+    "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+    "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+    "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+    "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+    "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+    "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+    "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+    "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+  },
+  "compiled_guard": {
+    "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-014100-e011d913/frozen-compiler-inputs/0-Vox.c.i",
+    "sha256": "f2fe72549672e30281554a5a73fbac8f431949bd7e94732fc25d2b792ec2eaa7",
+    "has_guard": true,
+    "guard_mentions": 10
+  },
+  "archived_reply": {
+    "results": [
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 2,
+        "png_size": [
+          2048,
+          1536
+        ],
+        "differing_pixels": 1,
+        "max_channel_error": 1,
+        "bounds": [
+          2013,
+          1142,
+          2014,
+          1143
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+  },
+  "fresh_brave_session": {
+    "identity_stable": true,
+    "inputs_stable": true,
+    "fresh_document_requests": 2,
+    "response_entries": 1020,
+    "captured_frozen": true,
+    "reported_errors": 0,
+    "reply_observed": true,
+    "service_blocked": false
+  },
+  "fresh_native_send": {
+    "exit": 0,
+    "identity_stable": true,
+    "inputs_stable": true,
+    "guard_budget": "standard 12 GiB full-application guard",
+    "backend_responses_seeded": false,
+    "initial_native_cookie_jar_empty": false,
+    "session_cookie_source": "Matching anonymous Brave session captured before input; values remain private",
+    "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+    "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+    "ready": "complete",
+    "fully_active": true,
+    "reply_observed": true,
+    "native_error_count": 0,
+    "javascript_diagnostic_count": 0,
+    "native_input_started": true,
+    "service_blocked": false,
+    "passed": true,
+    "expected_native_loaded": true,
+    "pixels": {
+      "size": [
+        2048,
+        1536
+      ],
+      "reference_size": [
+        2048,
+        1536
+      ],
+      "expected_size": [
+        2048,
+        1536
+      ],
+      "differing_pixels": 41,
+      "max_channel_error": 2,
+      "bounds": [
+        1532,
+        162,
+        2014,
+        1143
+      ]
+    }
+  },
+  "fresh_frozen_pair": {
+    "results": [
+      {
+        "viewport": [
+          1024,
+          768
+        ],
+        "exit": 0,
+        "stable": true,
+        "scale": 2,
+        "png_size": [
+          2048,
+          1536
+        ],
+        "differing_pixels": 1,
+        "max_channel_error": 1,
+        "bounds": [
+          2013,
+          1142,
+          2014,
+          1143
+        ],
+        "dimensions_match": true,
+        "viewport_match": true,
+        "document_match": true,
+        "ready": "complete",
+        "native_reported_errors": [],
+        "javascript_diagnostics": []
+      }
+    ],
+    "inputs_stable": true,
+    "identity_stable": true,
+    "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+  },
+  "older_input_replay": {
+    "exit": 1,
+    "identity_stable": true,
+    "inputs_stable": true,
+    "guard_budget": "standard 12 GiB full-application guard",
+    "backend_responses_seeded": false,
+    "initial_native_cookie_jar_empty": false,
+    "session_cookie_source": "Matching anonymous Brave session captured before input; values remain private",
+    "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+    "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active",
+    "ready": "complete",
+    "fully_active": true,
+    "reply_observed": false,
+    "native_error_count": 0,
+    "javascript_diagnostic_count": 0,
+    "native_input_started": true,
+    "service_blocked": false,
+    "passed": false,
+    "expected_native_loaded": true
+  },
+  "older_input_failure": "Document.update_layout assertion !d.is_running_update_layout_; browser exit 1 after native Return. The previous calculated range-map fault was not observed in this attempt.",
+  "guards": {
+    "archived_reply": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 585629696,
+      "elapsed_seconds": 11.072038583
+    },
+    "fresh_brave": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1699250176,
+      "elapsed_seconds": 35.903953375
+    },
+    "fresh_native": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 9447276544,
+      "elapsed_seconds": 121.4307595
+    },
+    "fresh_frozen_brave": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 972521472,
+      "elapsed_seconds": 10.881338125
+    },
+    "fresh_frozen_native": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 595394560,
+      "elapsed_seconds": 11.253010458
+    },
+    "older_input_replay": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2805874688,
+      "elapsed_seconds": 55.029827208
+    }
+  },
+  "png_sha256": {
+    "archived_reference": "884d20b8d8f60d8d589bea11aef58427d141318d1e85ae0b0147160a48323be5",
+    "archived_production": "1a80ccd77dfe707bd694c1bf266143179d02a1c349d8a35d2b961b2b63600831",
+    "fresh_live_brave": "e270468fe8ff72bfb4d27e2db54c69401bdf869ee43a81cc6a71f717331d3473",
+    "fresh_live_native": "1a80ccd77dfe707bd694c1bf266143179d02a1c349d8a35d2b961b2b63600831",
+    "fresh_frozen_brave": "884d20b8d8f60d8d589bea11aef58427d141318d1e85ae0b0147160a48323be5",
+    "fresh_frozen_native": "1a80ccd77dfe707bd694c1bf266143179d02a1c349d8a35d2b961b2b63600831"
+  },
+  "pixel_localization": {
+    "live_prompt_bubble": {
+      "differing_pixels": 40,
+      "bounds": [
+        1532,
+        162,
+        2008,
+        234
+      ],
+      "max_channel_error": 2
+    },
+    "cookie_panel": {
+      "differing_pixels": 1,
+      "bounds": [
+        2013,
+        1142,
+        2014,
+        1143
+      ],
+      "brave_rgb": [
+        244,
+        244,
+        244
+      ],
+      "vox_rgb": [
+        243,
+        243,
+        243
+      ]
+    }
+  },
+  "qualification": [
+    "The completed production bundle contains the guard and completes a genuine native Send/reply in a fresh session. This does not establish resolution of every input failure.",
+    "The old-input replay fails a different layout re-entry assertion. No layout invariant is relaxed and no speculative renderer change is shipped.",
+    "Fresh frozen-page equality still misses one physical pixel; live equality misses 41. References and tolerances are unchanged.",
+    "Live requests use native TLS through SOCKS after one archived SSR response and static-resource seeding. Backend replies are not replayed.",
+    "Session HTML, cookie values and guest conversation URLs remain private in Build. No general ChatGPT functionality, login, upload, audio or performance acceptance is claimed."
+  ],
+  "raw_evidence": {
+    "orchestrator": "Build/chatgpt-responsive-20261103/retina-borders-24/production-calculated-validation-220",
+    "archived_capture": "Build/chatgpt-responsive-20261103/retina-borders-24/production-calculated-capture-217",
+    "fresh_brave": "Build/chatgpt-responsive-20261103/retina-borders-24/fresh-retina-218",
+    "fresh_native": "Build/chatgpt-responsive-20261103/retina-borders-24/production-live-calculated-219",
+    "fresh_frozen_driver": "Build/chatgpt-responsive-20261103/retina-borders-24/fresh-frozen-parity-225",
+    "fresh_frozen_brave": "Build/chatgpt-responsive-20261103/retina-borders-24/fresh-frozen-brave-225",
+    "fresh_frozen_native": "Build/chatgpt-responsive-20261103/retina-borders-24/fresh-frozen-vox-226",
+    "older_input_replay": "Build/chatgpt-responsive-20261103/retina-borders-24/production-live-repro-224",
+    "passive_exit_probe": "Build/chatgpt-responsive-20261103/retina-borders-24/exit-stack-probe-227",
+    "first_probed_replay": "Build/chatgpt-responsive-20261103/retina-borders-24/production-exit-stack-228",
+    "second_probed_replay": "Build/chatgpt-responsive-20261103/retina-borders-24/production-exit-stack-230"
+  }
+}
