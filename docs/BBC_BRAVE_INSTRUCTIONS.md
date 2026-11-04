@@ -1,7 +1,27 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Cohort 83 completes seven alternating
+`OPTIMIZED_SITES.md`.** Latest attempted cohort 84 retains all seven alternating
+control/Vox/Brave triples. All fourteen Vox captures preserve original pixels,
+complete content, ownership, input identities and normal exits. Brave pair 2
+fails helper ownership validation before capture, invalidating acceptance;
+the other six Brave trials pass. Vox's median is **29,223,498,814**, versus
+control **28,766,020,953**: a **457,477,861-instruction regression**, with four
+paired improvements and three regressions. The conservative control ratio is
+**1.1074185217005499**. Only six Brave launch intervals exist, so their
+17,452,948,388.5 median is a partial diagnostic. Even those observed intervals
+fail the target inequality, `301714399340 > 155617781490`.
+
+The fresh-media proof has been removed (`1abb417fe`); its 42 focused rollback
+executions and all 285 current instruction-tool tests pass. The available-block-
+space cache experiment was also removed (`6d62205fb`): its exact production
+captures never used the candidate path before PNG. Its 18 rollback executions
+and 287 tool tests passed before the later stylesheet-control removal.
+No optimization credit or new broad-check cadence reset is claimed. See the
+[cohort 84 and rollback ledger](performance/bbc-cohort84-fresh-media-rollback-20261104.json)
+and [verified raw evidence](performance/raw/bbc-cohort84-fresh-media-rollback-20261104.tar.gz).
+
+The latest fully valid acceptance remains cohort 83, which completes seven alternating
 control/Vox/Brave triples, with all 21 original pixel, content, ownership,
 native-exit and input-identity checks passing. Vox's median is
 **29,609,230,829**, control **29,758,720,791**, and Brave's lower-bound median
@@ -82,7 +102,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **83 cohorts / 1,863 attempted browser trials**, excluding separately
+History is **84 cohorts / 1,884 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 The requested `v -profile` follow-up now covers the main thread from V's main
@@ -154,15 +174,25 @@ compile was cancelled under contention; its guard cleanup raised a permission
 error and supplies no successful compile receipt. Root-scoped timings include
 different work and cannot establish whole-page savings.
 
-The next text-cache experiment passes 54 focused executions, with exact
+The later text-cache experiment passed 54 focused executions, with exact
 uncached line/glyph oracles, mutations and definite-height exclusions, plus
-289 current instruction-tool tests. BBC eligibility and unprofiled savings
-remain pending. No cohort 84 was launched by these archived diagnostics:
+289 instruction-tool tests at that point. It was subsequently found unused on
+BBC and removed, as described above. No cohort 84 was launched by these earlier archived diagnostics:
 the selected pre-acceptance load gate required one-minute load no higher than
-the CPU count, but observed 49.38 on 18 CPUs. The latest acceptance remains
-cohort 83, and BBC remains outside the catalog. See the
+the CPU count, but observed 49.38 on 18 CPUs. Cohort 84 was collected later,
+after host load fell below that limit. BBC remains outside the catalog. See the
 [fresh-media/profile ledger](performance/bbc-fresh-media-profile-20261104.json)
 and [verified diagnostic archive](performance/raw/bbc-fresh-media-profile-20261104.tar.gz).
+
+A separately declared contention diagnostic stopped after seven browser
+attempts when the shared disk filled. Missing/malformed audit and result files,
+a Brave pixel mismatch, and failed receipt writes invalidate that partial run;
+no partial-cohort win is credited. Removing this task's regenerable focused-test
+C and binaries freed about 4 GB while preserving sources, commands and evidence.
+The later cohort 84 retains its distinct complete attempt set. A separate
+production `sample` run preserves exact pixels, normal exit, complete content
+and 72 exact author-script hashes. Its stacks include waits and possible work
+after PNG; they supply diagnostic leads, with no instruction savings credited.
 
 ## Historical results on the earlier fixture
 
