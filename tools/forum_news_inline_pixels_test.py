@@ -52,6 +52,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_translated_svg_viewports_preserve_path_edge_coverage(self):
         self.compare_fixture('translated-svg-viewport-clip', width=1024, height=768)
 
+    def test_svg_background_image_viewports_clip_before_the_svg_overflow_edges(self):
+        self.compare_fixture('translated-svg-background-viewport', width=1024, height=768)
+
     def test_svg_background_round_caps_and_curves_share_the_parent_picture(self):
         self.compare_fixture('register-svg-stroke-recording', width=1024, height=768)
 

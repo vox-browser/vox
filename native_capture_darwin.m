@@ -75,6 +75,7 @@ extern void ladybird_v_skia_restore_shared_clip(CGContextRef);
 extern void ladybird_v_skia_block_shared_recording(CGContextRef);
 extern void ladybird_v_skia_block_shared_clip(CGContextRef);
 extern void ladybird_v_skia_add_shared_rounded_clip(CGContextRef, float const*, float const*);
+extern void ladybird_v_skia_add_shared_image_viewport_clip(CGContextRef, float const*, float const*);
 extern void ladybird_v_skia_record_rect(CGContextRef, float, float, float, float,
     uint8_t, uint8_t, uint8_t, uint8_t);
 extern int ladybird_v_skia_register_system_face(const char *key, const char *path,
@@ -5104,6 +5105,32 @@ void native_add_corner_rounded_clip(float x, float y, float width, float height,
 	CGContextClip(context);
 	CGPathRelease(canvas_path);
 	CGPathRelease(local_path);
+}
+
+void native_add_image_viewport_clip(float x, float y, float width, float height,
+    float a, float b, float c, float d, float e, float f,
+    float page_x, float page_y, float scroll_y, float canvas_height) {
+    CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+    if (!context) return;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    float rect[] = {x, y, width, height, 0, 0, 0, 0, 0, 0, 0, 0};
+    float transform[] = {a, b, c, d, page_x + e, page_y - scroll_y + f};
+    // Bound the SVG image domain first, then retain its destination coverage.
+    // A fractional translation can exclude the leading pixel while the
+    // trailing image edge still contributes an antialiased sample.
+    ladybird_v_skia_add_shared_image_viewport_clip(context, rect, transform);
+    ladybird_v_skia_add_shared_rounded_clip(context, rect, transform);
+#endif
+    if (width <= 0 || height <= 0) {
+        CGContextClipToRect(context, CGRectZero);
+        return;
+    }
+    CGAffineTransform transform_to_canvas = CGAffineTransformMake(a, -b, c, -d,
+        page_x + e, canvas_height - page_y + scroll_y - f);
+    CGPathRef path = CGPathCreateWithRect(CGRectMake(x, y, width, height), &transform_to_canvas);
+    CGContextAddPath(context, path);
+    CGContextClip(context);
+    CGPathRelease(path);
 }
 
 void native_begin_skia_command_group(float x, float y, float width, float height,

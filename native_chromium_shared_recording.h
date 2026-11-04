@@ -127,6 +127,7 @@ bool s_test_fail_deferred_layer;
 struct SharedClip {
     SkRRect rect;
     SkMatrix matrix;
+    bool antialias = true;
 };
 struct SharedClipState {
     std::vector<SharedClip> clips;
@@ -307,7 +308,7 @@ void shared_recording_clip(CGContextRef destination, SkCanvas* canvas)
     }
     for (auto const& clip : found->second.clips) {
         canvas->setMatrix(clip.matrix);
-        canvas->clipRRect(clip.rect, true);
+        canvas->clipRRect(clip.rect, clip.antialias);
     }
     canvas->resetMatrix();
 }
@@ -788,8 +789,8 @@ extern "C" void ladybird_v_skia_block_shared_clip(CGContextRef destination)
     ladybird_v_skia_block_shared_recording(destination);
 }
 
-extern "C" void ladybird_v_skia_add_shared_rounded_clip(CGContextRef destination,
-    float const* rect, float const* transform)
+static void add_shared_rounded_clip(CGContextRef destination,
+    float const* rect, float const* transform, bool antialias)
 {
     if (!destination) return;
     if (!rect || !transform
@@ -799,6 +800,7 @@ extern "C" void ladybird_v_skia_add_shared_rounded_clip(CGContextRef destination
         return;
     }
     SharedClip clip;
+    clip.antialias = antialias;
     clip.matrix = SkMatrix::MakeAll(transform[0], transform[2], transform[4],
         transform[1], transform[3], transform[5], 0, 0, 1);
     SkVector radii[] {{rect[4], rect[5]}, {rect[6], rect[7]},
@@ -806,6 +808,18 @@ extern "C" void ladybird_v_skia_add_shared_rounded_clip(CGContextRef destination
     clip.rect.setRectRadii(SkRect::MakeXYWH(rect[0], rect[1],
         std::max(rect[2], 0.f), std::max(rect[3], 0.f)), radii);
     s_shared_clips[destination].clips.push_back(clip);
+}
+
+extern "C" void ladybird_v_skia_add_shared_rounded_clip(CGContextRef destination,
+    float const* rect, float const* transform)
+{
+    add_shared_rounded_clip(destination, rect, transform, true);
+}
+
+extern "C" void ladybird_v_skia_add_shared_image_viewport_clip(CGContextRef destination,
+    float const* rect, float const* transform)
+{
+    add_shared_rounded_clip(destination, rect, transform, false);
 }
 
 extern "C" void ladybird_v_skia_set_layer_shared_recording(int enabled)
@@ -968,7 +982,7 @@ extern "C" void ladybird_v_skia_record_caret(CGContextRef destination, float x,
                 rounded.right() / scale, rounded.bottom() / scale), SkClipOp::kIntersect, false);
         } else {
             canvas->setMatrix(clip.matrix);
-            canvas->clipRRect(clip.rect, true);
+            canvas->clipRRect(clip.rect, clip.antialias);
         }
     }
     canvas->resetMatrix();

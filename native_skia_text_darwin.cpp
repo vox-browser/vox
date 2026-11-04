@@ -5468,7 +5468,7 @@ extern "C" int ladybird_v_skia_draw_svg_path_batch(CGContextRef destination,
                     auto transform = raster_matrix(clip.matrix, region, sx, sy);
                     transform.postTranslate(offset_x, offset_y);
                     canvas->setMatrix(transform);
-                    canvas->clipRRect(clip.rect, true);
+                    canvas->clipRRect(clip.rect, clip.antialias);
                 }
             }
             bool recorded = record_chromium_svg_path_batch(canvas, paths, count, parent,

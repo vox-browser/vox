@@ -297,6 +297,7 @@ fn C.native_record_css_svg_filter_input(a f32, b f32, c f32, d f32, e f32, f f32
 fn C.native_begin_font_compositing_layer(canvas_width f32, canvas_height f32)
 fn C.native_set_chromium_raster_scroll_y(scroll_y f64)
 fn C.native_set_chromium_raster_layer(origin_x f64, origin_y f64, root int)
+fn C.native_add_image_viewport_clip(x f32, y f32, width f32, height f32, a f32, b f32, c f32, d f32, e f32, f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32)
 fn C.native_set_chromium_msaa_tiles(tiles &i32, count int, tile_rows int)
 fn C.native_set_rect_clip_outs(rects &f64, count int)
 fn C.native_rounded_rect_underlay_supported() int
@@ -7015,7 +7016,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 							clip_x := if chromium_svg { f64(0) } else { f64(destination.x) }
 							clip_y := if chromium_svg { f64(0) } else { f64(destination.y) }
 							m := replay.transform
-							C.native_add_corner_rounded_clip(f32(clip_x), f32(clip_y), f32(replay.content_width()), f32(replay.content_height()), 0, 0, 0, 0, 0, 0, 0, 0, f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+							C.native_add_image_viewport_clip(f32(clip_x), f32(clip_y), f32(replay.content_width()), f32(replay.content_height()), f32(m[0]), f32(m[1]), f32(m[2]), f32(m[3]), f32(m[4]), f32(m[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 						}
 					}
 					nested_commands := svg_background_paint_commands_for_replay(&image_data, replay)
