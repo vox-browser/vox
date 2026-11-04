@@ -30,6 +30,7 @@ fn can_target_deleted_conditional_style_rule(rule &CSSRule) bool {
 fn extend_deleted_conditional_style_invalidation(mut result StyleSheetInvalidationSet,
 	rule &CSSRule) {
 	if rule.type_ == .style {
+		if deleted_conditional_leaf_has_no_declarations(rule) { return }
 		extend_style_sheet_invalidation_set_with_style_rule(mut result, rule)
 	}
 	if children := rule.css_rules() {
