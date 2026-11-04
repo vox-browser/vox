@@ -7,10 +7,19 @@ import dom
 // image model exists. Keep those bytes in the static document's preload barrier,
 // including a URL shared by an ordinary <img>.
 fn document_svg_image_preload_urls(document &dom.Document, base_url string) map[string]bool {
+	return document_svg_element_preload_urls(document, base_url, ['image', 'feImage', 'use'])
+}
+
+fn document_initial_svg_preload_urls(document &dom.Document, base_url string) map[string]bool {
+	return if document.as_node().is_scripting_enabled() {
+		document_svg_element_preload_urls(document, base_url, ['use'])
+	} else { document_svg_image_preload_urls(document, base_url) }
+}
+
+fn document_svg_element_preload_urls(document &dom.Document, base_url string, tags []string) map[string]bool {
 	mut urls := map[string]bool{}
-	mut images := css.query_selector_all(document.as_node(), 'image')
-	images << css.query_selector_all(document.as_node(), 'feImage')
-	images << css.query_selector_all(document.as_node(), 'use')
+	mut images := []&dom.Element{}
+	for tag in tags { images << css.query_selector_all(document.as_node(), tag) }
 	for image in images {
 		if image.is_html_element() { continue }
 		source := if image.has_attribute('href') {

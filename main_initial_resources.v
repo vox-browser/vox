@@ -13,7 +13,7 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	_ = prepare_document_render_heap(app.document)
 	if app.can_load_images_asynchronously() || app.document.as_node().is_scripting_enabled() || is_browser_new_tab_url(app.document.url_string()) {
 		types := document_preload_resource_types(app.document, base_url)
-		svg_images := if app.document.as_node().is_scripting_enabled() { map[string]bool{} } else { document_svg_image_preload_urls(app.document, base_url) }
+		svg_images := document_initial_svg_preload_urls(app.document, base_url)
 		// Images do not block the first document frame, including when scripting
 		// is disabled. Their native request models consume cached bytes or
 		// complete on the owning thread. Tree-only and standalone callers retain

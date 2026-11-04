@@ -25,6 +25,19 @@ fn test_external_svg_use_preloads_one_body_for_fragments_and_resolves_document_b
 	assert 'https://sprite.test/assets/sprite.svg' in foreground
 }
 
+fn test_external_svg_use_stays_in_the_initial_barrier_when_scripting_is_enabled() {
+	mut document := svg_use_resource_test_document('<!doctype html><svg><use href="sprite.svg#logo"/><image href="photo.png"/></svg>')
+	defer { document.finalize() }
+	assert document.as_node().is_scripting_enabled()
+	initial := document_initial_svg_preload_urls(document, document.base_url().serialize())
+	assert 'https://sprite.test/sprite.svg' in initial
+	assert 'https://sprite.test/photo.png' !in initial
+	document.set_scripting_enabled_by_embedder(false)
+	static_initial := document_initial_svg_preload_urls(document, document.base_url().serialize())
+	assert 'https://sprite.test/sprite.svg' in static_initial
+	assert 'https://sprite.test/photo.png' in static_initial
+}
+
 fn test_external_svg_use_clones_symbol_dimensions_and_refreshes_href() {
 	mut document := svg_use_resource_test_document('<!doctype html><svg><path id="shape" data-owner="page"/><use id="target" href="sprite.svg#shape" width="40" height="20"/></svg>')
 	defer { document.finalize() }
