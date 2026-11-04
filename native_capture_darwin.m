@@ -5696,10 +5696,10 @@ typedef struct {
 
 static int native_begin_skia_image_source(CGContextRef context, gg__Image *image,
 	NativeSkiaImageSource *source) {
-	// Markers 8 to 10 retain planar YUV rather than packed RGBA for native
-	// sampling: limited-range 4:2:0, full-range 4:2:0 and full-range 4:4:4.
+	// Markers 8, 9, 10 and 12 retain planar YUV for native sampling:
+	// limited 4:2:0, full 4:2:0, full 4:4:4 and full 4:2:2 respectively.
 	if (image->path.len != 0 || image->nr_channels < 4
-	    || image->nr_channels > VOX_PNG_ICC_CHANNEL_MARKER) {
+	    || image->nr_channels > 12) {
 		return 0;
 	}
 	if (image->width <= 0 || image->height <= 0 || image->width > INT_MAX / 4) return 0;
@@ -5745,6 +5745,7 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 		    | (image->nr_channels == 8 ? 4 : 0)
 		    | (image->nr_channels == 9 ? 12 : 0)
 		    | (image->nr_channels == 10 ? 28 : 0)
+		    | (image->nr_channels == 12 ? (12 | VOX_GRAPHITE_IMAGE_YUV422) : 0)
 		    | ((context == native_font_compositing_context
 		        && native_font_compositing_transparency_depth == 0) ? 2 : 0),
 	};

@@ -14,6 +14,7 @@
 typedef struct {
     int (*sniff)(const uint8_t *, uint64_t);
     uint8_t *(*decode)(const uint8_t *, uint64_t, int, int32_t *, int32_t *, int32_t *);
+    uint8_t *(*decode_yuv)(const uint8_t *, uint64_t, int32_t *, int32_t *, int32_t *, int32_t *);
     void (*release)(uint8_t *);
 } VoxAVIFAPI;
 static VoxAVIFAPI vox_avif_api;
@@ -38,6 +39,8 @@ static void vox_avif_load(void)
         api.decode = (uint8_t *(*)(const uint8_t *, uint64_t, int, int32_t *, int32_t *, int32_t *))
             dlsym(library, "vox_avif_decode");
         api.release = (void (*)(uint8_t *))dlsym(library, "vox_avif_free");
+        api.decode_yuv = (uint8_t *(*)(const uint8_t *, uint64_t, int32_t *, int32_t *, int32_t *, int32_t *))
+            dlsym(library, "vox_avif_decode_yuv");
         if (version && version() == 1 && api.sniff && api.decode && api.release) {
             vox_avif_api = api;
             return;
@@ -64,6 +67,33 @@ static uint8_t *vox_avif_decode_rgba(const uint8_t *bytes, uint64_t length, int 
 }
 static void vox_avif_release(uint8_t *pixels)
 { if (pixels && vox_avif_available()) vox_avif_api.release(pixels); }
+static uint8_t *vox_avif_decode_yuv(const uint8_t *bytes, uint64_t length,
+    int32_t *width, int32_t *height, int32_t *size, int32_t *subsampling)
+{
+    if (width) *width = 0;
+    if (height) *height = 0;
+    if (size) *size = 0;
+    if (subsampling) *subsampling = 0;
+    if (!width || !height || !size || !subsampling || !vox_avif_available() || !vox_avif_api.decode_yuv) return NULL;
+    return vox_avif_api.decode_yuv(bytes, length, width, height, size, subsampling);
+}
+static int vox_avif_yuv_paint_supported(void)
+{
+#if defined(__APPLE__)
+    // Both services must understand the new chroma layout. An older shared
+    // bundle can retain the RGBA fallback while its replacements are built.
+    void *gpu = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+    void *bridge = dlopen("@rpath/libLadybirdVSkiaText.dylib", RTLD_LAZY | RTLD_LOCAL);
+    int (*g)(void) = gpu ? (int (*)(void))dlsym(gpu, "vox_graphite_supports_yuv422") : NULL;
+    int (*b)(void) = bridge ? (int (*)(void))dlsym(bridge, "ladybird_v_skia_supports_yuv422") : NULL;
+    int supported = g && b && g() && b();
+    if (gpu) dlclose(gpu);
+    if (bridge) dlclose(bridge);
+    return supported;
+#else
+    return 0;
+#endif
+}
 #else
 static int vox_avif_available(void) { return 0; }
 static int vox_avif_is_avif(const uint8_t *bytes, uint64_t length) { (void)bytes; (void)length; return 0; }
@@ -77,5 +107,16 @@ static uint8_t *vox_avif_decode_rgba(const uint8_t *bytes, uint64_t length, int 
     return NULL;
 }
 static void vox_avif_release(uint8_t *pixels) { (void)pixels; }
+static uint8_t *vox_avif_decode_yuv(const uint8_t *bytes, uint64_t length,
+    int32_t *width, int32_t *height, int32_t *size, int32_t *subsampling)
+{
+    (void)bytes; (void)length;
+    if (width) *width = 0;
+    if (height) *height = 0;
+    if (size) *size = 0;
+    if (subsampling) *subsampling = 0;
+    return NULL;
+}
+static int vox_avif_yuv_paint_supported(void) { return 0; }
 #endif
 #endif

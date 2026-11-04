@@ -115,7 +115,7 @@ int main()
     assert(!cache.prepare_tiles(changed.data(), 2, 2, 2, 8, true, pixels.data()).pending);
 
     // Planar inputs retain every chroma byte and each placement's profile.
-    for (int flags : {0, 1, 4, 4 | 8, 4 | 16}) {
+    for (int flags : {0, 1, 4, 4 | 8, 4 | 16, 4 | 8 | VOX_GRAPHITE_IMAGE_YUV422}) {
         std::vector<uint8_t> bytes(36, 50);
         auto group = placements(bytes.data());
         for (auto& image : group) {
@@ -128,7 +128,7 @@ int main()
         assert(!pending.hit && pending.pending);
         cache.finish(std::move(pending), pixels.data(), 8);
         assert(cache.prepare_tiles(group.data(), 2, 2, 2, 8, false, pixels.data()).hit);
-        size_t last = flags & 4 ? (flags & 16 ? 26 : 16) : 35;
+        size_t last = flags & 4 ? (flags & 16 ? 26 : flags & VOX_GRAPHITE_IMAGE_YUV422 ? 20 : 16) : 35;
         bytes[last]++;
         assert(!cache.prepare_tiles(group.data(), 2, 2, 2, 8, false, pixels.data()).hit);
         bytes[last]--;

@@ -62,3 +62,18 @@ fn test_avif_incomplete_and_unsupported_images_fail_without_a_bitmap() {
 		assert false, 'Unsupported AVIF returned bitmap data'
 	}
 }
+
+fn test_avif_native_planes_keep_full_height_422_and_odd_420_chroma() {
+	if C.vox_avif_available() == 0 { return }
+	mut app := BrowserApp{ctx: gg.new_context(native_rendering: true)}
+	for name in ['slate-hero.jpeg', 'slate-card.jpeg', 'red.avif', 'odd-420.avif'] {
+		bytes := avif_test_bytes(name)
+		image := app.create_avif_yuv_image(bytes) or { panic('missing AVIF planes') }
+		assert image.nr_channels == if name == 'red.avif' { 10 } else if name == 'odd-420.avif' { 9 } else { 12 }
+		if name == 'odd-420.avif' { assert image.width == 17 && image.height == 13 }
+		cached := app.ctx.get_cached_image_by_idx(image.id)
+		assert cached.data == image.data && cached.nr_channels == image.nr_channels
+	}
+	_ := app.create_avif_yuv_image(avif_test_bytes('alpha.avif')) or { return }
+	assert false, 'AVIF alpha must keep its premultiplied RGBA fallback'
+}

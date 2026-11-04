@@ -50,6 +50,27 @@ int main(int argc, char** argv) {
         ++cases;
     }
     auto bytes = read(directory + "/red.avif");
+    for (auto name : {"slate-hero.jpeg", "slate-card.jpeg", "red.avif", "odd-420.avif"}) {
+        auto encoded = read(directory + "/" + name);
+        int32_t w = -1, h = -1, size = -1, subsampling = -1;
+        auto* planes = vox_avif_decode_yuv(encoded.data(), encoded.size(), &w, &h, &size, &subsampling);
+        assert(planes);
+        assert(subsampling == (std::string(name) == "red.avif" ? 0 : std::string(name) == "odd-420.avif" ? 2 : 1));
+        assert(size == w * h + 2 * (subsampling ? (w + 1) / 2 : w) * (subsampling == 2 ? (h + 1) / 2 : h));
+        if (std::string(name) == "odd-420.avif") assert(w == 17 && h == 13 && size == 347);
+        // Repeated decodes must own equal planes, including the last chroma byte.
+        int32_t ww, hh, ss, sub;
+        auto* second = vox_avif_decode_yuv(encoded.data(), encoded.size(), &ww, &hh, &ss, &sub);
+        assert(second && second != planes && w == ww && h == hh && size == ss && subsampling == sub);
+        assert(std::equal(planes, planes + size, second));
+        vox_avif_release(second); vox_avif_release(planes); ++cases;
+    }
+    for (auto name : {"alpha.avif", "animated.avif", "oversize.avif", "icc.avif"}) {
+        auto encoded = read(directory + "/" + name);
+        int32_t w = -1, h = -1, size = -1, sub = -1;
+        assert(!vox_avif_decode_yuv(encoded.data(), encoded.size(), &w, &h, &size, &sub));
+        assert(w == 0 && h == 0 && size == 0 && sub == 0); ++cases;
+    }
     for (size_t length : {size_t(0), size_t(1), size_t(12), size_t(20), bytes.size() / 2}) {
         int32_t width = -1, height = -1, pitch = -1;
         assert(!vox_avif_decode_rgba(bytes.data(), length, 0, &width, &height, &pitch));

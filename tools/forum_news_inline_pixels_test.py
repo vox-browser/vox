@@ -16,6 +16,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_static_avif_images_decode_by_bytes_in_models_and_backgrounds(self):
         self.compare_fixture('avif-image-paths', width=1024, height=768)
 
+    def test_avif_yuv_sampling_reuses_the_original_chroma_planes(self):
+        self.compare_fixture('avif-yuv-sampling', width=1024, height=768)
+
     def test_svg_background_round_caps_and_curves_share_the_parent_picture(self):
         self.compare_fixture('register-svg-stroke-recording', width=1024, height=768)
 

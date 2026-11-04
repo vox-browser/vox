@@ -17,6 +17,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--sanitize', action='store_true')
+    parser.add_argument('--graphite-library', type=Path,
+                        help='also compare the YUV422 GPU draw with the fixed Brave photo')
     parser.add_argument('--sdk-root', type=Path, default=REPO.parent /
         '3rd/ladybird/Build/release/vcpkg_installed' /
         ('arm64-osx-dynamic' if platform.machine() == 'arm64' else 'x64-osx-dynamic'))
@@ -44,6 +46,11 @@ def main():
              REPO / 'tools/native_avif_test.cpp', REPO / 'tools/build_native_avif.py',
              Path(__file__).resolve(), sdk / 'include/avif/avif.h',
              *sorted(resources.iterdir()), *sorted(dependencies)]
+    if args.graphite_library:
+        args.graphite_library = args.graphite_library.resolve()
+        paths += [args.graphite_library, REPO / 'tools/native_avif_yuv_test.cpp',
+                  REPO / 'native_graphite_bridge.h',
+                  REPO / 'Tests/Browser/Brave/expected/avif-yuv-sampling.png']
     pins = lambda: {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
     before = pins()
     (output / 'identities.json').write_text(json.dumps(before, indent=2) + '\n')
@@ -56,6 +63,14 @@ def main():
     commands = [('helper', build, 12),
         ('compile', ['clang++', '-std=c++20', *flags, str(REPO / 'tools/native_avif_test.cpp'), '-o', str(executable)], 12),
         ('runtime', [str(executable), str(resources)], 3)]
+    if args.graphite_library:
+        pixel_test = output / 'native_avif_yuv_test'
+        commands += [('pixel-compile', ['clang++', '-std=c++20', *flags,
+            str(REPO / 'tools/native_avif_yuv_test.cpp'), '-framework', 'CoreGraphics',
+            '-framework', 'ImageIO', '-framework', 'CoreFoundation', '-o', str(pixel_test)], 12),
+            ('pixel-runtime', [str(pixel_test), str(args.graphite_library),
+                str(resources / 'slate-hero.jpeg'),
+                str(REPO / 'Tests/Browser/Brave/expected/avif-yuv-sampling.png')], 3)]
     results = []
     environment = dict(os.environ, ASAN_OPTIONS='detect_leaks=0')
     for phase, command, limit in commands:

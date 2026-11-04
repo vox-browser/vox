@@ -181,6 +181,9 @@ skgpu::graphite::Context* context()
 }
 
 extern "C" __attribute__((visibility("default")))
+int vox_graphite_supports_yuv422(void) { return 1; }
+
+extern "C" __attribute__((visibility("default")))
 int vox_graphite_prepare_webp_icc_rgba(uint8_t* pixels, int count,
     uint8_t const* profile, int profile_size, float* color_profile)
 {
@@ -520,7 +523,8 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
         // Flag 16 marks full-resolution 4:4:4 chroma planes.
         bool full_chroma = image->flags & 16;
         int uv_width = full_chroma ? image->width : (image->width + 1) / 2;
-        int uv_height = full_chroma ? image->height : (image->height + 1) / 2;
+        bool horizontal_chroma = image->flags & VOX_GRAPHITE_IMAGE_YUV422;
+        int uv_height = full_chroma || horizontal_chroma ? image->height : (image->height + 1) / 2;
         size_t y_size = static_cast<size_t>(image->width) * image->height;
         size_t uv_size = static_cast<size_t>(uv_width) * uv_height;
         SkPixmap planes[4] {
@@ -552,7 +556,8 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
         }
         SkYUVAInfo yuva(SkISize::Make(upload_width, upload_height),
             SkYUVAInfo::PlaneConfig::kY_U_V,
-            resized || full_chroma ? SkYUVAInfo::Subsampling::k444 : SkYUVAInfo::Subsampling::k420,
+            resized || full_chroma ? SkYUVAInfo::Subsampling::k444
+                : horizontal_chroma ? SkYUVAInfo::Subsampling::k422 : SkYUVAInfo::Subsampling::k420,
             // JPEG planes use the full BT.601 range; WebP planes are limited.
             (image->flags & 8) ? kJPEG_Full_SkYUVColorSpace : kRec601_SkYUVColorSpace);
         auto pixmaps = SkYUVAPixmaps::FromExternalPixmaps(yuva, planes);

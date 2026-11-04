@@ -28,5 +28,9 @@
   "icc.avif": {
     "generated": "Pillow AVIF encoder; geometric decoder controls",
     "sha256": "a0396807adf9558ffcb2275765476eaeb8c2ff8217f0996859ae72843569f76d"
+  },
+  "odd-420.avif": {
+    "generated": "Pillow AVIF encoder; odd 17x13 YUV420 packed-plane control",
+    "sha256": "4a9d7b3220207ab4f69f2a104f48d51e4064c85762648a13ebc117b977fd2cc5"
   }
 }

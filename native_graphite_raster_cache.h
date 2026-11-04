@@ -385,7 +385,7 @@ private:
         if (image.flags & 4) {
             size_t w = image.width, h = image.height;
             size_t uv_w = image.flags & 16 ? w : (w + 1) / 2;
-            size_t uv_h = image.flags & 16 ? h : (h + 1) / 2;
+            size_t uv_h = image.flags & (16 | VOX_GRAPHITE_IMAGE_YUV422) ? h : (h + 1) / 2;
             if (w > limit / h || uv_w > limit / uv_h) return request;
             source = {image.pixels, w * h + 2 * uv_w * uv_h, 0, 1};
         } else if (source.bytes > source.pitch) return request;

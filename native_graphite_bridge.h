@@ -10,7 +10,8 @@ enum {
     VOX_GRAPHITE_IMAGE_REPEAT_X = 64,
     VOX_GRAPHITE_IMAGE_REPEAT_Y = 128,
     // A separately composited opaque CSS mask at the image clip's rounded box.
-    VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK = 256
+    VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK = 256,
+    VOX_GRAPHITE_IMAGE_YUV422 = 512
 };
 
 enum {
@@ -109,6 +110,7 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
+int vox_graphite_supports_yuv422(void);
 // Owner/main-thread idle cache eviction. Does not initialize an unused backend
 // or destroy live paint resources; the next draw may rebuild temporary caches.
 void vox_graphite_release_unused_graphics_memory(void);

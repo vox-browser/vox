@@ -1899,6 +1899,8 @@ extern "C" int ladybird_v_skia_draw_line(CGContextRef destination,
 static bool s_has_image_color_profile = false;
 static float s_image_color_profile[VOX_IMAGE_COLOR_PROFILE_VALUES] {};
 
+extern "C" int ladybird_v_skia_supports_yuv422(void) { return 1; }
+
 extern "C" void ladybird_v_skia_set_image_color_profile(float const* profile)
 {
     s_has_image_color_profile = profile != nullptr;
@@ -1944,7 +1946,7 @@ static sk_sp<SkColorSpace> image_color_space()
 
 static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int height,
     SkSamplingOptions const& sampling, SkRect const& source, SkRect const& destination,
-    bool full_range, bool full_chroma)
+    bool full_range, bool full_chroma, bool horizontal_chroma)
 {
     // Sample the original 4:2:0 planes before Rec.601 conversion, as Chromium's
     // GPU YUVA image does. Early RGB quantization changes downscaled colors.
@@ -1955,7 +1957,7 @@ static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int hei
         uniform shader chroma_v;
         uniform int nearest;
         uniform int full_range;
-        uniform float chroma_scale;
+        uniform float2 chroma_scale;
         uniform float4 source_bounds;
         half4 main(float2 p) {
             p = clamp(p, source_bounds.xy, source_bounds.zw);
@@ -1977,7 +1979,7 @@ static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int hei
     )"));
     if (!effect.effect) return nullptr;
     int uv_width = full_chroma ? width : (width + 1) / 2;
-    int uv_height = full_chroma ? height : (height + 1) / 2;
+    int uv_height = full_chroma || horizontal_chroma ? height : (height + 1) / 2;
     auto plane = [](uint8_t const* data, int w, int h) {
         SkPixmap pixmap(SkImageInfo::Make(w, h, kGray_8_SkColorType, kOpaque_SkAlphaType), data, w);
         return SkImages::RasterFromPixmapCopy(pixmap);
@@ -1990,7 +1992,8 @@ static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int hei
     SkRuntimeShaderBuilder builder(effect.effect);
     builder.uniform("nearest") = sampling.filter == SkFilterMode::kNearest ? 1 : 0;
     builder.uniform("full_range") = full_range ? 1 : 0;
-    builder.uniform("chroma_scale") = full_chroma ? 1.0f : 0.5f;
+    builder.uniform("chroma_scale") = SkV2{full_chroma ? 1.0f : 0.5f,
+        full_chroma || horizontal_chroma ? 1.0f : 0.5f};
     builder.uniform("source_bounds") = SkV4{source.left() + 0.5f, source.top() + 0.5f,
         source.right() - 0.5f, source.bottom() - 0.5f};
     builder.child("luma") = y->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, SkSamplingOptions(SkFilterMode::kLinear));
@@ -2441,7 +2444,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     if (image_flags & 4) {
         auto shader = webp_yuv_shader(source_pixels, image_width, image_height,
             sampling, source_rect, local_destination, (image_flags & 8) != 0,
-            (image_flags & 16) != 0);
+            (image_flags & 16) != 0, (image_flags & VOX_GRAPHITE_IMAGE_YUV422) != 0);
         if (!shader) return 0;
         paint.setShader(std::move(shader));
         canvas->drawRect(local_destination, paint);

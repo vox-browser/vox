@@ -186,7 +186,7 @@ int main(int argc, char** argv)
 
     // Cache full profiles, planar YUV (including odd 4:2:0 dimensions), and
     // transparent draws, which have no dependency on the output's old contents.
-    for (int flags : {0, 4, 4 | 8, 4 | 16}) {
+    for (int flags : {0, 4, 4 | 8, 4 | 16, 4 | 8 | VOX_GRAPHITE_IMAGE_YUV422}) {
         std::vector<uint8_t> planes(27, 50);
         auto planar = image(planes.data());
         planar.width = planar.height = 3;
@@ -199,7 +199,7 @@ int main(int argc, char** argv)
         assert(!request.hit && request.pending);
         cache.finish(std::move(request), pixels.data(), 8);
         assert(cache.prepare(planar, 2, 2, 8, false, pixels.data()).hit);
-        size_t last = flags & 4 ? (flags & 16 ? 26 : 16) : 35;
+        size_t last = flags & 4 ? (flags & 16 ? 26 : flags & VOX_GRAPHITE_IMAGE_YUV422 ? 20 : 16) : 35;
         planes[last]++;
         assert(!cache.prepare(planar, 2, 2, 8, false, pixels.data()).hit);
         planes[last]--;
@@ -552,7 +552,7 @@ int main(int argc, char** argv)
         changed = original_profile; changed.color_profile[field] += .125f; upload_misses(changed);
     }
     assert(!uploads.prepare(descriptor, 2, 2, false).texture); // Count eviction.
-    for (int flags : {4, 12, 20, 28}) {
+    for (int flags : {4, 12, 20, 28, 12 | VOX_GRAPHITE_IMAGE_YUV422}) {
         std::vector<uint8_t> planes(33, 91);
         auto yuv = descriptor; yuv.width = 3; yuv.height = 3; yuv.pitch = 12;
         yuv.flags = flags; yuv.pixels = planes.data();
@@ -563,7 +563,7 @@ int main(int argc, char** argv)
         // Do not turn a planar upload into an RGBA copy while adding mips.
         auto planar_mips = uploads.prepare(yuv, 3, 3, true);
         assert(!planar_mips.texture && planar_mips.pending && !planar_mips.needs_mipmaps);
-        size_t last = flags & 16 ? 26 : 16;
+        size_t last = flags & 16 ? 26 : flags & VOX_GRAPHITE_IMAGE_YUV422 ? 20 : 16;
         planes[last]++;
         assert(!uploads.prepare(yuv, 3, 3, false).texture);
     }
