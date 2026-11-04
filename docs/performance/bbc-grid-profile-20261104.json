@@ -1,0 +1,1035 @@
+{
+  "status": "Diagnostic grid work investigation; no optimization or acceptance credit.",
+  "target_met": false,
+  "catalog_entry_added": false,
+  "actual_V_profile": "Existing independently verified -profile - -profile-no-inline -profile-fns main__main binary, from the committed main-profile ledger. Main-thread counters include nested grid and post-PNG work. Not current-production validation.",
+  "trace": {
+    "bounded_entries": 1200,
+    "measurement_calls": 636,
+    "counts": [
+      {
+        "mode": 0,
+        "width_only": 0,
+        "calls": 270,
+        "unique_logged_input_combinations": 130,
+        "repeats": 140
+      },
+      {
+        "mode": 1,
+        "width_only": 0,
+        "calls": 90,
+        "unique_logged_input_combinations": 90,
+        "repeats": 0
+      },
+      {
+        "mode": 0,
+        "width_only": 1,
+        "calls": 276,
+        "unique_logged_input_combinations": 276,
+        "repeats": 0
+      }
+    ],
+    "limits": "Only the first1200 calls, not a complete-call census. Matching logged inputs are optimization leads and do not prove hidden state equivalence. Instrumented older full-V-profile binary, unchanged grid source, current pinned native libraries. Debugger pauses and profile timers supply no production instruction/time credit."
+  },
+  "trace_result": {
+    "diagnostic_only": true,
+    "browser_exit": 0,
+    "input_identity_unchanged": true,
+    "host_after": {
+      "unix": 1793783283.292827,
+      "load_average": [
+        32.53076171875,
+        29.9150390625,
+        33.1572265625
+      ]
+    },
+    "acceptance": false,
+    "performance_credit": 0,
+    "content_audit": {
+      "passed": true,
+      "headlines": 91,
+      "images": 125,
+      "visible_decoded_images": 3,
+      "dom_elements": 2704,
+      "unavailable_local_fallbacks": [
+        {
+          "family": "BBCReithSans-fallback",
+          "sources": [
+            "Arial"
+          ]
+        },
+        {
+          "family": "BBCReithSans-fallback",
+          "sources": [
+            "Arial Bold"
+          ]
+        }
+      ],
+      "body_text_sha256": "9f689d46fee94b5f006334ba6fa200ce30df5711b0acf9142caf52e3f63dae29"
+    },
+    "pixels": {
+      "exit": 0,
+      "exact": true,
+      "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/bbc-grid-profile-20261104-1105/lldb-inputs/recheck-abi/page/diff.png\n"
+    },
+    "debugger_exit": 0,
+    "native_exit_statuses": [
+      [
+        "70970",
+        "0"
+      ]
+    ],
+    "grid_entry_diagnostic_only": true,
+    "author_evaluations": [
+      {
+        "url": "https://www.bbc.com/",
+        "sha256": "c509306a81e47ba10fe0774ebcd79e2bb841e012dfdaafe3b0dd96fb8bd1e17e",
+        "bytes": 403,
+        "success": true,
+        "exact_external": false
+      },
+      {
+        "url": "https://www.bbc.com/",
+        "sha256": "8341cbd9dd4861255d63cb2043ab679e07a95921570377b3d80e72ef0e4d4a3e",
+        "bytes": 26,
+        "success": true,
+        "exact_external": false
+      },
+      {
+        "url": "https://www.bbc.com/",
+        "sha256": "64706be7c32755c1dcc3f01c570bbb1809482ff90353035140e9defe99b6417b",
+        "bytes": 998,
+        "success": true,
+        "exact_external": false
+      },
+      {
+        "url": "https://www.bbc.com/",
+        "sha256": "c89389e1183b21a8b36a12c2fffd9701bf2cdb4019e712fc4a1e551f97865849",
+        "bytes": 2252,
+        "success": true,
+        "exact_external": false
+      },
+      {
+        "url": "https://www.bbc.com/",
+        "sha256": "b0a707f6d7cc37e31a1ff909334dd2dae5de86cec510d9758987313ebb21756e",
+        "bytes": 93,
+        "success": true,
+        "exact_external": false
+      },
+      {
+        "url": "https://www.bbc.com/",
+        "sha256": "5fa37dfab923a502bf66b5000fdc4da2200a542d9caba432e75dc8a19cf5261a",
+        "bytes": 51,
+        "success": true,
+        "exact_external": false
+      },
+      {
+        "url": "https://www.bbc.com/",
+        "sha256": "fbc325c2e16d559854d6a056d0bfeb40abafd89bf73f7350abf486cf93d7ad45",
+        "bytes": 107,
+        "success": true,
+        "exact_external": false
+      },
+      {
+        "url": "https://static.bbci.co.uk/frameworks/requirejs/0.13.0/sharedmodules/require.js",
+        "sha256": "ac67b60f44b8f1771c6e3ef5b0718f9e2d2e8a764114191e195fadd7876f41c0",
+        "bytes": 26631,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://cdn.tinypass.com/api/tinypass.min.js",
+        "sha256": "b7c42d08846f10e6c2def4ea4ea19867b85a9e956361be06914343da58ac48fb",
+        "bytes": 497751,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://emp.bbci.co.uk/emp/bump-4/bump-4.js",
+        "sha256": "c2c7875f2aab40fd9815ec650f4d34a0b18f8d76037e1b025f7aeef413cf07da",
+        "bytes": 135871,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/03~yq9q893hmn.js",
+        "sha256": "0973c1d64c88adc8e3c950410cb58b288f72118d5965b78049438deb8f2f9683",
+        "bytes": 112594,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b-tgv1_m1uo9.js",
+        "sha256": "8ff3b4fc6689d2b983dd480c82dc932148f428029040cc65809f1cc047ba0fe2",
+        "bytes": 5926,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0d9awe5d081.2.js",
+        "sha256": "75802ee56057653bcc2b605089e5462edbc8474f41c9d7bf03df55a3fbde9aad",
+        "bytes": 34454,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0s_kjwmep8yf2.js",
+        "sha256": "43a274c8e775e4745b5675363f437c01feac88662e7f6040a53f21cba5ad272b",
+        "bytes": 25448,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-a6nanpwqpag.js",
+        "sha256": "6382492412736c25323b49c8282e48c2da65de65bfba9fc23ee9b299891e5f31",
+        "bytes": 23644,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/178~uy1pz6ka4.js",
+        "sha256": "0e507fb2b10a6e5f7952b05eccbef421dc85fe59a617fcab505e6d746dc78768",
+        "bytes": 1511,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02w2j6a0szhem.js",
+        "sha256": "eb96b7160f75c0e779c8e775e73bda35fddc31bdb0c616f8e4f15b0c5e0feae7",
+        "bytes": 25157,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/01ahds4cdfgmx.js",
+        "sha256": "73591aedcda1a85382794bcc8647dc1044d879d990f9e50dffc5180938584042",
+        "bytes": 1391,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/004vauwu48azs.js",
+        "sha256": "c6976ec6cc131d87d5e7f11d0e783b85d503b264a28a2751b486fd4ab3321197",
+        "bytes": 7574,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jl4bpoiy-t_p.js",
+        "sha256": "dff644624d905c732f9a0ef6e564d052584e957ae393366d0319fea89b695d48",
+        "bytes": 6821,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0k530rgixl5kt.js",
+        "sha256": "e369265a9d8c40769f6ccdcd0b87cb392a3672fedbba01f16075d4f298d59166",
+        "bytes": 36524,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zpz-874su9ks.js",
+        "sha256": "9ea3f2b34d76ce6a162b709cc65c34cc37a66660de2853e1c305dd93bf294314",
+        "bytes": 29966,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jcf7ay9pl-s0.js",
+        "sha256": "d92c8ba375ebd3e3c604d93124841f2a250371a73291efbeb403ad3188160033",
+        "bytes": 1651,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0gmos.wajd.qx.js",
+        "sha256": "4c946bc766052d9dce2c45f0e6bbaddb4c97f4ef73611d009df80024d56d2891",
+        "bytes": 1433,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0na6onp8uomzi.js",
+        "sha256": "a26e7e6fb52587c33e5b49e4db4a00951b9564e6ca908ca7cce6e655dd7c9edb",
+        "bytes": 4791,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0pr885e78gdj8.js",
+        "sha256": "43278b629a1156a81e375dff43ad5735d9f1cd531c230d4863593d9eabd4570e",
+        "bytes": 23393,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0u17oyz1d609w.js",
+        "sha256": "c10777b2a4195b77c5f897973fe307e71473533852fa91eb8cdee62226569f24",
+        "bytes": 1361,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ogvtm3jmac~r.js",
+        "sha256": "31d3f1f63e416587d220cab1ff104bc18487ceefa94ca33973391d739c32560b",
+        "bytes": 22677,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0~~24znpk8vc1.js",
+        "sha256": "f58b0adb797260e75b3560b55e9a1187ad0a7cebd1592d5146f89f5e4a887c28",
+        "bytes": 1371,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/116azxjox4uhk.js",
+        "sha256": "289638f4f398843c2e4ca6b5b9f52843f4ede9b223346482f6d2e298735fc7f1",
+        "bytes": 19790,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00su1kxuv.aa_.js",
+        "sha256": "a524098545ef1cd851bfe249d8547418701553c1271fa61df83e322d31ef1bda",
+        "bytes": 29178,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05el2iwpn3pyx.js",
+        "sha256": "b41e787f031780654f9aefaf4baf901cebb143defbb07e9d84abc01ee1af33c6",
+        "bytes": 25798,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/12w5u9fluro3i.js",
+        "sha256": "87b2c72ef5a9e6a9ec946db9e608f362b0eaff7f7fcffb6f49eade74019c71da",
+        "bytes": 33911,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00pv_7c.hjx18.js",
+        "sha256": "ecb85f0c77754c57fe55dbd3869570c0dfce669aef10642534b50564e1524976",
+        "bytes": 37329,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06nzlhdny82mu.js",
+        "sha256": "7321beafb2b2fd4ec44c729f04b6fbff625d333de2a3feb6e1caf5ea3e59213c",
+        "bytes": 31925,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0z3rjge5m4grx.js",
+        "sha256": "dd181f9f615bb71d8f0a5b7c0ad50bd47dcee782ef2a3a516577a56bd4d53cfd",
+        "bytes": 15392,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/1556fllq~t8x3.js",
+        "sha256": "880c3492ac7473e1ebcd83c06baf55b55a9a8628626393fc6973fd255fb32e98",
+        "bytes": 37689,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0c.fzizjof3_9.js",
+        "sha256": "15a112fb236ba9ac3559681959e5b63c3a0245be19d7424f0f067b24961c2221",
+        "bytes": 27920,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04n.yg_e~~1ci.js",
+        "sha256": "671df04e43515714028382bc50ac1dd17c9a725934d803433bff1ac0d1f23052",
+        "bytes": 36570,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05bsy3xzra8wq.js",
+        "sha256": "90c64d6b7765acb8ea15202ec1b7e5eb5c5093202291ae13c00fb1bf3d5bb367",
+        "bytes": 246296,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0a--~b-snp6to.js",
+        "sha256": "03b522f1bdba75c82eda171462e44f29263e09779bf61acb06465c126156ceaa",
+        "bytes": 71931,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13ad5orspgznk.js",
+        "sha256": "28a1e4258d181f3e67e1c23bab3850c64c7c42d0ab173d3b65f2f262067c995c",
+        "bytes": 29927,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/18bprfc204vpd.js",
+        "sha256": "f5cb72d4776976e5f53690a42356a1c6a83d8d069c6574ee83c3b5139f714556",
+        "bytes": 69240,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0x01rgvk49mtx.js",
+        "sha256": "2d1c012683cdac3406f62e3c3356b04b6a25655e245ad5134d3e97dd64ee0963",
+        "bytes": 23725,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0y-nyl-getpga.js",
+        "sha256": "5044522b2e87659006670afa4c8b2b418a0aaaa021f8f447f808bebbc3f63d0a",
+        "bytes": 191503,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.ws-k_jzc8i2.js",
+        "sha256": "40ec1bea360585aa83b6ae7aa29eafb0996067d723d1f036da0ced04a18ea25a",
+        "bytes": 45132,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0iid2kl3pm46u.js",
+        "sha256": "82978ff2c40aa53e0e140eca17e3c49276f4b855765289c3ff5495d91a0479c6",
+        "bytes": 104809,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/138t46x7lzh0_.js",
+        "sha256": "39370398a4b17414b2d5de02138c9c8e8cd13e95a33537fe609d653d1a879da2",
+        "bytes": 32500,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0n-kjrsnwe2tb.js",
+        "sha256": "eeabd9d60a251b8ae244bda6cfae43d533a163143cea5f870f3a065c095d8ca9",
+        "bytes": 192983,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0sm_sfi0c1mq-.js",
+        "sha256": "6c90bd457fe4dfa7671de01af36c490f6d8ba473a5933bc39def8ee76c40f0b2",
+        "bytes": 91052,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0uleyy2687dl3.js",
+        "sha256": "cbbcbf316e5eadd37b184ca485ac753e4fd082ea39174c7a68acbd71d2574f38",
+        "bytes": 11234,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02-eeonhl._fb.js",
+        "sha256": "3eb4b0ea5e700623fd5a082d70a1d7f915f647a0de76b5b62f0c036fd7001933",
+        "bytes": 19790,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13lckzgg918t5.js",
+        "sha256": "eb66a6c5b6557a50f7bc232d448fff6ad8e3aee32cc5f5c7e1bcff9f3bc45c99",
+        "bytes": 23413,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07ngao.t8frq0.js",
+        "sha256": "6d8c53b4d26e809bd41c2898450138d6f0e277cf410c2bd94da8f9fb4dfa830f",
+        "bytes": 16523,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0fmsfuctu-bad.js",
+        "sha256": "2bec8483b973c921eb7cac7cc629c41b780da563c1f63c862c992730d8095270",
+        "bytes": 29748,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07yl_.h914mqi.js",
+        "sha256": "8af3e6c19c648d2a9be92bcb64b35d720aeaf07907973dbe031fb59a543943fd",
+        "bytes": 41302,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0rn767pe.qoie.js",
+        "sha256": "24b5c759dc0b1743ac6980b5d01a2bee0cc2357b78e77b823bdeff0213f4cc00",
+        "bytes": 70436,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06~h23gcdri8t.js",
+        "sha256": "50f43cfdc412de60ba410311562423de537e03c0d53a89b731751feb4ea0eb80",
+        "bytes": 69240,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b_bpuxw-.1p..js",
+        "sha256": "8763f828f40b14b1147ac48596546e0e63b230d891bb4dad4fe6d6f8fcd4a29f",
+        "bytes": 154276,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ltjlb3luz40f.js",
+        "sha256": "19201380cfad57644d52f26d1da9b3d7d52ce477e9e0ba8e6c9eaef71ecb6eb5",
+        "bytes": 120020,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ua0r8ey9cy9_.js",
+        "sha256": "5e739186cf2cf4ccf0482c1b9ecbae5ef3779c64341b18daf1ad39599dfc51e2",
+        "bytes": 32500,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/17t.2dba68ndj.js",
+        "sha256": "825c72eaadac1dfffd882f5f956d45a62a09347d944055ac5f5c195c0b358479",
+        "bytes": 44857,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0eg_6rsvcuq6e.js",
+        "sha256": "4de48db9fc3e1d91ee5907327ee0f1017a4821ba3b52ccbc16f42ceea5afe232",
+        "bytes": 11399,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_buildManifest.js",
+        "sha256": "44ba1dfcdd0ae1d11c4efd797d53811f869baf259d2d59d7eb5440583c5472d0",
+        "bytes": 1693,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_ssgManifest.js",
+        "sha256": "678f6ce2cb80b1fe72fc67e7412be6e2ab6ada083111b64f7c40d35e3cba5e00",
+        "bytes": 80,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_clientMiddlewareManifest.js",
+        "sha256": "95ea07356281f634824367e07931feac78ad1c53ad48fc9080913a8331f04e66",
+        "bytes": 458,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-e.cy8zqdh4a.js",
+        "sha256": "056df528e4c1a9ac77cb9043f3e7029642ace68478ec45f296a73423e8b6fc9c",
+        "bytes": 32984,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0r-xplh.6.-03.js",
+        "sha256": "f3561669372187e138a67d11b7ff6e9ccc69781baa82abe5990e1ebb8986864b",
+        "bytes": 12167,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04x.wea_ofqc1.js",
+        "sha256": "72dd68e7e9eace4236a374c4653d79195934ce4b7999f3bf01dad024b4f02d23",
+        "bytes": 37794,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zm-lheg_tx40.js",
+        "sha256": "5396e44b4684df27b645211631585bcb5a618d62624cda64b04424584e004df8",
+        "bytes": 17446,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04_rrh.j6.wba.js",
+        "sha256": "5a0825ea07e3075a80d5652fe1b57a8254265e841621fb9892e6810e302ca790",
+        "bytes": 2870,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0w54l~99pq3b9.js",
+        "sha256": "02f2ba1c7b10847bee0af25990cad7772701041e5c7671bc03a5662e7257d183",
+        "bytes": 1851,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02xyfoe1v.vkw.js",
+        "sha256": "11b391e39f59b1029c76cfbbde2b439ee91de8a558dfce3f576f13675c3e4292",
+        "bytes": 8114,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0_a80-qmpyc3s.js",
+        "sha256": "fe0a1d5f3640b599ff12b7409b7b4ce4272d5396e3983bb8fc07e3e9efe0f4d9",
+        "bytes": 38828,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.gu_l8v2fg11.js",
+        "sha256": "3e2bd65a17d5f45c51df4036753d0dcd283c45b4dd48e7ca22bf4eeb38449e68",
+        "bytes": 5376,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.44191m_y6r1.js",
+        "sha256": "c0d233d34bde493ebdd970be1680c9c1db7f42fdafe91e5d19ace1622a51b03c",
+        "bytes": 5427,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/127xbfgjo2hre.js",
+        "sha256": "ea2b7ead2c0aebb45328cd673a5f0450d1ab4667cac3729cbf72d416248cd96b",
+        "bytes": 3712,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yoghfwkswxeg.js",
+        "sha256": "edfc0707656673b8095aedee9bf84317dc398e39a762cf59ff68aea7386df26a",
+        "bytes": 15509,
+        "success": true,
+        "exact_external": true
+      },
+      {
+        "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yv_0~sh~88vc.js",
+        "sha256": "7f2a92b3dfe6ad237ddde904dc01caff1fd37de4c13e874cdb71e8b5c0a7a46a",
+        "bytes": 938,
+        "success": true,
+        "exact_external": true
+      }
+    ],
+    "successful_exact_external_sources": 72,
+    "logical_font_policy_witness": true
+  },
+  "trace_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-grid-profile-20261104-1105/lldb-inputs/recheck-abi/run-page.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "69867": "Wed Nov  4 12:06:05 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 5019107328,
+    "elapsed_seconds": 121.14475116700001,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "failed_attempts": {
+    "current_source_codegen": "Two real -profile - -profile-no-inline -profile-fns layout__run_grid_formatting_context_internal codegens finish0 but source inputs change during generation. Both controllers reject2 and do not compile native code.",
+    "older_C_rescope": "Verified exact old preprocessed C restored from committed raw archive. First injection failed false-versus0 token assertion. Corrected injection then fails native compilation because added NULL/stderr macros are unavailable after preprocessing. Symbol-corrected retry reaches600second timeout; child-9,guard125, no native binary. No production task was stopped.",
+    "first_lldb_trace": "One read-only entry fails ARM64 argument validation because a16byte AvailableSpace is passed in two registers, not indirectly. Breakpoint disabled; full page still completes exact/native0. No decoded grid data accepted from this failed probe.",
+    "corrected_lldb_trace": "All1200 bounded reads validate modes/constraints/options, correct32bit enum packing, then breakpoint disables itself. Full original PNG/content,72 external scripts, native0 and stable inputs pass. All attempts retained."
+  },
+  "reconstruction": "Generated C from rejected codegens and failed native recompiles is retained under Build, excluded from this archive. SHA256/byte inventory is recorded below. Old base C is already durable in docs/performance/raw/bbc-main-profile-rule-deletion-20261104.tar.gz, member main-profile/recheck-current-runtime/frozen-compiler-inputs/0-Vox.c.i; exact injection scripts/proofs and full compiler commands are archived here. No omitted output supplies acceptance evidence.",
+  "excluded_generated_inputs": {
+    "Vox.c": {
+      "bytes": 108342314,
+      "sha256": "d87e553d5ffe2c0a5a0380765372b34c0dfa98f18847d44720bd918cfe95d319"
+    },
+    "recheck-source/Vox.c": {
+      "bytes": 108344304,
+      "sha256": "e46488ce8a909b55a408c505965ca593448be26dca077ddb45a3d7e9ee216df9"
+    },
+    "reuse-verified-profile/Vox-grid-profile.c.i": {
+      "bytes": 147126243,
+      "sha256": "646e3d5e9b7d59de1b133d965e099437cad98de9da453c556261590fd628aeb9"
+    },
+    "reuse-verified-profile/recheck-token/Vox-grid-profile.c.i": {
+      "bytes": 147129113,
+      "sha256": "19c4eac94895c7ffd9fddb2b0e6fcdc6996e29cdb8817cba795e54c64595a3d0"
+    },
+    "reuse-verified-profile/recheck-preprocessed-symbols/Vox-grid-profile.c.i": {
+      "bytes": 147129173,
+      "sha256": "b3d0f9f1f4f472d323c48a52054d50d13df1193cc42446550124a65a00a3631d"
+    }
+  },
+  "raw_evidence": {
+    "path": "docs/performance/raw/bbc-grid-profile-20261104.tar.gz",
+    "bytes": 2350081,
+    "sha256": "4641021b8c4e731661d164c77072a30c24d31d9b2567659579d4d5f55a635a2e",
+    "files": 85,
+    "round_trip_verified": true,
+    "inventory": {
+      "Vox.flags": {
+        "bytes": 13335,
+        "sha256": "a8f2b4fb22da6fee885bdc4f9af42d448e54b15943520c1f8d09bbc7ca08f28e"
+      },
+      "codegen-controller.log": {
+        "bytes": 10,
+        "sha256": "bc7fb7112cdebb51d0424096a9c4ae5c2d7556c7d852959087192ef7f0d4cf61"
+      },
+      "source-state-after-codegen.json": {
+        "bytes": 258,
+        "sha256": "6cd08daff45a5aab0661d96fa1e4aef79efffb43cca30f63effc26b3f55c02ce"
+      },
+      "codegen-exit.json": {
+        "bytes": 12,
+        "sha256": "5bc232b82de377a5655a39a2af9d7ae0fc868de5b9df957e18905cb914606c88"
+      },
+      "derived-trace-summary.json": {
+        "bytes": 830,
+        "sha256": "6f770867a34d22508b5e315155c139777dfc8995095becbc3feebdedd730151b"
+      },
+      "codegen.log": {
+        "bytes": 7765,
+        "sha256": "b9e57d05b7fb8a25d88b2fe1b402d652915fe4343ad22763ca6bbc26a9bc7b96"
+      },
+      "source-state-before.json": {
+        "bytes": 258,
+        "sha256": "c45065afaa7b57906e950d060d429e5ee29a506c8122d999886dfb5cdc065ca6"
+      },
+      "profile-scope-proof.json": {
+        "bytes": 71543,
+        "sha256": "50561ee20ede2c39d9cf0386f7711b55b059b43daf3552880b03de3d79144f3d"
+      },
+      "instrument.py": {
+        "bytes": 5060,
+        "sha256": "2462cfb49166b2d8bb4b556fef8813d794b3cb12ec3a6b942255fb1952719eaf"
+      },
+      "codegen.py": {
+        "bytes": 2639,
+        "sha256": "dcd6cb23fd260b8f0b4b931b17944f11cc97e3e37f53fb00a61e40b4e7125b79"
+      },
+      "codegen.guard.json": {
+        "bytes": 2128,
+        "sha256": "3674b06220728ec29f5ea390c610c8beba7b2ca09310a02ab0a8dce6f57b3c2d"
+      },
+      "source-change-rejection.json": {
+        "bytes": 118,
+        "sha256": "c2d49d6072a78200c05b5fce4babe916daadb563108f21c6e7cefdfbaa62b141"
+      },
+      "codegen-command.json": {
+        "bytes": 2338,
+        "sha256": "3dc9f814d9eda5afc9855f72afec252e2f4825b869d7780bef4a5d2c506a3cdd"
+      },
+      "recheck-source/Vox.flags": {
+        "bytes": 13335,
+        "sha256": "a8f2b4fb22da6fee885bdc4f9af42d448e54b15943520c1f8d09bbc7ca08f28e"
+      },
+      "recheck-source/codegen-controller.log": {
+        "bytes": 10,
+        "sha256": "bc7fb7112cdebb51d0424096a9c4ae5c2d7556c7d852959087192ef7f0d4cf61"
+      },
+      "recheck-source/source-state-after-codegen.json": {
+        "bytes": 258,
+        "sha256": "cac91123491a14303e26580b0f91809ea514cbc58d5a5e33d31cf0aaffbfec66"
+      },
+      "recheck-source/codegen-exit.json": {
+        "bytes": 12,
+        "sha256": "5bc232b82de377a5655a39a2af9d7ae0fc868de5b9df957e18905cb914606c88"
+      },
+      "recheck-source/codegen.log": {
+        "bytes": 7789,
+        "sha256": "e52857b8caf8e15258d4f04dd56223cf6c3137af7f2430c7d1210ac7368f66eb"
+      },
+      "recheck-source/source-state-before.json": {
+        "bytes": 258,
+        "sha256": "95f148c37570b0be41aab76797ce959194a6478b5d6822de2a3ab8a1ef75a405"
+      },
+      "recheck-source/codegen.py": {
+        "bytes": 2639,
+        "sha256": "dcd6cb23fd260b8f0b4b931b17944f11cc97e3e37f53fb00a61e40b4e7125b79"
+      },
+      "recheck-source/codegen.guard.json": {
+        "bytes": 2152,
+        "sha256": "17c8ac90de8bfc1fbdf83a81a53d0c0a9f74e6db6813b8564654ef2ee6ec9f62"
+      },
+      "recheck-source/source-change-rejection.json": {
+        "bytes": 118,
+        "sha256": "c2d49d6072a78200c05b5fce4babe916daadb563108f21c6e7cefdfbaa62b141"
+      },
+      "recheck-source/codegen-command.json": {
+        "bytes": 2398,
+        "sha256": "80873416f9cf82f1f09f6734a7bffa6a8df0c6cfbf2fabef42fdf66277245af8"
+      },
+      "reuse-verified-profile/prepare.guard.json": {
+        "bytes": 404,
+        "sha256": "a3aeab6d2a47dda6e7490af5079c35ce6437e11ef294e369766ff0579c23da3a"
+      },
+      "reuse-verified-profile/prepare.log": {
+        "bytes": 842,
+        "sha256": "a15cb38d1831a59cf46bcd603086f68638cb74b20691ffe5a5f9f6bdcfb56077"
+      },
+      "reuse-verified-profile/prepare.py": {
+        "bytes": 5236,
+        "sha256": "3c28535a7240e78deffbd2ebe10cb29f1703929fe27c8c642d410d22e2690f47"
+      },
+      "reuse-verified-profile/recheck-token/inputs-after.json": {
+        "bytes": 35660,
+        "sha256": "fb7a528309f9d4867c5baa32d74716a88e03517e6991d70176c5c337f6609559"
+      },
+      "reuse-verified-profile/recheck-token/compile-exit.json": {
+        "bytes": 38,
+        "sha256": "386e108c0d8fc69697725f852fa94d194446033c7d186640019787f4809982ec"
+      },
+      "reuse-verified-profile/recheck-token/compile-controller.log": {
+        "bytes": 10,
+        "sha256": "adc36671bd48bdb707fafc1d488d78e262d4c6887499b70f183da9e02f49786f"
+      },
+      "reuse-verified-profile/recheck-token/compile-command.json": {
+        "bytes": 30777,
+        "sha256": "e4555ec374b2161818421d8a94a6144d624584e8047f4dcf3fb35b354c4b4582"
+      },
+      "reuse-verified-profile/recheck-token/prepare.guard.json": {
+        "bytes": 424,
+        "sha256": "5951a94e73db8b033d3267189d9ca1b4c18f829b24e2c88aaf6a99a07a539484"
+      },
+      "reuse-verified-profile/recheck-token/compile.log": {
+        "bytes": 29638,
+        "sha256": "b1841ea53317d8cde4587d2cc50a917ee4f1ab3eeed2695f0edd2f22b057edd9"
+      },
+      "reuse-verified-profile/recheck-token/inputs-before.json": {
+        "bytes": 35660,
+        "sha256": "fb7a528309f9d4867c5baa32d74716a88e03517e6991d70176c5c337f6609559"
+      },
+      "reuse-verified-profile/recheck-token/compiler-command.json": {
+        "bytes": 28654,
+        "sha256": "09de4894732d7941c9c5ac87c68ce58dadc17754a5546de9d2031c83bdf1acb9"
+      },
+      "reuse-verified-profile/recheck-token/compile.py": {
+        "bytes": 1959,
+        "sha256": "435be5390ba58d2e732007283e2d4ae91507dd3f94d7f9b17aa4a1633e0fe4c9"
+      },
+      "reuse-verified-profile/recheck-token/compile.guard.json": {
+        "bytes": 30419,
+        "sha256": "fb9c5209f78c46e448dd8c418d52b0c89dcb1b61324229afa2e9a326bc7f33f3"
+      },
+      "reuse-verified-profile/recheck-token/prepare.log": {
+        "bytes": 567,
+        "sha256": "e5de3ab7af67c5ea49dc39b9659321136bd474a171d6202bf311c895d8f5972c"
+      },
+      "reuse-verified-profile/recheck-token/profile-scope-proof.json": {
+        "bytes": 71954,
+        "sha256": "f97b62583fa54c800eb1b726334759a3513a5ce65b6cf7d63c7c2854af6866c6"
+      },
+      "reuse-verified-profile/recheck-token/prepare.py": {
+        "bytes": 5688,
+        "sha256": "481e20f48310c53c2aeb0326a5c9ee92b50eaa1b66021543050e84e80474a16f"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/inputs-after.json": {
+        "bytes": 35675,
+        "sha256": "c233767932e119e477d517072cf46f54423466b7f061e3af2bcbbf8c2fabed8c"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/compile-exit.json": {
+        "bytes": 40,
+        "sha256": "34f26acf0d78c3009990530e222fa1ac3e3689dea3cd5bc83927da907e1d97af"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/run.py": {
+        "bytes": 1152,
+        "sha256": "3d44d958b1e8c90a27bef81baf9753d6acb308ff24ab405138b108719ef29165"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/compile-controller.log": {
+        "bytes": 12,
+        "sha256": "e077bebcea4a52603d19e2457ba400daa4329a7e791917407fd8c1345dc2508c"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/compile-command.json": {
+        "bytes": 30835,
+        "sha256": "fe0bd451702d7af747b661c05052ec700f599c4d3c40c8871fee13b6fddc6012"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/prepare.guard.json": {
+        "bytes": 433,
+        "sha256": "611887ae0ab432518f4beb09d51c46ea43e41e35e656ec9054eeaf79e56c9400"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/compile.log": {
+        "bytes": 27517,
+        "sha256": "bbfcfd1986b1f697df6f593029595e64fd9f790c8125b7356bd4a87d0fb368f0"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/inputs-before.json": {
+        "bytes": 35675,
+        "sha256": "c233767932e119e477d517072cf46f54423466b7f061e3af2bcbbf8c2fabed8c"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/compiler-command.json": {
+        "bytes": 28684,
+        "sha256": "5779740a3cb0bac8a45eb4787646ab30df52815f03929b584b153be04f176fff"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/compile.py": {
+        "bytes": 1959,
+        "sha256": "435be5390ba58d2e732007283e2d4ae91507dd3f94d7f9b17aa4a1633e0fe4c9"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/compile.guard.json": {
+        "bytes": 30453,
+        "sha256": "17c9a0ab5ff55d5726b9374288f3a44415be015902839a76b91e61a138512931"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/prepare.log": {
+        "bytes": 401,
+        "sha256": "e4b8fbe44781dd624ae32f6605a831935d20b858b6d8f59818f1c6051defa24d"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/profile-scope-proof.json": {
+        "bytes": 72757,
+        "sha256": "686feff828a45b7be44a1dfea585d800cd14adfe1533aef982560411d0d6efbf"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/run-page.py": {
+        "bytes": 5731,
+        "sha256": "5ec57b2e520b40d553a03d784fd228821f3c9c8e2052609d47e1dc3874cb47a0"
+      },
+      "reuse-verified-profile/recheck-preprocessed-symbols/prepare.py": {
+        "bytes": 1683,
+        "sha256": "26d5426097d35656a4c05ab1d88d4c5903abe6f4e658ebf6717c34c10acb0f10"
+      },
+      "lldb-inputs/page-pids.json": {
+        "bytes": 59,
+        "sha256": "4e6a81ca599e4bd152c3cf6a290829777e5748bf664015c766104d9e0c80833e"
+      },
+      "lldb-inputs/page-guard.json": {
+        "bytes": 442,
+        "sha256": "956d8fe257f23042a9751697e98cbc1afff6f06c740928e63fd934b747908aee"
+      },
+      "lldb-inputs/run-page.py": {
+        "bytes": 6151,
+        "sha256": "aa07600b103e2b5c5fc517658a125cf8e1a3937119793e646e73999e3deaac5e"
+      },
+      "lldb-inputs/grid_probe.py": {
+        "bytes": 2459,
+        "sha256": "8e86c8d7ea7d507ac91c7bdb2e8482b1c5c0b5f86261ff94eb3462a2007aae5b"
+      },
+      "lldb-inputs/page/inputs-after.json": {
+        "bytes": 160364,
+        "sha256": "e9120a71316ae8de9b55917b11434aaf08c1382bf4956d0e7d2541944718facf"
+      },
+      "lldb-inputs/page/document.png": {
+        "bytes": 1441059,
+        "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+      },
+      "lldb-inputs/page/browser.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "lldb-inputs/page/audit.json": {
+        "bytes": 363754,
+        "sha256": "e126bbccbe3e2d16fc26f1a8b5d5acf12668d746b01ac70bff5865a3134dd6bb"
+      },
+      "lldb-inputs/page/diff.png": {
+        "bytes": 125061,
+        "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+      },
+      "lldb-inputs/page/result.json": {
+        "bytes": 25048,
+        "sha256": "0783771de9337e2b38485e42ffa2b99b2abfcfee7bcb3d10cb253f13f50248b7"
+      },
+      "lldb-inputs/page/stdout.log": {
+        "bytes": 1448275,
+        "sha256": "619c0550a97919cb4fae57401350e6c5a13aaa512a16ef363fe91e74f771575a"
+      },
+      "lldb-inputs/page/inputs-before.json": {
+        "bytes": 160364,
+        "sha256": "e9120a71316ae8de9b55917b11434aaf08c1382bf4956d0e7d2541944718facf"
+      },
+      "lldb-inputs/page/command.json": {
+        "bytes": 3710,
+        "sha256": "3132d5713bdd1916ff01211105f761156f73ffd99ef50bb738f16364c5566dd5"
+      },
+      "lldb-inputs/page/audit-config.json": {
+        "bytes": 358,
+        "sha256": "d2ef27a4a4ce73e2a863532950d15116bb8817141458fa1e441a0a8a36819d50"
+      },
+      "lldb-inputs/page/root.json": {
+        "bytes": 136,
+        "sha256": "69f407e6bda299218a99e9e1a249c5f0389822ce1cb0066a32c522eda6bb7fb1"
+      },
+      "lldb-inputs/recheck-abi/page-pids.json": {
+        "bytes": 59,
+        "sha256": "d651a6d4c2d3c4d5484761287dc3fc6dfddab051a1decb273b308b683ddc4087"
+      },
+      "lldb-inputs/recheck-abi/page-guard.json": {
+        "bytes": 460,
+        "sha256": "c1022b57e6c8702fcf046281175a4e0933aafdd1e30d858fbd768f1aae5b2492"
+      },
+      "lldb-inputs/recheck-abi/run-page.py": {
+        "bytes": 6151,
+        "sha256": "aa07600b103e2b5c5fc517658a125cf8e1a3937119793e646e73999e3deaac5e"
+      },
+      "lldb-inputs/recheck-abi/grid_probe.py": {
+        "bytes": 2536,
+        "sha256": "844955c3ed0b43a8a1584bdc4cc3cb087412231302fa69e89c72f501d8055d64"
+      },
+      "lldb-inputs/recheck-abi/page/inputs-after.json": {
+        "bytes": 160388,
+        "sha256": "1c978caece93f7ad480e043d514b0e9fa40549c751f531ddd94ef9c8df361ac4"
+      },
+      "lldb-inputs/recheck-abi/page/document.png": {
+        "bytes": 1441059,
+        "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+      },
+      "lldb-inputs/recheck-abi/page/browser.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "lldb-inputs/recheck-abi/page/audit.json": {
+        "bytes": 363754,
+        "sha256": "6e93aa6739f7a00656a9f797b5206b21520736f9f6161e1c412847f9e957f7de"
+      },
+      "lldb-inputs/recheck-abi/page/diff.png": {
+        "bytes": 125061,
+        "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+      },
+      "lldb-inputs/recheck-abi/page/result.json": {
+        "bytes": 25061,
+        "sha256": "556d3fcd423c46d664d25ec2f5a0ee9989202f875d1c08351a1fc2f691f05bb5"
+      },
+      "lldb-inputs/recheck-abi/page/stdout.log": {
+        "bytes": 2084372,
+        "sha256": "9cc4ec48aa96bea7fb440fb1f7db660e71eebadf88885164e3564f11f72b8a29"
+      },
+      "lldb-inputs/recheck-abi/page/inputs-before.json": {
+        "bytes": 160388,
+        "sha256": "1c978caece93f7ad480e043d514b0e9fa40549c751f531ddd94ef9c8df361ac4"
+      },
+      "lldb-inputs/recheck-abi/page/command.json": {
+        "bytes": 3854,
+        "sha256": "7b998846d109cb43077ff2cc22d4d7650578df1774e770008a2c9efaa797efd0"
+      },
+      "lldb-inputs/recheck-abi/page/grid-inputs.json": {
+        "bytes": 900088,
+        "sha256": "65d2d3b472a58af95949ab6759784e5de68509291ad9eb30ccccbb6762d2db8e"
+      },
+      "lldb-inputs/recheck-abi/page/audit-config.json": {
+        "bytes": 358,
+        "sha256": "d2ef27a4a4ce73e2a863532950d15116bb8817141458fa1e441a0a8a36819d50"
+      },
+      "lldb-inputs/recheck-abi/page/root.json": {
+        "bytes": 136,
+        "sha256": "cde4cb6c7b811c81691b9cb0dcc7ffd16c108cd123b3146e35250074c618d747"
+      }
+    }
+  }
+}

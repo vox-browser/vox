@@ -19,6 +19,19 @@ the unique recheck passes that same gate. Every attempt remains in the
 [cohort 86 ledger](performance/bbc-cohort86-baseline-20261104.json) and
 [verified raw evidence](performance/raw/bbc-cohort86-baseline-20261104.tar.gz).
 
+The grid follow-up uses the existing verified `v -profile` executable for a
+bounded, read-only debugger trace. All 1,200 corrected entry reads validate;
+among 270 full normal grid calls in temporary measurements, 140 repeat the
+logged inputs. This is a lead for within-pass reuse, not proof that every hidden
+input matches or a production instruction saving. The older profiled engine
+still produces exact original pixels, complete content, 72 external script
+evaluations and a normal exit with pinned inputs. Two current-source profile
+codegens were rejected after concurrent source changes; attempts to recompile
+an older generated-C grid scope fail or time out. All attempts, including the
+first rejected ABI decode, remain in the
+[grid diagnostic ledger](performance/bbc-grid-profile-20261104.json) and
+[verified raw evidence](performance/raw/bbc-grid-profile-20261104.tar.gz).
+
 Earlier cohort 85 retains all seven alternating
 control/Vox/Brave triples. All 21 native exits, complete-content, ownership and
 input-identity checks pass, but control pair 1 differs by 546,867 pixels
