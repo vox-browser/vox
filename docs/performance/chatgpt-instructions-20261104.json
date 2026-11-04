@@ -1,0 +1,318 @@
+{
+  "status": "incomplete; requested 5% acceptance remains open",
+  "date": "2026-11-04",
+  "url": "https://chatgpt.com/",
+  "objective": {
+    "target_vox_fraction": "0.95",
+    "integer_gate": "100 * max(Vox upper) <= 95 * min(Brave lower)",
+    "minimum_complete_alternating_pairs": 7,
+    "scope": "Fresh exclusive browser resource-coalition creation through completed document PNG encoding; includes startup and native window/CDP target setup. Brave endpoint includes base64/IPC delivery. GPU execution and outside-coalition services excluded."
+  },
+  "commits": {
+    "connection_limit": "88f1120f0",
+    "capture_and_comparison": "028ba7127",
+    "source_content_audit": "7c6fbfd06"
+  },
+  "download": {
+    "proxy": "socks5h://127.0.0.1:1337",
+    "explicit_navigations": 1,
+    "document_responses": 2,
+    "policy": "One normal anonymous Brave capture session; site performed its own document replacement. No additional live download or prompt submission. All subsequent runs use disk-only original-origin replay.",
+    "original_document_sha256": "20960cf144422190847df92297356039f0faa822135f12f2b868fb38ad11dd38",
+    "original_document_bytes": 465877,
+    "response_urls": 305,
+    "raw_capture_exits": {
+      "browser": 0,
+      "sealed": false,
+      "identity_stable": true
+    },
+    "capture_body_errors": 52,
+    "recovery": "All 52 error URLs have retained response bodies in the unfinished capture. Preserve the first original HTML response and all scripts. Later same-URL HTML nonce/session variant remains in original bodies; first capture stays failed. Sealed derived fixture uses no new download or DOM substitution.",
+    "raw_capture": {
+      "path": "Build/chatgpt-instructions-capture-20261104-0830/archive/capture-progress.json",
+      "sha256": "0d52a036f26653a7c0abc64e6f84c8078fcea994305643531e85a710d5d9a348",
+      "bytes": 594026
+    },
+    "derived_fixture": {
+      "path": "Build/chatgpt-instructions-input-20261104-0830/manifest.json",
+      "sha256": "5c59adf716301d5a32484f67343db29ba026fa3f8527daa1c8c14c6ae78d9a59",
+      "bytes": 605675
+    },
+    "reference": {
+      "path": "Build/chatgpt-instructions-capture-20261104-0830/live-observed.png",
+      "sha256": "7f50b7ebb39ea1ded5008a6ba8dce4b15f3948b6e7ccd5ec21461446a445e711",
+      "bytes": 165387
+    },
+    "author_scripts": "Original bytes retained and enabled. Frozen diagnostic DOM is not used as the benchmark document."
+  },
+  "primary": {
+    "scope": "Launch; exclusive resource coalition for both engines",
+    "cohort_complete": false,
+    "vox": {
+      "engine": "vox",
+      "exit": 1,
+      "error": "Vox exited unsuccessfully",
+      "kernel_exit_status": 6,
+      "started_unix": 1793770050.461372,
+      "finished_unix": 1793770053.7359629,
+      "root_start_ticks": 990562299466,
+      "resource_coalition": 15081,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          13.4521484375,
+          9.49951171875,
+          10.77978515625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          13.4521484375,
+          9.49951171875,
+          10.77978515625
+        ]
+      }
+    },
+    "brave": {
+      "engine": "brave",
+      "exit": 0,
+      "kernel_exit_status": 0,
+      "started_unix": 1793770055.324373,
+      "finished_unix": 1793770062.998921,
+      "launch_instruction_interval": {
+        "lower": 18964531064,
+        "upper": 18971947011
+      },
+      "instruction_interval": {
+        "lower": 12249918828,
+        "upper": 12282970766
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "root_start_ticks": 990678938419,
+      "resource_coalition": 15083,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          13.81591796875,
+          9.640625,
+          10.82177734375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          13.91064453125,
+          9.7294921875,
+          10.84619140625
+        ]
+      }
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "tools/chatgpt_browser_instructions.py",
+        "--archive",
+        "Build/chatgpt-instructions-input-20261104-0830",
+        "--output",
+        "Build/chatgpt-instructions-baseline-20261104-0830",
+        "--expected",
+        "Build/chatgpt-instructions-capture-20261104-0830/live-observed.png",
+        "--title",
+        "ChatGPT: Chat, Work, Create & Code with AI",
+        "--memory-guard-registry",
+        "Build/chatgpt-instructions-baseline-20261104-0830-pids.json",
+        "--diff-tool",
+        "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+        "--repeat",
+        "2",
+        "--timeout",
+        "100",
+        "--settle-seconds",
+        "5"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "35557": "Wed Nov  4 08:27:30 2026    ",
+        "35560": "Wed Nov  4 08:27:30 2026    ",
+        "35871": "Wed Nov  4 08:27:35 2026    ",
+        "35880": "Wed Nov  4 08:27:35 2026    ",
+        "35889": "Wed Nov  4 08:27:35 2026    ",
+        "35890": "Wed Nov  4 08:27:35 2026    ",
+        "35892": "Wed Nov  4 08:27:35 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1108393984,
+      "elapsed_seconds": 16.9346865,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "acceptance": "None. Vox aborts before PNG encoding; only one attempted pair. Captured results predate the stronger source-identity audit and method-aware POST replay."
+  },
+  "cause": {
+    "signal": "SIGABRT",
+    "path": "requestserver__curl_socket_callback -> vox_curl_socket_create -> fcntl(F_DUPFD_CLOEXEC)",
+    "confirmed_probe_line": "VOX_SOCKET_PROBE pid=44934 fd=49 command=67 result=-1 errno=24 nofile=256/9223372036854775807",
+    "probe": "Build/chatgpt-instructions-socket-diagnostic-20261104-0830/run-v2/pair-1-vox/browser.log",
+    "fix": "Set CURLMOPT_MAX_TOTAL_CONNECTIONS=32 on every CurlConnection; libcurl queues excess transfers and may multiplex established connections. No scripts, page content, pixel references, or tolerances removed.",
+    "limitation": "Bounds each connection manager; does not guarantee arbitrary multi-tab descriptor exhaustion is impossible."
+  },
+  "diagnostic": {
+    "folder": "Build/chatgpt-instructions-profile-20261104-0830",
+    "acceptance": false,
+    "fd_limit": 4096,
+    "browser_exit": 0,
+    "identity_stable": true,
+    "process_cumulative_instructions_through_png": 36622023555,
+    "counter_coverage": "Single process cumulative markers; inherited CLI coalition is nonexclusive and unusable. Do not compare this count or a ratio with Brave exclusive-coalition counts.",
+    "pixels": {
+      "differing_pixels": 60,
+      "maximum_channel_error": 242,
+      "reference_unchanged": true,
+      "visible_observation": "40 pixels form the native editor caret; remaining 20 pixels lie around a pill border. This is not pixel-exact."
+    },
+    "native_errors": 0,
+    "javascript_diagnostics": 0,
+    "guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-instructions-profile-20261104-0830/driver.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1770864640,
+      "elapsed_seconds": 8.975491167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "sampling": "sample returned exit 0 but reported pid_for_task failure and produced no sample.txt; no usable profile or hot-path attribution.",
+    "selected_javascript_backend": "JavaScriptCore; read-only live DOM audit and scripts are present; no fallback/backend performance claim"
+  },
+  "validation": {
+    "transport_cases_per_mode": 6,
+    "burst_requests": 64,
+    "final_default_gc_guard": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "test",
+        "requestserver/curl_transport_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 2563604480,
+      "elapsed_seconds": 191.037622959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "final_gc_none_guard": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-gc",
+        "none",
+        "test",
+        "requestserver/curl_transport_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 2553217024,
+      "elapsed_seconds": 156.311882917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "tooling_guard": {
+      "command": [
+        "env",
+        "PYTHONPATH=tools",
+        "python3",
+        "-m",
+        "unittest",
+        "tools/chatgpt_browser_instructions_test.py",
+        "tools/page_archive_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 40157184,
+      "elapsed_seconds": 2.8911138330000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "tooling_tests": 27,
+    "retained_failures": [
+      "Original transport regression stopped at active native request count zero before deferred XHR completion delivery; fixed the test to await all real XHR done states. Original failure retained in Build/chatgpt-curl-burst-tests-20261104-0830.log.",
+      "First fcntl probe recursed through dlsym and crashed inside dyld; corrected probe uses the original fcntl import. Both probe attempts retained. Neither is a performance observation."
+    ],
+    "broad_verification": "Not triggered: no measured instruction reduction credited, accumulated savings 0."
+  },
+  "production": {
+    "latest_completed_receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-082044-8804e823/frozen-compile.json",
+    "latest_completed_executable_sha256": "5283f5ee09518e8ebb402232412c7789d4a7d357c99757ee69c1472bb84d96ee",
+    "candidate_validation": "Pending: latest completed production bundle lacks the connection cap. Shared production worker was already running; no duplicate production build was requested.",
+    "rejected_receipt": "Build/production-build/receipts/20261104-083318-b45cfe0f",
+    "rejected_reason": "Repository inputs changed before C preprocessing",
+    "next_existing_receipt": "Build/production-build/receipts/20261104-083807-772efa2a",
+    "policy": "Reuse the shared bundle, retain its memory guard and input checks, and reject any cohort whose executable/native libraries change."
+  },
+  "optimization_credit": false,
+  "accepted_pairs": 0,
+  "optimized_sites_entry_added": false,
+  "remaining": [
+    "Validate a stable completed production bundle containing 88f1120f0 under normal LaunchServices descriptor limits.",
+    "Resolve the unchanged-reference pixel mismatch and verify author-script/fixture readiness and source identity in both browsers.",
+    "Collect at least seven complete unprofiled alternating pairs on one pinned build and the same sealed page bytes; retain every attempt and require the exact 5% integer gate.",
+    "Use matched before/after controls and an independently verified executed path before attributing any instruction reduction to an optimization."
+  ],
+  "workspace_files_at_report": [
+    {
+      "path": "requestserver/curl_connection.v",
+      "sha256": "6b9ede3d71a6e569b2090b46524d46b22c1a7fb194b88407c66cecf10e398497",
+      "bytes": 5765
+    },
+    {
+      "path": "requestserver/curl_native.c.v",
+      "sha256": "5ad6a961968283c19d24113e7a798ca04b97982e2be5b5a317e33c78ae883bdf",
+      "bytes": 2228
+    },
+    {
+      "path": "requestserver/curl_transport_test.v",
+      "sha256": "88c72094a8556f61b12c4da13cadb50eed22a92e50ddced96b8e26b5dc79e9e5",
+      "bytes": 14375
+    },
+    {
+      "path": "requestserver/curl_bridge.h",
+      "sha256": "63b740ed8a178d0237243d772367443f7c5b84774536b9c7ce4ce27b1a50278f",
+      "bytes": 16024
+    },
+    {
+      "path": "tools/chatgpt_browser_instructions.py",
+      "sha256": "64b0ee3178ecbec33028b8ce905b07d75e92bf0a4cdd84731befb61fee602d06",
+      "bytes": 12171
+    },
+    {
+      "path": "tools/capture_chatgpt_archive.py",
+      "sha256": "30870ab1fe639201e99da4034537edd1ffbb46acd1716d8a5462013d3671c0c7",
+      "bytes": 11196
+    },
+    {
+      "path": "tools/page_archive.py",
+      "sha256": "05d2b13aba6e42c66fea166cf2035263579a47828b7627ad112720755d328524",
+      "bytes": 20223
+    }
+  ],
+  "workspace_note": "Canonical master retains unrelated concurrent edits. Native curl header includes independently owned native-state changes in the working tree; feature commit includes only the new long-option adapter in that header."
+}
