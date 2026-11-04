@@ -1,0 +1,65 @@
+{
+  "status": "Broader cadence completed; no full pass or cadence reset. Both modes retain exactly three known baseline failures; no new failures.",
+  "modes": {
+    "default": {
+      "unique_cases": 504,
+      "passes": 501,
+      "failures": [
+        "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+        "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+        "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+      ],
+      "inputs_unchanged": true
+    },
+    "none": {
+      "unique_cases": 504,
+      "passes": 501,
+      "failures": [
+        "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+        "test_chromium_toggle_controls_align_their_border_box_with_the_baseline",
+        "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin"
+      ],
+      "inputs_unchanged": true
+    }
+  },
+  "trigger": "Matched flex median point difference258510094instructions exceeds5000000, despite failed conservative gate.",
+  "test_files": 53,
+  "initial_preflight": "Rejected before compiling: concurrent temporary test wrapper duplicated selected test names. The subsequent inventory names the canonical53test files explicitly and retains all504cases. Original rejected command/log retained.",
+  "summary": {
+    "default": {
+      "entered": 504,
+      "failed_jobs": [
+        "default-all"
+      ]
+    },
+    "none": {
+      "entered": 504,
+      "failed_jobs": [
+        "none-2",
+        "none-92"
+      ]
+    }
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-flex-broad-20261104.tar.gz",
+    "sha256": "046e9ef7411b6ef3f6bcebd16b8d36925fae3af76a3017e7aad67f87f1ebf4d1",
+    "bytes": 8990153,
+    "members": 324,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793813861.606206,
+  "archive_job": {
+    "command": [
+      "python3",
+      "Build/bbc-flex-measurement-20261104-1910/archive-broad-flex.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 78626816,
+    "elapsed_seconds": 8.232921000000001,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

@@ -24,9 +24,13 @@ marginal flex saving. A separate seven-pair enabled/disabled run on one newer ex
 conservative ratio **1.0582300992694578** fails, so no robust saving is credited.
 All 14 capture audits pass; no Brave process is launched or target evaluated in
 that diagnostic. Its two runtime preflights remain separate. The observed point
-difference triggers the broad cadence: the default batch has exercised all 504
-cases with the same three known failures; no-GC validation is pending. No full
-pass or cadence reset is claimed. See the
+difference triggers the broad cadence: both default and no-GC batches exercise **504 unique cases / 501 passes**,
+retaining exactly the same three known failures and unchanged checked inputs.
+No full pass or cadence reset is claimed. The initial broad preflight rejects a
+concurrent temporary wrapper with duplicate test names before compilation; the
+recorded inventory then names the 53 canonical test files explicitly. See the
+[broad-check ledger](performance/bbc-flex-broad-20261104.json) and
+[raw broad evidence](performance/raw/bbc-flex-broad-20261104.tar.gz). See the
 [matched-control ledger](performance/bbc-flex-matched-control-20261104.json) and
 [raw matched evidence](performance/raw/bbc-flex-matched-control-20261104.tar.gz).
 
