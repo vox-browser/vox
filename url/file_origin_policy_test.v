@@ -29,6 +29,12 @@ fn test_source_file_origin_policy_is_process_wide_and_one_shot() {
 		actual := cached.origin()
 		assert !actual.is_opaque() && !actual.is_opaque_file_origin()
 		assert actual.serialize() == 'file://'
+		// Dispatch on the sum type before narrowing it. Current V otherwise
+		// retains the narrowed receiver when compiling this later method call.
+		for address in ['file:///tmp/other.html', 'file://different-host/tmp/other.html',
+			'blob:file:///tmp/actual-blob-id'] {
+			assert actual.is_same_origin(parse(address)?.origin())
+		}
 		if actual is OriginTuple {
 			assert actual.scheme? == 'file'
 			assert actual.host.serialize() == ''
@@ -38,10 +44,6 @@ fn test_source_file_origin_policy_is_process_wide_and_one_shot() {
 		}
 		assert cached.host?.serialize() == 'original-host'
 		assert first.is_opaque_file_origin()
-		for address in ['file:///tmp/other.html', 'file://different-host/tmp/other.html',
-			'blob:file:///tmp/actual-blob-id'] {
-			assert actual.is_same_origin(parse(address)?.origin())
-		}
 		data := parse('data:text/plain,file-policy-control')?
 		assert data.origin().is_opaque() && !data.origin().is_opaque_file_origin()
 		assert !data.origin().is_same_origin(data.origin())
