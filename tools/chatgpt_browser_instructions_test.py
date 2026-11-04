@@ -9,6 +9,16 @@ import chatgpt_browser_instructions as comparison
 
 
 class ChatGPTInstructionsTests(unittest.TestCase):
+    def test_policy_diagnostic_requires_execution_marker_independently_of_bootstrap(self):
+        audit = self.audit()
+        audit['selections'].append(dict(name='bootstrap', count=1, elements=[]))
+        with self.assertRaisesRegex(RuntimeError, 'suppression did not execute'):
+            comparison.content_gate(audit, 'ChatGPT', require_bootstrap=True,
+                                    require_performance_policy=True)
+        audit['selections'].append(dict(name='performance_policy', count=1, elements=[]))
+        comparison.content_gate(audit, 'ChatGPT', require_bootstrap=True,
+                                require_performance_policy=True)
+
     def test_replay_disables_presence_based_snapshot_cache_and_matches_focus(self):
         for unfocused, active in [(True, '0'), (False, '1')]:
             settings = comparison.vox_replay_environment('socks5h://replay:1', '/private/ca', unfocused)

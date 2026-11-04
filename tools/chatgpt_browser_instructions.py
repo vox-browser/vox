@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Compare a single SOCKS-captured ChatGPT homepage using disk-only replay.
 
-Author scripts remain enabled and the archived document is unchanged. References
+Author scripts remain enabled and the archived document is unchanged. An explicit
+reviewed policy experiment may suppress performance collection in both engines.
+References
 are required; this tool never regenerates them. Diagnostic runs may use fewer
 than seven pairs, but cannot pass the 5% acceptance gate.
 """
@@ -25,6 +27,7 @@ from measure_sealed_github_instructions import clean_environment, fingerprint, n
 from measure_sealed_github_instructions import FixtureHTML, text_content
 from measure_precise_scroll import runtime_input_paths
 from page_archive import Replay, load_archive
+import chatgpt_performance_policy as performance_policy
 
 ROOT = Path(__file__).resolve().parents[1]
 SELECTORS = [dict(name='headings', selector='h1', limit=20, attributes=[]),
@@ -34,6 +37,8 @@ SELECTORS = [dict(name='headings', selector='h1', limit=20, attributes=[]),
              dict(name='links', selector='a[href]', limit=200, attributes=['href']),
              dict(name='images', selector='img', limit=100, attributes=['src']),
              dict(name='bootstrap', selector='html[data-octane-home-behavior-ready="1"]',
+                  limit=0, attributes=[]),
+             dict(name='performance_policy', selector='html[' + performance_policy.MARKER + '="1"]',
                   limit=0, attributes=[])]
 
 
@@ -76,7 +81,8 @@ def viewport_button_identities(audit):
     return identities
 
 
-def content_gate(audit, title, expected=None, reference_buttons=None, require_bootstrap=False):
+def content_gate(audit, title, expected=None, reference_buttons=None, require_bootstrap=False,
+                 require_performance_policy=False):
     require(audit.get('url') == URL and audit.get('title') == title, 'Wrong ChatGPT document')
     require(audit.get('ready') == 'complete', 'Incomplete ChatGPT document')
     require((audit.get('viewport_width'), audit.get('viewport_height')) == (1024, 768),
@@ -105,6 +111,9 @@ def content_gate(audit, title, expected=None, reference_buttons=None, require_bo
     if require_bootstrap:
         require(groups.get('bootstrap', {}).get('count') == 1,
                 'ChatGPT author bootstrap did not complete')
+    if require_performance_policy:
+        require(groups.get('performance_policy', {}).get('count') == 1,
+                'Reviewed performance collector suppression did not execute')
     errors = audit.get('native_reported_errors', []) + audit.get('javascript_diagnostics', [])
     require(not errors, 'ChatGPT script/native errors: ' + repr(errors)[:1500])
     return dict(title=title, counts={name: row['count'] for name, row in groups.items()})
@@ -169,6 +178,14 @@ def run(args):
     out.mkdir(parents=True, exist_ok=False)
     archive = args.archive.resolve()
     manifest = load_archive(archive)
+    policy = None
+    if getattr(args, 'script_policy', None):
+        policy = performance_policy.prepare_archive(archive, out / 'policy-archive',
+            diagnostic=getattr(args, 'policy_diagnostics', False))
+        archive = out / 'policy-archive'
+        manifest = load_archive(archive)
+    elif manifest.get('script_policy') or not manifest.get('author_scripts', '').startswith('original'):
+        raise RuntimeError('Changed author-script policy requires an explicit reviewed experiment')
     require(manifest['url'] == URL, 'Archive is not the ChatGPT homepage')
     require(manifest['responses'][URL]['status'] == 200, 'Unsuccessful homepage response')
     expected_content = source_expectations(archive, manifest)
@@ -201,7 +218,8 @@ def run(args):
         expected_vox=native_reference,
         audit_vox_capture_ownership=True,
         content_validator=lambda audit: content_gate(audit, args.title, expected_content,
-            reference_buttons=reference_buttons, require_bootstrap=True),
+            reference_buttons=reference_buttons, require_bootstrap=True,
+            require_performance_policy=bool(policy and policy['diagnostic'])),
         audit_expression=audit_expression(), brave_emulated_viewport=True,
         brave_focus_emulation=not args.unfocused)
     settings.readiness_expression = """location.href===URL && document.title===TITLE
@@ -221,7 +239,10 @@ def run(args):
         'hacker_news_browser_instructions.py', 'coalition_instruction_counts.py',
         'process_instruction_counts.py', 'measure_browser_instructions.py',
         'measure_sealed_github_instructions.py', 'run_memory_bounded.py',
-        'page_archive.py', 'check_pixel_equality.py', 'capture_brave_reference.py'])
+        'page_archive.py', 'check_pixel_equality.py', 'capture_brave_reference.py',
+        'chatgpt_performance_policy.py'])
+    if policy:
+        paths.update(p for p in Path(policy['source_archive']).rglob('*') if p.is_file())
     paths.update(runtime_input_paths(apps['vox'] / 'Contents/MacOS/Vox', {}))
     paths.update(native_dependencies(apps['vox'] / 'Contents/MacOS/Vox'))
     # Pin both application bundles, including renderer/utility executables.
@@ -230,7 +251,7 @@ def run(args):
     pins = fingerprint(paths)
     measurement.write_json(out / 'inputs.json', dict(files=pins, scope=measurement.LAUNCH_SCOPE,
         policy=dict(url=URL, viewport=[1024, 768], scale=2,
-            author_scripts='Original bytes, enabled in both browsers; no frozen DOM substitution',
+            author_scripts=manifest['author_scripts'], script_policy=policy,
             network='Original-origin sealed replay, no forwarding or downloads during trials',
             caches='Empty private profiles/caches each trial; OS filesystem/shader caches retained',
             native_snapshot_cache='Disabled with an empty LADYBIRD_ENABLE_SNAPSHOT_CACHE value',
@@ -284,8 +305,11 @@ def run(args):
         replay.server.shutdown()
         replay.server.server_close()
         worker.join()
-    summary.update(optimization_credit=False, author_scripts='original, enabled',
+    summary.update(optimization_credit=False, author_scripts=manifest['author_scripts'],
+                   script_policy=policy, instrumented_diagnostic=bool(policy and policy['diagnostic']),
                    scope=measurement.LAUNCH_SCOPE)
+    if policy and policy['diagnostic']:
+        summary['passed'] = False
     measurement.write_json(out / 'summary.json', summary)
     print(json.dumps(summary), flush=True)
     return 0 if summary['passed'] else 1
@@ -308,9 +332,15 @@ def main():
     parser.add_argument('--repeat', type=int, default=7)
     parser.add_argument('--timeout', type=float, default=120)
     parser.add_argument('--settle-seconds', type=float, default=5)
+    parser.add_argument('--script-policy', choices=[performance_policy.POLICY],
+                        help='Opt-in frozen-page experiment, applied identically to Vox and Brave')
+    parser.add_argument('--policy-diagnostics', action='store_true',
+                        help='Require a separate instrumented proof that suppression executed; no acceptance')
     args = parser.parse_args()
     if args.repeat < 2 or not 0 <= args.settle_seconds < args.timeout:
         parser.error('Need at least two pairs and settlement below the timeout')
+    if args.policy_diagnostics and not args.script_policy:
+        parser.error('--policy-diagnostics requires --script-policy')
     return run(args)
 
 
