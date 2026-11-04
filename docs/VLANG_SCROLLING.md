@@ -1580,3 +1580,71 @@ not in the tree.
 Evidence is under `Build/vlang-fps-20261104` (`diagK-*`, `rK2-*`). The
 [raw summaries, logs, commands and guard reports](performance/raw/vlang-clipped-ink-20261104.tar.gz)
 are committed so deleting `Build/` does not erase them.
+
+### Scroll-start stalls, idle GPU state and large uploads (2026-11-04, night)
+
+**The live 60 FPS goal remains open.** After the clipped-text fix, every run
+still starts with a 160–270 ms gap between the first input and the first scroll
+publication: the first frames take about 104–119, 66–102 and 33–56 ms. Leaves
+that normally cost ~2 ms take 9–53 ms. Two explanations were tested.
+
+**Idle GPU context retirement is not the cause.** The bridge retires its three
+GPU contexts after two seconds without raster work, and a standalone check of
+the installed `libVoxGraphite.dylib` shows a retired context's first shadow
+draw costs 13–18 ms instead of 2–3 ms. Retirement frees about 27 MiB of process
+footprint per context there (217 → 190 MiB). A bridge-only experiment,
+`VOX_GRAPHICS_IDLE_RETIRE_SECONDS`, kept every context while frames were being
+painted. Its diagnostic confirms that no context retired, yet the first frames
+stayed equally slow. Cohort `rI` (executable `2550c9ec…`, injected bridge
+`002bae06…` in both arms, load 19.5–25) shows no consistent change: candidate
+FPS 52.8/55.7/52.1 versus control 45.8/55.5/55.6, with leading gaps
+253/164/238 versus 237/211/206 ms. The experiment was not committed; its patch
+and logs are archived below.
+
+**GPU power-state ramp is.** Without any retirement, the same standalone shadow
+draw takes 2.2–2.7 ms warm, 9.4 ms after 3 s idle, 10.7 ms after 10 s and
+15.3 ms after 30 s, and the following draws stay slower for a few frames. Each
+leaf's synchronous submit-and-readback pays that latency separately, so the
+cost of resuming after a pause grows with the number of GPU leaves in the
+first strips. It is inherent to per-leaf GPU readback rather than to a cache
+policy.
+
+**Large decoded images now reuse one upload** (`d0347a830`). The DOOM screenshot
+on the second slide is 1824x1468, uploaded at 912x734. With the source copy the
+upload cache keeps for exact reuse, an entry costs 13.4 MiB, above the 8 MiB
+per-entry cap, so each tile of each redraw repeated its CPU downscale and
+upload: three ~6.5 ms uploads per redraw. One entry may now use half of the
+unchanged 32 MiB budget. A diagnostic run on the candidate library shows all 19
+uploads in the input window reused, and the image's first two strips fall from
+38–52 ms to 37 and 20 ms; ordinary strips of it still cost ~6 ms of tile work.
+`tools/test_native_graphite_cache.sh` passes with a new admission case.
+
+Cohort `rU` alternated the rebuilt unchanged library (byte-identical to the
+installed one) with the candidate. A production build replaced the executable
+mid-cohort (`abd2573b…` then `49e0a818…`), so the cohort is invalid as a whole;
+candidate-2 aborted on the identity check. The two pairs that stayed on one
+executable show no throughput change: 45.9 versus 45.7 and 48.2 versus 47.3
+scroll FPS. The image redraws only at a few scroll extremes, so no scrolling
+speedup is claimed.
+
+Two further findings bound the remaining options:
+
+- The card's 1200x680 composited-layer shadow is painted after the tab strip
+  (the demo stage is positioned), so it genuinely darkens the strip under the
+  progress bar. Animation damage there must replay it; only the strip's
+  border could be skipped by a ring-aware planner, worth about 5% of replay.
+- Layer shadows render their whole canvas-clipped region on the GPU for every
+  strip. A standalone check confirms the code's warning: cropping that target
+  by hundreds of rows changes the blur's pixels (57 of 72 crops match; large
+  ones do not), so their output cannot be reused across scroll positions
+  without changing pixels.
+
+The remaining cost is structural: each leaf is drawn by its own synchronous
+GPU submission and readback, then composited on the CPU. Drawing all leaves of
+a damaged region in one GPU pass, as Chromium rasterizes a tile, is the next
+substantial lever.
+
+Evidence is under `Build/vlang-fps-20261104` (`rI-*`, `rU-*`, `idlediag-*`,
+`imgdiag*`, `shadow-target-exp`). The
+[raw logs, experiment sources and guard reports](performance/raw/vlang-gpu-idle-upload-20261104.tar.gz)
+are committed.
