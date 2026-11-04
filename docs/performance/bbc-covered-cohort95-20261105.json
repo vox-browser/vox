@@ -1,0 +1,579 @@
+{
+  "status": "All21launches in seven alternating triples pass original pixels, complete content, ownership, identities and normal exits. Strict10percent target and conservative matched-control gate fail. Covered stylesheet shortcut median point saving37,155,750instructions is variable:4improvements3regressions. No robust credit or catalog entry.",
+  "target_met": false,
+  "catalog_entry_added": false,
+  "engine_commits": [
+    "f821844ab",
+    "0fe282abc"
+  ],
+  "control_tool_commit": "a03d530b7",
+  "inline_revert_commit": "d5de340eb",
+  "native": {
+    "production": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "809de706df254e9eae5e050935001349e3f398daf97ab433a7225f55ffffe30d",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-001004-4a2f08a3/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+        "dirty": true,
+        "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+        "repository_sha256": "dd5f4db9d82bba8c81cc39e9c0c9699d6fa7b1e394d583702901ead60ac3a762"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+        "dirty": true,
+        "head": "0fe282abc62a62947aa9d345312ced395c63ea44",
+        "repository_sha256": "63619b76376fa778c2b5fca69f8c598e5cc3465652af10885136777bc808a1c8"
+      },
+      "request": {
+        "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+        "id": "54a20d7d9589476092b18086796a2029"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+        "dirty": true,
+        "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+        "repository_sha256": "4eb7eb43179738eedefb81c4b517142299582e1cf014df46783d264bb5e200ee"
+      }
+    },
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "original_external_sources_exact": true,
+        "path_before_png": true,
+        "runtime_images_pinned": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "original_external_sources_exact": true,
+        "path_before_png": false,
+        "runtime_images_pinned": true
+      }
+    ],
+    "source_proof": {
+      "preserved_source": "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/production/native-diagnostic/production-compilation/809de706df254e9eae5e050935001349e3f398daf97ab433a7225f55ffffe30d/0-0-Vox.c.i",
+      "sha256": "0b654ed111cf2f5d0837753dd5395785d5febdbabb3ed77b5a74bc5ca3e0f3ac",
+      "witnesses": {
+        "Vox stylesheet invalidation: pending full cascade covers primary walk (render requested)": true,
+        "css__style_sheet_primary_invalidation_is_covered": true,
+        "retain_covered_style_sheet_walk": true,
+        "set_needs_repaint_with_invalidation": true
+      },
+      "hash_matches": true
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/native-diagnostic.py",
+        "--capture-reference",
+        "--output",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/production/native-diagnostic",
+        "--archive",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/fixture/clock-archive-v3",
+        "--memory-guard-registry",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/production/native-pids.json",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--expected-vox",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/fixture/reference-complete/pair-1-vox/document.png",
+        "--expected-brave",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/fixture/reference-complete/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+        "--control-vox-app",
+        "Build/v/Vox.app",
+        "--control-retain-covered-style-sheet-walk",
+        "--retain-logical-paint-snapping",
+        "--retain-css-layout-for-svg"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "98100": "Thu Nov  5 00:23:49 2026    ",
+        "98106": "Thu Nov  5 00:23:49 2026    ",
+        "98717": "Thu Nov  5 00:23:56 2026    ",
+        "98719": "Thu Nov  5 00:23:56 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1474658304,
+      "elapsed_seconds": 18.080083334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "independent_paths": {
+      "checks": [
+        {
+          "arm": "vox",
+          "endpoint_character_offset": 212140,
+          "marker_character_offsets": {
+            "covered": 179680,
+            "inline": -1
+          },
+          "covered_before_png": true,
+          "inline_before_png": false
+        },
+        {
+          "arm": "control",
+          "endpoint_character_offset": 208741,
+          "marker_character_offsets": {
+            "covered": -1,
+            "inline": -1
+          },
+          "covered_before_png": false,
+          "inline_before_png": false
+        }
+      ],
+      "correction": "Supplemental covered-path-checks.json erroneously reused the stylesheet marker for inline_tree_before_png. This independent audit uses distinct actual marker strings; no captures, counters or primary validation gates changed.",
+      "unix": 1793827821.887996
+    },
+    "joint_diagnostic": "Both native captures pass pixels/content/scripts/images, but joint validator exits1 because experimental styled-inline marker never appears. Corrected CSS-only validator exits0. Supplemental original covered-path-checks mislabels its inline boolean using CSS marker; independently corrected without changing raw data or primary gates."
+  },
+  "revert_focused": {
+    "cases": 21,
+    "executions": 126,
+    "gc_modes": [
+      "default",
+      "none",
+      "prealloc"
+    ],
+    "arms": [
+      "default",
+      "disable-all-inline-measurement-reuse"
+    ],
+    "results": {
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-inline-control",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-inline-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-inline-control",
+          "exit": 0
+        }
+      ],
+      "proof": [
+        {
+          "mode": "default",
+          "calls": [
+            "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+            "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+            "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+            "test_inline_measurement_does_not_cache_discarded_whitespace",
+            "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+            "test_committed_inline_misses_never_populate_or_evict_measurements",
+            "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+            "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+            "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+            "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+            "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+            "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+            "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+            "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+            "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+            "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+            "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+            "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+            "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+            "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+            "test_grid_measurement_revalidates_svg_attributes_before_replay"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "none",
+          "calls": [
+            "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+            "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+            "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+            "test_inline_measurement_does_not_cache_discarded_whitespace",
+            "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+            "test_committed_inline_misses_never_populate_or_evict_measurements",
+            "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+            "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+            "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+            "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+            "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+            "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+            "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+            "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+            "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+            "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+            "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+            "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+            "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+            "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+            "test_grid_measurement_revalidates_svg_attributes_before_replay"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "prealloc",
+          "calls": [
+            "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+            "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+            "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+            "test_inline_measurement_does_not_cache_discarded_whitespace",
+            "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+            "test_committed_inline_misses_never_populate_or_evict_measurements",
+            "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+            "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+            "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+            "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+            "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+            "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+            "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+            "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+            "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+            "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+            "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+            "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+            "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+            "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+            "test_grid_measurement_revalidates_svg_attributes_before_replay"
+          ],
+          "all_called": true
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/inline_measurement_layout_test.v": "9bdf7edb27b05f785c4aced8faecfc63d7dc988d939b751b55fe2d162321b878",
+        "/Users/alex/code/vox2/layout/inline_measurement_height_test.v": "c4feae7067924a65758860b0a9465dcd3cc657d0ee2054ca7abd5490730b1dbd",
+        "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "bfd3a38293b6d18e2843f29f5fdcf7099b452a4fed8c30eb75e407357c1a0275",
+        "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "c14937afa829eb634e907aec4adf2ca2a044419f5bcf020a3f802f8f77f45add",
+        "/Users/alex/code/vox2/layout/inline_measurement_height.v": "ba913b52e02b93cca870490e12772c7ae3004d4ef16695dab05d48641a2ec5e5",
+        "/Users/alex/code/vox2/layout/inline_layout_workspace.v": "cca616e21e2b1d96a2ace5b6dba54cfc0f5564e4398696db1df15010e794d205",
+        "/Users/alex/code/vox2/layout/retained_inline_layout.v": "e7d067dcb7d10161c7c4111ad19c1d92bcdabc69d5dcec93245b33bc2e239fbd",
+        "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+        "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+        "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "a9b12fd7df188201d85a0d20ae24db038ad82c3de91b778df13050ad56595d30"
+      },
+      "unchanged": true,
+      "cases_per_run": 21,
+      "expected_cases": [
+        "test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires",
+        "test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs",
+        "test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout",
+        "test_inline_measurement_does_not_cache_discarded_whitespace",
+        "test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write",
+        "test_committed_inline_misses_never_populate_or_evict_measurements",
+        "test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question",
+        "test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes",
+        "test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key",
+        "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+        "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+        "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+        "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+        "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+        "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+        "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+        "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+        "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+        "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+        "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+        "test_grid_measurement_revalidates_svg_attributes_before_replay"
+      ]
+    }
+  },
+  "cohort": {
+    "number": 95,
+    "attempted_browser_trials": 21,
+    "runtime_discovery_validation_launches": 4,
+    "capture_audits_passed": 21,
+    "vox_upper": [
+      27718688336,
+      27782805141,
+      28861090983,
+      26968398320,
+      28876157052,
+      26636735700,
+      27067906963
+    ],
+    "control_lower": [
+      27964464841,
+      29009324790,
+      27850143065,
+      26598183906,
+      27629804016,
+      27259217248,
+      27755844086
+    ],
+    "brave_lower": [
+      17816915414,
+      17424033705,
+      17493927793,
+      17393977849,
+      17441938142,
+      17622680372,
+      17536799553
+    ],
+    "medians": {
+      "vox": 27718688336,
+      "control": 27755844086,
+      "brave_lower": 17493927793
+    },
+    "matched_control": {
+      "point_difference": 37155750,
+      "point_percent": 0.13386640263893576,
+      "paired_improvements": 4,
+      "paired_regressions": 3,
+      "conservative_ratio": 1.085643935467569,
+      "robust_saving": false
+    },
+    "strict_target": {
+      "left": 288761570520,
+      "right": 156545800641,
+      "passed": false,
+      "conservative_ratio": 1.6601238257676707
+    },
+    "summary": {
+      "brave_median_lower_bound_instructions": 17493927793,
+      "cross_browser_pixels": {
+        "actual": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-vox/document.png",
+        "diff": "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/cohort95/cohort-95/cross-browser.diff.png",
+        "different_pixels": 2602001,
+        "exact": false,
+        "expected": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/cohort95/cohort-95/cross-browser.diff.png\n"
+      },
+      "instruction_scope": "launch",
+      "matched_control": {
+        "brave_median_lower_bound_instructions": 27755844086,
+        "instruction_scope": "launch",
+        "pairs": 7,
+        "passed": false,
+        "target_vox_fraction": 0.9,
+        "vox_median_instructions": 27718688336,
+        "worst_vox_over_best_brave": 1.085643935467569
+      },
+      "pairs": 7,
+      "passed": false,
+      "target_vox_fraction": 0.9,
+      "vox_median_instructions": 27718688336,
+      "worst_vox_over_best_brave": 1.6601238257676707
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/cohort-with-host.py",
+        "--output",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/cohort95/cohort-95",
+        "--repeat",
+        "7",
+        "--control-vox-app",
+        "Build/v/Vox.app",
+        "--control-retain-covered-style-sheet-walk",
+        "--archive",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/fixture/clock-archive-v3",
+        "--memory-guard-registry",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/cohort95/cohort95-pids.json",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--expected-vox",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/fixture/reference-complete/pair-1-vox/document.png",
+        "--expected-brave",
+        "/Users/alex/code/vox2/Build/bbc-style-inline-20261105-0018/fixture/reference-complete/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+        "--retain-logical-paint-snapping",
+        "--retain-css-layout-for-svg"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "17334": "Thu Nov  5 00:30:25 2026    ",
+        "17344": "Thu Nov  5 00:30:25 2026    ",
+        "18089": "Thu Nov  5 00:30:32 2026    ",
+        "18093": "Thu Nov  5 00:30:32 2026    ",
+        "19435": "Thu Nov  5 00:30:41 2026    ",
+        "19440": "Thu Nov  5 00:30:41 2026    ",
+        "20136": "Thu Nov  5 00:30:48 2026    ",
+        "20141": "Thu Nov  5 00:30:48 2026    ",
+        "20793": "Thu Nov  5 00:30:56 2026    ",
+        "20798": "Thu Nov  5 00:30:56 2026    ",
+        "21540": "Thu Nov  5 00:31:02 2026    ",
+        "21542": "Thu Nov  5 00:31:02 2026    ",
+        "22578": "Thu Nov  5 00:31:09 2026    ",
+        "22588": "Thu Nov  5 00:31:09 2026    ",
+        "22610": "Thu Nov  5 00:31:09 2026    ",
+        "22611": "Thu Nov  5 00:31:09 2026    ",
+        "22612": "Thu Nov  5 00:31:09 2026    ",
+        "23219": "Thu Nov  5 00:31:15 2026    ",
+        "23224": "Thu Nov  5 00:31:15 2026    ",
+        "23241": "Thu Nov  5 00:31:15 2026    ",
+        "23242": "Thu Nov  5 00:31:15 2026    ",
+        "23245": "Thu Nov  5 00:31:15 2026    ",
+        "23853": "Thu Nov  5 00:31:20 2026    ",
+        "23859": "Thu Nov  5 00:31:20 2026    ",
+        "24705": "Thu Nov  5 00:31:26 2026    ",
+        "24710": "Thu Nov  5 00:31:26 2026    ",
+        "25621": "Thu Nov  5 00:31:33 2026    ",
+        "25626": "Thu Nov  5 00:31:33 2026    ",
+        "26377": "Thu Nov  5 00:31:39 2026    ",
+        "26380": "Thu Nov  5 00:31:39 2026    ",
+        "27191": "Thu Nov  5 00:31:45 2026    ",
+        "27197": "Thu Nov  5 00:31:46 2026    ",
+        "27208": "Thu Nov  5 00:31:46 2026    ",
+        "27210": "Thu Nov  5 00:31:46 2026    ",
+        "27211": "Thu Nov  5 00:31:46 2026    ",
+        "27981": "Thu Nov  5 00:31:51 2026    ",
+        "27989": "Thu Nov  5 00:31:51 2026    ",
+        "28000": "Thu Nov  5 00:31:51 2026    ",
+        "28001": "Thu Nov  5 00:31:51 2026    ",
+        "28003": "Thu Nov  5 00:31:51 2026    ",
+        "28647": "Thu Nov  5 00:31:56 2026    ",
+        "28658": "Thu Nov  5 00:31:56 2026    ",
+        "29429": "Thu Nov  5 00:32:03 2026    ",
+        "29436": "Thu Nov  5 00:32:03 2026    ",
+        "30322": "Thu Nov  5 00:32:09 2026    ",
+        "30327": "Thu Nov  5 00:32:09 2026    ",
+        "31154": "Thu Nov  5 00:32:16 2026    ",
+        "31161": "Thu Nov  5 00:32:16 2026    ",
+        "31961": "Thu Nov  5 00:32:22 2026    ",
+        "31971": "Thu Nov  5 00:32:22 2026    ",
+        "31995": "Thu Nov  5 00:32:23 2026    ",
+        "31997": "Thu Nov  5 00:32:23 2026    ",
+        "32001": "Thu Nov  5 00:32:23 2026    ",
+        "32684": "Thu Nov  5 00:32:28 2026    ",
+        "32696": "Thu Nov  5 00:32:28 2026    ",
+        "32724": "Thu Nov  5 00:32:28 2026    ",
+        "32725": "Thu Nov  5 00:32:28 2026    ",
+        "32730": "Thu Nov  5 00:32:28 2026    ",
+        "33385": "Thu Nov  5 00:32:33 2026    ",
+        "33391": "Thu Nov  5 00:32:33 2026    ",
+        "34133": "Thu Nov  5 00:32:40 2026    ",
+        "34138": "Thu Nov  5 00:32:40 2026    ",
+        "35016": "Thu Nov  5 00:32:47 2026    ",
+        "35026": "Thu Nov  5 00:32:47 2026    ",
+        "35956": "Thu Nov  5 00:32:53 2026    ",
+        "35960": "Thu Nov  5 00:32:53 2026    ",
+        "36715": "Thu Nov  5 00:33:00 2026    ",
+        "36719": "Thu Nov  5 00:33:00 2026    ",
+        "36729": "Thu Nov  5 00:33:00 2026    ",
+        "36730": "Thu Nov  5 00:33:00 2026    ",
+        "36733": "Thu Nov  5 00:33:00 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1506820096,
+      "elapsed_seconds": 164.89929575,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "driver_guard_exit": {
+      "driver_guard_exit": 1
+    },
+    "protocol": {
+      "cohort": 95,
+      "comparison": "Seven alternating matched control/Vox/Brave triples. Same executable in both Vox arms, only covered-stylesheet primary-walk skip disabled in control. Target evaluates Vox/Brave; isolated covered-stylesheet marginal comparison reported separately. Separate traced runtime discovery and pinned-set validation precede acceptance. Every attempt retained; no profiler/probe/dyld tracing in acceptance. No credit from protocol corrections or historical cross-build differences.",
+      "scope": "Exclusive coalition creation through encoded document PNG; startup and native window/target setup included. Vox endpoint before filewrite; Brave includes CDP delivery. Content audits and teardown follow endpoint. GPU/outside services excluded.",
+      "workload": "Unchanged609response replay, originalauthor scripts,1024x768CSS,DPR/capture2,two-second settle after identity/readiness/visibledecode,fresh profiles/caches,OSfilesystem/shadercaches retained. Fixed original references; historical logical font/paint and CSS SVG fallback common to both Voxarms.",
+      "host_gate": "Record variable host load without a launch-load cap; Free disk must cover prospective1111573390byte planning budget(3xcohort93footprint+64MiB); earlier extra2GiBgate corrected before any acceptance launch. No optimization credit. Native exits, ownership, content, exact pixels and all pinned inputs required. Strict goal10maxVoxUpper<=9minBraveLower.",
+      "engine_commits": [
+        "f821844ab",
+        "0fe282abc"
+      ],
+      "control_tool_commits": [
+        "a03d530b7"
+      ],
+      "runtime_tool_commits": [
+        "cd836ed37",
+        "2b7c4428f"
+      ],
+      "production": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "809de706df254e9eae5e050935001349e3f398daf97ab433a7225f55ffffe30d",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-001004-4a2f08a3/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+          "dirty": true,
+          "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+          "repository_sha256": "dd5f4db9d82bba8c81cc39e9c0c9699d6fa7b1e394d583702901ead60ac3a762"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+          "dirty": true,
+          "head": "0fe282abc62a62947aa9d345312ced395c63ea44",
+          "repository_sha256": "63619b76376fa778c2b5fca69f8c598e5cc3465652af10885136777bc808a1c8"
+        },
+        "request": {
+          "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+          "id": "54a20d7d9589476092b18086796a2029"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+          "dirty": true,
+          "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+          "repository_sha256": "4eb7eb43179738eedefb81c4b517142299582e1cf014df46783d264bb5e200ee"
+        }
+      },
+      "source_revert": "d5de340eb removes unused styled-inline experiment; pinned809de production still contains it equally in both arms. Its absent native marker supplies no BBC credit. This cohort isolates covered-style-sheet skip only; older bundle cannot validate reverted canonical default."
+    }
+  },
+  "history": {
+    "attempted_cohorts": 95,
+    "attempted_browser_trials": 2085
+  },
+  "build_qualification": "Pinned809de bundle contains provisional styled-inline extension in both arms; native marker absent, no BBC credit. Canonical revert passes126focused executions but older bundle cannot validate reverted default; new completed production still needed.",
+  "broad_status": "Follow-up complete:514unique cases,511passes and same3known baseline failures in bothGCmodes. Separate covered-broad ledger/raw archive; no fullpass or cadence reset.",
+  "limitations": "Frozen609response original-origin replay, original author scripts verified72unique external sources beforePNG; JSC.1024x768CSS,DPR2,2ssettle after identity/readiness/visibledecode, fresh profiles/caches, OSfilesystem/shadercaches retained. Exclusive coalition creation through encodedPNG includes startup/nativewindow/targetsetup and exited-task aggregates; Brave includesCDPdelivery,Vox precedes filewrite. Audit/teardown after. GPU/outsidework excluded. Per-engine original pixels exact; cross-engine mismatch82.7154percent remains. IncompleteDOM/script support,performance.measure,localArialfallback,paint_decoded=false remain. No live-site, isolated rendering time or scrolling claim.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-covered-cohort95-20261105.tar.gz",
+    "bytes": 28283064,
+    "sha256": "ae7f4d221f4f6055faa93f43d9a9b7109d9198a31903130ce25df7a91b2d196e",
+    "members": 402,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793828081.423996,
+  "archive_completion_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-style-inline-20261105-0018/archive-cohort95.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 161398784,
+    "elapsed_seconds": 6.784213542,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

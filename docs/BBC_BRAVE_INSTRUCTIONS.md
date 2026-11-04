@@ -5481,3 +5481,62 @@ CPU times or instruction gains. The first compile used the earlier production
 recipe's incompatible staged allocator and failed before launch. It is retained;
 the corrected build uses the latest completed production recipe. Its page run
 and profile analysis are pending. BBC remains outside the catalog.
+
+
+## Covered stylesheet invalidation and cohort 95 (2026-11-05)
+
+A pending full document cascade can cover a primary stylesheet invalidation
+walk. The shortcut retains pseudo-element anchor and trailing-universal walks,
+falls back during an active computed-property batch, and requests a render
+wakeup before returning. Its 360 final focused executions pass across three
+memory modes and both arms, including effective cascade, pseudo-elements and
+paint-revision checks. All 281 instruction-tool tests pass. The separate
+`v -profile` and verified production sample remain diagnostic evidence only;
+see the [coarse profile](performance/bbc-coarse-profile-20261104.json) and
+[production sample](performance/bbc-current-production-sample-20261104.json).
+
+Fresh native launches on executable `809de706` show the stylesheet shortcut
+before encoded PNG only in the candidate. Both arms retain the original
+pixels, complete content and 72 exact external author-script executions through
+JavaScriptCore, with actual native images pinned. An experimental styled-inline
+cache passed 225 focused executions but showed no BBC reuse marker. It was
+removed in `d5de340eb`, followed by 126 passing focused executions. The pinned
+cohort bundle still contains that extension equally in both arms; it cannot
+validate the later source revert. An initial joint validator therefore fails
+its inline eligibility requirement; the subsequent CSS-only validator passes.
+A supplemental metadata label accidentally tested the CSS marker for inline
+eligibility. Independent audits correct that label while preserving all raw
+logs and primary validation gates.
+
+Cohort 95 completes all seven alternating control/Vox/Brave triples with all
+21 capture audits passing. Medians are **27,755,844,086 control**,
+**27,718,688,336 Vox**, and **17,493,927,793 Brave lower bound**. The
+37,155,750-instruction median point reduction is variable: four matched pairs
+improve and three regress, and highest-candidate/lowest-control is 1.08564.
+No robust saving is attributed. The strict target fails:
+`288761570520 > 156545800641`, ratio **1.66012**. Driver and memory guard exit
+1 because that target fails; every browser exits normally.
+
+The unchanged protocol measures exclusive coalition creation through encoded
+document PNG, including startup and native window/target setup. Vox ends
+before file writing; Brave includes CDP delivery. Audits and teardown follow
+the endpoint. The frozen 609-response replay retains original author scripts,
+1024×768 CSS viewport, scale 2, two-second readiness/decode settling and fresh
+private profiles/caches; OS filesystem/shader caches remain. Exited-task
+aggregates and allowed owned services are counted, GPU/outside work excluded.
+Exact per-engine references do not establish cross-browser equality: the
+82.7154% cross-engine pixel difference and incomplete DOM/script support,
+performance.measure gap, local Arial fallback and paint_decoded=false remain.
+There is no live-site, rendering-time or scrolling claim.
+
+The 37.2M point triggers broader verification despite its variation. Both GC
+modes enter all 514 selected cases, with 511 passes and the same three known
+baseline failures each. Inputs remain unchanged; no full pass or cadence
+reset is claimed. History now contains **95 attempted cohorts / 2,085
+acceptance browser attempts**; diagnostic/runtime preflights remain separate.
+BBC homepage stays outside `OPTIMIZED_SITES.md`. See the
+[focused ledger](performance/bbc-covered-inline-focus-20261105.json),
+[cohort and exact counts](performance/bbc-covered-cohort95-20261105.json), and
+[broader checks](performance/bbc-covered-broad-20261105.json). Earlier
+[cohort 93](performance/bbc-relative-cohort93-20261104.json) and
+[cohort 94](performance/bbc-svg-cohort94-20261104.json) remain retained.
