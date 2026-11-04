@@ -24,6 +24,7 @@
 #include "include/core/SkShader.h"
 #include "include/core/SkColorFilter.h"
 #include "include/effects/SkGradient.h"
+#include "include/effects/SkDashPathEffect.h"
 #include "include/core/SkRRect.h"
 #include "native_rounded_single_border.h"
 #include "include/core/SkSurface.h"
@@ -1512,7 +1513,7 @@ int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
 }
 
 static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path,
-    SkM44 const* parent = nullptr)
+    SkM44 const* parent = nullptr, SkPathEffect* path_effect = nullptr)
 {
     SkAutoCanvasRestore clip_scope(canvas, path->has_clip || path->has_ancestor_clip);
     SkMatrix matrix;
@@ -1580,6 +1581,7 @@ static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path,
         paint.setStrokeJoin(path->line_join == 1 ? SkPaint::kRound_Join
             : path->line_join == 2 ? SkPaint::kBevel_Join : SkPaint::kMiter_Join);
         paint.setStrokeMiter(std::max(path->miter_limit, 1.0f));
+        if (path_effect) paint.setPathEffect(sk_ref_sp(path_effect));
     }
     canvas->drawPath(geometry, paint);
     return true;
@@ -1620,6 +1622,34 @@ int vox_graphite_draw_path_pixels(uint8_t* pixels, int width, int height,
     int result = read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
     if (result) path_cache.finish(std::move(cached), pixels, pitch);
     return result;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_draw_dashed_path_pixels(uint8_t* pixels, int width, int height,
+    int pitch, int has_background, VoxGraphitePath const* path,
+    float const* intervals, int interval_count, float phase)
+{
+    if (!pixels || !path || !path->segments || path->segment_count <= 0 || !path->stroke
+        || width <= 0 || height <= 0 || pitch <= 0 || size_t(pitch) < size_t(width) * 4
+        || !intervals || interval_count <= 0 || interval_count % 2 || !std::isfinite(phase)) return 0;
+    for (int i = 0; i < interval_count; ++i)
+        if (!std::isfinite(intervals[i]) || intervals[i] <= 0) return 0;
+    auto effect = SkDashPathEffect::Make({intervals, size_t(interval_count)}, phase);
+    if (!effect) return 0;
+    std::lock_guard lock(gpu_mutex);
+    auto* gpu = context();
+    if (!gpu) return 0;
+    FullDrawRecorder recorder(gpu);
+    if (!recorder.get()) return 0;
+    auto info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = vox_shared_surface(recorder.get(), info);
+    if (!surface) return 0;
+    auto* canvas = surface->getCanvas();
+    if (has_background) vox_shared_write(gpu, surface, SkPixmap(info, pixels, pitch), 0, 0);
+    else canvas->clear(SK_ColorTRANSPARENT);
+    if (!draw_path_on_canvas(canvas, path, nullptr, effect.get())) return 0;
+    return read_pixels(gpu, recorder.get(), surface.get(), info, pixels, pitch);
 }
 
 // Preserve the GPU surface and shader coordinates while transferring only the

@@ -428,6 +428,16 @@ auto graphite_path_draw()
     return draw;
 }
 
+auto graphite_dashed_path_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_dashed_path_pixels)>(
+            dlsym(library, "vox_graphite_draw_dashed_path_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
 auto graphite_path_parts_draw()
 {
     static auto draw = [] {
@@ -5745,8 +5755,9 @@ extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destinatio
                 destination_scale, canvas_height, opaque_backdrop)) return 1;
     }
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
+    bool dashed = strokes && dash_data && dash_count > 0;
     if (s_chromium_painting && (has_fill || strokes)
-        && !(strokes && dash_data && dash_count > 0)) {
+        && (!dashed || graphite_dashed_path_draw())) {
         // Chromium draws SVG paths with its GPU rasterizer. The stroke draws
         // over the fill's result, as both would on Chromium's canvas. Inside a
         // transparency layer the destination bitmap lacks the layer's pixels.
@@ -5803,7 +5814,12 @@ extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destinatio
             descriptor.alpha = stroke_alpha;
             descriptor.has_float_color = stroke_components != nullptr;
             if (stroke_components) std::copy(stroke_components, stroke_components + 4, descriptor.float_color);
-            drawn = draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
+            if (dashed) {
+                std::vector<float> intervals(dash_data, dash_data + dash_count);
+                drawn = graphite_dashed_path_draw()(reinterpret_cast<uint8_t*>(pixels.data()),
+                    raster_width, raster_height, raster_width * 4, has_background || has_fill,
+                    &descriptor, intervals.data(), dash_count, float(dash_offset));
+            } else drawn = draw(reinterpret_cast<uint8_t*>(pixels.data()), raster_width, raster_height,
                 raster_width * 4, has_background || has_fill, &descriptor);
         }
         if (drawn) {

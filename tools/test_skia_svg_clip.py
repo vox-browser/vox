@@ -34,6 +34,7 @@ def main():
                          ('masked-image', 'native_skia_masked_image_test.cpp'),
                          ('svg-mask-backdrop', 'native_skia_svg_mask_backdrop_test.cpp'),
                          ('svg-color', 'native_skia_svg_color_test.cpp'),
+                         ('dashed-border', 'native_skia_dashed_border_test.cpp'),
                          ('rounded-underlay-color', 'native_skia_rounded_underlay_color_test.cpp'),
                          ('uniform-border-clip-layer', 'native_skia_uniform_border_clip_layer_test.cpp'),
                          ('superellipse-geometry', 'native_chromium_superellipse_test.cpp'),
@@ -41,7 +42,7 @@ def main():
         executable = output / name
         command = ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address,undefined',
                    '-fno-omit-frame-pointer']
-        if name in ('svg-clip', 'svg-parent-msaa', 'masked-image', 'svg-mask-backdrop', 'svg-color', 'rounded-underlay-color',
+        if name in ('svg-clip', 'svg-parent-msaa', 'masked-image', 'svg-mask-backdrop', 'svg-color', 'dashed-border', 'rounded-underlay-color',
                     'uniform-border-clip-layer', 'superellipse-geometry', 'contoured-box'):
             command += ['-x', 'objective-c++', '-I' + str(skia / 'include/skia'),
                         '-I' + str(skia / 'include'), '-L' + str(skia / 'lib'), '-lskia',
@@ -49,6 +50,8 @@ def main():
                         '-Wl,-rpath,' + str(args.graphite_dir.resolve())]
             for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal']:
                 command += ['-framework', framework]
+            if name == 'dashed-border':
+                command += ['-framework', 'ImageIO']
         command += [str(REPO / 'tools' / source), '-o', str(executable)]
         phases = [('compile', command, '12'), ('run', [str(executable)], '3')]
         if name == 'rounded-underlay-color':

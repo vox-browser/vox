@@ -194,6 +194,7 @@ def main():
         "-Wl,-exported_symbol,_vox_graphite_draw_shape_regions_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_rounded_parts_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_path_pixels",
+        "-Wl,-exported_symbol,_vox_graphite_draw_dashed_path_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_path_region_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_shadow_region_pixels",
         "-Wl,-exported_symbol,_vox_graphite_draw_path_parts_pixels",

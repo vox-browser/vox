@@ -186,6 +186,11 @@ int vox_graphite_draw_shape_regions_pixels(const VoxGraphitePixelRegion *regions
     int has_background);
 int vox_graphite_draw_path_pixels(uint8_t *pixels, int width, int height,
     int pitch, int has_background, const VoxGraphitePath *path);
+// Keep path effects in a separate entry point so older helpers retain the
+// existing path descriptor ABI. Intervals are positive, even-count pairs.
+int vox_graphite_draw_dashed_path_pixels(uint8_t *pixels, int width, int height,
+    int pitch, int has_background, const VoxGraphitePath *path,
+    const float *intervals, int interval_count, float phase);
 int vox_graphite_draw_path_region_pixels(const VoxGraphitePixelRegion *region,
     int surface_width, int surface_height, int has_background, const VoxGraphitePath *path);
 // The complete shadow target; only the caller's region is transferred.
