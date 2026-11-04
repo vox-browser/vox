@@ -715,6 +715,8 @@ fn shape_text_uncached(initial_x f32, letter_spacing f32, word_spacing f32, text
 	mut code_unit_offset := 0
 	font.reset_kerning()
 	resolution := f64(font.shaping_resolution())
+	resolved_letter_spacing := font.quantized_shaping_spacing(letter_spacing)
+	resolved_word_spacing := font.quantized_shaping_spacing(word_spacing)
 	for character in text.runes() {
 		code_point := u32(character)
 		base_advance, glyph_index := font.glyph_metrics(code_point)
@@ -726,9 +728,9 @@ fn shape_text_uncached(initial_x f32, letter_spacing f32, word_spacing f32, text
 		mut advance := f32(0)
 		if !is_default_ignorable {
 			x += f32(math.round(f64(font.kerning_for_glyph(glyph_index)) * resolution) / resolution)
-			advance = f32(math.round(f64(base_advance) * resolution) / resolution) + letter_spacing
+			advance = f32(math.round(f64(base_advance) * resolution) / resolution) + resolved_letter_spacing
 			if is_word_separator(code_point) {
-				advance += word_spacing
+				advance += resolved_word_spacing
 			}
 		}
 		glyphs << Glyph{

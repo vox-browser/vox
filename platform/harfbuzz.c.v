@@ -988,6 +988,8 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			previous = cluster
 		}
 	}
+	resolved_letter_spacing := font.quantized_shaping_spacing(letter_spacing)
+	resolved_word_spacing := font.quantized_shaping_spacing(word_spacing)
 	mut glyphs := []Glyph{cap: int(glyph_count)}
 	mut point_x := initial_x
 	trailing_length := trailing_whitespace_length(text)
@@ -1007,9 +1009,9 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			} else {
 				f32(f64(position.x_advance) / resolution)
 			}
-			advance = design_advance + letter_spacing
+			advance = design_advance + resolved_letter_spacing
 			if is_word_separator(code_point) {
-				advance += word_spacing
+				advance += resolved_word_spacing
 			}
 			// Blink never lets negative letter- or word-spacing make a glyph's
 			// advance negative.
