@@ -280,3 +280,31 @@ fn test_script_transform_and_opacity_updates_patch_the_retained_tree() {
 	_ = record_retained_display_list(mut document) or { panic('missing untransformed paint') }
 	assert result.paint_tree.children.data != paint_children
 }
+
+// Under device layout the node keeps its style in device pixels. A script
+// transform update on a 2x document must compare like units and patch the
+// retained tree, painting as a full refresh would.
+fn test_device_layout_transform_updates_compare_layout_units() {
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}#tab{position:relative;width:200px;height:40px;background:rgb(26 38 55)}#bar{position:absolute;left:0;bottom:0;width:100%;height:2px;background:rgb(169 210 255);transform-origin:left}</style><div id="tab">Tab<span id="bar" style="transform:scaleX(0.25)"></span></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	document.set_layout_coordinate_scale(2)
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	mut result := document_layout_result(document) or { panic('missing layout') }
+	mut bar := document.get_element_by_id('bar') or { panic('missing bar') }
+	_ = record_retained_display_list(mut document) or { panic('missing initial paint') }
+	paint_children := result.paint_tree.children.data
+	bar.set_attribute_value('style', 'transform:scaleX(0.5)')
+	document.update_layout(.html_event_loop_rendering_update)
+	assert !result.paint_style_update_requires_full_refresh
+	assert result.paint_style_update_compositor_handles.len() == 1
+	local := record_retained_display_list(mut document) or { panic('missing updated paint') }
+	assert result.paint_tree.children.data == paint_children
+	local_dump := local.dump()
+	refresh_document_paint_tree(document, mut result, 320, 200)
+	assert (record_retained_display_list(mut document) or { panic('missing full paint') }).dump() == local_dump
+	// Geometry changes still leave the retained snapshot.
+	bar.set_attribute_value('style', 'transform:scaleX(0.5);height:4px')
+	document.update_layout(.html_event_loop_rendering_update)
+	assert bar.client_height() == 4
+}

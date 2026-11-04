@@ -679,6 +679,8 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 
 // Same-binary control: script transform/opacity updates rebuild the snapshot.
 const disable_compositor_style_updates = os.getenv('VOX_DISABLE_COMPOSITOR_STYLE_UPDATES') != ''
+// Same-binary control: compare device-layout styles across units, as before.
+const disable_layout_unit_style_comparison = os.getenv('VOX_DISABLE_LAYOUT_UNIT_STYLE_COMPARISON') != ''
 
 fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_handle voidptr) {
 	if layout_handle == unsafe { nil } || css_computed_properties_handle == unsafe { nil } {
@@ -687,11 +689,21 @@ fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_han
 	node := unsafe { &Node(layout_handle) }
 	styled := node.as_node_with_style() or { return }
 	computed := unsafe { &css.ComputedProperties(css_computed_properties_handle) }
-	can_refresh_locally := paint_style_update_can_be_local(node, styled.computed_values(), computed)
+	// The node retains its style in layout coordinates (device pixels under
+	// device layout). Compare the update in the same units: at a scale of 2 a
+	// `medium` border is 6px there and 3px in CSS pixels, so every update
+	// otherwise looked like a geometry change and rebuilt the snapshot.
+	previous := styled.computed_values()
+	incoming := if node.document().layout_coordinate_scale() == 1 || disable_layout_unit_style_comparison {
+		computed
+	} else {
+		computed_values_in_layout_coordinates(computed, node.document())
+	}
+	can_refresh_locally := paint_style_update_can_be_local(node, previous, incoming)
 	compositor_only := !can_refresh_locally && !disable_compositor_style_updates
-		&& paint_style_update_is_compositor_only(node, styled.computed_values(), computed)
+		&& paint_style_update_is_compositor_only(node, previous, incoming)
 	if paint_refresh_diagnostics && !can_refresh_locally && !compositor_only {
-		report_paint_refresh_style(node, styled.computed_values(), computed)
+		report_paint_refresh_style(node, previous, incoming)
 	}
 	mut mutable_styled := unsafe { &NodeWithStyle(styled) }
 	mutable_styled.apply_style(computed)
