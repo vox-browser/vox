@@ -1398,3 +1398,53 @@ interaction claim. The
 links every raw count, PNG, audit, source proof, guard, lease and broad result.
 The original author scripts, five-second settle, fixture and references remain
 unchanged, with no new download. The requested 5% Brave advantage remains unmet.
+
+### Reuse of ancestor class hashes
+
+Commits `bad13c8f1` and `e768f1d1f` add bounded reuse for substantial ancestor
+class attributes. The final path memoizes only 64–8192-byte class strings with
+at most 128 token hashes. Tag, ID and attribute-name hashing stays live. Each
+style computer owns 128 slots containing scalar hashes, keyed by full live
+node/document identities, attribute epoch, class-source address/length and
+quirks mode. Foreign documents bypass the cache. Slot buffers use the caller's
+retained document storage and keep their reservation across replacement;
+the scalar payload is capped at 65,536 bytes, plus descriptors and allocator
+storage.
+
+The first whole-sequence prototype regresses the captured ancestor chain by
+5.0% and full traversal by 10.3%. Restricting it to long classes initially
+still regresses traversal by 5.2%. A separate diagnostic explains the misses:
+Vox node IDs are aligned addresses, and selecting their low bits collapses
+the table. It records 256 hits versus 2,304 misses for the chain, and zero hits
+versus 30,464 misses for traversal. The final table mixes address bits above
+alignment and keeps the first admitted node within an epoch, avoiding repeated
+copies for colliding cold nodes. Earlier results remain retained and unpooled.
+
+**All 36 final focused jobs, with 118 test-function executions, pass.** These
+cover epoch changes, named-map/token-list edits, adoption, quirks changes,
+collisions, empty vectors, byte/token limits, reentrant attribute callbacks,
+foreign-document bypass, scratch retirement and stable warm storage. Existing
+ancestor and computed-query tests pass with both variants, ordinary GC and no
+GC. Poisoned preallocation and address/undefined-behavior sanitizers also pass.
+The initial zeroed fixed-array vector descriptors produced wrong buckets and
+hit the 3 GiB runtime guard; explicit typed vector initialization fixes that
+attempt. Its actual failure and source remain in evidence.
+
+The final C-`-O2` preallocation component uses the captured HTML's 36-element
+deepest chain and all 833 elements. Each measured pass resets buckets, balances
+push/pop and checks every scalar hash against an independent reference. Input
+construction, launch and teardown are excluded. Control/candidate/candidate/
+control medians are:
+
+| Scene | Scalar instructions | Candidate instructions | Observed reduction |
+| --- | ---: | ---: | ---: |
+| Captured ancestor chain | 59,268,600 | 49,121,546.5 | 17.120% |
+| Captured full traversal | 450,852,929.5 | 401,665,134.5 | 10.910% |
+| Attribute epoch changes every pass | 31,936,001 | 32,212,901.5 | −0.867% |
+| Oversized class input | 36,955,532 | 36,980,035.5 | −0.066% |
+
+The [ancestor class-cache receipt](performance/chatgpt-ancestor-class-cache-20261105.json)
+links complete final and prototype observations, original failures, source
+proofs, diagnostics and guards. These component counts provide no browser
+instruction credit. A separate final production diagnostic and matched page
+comparison are required; the requested 5% Brave advantage remains unmet.

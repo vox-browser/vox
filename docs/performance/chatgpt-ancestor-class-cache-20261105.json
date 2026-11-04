@@ -1,0 +1,754 @@
+{
+  "version": 1,
+  "implementation_commits": [
+    "bad13c8f1",
+    "e768f1d1f"
+  ],
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "profile_lead": {
+    "path": "docs/performance/chatgpt-v-profile-production-20261104.json",
+    "sha256": "be4f823c07d347787ed322e096e39eca99604a7bc056fb86709441e759b2fd84",
+    "bytes": 52026
+  },
+  "behavior": "Cache only class attributes of 64\u20138192 bytes with at most 128 token hashes. Tag, ID and attribute-name hashing remains live. Each style computer owns 128 slots keyed by full live node/document identities, attribute epoch, class-source identity/length and quirks. Address bits above alignment select slots. The first admitted node keeps its slot within an epoch, avoiding traversal churn; stale epochs and the same node can replace contents. Foreign documents bypass caching. Vectors contain scalar hashes only, are explicitly typed before append, and reuse their reservation.",
+  "bounded_payload": "At most 128 slots times 128 u32 hashes: 65,536 scalar payload bytes. Descriptors, vector headers and allocator storage are additional. Allocation follows the saved-visit caller\u2019s document-retained scope. Warm hit loops preserve caller-arena usage and payload backing.",
+  "control": "VOX_RETAIN_ANCESTOR_HASH_RECOMPUTE=1; same final class-token loop with memo disabled, existing saved ancestor-pop hashes enabled in both variants. Common dispatch differs from older release code.",
+  "diagnostic": "VOX_ANCESTOR_HASH_CACHE_DIAGNOSTICS=1; separate marker for a class-vector hit in the requested document.",
+  "focused": {
+    "jobs": 36,
+    "function_executions": 118,
+    "all_passed": true,
+    "compiler_sha256": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+    "source_pins_stable": true,
+    "modes": "Five focused files under poisoned preallocation with both variants; cache, saved-visit and computed-query files with ordinary GC and no GC; both cache variants under address and undefined-behavior sanitizers."
+  },
+  "component": {
+    "complete": true,
+    "instrumented": false,
+    "acceptance": false,
+    "page_instruction_credit": 0,
+    "inputs_before": {
+      "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component.py": "154f278774c89b81d8511b1ebbf2b35956307e7267635cb209d545b0ca8f9810",
+      "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component_test.v": "09bea9e4e5e3f2d76150d813fb89d01765d492e37e6f4b0729cdc21f02360810",
+      "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-files.txt": "63513d07d25658eba5942675d3d2911c82def91deb0662e92fe71a24d4ae97b1",
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+      "/Users/alex/code/vox2/css/ancestor_filter.v": "0af52b3e60ae956bd6031322af42c13ae094dd30f80439187f2e6e5af7bb7d0d",
+      "/Users/alex/code/vox2/css/ancestor_filter_visits.v": "90b71cd3a267b60cee3e608dfe165a365828cf4507537ef16a46b73afea723d6",
+      "/Users/alex/code/vox2/css/ancestor_hash_cache.v": "9b9f534645e69b32638cd056cdb601a0174cd676437b6587e1672e87780d4c78",
+      "/Users/alex/code/vox2/css/computed_interpolation.v": "98f0189def96849d01a431c84bc35d0a60877dceb517fd8f22691a6dcdea86bf",
+      "/Users/alex/code/vox2/css/computed_property_store.v": "bc0a4f81b805a571559c126d74e9a5cfb97b921f1653e0fe903d898474bb8bae",
+      "/Users/alex/code/vox2/css/parser_core.v": "0bdedd5cc0f0919f6a87328b359194b2ea4006cf7738f364b95a77c63ada8cb6",
+      "/Users/alex/code/vox2/platform/prealloc_arena.v": "ed0ea6f09c7c169e6aa449144149d99381aa62ca7881c1b8553592861ce0a516",
+      "/Users/alex/code/vox2/platform/thread_scratch.v": "ac880c7ace9b16e3ab79a174ea00c5acb824782253f29763e63829badff6890d",
+      "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808": "446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808",
+      "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component": "ade940150fa6d7e7914864be934fec280d07bd1b77cae73e6c5dd72ad875ebfc"
+    },
+    "observations": [
+      {
+        "label": "component-r2-0-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-0-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ANCESTOR_HASH_RECOMPUTE": "1",
+          "VOX_ANCESTOR_HASH_CACHE_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793829237.419171,
+          "cpu_count": 18,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793829237.8358479,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "variant": "control",
+        "scenes": [
+          {
+            "scene": "archived-ancestor-chain",
+            "instructions": 59283147,
+            "passes": 128,
+            "elements": 36,
+            "checksum": 212728821252352
+          },
+          {
+            "scene": "archived-preorder",
+            "instructions": 450852888,
+            "passes": 128,
+            "elements": 833,
+            "checksum": 2944587154547200
+          },
+          {
+            "scene": "mutating-epoch",
+            "instructions": 31945662,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 30137241827200
+          },
+          {
+            "scene": "oversized",
+            "instructions": 36960371,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 132961514698112
+          }
+        ]
+      },
+      {
+        "label": "component-r2-1-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-1-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ANCESTOR_HASH_RECOMPUTE": "",
+          "VOX_ANCESTOR_HASH_CACHE_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793829237.8630242,
+          "cpu_count": 18,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793829238.050117,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "variant": "candidate",
+        "scenes": [
+          {
+            "scene": "archived-ancestor-chain",
+            "instructions": 49227529,
+            "passes": 128,
+            "elements": 36,
+            "checksum": 212728821252352
+          },
+          {
+            "scene": "archived-preorder",
+            "instructions": 400890547,
+            "passes": 128,
+            "elements": 833,
+            "checksum": 2944587154547200
+          },
+          {
+            "scene": "mutating-epoch",
+            "instructions": 32195998,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 30137241827200
+          },
+          {
+            "scene": "oversized",
+            "instructions": 36967948,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 132961514698112
+          }
+        ]
+      },
+      {
+        "label": "component-r2-2-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-2-candidate-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ANCESTOR_HASH_RECOMPUTE": "",
+          "VOX_ANCESTOR_HASH_CACHE_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793829238.077354,
+          "cpu_count": 18,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793829238.274867,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "variant": "candidate",
+        "scenes": [
+          {
+            "scene": "archived-ancestor-chain",
+            "instructions": 49015564,
+            "passes": 128,
+            "elements": 36,
+            "checksum": 212728821252352
+          },
+          {
+            "scene": "archived-preorder",
+            "instructions": 402439722,
+            "passes": 128,
+            "elements": 833,
+            "checksum": 2944587154547200
+          },
+          {
+            "scene": "mutating-epoch",
+            "instructions": 32229805,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 30137241827200
+          },
+          {
+            "scene": "oversized",
+            "instructions": 36992123,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 132961514698112
+          }
+        ]
+      },
+      {
+        "label": "component-r2-3-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-3-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ANCESTOR_HASH_RECOMPUTE": "1",
+          "VOX_ANCESTOR_HASH_CACHE_DIAGNOSTICS": ""
+        },
+        "host_before": {
+          "unix": 1793829238.303325,
+          "cpu_count": 18,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793829238.496777,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "variant": "control",
+        "scenes": [
+          {
+            "scene": "archived-ancestor-chain",
+            "instructions": 59254053,
+            "passes": 128,
+            "elements": 36,
+            "checksum": 212728821252352
+          },
+          {
+            "scene": "archived-preorder",
+            "instructions": 450852971,
+            "passes": 128,
+            "elements": 833,
+            "checksum": 2944587154547200
+          },
+          {
+            "scene": "mutating-epoch",
+            "instructions": 31926340,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 30137241827200
+          },
+          {
+            "scene": "oversized",
+            "instructions": 36950693,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 132961514698112
+          }
+        ]
+      },
+      {
+        "label": "component-r2-4-diagnostic",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-4-diagnostic.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-4-diagnostic-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ANCESTOR_HASH_RECOMPUTE": "",
+          "VOX_ANCESTOR_HASH_CACHE_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793829238.524943,
+          "cpu_count": 18,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793829238.70846,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "variant": "diagnostic",
+        "scenes": [
+          {
+            "scene": "archived-ancestor-chain",
+            "instructions": 50257917,
+            "passes": 128,
+            "elements": 36,
+            "checksum": 212728821252352
+          },
+          {
+            "scene": "archived-preorder",
+            "instructions": 407545392,
+            "passes": 128,
+            "elements": 833,
+            "checksum": 2944587154547200
+          },
+          {
+            "scene": "mutating-epoch",
+            "instructions": 32196023,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 30137241827200
+          },
+          {
+            "scene": "oversized",
+            "instructions": 36967973,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 132961514698112
+          }
+        ]
+      },
+      {
+        "label": "component-r2-5-diagnostic-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "600",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-5-diagnostic-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-5-diagnostic-control-guard.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_ANCESTOR_HASH_RECOMPUTE": "1",
+          "VOX_ANCESTOR_HASH_CACHE_DIAGNOSTICS": "1"
+        },
+        "host_before": {
+          "unix": 1793829238.73612,
+          "cpu_count": 18,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793829238.9286442,
+          "load": [
+            6.626953125,
+            7.61767578125,
+            10.2392578125
+          ]
+        },
+        "variant": "diagnostic-control",
+        "scenes": [
+          {
+            "scene": "archived-ancestor-chain",
+            "instructions": 59295428,
+            "passes": 128,
+            "elements": 36,
+            "checksum": 212728821252352
+          },
+          {
+            "scene": "archived-preorder",
+            "instructions": 450877452,
+            "passes": 128,
+            "elements": 833,
+            "checksum": 2944587154547200
+          },
+          {
+            "scene": "mutating-epoch",
+            "instructions": 31931694,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 30137241827200
+          },
+          {
+            "scene": "oversized",
+            "instructions": 36955168,
+            "passes": 128,
+            "elements": 1,
+            "checksum": 132961514698112
+          }
+        ]
+      }
+    ],
+    "build": {
+      "label": "component-r2-compile",
+      "command": [
+        "python3",
+        "tools/run_memory_bounded.py",
+        "--limit-gib",
+        "12",
+        "--timeout",
+        "600",
+        "--lock",
+        "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-compile.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-r2-compile-guard.json",
+        "--",
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-b",
+        "c",
+        "-cc",
+        "clang",
+        "-nocache",
+        "-w",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-cflags",
+        "-O2",
+        "-ldflags",
+        "-framework CoreGraphics",
+        "-file-list",
+        "/Users/alex/code/vox2/css/absolute_font_size_computation.v,/Users/alex/code/vox2/css/adopted_style_sheets.v,/Users/alex/code/vox2/css/affine_rounding.c.v,/Users/alex/code/vox2/css/ancestor_filter.v,/Users/alex/code/vox2/css/ancestor_filter_visits.v,/Users/alex/code/vox2/css/ancestor_hash_cache.v,/Users/alex/code/vox2/css/animation_ancestor_filter.v,/Users/alex/code/vox2/css/animation_range.v,/Users/alex/code/vox2/css/animation_rendering_demand.v,/Users/alex/code/vox2/css/animation_sample_page_scan.v,/Users/alex/code/vox2/css/animation_samples.v,/Users/alex/code/vox2/css/anonymous_computed_geometry.v,/Users/alex/code/vox2/css/arena_diagnostics.v,/Users/alex/code/vox2/css/attribute_tag_bucket.v,/Users/alex/code/vox2/css/background_resource_urls.v,/Users/alex/code/vox2/css/boolean_expressions.v,/Users/alex/code/vox2/css/borrowed_invalidation_values.v,/Users/alex/code/vox2/css/browser_font_rendering.v,/Users/alex/code/vox2/css/browser_font_size_keywords.v,/Users/alex/code/vox2/css/browser_line_height.v,/Users/alex/code/vox2/css/calc_parsing.v,/Users/alex/code/vox2/css/calc_resolve.v,/Users/alex/code/vox2/css/calc_simplify.v,/Users/alex/code/vox2/css/calculated_or.v,/Users/alex/code/vox2/css/cascade_entry_updates.v,/Users/alex/code/vox2/css/cascade_scratch.v,/Users/alex/code/vox2/css/cascade_value_borrow.v,/Users/alex/code/vox2/css/chromium_input_placeholder.v,/Users/alex/code/vox2/css/chromium_paint_color.v,/Users/alex/code/vox2/css/chromium_selector_alias.v,/Users/alex/code/vox2/css/color_interpolation.v,/Users/alex/code/vox2/css/component_input_lookahead.v,/Users/alex/code/vox2/css/compositor_animation.v,/Users/alex/code/vox2/css/computed_color.v,/Users/alex/code/vox2/css/computed_font_inputs.v,/Users/alex/code/vox2/css/computed_geometry_provenance.v,/Users/alex/code/vox2/css/computed_interpolation.v,/Users/alex/code/vox2/css/computed_layout_cache.v,/Users/alex/code/vox2/css/computed_layout_rare_data.v,/Users/alex/code/vox2/css/computed_length.v,/Users/alex/code/vox2/css/computed_longhand_eligibility.v,/Users/alex/code/vox2/css/computed_longhand_reuse.v,/Users/alex/code/vox2/css/computed_longhand_shapes.v,/Users/alex/code/vox2/css/computed_property_invalidation.v,/Users/alex/code/vox2/css/computed_property_page_semantics.v,/Users/alex/code/vox2/css/computed_property_storage.v,/Users/alex/code/vox2/css/computed_property_store.v,/Users/alex/code/vox2/css/computed_values.v,/Users/alex/code/vox2/css/conditional_style_sheet_invalidation.v,/Users/alex/code/vox2/css/container_query_invalidator.v,/Users/alex/code/vox2/css/container_rule.v,/Users/alex/code/vox2/css/content_counter_styles.v,/Users/alex/code/vox2/css/coordinating_value_queries.v,/Users/alex/code/vox2/css/corner_shape_parameters.v,/Users/alex/code/vox2/css/counter_resolution_workspace.v,/Users/alex/code/vox2/css/counter_values.v,/Users/alex/code/vox2/css/covered_style_sheet_invalidation.v,/Users/alex/code/vox2/css/css.v,/Users/alex/code/vox2/css/css_rule_kind_storage.v,/Users/alex/code/vox2/css/cssom_declaration_builder.v,/Users/alex/code/vox2/css/cssom_events_extra.v,/Users/alex/code/vox2/css/cssom_rules.v,/Users/alex/code/vox2/css/custom_function_evaluation.v,/Users/alex/code/vox2/css/custom_function_scope.v,/Users/alex/code/vox2/css/custom_property_environment_equivalence.v,/Users/alex/code/vox2/css/deferred_declarations.v,/Users/alex/code/vox2/css/deferred_hidden_styles.v,/Users/alex/code/vox2/css/deleted_conditional_style_rules.v,/Users/alex/code/vox2/css/deleted_style_rule_invalidation.v,/Users/alex/code/vox2/css/descriptors.v,/Users/alex/code/vox2/css/device_layout_property_pages.v,/Users/alex/code/vox2/css/device_layout_scale_only.v,/Users/alex/code/vox2/css/device_layout_style.v,/Users/alex/code/vox2/css/dom_css_bridge.v,/Users/alex/code/vox2/css/dom_query.v,/Users/alex/code/vox2/css/empty_deleted_conditional_leaves.v,/Users/alex/code/vox2/css/empty_media_query_lists.v,/Users/alex/code/vox2/css/events_misc.v,/Users/alex/code/vox2/css/exact_layout_lengths.v,/Users/alex/code/vox2/css/explicit_parent_longhand_inputs.v,/Users/alex/code/vox2/css/fetch_css_api.v,/Users/alex/code/vox2/css/font_face_values.v,/Users/alex/code/vox2/css/font_fetch_transport.v,/Users/alex/code/vox2/css/font_input_refresh.v,/Users/alex/code/vox2/css/font_input_scratch.v,/Users/alex/code/vox2/css/font_key_scratch.v,/Users/alex/code/vox2/css/font_loading.v,/Users/alex/code/vox2/css/font_loading_tasks.v,/Users/alex/code/vox2/css/font_synthesis.v,/Users/alex/code/vox2/css/font_variation_axis_storage.v,/Users/alex/code/vox2/css/function_rules.v,/Users/alex/code/vox2/css/generated_content_storage.v,/Users/alex/code/vox2/css/gradient_color_interpolation.v,/Users/alex/code/vox2/css/grid_values.v,/Users/alex/code/vox2/css/html_attribute_case.v,/Users/alex/code/vox2/css/hyphens.v,/Users/alex/code/vox2/css/identical_layout_inputs.v,/Users/alex/code/vox2/css/idle_computation_pages.v,/Users/alex/code/vox2/css/idle_layout_snapshots.v,/Users/alex/code/vox2/css/image_color_values.v,/Users/alex/code/vox2/css/independent_dom_query.v,/Users/alex/code/vox2/css/inherited_property_iterator.v,/Users/alex/code/vox2/css/initial_layout_snapshots.v,/Users/alex/code/vox2/css/inline_style.v,/Users/alex/code/vox2/css/instruction_diagnostics.v,/Users/alex/code/vox2/css/internal_font_settings.v,/Users/alex/code/vox2/css/invalidation_plan_union.v,/Users/alex/code/vox2/css/layout_inheritance_proof.v,/Users/alex/code/vox2/css/layout_input_diagnostics.v,/Users/alex/code/vox2/css/layout_viewport_overrides.v,/Users/alex/code/vox2/css/legacy_font_size.v,/Users/alex/code/vox2/css/length_percentage_storage.v,/Users/alex/code/vox2/css/longhand_parent_hash_hints.v,/Users/alex/code/vox2/css/marker_counter_styles.v,/Users/alex/code/vox2/css/matching_rule_candidates.v,/Users/alex/code/vox2/css/matching_rule_set_workspace.v,/Users/alex/code/vox2/css/media_evaluation_candidates.v,/Users/alex/code/vox2/css/media_feature.v,/Users/alex/code/vox2/css/media_queries.v,/Users/alex/code/vox2/css/media_query_compatibility.v,/Users/alex/code/vox2/css/misc_values.v,/Users/alex/code/vox2/css/missing_style_query.v,/Users/alex/code/vox2/css/more_style_values.v,/Users/alex/code/vox2/css/native_document_retirement.v,/Users/alex/code/vox2/css/native_font_variations.v,/Users/alex/code/vox2/css/parser_core.v,/Users/alex/code/vox2/css/parser_helpers.v,/Users/alex/code/vox2/css/parser_rules_selectors.v,/Users/alex/code/vox2/css/parser_stream_eof.v,/Users/alex/code/vox2/css/parser_syntax_helpers.v,/Users/alex/code/vox2/css/parser_value_logic.v,/Users/alex/code/vox2/css/pixel_rounding.c.v,/Users/alex/code/vox2/css/pixel_units.v,/Users/alex/code/vox2/css/primitives_extra.v,/Users/alex/code/vox2/css/properties_data.v,/Users/alex/code/vox2/css/property_calculation_metadata.v,/Users/alex/code/vox2/css/property_shorthand_metadata.v,/Users/alex/code/vox2/css/recursive_value_storage.v,/Users/alex/code/vox2/css/redundant_sheet_removal.v,/Users/alex/code/vox2/css/repeated_rule_matching.v,/Users/alex/code/vox2/css/resolved_box_model_edges.v,/Users/alex/code/vox2/css/resolved_scalar_computation.v,/Users/alex/code/vox2/css/resource_url_candidates.v,/Users/alex/code/vox2/css/retained_layout_style.v,/Users/alex/code/vox2/css/rule_bucket_iterator.v,/Users/alex/code/vox2/css/rule_selector_reuse.v,/Users/alex/code/vox2/css/scalar_font_computation.v,/Users/alex/code/vox2/css/scalar_style_value_equality.v,/Users/alex/code/vox2/css/screen_animation.v,/Users/alex/code/vox2/css/scroll_animation_source.v,/Users/alex/code/vox2/css/selector_input_workspace.v,/Users/alex/code/vox2/css/selector_invalidation_workspace.v,/Users/alex/code/vox2/css/selector_parse_workspace.v,/Users/alex/code/vox2/css/selector_rule_font_sync.v,/Users/alex/code/vox2/css/selector_substring_scan.v,/Users/alex/code/vox2/css/selectors.v,/Users/alex/code/vox2/css/simple_selector_storage.v,/Users/alex/code/vox2/css/size_query_result_reuse.v,/Users/alex/code/vox2/css/static_animation_names.v,/Users/alex/code/vox2/css/static_user_style_filter.v,/Users/alex/code/vox2/css/style_computer.v,/Users/alex/code/vox2/css/style_declarations.v,/Users/alex/code/vox2/css/style_scope_cache.v,/Users/alex/code/vox2/css/style_sheet_invalidation.v,/Users/alex/code/vox2/css/style_values_core.v,/Users/alex/code/vox2/css/style_values_extra.v,/Users/alex/code/vox2/css/stylesheet_conversion_workspace.v,/Users/alex/code/vox2/css/stylesheet_rule_scratch.v,/Users/alex/code/vox2/css/stylesheet_syntax_cache.v,/Users/alex/code/vox2/css/stylesheet_token_scratch.v,/Users/alex/code/vox2/css/substitution_leaf_validation.v,/Users/alex/code/vox2/css/substitution_workspace.v,/Users/alex/code/vox2/css/svg_presentation_path.v,/Users/alex/code/vox2/css/syntax_highlighter.v,/Users/alex/code/vox2/css/text_box.v,/Users/alex/code/vox2/css/transforms.v,/Users/alex/code/vox2/css/typed_om_math.v,/Users/alex/code/vox2/css/ua_only_shadow_style_cache.v,/Users/alex/code/vox2/css/unchanged_has_invalidation.v,/Users/alex/code/vox2/css/unparsed_values.v,/Users/alex/code/vox2/css/url_system.v,/Users/alex/code/vox2/css/user_agent_style_cache_templates.v,/Users/alex/code/vox2/css/user_agent_stylesheet.v,/Users/alex/code/vox2/css/user_style_change_invalidation.v,/Users/alex/code/vox2/css/value_parse_export.v,/Users/alex/code/vox2/css/value_token_workspace.v,/Users/alex/code/vox2/css/value_type_color.v,/Users/alex/code/vox2/css/view_transition_style_sheet.v",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component",
+        "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component_test.v"
+      ],
+      "environment": {},
+      "host_before": {
+        "unix": 1793829186.626622,
+        "cpu_count": 18,
+        "load": [
+          6.6806640625,
+          7.77783203125,
+          10.45166015625
+        ]
+      },
+      "exit": 0,
+      "host_after": {
+        "unix": 1793829237.38166,
+        "load": [
+          6.626953125,
+          7.61767578125,
+          10.2392578125
+        ]
+      }
+    },
+    "scenes": {
+      "archived-ancestor-chain": {
+        "control": [
+          59283147,
+          59254053
+        ],
+        "candidate": [
+          49227529,
+          49015564
+        ],
+        "control_median": 59268600.0,
+        "candidate_median": 49121546.5,
+        "median_reduction_fraction": 0.17120454169661503,
+        "conservative_component_reduction": 10026524
+      },
+      "archived-preorder": {
+        "control": [
+          450852888,
+          450852971
+        ],
+        "candidate": [
+          400890547,
+          402439722
+        ],
+        "control_median": 450852929.5,
+        "candidate_median": 401665134.5,
+        "median_reduction_fraction": 0.10909942418373486,
+        "conservative_component_reduction": 48413166
+      },
+      "mutating-epoch": {
+        "control": [
+          31945662,
+          31926340
+        ],
+        "candidate": [
+          32195998,
+          32229805
+        ],
+        "control_median": 31936001.0,
+        "candidate_median": 32212901.5,
+        "median_reduction_fraction": -0.008670481316680911,
+        "conservative_component_reduction": -303465
+      },
+      "oversized": {
+        "control": [
+          36960371,
+          36950693
+        ],
+        "candidate": [
+          36967948,
+          36992123
+        ],
+        "control_median": 36955532.0,
+        "candidate_median": 36980035.5,
+        "median_reduction_fraction": -0.0006630536397094211,
+        "conservative_component_reduction": -41430
+      }
+    },
+    "inputs_after": {
+      "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component.py": "154f278774c89b81d8511b1ebbf2b35956307e7267635cb209d545b0ca8f9810",
+      "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component_test.v": "09bea9e4e5e3f2d76150d813fb89d01765d492e37e6f4b0729cdc21f02360810",
+      "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component-files.txt": "63513d07d25658eba5942675d3d2911c82def91deb0662e92fe71a24d4ae97b1",
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+      "/Users/alex/code/vox2/css/ancestor_filter.v": "0af52b3e60ae956bd6031322af42c13ae094dd30f80439187f2e6e5af7bb7d0d",
+      "/Users/alex/code/vox2/css/ancestor_filter_visits.v": "90b71cd3a267b60cee3e608dfe165a365828cf4507537ef16a46b73afea723d6",
+      "/Users/alex/code/vox2/css/ancestor_hash_cache.v": "9b9f534645e69b32638cd056cdb601a0174cd676437b6587e1672e87780d4c78",
+      "/Users/alex/code/vox2/css/computed_interpolation.v": "98f0189def96849d01a431c84bc35d0a60877dceb517fd8f22691a6dcdea86bf",
+      "/Users/alex/code/vox2/css/computed_property_store.v": "bc0a4f81b805a571559c126d74e9a5cfb97b921f1653e0fe903d898474bb8bae",
+      "/Users/alex/code/vox2/css/parser_core.v": "0bdedd5cc0f0919f6a87328b359194b2ea4006cf7738f364b95a77c63ada8cb6",
+      "/Users/alex/code/vox2/platform/prealloc_arena.v": "ed0ea6f09c7c169e6aa449144149d99381aa62ca7881c1b8553592861ce0a516",
+      "/Users/alex/code/vox2/platform/thread_scratch.v": "ac880c7ace9b16e3ab79a174ea00c5acb824782253f29763e63829badff6890d",
+      "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808": "446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808",
+      "/Users/alex/code/vox2/Build/chatgpt-ancestor-classes-20261105-r3/component": "ade940150fa6d7e7914864be934fec280d07bd1b77cae73e6c5dd72ad875ebfc"
+    },
+    "identity_stable": true,
+    "scope": "Current-process counters around 128 ancestor-filter passes, including bucket reset, balanced push/pop, and complete scalar-hash-vector checks against independently generated reference vectors. Three scenes retain captured HTML elements; oversized uses a synthetic 300-token class. Mutating-epoch also includes one attribute edit per pass. C -O2, production prealloc runtime, no GC; fixture construction, startup and teardown excluded. Each result checked. Component only; no browser instruction or broad-cadence credit."
+  },
+  "prototype": {
+    "whole_hash_sequence": {
+      "archived-ancestor-chain": {
+        "control": [
+          58534391,
+          58510660
+        ],
+        "candidate": [
+          61438759,
+          61456464
+        ],
+        "control_median": 58522525.5,
+        "candidate_median": 61447611.5,
+        "median_reduction_fraction": -0.049982224365898276,
+        "conservative_component_reduction": -2945804
+      },
+      "archived-preorder": {
+        "control": [
+          445897862,
+          446187798
+        ],
+        "candidate": [
+          492266625,
+          491896945
+        ],
+        "control_median": 446042830.0,
+        "candidate_median": 492081785.0,
+        "median_reduction_fraction": -0.10321644448359368,
+        "conservative_component_reduction": -46368763
+      },
+      "mutating-epoch": {
+        "control": [
+          31815381,
+          31845572
+        ],
+        "candidate": [
+          32210668,
+          32176035
+        ],
+        "control_median": 31830476.5,
+        "candidate_median": 32193351.5,
+        "median_reduction_fraction": -0.011400237756415521,
+        "conservative_component_reduction": -395287
+      },
+      "oversized": {
+        "control": [
+          36546142,
+          36669230
+        ],
+        "candidate": [
+          36612247,
+          36540759
+        ],
+        "control_median": 36607686.0,
+        "candidate_median": 36576503.0,
+        "median_reduction_fraction": 0.0008518156542317579,
+        "conservative_component_reduction": -66105
+      }
+    },
+    "long_classes_with_low_bit_slots": {
+      "archived-ancestor-chain": {
+        "control": [
+          59198114,
+          59207750
+        ],
+        "candidate": [
+          59209936,
+          59207355
+        ],
+        "control_median": 59202932.0,
+        "candidate_median": 59208645.5,
+        "median_reduction_fraction": -9.650704461727777e-05,
+        "conservative_component_reduction": -11822
+      },
+      "archived-preorder": {
+        "control": [
+          449892455,
+          449938275
+        ],
+        "candidate": [
+          473378635,
+          473437126
+        ],
+        "control_median": 449915365.0,
+        "candidate_median": 473407880.5,
+        "median_reduction_fraction": -0.052215410558383635,
+        "conservative_component_reduction": -23544671
+      },
+      "mutating-epoch": {
+        "control": [
+          31924703,
+          31931280
+        ],
+        "candidate": [
+          32196984,
+          32197104
+        ],
+        "control_median": 31927991.5,
+        "candidate_median": 32197044.0,
+        "median_reduction_fraction": -0.008426853283270308,
+        "conservative_component_reduction": -272401
+      },
+      "oversized": {
+        "control": [
+          36949129,
+          36949129
+        ],
+        "candidate": [
+          36963952,
+          36963977
+        ],
+        "control_median": 36949129.0,
+        "candidate_median": 36963964.5,
+        "median_reduction_fraction": -0.00040151149435763145,
+        "conservative_component_reduction": -14848
+      }
+    },
+    "qualification": "Distinct earlier implementations; all regressions and attempts retained, never pooled with final candidate observations. Whole-sequence caching regressed chain/traversal by 5.0%/10.3%; class-only low-bit slots regressed traversal 5.2%. A separate diagnostic found only 256 hits versus 2,304 misses for the chain and zero hits versus 30,464 misses for traversal: node IDs are aligned addresses. These diagnostic probes are instrumented and give no instruction credit."
+  },
+  "retained_failures": "Initial test compilation rejected an unqualified enum and non-option guard. The initial zeroed fixed-array vector descriptors produced wrong bucket hashes; the 3 GiB runtime guard stopped that failed run. Explicit typed initialization corrected it. An initial component fixture needed an explicit array clone; its next successful compile encountered a controller fingerprint-order bug before any observations. After verifying the unchanged executable/source/compiler, a corrected controller reused that compile. No failed observation was excluded to obtain acceptance.",
+  "production_status": "Separate final source/execution diagnostic and matched frozen-page comparison prepared; final bundle/path validation required before any page attribution. No extra download or author-script suppression.",
+  "qualification": "Component only: identical captured HTML, independent complete scalar-vector references checked during balanced push/pop and reset loops. Current-process instruction counters; no retired browser-coalition counts mixed into these statistics. Final chain/traversal gains coexist with mutation/oversize regressions. No whole-page or 5%-below-Brave claim.",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-ancestor-class-cache-r3-20261105-evidence.zip",
+      "sha256": "f459143841a2584788740acd414af50eb806e34ebe1058bfe1450b859df72ca8",
+      "bytes": 439740
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-hash-cache-prototype-20261105-evidence.zip",
+      "sha256": "7485d35aa3023333f8cd73b24031b2d351c7a136141a39f39e1aee78750d9521",
+      "bytes": 235504
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-hash-cache-20261105-evidence.zip",
+      "sha256": "8258f9707ced275b2df84080ac02e18eebf5684553544a24678443edb32651dd",
+      "bytes": 405624
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-class-cache-r2-20261105-evidence.zip",
+      "sha256": "5a4539c2302c30b497e1a5b6f1eab6db84b2c183214bd49e7d39f91bee623609",
+      "bytes": 211411
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-class-cache-final-20261105-evidence.zip",
+      "sha256": "3d248eb73b5497f104d3faf27e5f3b36dc5e78197aea0168875dbcbdc9a85e9a",
+      "bytes": 401832
+    }
+  ]
+}
