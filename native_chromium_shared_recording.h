@@ -1,6 +1,7 @@
 #pragma once
 #include "native_opacity_group_darwin.h"
 #include "native_sparse_opacity_ink_darwin.h"
+#include "native_chromium_recorded_ink_bounds.h"
 
 // Included after the native raster-layer state. The existing leaf renderer
 // supplies the fallback frame; complete supported pictures replace root SVG
@@ -287,6 +288,15 @@ void shared_recording_content(CGContextRef destination, SkRect bounds, float pag
     }
     if (!shared_recording_canvas(destination) || s_msaa_grid_columns <= 0) return;
     auto& group = *s_shared_root_recording;
+    // Clipped shadow overflow must not enlarge a compositor picture beyond
+    // its tile grid. Retain genuinely visible overflow and uncertain AA clips.
+    if (!group.root) {
+        auto clips = s_shared_clips.find(destination);
+        if (clips != s_shared_clips.end() && !clips->second.unsupported) {
+            for (auto const& clip : clips->second.clips)
+                bounds = vox_chromium_clip_recorded_ink(bounds, clip.rect, clip.matrix, group.scale);
+        }
+    }
     group.replay_bounds.push_back(bounds);
     group.page_y = page_y;
     // Browser display-list matrices already include root scrolling. The
