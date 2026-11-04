@@ -153,14 +153,6 @@ fn parser_processed_override_input(raw_input string) []rune {
 	return output
 }
 
-fn parser_runes_to_string(input []rune, start int, end int) string {
-	mut output := ''
-	for index := start; index < end; index++ {
-		output += input[index].str()
-	}
-	return output
-}
-
 struct ParserPortResult {
 	port ?u16
 }
