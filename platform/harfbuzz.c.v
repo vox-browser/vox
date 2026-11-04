@@ -20,7 +20,12 @@ $if macos {
 			#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.0.dylib
 		} $else {
 			#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.a
-			#flag /opt/homebrew/opt/freetype/lib/libfreetype.6.dylib
+			// The archive's FreeType backend only needs its symbols bound: shaping
+			// uses OpenType/CoreText font functions. Bind them to the FreeType that
+			// Skia already maps, rather than loading Homebrew's FreeType with its
+			// libpng and Brotli into every launch.
+			#flag @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.dylib
+			#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
 			#flag /opt/homebrew/opt/graphite2/lib/libgraphite2.3.dylib
 		}
 	} $else {
