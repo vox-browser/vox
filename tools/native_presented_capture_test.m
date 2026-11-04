@@ -3,6 +3,27 @@
 #include <stdio.h>
 #include "native_layer_presentation_test_darwin.h"
 #include "native_presented_capture_darwin.h"
+#include "native_snapshot_png_darwin.h"
+#include <dlfcn.h>
+
+static unsigned codec_regions;
+
+// The device-RGB copy retagged as sRGB that presented capture used to return.
+static NSBitmapImageRep *copied_presented_bitmap(NativePresentedPixels layout)
+{
+    NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
+        pixelsWide:layout.width pixelsHigh:layout.height bitsPerSample:8 samplesPerPixel:4
+        hasAlpha:YES isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace
+        bytesPerRow:layout.width * 4 bitsPerPixel:32];
+    for (size_t y = 0; y < layout.height; ++y)
+        memcpy(bitmap.bitmapData + y * bitmap.bytesPerRow, layout.pixels + y * layout.pitch, layout.width * 4);
+    bitmap.size = NSMakeSize(layout.width, layout.height);
+    NSBitmapImageRep *result = [bitmap bitmapImageRepByRetaggingWithColorSpace:NSColorSpace.sRGBColorSpace];
+#if !__has_feature(objc_arc)
+    [bitmap release];
+#endif
+    return result;
+}
 
 @interface MyView2 : NativeLayerFrameTestView
 @property BOOL testFlipped;
@@ -53,9 +74,27 @@ static void compare_region(MyView2 *canvas, NSView *root, NSRect rect, NSInteger
     }
     assert(CFEqual(CGImageGetColorSpace(actual.CGImage), CGImageGetColorSpace(expected.CGImage)));
     assert(native_layer_capture_scale == 0);
+    // The capture wraps the presented bytes; the encoder reads them directly
+    // and produces exactly the PNG of the copied rep it replaces.
+    NativePresentedPixels layout;
+    assert(native_presented_pixels_for(actual, &layout));
+    assert(layout.width == (size_t)width && layout.height == (size_t)height && layout.pitch >= layout.width * 4);
+    NSData *png = native_encode_snapshot_png(actual);
+    NSData *copied = native_encode_snapshot_png(copied_presented_bitmap(layout));
+    assert(png && copied && [png isEqualToData:copied]);
+    typedef size_t (*RowCompressor)(const void *, size_t, size_t, size_t, void *, size_t);
+    RowCompressor rows = (RowCompressor)dlsym(RTLD_DEFAULT, "ladybird_v_snapshot_compress_png_rows");
+    if (rows) {
+        NSMutableData *stream = [NSMutableData dataWithLength:(layout.width * 4 + 1) * layout.height + 4096];
+        codec_regions += rows(layout.pixels, layout.width * 4, layout.height, layout.pitch,
+            stream.mutableBytes, stream.length) != 0;
+    }
 }
 
-int main(void) { @autoreleasepool {
+int main(int argc, const char *argv[]) { @autoreleasepool {
+    // An optional snapshot compression library exercises the row codec.
+    assert(argc == 1 || argc == 2);
+    if (argc == 2) assert(dlopen(argv[1], RTLD_NOW | RTLD_GLOBAL));
     [NSApplication sharedApplication];
     setenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS", "0", 1);
     native_layer_original_draw = (IMP)native_layer_test_asymmetric_draw;
@@ -116,5 +155,7 @@ int main(void) { @autoreleasepool {
 #endif
     }
     assert(!native_presented_capture_bitmap(nil, NSMakeRect(0,0,1,1), 1, 1));
-    printf("PASS %u exact presented-frame captures, cropped/flipped regions and overlay/state fallbacks\n", comparisons);
+    if (argc == 2) assert(codec_regions > 0);
+    printf("PASS %u exact presented-frame captures, cropped/flipped regions and overlay/state fallbacks"
+        " (%u PNGs equal to copied captures, %u through the row codec)\n", comparisons, comparisons, codec_regions);
 } return 0; }

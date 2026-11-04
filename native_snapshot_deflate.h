@@ -20,4 +20,15 @@ size_t ladybird_v_snapshot_compress_zlib(void const* input, size_t size,
     libdeflate_free_compressor(compressor);
     return written;
 }
+
+// The same repeated-pixel stream for PNG rows with filter type zero, read
+// from a pitched image. Returns 0 when that codec declines; the caller then
+// materializes the rows for ladybird_v_snapshot_compress_zlib.
+extern "C" __attribute__((visibility("default")))
+size_t ladybird_v_snapshot_compress_png_rows(void const* image, size_t row_bytes, size_t height,
+    size_t pitch, void* output, size_t capacity)
+{
+    if (std::getenv("VOX_DISABLE_PIXEL_RUN_PNG")) return 0;
+    return vox_snapshot_pixel_runs::compress_rows(image, row_bytes, height, pitch, output, capacity);
+}
 #endif

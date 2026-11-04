@@ -52,7 +52,8 @@ def main():
     extracted.write_text(entry_points(implementation))
     compiler = Path(shutil.which("clang")).resolve()
     pins = {str(path): sha256(path) for path in (header, png_header,
-        source / 'native_presented_capture_darwin.h', implementation, fixture, extracted,
+        source / 'native_presented_capture_darwin.h', source / 'native_presented_pixels_darwin.h',
+        implementation, fixture, extracted,
         compiler, Path(__file__).resolve())}
     result = {"status": "running", "pins": pins, "jobs": {}}
     for mode, flag in (("nonarc", "-fno-objc-arc"), ("arc", "-fobjc-arc")):

@@ -1,5 +1,12 @@
 #pragma once
+#include "native_presented_pixels_darwin.h"
 #include "native_rgba_is_opaque.h"
+
+static void native_presented_capture_release_data(void *info, const void *data, size_t size)
+{
+    (void)data; (void)size;
+    CFRelease((CFDataRef)info);
+}
 
 // Export an unchanged, opaque document region directly from its immutable
 // presented sRGB frame. Overlays, scaling, clipping or unsupported formats keep
@@ -79,23 +86,31 @@ static NSBitmapImageRep *native_presented_capture_bitmap(NSView *root, NSRect bo
             if ((size_t)CFDataGetLength(data) < pitch * rows) return nil;
             const uint8_t *pixels = CFDataGetBytePtr(data) + (size_t)top * pitch + (size_t)left * 4;
             if (!vox_rgba8_is_opaque(pixels, width, height, pitch)) return nil;
-            NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:NULL
-                pixelsWide:width pixelsHigh:height bitsPerSample:8 samplesPerPixel:4
-                hasAlpha:YES isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace
-                bytesPerRow:width * 4 bitsPerPixel:32];
-            if (!bitmap || !bitmap.bitmapData) return nil;
-            for (NSInteger y = 0; y < height; ++y)
-                memcpy(bitmap.bitmapData + y * bitmap.bytesPerRow, pixels + y * pitch, width * 4);
+            // Present the region as an sRGB image over the same bytes. Copying
+            // them into a device-RGB rep and retagging it costs two image-sized
+            // copies; the rep below materializes its own data only if read, and
+            // the PNG encoder reads the attached bytes instead.
+            CFRetain(data);
+            CGDataProviderRef provider = CGDataProviderCreateWithData((void *)data, pixels,
+                (size_t)(height - 1) * pitch + (size_t)width * 4, native_presented_capture_release_data);
+            if (!provider) { CFRelease(data); return nil; }
+            CGImageRef region = CGImageCreate(width, height, 8, 32, pitch, CGImageGetColorSpace(image),
+                (CGBitmapInfo)kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big, provider, NULL, true,
+                kCGRenderingIntentDefault);
+            CGDataProviderRelease(provider);
+            if (!region) return nil;
+            result = [[NSBitmapImageRep alloc] initWithCGImage:region];
+            CGImageRelease(region);
+            if (!result) return nil;
+#if !__has_feature(objc_arc)
+            [result autorelease];
+#endif
             // The ordinary sRGB conversion creates a pixel-sized image rep,
             // discarding the input's logical size. Preserve that existing PNG
             // density/Exif contract when omitting the conversion.
-            bitmap.size = NSMakeSize(width, height);
-            // Retag bytes whose source is already sRGB; converting them from
-            // the display's device space would introduce an unnecessary pass.
-            result = [bitmap bitmapImageRepByRetaggingWithColorSpace:NSColorSpace.sRGBColorSpace];
-#if !__has_feature(objc_arc)
-            [bitmap release];
-#endif
+            result.size = NSMakeSize(width, height);
+            native_presented_pixels_attach(result,
+                (NativePresentedPixels){pixels, (size_t)width, (size_t)height, pitch});
             if (result && getenv("VOX_PRESENTED_CAPTURE_DIAGNOSTICS"))
                 fprintf(stderr, "VOX_PRESENTED_CAPTURE %ldx%ld scale=%g\n", (long)width, (long)height, (double)scale);
         } @finally { CFRelease(data); }

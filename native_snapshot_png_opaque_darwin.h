@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include "native_rgba_is_opaque.h"
 #include "native_crc32.h"
+#include "native_presented_pixels_darwin.h"
 
 static void native_png_write_u32(unsigned char *bytes, uint32_t value)
 {
@@ -60,7 +61,12 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
     if (width <= 0 || height <= 0 || width > UINT32_MAX || height > UINT32_MAX
         || width > (64 * 1024 * 1024 - 1) / 4) return nil;
     size_t row_bytes = (size_t)width * 4, filtered_pitch = row_bytes + 1;
-    NSInteger row_pitch = bitmap.bytesPerRow;
+    // A presented capture already verified its bytes as opaque sRGB; read
+    // them directly rather than materializing the wrapping rep's own copy.
+    NativePresentedPixels presented;
+    BOOL trusted = native_presented_pixels_for(bitmap, &presented)
+        && presented.width == (size_t)width && presented.height == (size_t)height;
+    NSInteger row_pitch = trusted ? (NSInteger)presented.pitch : bitmap.bytesPerRow;
     if ((size_t)height > 64 * 1024 * 1024 / filtered_pitch
         || row_pitch < (NSInteger)row_bytes || (size_t)row_pitch > SIZE_MAX / (size_t)height)
         return nil;
@@ -68,7 +74,7 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
     BOOL same_space = srgb && CGImageGetColorSpace(image)
         && CFEqual(srgb, CGImageGetColorSpace(image));
     if (srgb) CGColorSpaceRelease(srgb);
-    if (!same_space || bitmap.bitmapData == NULL) return nil;
+    if (!same_space || (!trusted && bitmap.bitmapData == NULL)) return nil;
     NSNumber *horizontal = properties[(__bridge NSString *)kCGImagePropertyDPIWidth];
     NSNumber *vertical = properties[(__bridge NSString *)kCGImagePropertyDPIHeight];
     BOOL density = horizontal != nil || vertical != nil;
@@ -78,37 +84,47 @@ static NSData *native_encode_opaque_snapshot_png(NSBitmapImageRep *bitmap,
         || dpi_x <= 0 || dpi_y <= 0 || floor(dpi_x) != dpi_x || floor(dpi_y) != dpi_y
         || dpi_x > UINT32_MAX || dpi_y > UINT32_MAX || meter_x > UINT32_MAX || meter_y > UINT32_MAX))
         return nil;
-    const unsigned char *source = bitmap.bitmapData;
-    if (!vox_rgba8_is_opaque(source, (size_t)width, (size_t)height, (size_t)row_pitch)) return nil;
+    const unsigned char *source = trusted ? presented.pixels : bitmap.bitmapData;
+    if (!trusted && !vox_rgba8_is_opaque(source, (size_t)width, (size_t)height, (size_t)row_pitch)) return nil;
 
-    NSMutableData *rows = [NSMutableData dataWithLength:filtered_pitch * height];
-    unsigned char *filtered = rows.mutableBytes;
-    for (NSInteger y = 0; y < height; ++y) {
-        unsigned char *output = filtered + (size_t)y * filtered_pitch;
-        output[0] = 0;
-        memcpy(output + 1, source + (size_t)y * row_pitch, row_bytes);
-    }
-    size_t size = rows.length;
+    size_t size = filtered_pitch * (size_t)height;
     NSMutableData *compressed = [NSMutableData dataWithLength:compressBound((uLong)size)];
-    typedef size_t (*SnapshotCompressor)(const void *, size_t, void *, size_t);
-    SnapshotCompressor compressor = (SnapshotCompressor)dlsym(RTLD_DEFAULT,
-        "ladybird_v_snapshot_compress_zlib");
-    size_t written = !getenv("VOX_DISABLE_LIBDEFLATE_PNG") && compressor
-        ? compressor(rows.bytes, size, compressed.mutableBytes, compressed.length) : 0;
-    if (written && getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
-        fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
+    BOOL libdeflate = !getenv("VOX_DISABLE_LIBDEFLATE_PNG");
+    // The repeated-pixel codec reads unfiltered rows straight from the
+    // bitmap. Its output equals compressing the materialized rows below.
+    typedef size_t (*SnapshotRowCompressor)(const void *, size_t, size_t, size_t, void *, size_t);
+    SnapshotRowCompressor row_compressor = (SnapshotRowCompressor)dlsym(RTLD_DEFAULT,
+        "ladybird_v_snapshot_compress_png_rows");
+    size_t written = libdeflate && row_compressor ? row_compressor(source, row_bytes, (size_t)height,
+        (size_t)row_pitch, compressed.mutableBytes, compressed.length) : 0;
     if (!written) {
-        z_stream stream = {0};
-        // Retain the original lossless encoder if the optional backend is
-        // absent, cannot allocate, or cannot fit its output in this buffer.
-        if (deflateInit2(&stream, Z_BEST_SPEED, Z_DEFLATED, MAX_WBITS, 5, Z_DEFAULT_STRATEGY) != Z_OK) return nil;
-        stream.next_in = rows.mutableBytes; stream.avail_in = (uInt)size;
-        stream.next_out = compressed.mutableBytes; stream.avail_out = (uInt)compressed.length;
-        int status = deflate(&stream, Z_FINISH);
-        written = stream.total_out;
-        deflateEnd(&stream);
-        if (status != Z_STREAM_END) return nil;
-    }
+        NSMutableData *rows = [NSMutableData dataWithLength:size];
+        unsigned char *filtered = rows.mutableBytes;
+        for (NSInteger y = 0; y < height; ++y) {
+            unsigned char *output = filtered + (size_t)y * filtered_pitch;
+            output[0] = 0;
+            memcpy(output + 1, source + (size_t)y * row_pitch, row_bytes);
+        }
+        typedef size_t (*SnapshotCompressor)(const void *, size_t, void *, size_t);
+        SnapshotCompressor compressor = (SnapshotCompressor)dlsym(RTLD_DEFAULT,
+            "ladybird_v_snapshot_compress_zlib");
+        written = libdeflate && compressor
+            ? compressor(rows.bytes, size, compressed.mutableBytes, compressed.length) : 0;
+        if (!written) {
+            z_stream stream = {0};
+            // Retain the original lossless encoder if the optional backend is
+            // absent, cannot allocate, or cannot fit its output in this buffer.
+            if (deflateInit2(&stream, Z_BEST_SPEED, Z_DEFLATED, MAX_WBITS, 5, Z_DEFAULT_STRATEGY) != Z_OK) return nil;
+            stream.next_in = rows.mutableBytes; stream.avail_in = (uInt)size;
+            stream.next_out = compressed.mutableBytes; stream.avail_out = (uInt)compressed.length;
+            int status = deflate(&stream, Z_FINISH);
+            written = stream.total_out;
+            deflateEnd(&stream);
+            if (status != Z_STREAM_END) return nil;
+        } else if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
+            fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
+    } else if (getenv("VOX_LIBDEFLATE_PNG_DIAGNOSTICS"))
+        fprintf(stderr, "VOX_LIBDEFLATE_PNG input=%zu output=%zu\n", size, written);
     compressed.length = written;
 
     const unsigned char signature[] = {137,80,78,71,13,10,26,10};

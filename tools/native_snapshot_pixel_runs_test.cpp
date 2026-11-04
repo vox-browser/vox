@@ -51,6 +51,43 @@ static size_t round_trip(std::vector<uint8_t> const& input, size_t alignment)
     return written;
 }
 
+// compress_rows() must produce compress()'s exact stream for the materialized
+// filter-type-zero rows, without reading row padding or writing past capacity.
+static unsigned rows_match_materialized(size_t row_bytes, size_t height, size_t padding, uint32_t seed)
+{
+    size_t pitch = row_bytes + padding;
+    std::vector<uint8_t> image(pitch * height);
+    uint32_t state = seed;
+    auto next = [&] { state ^= state << 13; state ^= state >> 17; state ^= state << 5; return state; };
+    uint32_t background = next();
+    for (size_t y = 0; y < height; ++y) {
+        for (size_t x = 0; x < row_bytes; ++x) {
+            // Mostly repeated pixels with sparse literals, row-crossing runs
+            // and partial trailing pixels.
+            image[y * pitch + x] = next() % 211 ? uint8_t(background >> (8 * (x % 4))) : uint8_t(next());
+        }
+        for (size_t x = row_bytes; x < pitch; ++x) image[y * pitch + x] = uint8_t(next());
+    }
+    std::vector<uint8_t> rows((row_bytes + 1) * height);
+    for (size_t y = 0; y < height; ++y)
+        std::memcpy(&rows[y * (row_bytes + 1) + 1], &image[y * pitch], row_bytes);
+    std::vector<uint8_t> expected(rows.size() + 4096), actual(expected.size(), 0xa5);
+    size_t written = vox_snapshot_pixel_runs::compress(rows.data(), rows.size(), expected.data(), expected.size());
+    size_t from_rows = vox_snapshot_pixel_runs::compress_rows(image.data(), row_bytes, height, pitch,
+        actual.data(), actual.size());
+    assert(from_rows == written);
+    assert(!std::memcmp(expected.data(), actual.data(), written));
+    if (!written) return 0;
+    for (size_t cap : {written - 1, written - 4, size_t(15), written}) {
+        std::fill(actual.begin(), actual.end(), 0xa5);
+        size_t count = vox_snapshot_pixel_runs::compress_rows(image.data(), row_bytes, height, pitch,
+            actual.data(), cap);
+        assert(cap < written ? !count : count == written);
+        for (size_t i = cap; i < actual.size(); ++i) assert(actual[i] == 0xa5);
+    }
+    return 1;
+}
+
 int main()
 {
     uint8_t byte = 0, output[32] {};
@@ -80,4 +117,21 @@ int main()
     for (auto& value : noisy) { state ^= state << 13; state ^= state >> 17; state ^= state << 5; value = state; }
     assert(!vox_snapshot_pixel_runs::compress(noisy.data(), noisy.size(), compressed.data(), compressed.size()));
     std::printf("PASS %u bounded repeated-pixel zlib round trips and noisy-input fallback\n", cases);
+    assert(!vox_snapshot_pixel_runs::compress_rows(nullptr, 4096, 1, 4096, output, sizeof output));
+    assert(!vox_snapshot_pixel_runs::compress_rows(noisy.data(), 4096, 1, 4095, output, sizeof output));
+    assert(!vox_snapshot_pixel_runs::compress_rows(noisy.data(), 4094, 1, 4094, output, sizeof output));
+    assert(!vox_snapshot_pixel_runs::compress_rows(noisy.data(), 4096, 16, 4096, compressed.data(), compressed.size()));
+    unsigned row_cases = 0, encoded = 0;
+    // Rows shorter and longer than the seam buffer, padded pitches, a single
+    // tall column and the 2048-pixel capture width.
+    for (size_t row_bytes : {size_t(1), size_t(3), size_t(4), size_t(7), size_t(64), size_t(127),
+            size_t(128), size_t(129), size_t(1000), size_t(4093), size_t(8192)}) {
+        for (size_t padding : {size_t(0), size_t(1), size_t(13), size_t(64)}) {
+            size_t height = (64 * 1024 + row_bytes) / (row_bytes + 1);
+            encoded += rows_match_materialized(row_bytes, height, padding, uint32_t(row_bytes * 31 + padding));
+            ++row_cases;
+        }
+    }
+    assert(encoded > row_cases / 2);
+    std::printf("PASS %u pitched filter-row streams equal their materialized rows (%u encoded)\n", row_cases, encoded);
 }
