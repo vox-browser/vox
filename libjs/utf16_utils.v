@@ -147,8 +147,12 @@ fn string_from_utf16_lossy(data []u16) string {
 }
 
 fn encode_utf16(data []u16, lossy bool) string {
-	mut buf := []u8{cap: data.len}
-	mut index := 0
+	if !disable_utf16_ascii_prefix && data.len == 0 { return '' }
+	mut buf := []u8{len: data.len}
+	mut index := if disable_utf16_ascii_prefix { 0 } else { utf16_copy_ascii_prefix(data, mut buf) }
+	// Only the prefix is initialized output. The existing encoder appends the
+	// remaining Unicode/WTF-8 bytes using the same capacity as before.
+	buf.trim(index)
 	for index < data.len {
 		unit := data[index]
 		mut code_point := u32(unit)
