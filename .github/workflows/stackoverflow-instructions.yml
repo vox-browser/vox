@@ -1,0 +1,102 @@
+name: Stack Overflow instruction investigation
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - .github/workflows/stackoverflow-instructions.yml
+      - tools/ci_stackoverflow_instructions.py
+  workflow_dispatch:
+    inputs:
+      baseline_sha:
+        description: Full baseline SHA; empty uses this workflow's commit
+        type: string
+        default: ''
+      candidate_sha:
+        description: Full candidate SHA; empty collects a baseline and profile
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stackoverflow-instruction-investigation
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      VOX_CI_BASELINE_SHA: ${{ inputs.baseline_sha || github.sha }}
+      VOX_CI_CANDIDATE_SHA: ${{ inputs.candidate_sha || '' }}
+      VOX_CI_EVIDENCE: Build/ci-stackoverflow-${{ github.run_id }}-${{ github.run_attempt }}
+      JOBS: '2'
+      VJOBS: '1'
+      CARGO_BUILD_JOBS: '1'
+      V_C_ERROR_BUG_REPORT_DISABLED: '1'
+      V_MACOS_V3_NO_FALLBACK: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Linux build and capture dependencies
+        timeout-minutes: 20
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$VOX_CI_EVIDENCE"
+          sudo apt-get update > "$VOX_CI_EVIDENCE/apt-update.log" 2>&1
+          sudo apt-get install --no-install-recommends -y \
+            build-essential clang ninja-build generate-ninja pkg-config \
+            python3 python3-pil curl ca-certificates openssl \
+            libjavascriptcoregtk-4.1-dev libglib2.0-dev libharfbuzz-dev \
+            libicu-dev libwoff-dev libbrotli-dev libcurl4-openssl-dev \
+            libssl-dev libegl1-mesa-dev libgles2-mesa-dev libgl1-mesa-dev \
+            libxi-dev libxcursor-dev libxrandr-dev libx11-dev libasound2-dev \
+            libgc-dev libfreetype-dev libfontconfig-dev libwebp-dev \
+            libpng-dev libjpeg-dev fonts-liberation2 fonts-dejavu-core \
+            valgrind xvfb xauth xdotool \
+            > "$VOX_CI_EVIDENCE/apt-install.log" 2>&1
+          rustc --version --verbose
+          cargo --version
+
+      - name: Build pinned browser sources and verify startup
+        timeout-minutes: 170
+        run: python3 tools/ci_stackoverflow_instructions.py build
+
+      - name: Measure Cachegrind baseline or matched pairs
+        timeout-minutes: 185
+        run: python3 tools/ci_stackoverflow_instructions.py measure
+
+      - name: Preserve the cohort before profiling
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: stackoverflow-cohort-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.VOX_CI_EVIDENCE }}
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 6
+
+      - name: Collect separate Callgrind diagnostic
+        if: env.VOX_CI_CANDIDATE_SHA == ''
+        timeout-minutes: 40
+        run: python3 tools/ci_stackoverflow_instructions.py profile
+
+      - name: Preserve profiles, images, receipts and failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: stackoverflow-final-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.VOX_CI_EVIDENCE }}
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 6
