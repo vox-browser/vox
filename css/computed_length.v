@@ -32,14 +32,7 @@ fn (c &ComputedProperties) absolute_layout_length_to_px(length Length) CSSPixels
 		c.report_exact_layout_length()
 		return CSSPixels.from_raw(0)
 	}
-	if subject := c.subject_element_ {
-		if subject.document().font_rendering_policy() == .chromium {
-			return CSSPixels.truncated_value_for(length.absolute_length_to_px_without_rounding())
-		}
-		return length.absolute_length_to_px()
-	}
-	if c.cached_first_available_computed_font_ != unsafe { nil }
-		&& c.cached_first_available_computed_font_.font_rendering_policy == .chromium {
+	if c.absolute_layout_lengths_are_truncated() {
 		return CSSPixels.truncated_value_for(length.absolute_length_to_px_without_rounding())
 	}
 	return length.absolute_length_to_px()
@@ -108,10 +101,10 @@ pub fn (c &ComputedProperties) resolve_length_percentage_value_px(value StyleVal
 pub fn (c &ComputedProperties) length_resolution_context() LengthResolutionContext {
 	font_metrics, root_font_metrics := c.length_font_metrics()
 	mut context := LengthResolutionContext{
-		viewport_rect: c.viewport_rect_
-		font_metrics: font_metrics
-		root_font_metrics: root_font_metrics
-		font_metrics_depend_on_viewport_metrics: c.font_metrics_depend_on_viewport_metrics()
+		viewport_rect:                                c.viewport_rect_
+		font_metrics:                                 font_metrics
+		root_font_metrics:                            root_font_metrics
+		font_metrics_depend_on_viewport_metrics:      c.font_metrics_depend_on_viewport_metrics()
 		root_font_metrics_depend_on_viewport_metrics: c.root_font_metrics_depend_on_viewport_metrics_
 	}
 	if subject := c.subject_element_ {
@@ -136,4 +129,13 @@ pub fn (c &ComputedProperties) resolved_font_size_px() f64 {
 		}
 	}
 	return 16.0
+}
+
+@[inline]
+fn (c &ComputedProperties) absolute_layout_lengths_are_truncated() bool {
+	if subject := c.subject_element_ {
+		return subject.document().font_rendering_policy() == .chromium
+	}
+	return c.cached_first_available_computed_font_ != unsafe { nil }
+		&& c.cached_first_available_computed_font_.font_rendering_policy == .chromium
 }

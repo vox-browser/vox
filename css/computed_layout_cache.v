@@ -8,6 +8,7 @@ import platform
 @[heap]
 struct ComputedLayoutCache {
 mut:
+	resolved_edge_memo_                            ResolvedBoxEdgeMemo
 	computed_values_display_                       Display = Display.new()
 	computed_values_display_before_transformation_ Display = Display.new()
 	computed_values_position_                      Positioning

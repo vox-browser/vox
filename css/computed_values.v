@@ -2027,11 +2027,17 @@ pub fn (mut values MutableComputedValues) set_inset(value LengthBox) {
 }
 
 pub fn (mut values MutableComputedValues) set_margin(value LengthBox) {
-	values.ensure_computed_layout_cache().computed_values_margin_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	cache.computed_values_margin_ = value
+	cache.resolved_edge_memo_.valid = false
+	cache.resolved_edge_memo_.kind = .unclassified
 }
 
 pub fn (mut values MutableComputedValues) set_padding(value LengthBox) {
-	values.ensure_computed_layout_cache().computed_values_padding_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	cache.computed_values_padding_ = value
+	cache.resolved_edge_memo_.valid = false
+	cache.resolved_edge_memo_.kind = .unclassified
 }
 
 pub fn (mut values MutableComputedValues) set_overflow_clip_margin(value LengthBox) {
@@ -2039,19 +2045,27 @@ pub fn (mut values MutableComputedValues) set_overflow_clip_margin(value LengthB
 }
 
 pub fn (mut values MutableComputedValues) set_border_left(value BorderData) {
-	values.ensure_computed_layout_cache().computed_values_border_left_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	cache.computed_values_border_left_ = value
+	cache.resolved_edge_memo_.valid = false
 }
 
 pub fn (mut values MutableComputedValues) set_border_top(value BorderData) {
-	values.ensure_computed_layout_cache().computed_values_border_top_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	cache.computed_values_border_top_ = value
+	cache.resolved_edge_memo_.valid = false
 }
 
 pub fn (mut values MutableComputedValues) set_border_right(value BorderData) {
-	values.ensure_computed_layout_cache().computed_values_border_right_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	cache.computed_values_border_right_ = value
+	cache.resolved_edge_memo_.valid = false
 }
 
 pub fn (mut values MutableComputedValues) set_border_bottom(value BorderData) {
-	values.ensure_computed_layout_cache().computed_values_border_bottom_ = value
+	mut cache := values.ensure_computed_layout_cache()
+	cache.computed_values_border_bottom_ = value
+	cache.resolved_edge_memo_.valid = false
 }
 
 pub fn (mut values MutableComputedValues) set_border_bottom_left_radius(value BorderRadiusData) {

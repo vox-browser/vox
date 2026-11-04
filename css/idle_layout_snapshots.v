@@ -41,10 +41,10 @@ fn idle_layout_snapshot_is_shareable(cache &ComputedLayoutCache) bool {
 
 fn idle_layout_snapshots_equal(first &ComputedLayoutCache, second &ComputedLayoutCache) bool {
 	// Compare every resolved field, including future additions. Only write
-	// ownership and raw-graph resolution provenance are not rendered values.
+	// ownership, raw-graph provenance and derived edge memos are not rendered values.
 	// Eligibility excludes rare resource graphs and requires empty background layers.
 	$for field in ComputedLayoutCache.fields {
-		$if field.name != 'resolution_provenance' && field.name != 'document_resolution_owner' && field.name != 'writable_owner_identity' && field.name != 'owner_identity' && field.name != 'owner_serial' && field.name != 'rare_data_writable_' && field.name != 'rare_data_' && field.name != 'computed_values_background_layers_' && field.name != 'device_layout_projection_' {
+		$if field.name != 'resolution_provenance' && field.name != 'document_resolution_owner' && field.name != 'writable_owner_identity' && field.name != 'owner_identity' && field.name != 'owner_serial' && field.name != 'rare_data_writable_' && field.name != 'rare_data_' && field.name != 'computed_values_background_layers_' && field.name != 'device_layout_projection_' && field.name != 'resolved_edge_memo_' {
 			if first.$(field.name) != second.$(field.name) { return false }
 		}
 	}
