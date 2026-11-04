@@ -20,6 +20,7 @@ from types import SimpleNamespace
 import hacker_news_browser_instructions as measurement
 from capture_chatgpt_archive import URL
 from measure_sealed_github_instructions import clean_environment, fingerprint, native_dependencies, require
+from measure_sealed_github_instructions import FixtureHTML, text_content
 from measure_precise_scroll import runtime_input_paths
 from page_archive import Replay, load_archive
 
@@ -32,7 +33,24 @@ SELECTORS = [dict(name='headings', selector='h1', limit=20, attributes=[]),
              dict(name='images', selector='img', limit=100, attributes=['src'])]
 
 
-def content_gate(audit, title):
+def normalized(text):
+    return ' '.join(text.split())
+
+
+def source_expectations(archive, manifest):
+    parser = FixtureHTML()
+    entry = manifest['responses'][URL]
+    parser.feed((archive / 'bodies' / entry['sha256']).read_text())
+    return dict(document_sha256=entry['sha256'],
+        headings=[normalized(text_content(n)) for n in parser.nodes if n['tag'] == 'h1'],
+        links=[(n['attrs']['href'], normalized(text_content(n))) for n in parser.nodes
+               if n['tag'] == 'a' and 'href' in n['attrs']],
+        buttons=sum(n['tag'] == 'button' for n in parser.nodes),
+        editors=sum(n['tag'] == 'textarea' or n['attrs'].get('contenteditable') == 'true'
+                    for n in parser.nodes))
+
+
+def content_gate(audit, title, expected=None):
     require(audit.get('url') == URL and audit.get('title') == title, 'Wrong ChatGPT document')
     require(audit.get('ready') == 'complete', 'Incomplete ChatGPT document')
     require((audit.get('viewport_width'), audit.get('viewport_height')) == (1024, 768),
@@ -45,6 +63,14 @@ def content_gate(audit, title):
     require(any(e.get('rect', {}).get('width', 0) > 0
                 and e.get('rect', {}).get('height', 0) > 0
                 for e in groups['editors']['elements']), 'ChatGPT editor is not laid out')
+    if expected is not None:
+        require([normalized(e['text']) for e in groups['headings']['elements']] == expected['headings'],
+                'Homepage headings differ from the original source')
+        require([(e['attributes'].get('href', ''), normalized(e['text']))
+                 for e in groups['links']['elements']] == expected['links'],
+                'Full homepage link identity differs from the original source')
+        require(groups['buttons']['count'] == expected['buttons']
+                and groups['editors']['count'] == expected['editors'], 'Incomplete homepage controls')
     errors = audit.get('native_reported_errors', []) + audit.get('javascript_diagnostics', [])
     require(not errors, 'ChatGPT script/native errors: ' + repr(errors)[:1500])
     return dict(title=title, counts={name: row['count'] for name, row in groups.items()})
@@ -88,6 +114,8 @@ def run(args):
     manifest = load_archive(archive)
     require(manifest['url'] == URL, 'Archive is not the ChatGPT homepage')
     require(manifest['responses'][URL]['status'] == 200, 'Unsuccessful homepage response')
+    expected_content = source_expectations(archive, manifest)
+    measurement.write_json(out / 'source-expectations.json', expected_content)
     apps = measurement.reference_browser_apps(out, [
         ('vox', ROOT / 'Build/v/Vox.app'), ('brave', Path('/Applications/Brave Browser.app'))])
     reference = args.expected.resolve(strict=True)
@@ -99,7 +127,7 @@ def run(args):
         vox_arguments=['--screenshot-viewport-height', '768', '--js-engine=javascriptcore'],
         expected=reference, diff_tool=args.diff_tool.resolve(),
         audit_vox_capture_ownership=True,
-        content_validator=lambda audit: content_gate(audit, args.title),
+        content_validator=lambda audit: content_gate(audit, args.title, expected_content),
         audit_expression=audit_expression(), brave_emulated_viewport=True)
     settings.readiness_expression = """location.href===URL && document.title===TITLE
         && document.readyState==='complete' && document.fonts.status==='loaded'
@@ -107,7 +135,7 @@ def run(args):
         && [...document.querySelectorAll('textarea,[contenteditable=true]')].some(e=>{
             const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&!e.disabled})""".replace(
             'URL', json.dumps(URL)).replace('TITLE', json.dumps(args.title))
-    paths = {reference, audit_config, settings.diff_tool}
+    paths = {reference, audit_config, settings.diff_tool, out / 'source-expectations.json'}
     paths.update(p for p in archive.rglob('*') if p.is_file())
     paths.update(Path(__file__).parent / name for name in [
         'chatgpt_browser_instructions.py', 'capture_chatgpt_archive.py',

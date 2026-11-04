@@ -1,6 +1,4 @@
 import base64
-import copy
-import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -97,6 +95,18 @@ class ChatGPTInstructionsTests(unittest.TestCase):
         for audit in [truncated, invisible, native_error]:
             with self.assertRaises(RuntimeError):
                 comparison.content_gate(audit, 'ChatGPT')
+
+    def test_content_checks_full_source_link_and_heading_identity(self):
+        audit = self.audit()
+        groups = {g['name']: g for g in audit['selections']}
+        groups['headings']['elements'][0]['text'] = 'Where should we begin?'
+        groups['links']['elements'][0].update(text='Terms', attributes={'href': '/terms'})
+        expected = dict(headings=['Where should we begin?'], links=[('/terms', 'Terms')],
+                        buttons=1, editors=1)
+        comparison.content_gate(audit, 'ChatGPT', expected)
+        groups['links']['elements'][0]['attributes']['href'] = '/different'
+        with self.assertRaisesRegex(RuntimeError, 'link identity'):
+            comparison.content_gate(audit, 'ChatGPT', expected)
 
 
 if __name__ == '__main__':
