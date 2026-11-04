@@ -1409,3 +1409,100 @@ Working evidence is under `Build/vlang-damage-20261104-1630`.
 [Durable results](performance/vlang-damage-filter-20261104.json) and
 [raw commands, logs and receipts](performance/raw/vlang-damage-filter-20261104.tar.gz)
 preserve the evidence independently of that directory.
+
+### Parallel CPU pixel work (2026-11-04, late evening)
+
+**The live 60 FPS goal remains open.** Commit `c197d4355` adds one reusable CPU
+worker pool for independent channel conversion, backdrop copying and recorded
+layer compositing. Its capacity includes the caller and follows the available
+logical CPU count (18 here). Large jobs can use every participant; each range
+needs at least 524,288 pixels (2 MiB). Small jobs stay serial, and skipped opaque
+centers do not count toward the backdrop-copy admission threshold. Only workers
+assigned to a job wake. Concurrent producers share the pool; nested work runs
+serially. Callbacks finish before their buffers are published or released.
+Workers inherit the caller's floating-point rounding mode for exact blending.
+AppKit, mutable paint state, Skia recorders and GPU submission retain their
+existing owners and ordering. This does not parallelize the entire browser.
+
+`VOX_DISABLE_PARALLEL_RASTER=1` restores serial execution in the same native
+library. `VOX_PARALLEL_RASTER_DIAGNOSTICS=1` reports each parallel job's kind,
+units, participating lanes and pool capacity. A separate live diagnostic with
+the final policy records 44 parallel channel conversions and 16 backdrop copies
+during native input, using two to four participants per job. Recorded-layer
+compositing is covered by pixel checks, but did not occur in that live diagnostic
+and earns no scrolling attribution. The scheduler test observes 18 distinct
+threads inside one simultaneous job; a 10-megapixel conversion also exercises
+the full pool. Capacity is not a claim that all cores stay busy on every frame.
+
+The first policy used 65,536 pixels per participant and woke every worker.
+Both live pairs regressed, so that policy was rejected:
+
+| Pair | Serial FPS | Parallel FPS |
+| --- | ---: | ---: |
+| 1 | 46.2 | 39.3 |
+| 2 | 44.0 | 40.6 |
+
+Range-size sweeps showed that wake-up overhead exceeded the SIMD copy time for
+small buffers. Those microbenchmarks selected the coarser policy; they do not
+establish scrolling FPS. The final unprofiled cohort alternates serial and
+parallel execution of the same native candidate:
+
+| Run | Scroll FPS | Median / p95 / max interval | Over 16.67 ms | Inputs / scroll intervals / all publications |
+| --- | ---: | --- | ---: | --- |
+| serial-1 | 45.1 | 16.8 / 38.8 / 245.9 ms | 51% | 600 / 480 / 680 |
+| parallel-1 | 45.3 | 17.0 / 37.1 / 315.1 ms | 53% | 600 / 479 / 705 |
+| serial-2 | 46.8 | 17.0 / 31.5 / 235.8 ms | 53% | 600 / 489 / 718 |
+| parallel-2 | 47.3 | 16.5 / 37.2 / 252.1 ms | 49% | 600 / 494 / 744 |
+
+These small throughput differences do not establish a reliable improvement.
+Tail latency regresses, including the first parallel run's 315 ms maximum.
+Input delivery is respectively 56.3, 56.6, 57.3 and 57.4 Hz. Leading/trailing
+scroll-publication gaps are 212.3/0.3, 237.0/1.4, 199.7/161.6 and 173.9/0.4 ms;
+the throughput denominator includes the complete first-to-last input window.
+The JSON retains raw counts, exact intervals, host loads and actual input/frame
+timestamps. Publication means changed native layer contents after `updateLayer`,
+not physical display scanout.
+
+Both cohorts use live direct HTTPS, automatic scripting, a 1024x768 CSS-pixel
+viewport at 2x backing scale, empty private profiles/caches, retained OS caches,
+30 seconds of settling after the matching document title, and 600 native precise
+wheel events at nominal 60 Hz, delta 2, reversing every 60 inputs. All browser,
+driver and guard exits are zero; executable/native-library identities stay fixed
+throughout each cohort. Every pair has the same 29 cached resource URL/body-hash
+records. Host load changes from 62 to 37 in the rejected cohort and spans 38–45
+in the final cohort on 18 logical CPUs. Other production compilation continued
+on the host. Controls and candidates share that contention; small gains remain
+uncertain.
+
+The rejected cohort uses executable `6e17496f…`, and the final cohort uses the
+newest completed production executable then available, `70de4b58…`. Each loads
+an explicitly pinned native candidate, with serial/parallel selected only by the
+disable variable. Do not compare the two cohorts as a same-build pair. Both
+disable stationary-filter reuse. The final candidate also disables concurrent
+hidden-content/root-region shadow experiments in every run, isolating this pool.
+The raw records retain complete executable, library, source and resource hashes.
+
+Focused verification passes optimized compilation with warnings treated as
+errors (excluding unused helpers from the existing opacity header), plus
+AddressSanitizer/UndefinedBehaviorSanitizer and ThreadSanitizer execution.
+Checks cover exact in-place and unaligned conversion, scalar/SIMD tails, padded
+rows, skipped opaque cores, strided and contiguous blending under all four
+rounding modes, complete disjoint coverage, concurrent producers, nested calls,
+exception draining, serial fallback and actual worker participation. All 144
+existing local compositor picture comparisons also pass with the final pool.
+Focused runtime guards retain the 3 GiB cap; production/native compiles and live
+cohorts retain the default 12 GiB cap. This is no broad-suite or instruction-count
+claim. GPU round trips, full carousel repaints and main-thread input remain the
+larger unresolved work.
+
+The shared production build subsequently completed as receipt
+`20261104-181445-ed287358`, executable `b8701f74…`. A fresh installed-process
+diagnostic on live vlang.io completes all 240 inputs, exits cleanly and confirms
+that the installed bridge reaches the coarser parallel paths during input.
+This run uses the installed default settings and has no candidate injection;
+its diagnostic timing supplies no additional performance credit.
+
+Working evidence is in `Build/parallel-raster-20261104-1800`.
+[Durable results](performance/vlang-parallel-raster-20261104.json) and
+[raw commands, logs, timestamps and receipts](performance/raw/vlang-parallel-raster-20261104.tar.gz)
+retain both the rejected and final cohorts independently of `Build/`.

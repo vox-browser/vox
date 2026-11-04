@@ -1,0 +1,3053 @@
+{
+  "schema_version": 1,
+  "feature_commit": "c197d4355",
+  "goal": {
+    "target_hz": 60,
+    "satisfied": false
+  },
+  "workload": {
+    "url": "https://vlang.io/",
+    "viewport_css": [
+      1024,
+      768
+    ],
+    "backing_scale": 2,
+    "input_count": 600,
+    "nominal_input_hz": 60,
+    "delta_css": 2,
+    "reverse_every": 60,
+    "settle_seconds_after_title": 30,
+    "script_policy": "automatic",
+    "network": "live direct HTTPS",
+    "profile_and_cache": "empty private profile/cache per trial; OS caches retained",
+    "endpoint": "scroll-changing native layer publications after updateLayer; not physical display scanout"
+  },
+  "cohorts": [
+    {
+      "name": "small-ranges",
+      "grain_pixels": 65536,
+      "source_and_candidate_sha256": {
+        "/Users/alex/code/vox2/native_parallel_raster.h": "425e6ea99de3621f7e87442293e1c5790c7e8919825835ad6a4ea8dfe82c0304",
+        "/Users/alex/code/vox2/native_parallel_pixels.h": "56b388dae0c515da58844175ceafa96529782b8c688d3886d2304c411bbe86d2",
+        "/Users/alex/code/vox2/native_skia_text_darwin.cpp": "cb5935c7228cab0bc732076865b6645292e3870a329b8ffa23e4aeff0b929270",
+        "/Users/alex/code/vox2/native_chromium_shared_recording.h": "f68206a87f2d4d9939d393237bc8bdd295d9b4a26805be803a60d15f9c2c4fe2",
+        "/Users/alex/code/vox2/native_opacity_group_darwin.h": "46170af7f404e4527722305c09c9769536da3800ac1796a1a934a9f424fd458d",
+        "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/libLadybirdVSkiaText.dylib": "356cdb084b37fa241d1e515f1178b9ce06292778b56f38f1003ccf8a5b1332d1"
+      },
+      "sources_unchanged_during_cohort": true,
+      "runtime_inputs_identical": true,
+      "runtime_inputs": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+      },
+      "pinned_source_and_binary_sha256": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "6e17496ff30b300a11d6d015d162d4e8a9ed40e5b6717f6ecd0c96d12724d332",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "b4a9cf2d70eeaae4d5aee8fa4409916e8aa490124a5e725fce71c6ab79592bbd",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "100356905520dca5a7f9e2d8aa6db52232b1f8ea13c58cddb43c988bfc751d5e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": "6cd348efdbac344cd0db88f0a6c2c7695cf4d2165f7f103059792620302d6c27",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": "160f184eb6c42ec3343a5f9952dea7b37c647697ef4427a66cbfc7c8d2f9ce2b",
+        "/Users/alex/code/vox2/tools/precise_scroll_faults.h": "c4c9b278cdd523f9bc43012d2073f831bb70c7081b5b0bec632b00878ac85c7a",
+        "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/control-1/precise-scroll.dylib": "579d93468f1a7235e53430f550051fce15d1159eb40f0b795a454a919f2f8539",
+        "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/libLadybirdVSkiaText.dylib": "356cdb084b37fa241d1e515f1178b9ce06292778b56f38f1003ccf8a5b1332d1",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/parallel-raster-20261104-1800/run-cohort.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 6218481664,
+        "elapsed_seconds": 186.812238625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runs": [
+        {
+          "trial": "control-1",
+          "parallel": false,
+          "browser_exit": 0,
+          "driver_exit": 0,
+          "valid": true,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              62.13623046875,
+              72.92626953125,
+              73.7734375
+            ],
+            "load_average_after": [
+              54.17529296875,
+              69.31005859375,
+              72.3974609375
+            ]
+          },
+          "started_unix": 1793804371.5213661,
+          "finished_unix": 1793804415.631285,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-04 14:13:53 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=726 duration_us=10840708.417",
+            "completed_inputs": 600,
+            "completed_publications": 726,
+            "measured_publications": 694,
+            "moving_intervals": 489,
+            "measurement_window_us": 10585053.042,
+            "mean_publication_fps": 65.5641494895024,
+            "mean_scroll_fps": 46.19721772387128,
+            "mean_publication_interval_fps": 67.08602369182132,
+            "mean_scroll_interval_fps": 47.37943443658798,
+            "first_publication_delay_us": 102806.5,
+            "last_publication_gap_us": 152226.04199999943,
+            "first_counted_scroll_delay_us": 221507.58399999997,
+            "last_scroll_publication_gap_us": 161312.875,
+            "input_delivery_hz": 56.58922989079529,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 17671.207081803004,
+              "median": 17031.457999999635,
+              "p95": 25076.042000000365,
+              "max": 61750.54199999999
+            },
+            "publication_interval_us": {
+              "n": 693,
+              "mean": 14906.23448773449,
+              "median": 11912.29099999927,
+              "p95": 27447.2910000002,
+              "max": 281134.667
+            },
+            "scroll_interval_us": {
+              "n": 489,
+              "mean": 21106.20381799591,
+              "median": 16768.75,
+              "p95": 37358.542000000365,
+              "max": 281134.667
+            },
+            "update_layer_us": {
+              "n": 694,
+              "mean": 12875.275144092218,
+              "median": 9967.396,
+              "p95": 24444.208,
+              "max": 280731.25
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 247,
+            "fraction_over_budget": 0.5051124744376279
+          },
+          "raw": "Build/parallel-raster-20261104-1800/control-1",
+          "cached_resource_manifest": [
+            {
+              "url": "https://cdn.vox-cdn.com/verge/favicon.ico",
+              "body_sha256": "e8b35d402d511a684cf7fdc00a9e84772acd1b49c4d86cf4b1408fec5864bd63",
+              "bytes": 15086
+            },
+            {
+              "url": "https://cs.pikabu.ru/favicon.ico",
+              "body_sha256": "b136c8444148253d0264dd45d3f2dd3653a14a3d4bd6dad9653255df114376b8",
+              "bytes": 5430
+            },
+            {
+              "url": "https://edition.cnn.com/favicon.ico",
+              "body_sha256": "0cf453fe1114b59fa626c511484e5a9e502ddc2cc32875cfa6c37dd0673ba953",
+              "bytes": 11502
+            },
+            {
+              "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap",
+              "body_sha256": "b75f4b37e7df14ab3ee023bf6c41177fb550dfd2065c445d7ed3e3cf5327aafe",
+              "bytes": 10099
+            },
+            {
+              "url": "https://lobste.rs/favicon.ico",
+              "body_sha256": "2265dc38cbab99bec7cd7c193acbc31ca2d46ac7085c6ef8427509f2a322be09",
+              "bytes": 11134
+            },
+            {
+              "url": "https://slashdot.org/favicon.ico",
+              "body_sha256": "246b69d49e6e2c4548220e20030cd8f50837156cb993ea5f5f81c62fcbeeb59e",
+              "bytes": 777
+            },
+            {
+              "url": "https://slate.com/favicon.ico",
+              "body_sha256": "a85b0578562d82c677af6b987122ceb5ffbf35bff15a7d4e60f2f3e288bbe47f",
+              "bytes": 5430
+            },
+            {
+              "url": "https://stackoverflow.com/Content/Sites/stackoverflow/Img/favicon.ico?v=562fb39d93c8",
+              "body_sha256": "1fb72fef0a0698fda92fafe9dd1e3dce35fb7eb7151dfaf6977fa5a3770b1bb8",
+              "bytes": 7406
+            },
+            {
+              "url": "https://techcrunch.com/favicon.ico",
+              "body_sha256": "9deb629637088856fe61dc868bf40a7d21ed942e4117659f3d6c3408f59b906b",
+              "bytes": 198
+            },
+            {
+              "url": "https://vlang.io/app.css?v=20261025-1",
+              "body_sha256": "b71286ffeac1c0622b63535dcea97bc74dd25a7d3073d21cdd19919e126b6ed2",
+              "bytes": 51866
+            },
+            {
+              "url": "https://vlang.io/app.js?v=20261025-1",
+              "body_sha256": "30bb335433eeb441708f36966bb576094ec33af74b4b50dfeef20fd07bd275ba",
+              "bytes": 18136
+            },
+            {
+              "url": "https://vlang.io/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+              "body_sha256": "2595496fe48df6fcf9b1bc57c29a744c121eb4dd11566466bc13d2e52e6bbcc8",
+              "bytes": 1239
+            },
+            {
+              "url": "https://vlang.io/img/doom.png",
+              "body_sha256": "2d5ac5eddb928c63e2d05f17d6798e7cf117a553b14e65a1e49dabb5d6456b31",
+              "bytes": 496385
+            },
+            {
+              "url": "https://vlang.io/img/mastodon.png",
+              "body_sha256": "2b78b6a546e2b4444eae530c47b092aa647527afe4509705066758aa6277eeb7",
+              "bytes": 4560
+            },
+            {
+              "url": "https://vlang.io/img/patreon.png",
+              "body_sha256": "0072d654c99bc3e7f21174dbc93652969c1d16c3661034851823b4a151d7d48c",
+              "bytes": 9063
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_huly.png?3",
+              "body_sha256": "bce2cc2c87cfefc8b468dcbb4482deaf20822a4d53fa3273f880c4cf8d4e3ac9",
+              "bytes": 3826
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_mx.png",
+              "body_sha256": "eb94bf018ddd20ba154e75eabd997e9b2185934d333a28bd7474833f69afc396",
+              "bytes": 24284
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_octoberswimmer.png?3",
+              "body_sha256": "fff3dabac90b225a8433598b0d31922756f04600cc3085bb009c55003f19a14b",
+              "bytes": 6968
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_okturtles.svg",
+              "body_sha256": "68e40ab1b19d1a5c13141fe5e3692dd065897718881a3dbf574894061d790fbe",
+              "bytes": 16814
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_syndica.jpg?1",
+              "body_sha256": "0f7bdb73efe4b6bab479b0893a7bdda4dec23cb71db39b0e0d10ac7735c8d8fa",
+              "bytes": 14111
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_threefold.svg",
+              "body_sha256": "c8c42e67a42f7b3459123a1ba8564086790833c172d177d5bddbcd97e24ce527",
+              "bytes": 7594
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_whatlab.png",
+              "body_sha256": "d0f830708fec5fbe800357682a7f95d057d1a0473b19c702af729a07c894933a",
+              "bytes": 90565
+            },
+            {
+              "url": "https://vlang.io/img/v-logo.png",
+              "body_sha256": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+              "bytes": 29026
+            },
+            {
+              "url": "https://vlang.io/img/veasel.png",
+              "body_sha256": "48f654fb50d0013bb945e5c22998fa4166a9303bf19558f0d2bf33b86ec3c381",
+              "bytes": 309868
+            },
+            {
+              "url": "https://vlang.io/img/veery.jpg",
+              "body_sha256": "18364bf971eb5d4518c7aacbadd505949a832c9936da5ff0ee12713c8174a014",
+              "bytes": 37919
+            },
+            {
+              "url": "https://www.reddit.com/favicon.ico",
+              "body_sha256": "3fcb0febd3450b5edbd536a86dbfe6dd7bad6bd39d3976801b069e14d15da5d3",
+              "bytes": 2441
+            },
+            {
+              "url": "https://www.theguardian.com/favicon.ico",
+              "body_sha256": "2b67315a14d90101ccee5dd1d14e3e2520289367e335db003ed01328f7121382",
+              "bytes": 4286
+            },
+            {
+              "url": "https://www.theregister.com/favicon.ico",
+              "body_sha256": "c3d7122917ed85075db8b4420e7338b02668950beb80f5cda6861d4be0ee6878",
+              "bytes": 2101
+            },
+            {
+              "url": "https://www.wired.com/favicon.ico",
+              "body_sha256": "2536c01f1f9a9df0ad788a957dead34d216b26d2ffef0d17fdc7f2dc3158464a",
+              "bytes": 10990
+            }
+          ]
+        },
+        {
+          "trial": "candidate-1",
+          "parallel": true,
+          "browser_exit": 0,
+          "driver_exit": 0,
+          "valid": true,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              54.17529296875,
+              69.31005859375,
+              72.3974609375
+            ],
+            "load_average_after": [
+              42.783203125,
+              64.107421875,
+              70.31640625
+            ]
+          },
+          "started_unix": 1793804417.96034,
+          "finished_unix": 1793804462.5088341,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-04 14:13:53 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=549 duration_us=11082472.042",
+            "completed_inputs": 600,
+            "completed_publications": 549,
+            "measured_publications": 524,
+            "moving_intervals": 426,
+            "measurement_window_us": 10832335.667,
+            "mean_publication_fps": 48.37368561208195,
+            "mean_scroll_fps": 39.32669860829563,
+            "mean_publication_interval_fps": 49.76977908593946,
+            "mean_scroll_interval_fps": 40.543065642767175,
+            "first_publication_delay_us": 117879.959,
+            "last_publication_gap_us": 206070.70800000057,
+            "first_counted_scroll_delay_us": 253434.375,
+            "last_scroll_publication_gap_us": 207110.16699999943,
+            "input_delivery_hz": 55.29740015579597,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 18084.03283305509,
+              "median": 17720.333000000566,
+              "p95": 27670.375,
+              "max": 65843.33300000001
+            },
+            "publication_interval_us": {
+              "n": 523,
+              "mean": 20092.51434034417,
+              "median": 14677.41599999927,
+              "p95": 36838.7089999998,
+              "max": 356353.125
+            },
+            "scroll_interval_us": {
+              "n": 426,
+              "mean": 24665.130377934274,
+              "median": 18977.021000000183,
+              "p95": 42089.625,
+              "max": 356353.125
+            },
+            "update_layer_us": {
+              "n": 524,
+              "mean": 17794.49253053435,
+              "median": 12867.0415,
+              "p95": 35019.792,
+              "max": 353738.208
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 258,
+            "fraction_over_budget": 0.6056338028169014
+          },
+          "raw": "Build/parallel-raster-20261104-1800/candidate-1",
+          "cached_resource_manifest": [
+            {
+              "url": "https://cdn.vox-cdn.com/verge/favicon.ico",
+              "body_sha256": "e8b35d402d511a684cf7fdc00a9e84772acd1b49c4d86cf4b1408fec5864bd63",
+              "bytes": 15086
+            },
+            {
+              "url": "https://cs.pikabu.ru/favicon.ico",
+              "body_sha256": "b136c8444148253d0264dd45d3f2dd3653a14a3d4bd6dad9653255df114376b8",
+              "bytes": 5430
+            },
+            {
+              "url": "https://edition.cnn.com/favicon.ico",
+              "body_sha256": "0cf453fe1114b59fa626c511484e5a9e502ddc2cc32875cfa6c37dd0673ba953",
+              "bytes": 11502
+            },
+            {
+              "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap",
+              "body_sha256": "b75f4b37e7df14ab3ee023bf6c41177fb550dfd2065c445d7ed3e3cf5327aafe",
+              "bytes": 10099
+            },
+            {
+              "url": "https://lobste.rs/favicon.ico",
+              "body_sha256": "2265dc38cbab99bec7cd7c193acbc31ca2d46ac7085c6ef8427509f2a322be09",
+              "bytes": 11134
+            },
+            {
+              "url": "https://slashdot.org/favicon.ico",
+              "body_sha256": "246b69d49e6e2c4548220e20030cd8f50837156cb993ea5f5f81c62fcbeeb59e",
+              "bytes": 777
+            },
+            {
+              "url": "https://slate.com/favicon.ico",
+              "body_sha256": "a85b0578562d82c677af6b987122ceb5ffbf35bff15a7d4e60f2f3e288bbe47f",
+              "bytes": 5430
+            },
+            {
+              "url": "https://stackoverflow.com/Content/Sites/stackoverflow/Img/favicon.ico?v=562fb39d93c8",
+              "body_sha256": "1fb72fef0a0698fda92fafe9dd1e3dce35fb7eb7151dfaf6977fa5a3770b1bb8",
+              "bytes": 7406
+            },
+            {
+              "url": "https://techcrunch.com/favicon.ico",
+              "body_sha256": "9deb629637088856fe61dc868bf40a7d21ed942e4117659f3d6c3408f59b906b",
+              "bytes": 198
+            },
+            {
+              "url": "https://vlang.io/app.css?v=20261025-1",
+              "body_sha256": "b71286ffeac1c0622b63535dcea97bc74dd25a7d3073d21cdd19919e126b6ed2",
+              "bytes": 51866
+            },
+            {
+              "url": "https://vlang.io/app.js?v=20261025-1",
+              "body_sha256": "30bb335433eeb441708f36966bb576094ec33af74b4b50dfeef20fd07bd275ba",
+              "bytes": 18136
+            },
+            {
+              "url": "https://vlang.io/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+              "body_sha256": "2595496fe48df6fcf9b1bc57c29a744c121eb4dd11566466bc13d2e52e6bbcc8",
+              "bytes": 1239
+            },
+            {
+              "url": "https://vlang.io/img/doom.png",
+              "body_sha256": "2d5ac5eddb928c63e2d05f17d6798e7cf117a553b14e65a1e49dabb5d6456b31",
+              "bytes": 496385
+            },
+            {
+              "url": "https://vlang.io/img/mastodon.png",
+              "body_sha256": "2b78b6a546e2b4444eae530c47b092aa647527afe4509705066758aa6277eeb7",
+              "bytes": 4560
+            },
+            {
+              "url": "https://vlang.io/img/patreon.png",
+              "body_sha256": "0072d654c99bc3e7f21174dbc93652969c1d16c3661034851823b4a151d7d48c",
+              "bytes": 9063
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_huly.png?3",
+              "body_sha256": "bce2cc2c87cfefc8b468dcbb4482deaf20822a4d53fa3273f880c4cf8d4e3ac9",
+              "bytes": 3826
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_mx.png",
+              "body_sha256": "eb94bf018ddd20ba154e75eabd997e9b2185934d333a28bd7474833f69afc396",
+              "bytes": 24284
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_octoberswimmer.png?3",
+              "body_sha256": "fff3dabac90b225a8433598b0d31922756f04600cc3085bb009c55003f19a14b",
+              "bytes": 6968
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_okturtles.svg",
+              "body_sha256": "68e40ab1b19d1a5c13141fe5e3692dd065897718881a3dbf574894061d790fbe",
+              "bytes": 16814
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_syndica.jpg?1",
+              "body_sha256": "0f7bdb73efe4b6bab479b0893a7bdda4dec23cb71db39b0e0d10ac7735c8d8fa",
+              "bytes": 14111
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_threefold.svg",
+              "body_sha256": "c8c42e67a42f7b3459123a1ba8564086790833c172d177d5bddbcd97e24ce527",
+              "bytes": 7594
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_whatlab.png",
+              "body_sha256": "d0f830708fec5fbe800357682a7f95d057d1a0473b19c702af729a07c894933a",
+              "bytes": 90565
+            },
+            {
+              "url": "https://vlang.io/img/v-logo.png",
+              "body_sha256": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+              "bytes": 29026
+            },
+            {
+              "url": "https://vlang.io/img/veasel.png",
+              "body_sha256": "48f654fb50d0013bb945e5c22998fa4166a9303bf19558f0d2bf33b86ec3c381",
+              "bytes": 309868
+            },
+            {
+              "url": "https://vlang.io/img/veery.jpg",
+              "body_sha256": "18364bf971eb5d4518c7aacbadd505949a832c9936da5ff0ee12713c8174a014",
+              "bytes": 37919
+            },
+            {
+              "url": "https://www.reddit.com/favicon.ico",
+              "body_sha256": "3fcb0febd3450b5edbd536a86dbfe6dd7bad6bd39d3976801b069e14d15da5d3",
+              "bytes": 2441
+            },
+            {
+              "url": "https://www.theguardian.com/favicon.ico",
+              "body_sha256": "2b67315a14d90101ccee5dd1d14e3e2520289367e335db003ed01328f7121382",
+              "bytes": 4286
+            },
+            {
+              "url": "https://www.theregister.com/favicon.ico",
+              "body_sha256": "c3d7122917ed85075db8b4420e7338b02668950beb80f5cda6861d4be0ee6878",
+              "bytes": 2101
+            },
+            {
+              "url": "https://www.wired.com/favicon.ico",
+              "body_sha256": "2536c01f1f9a9df0ad788a957dead34d216b26d2ffef0d17fdc7f2dc3158464a",
+              "bytes": 10990
+            }
+          ]
+        },
+        {
+          "trial": "control-2",
+          "parallel": false,
+          "browser_exit": 0,
+          "driver_exit": 0,
+          "valid": true,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              42.783203125,
+              64.107421875,
+              70.31640625
+            ],
+            "load_average_after": [
+              39.69482421875,
+              60.302734375,
+              68.59375
+            ]
+          },
+          "started_unix": 1793804464.534338,
+          "finished_unix": 1793804509.3393931,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-04 14:13:53 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=675 duration_us=10981877.167",
+            "completed_inputs": 600,
+            "completed_publications": 675,
+            "measured_publications": 644,
+            "moving_intervals": 472,
+            "measurement_window_us": 10724245.583,
+            "mean_publication_fps": 60.050844137779194,
+            "mean_scroll_fps": 44.01241992706798,
+            "mean_publication_interval_fps": 61.56546520177243,
+            "mean_scroll_interval_fps": 45.19755563096727,
+            "first_publication_delay_us": 116157.083,
+            "last_publication_gap_us": 163921.5,
+            "first_counted_scroll_delay_us": 233442.29100000003,
+            "last_scroll_publication_gap_us": 165045.875,
+            "input_delivery_hz": 55.85474478032568,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 17903.581941569282,
+              "median": 17378.6669999999,
+              "p95": 25736.041999999434,
+              "max": 84332.66599999997
+            },
+            "publication_interval_us": {
+              "n": 643,
+              "mean": 16242.872472783825,
+              "median": 12614.33400000073,
+              "p95": 27324.375,
+              "max": 292882.875
+            },
+            "scroll_interval_us": {
+              "n": 472,
+              "mean": 22125.09030720339,
+              "median": 17225.0,
+              "p95": 39093.333000000566,
+              "max": 292882.875
+            },
+            "update_layer_us": {
+              "n": 644,
+              "mean": 14198.033616459627,
+              "median": 10732.2085,
+              "p95": 24573.333,
+              "max": 290546.083
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 254,
+            "fraction_over_budget": 0.538135593220339
+          },
+          "raw": "Build/parallel-raster-20261104-1800/control-2",
+          "cached_resource_manifest": [
+            {
+              "url": "https://cdn.vox-cdn.com/verge/favicon.ico",
+              "body_sha256": "e8b35d402d511a684cf7fdc00a9e84772acd1b49c4d86cf4b1408fec5864bd63",
+              "bytes": 15086
+            },
+            {
+              "url": "https://cs.pikabu.ru/favicon.ico",
+              "body_sha256": "b136c8444148253d0264dd45d3f2dd3653a14a3d4bd6dad9653255df114376b8",
+              "bytes": 5430
+            },
+            {
+              "url": "https://edition.cnn.com/favicon.ico",
+              "body_sha256": "0cf453fe1114b59fa626c511484e5a9e502ddc2cc32875cfa6c37dd0673ba953",
+              "bytes": 11502
+            },
+            {
+              "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap",
+              "body_sha256": "b75f4b37e7df14ab3ee023bf6c41177fb550dfd2065c445d7ed3e3cf5327aafe",
+              "bytes": 10099
+            },
+            {
+              "url": "https://lobste.rs/favicon.ico",
+              "body_sha256": "2265dc38cbab99bec7cd7c193acbc31ca2d46ac7085c6ef8427509f2a322be09",
+              "bytes": 11134
+            },
+            {
+              "url": "https://slashdot.org/favicon.ico",
+              "body_sha256": "246b69d49e6e2c4548220e20030cd8f50837156cb993ea5f5f81c62fcbeeb59e",
+              "bytes": 777
+            },
+            {
+              "url": "https://slate.com/favicon.ico",
+              "body_sha256": "a85b0578562d82c677af6b987122ceb5ffbf35bff15a7d4e60f2f3e288bbe47f",
+              "bytes": 5430
+            },
+            {
+              "url": "https://stackoverflow.com/Content/Sites/stackoverflow/Img/favicon.ico?v=562fb39d93c8",
+              "body_sha256": "1fb72fef0a0698fda92fafe9dd1e3dce35fb7eb7151dfaf6977fa5a3770b1bb8",
+              "bytes": 7406
+            },
+            {
+              "url": "https://techcrunch.com/favicon.ico",
+              "body_sha256": "9deb629637088856fe61dc868bf40a7d21ed942e4117659f3d6c3408f59b906b",
+              "bytes": 198
+            },
+            {
+              "url": "https://vlang.io/app.css?v=20261025-1",
+              "body_sha256": "b71286ffeac1c0622b63535dcea97bc74dd25a7d3073d21cdd19919e126b6ed2",
+              "bytes": 51866
+            },
+            {
+              "url": "https://vlang.io/app.js?v=20261025-1",
+              "body_sha256": "30bb335433eeb441708f36966bb576094ec33af74b4b50dfeef20fd07bd275ba",
+              "bytes": 18136
+            },
+            {
+              "url": "https://vlang.io/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+              "body_sha256": "2595496fe48df6fcf9b1bc57c29a744c121eb4dd11566466bc13d2e52e6bbcc8",
+              "bytes": 1239
+            },
+            {
+              "url": "https://vlang.io/img/doom.png",
+              "body_sha256": "2d5ac5eddb928c63e2d05f17d6798e7cf117a553b14e65a1e49dabb5d6456b31",
+              "bytes": 496385
+            },
+            {
+              "url": "https://vlang.io/img/mastodon.png",
+              "body_sha256": "2b78b6a546e2b4444eae530c47b092aa647527afe4509705066758aa6277eeb7",
+              "bytes": 4560
+            },
+            {
+              "url": "https://vlang.io/img/patreon.png",
+              "body_sha256": "0072d654c99bc3e7f21174dbc93652969c1d16c3661034851823b4a151d7d48c",
+              "bytes": 9063
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_huly.png?3",
+              "body_sha256": "bce2cc2c87cfefc8b468dcbb4482deaf20822a4d53fa3273f880c4cf8d4e3ac9",
+              "bytes": 3826
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_mx.png",
+              "body_sha256": "eb94bf018ddd20ba154e75eabd997e9b2185934d333a28bd7474833f69afc396",
+              "bytes": 24284
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_octoberswimmer.png?3",
+              "body_sha256": "fff3dabac90b225a8433598b0d31922756f04600cc3085bb009c55003f19a14b",
+              "bytes": 6968
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_okturtles.svg",
+              "body_sha256": "68e40ab1b19d1a5c13141fe5e3692dd065897718881a3dbf574894061d790fbe",
+              "bytes": 16814
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_syndica.jpg?1",
+              "body_sha256": "0f7bdb73efe4b6bab479b0893a7bdda4dec23cb71db39b0e0d10ac7735c8d8fa",
+              "bytes": 14111
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_threefold.svg",
+              "body_sha256": "c8c42e67a42f7b3459123a1ba8564086790833c172d177d5bddbcd97e24ce527",
+              "bytes": 7594
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_whatlab.png",
+              "body_sha256": "d0f830708fec5fbe800357682a7f95d057d1a0473b19c702af729a07c894933a",
+              "bytes": 90565
+            },
+            {
+              "url": "https://vlang.io/img/v-logo.png",
+              "body_sha256": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+              "bytes": 29026
+            },
+            {
+              "url": "https://vlang.io/img/veasel.png",
+              "body_sha256": "48f654fb50d0013bb945e5c22998fa4166a9303bf19558f0d2bf33b86ec3c381",
+              "bytes": 309868
+            },
+            {
+              "url": "https://vlang.io/img/veery.jpg",
+              "body_sha256": "18364bf971eb5d4518c7aacbadd505949a832c9936da5ff0ee12713c8174a014",
+              "bytes": 37919
+            },
+            {
+              "url": "https://www.reddit.com/favicon.ico",
+              "body_sha256": "3fcb0febd3450b5edbd536a86dbfe6dd7bad6bd39d3976801b069e14d15da5d3",
+              "bytes": 2441
+            },
+            {
+              "url": "https://www.theguardian.com/favicon.ico",
+              "body_sha256": "2b67315a14d90101ccee5dd1d14e3e2520289367e335db003ed01328f7121382",
+              "bytes": 4286
+            },
+            {
+              "url": "https://www.theregister.com/favicon.ico",
+              "body_sha256": "c3d7122917ed85075db8b4420e7338b02668950beb80f5cda6861d4be0ee6878",
+              "bytes": 2101
+            },
+            {
+              "url": "https://www.wired.com/favicon.ico",
+              "body_sha256": "2536c01f1f9a9df0ad788a957dead34d216b26d2ffef0d17fdc7f2dc3158464a",
+              "bytes": 10990
+            }
+          ]
+        },
+        {
+          "trial": "candidate-2",
+          "parallel": true,
+          "browser_exit": 0,
+          "driver_exit": 0,
+          "valid": true,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              39.47900390625,
+              59.91552734375,
+              68.408203125
+            ],
+            "load_average_after": [
+              37.12109375,
+              56.40380859375,
+              66.6748046875
+            ]
+          },
+          "started_unix": 1793804511.54073,
+          "finished_unix": 1793804556.523089,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-04 14:13:53 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=654 duration_us=11491508.458",
+            "completed_inputs": 600,
+            "completed_publications": 654,
+            "measured_publications": 623,
+            "moving_intervals": 456,
+            "measurement_window_us": 11233103.625,
+            "mean_publication_fps": 55.46107476596879,
+            "mean_scroll_fps": 40.59430191538004,
+            "mean_publication_interval_fps": 56.06619160591488,
+            "mean_scroll_interval_fps": 41.10318870144242,
+            "first_publication_delay_us": 138729.0,
+            "last_publication_gap_us": 344.83300000056624,
+            "first_counted_scroll_delay_us": 237755.542,
+            "last_scroll_publication_gap_us": 344.83300000056624,
+            "input_delivery_hz": 53.32453255989614,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 18753.09453255426,
+              "median": 17462.7910000002,
+              "p95": 27330.375,
+              "max": 160786.25
+            },
+            "publication_interval_us": {
+              "n": 622,
+              "mean": 17836.060758842443,
+              "median": 12499.10400000005,
+              "p95": 33104.082999999984,
+              "max": 310851.66699999943
+            },
+            "scroll_interval_us": {
+              "n": 456,
+              "mean": 24329.012701754385,
+              "median": 17524.6455000001,
+              "p95": 55032.375,
+              "max": 310851.66699999943
+            },
+            "update_layer_us": {
+              "n": 623,
+              "mean": 15803.412670947031,
+              "median": 10650.5,
+              "p95": 32984.417,
+              "max": 306744.5
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 256,
+            "fraction_over_budget": 0.5614035087719298
+          },
+          "raw": "Build/parallel-raster-20261104-1800/candidate-2",
+          "cached_resource_manifest": [
+            {
+              "url": "https://cdn.vox-cdn.com/verge/favicon.ico",
+              "body_sha256": "e8b35d402d511a684cf7fdc00a9e84772acd1b49c4d86cf4b1408fec5864bd63",
+              "bytes": 15086
+            },
+            {
+              "url": "https://cs.pikabu.ru/favicon.ico",
+              "body_sha256": "b136c8444148253d0264dd45d3f2dd3653a14a3d4bd6dad9653255df114376b8",
+              "bytes": 5430
+            },
+            {
+              "url": "https://edition.cnn.com/favicon.ico",
+              "body_sha256": "0cf453fe1114b59fa626c511484e5a9e502ddc2cc32875cfa6c37dd0673ba953",
+              "bytes": 11502
+            },
+            {
+              "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap",
+              "body_sha256": "b75f4b37e7df14ab3ee023bf6c41177fb550dfd2065c445d7ed3e3cf5327aafe",
+              "bytes": 10099
+            },
+            {
+              "url": "https://lobste.rs/favicon.ico",
+              "body_sha256": "2265dc38cbab99bec7cd7c193acbc31ca2d46ac7085c6ef8427509f2a322be09",
+              "bytes": 11134
+            },
+            {
+              "url": "https://slashdot.org/favicon.ico",
+              "body_sha256": "246b69d49e6e2c4548220e20030cd8f50837156cb993ea5f5f81c62fcbeeb59e",
+              "bytes": 777
+            },
+            {
+              "url": "https://slate.com/favicon.ico",
+              "body_sha256": "a85b0578562d82c677af6b987122ceb5ffbf35bff15a7d4e60f2f3e288bbe47f",
+              "bytes": 5430
+            },
+            {
+              "url": "https://stackoverflow.com/Content/Sites/stackoverflow/Img/favicon.ico?v=562fb39d93c8",
+              "body_sha256": "1fb72fef0a0698fda92fafe9dd1e3dce35fb7eb7151dfaf6977fa5a3770b1bb8",
+              "bytes": 7406
+            },
+            {
+              "url": "https://techcrunch.com/favicon.ico",
+              "body_sha256": "9deb629637088856fe61dc868bf40a7d21ed942e4117659f3d6c3408f59b906b",
+              "bytes": 198
+            },
+            {
+              "url": "https://vlang.io/app.css?v=20261025-1",
+              "body_sha256": "b71286ffeac1c0622b63535dcea97bc74dd25a7d3073d21cdd19919e126b6ed2",
+              "bytes": 51866
+            },
+            {
+              "url": "https://vlang.io/app.js?v=20261025-1",
+              "body_sha256": "30bb335433eeb441708f36966bb576094ec33af74b4b50dfeef20fd07bd275ba",
+              "bytes": 18136
+            },
+            {
+              "url": "https://vlang.io/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+              "body_sha256": "2595496fe48df6fcf9b1bc57c29a744c121eb4dd11566466bc13d2e52e6bbcc8",
+              "bytes": 1239
+            },
+            {
+              "url": "https://vlang.io/img/doom.png",
+              "body_sha256": "2d5ac5eddb928c63e2d05f17d6798e7cf117a553b14e65a1e49dabb5d6456b31",
+              "bytes": 496385
+            },
+            {
+              "url": "https://vlang.io/img/mastodon.png",
+              "body_sha256": "2b78b6a546e2b4444eae530c47b092aa647527afe4509705066758aa6277eeb7",
+              "bytes": 4560
+            },
+            {
+              "url": "https://vlang.io/img/patreon.png",
+              "body_sha256": "0072d654c99bc3e7f21174dbc93652969c1d16c3661034851823b4a151d7d48c",
+              "bytes": 9063
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_huly.png?3",
+              "body_sha256": "bce2cc2c87cfefc8b468dcbb4482deaf20822a4d53fa3273f880c4cf8d4e3ac9",
+              "bytes": 3826
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_mx.png",
+              "body_sha256": "eb94bf018ddd20ba154e75eabd997e9b2185934d333a28bd7474833f69afc396",
+              "bytes": 24284
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_octoberswimmer.png?3",
+              "body_sha256": "fff3dabac90b225a8433598b0d31922756f04600cc3085bb009c55003f19a14b",
+              "bytes": 6968
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_okturtles.svg",
+              "body_sha256": "68e40ab1b19d1a5c13141fe5e3692dd065897718881a3dbf574894061d790fbe",
+              "bytes": 16814
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_syndica.jpg?1",
+              "body_sha256": "0f7bdb73efe4b6bab479b0893a7bdda4dec23cb71db39b0e0d10ac7735c8d8fa",
+              "bytes": 14111
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_threefold.svg",
+              "body_sha256": "c8c42e67a42f7b3459123a1ba8564086790833c172d177d5bddbcd97e24ce527",
+              "bytes": 7594
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_whatlab.png",
+              "body_sha256": "d0f830708fec5fbe800357682a7f95d057d1a0473b19c702af729a07c894933a",
+              "bytes": 90565
+            },
+            {
+              "url": "https://vlang.io/img/v-logo.png",
+              "body_sha256": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+              "bytes": 29026
+            },
+            {
+              "url": "https://vlang.io/img/veasel.png",
+              "body_sha256": "48f654fb50d0013bb945e5c22998fa4166a9303bf19558f0d2bf33b86ec3c381",
+              "bytes": 309868
+            },
+            {
+              "url": "https://vlang.io/img/veery.jpg",
+              "body_sha256": "18364bf971eb5d4518c7aacbadd505949a832c9936da5ff0ee12713c8174a014",
+              "bytes": 37919
+            },
+            {
+              "url": "https://www.reddit.com/favicon.ico",
+              "body_sha256": "3fcb0febd3450b5edbd536a86dbfe6dd7bad6bd39d3976801b069e14d15da5d3",
+              "bytes": 2441
+            },
+            {
+              "url": "https://www.theguardian.com/favicon.ico",
+              "body_sha256": "2b67315a14d90101ccee5dd1d14e3e2520289367e335db003ed01328f7121382",
+              "bytes": 4286
+            },
+            {
+              "url": "https://www.theregister.com/favicon.ico",
+              "body_sha256": "c3d7122917ed85075db8b4420e7338b02668950beb80f5cda6861d4be0ee6878",
+              "bytes": 2101
+            },
+            {
+              "url": "https://www.wired.com/favicon.ico",
+              "body_sha256": "2536c01f1f9a9df0ad788a957dead34d216b26d2ffef0d17fdc7f2dc3158464a",
+              "bytes": 10990
+            }
+          ]
+        }
+      ],
+      "cached_resources_equal_within_pairs": [
+        true,
+        true
+      ]
+    },
+    {
+      "name": "coarse-ranges",
+      "grain_pixels": 524288,
+      "source_and_candidate_sha256": {
+        "/Users/alex/code/vox2/native_parallel_raster.h": "d74d8f9dfd98af90a1af34f1b6c8d7ccd99e4c6da5fb4b2ed4a89d17b9a557d1",
+        "/Users/alex/code/vox2/native_parallel_pixels.h": "95825c824aae2f67b8bc98f4a3a6f47be71c301779505aee76e3b48c82db8b6b",
+        "/Users/alex/code/vox2/native_skia_text_darwin.cpp": "cb5935c7228cab0bc732076865b6645292e3870a329b8ffa23e4aeff0b929270",
+        "/Users/alex/code/vox2/native_chromium_shared_recording.h": "f68206a87f2d4d9939d393237bc8bdd295d9b4a26805be803a60d15f9c2c4fe2",
+        "/Users/alex/code/vox2/native_opacity_group_darwin.h": "46170af7f404e4527722305c09c9769536da3800ac1796a1a934a9f424fd458d",
+        "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/coarse/libLadybirdVSkiaText.dylib": "d2c9c5c8b26c9ae0f1844627aa0f0c33c4d769e9aedbd13909f0304a9376ba86"
+      },
+      "sources_unchanged_during_cohort": true,
+      "runtime_inputs_identical": true,
+      "runtime_inputs": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+      },
+      "pinned_source_and_binary_sha256": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "70de4b58efdae04001ce2f15504dc8b736eb44f7443bb8f841f11d348766b5e4",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "452e1b6445fbc2691605ec6c35faeb2d70fcfc9a83c730ef5bf53b39c24bff7c",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "100356905520dca5a7f9e2d8aa6db52232b1f8ea13c58cddb43c988bfc751d5e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": "6cd348efdbac344cd0db88f0a6c2c7695cf4d2165f7f103059792620302d6c27",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": "160f184eb6c42ec3343a5f9952dea7b37c647697ef4427a66cbfc7c8d2f9ce2b",
+        "/Users/alex/code/vox2/tools/precise_scroll_faults.h": "c4c9b278cdd523f9bc43012d2073f831bb70c7081b5b0bec632b00878ac85c7a",
+        "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/coarse/control-1/precise-scroll.dylib": "8f6988d9a09c43691fb07c041577392369e3bfd25263ea88e9e69a207191fd4d",
+        "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/coarse/libLadybirdVSkiaText.dylib": "d2c9c5c8b26c9ae0f1844627aa0f0c33c4d769e9aedbd13909f0304a9376ba86",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/parallel-raster-20261104-1800/coarse/run-cohort.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 6459179008,
+        "elapsed_seconds": 183.71065812499998,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runs": [
+        {
+          "trial": "control-1",
+          "parallel": false,
+          "browser_exit": 0,
+          "driver_exit": 0,
+          "valid": true,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              38.484375,
+              41.29931640625,
+              52.55517578125
+            ],
+            "load_average_after": [
+              41.3837890625,
+              41.7470703125,
+              52.20458984375
+            ]
+          },
+          "started_unix": 1793805140.134752,
+          "finished_unix": 1793805184.833051,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-04 14:44:20 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=680 duration_us=10889542.833",
+            "completed_inputs": 600,
+            "completed_publications": 680,
+            "measured_publications": 649,
+            "moving_intervals": 480,
+            "measurement_window_us": 10639155.958999999,
+            "mean_publication_fps": 61.001079644009764,
+            "mean_scroll_fps": 45.1163609077422,
+            "mean_publication_interval_fps": 61.64917561853281,
+            "mean_scroll_interval_fps": 45.666056013728,
+            "first_publication_delay_us": 127768.375,
+            "last_publication_gap_us": 298.125,
+            "first_counted_scroll_delay_us": 212275.375,
+            "last_scroll_publication_gap_us": 298.125,
+            "input_delivery_hz": 56.301458716119946,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 17761.52914691152,
+              "median": 17234.5830000001,
+              "p95": 26234.0,
+              "max": 57722.5419999999
+            },
+            "publication_interval_us": {
+              "n": 648,
+              "mean": 16220.817066358024,
+              "median": 12578.875,
+              "p95": 29054.583000000566,
+              "max": 245856.209
+            },
+            "scroll_interval_us": {
+              "n": 480,
+              "mean": 21898.103039583333,
+              "median": 16789.291499999817,
+              "p95": 38820.79099999997,
+              "max": 245856.209
+            },
+            "update_layer_us": {
+              "n": 649,
+              "mean": 14318.31361016949,
+              "median": 10586.042,
+              "p95": 28028.708,
+              "max": 243354.208
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 246,
+            "fraction_over_budget": 0.5125
+          },
+          "raw": "Build/parallel-raster-20261104-1800/coarse/control-1",
+          "cached_resource_manifest": [
+            {
+              "url": "https://cdn.vox-cdn.com/verge/favicon.ico",
+              "body_sha256": "e8b35d402d511a684cf7fdc00a9e84772acd1b49c4d86cf4b1408fec5864bd63",
+              "bytes": 15086
+            },
+            {
+              "url": "https://cs.pikabu.ru/favicon.ico",
+              "body_sha256": "b136c8444148253d0264dd45d3f2dd3653a14a3d4bd6dad9653255df114376b8",
+              "bytes": 5430
+            },
+            {
+              "url": "https://edition.cnn.com/favicon.ico",
+              "body_sha256": "0cf453fe1114b59fa626c511484e5a9e502ddc2cc32875cfa6c37dd0673ba953",
+              "bytes": 11502
+            },
+            {
+              "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap",
+              "body_sha256": "b75f4b37e7df14ab3ee023bf6c41177fb550dfd2065c445d7ed3e3cf5327aafe",
+              "bytes": 10099
+            },
+            {
+              "url": "https://lobste.rs/favicon.ico",
+              "body_sha256": "2265dc38cbab99bec7cd7c193acbc31ca2d46ac7085c6ef8427509f2a322be09",
+              "bytes": 11134
+            },
+            {
+              "url": "https://slashdot.org/favicon.ico",
+              "body_sha256": "246b69d49e6e2c4548220e20030cd8f50837156cb993ea5f5f81c62fcbeeb59e",
+              "bytes": 777
+            },
+            {
+              "url": "https://slate.com/favicon.ico",
+              "body_sha256": "a85b0578562d82c677af6b987122ceb5ffbf35bff15a7d4e60f2f3e288bbe47f",
+              "bytes": 5430
+            },
+            {
+              "url": "https://stackoverflow.com/Content/Sites/stackoverflow/Img/favicon.ico?v=562fb39d93c8",
+              "body_sha256": "1fb72fef0a0698fda92fafe9dd1e3dce35fb7eb7151dfaf6977fa5a3770b1bb8",
+              "bytes": 7406
+            },
+            {
+              "url": "https://techcrunch.com/favicon.ico",
+              "body_sha256": "9deb629637088856fe61dc868bf40a7d21ed942e4117659f3d6c3408f59b906b",
+              "bytes": 198
+            },
+            {
+              "url": "https://vlang.io/app.css?v=20261025-1",
+              "body_sha256": "b71286ffeac1c0622b63535dcea97bc74dd25a7d3073d21cdd19919e126b6ed2",
+              "bytes": 51866
+            },
+            {
+              "url": "https://vlang.io/app.js?v=20261025-1",
+              "body_sha256": "30bb335433eeb441708f36966bb576094ec33af74b4b50dfeef20fd07bd275ba",
+              "bytes": 18136
+            },
+            {
+              "url": "https://vlang.io/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+              "body_sha256": "2595496fe48df6fcf9b1bc57c29a744c121eb4dd11566466bc13d2e52e6bbcc8",
+              "bytes": 1239
+            },
+            {
+              "url": "https://vlang.io/img/doom.png",
+              "body_sha256": "2d5ac5eddb928c63e2d05f17d6798e7cf117a553b14e65a1e49dabb5d6456b31",
+              "bytes": 496385
+            },
+            {
+              "url": "https://vlang.io/img/mastodon.png",
+              "body_sha256": "2b78b6a546e2b4444eae530c47b092aa647527afe4509705066758aa6277eeb7",
+              "bytes": 4560
+            },
+            {
+              "url": "https://vlang.io/img/patreon.png",
+              "body_sha256": "0072d654c99bc3e7f21174dbc93652969c1d16c3661034851823b4a151d7d48c",
+              "bytes": 9063
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_huly.png?3",
+              "body_sha256": "bce2cc2c87cfefc8b468dcbb4482deaf20822a4d53fa3273f880c4cf8d4e3ac9",
+              "bytes": 3826
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_mx.png",
+              "body_sha256": "eb94bf018ddd20ba154e75eabd997e9b2185934d333a28bd7474833f69afc396",
+              "bytes": 24284
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_octoberswimmer.png?3",
+              "body_sha256": "fff3dabac90b225a8433598b0d31922756f04600cc3085bb009c55003f19a14b",
+              "bytes": 6968
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_okturtles.svg",
+              "body_sha256": "68e40ab1b19d1a5c13141fe5e3692dd065897718881a3dbf574894061d790fbe",
+              "bytes": 16814
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_syndica.jpg?1",
+              "body_sha256": "0f7bdb73efe4b6bab479b0893a7bdda4dec23cb71db39b0e0d10ac7735c8d8fa",
+              "bytes": 14111
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_threefold.svg",
+              "body_sha256": "c8c42e67a42f7b3459123a1ba8564086790833c172d177d5bddbcd97e24ce527",
+              "bytes": 7594
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_whatlab.png",
+              "body_sha256": "d0f830708fec5fbe800357682a7f95d057d1a0473b19c702af729a07c894933a",
+              "bytes": 90565
+            },
+            {
+              "url": "https://vlang.io/img/v-logo.png",
+              "body_sha256": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+              "bytes": 29026
+            },
+            {
+              "url": "https://vlang.io/img/veasel.png",
+              "body_sha256": "48f654fb50d0013bb945e5c22998fa4166a9303bf19558f0d2bf33b86ec3c381",
+              "bytes": 309868
+            },
+            {
+              "url": "https://vlang.io/img/veery.jpg",
+              "body_sha256": "18364bf971eb5d4518c7aacbadd505949a832c9936da5ff0ee12713c8174a014",
+              "bytes": 37919
+            },
+            {
+              "url": "https://www.reddit.com/favicon.ico",
+              "body_sha256": "3fcb0febd3450b5edbd536a86dbfe6dd7bad6bd39d3976801b069e14d15da5d3",
+              "bytes": 2441
+            },
+            {
+              "url": "https://www.theguardian.com/favicon.ico",
+              "body_sha256": "2b67315a14d90101ccee5dd1d14e3e2520289367e335db003ed01328f7121382",
+              "bytes": 4286
+            },
+            {
+              "url": "https://www.theregister.com/favicon.ico",
+              "body_sha256": "c3d7122917ed85075db8b4420e7338b02668950beb80f5cda6861d4be0ee6878",
+              "bytes": 2101
+            },
+            {
+              "url": "https://www.wired.com/favicon.ico",
+              "body_sha256": "2536c01f1f9a9df0ad788a957dead34d216b26d2ffef0d17fdc7f2dc3158464a",
+              "bytes": 10990
+            }
+          ]
+        },
+        {
+          "trial": "candidate-1",
+          "parallel": true,
+          "browser_exit": 0,
+          "driver_exit": 0,
+          "valid": true,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              40.39208984375,
+              41.53515625,
+              52.068359375
+            ],
+            "load_average_after": [
+              40.08251953125,
+              41.18701171875,
+              51.390625
+            ]
+          },
+          "started_unix": 1793805186.1849852,
+          "finished_unix": 1793805230.223899,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-04 14:44:20 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=705 duration_us=10840292.458",
+            "completed_inputs": 600,
+            "completed_publications": 705,
+            "measured_publications": 673,
+            "moving_intervals": 479,
+            "measurement_window_us": 10577230.542,
+            "mean_publication_fps": 63.62724130174301,
+            "mean_scroll_fps": 45.2859562905422,
+            "mean_publication_interval_fps": 64.37902821154267,
+            "mean_scroll_interval_fps": 45.88921802578711,
+            "first_publication_delay_us": 137663.83399999997,
+            "last_publication_gap_us": 1384.9169999994338,
+            "first_counted_scroll_delay_us": 236956.542,
+            "last_scroll_publication_gap_us": 1384.9169999994338,
+            "input_delivery_hz": 56.63108103973858,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 17658.1478163606,
+              "median": 17086.708999998868,
+              "p95": 24684.25,
+              "max": 55735.33399999997
+            },
+            "publication_interval_us": {
+              "n": 672,
+              "mean": 15533.008617559524,
+              "median": 11785.3125,
+              "p95": 26237.6669999999,
+              "max": 315149.458
+            },
+            "scroll_interval_us": {
+              "n": 479,
+              "mean": 21791.611254697287,
+              "median": 17039.375,
+              "p95": 37073.91600000113,
+              "max": 315149.458
+            },
+            "update_layer_us": {
+              "n": 673,
+              "mean": 13590.212606240713,
+              "median": 10119.333,
+              "p95": 23203.708,
+              "max": 312695.333
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 254,
+            "fraction_over_budget": 0.5302713987473904
+          },
+          "raw": "Build/parallel-raster-20261104-1800/coarse/candidate-1",
+          "cached_resource_manifest": [
+            {
+              "url": "https://cdn.vox-cdn.com/verge/favicon.ico",
+              "body_sha256": "e8b35d402d511a684cf7fdc00a9e84772acd1b49c4d86cf4b1408fec5864bd63",
+              "bytes": 15086
+            },
+            {
+              "url": "https://cs.pikabu.ru/favicon.ico",
+              "body_sha256": "b136c8444148253d0264dd45d3f2dd3653a14a3d4bd6dad9653255df114376b8",
+              "bytes": 5430
+            },
+            {
+              "url": "https://edition.cnn.com/favicon.ico",
+              "body_sha256": "0cf453fe1114b59fa626c511484e5a9e502ddc2cc32875cfa6c37dd0673ba953",
+              "bytes": 11502
+            },
+            {
+              "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap",
+              "body_sha256": "b75f4b37e7df14ab3ee023bf6c41177fb550dfd2065c445d7ed3e3cf5327aafe",
+              "bytes": 10099
+            },
+            {
+              "url": "https://lobste.rs/favicon.ico",
+              "body_sha256": "2265dc38cbab99bec7cd7c193acbc31ca2d46ac7085c6ef8427509f2a322be09",
+              "bytes": 11134
+            },
+            {
+              "url": "https://slashdot.org/favicon.ico",
+              "body_sha256": "246b69d49e6e2c4548220e20030cd8f50837156cb993ea5f5f81c62fcbeeb59e",
+              "bytes": 777
+            },
+            {
+              "url": "https://slate.com/favicon.ico",
+              "body_sha256": "a85b0578562d82c677af6b987122ceb5ffbf35bff15a7d4e60f2f3e288bbe47f",
+              "bytes": 5430
+            },
+            {
+              "url": "https://stackoverflow.com/Content/Sites/stackoverflow/Img/favicon.ico?v=562fb39d93c8",
+              "body_sha256": "1fb72fef0a0698fda92fafe9dd1e3dce35fb7eb7151dfaf6977fa5a3770b1bb8",
+              "bytes": 7406
+            },
+            {
+              "url": "https://techcrunch.com/favicon.ico",
+              "body_sha256": "9deb629637088856fe61dc868bf40a7d21ed942e4117659f3d6c3408f59b906b",
+              "bytes": 198
+            },
+            {
+              "url": "https://vlang.io/app.css?v=20261025-1",
+              "body_sha256": "b71286ffeac1c0622b63535dcea97bc74dd25a7d3073d21cdd19919e126b6ed2",
+              "bytes": 51866
+            },
+            {
+              "url": "https://vlang.io/app.js?v=20261025-1",
+              "body_sha256": "30bb335433eeb441708f36966bb576094ec33af74b4b50dfeef20fd07bd275ba",
+              "bytes": 18136
+            },
+            {
+              "url": "https://vlang.io/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+              "body_sha256": "2595496fe48df6fcf9b1bc57c29a744c121eb4dd11566466bc13d2e52e6bbcc8",
+              "bytes": 1239
+            },
+            {
+              "url": "https://vlang.io/img/doom.png",
+              "body_sha256": "2d5ac5eddb928c63e2d05f17d6798e7cf117a553b14e65a1e49dabb5d6456b31",
+              "bytes": 496385
+            },
+            {
+              "url": "https://vlang.io/img/mastodon.png",
+              "body_sha256": "2b78b6a546e2b4444eae530c47b092aa647527afe4509705066758aa6277eeb7",
+              "bytes": 4560
+            },
+            {
+              "url": "https://vlang.io/img/patreon.png",
+              "body_sha256": "0072d654c99bc3e7f21174dbc93652969c1d16c3661034851823b4a151d7d48c",
+              "bytes": 9063
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_huly.png?3",
+              "body_sha256": "bce2cc2c87cfefc8b468dcbb4482deaf20822a4d53fa3273f880c4cf8d4e3ac9",
+              "bytes": 3826
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_mx.png",
+              "body_sha256": "eb94bf018ddd20ba154e75eabd997e9b2185934d333a28bd7474833f69afc396",
+              "bytes": 24284
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_octoberswimmer.png?3",
+              "body_sha256": "fff3dabac90b225a8433598b0d31922756f04600cc3085bb009c55003f19a14b",
+              "bytes": 6968
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_okturtles.svg",
+              "body_sha256": "68e40ab1b19d1a5c13141fe5e3692dd065897718881a3dbf574894061d790fbe",
+              "bytes": 16814
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_syndica.jpg?1",
+              "body_sha256": "0f7bdb73efe4b6bab479b0893a7bdda4dec23cb71db39b0e0d10ac7735c8d8fa",
+              "bytes": 14111
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_threefold.svg",
+              "body_sha256": "c8c42e67a42f7b3459123a1ba8564086790833c172d177d5bddbcd97e24ce527",
+              "bytes": 7594
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_whatlab.png",
+              "body_sha256": "d0f830708fec5fbe800357682a7f95d057d1a0473b19c702af729a07c894933a",
+              "bytes": 90565
+            },
+            {
+              "url": "https://vlang.io/img/v-logo.png",
+              "body_sha256": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+              "bytes": 29026
+            },
+            {
+              "url": "https://vlang.io/img/veasel.png",
+              "body_sha256": "48f654fb50d0013bb945e5c22998fa4166a9303bf19558f0d2bf33b86ec3c381",
+              "bytes": 309868
+            },
+            {
+              "url": "https://vlang.io/img/veery.jpg",
+              "body_sha256": "18364bf971eb5d4518c7aacbadd505949a832c9936da5ff0ee12713c8174a014",
+              "bytes": 37919
+            },
+            {
+              "url": "https://www.reddit.com/favicon.ico",
+              "body_sha256": "3fcb0febd3450b5edbd536a86dbfe6dd7bad6bd39d3976801b069e14d15da5d3",
+              "bytes": 2441
+            },
+            {
+              "url": "https://www.theguardian.com/favicon.ico",
+              "body_sha256": "2b67315a14d90101ccee5dd1d14e3e2520289367e335db003ed01328f7121382",
+              "bytes": 4286
+            },
+            {
+              "url": "https://www.theregister.com/favicon.ico",
+              "body_sha256": "c3d7122917ed85075db8b4420e7338b02668950beb80f5cda6861d4be0ee6878",
+              "bytes": 2101
+            },
+            {
+              "url": "https://www.wired.com/favicon.ico",
+              "body_sha256": "2536c01f1f9a9df0ad788a957dead34d216b26d2ffef0d17fdc7f2dc3158464a",
+              "bytes": 10990
+            }
+          ]
+        },
+        {
+          "trial": "control-2",
+          "parallel": false,
+          "browser_exit": 0,
+          "driver_exit": 0,
+          "valid": true,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              40.08251953125,
+              41.18701171875,
+              51.390625
+            ],
+            "load_average_after": [
+              45.275390625,
+              42.6474609375,
+              51.4169921875
+            ]
+          },
+          "started_unix": 1793805232.085897,
+          "finished_unix": 1793805276.411214,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-04 14:44:20 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=718 duration_us=10756174.375",
+            "completed_inputs": 600,
+            "completed_publications": 718,
+            "measured_publications": 694,
+            "moving_intervals": 489,
+            "measurement_window_us": 10452254.833,
+            "mean_publication_fps": 66.39715650721544,
+            "mean_scroll_fps": 46.78416359081895,
+            "mean_publication_interval_fps": 67.94550910923512,
+            "mean_scroll_interval_fps": 47.98641130814012,
+            "first_publication_delay_us": 100256.375,
+            "last_publication_gap_us": 152648.875,
+            "first_counted_scroll_delay_us": 199749.458,
+            "last_scroll_publication_gap_us": 161613.58300000057,
+            "input_delivery_hz": 57.30820857034877,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 17449.507233722874,
+              "median": 17024.083999998868,
+              "p95": 24281.29099999927,
+              "max": 56340.75
+            },
+            "publication_interval_us": {
+              "n": 693,
+              "mean": 14717.676165945168,
+              "median": 11571.79099999927,
+              "p95": 25188.083000000566,
+              "max": 235790.459
+            },
+            "scroll_interval_us": {
+              "n": 489,
+              "mean": 20839.232873210633,
+              "median": 17013.625,
+              "p95": 31456.082999999635,
+              "max": 235790.459
+            },
+            "update_layer_us": {
+              "n": 694,
+              "mean": 12706.937023054756,
+              "median": 9419.25,
+              "p95": 22711.167,
+              "max": 234041.417
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 259,
+            "fraction_over_budget": 0.5296523517382413
+          },
+          "raw": "Build/parallel-raster-20261104-1800/coarse/control-2",
+          "cached_resource_manifest": [
+            {
+              "url": "https://cdn.vox-cdn.com/verge/favicon.ico",
+              "body_sha256": "e8b35d402d511a684cf7fdc00a9e84772acd1b49c4d86cf4b1408fec5864bd63",
+              "bytes": 15086
+            },
+            {
+              "url": "https://cs.pikabu.ru/favicon.ico",
+              "body_sha256": "b136c8444148253d0264dd45d3f2dd3653a14a3d4bd6dad9653255df114376b8",
+              "bytes": 5430
+            },
+            {
+              "url": "https://edition.cnn.com/favicon.ico",
+              "body_sha256": "0cf453fe1114b59fa626c511484e5a9e502ddc2cc32875cfa6c37dd0673ba953",
+              "bytes": 11502
+            },
+            {
+              "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap",
+              "body_sha256": "b75f4b37e7df14ab3ee023bf6c41177fb550dfd2065c445d7ed3e3cf5327aafe",
+              "bytes": 10099
+            },
+            {
+              "url": "https://lobste.rs/favicon.ico",
+              "body_sha256": "2265dc38cbab99bec7cd7c193acbc31ca2d46ac7085c6ef8427509f2a322be09",
+              "bytes": 11134
+            },
+            {
+              "url": "https://slashdot.org/favicon.ico",
+              "body_sha256": "246b69d49e6e2c4548220e20030cd8f50837156cb993ea5f5f81c62fcbeeb59e",
+              "bytes": 777
+            },
+            {
+              "url": "https://slate.com/favicon.ico",
+              "body_sha256": "a85b0578562d82c677af6b987122ceb5ffbf35bff15a7d4e60f2f3e288bbe47f",
+              "bytes": 5430
+            },
+            {
+              "url": "https://stackoverflow.com/Content/Sites/stackoverflow/Img/favicon.ico?v=562fb39d93c8",
+              "body_sha256": "1fb72fef0a0698fda92fafe9dd1e3dce35fb7eb7151dfaf6977fa5a3770b1bb8",
+              "bytes": 7406
+            },
+            {
+              "url": "https://techcrunch.com/favicon.ico",
+              "body_sha256": "9deb629637088856fe61dc868bf40a7d21ed942e4117659f3d6c3408f59b906b",
+              "bytes": 198
+            },
+            {
+              "url": "https://vlang.io/app.css?v=20261025-1",
+              "body_sha256": "b71286ffeac1c0622b63535dcea97bc74dd25a7d3073d21cdd19919e126b6ed2",
+              "bytes": 51866
+            },
+            {
+              "url": "https://vlang.io/app.js?v=20261025-1",
+              "body_sha256": "30bb335433eeb441708f36966bb576094ec33af74b4b50dfeef20fd07bd275ba",
+              "bytes": 18136
+            },
+            {
+              "url": "https://vlang.io/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+              "body_sha256": "2595496fe48df6fcf9b1bc57c29a744c121eb4dd11566466bc13d2e52e6bbcc8",
+              "bytes": 1239
+            },
+            {
+              "url": "https://vlang.io/img/doom.png",
+              "body_sha256": "2d5ac5eddb928c63e2d05f17d6798e7cf117a553b14e65a1e49dabb5d6456b31",
+              "bytes": 496385
+            },
+            {
+              "url": "https://vlang.io/img/mastodon.png",
+              "body_sha256": "2b78b6a546e2b4444eae530c47b092aa647527afe4509705066758aa6277eeb7",
+              "bytes": 4560
+            },
+            {
+              "url": "https://vlang.io/img/patreon.png",
+              "body_sha256": "0072d654c99bc3e7f21174dbc93652969c1d16c3661034851823b4a151d7d48c",
+              "bytes": 9063
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_huly.png?3",
+              "body_sha256": "bce2cc2c87cfefc8b468dcbb4482deaf20822a4d53fa3273f880c4cf8d4e3ac9",
+              "bytes": 3826
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_mx.png",
+              "body_sha256": "eb94bf018ddd20ba154e75eabd997e9b2185934d333a28bd7474833f69afc396",
+              "bytes": 24284
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_octoberswimmer.png?3",
+              "body_sha256": "fff3dabac90b225a8433598b0d31922756f04600cc3085bb009c55003f19a14b",
+              "bytes": 6968
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_okturtles.svg",
+              "body_sha256": "68e40ab1b19d1a5c13141fe5e3692dd065897718881a3dbf574894061d790fbe",
+              "bytes": 16814
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_syndica.jpg?1",
+              "body_sha256": "0f7bdb73efe4b6bab479b0893a7bdda4dec23cb71db39b0e0d10ac7735c8d8fa",
+              "bytes": 14111
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_threefold.svg",
+              "body_sha256": "c8c42e67a42f7b3459123a1ba8564086790833c172d177d5bddbcd97e24ce527",
+              "bytes": 7594
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_whatlab.png",
+              "body_sha256": "d0f830708fec5fbe800357682a7f95d057d1a0473b19c702af729a07c894933a",
+              "bytes": 90565
+            },
+            {
+              "url": "https://vlang.io/img/v-logo.png",
+              "body_sha256": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+              "bytes": 29026
+            },
+            {
+              "url": "https://vlang.io/img/veasel.png",
+              "body_sha256": "48f654fb50d0013bb945e5c22998fa4166a9303bf19558f0d2bf33b86ec3c381",
+              "bytes": 309868
+            },
+            {
+              "url": "https://vlang.io/img/veery.jpg",
+              "body_sha256": "18364bf971eb5d4518c7aacbadd505949a832c9936da5ff0ee12713c8174a014",
+              "bytes": 37919
+            },
+            {
+              "url": "https://www.reddit.com/favicon.ico",
+              "body_sha256": "3fcb0febd3450b5edbd536a86dbfe6dd7bad6bd39d3976801b069e14d15da5d3",
+              "bytes": 2441
+            },
+            {
+              "url": "https://www.theguardian.com/favicon.ico",
+              "body_sha256": "2b67315a14d90101ccee5dd1d14e3e2520289367e335db003ed01328f7121382",
+              "bytes": 4286
+            },
+            {
+              "url": "https://www.theregister.com/favicon.ico",
+              "body_sha256": "c3d7122917ed85075db8b4420e7338b02668950beb80f5cda6861d4be0ee6878",
+              "bytes": 2101
+            },
+            {
+              "url": "https://www.wired.com/favicon.ico",
+              "body_sha256": "2536c01f1f9a9df0ad788a957dead34d216b26d2ffef0d17fdc7f2dc3158464a",
+              "bytes": 10990
+            }
+          ]
+        },
+        {
+          "trial": "candidate-2",
+          "parallel": true,
+          "browser_exit": 0,
+          "driver_exit": 0,
+          "valid": true,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              45.275390625,
+              42.6474609375,
+              51.4169921875
+            ],
+            "load_average_after": [
+              44.79345703125,
+              43.0361328125,
+              51.1142578125
+            ]
+          },
+          "started_unix": 1793805278.030354,
+          "finished_unix": 1793805321.956907,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V \u2014 The V Programming Language \u2014 vox [prod \u00b7 built 2026-11-04 14:44:20 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=744 duration_us=10698577.833",
+            "completed_inputs": 600,
+            "completed_publications": 744,
+            "measured_publications": 712,
+            "moving_intervals": 494,
+            "measurement_window_us": 10437020.292,
+            "mean_publication_fps": 68.21870419718832,
+            "mean_scroll_fps": 47.33151667613909,
+            "mean_publication_interval_fps": 68.74695777609705,
+            "mean_scroll_interval_fps": 47.765115529383884,
+            "first_publication_delay_us": 94330.375,
+            "last_publication_gap_us": 414.0839999988675,
+            "first_counted_scroll_delay_us": 173940.5,
+            "last_scroll_publication_gap_us": 414.0839999988675,
+            "input_delivery_hz": 57.39185928948849,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 17424.07394323873,
+              "median": 16996.54099999927,
+              "p95": 23917.625,
+              "max": 55039.625
+            },
+            "publication_interval_us": {
+              "n": 711,
+              "mean": 14546.098218002813,
+              "median": 11602.75,
+              "p95": 24998.707999999635,
+              "max": 252080.041
+            },
+            "scroll_interval_us": {
+              "n": 494,
+              "mean": 20935.78103846154,
+              "median": 16498.457999999868,
+              "p95": 37183.5,
+              "max": 252080.041
+            },
+            "update_layer_us": {
+              "n": 712,
+              "mean": 12510.59267977528,
+              "median": 9530.479,
+              "p95": 21778.875,
+              "max": 249670.167
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 241,
+            "fraction_over_budget": 0.48785425101214575
+          },
+          "raw": "Build/parallel-raster-20261104-1800/coarse/candidate-2",
+          "cached_resource_manifest": [
+            {
+              "url": "https://cdn.vox-cdn.com/verge/favicon.ico",
+              "body_sha256": "e8b35d402d511a684cf7fdc00a9e84772acd1b49c4d86cf4b1408fec5864bd63",
+              "bytes": 15086
+            },
+            {
+              "url": "https://cs.pikabu.ru/favicon.ico",
+              "body_sha256": "b136c8444148253d0264dd45d3f2dd3653a14a3d4bd6dad9653255df114376b8",
+              "bytes": 5430
+            },
+            {
+              "url": "https://edition.cnn.com/favicon.ico",
+              "body_sha256": "0cf453fe1114b59fa626c511484e5a9e502ddc2cc32875cfa6c37dd0673ba953",
+              "bytes": 11502
+            },
+            {
+              "url": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap",
+              "body_sha256": "b75f4b37e7df14ab3ee023bf6c41177fb550dfd2065c445d7ed3e3cf5327aafe",
+              "bytes": 10099
+            },
+            {
+              "url": "https://lobste.rs/favicon.ico",
+              "body_sha256": "2265dc38cbab99bec7cd7c193acbc31ca2d46ac7085c6ef8427509f2a322be09",
+              "bytes": 11134
+            },
+            {
+              "url": "https://slashdot.org/favicon.ico",
+              "body_sha256": "246b69d49e6e2c4548220e20030cd8f50837156cb993ea5f5f81c62fcbeeb59e",
+              "bytes": 777
+            },
+            {
+              "url": "https://slate.com/favicon.ico",
+              "body_sha256": "a85b0578562d82c677af6b987122ceb5ffbf35bff15a7d4e60f2f3e288bbe47f",
+              "bytes": 5430
+            },
+            {
+              "url": "https://stackoverflow.com/Content/Sites/stackoverflow/Img/favicon.ico?v=562fb39d93c8",
+              "body_sha256": "1fb72fef0a0698fda92fafe9dd1e3dce35fb7eb7151dfaf6977fa5a3770b1bb8",
+              "bytes": 7406
+            },
+            {
+              "url": "https://techcrunch.com/favicon.ico",
+              "body_sha256": "9deb629637088856fe61dc868bf40a7d21ed942e4117659f3d6c3408f59b906b",
+              "bytes": 198
+            },
+            {
+              "url": "https://vlang.io/app.css?v=20261025-1",
+              "body_sha256": "b71286ffeac1c0622b63535dcea97bc74dd25a7d3073d21cdd19919e126b6ed2",
+              "bytes": 51866
+            },
+            {
+              "url": "https://vlang.io/app.js?v=20261025-1",
+              "body_sha256": "30bb335433eeb441708f36966bb576094ec33af74b4b50dfeef20fd07bd275ba",
+              "bytes": 18136
+            },
+            {
+              "url": "https://vlang.io/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+              "body_sha256": "2595496fe48df6fcf9b1bc57c29a744c121eb4dd11566466bc13d2e52e6bbcc8",
+              "bytes": 1239
+            },
+            {
+              "url": "https://vlang.io/img/doom.png",
+              "body_sha256": "2d5ac5eddb928c63e2d05f17d6798e7cf117a553b14e65a1e49dabb5d6456b31",
+              "bytes": 496385
+            },
+            {
+              "url": "https://vlang.io/img/mastodon.png",
+              "body_sha256": "2b78b6a546e2b4444eae530c47b092aa647527afe4509705066758aa6277eeb7",
+              "bytes": 4560
+            },
+            {
+              "url": "https://vlang.io/img/patreon.png",
+              "body_sha256": "0072d654c99bc3e7f21174dbc93652969c1d16c3661034851823b4a151d7d48c",
+              "bytes": 9063
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_huly.png?3",
+              "body_sha256": "bce2cc2c87cfefc8b468dcbb4482deaf20822a4d53fa3273f880c4cf8d4e3ac9",
+              "bytes": 3826
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_mx.png",
+              "body_sha256": "eb94bf018ddd20ba154e75eabd997e9b2185934d333a28bd7474833f69afc396",
+              "bytes": 24284
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_octoberswimmer.png?3",
+              "body_sha256": "fff3dabac90b225a8433598b0d31922756f04600cc3085bb009c55003f19a14b",
+              "bytes": 6968
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_okturtles.svg",
+              "body_sha256": "68e40ab1b19d1a5c13141fe5e3692dd065897718881a3dbf574894061d790fbe",
+              "bytes": 16814
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_syndica.jpg?1",
+              "body_sha256": "0f7bdb73efe4b6bab479b0893a7bdda4dec23cb71db39b0e0d10ac7735c8d8fa",
+              "bytes": 14111
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_threefold.svg",
+              "body_sha256": "c8c42e67a42f7b3459123a1ba8564086790833c172d177d5bddbcd97e24ce527",
+              "bytes": 7594
+            },
+            {
+              "url": "https://vlang.io/img/sponsor_whatlab.png",
+              "body_sha256": "d0f830708fec5fbe800357682a7f95d057d1a0473b19c702af729a07c894933a",
+              "bytes": 90565
+            },
+            {
+              "url": "https://vlang.io/img/v-logo.png",
+              "body_sha256": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+              "bytes": 29026
+            },
+            {
+              "url": "https://vlang.io/img/veasel.png",
+              "body_sha256": "48f654fb50d0013bb945e5c22998fa4166a9303bf19558f0d2bf33b86ec3c381",
+              "bytes": 309868
+            },
+            {
+              "url": "https://vlang.io/img/veery.jpg",
+              "body_sha256": "18364bf971eb5d4518c7aacbadd505949a832c9936da5ff0ee12713c8174a014",
+              "bytes": 37919
+            },
+            {
+              "url": "https://www.reddit.com/favicon.ico",
+              "body_sha256": "3fcb0febd3450b5edbd536a86dbfe6dd7bad6bd39d3976801b069e14d15da5d3",
+              "bytes": 2441
+            },
+            {
+              "url": "https://www.theguardian.com/favicon.ico",
+              "body_sha256": "2b67315a14d90101ccee5dd1d14e3e2520289367e335db003ed01328f7121382",
+              "bytes": 4286
+            },
+            {
+              "url": "https://www.theregister.com/favicon.ico",
+              "body_sha256": "c3d7122917ed85075db8b4420e7338b02668950beb80f5cda6861d4be0ee6878",
+              "bytes": 2101
+            },
+            {
+              "url": "https://www.wired.com/favicon.ico",
+              "body_sha256": "2536c01f1f9a9df0ad788a957dead34d216b26d2ffef0d17fdc7f2dc3158464a",
+              "bytes": 10990
+            }
+          ]
+        }
+      ],
+      "cached_resources_equal_within_pairs": [
+        true,
+        true
+      ]
+    }
+  ],
+  "diagnostics": {
+    "small_ranges": {
+      "valid": true,
+      "before_input": [
+        {
+          "kind": "backdrop-copy",
+          "lanes": 16,
+          "jobs": 5
+        },
+        {
+          "kind": "backdrop-copy",
+          "lanes": 18,
+          "jobs": 17
+        },
+        {
+          "kind": "backdrop-copy",
+          "lanes": 2,
+          "jobs": 6
+        },
+        {
+          "kind": "backdrop-copy",
+          "lanes": 4,
+          "jobs": 315
+        },
+        {
+          "kind": "backdrop-copy",
+          "lanes": 8,
+          "jobs": 1
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 12,
+          "jobs": 5
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 16,
+          "jobs": 5
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 18,
+          "jobs": 51
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 2,
+          "jobs": 6
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 4,
+          "jobs": 315
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 5,
+          "jobs": 1
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 8,
+          "jobs": 1
+        }
+      ],
+      "during_input": [
+        {
+          "kind": "backdrop-copy",
+          "lanes": 16,
+          "jobs": 4
+        },
+        {
+          "kind": "backdrop-copy",
+          "lanes": 18,
+          "jobs": 12
+        },
+        {
+          "kind": "backdrop-copy",
+          "lanes": 2,
+          "jobs": 38
+        },
+        {
+          "kind": "backdrop-copy",
+          "lanes": 4,
+          "jobs": 68
+        },
+        {
+          "kind": "backdrop-copy",
+          "lanes": 8,
+          "jobs": 8
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 16,
+          "jobs": 4
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 18,
+          "jobs": 44
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 2,
+          "jobs": 55
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 3,
+          "jobs": 6
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 4,
+          "jobs": 71
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 5,
+          "jobs": 4
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 8,
+          "jobs": 8
+        }
+      ]
+    },
+    "coarse_ranges": {
+      "valid": true,
+      "before_input": [
+        {
+          "kind": "backdrop-copy",
+          "lanes": 2,
+          "jobs": 10
+        },
+        {
+          "kind": "backdrop-copy",
+          "lanes": 3,
+          "jobs": 9
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 2,
+          "jobs": 18
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 3,
+          "jobs": 19
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 4,
+          "jobs": 10
+        }
+      ],
+      "during_input": [
+        {
+          "kind": "backdrop-copy",
+          "lanes": 2,
+          "jobs": 10
+        },
+        {
+          "kind": "backdrop-copy",
+          "lanes": 3,
+          "jobs": 6
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 2,
+          "jobs": 16
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 3,
+          "jobs": 16
+        },
+        {
+          "kind": "channel-swap",
+          "lanes": 4,
+          "jobs": 12
+        }
+      ]
+    }
+  },
+  "checks": {
+    "final-unit": {
+      "guard": {
+        "command": [
+          "Build/parallel-raster-20261104-1800/coarse/final-unit"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 261619712,
+        "elapsed_seconds": 1.003004708,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": [
+        "worker participation: 4 distinct threads, 18 logical CPUs",
+        "worker participation: 18 distinct threads, 18 logical CPUs",
+        "worker participation: 4 distinct threads, 18 logical CPUs",
+        "parallel raster scheduling, pixels and compositing: PASS",
+        "{\"command\": [\"Build/parallel-raster-20261104-1800/coarse/final-unit\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 261619712, \"elapsed_seconds\": 1.003004708, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}"
+      ]
+    },
+    "final-asan": {
+      "guard": {
+        "command": [
+          "Build/parallel-raster-20261104-1800/coarse/final-asan"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 349700096,
+        "elapsed_seconds": 3.062836709,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": [
+        "worker participation: 4 distinct threads, 18 logical CPUs",
+        "worker participation: 18 distinct threads, 18 logical CPUs",
+        "worker participation: 4 distinct threads, 18 logical CPUs",
+        "parallel raster scheduling, pixels and compositing: PASS",
+        "{\"command\": [\"Build/parallel-raster-20261104-1800/coarse/final-asan\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 349700096, \"elapsed_seconds\": 3.062836709, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}"
+      ]
+    },
+    "final-tsan": {
+      "guard": {
+        "command": [
+          "Build/parallel-raster-20261104-1800/coarse/final-tsan"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 523796480,
+        "elapsed_seconds": 21.869406542,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": [
+        "worker participation: 4 distinct threads, 18 logical CPUs",
+        "worker participation: 18 distinct threads, 18 logical CPUs",
+        "worker participation: 4 distinct threads, 18 logical CPUs",
+        "parallel raster scheduling, pixels and compositing: PASS",
+        "{\"command\": [\"Build/parallel-raster-20261104-1800/coarse/final-tsan\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 523796480, \"elapsed_seconds\": 21.869406542, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}"
+      ]
+    },
+    "shared-layer": {
+      "guard": {
+        "command": [
+          "env",
+          "DYLD_LIBRARY_PATH=/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+          "VOX_PARALLEL_RASTER_DIAGNOSTICS=1",
+          "Build/parallel-raster-20261104-1800/coarse/shared-layer-test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 135921664,
+        "elapsed_seconds": 4.02024775,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": [
+        "VOX_PARALLEL_RASTER kind=backdrop-copy units=1704 lanes=6 capacity=18",
+        "VOX_PARALLEL_RASTER kind=backdrop-copy units=1704 lanes=6 capacity=18",
+        "VOX_PARALLEL_RASTER kind=backdrop-copy units=1704 lanes=6 capacity=18",
+        "VOX_PARALLEL_RASTER kind=backdrop-copy units=1704 lanes=6 capacity=18",
+        "144 local compositor pictures match; root backgrounds and blocked fallback pixels preserved",
+        "{\"command\": [\"env\", \"DYLD_LIBRARY_PATH=/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS\", \"VOX_PARALLEL_RASTER_DIAGNOSTICS=1\", \"Build/parallel-raster-20261104-1800/coarse/shared-layer-test\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 135921664, \"elapsed_seconds\": 4.02024775, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}"
+      ]
+    },
+    "native_compile": {
+      "command": [
+        "clang++",
+        "-std=c++20",
+        "-O3",
+        "-fno-rtti",
+        "-fPIC",
+        "-dynamiclib",
+        "-x",
+        "objective-c++",
+        "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+        "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+        "-DLADYBIRD_V_HAS_SNAPSHOT_DEFLATE",
+        "-IBuild/deps/libdeflate-1.24/libdeflate-1.24",
+        "native_skia_text_darwin.cpp",
+        "-x",
+        "none",
+        "Build/deps/libdeflate-1.24/snapshot-build/libdeflate.a",
+        "-Wl,-unexported_symbol,_libdeflate_*",
+        "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+        "-lskia",
+        "-framework",
+        "CoreFoundation",
+        "-framework",
+        "CoreGraphics",
+        "-framework",
+        "CoreText",
+        "-framework",
+        "Foundation",
+        "-framework",
+        "Metal",
+        "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+        "-Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib",
+        "-o",
+        "Build/parallel-raster-20261104-1800/coarse/libLadybirdVSkiaText.dylib"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 676593664,
+      "elapsed_seconds": 21.980691167000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "notes": [
+    "The pool sizes itself to all available logical CPUs; the verified host has 18. Each final range requires at least 524288 pixels (2 MiB).",
+    "Small ranges (65536 pixels) regressed in two paired live trials. Keep them as failures, not acceptance data for the final policy.",
+    "Coarse gains are small relative to host contention and variance; no reliable FPS improvement or 60 FPS claim.",
+    "The coarse native bridge includes concurrent shadow experiments disabled in every control, candidate and diagnostic by VOX_DISABLE_HIDDEN_CONTENT_SHADOW_SKIP and VOX_DISABLE_ROOT_SHADOW_REGIONS.",
+    "Paired timing used explicit native candidates. A subsequently completed shared production build was checked in a fresh installed process; its diagnostics are not performance acceptance."
+  ],
+  "tuning": {
+    "initial": [
+      "channel-swap trial=0 parallel=0 pixels=131072 ms=0.017108",
+      "channel-swap trial=0 parallel=1 pixels=131072 ms=0.083816",
+      "channel-swap trial=1 parallel=0 pixels=131072 ms=0.015295",
+      "channel-swap trial=1 parallel=1 pixels=131072 ms=0.060437",
+      "channel-swap trial=2 parallel=0 pixels=131072 ms=0.015329",
+      "channel-swap trial=2 parallel=1 pixels=131072 ms=0.057771",
+      "channel-swap trial=3 parallel=0 pixels=131072 ms=0.015691",
+      "channel-swap trial=3 parallel=1 pixels=131072 ms=0.041296",
+      "channel-swap trial=4 parallel=0 pixels=131072 ms=0.018226",
+      "channel-swap trial=4 parallel=1 pixels=131072 ms=0.069259",
+      "channel-swap trial=5 parallel=0 pixels=131072 ms=0.015635",
+      "channel-swap trial=5 parallel=1 pixels=131072 ms=0.103663",
+      "channel-swap trial=0 parallel=0 pixels=322088 ms=0.040793",
+      "channel-swap trial=0 parallel=1 pixels=322088 ms=0.076710",
+      "channel-swap trial=1 parallel=0 pixels=322088 ms=0.041825",
+      "channel-swap trial=1 parallel=1 pixels=322088 ms=0.104395",
+      "channel-swap trial=2 parallel=0 pixels=322088 ms=0.037659",
+      "channel-swap trial=2 parallel=1 pixels=322088 ms=0.074615",
+      "channel-swap trial=3 parallel=0 pixels=322088 ms=0.038283",
+      "channel-swap trial=3 parallel=1 pixels=322088 ms=0.069642",
+      "channel-swap trial=4 parallel=0 pixels=322088 ms=0.038381",
+      "channel-swap trial=4 parallel=1 pixels=322088 ms=0.070682",
+      "channel-swap trial=5 parallel=0 pixels=322088 ms=0.039198",
+      "channel-swap trial=5 parallel=1 pixels=322088 ms=0.071340",
+      "channel-swap trial=0 parallel=0 pixels=786432 ms=0.094156",
+      "channel-swap trial=0 parallel=1 pixels=786432 ms=0.142419",
+      "channel-swap trial=1 parallel=0 pixels=786432 ms=0.096686",
+      "channel-swap trial=1 parallel=1 pixels=786432 ms=0.075960",
+      "channel-swap trial=2 parallel=0 pixels=786432 ms=0.091454",
+      "channel-swap trial=2 parallel=1 pixels=786432 ms=0.127631",
+      "channel-swap trial=3 parallel=0 pixels=786432 ms=0.102894",
+      "channel-swap trial=3 parallel=1 pixels=786432 ms=0.121623",
+      "channel-swap trial=4 parallel=0 pixels=786432 ms=0.104766",
+      "channel-swap trial=4 parallel=1 pixels=786432 ms=0.107259",
+      "channel-swap trial=5 parallel=0 pixels=786432 ms=0.091995",
+      "channel-swap trial=5 parallel=1 pixels=786432 ms=0.148179",
+      "channel-swap trial=0 parallel=0 pixels=3145728 ms=0.461866",
+      "channel-swap trial=0 parallel=1 pixels=3145728 ms=0.553381",
+      "channel-swap trial=1 parallel=0 pixels=3145728 ms=0.475074",
+      "channel-swap trial=1 parallel=1 pixels=3145728 ms=0.255754",
+      "channel-swap trial=2 parallel=0 pixels=3145728 ms=0.456069",
+      "channel-swap trial=2 parallel=1 pixels=3145728 ms=0.542375",
+      "channel-swap trial=3 parallel=0 pixels=3145728 ms=0.431248",
+      "channel-swap trial=3 parallel=1 pixels=3145728 ms=0.285835",
+      "channel-swap trial=4 parallel=0 pixels=3145728 ms=0.431411",
+      "channel-swap trial=4 parallel=1 pixels=3145728 ms=0.269673",
+      "channel-swap trial=5 parallel=0 pixels=3145728 ms=0.423000",
+      "channel-swap trial=5 parallel=1 pixels=3145728 ms=0.382112",
+      "channel-swap trial=0 parallel=0 pixels=8388608 ms=1.179450",
+      "channel-swap trial=0 parallel=1 pixels=8388608 ms=0.649670",
+      "channel-swap trial=1 parallel=0 pixels=8388608 ms=1.248341",
+      "channel-swap trial=1 parallel=1 pixels=8388608 ms=1.196042",
+      "channel-swap trial=2 parallel=0 pixels=8388608 ms=1.093827",
+      "channel-swap trial=2 parallel=1 pixels=8388608 ms=1.055337",
+      "channel-swap trial=3 parallel=0 pixels=8388608 ms=1.194116",
+      "channel-swap trial=3 parallel=1 pixels=8388608 ms=1.078799",
+      "channel-swap trial=4 parallel=0 pixels=8388608 ms=1.221588",
+      "channel-swap trial=4 parallel=1 pixels=8388608 ms=0.646115",
+      "channel-swap trial=5 parallel=0 pixels=8388608 ms=1.167509",
+      "channel-swap trial=5 parallel=1 pixels=8388608 ms=1.079220"
+    ],
+    "selective_wake": [
+      "channel-swap trial=0 parallel=0 pixels=131072 ms=0.016882",
+      "channel-swap trial=0 parallel=1 pixels=131072 ms=0.404974",
+      "channel-swap trial=1 parallel=0 pixels=131072 ms=0.015680",
+      "channel-swap trial=1 parallel=1 pixels=131072 ms=0.133869",
+      "channel-swap trial=2 parallel=0 pixels=131072 ms=0.025712",
+      "channel-swap trial=2 parallel=1 pixels=131072 ms=0.075551",
+      "channel-swap trial=3 parallel=0 pixels=131072 ms=0.026665",
+      "channel-swap trial=3 parallel=1 pixels=131072 ms=0.069033",
+      "channel-swap trial=4 parallel=0 pixels=131072 ms=0.017640",
+      "channel-swap trial=4 parallel=1 pixels=131072 ms=0.053322",
+      "channel-swap trial=5 parallel=0 pixels=131072 ms=0.018023",
+      "channel-swap trial=5 parallel=1 pixels=131072 ms=0.068831",
+      "channel-swap trial=0 parallel=0 pixels=322088 ms=0.038309",
+      "channel-swap trial=0 parallel=1 pixels=322088 ms=0.144902",
+      "channel-swap trial=1 parallel=0 pixels=322088 ms=0.050939",
+      "channel-swap trial=1 parallel=1 pixels=322088 ms=0.079948",
+      "channel-swap trial=2 parallel=0 pixels=322088 ms=0.094488",
+      "channel-swap trial=2 parallel=1 pixels=322088 ms=0.213601",
+      "channel-swap trial=3 parallel=0 pixels=322088 ms=0.045065",
+      "channel-swap trial=3 parallel=1 pixels=322088 ms=0.117830",
+      "channel-swap trial=4 parallel=0 pixels=322088 ms=0.042260",
+      "channel-swap trial=4 parallel=1 pixels=322088 ms=0.203724",
+      "channel-swap trial=5 parallel=0 pixels=322088 ms=0.040825",
+      "channel-swap trial=5 parallel=1 pixels=322088 ms=0.107610",
+      "channel-swap trial=0 parallel=0 pixels=786432 ms=0.398462",
+      "channel-swap trial=0 parallel=1 pixels=786432 ms=0.346618",
+      "channel-swap trial=1 parallel=0 pixels=786432 ms=0.099044",
+      "channel-swap trial=1 parallel=1 pixels=786432 ms=0.256532",
+      "channel-swap trial=2 parallel=0 pixels=786432 ms=0.113719",
+      "channel-swap trial=2 parallel=1 pixels=786432 ms=0.205165",
+      "channel-swap trial=3 parallel=0 pixels=786432 ms=0.096270",
+      "channel-swap trial=3 parallel=1 pixels=786432 ms=0.889602",
+      "channel-swap trial=4 parallel=0 pixels=786432 ms=0.091889",
+      "channel-swap trial=4 parallel=1 pixels=786432 ms=0.233838",
+      "channel-swap trial=5 parallel=0 pixels=786432 ms=0.103531",
+      "channel-swap trial=5 parallel=1 pixels=786432 ms=0.664853",
+      "channel-swap trial=0 parallel=0 pixels=1048576 ms=0.123752",
+      "channel-swap trial=0 parallel=1 pixels=1048576 ms=0.858155",
+      "channel-swap trial=1 parallel=0 pixels=1048576 ms=0.135826",
+      "channel-swap trial=1 parallel=1 pixels=1048576 ms=0.290063",
+      "channel-swap trial=2 parallel=0 pixels=1048576 ms=0.143811",
+      "channel-swap trial=2 parallel=1 pixels=1048576 ms=0.301713",
+      "channel-swap trial=3 parallel=0 pixels=1048576 ms=0.193914",
+      "channel-swap trial=3 parallel=1 pixels=1048576 ms=0.328175",
+      "channel-swap trial=4 parallel=0 pixels=1048576 ms=0.169364",
+      "channel-swap trial=4 parallel=1 pixels=1048576 ms=0.235644",
+      "channel-swap trial=5 parallel=0 pixels=1048576 ms=0.242298",
+      "channel-swap trial=5 parallel=1 pixels=1048576 ms=0.234351",
+      "channel-swap trial=0 parallel=0 pixels=1713840 ms=0.336628",
+      "channel-swap trial=0 parallel=1 pixels=1713840 ms=0.274685",
+      "channel-swap trial=1 parallel=0 pixels=1713840 ms=0.241598",
+      "channel-swap trial=1 parallel=1 pixels=1713840 ms=1.367909",
+      "channel-swap trial=2 parallel=0 pixels=1713840 ms=0.300696",
+      "channel-swap trial=2 parallel=1 pixels=1713840 ms=0.335270",
+      "channel-swap trial=3 parallel=0 pixels=1713840 ms=0.240392",
+      "channel-swap trial=3 parallel=1 pixels=1713840 ms=0.378650",
+      "channel-swap trial=4 parallel=0 pixels=1713840 ms=0.365206",
+      "channel-swap trial=4 parallel=1 pixels=1713840 ms=0.393967",
+      "channel-swap trial=5 parallel=0 pixels=1713840 ms=0.271280",
+      "channel-swap trial=5 parallel=1 pixels=1713840 ms=0.446220",
+      "channel-swap trial=0 parallel=0 pixels=2097152 ms=0.305046",
+      "channel-swap trial=0 parallel=1 pixels=2097152 ms=0.414975",
+      "channel-swap trial=1 parallel=0 pixels=2097152 ms=0.423935",
+      "channel-swap trial=1 parallel=1 pixels=2097152 ms=0.313845",
+      "channel-swap trial=2 parallel=0 pixels=2097152 ms=0.500203",
+      "channel-swap trial=2 parallel=1 pixels=2097152 ms=1.755553",
+      "channel-swap trial=3 parallel=0 pixels=2097152 ms=0.454324",
+      "channel-swap trial=3 parallel=1 pixels=2097152 ms=0.897533",
+      "channel-swap trial=4 parallel=0 pixels=2097152 ms=0.566868",
+      "channel-swap trial=4 parallel=1 pixels=2097152 ms=0.677687",
+      "channel-swap trial=5 parallel=0 pixels=2097152 ms=0.415113",
+      "channel-swap trial=5 parallel=1 pixels=2097152 ms=1.725545",
+      "channel-swap trial=0 parallel=0 pixels=3145728 ms=0.472618",
+      "channel-swap trial=0 parallel=1 pixels=3145728 ms=0.616508",
+      "channel-swap trial=1 parallel=0 pixels=3145728 ms=0.467466",
+      "channel-swap trial=1 parallel=1 pixels=3145728 ms=0.836405",
+      "channel-swap trial=2 parallel=0 pixels=3145728 ms=0.496595",
+      "channel-swap trial=2 parallel=1 pixels=3145728 ms=0.539252",
+      "channel-swap trial=3 parallel=0 pixels=3145728 ms=0.414960",
+      "channel-swap trial=3 parallel=1 pixels=3145728 ms=0.713482",
+      "channel-swap trial=4 parallel=0 pixels=3145728 ms=0.443575",
+      "channel-swap trial=4 parallel=1 pixels=3145728 ms=0.926735",
+      "channel-swap trial=5 parallel=0 pixels=3145728 ms=0.544065",
+      "channel-swap trial=5 parallel=1 pixels=3145728 ms=0.546208",
+      "channel-swap trial=0 parallel=0 pixels=8388608 ms=1.554024",
+      "channel-swap trial=0 parallel=1 pixels=8388608 ms=1.032515",
+      "channel-swap trial=1 parallel=0 pixels=8388608 ms=1.198460",
+      "channel-swap trial=1 parallel=1 pixels=8388608 ms=1.074692",
+      "channel-swap trial=2 parallel=0 pixels=8388608 ms=1.222684",
+      "channel-swap trial=2 parallel=1 pixels=8388608 ms=2.318155",
+      "channel-swap trial=3 parallel=0 pixels=8388608 ms=1.350861",
+      "channel-swap trial=3 parallel=1 pixels=8388608 ms=1.572576",
+      "channel-swap trial=4 parallel=0 pixels=8388608 ms=1.470353",
+      "channel-swap trial=4 parallel=1 pixels=8388608 ms=1.204402",
+      "channel-swap trial=5 parallel=0 pixels=8388608 ms=1.248095",
+      "channel-swap trial=5 parallel=1 pixels=8388608 ms=1.100230"
+    ],
+    "grain_sweep": [
+      "range-tune trial=0 grain=65536 pixels=322088 ms=0.239202",
+      "range-tune trial=0 grain=262144 pixels=322088 ms=0.042943",
+      "range-tune trial=0 grain=524288 pixels=322088 ms=0.034605",
+      "range-tune trial=0 grain=1048576 pixels=322088 ms=0.076400",
+      "range-tune trial=0 grain=322089 pixels=322088 ms=0.098060",
+      "range-tune trial=1 grain=65536 pixels=322088 ms=0.276548",
+      "range-tune trial=1 grain=262144 pixels=322088 ms=0.041992",
+      "range-tune trial=1 grain=524288 pixels=322088 ms=0.064735",
+      "range-tune trial=1 grain=1048576 pixels=322088 ms=0.078259",
+      "range-tune trial=1 grain=322089 pixels=322088 ms=0.037250",
+      "range-tune trial=2 grain=65536 pixels=322088 ms=0.090977",
+      "range-tune trial=2 grain=262144 pixels=322088 ms=0.056161",
+      "range-tune trial=2 grain=524288 pixels=322088 ms=0.050944",
+      "range-tune trial=2 grain=1048576 pixels=322088 ms=0.122968",
+      "range-tune trial=2 grain=322089 pixels=322088 ms=0.135645",
+      "range-tune trial=3 grain=65536 pixels=322088 ms=0.242752",
+      "range-tune trial=3 grain=262144 pixels=322088 ms=0.045268",
+      "range-tune trial=3 grain=524288 pixels=322088 ms=0.047205",
+      "range-tune trial=3 grain=1048576 pixels=322088 ms=0.237365",
+      "range-tune trial=3 grain=322089 pixels=322088 ms=0.041935",
+      "range-tune trial=0 grain=65536 pixels=1048576 ms=0.668560",
+      "range-tune trial=0 grain=262144 pixels=1048576 ms=0.224619",
+      "range-tune trial=0 grain=524288 pixels=1048576 ms=0.148235",
+      "range-tune trial=0 grain=1048576 pixels=1048576 ms=0.290827",
+      "range-tune trial=0 grain=1048577 pixels=1048576 ms=0.315410",
+      "range-tune trial=1 grain=65536 pixels=1048576 ms=0.521646",
+      "range-tune trial=1 grain=262144 pixels=1048576 ms=0.132115",
+      "range-tune trial=1 grain=524288 pixels=1048576 ms=0.155748",
+      "range-tune trial=1 grain=1048576 pixels=1048576 ms=0.181159",
+      "range-tune trial=1 grain=1048577 pixels=1048576 ms=0.113023",
+      "range-tune trial=2 grain=65536 pixels=1048576 ms=0.850340",
+      "range-tune trial=2 grain=262144 pixels=1048576 ms=0.182965",
+      "range-tune trial=2 grain=524288 pixels=1048576 ms=0.181610",
+      "range-tune trial=2 grain=1048576 pixels=1048576 ms=0.118047",
+      "range-tune trial=2 grain=1048577 pixels=1048576 ms=0.163544",
+      "range-tune trial=3 grain=65536 pixels=1048576 ms=1.358520",
+      "range-tune trial=3 grain=262144 pixels=1048576 ms=0.181356",
+      "range-tune trial=3 grain=524288 pixels=1048576 ms=0.187710",
+      "range-tune trial=3 grain=1048576 pixels=1048576 ms=0.125078",
+      "range-tune trial=3 grain=1048577 pixels=1048576 ms=0.117133",
+      "range-tune trial=0 grain=65536 pixels=1713840 ms=0.309232",
+      "range-tune trial=0 grain=262144 pixels=1713840 ms=0.277458",
+      "range-tune trial=0 grain=524288 pixels=1713840 ms=0.448954",
+      "range-tune trial=0 grain=1048576 pixels=1713840 ms=0.229511",
+      "range-tune trial=0 grain=1713841 pixels=1713840 ms=0.352465",
+      "range-tune trial=1 grain=65536 pixels=1713840 ms=0.467137",
+      "range-tune trial=1 grain=262144 pixels=1713840 ms=0.353242",
+      "range-tune trial=1 grain=524288 pixels=1713840 ms=0.291274",
+      "range-tune trial=1 grain=1048576 pixels=1713840 ms=0.254643",
+      "range-tune trial=1 grain=1713841 pixels=1713840 ms=0.393160",
+      "range-tune trial=2 grain=65536 pixels=1713840 ms=0.492723",
+      "range-tune trial=2 grain=262144 pixels=1713840 ms=0.370142",
+      "range-tune trial=2 grain=524288 pixels=1713840 ms=0.241714",
+      "range-tune trial=2 grain=1048576 pixels=1713840 ms=0.214807",
+      "range-tune trial=2 grain=1713841 pixels=1713840 ms=0.224240",
+      "range-tune trial=3 grain=65536 pixels=1713840 ms=0.503250",
+      "range-tune trial=3 grain=262144 pixels=1713840 ms=0.322787",
+      "range-tune trial=3 grain=524288 pixels=1713840 ms=0.267808",
+      "range-tune trial=3 grain=1048576 pixels=1713840 ms=0.239767",
+      "range-tune trial=3 grain=1713841 pixels=1713840 ms=0.187121",
+      "range-tune trial=0 grain=65536 pixels=3145728 ms=0.651685",
+      "range-tune trial=0 grain=262144 pixels=3145728 ms=0.377783",
+      "range-tune trial=0 grain=524288 pixels=3145728 ms=0.779189",
+      "range-tune trial=0 grain=1048576 pixels=3145728 ms=0.475581",
+      "range-tune trial=0 grain=3145729 pixels=3145728 ms=0.528155",
+      "range-tune trial=1 grain=65536 pixels=3145728 ms=0.449884",
+      "range-tune trial=1 grain=262144 pixels=3145728 ms=0.636157",
+      "range-tune trial=1 grain=524288 pixels=3145728 ms=0.419648",
+      "range-tune trial=1 grain=1048576 pixels=3145728 ms=0.521169",
+      "range-tune trial=1 grain=3145729 pixels=3145728 ms=0.962958",
+      "range-tune trial=2 grain=65536 pixels=3145728 ms=0.631371",
+      "range-tune trial=2 grain=262144 pixels=3145728 ms=0.533537",
+      "range-tune trial=2 grain=524288 pixels=3145728 ms=0.330256",
+      "range-tune trial=2 grain=1048576 pixels=3145728 ms=0.390327",
+      "range-tune trial=2 grain=3145729 pixels=3145728 ms=0.568369",
+      "range-tune trial=3 grain=65536 pixels=3145728 ms=0.556936",
+      "range-tune trial=3 grain=262144 pixels=3145728 ms=0.350692",
+      "range-tune trial=3 grain=524288 pixels=3145728 ms=0.358723",
+      "range-tune trial=3 grain=1048576 pixels=3145728 ms=0.659001",
+      "range-tune trial=3 grain=3145729 pixels=3145728 ms=0.406153",
+      "range-tune trial=0 grain=65536 pixels=8388608 ms=0.741556",
+      "range-tune trial=0 grain=262144 pixels=8388608 ms=0.714365",
+      "range-tune trial=0 grain=524288 pixels=8388608 ms=0.981911",
+      "range-tune trial=0 grain=1048576 pixels=8388608 ms=1.126494",
+      "range-tune trial=0 grain=8388609 pixels=8388608 ms=3.805305",
+      "range-tune trial=1 grain=65536 pixels=8388608 ms=0.730655",
+      "range-tune trial=1 grain=262144 pixels=8388608 ms=0.612796",
+      "range-tune trial=1 grain=524288 pixels=8388608 ms=0.625394",
+      "range-tune trial=1 grain=1048576 pixels=8388608 ms=0.857467",
+      "range-tune trial=1 grain=8388609 pixels=8388608 ms=2.455540",
+      "range-tune trial=2 grain=65536 pixels=8388608 ms=0.555691",
+      "range-tune trial=2 grain=262144 pixels=8388608 ms=0.887240",
+      "range-tune trial=2 grain=524288 pixels=8388608 ms=0.712082",
+      "range-tune trial=2 grain=1048576 pixels=8388608 ms=1.078658",
+      "range-tune trial=2 grain=8388609 pixels=8388608 ms=1.978360",
+      "range-tune trial=3 grain=65536 pixels=8388608 ms=1.091743",
+      "range-tune trial=3 grain=262144 pixels=8388608 ms=0.724245",
+      "range-tune trial=3 grain=524288 pixels=8388608 ms=0.688675",
+      "range-tune trial=3 grain=1048576 pixels=8388608 ms=0.806037",
+      "range-tune trial=3 grain=8388609 pixels=8388608 ms=4.971830"
+    ]
+  },
+  "raw_archive": {
+    "path": "docs/performance/raw/vlang-parallel-raster-20261104.tar.gz",
+    "sha256": "945f198b344a2854adc744adf32b277d1cb7506fdbea4fa3f9e2b5252f5c4102"
+  },
+  "installed_validation": {
+    "receipt": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "b8701f740c8b57a0137d71bfece6ca3c1ae623d3abbc552fe4f70f067c82d446",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-181445-ed287358/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "2709488513e57c3d1b1156cb24c7c65c229a9e0c5fe4078cec2f3bec3cd4f49f",
+        "dirty": true,
+        "head": "5fe72e10a293d45777eed33ef48672814362e136",
+        "repository_sha256": "f5ff2ee5a9b6be140ac2a782233152cf5eef92867eb8509f66644d9b7b20f451"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "2709488513e57c3d1b1156cb24c7c65c229a9e0c5fe4078cec2f3bec3cd4f49f",
+        "dirty": true,
+        "head": "34bd72f6d91827a40cf290b73b6f9870a8e13397",
+        "repository_sha256": "bc9695485e749f4f419ea7fedd7ac2607d776ef6060d696fd6480636112d0cc6"
+      },
+      "request": {
+        "head": "5fe72e10a293d45777eed33ef48672814362e136",
+        "id": "5da8af675f694b7e8a24ee16e1abe543"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "2709488513e57c3d1b1156cb24c7c65c229a9e0c5fe4078cec2f3bec3cd4f49f",
+        "dirty": true,
+        "head": "c197d435515067dec81cacadbb7241b1ba3d8fd2",
+        "repository_sha256": "8ac920e89c67323e2a9a188b64a31ddd52d910cc8badd719188dd8e9e3363bff"
+      }
+    },
+    "run": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--window-width",
+        "1024",
+        "--window-height",
+        "880",
+        "https://vlang.io/"
+      ],
+      "compile_command": [
+        "clang",
+        "-O2",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-dynamiclib",
+        "-fobjc-arc",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m",
+        "-framework",
+        "Cocoa",
+        "-framework",
+        "QuartzCore",
+        "-Wl,-undefined,dynamic_lookup",
+        "-o",
+        "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/installed-diagnostic/precise-scroll.dylib"
+      ],
+      "diagnostic_only": false,
+      "source_and_binary_sha256": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "b8701f740c8b57a0137d71bfece6ca3c1ae623d3abbc552fe4f70f067c82d446",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "5a8245e36780af3ba8a40c27b14361cf57addaf6769da0daec13633b671f717d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "100356905520dca5a7f9e2d8aa6db52232b1f8ea13c58cddb43c988bfc751d5e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": "6cd348efdbac344cd0db88f0a6c2c7695cf4d2165f7f103059792620302d6c27",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": "160f184eb6c42ec3343a5f9952dea7b37c647697ef4427a66cbfc7c8d2f9ce2b",
+        "/Users/alex/code/vox2/tools/precise_scroll_faults.h": "c4c9b278cdd523f9bc43012d2073f831bb70c7081b5b0bec632b00878ac85c7a",
+        "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/installed-diagnostic/precise-scroll.dylib": "2244d42660497906f72d835ced93abdf1d56b561ffbd24a0a70c9e1e81c3d57d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+      },
+      "cache_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "runtime_input_sha256": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375"
+      },
+      "input_file_identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": [
+          16777230,
+          466673416,
+          32651232,
+          1793805912597545836,
+          1793805912597665378
+        ],
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": [
+          16777230,
+          466673409,
+          968640,
+          1793805912338519611,
+          1793805912338617361
+        ],
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": [
+          16777230,
+          466673407,
+          34352,
+          1793805912303887628,
+          1793805912303982878
+        ],
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": [
+          16777230,
+          466673411,
+          4419632,
+          1793805912378564681,
+          1793805912378669139
+        ],
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": [
+          16777230,
+          466673413,
+          13041776,
+          1793805912445470937,
+          1793805912445572687
+        ],
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": [
+          16777230,
+          466673405,
+          2192096,
+          1793805912268645311,
+          1793805912268751061
+        ],
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": [
+          16777230,
+          451632786,
+          25875,
+          1793794710462839981,
+          1793794710462839981
+        ],
+        "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": [
+          16777230,
+          450354625,
+          14302,
+          1793644714101002980,
+          1793644714101002980
+        ],
+        "/Users/alex/code/vox2/tools/precise_scroll_faults.h": [
+          16777230,
+          450354627,
+          6806,
+          1793644714101229189,
+          1793644714101229189
+        ],
+        "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/installed-diagnostic/precise-scroll.dylib": [
+          16777230,
+          466674748,
+          76632,
+          1793806014951589961,
+          1793806014951589961
+        ],
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": [
+          16777230,
+          466640677,
+          293648,
+          1793805337951692124,
+          1793805337966409408
+        ],
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": [
+          16777230,
+          466637404,
+          50450,
+          1793805286021546015,
+          1793805286030125517
+        ],
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": [
+          16777230,
+          466637391,
+          21679,
+          1793805285997930520,
+          1793805286007466693
+        ],
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": [
+          16777230,
+          466637369,
+          28599847,
+          1793805285966089400,
+          1793805285978958507
+        ],
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": [
+          16777230,
+          271474051,
+          22876,
+          1792030822448348981,
+          1792082750902417034
+        ],
+        "/Users/alex/code/vox2/aria/aria_roles.json": [
+          16777230,
+          2762254,
+          121440,
+          1786883031375494274,
+          1792082750908920812
+        ],
+        "/Users/alex/code/vox2/browserhistory/history.css": [
+          16777230,
+          393647579,
+          5830,
+          1793113553948299372,
+          1793113553948299372
+        ],
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": [
+          16777230,
+          431770823,
+          20560,
+          1793422492237388062,
+          1793422492237388062
+        ],
+        "/Users/alex/code/vox2/css/ua_default.css": [
+          16777230,
+          1219763,
+          91086,
+          1790255625544030586,
+          1790255625544030586
+        ],
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": [
+          16777230,
+          1219764,
+          2415,
+          1790255625546527814,
+          1790255625546527814
+        ],
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": [
+          16777230,
+          1219765,
+          1083,
+          1790255625544834384,
+          1790255625544834384
+        ],
+        "/Users/alex/code/vox2/css/ua_svg_default.css": [
+          16777230,
+          1219766,
+          478,
+          1790255625545972810,
+          1790255625545972810
+        ],
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": [
+          16777230,
+          64550126,
+          65952,
+          1789263380459367896,
+          1789263380459367896
+        ],
+        "/Users/alex/code/vox2/html/media_controls.css": [
+          16777230,
+          393628086,
+          3913,
+          1793113537377476438,
+          1793113537377476438
+        ],
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": [
+          16777230,
+          393649463,
+          448,
+          1793113555524613250,
+          1793113555524613250
+        ],
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": [
+          16777230,
+          393649464,
+          810,
+          1793113555524793626,
+          1793113555524793626
+        ],
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": [
+          16777230,
+          450348847,
+          7527,
+          1793644646433419357,
+          1793644646433419357
+        ],
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": [
+          16777230,
+          438507301,
+          1662,
+          1793499692361344179,
+          1793499692361344179
+        ],
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": [
+          16777230,
+          438507302,
+          29026,
+          1793499692361946056,
+          1793499692361946056
+        ],
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": [
+          16777230,
+          438507303,
+          2734,
+          1793499692362346224,
+          1793499692362346224
+        ],
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": [
+          16777230,
+          27648235,
+          141881,
+          1788219825204045450,
+          1788219825204045450
+        ]
+      },
+      "initial_profile": "empty private profile; default bookmark bar; no saved proxy override",
+      "native_configuration": "installed bundle",
+      "native_renderer_bridge": null,
+      "picture_renderer_bridge": null,
+      "image_renderer_bridge": null,
+      "chrome_height": 112,
+      "script_policy": "automatic",
+      "viewport": [
+        1024,
+        768
+      ],
+      "network_policy": "Live direct HTTPS; empty private profile/cache; OS caches retained; installed production parallel raster eligibility only",
+      "schedule": {
+        "inputs": 240,
+        "hz": 60.0,
+        "delta": 2,
+        "reverse_every": 60,
+        "settle_seconds": 30.0,
+        "required_title": "V \u2014 The V Programming Language",
+        "settle_basis": "matching document title"
+      },
+      "environment": {
+        "NO_PROXY": "localhost,127.0.0.1,::1",
+        "VOX_TEST_WINDOW": "1",
+        "VOX_PARALLEL_RASTER_DIAGNOSTICS": "1",
+        "LADYBIRD_CACHE_DIR": "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/installed-diagnostic/cache",
+        "VOX_PROFILE_DIR": "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/installed-diagnostic/profile",
+        "DYLD_INSERT_LIBRARIES": "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/installed-diagnostic/precise-scroll.dylib",
+        "VOX_PRECISE_INPUTS": "240",
+        "VOX_PRECISE_REVERSE": "60",
+        "VOX_PRECISE_HZ": "60.0",
+        "VOX_PRECISE_DELTA": "2",
+        "VOX_PRECISE_SETTLE": "30.0",
+        "VOX_PRECISE_RESET_V_PROFILE": "",
+        "VOX_PRECISE_CAPTURE_FAULTS": "",
+        "VOX_PRECISE_FAILURE_CAPTURE": "/Users/alex/code/vox2/Build/parallel-raster-20261104-1800/installed-diagnostic/navigation-error.png",
+        "VOX_PRECISE_REQUIRED_TITLE": "V \u2014 The V Programming Language"
+      },
+      "started_unix": 1793806015.020108,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          19.42919921875,
+          28.22900390625,
+          40.05615234375
+        ],
+        "load_average_after": [
+          20.66796875,
+          27.5693359375,
+          39.2783203125
+        ]
+      },
+      "browser_pid": 13826,
+      "browser_exit_code": 0,
+      "native_fault_recorded": false,
+      "native_images": {
+        "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+        "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+      },
+      "valid": true,
+      "finished_unix": 1793806052.557515
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "tools/measure_precise_scroll.py",
+        "--url",
+        "https://vlang.io/",
+        "--output",
+        "Build/parallel-raster-20261104-1800/installed-diagnostic",
+        "--width",
+        "1024",
+        "--height",
+        "768",
+        "--chrome-height",
+        "112",
+        "--inputs",
+        "240",
+        "--input-hz",
+        "60",
+        "--delta",
+        "2",
+        "--reverse-every",
+        "60",
+        "--require-title",
+        "V \u2014 The V Programming Language",
+        "--settle-seconds",
+        "30",
+        "--script-policy",
+        "automatic",
+        "--timeout",
+        "240",
+        "--network-policy",
+        "Live direct HTTPS; empty private profile/cache; OS caches retained; installed production parallel raster eligibility only",
+        "--env",
+        "VOX_PARALLEL_RASTER_DIAGNOSTICS=1"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3937206272,
+      "elapsed_seconds": 38.671113042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "during_input": [
+      {
+        "kind": "backdrop-copy",
+        "lanes": 2,
+        "jobs": 7
+      },
+      {
+        "kind": "backdrop-copy",
+        "lanes": 3,
+        "jobs": 2
+      },
+      {
+        "kind": "channel-swap",
+        "lanes": 2,
+        "jobs": 9
+      },
+      {
+        "kind": "channel-swap",
+        "lanes": 3,
+        "jobs": 12
+      },
+      {
+        "kind": "channel-swap",
+        "lanes": 4,
+        "jobs": 1
+      }
+    ],
+    "purpose": "fresh installed production eligibility/correct-exit diagnostic, not unprofiled performance credit"
+  }
+}
