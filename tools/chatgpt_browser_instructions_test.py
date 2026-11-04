@@ -2,6 +2,7 @@ import base64
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 import capture_chatgpt_archive as capture
 import chatgpt_browser_instructions as comparison
@@ -107,6 +108,48 @@ class ChatGPTInstructionsTests(unittest.TestCase):
         groups['links']['elements'][0]['attributes']['href'] = '/different'
         with self.assertRaisesRegex(RuntimeError, 'link identity'):
             comparison.content_gate(audit, 'ChatGPT', expected)
+
+    def test_hydrated_hidden_dialog_count_can_change_with_exact_viewport_controls(self):
+        audit = self.audit()
+        buttons = next(g for g in audit['selections'] if g['name'] == 'buttons')
+        buttons['elements'][0].update(text='Log in', attributes={})
+        hidden = dict(text='Sign up for free', attributes={}, rect=dict(width=0, height=0))
+        buttons['elements'].append(hidden)
+        buttons['count'] = 2
+        reference = comparison.viewport_button_identities(audit)
+        self.assertEqual(reference, [('Log in', '')])
+        comparison.content_gate(audit, 'ChatGPT', reference_buttons=reference)
+        buttons['elements'].pop()
+        buttons['count'] = 1
+        comparison.content_gate(audit, 'ChatGPT', reference_buttons=reference)
+
+    def test_hidden_replacement_cannot_hide_a_missing_viewport_button(self):
+        audit = self.audit()
+        buttons = next(g for g in audit['selections'] if g['name'] == 'buttons')
+        buttons['elements'][0].update(text='Log in', attributes={})
+        reference = comparison.viewport_button_identities(audit)
+        buttons['elements'][0]['rect']['width'] = 0
+        with self.assertRaisesRegex(RuntimeError, 'button identity'):
+            comparison.content_gate(audit, 'ChatGPT', reference_buttons=reference)
+
+    def test_bootstrap_marker_is_required_for_scripted_comparison(self):
+        audit = self.audit()
+        with self.assertRaisesRegex(RuntimeError, 'bootstrap'):
+            comparison.content_gate(audit, 'ChatGPT', require_bootstrap=True)
+        audit['selections'].append(dict(name='bootstrap', count=1, elements=[]))
+        comparison.content_gate(audit, 'ChatGPT', require_bootstrap=True)
+
+    def test_author_exceptions_are_retained_and_fail_content_gate(self):
+        client = comparison.ChatGPTCDP.__new__(comparison.ChatGPTCDP)
+        client.author_exceptions = []
+        event = dict(method='Runtime.exceptionThrown', params=dict(exceptionDetails=dict(text='unhandled')))
+        with mock.patch.object(comparison.CDP, 'receive', return_value=event):
+            client.receive()
+        value = self.audit()
+        with mock.patch.object(comparison.CDP, 'call', return_value=dict(result=dict(value=value))):
+            result = client.call('Runtime.evaluate', dict(expression=comparison.audit_expression()))
+        with self.assertRaisesRegex(RuntimeError, 'script/native errors'):
+            comparison.content_gate(result['result']['value'], 'ChatGPT')
 
 
 if __name__ == '__main__':

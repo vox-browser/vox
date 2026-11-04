@@ -19,6 +19,8 @@ from types import SimpleNamespace
 
 import hacker_news_browser_instructions as measurement
 from capture_chatgpt_archive import URL
+from measure_browser_instructions import CDP
+from check_pixel_equality import compare
 from measure_sealed_github_instructions import clean_environment, fingerprint, native_dependencies, require
 from measure_sealed_github_instructions import FixtureHTML, text_content
 from measure_precise_scroll import runtime_input_paths
@@ -30,7 +32,9 @@ SELECTORS = [dict(name='headings', selector='h1', limit=20, attributes=[]),
                   attributes=['id', 'placeholder', 'contenteditable']),
              dict(name='buttons', selector='button', limit=200, attributes=['aria-label']),
              dict(name='links', selector='a[href]', limit=200, attributes=['href']),
-             dict(name='images', selector='img', limit=100, attributes=['src'])]
+             dict(name='images', selector='img', limit=100, attributes=['src']),
+             dict(name='bootstrap', selector='html[data-octane-home-behavior-ready="1"]',
+                  limit=0, attributes=[])]
 
 
 def normalized(text):
@@ -50,7 +54,21 @@ def source_expectations(archive, manifest):
                     for n in parser.nodes))
 
 
-def content_gate(audit, title, expected=None):
+def viewport_button_identities(audit):
+    group = next((g for g in audit.get('selections', []) if g['name'] == 'buttons'), {})
+    require(group.get('count', 0) == len(group.get('elements', [])), 'Truncated button audit')
+    identities = []
+    for element in group.get('elements', []):
+        rect = element.get('rect', {})
+        x, y = rect.get('x', 0), rect.get('y', 0)
+        width, height = rect.get('width', 0), rect.get('height', 0)
+        if width > 0 and height > 0 and x < 1024 and y < 768 and x + width > 0 and y + height > 0:
+            identities.append((normalized(element.get('text', '')),
+                               element.get('attributes', {}).get('aria-label') or ''))
+    return identities
+
+
+def content_gate(audit, title, expected=None, reference_buttons=None, require_bootstrap=False):
     require(audit.get('url') == URL and audit.get('title') == title, 'Wrong ChatGPT document')
     require(audit.get('ready') == 'complete', 'Incomplete ChatGPT document')
     require((audit.get('viewport_width'), audit.get('viewport_height')) == (1024, 768),
@@ -69,11 +87,42 @@ def content_gate(audit, title, expected=None):
         require([(e['attributes'].get('href', ''), normalized(e['text']))
                  for e in groups['links']['elements']] == expected['links'],
                 'Full homepage link identity differs from the original source')
-        require(groups['buttons']['count'] == expected['buttons']
-                and groups['editors']['count'] == expected['editors'], 'Incomplete homepage controls')
+        require(groups['editors']['count'] == expected['editors'], 'Incomplete homepage editors')
+        if reference_buttons is None:
+            require(groups['buttons']['count'] == expected['buttons'], 'Incomplete homepage controls')
+    if reference_buttons is not None:
+        require(bool(reference_buttons), 'Empty viewport button reference')
+        require(viewport_button_identities(audit) == reference_buttons,
+                'Rendered homepage button identity differs from its retained Brave reference')
+    if require_bootstrap:
+        require(groups.get('bootstrap', {}).get('count') == 1,
+                'ChatGPT author bootstrap did not complete')
     errors = audit.get('native_reported_errors', []) + audit.get('javascript_diagnostics', [])
     require(not errors, 'ChatGPT script/native errors: ' + repr(errors)[:1500])
     return dict(title=title, counts={name: row['count'] for name, row in groups.items()})
+
+
+class ChatGPTCDP(CDP):
+    """Retain author exceptions; audit collection still follows the PNG endpoint."""
+    def __init__(self, url):
+        super().__init__(url)
+        self.author_exceptions = []
+
+    def receive(self):
+        result = super().receive()
+        if result.get('method') == 'Runtime.exceptionThrown':
+            self.author_exceptions.append(result.get('params', {}).get('exceptionDetails', {}))
+        return result
+
+    def call(self, method, params=None):
+        result = super().call(method, params)
+        if method == 'Page.enable':
+            super().call('Runtime.enable')
+        if method == 'Runtime.evaluate' and params and params.get('expression') == audit_expression():
+            value = result.get('result', {}).get('value')
+            if isinstance(value, dict):
+                value['javascript_diagnostics'] = [json.dumps(e, sort_keys=True) for e in self.author_exceptions]
+        return result
 
 
 def audit_expression():
@@ -119,6 +168,21 @@ def run(args):
     apps = measurement.reference_browser_apps(out, [
         ('vox', ROOT / 'Build/v/Vox.app'), ('brave', Path('/Applications/Brave Browser.app'))])
     reference = args.expected.resolve(strict=True)
+    native_reference = args.expected_vox.resolve(strict=True) if args.expected_vox else reference
+    reference_buttons = None
+    reference_audit_paths = set()
+    if args.reference_audit:
+        retained_audit = args.reference_audit.resolve(strict=True)
+        retained_png = retained_audit.parent / 'document.png'
+        verdict = compare(reference, retained_png, out / 'retained-brave-reference.diff.png',
+                          args.diff_tool.resolve())
+        require(verdict['exact'], 'Retained Brave audit does not belong to the unchanged pixel reference')
+        retained = json.loads(retained_audit.read_text())
+        content_gate(retained, args.title, expected_content)
+        reference_buttons = viewport_button_identities(retained)
+        require(reference_buttons, 'No buttons in retained reference viewport')
+        reference_audit_paths.update([retained_audit, retained_png])
+        measurement.write_json(out / 'reference-buttons.json', reference_buttons)
     audit_config = out / 'audit-config.json'
     measurement.write_json(audit_config, dict(selectors=SELECTORS, describe_native_errors=True))
     settings = SimpleNamespace(url=URL, scale=2, instruction_scope='launch', timeout=args.timeout,
@@ -126,16 +190,20 @@ def run(args):
         memory_guard_registry=args.memory_guard_registry.resolve(),
         vox_arguments=['--screenshot-viewport-height', '768', '--js-engine=javascriptcore'],
         expected=reference, diff_tool=args.diff_tool.resolve(),
+        expected_vox=native_reference,
         audit_vox_capture_ownership=True,
-        content_validator=lambda audit: content_gate(audit, args.title, expected_content),
+        content_validator=lambda audit: content_gate(audit, args.title, expected_content,
+            reference_buttons=reference_buttons, require_bootstrap=True),
         audit_expression=audit_expression(), brave_emulated_viewport=True)
     settings.readiness_expression = """location.href===URL && document.title===TITLE
         && document.readyState==='complete' && document.fonts.status==='loaded'
+        && document.documentElement.dataset.octaneHomeBehaviorReady==='1'
         && innerWidth===1024 && innerHeight===768 && devicePixelRatio===2
         && [...document.querySelectorAll('textarea,[contenteditable=true]')].some(e=>{
             const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&!e.disabled})""".replace(
             'URL', json.dumps(URL)).replace('TITLE', json.dumps(args.title))
-    paths = {reference, audit_config, settings.diff_tool, out / 'source-expectations.json'}
+    paths = {reference, native_reference, audit_config, settings.diff_tool, out / 'source-expectations.json'}
+    paths.update(reference_audit_paths)
     paths.update(p for p in archive.rglob('*') if p.is_file())
     paths.update(Path(__file__).parent / name for name in [
         'chatgpt_browser_instructions.py', 'capture_chatgpt_archive.py',
@@ -155,7 +223,13 @@ def run(args):
             network='Original-origin sealed replay, no forwarding or downloads during trials',
             caches='Empty private profiles/caches each trial; OS filesystem/shader caches retained',
             reference=str(reference), title=args.title, settle_seconds=args.settle_seconds,
+            native_reference=str(native_reference),
+            button_audit='Exact viewport identities from retained Brave audit' if reference_buttons else 'Exact SSR button count',
+            author_readiness='ChatGPT home-behavior marker required in both engines',
             gate='100 * max(Vox upper) <= 95 * min(Brave lower), at least seven pairs')))
+    cross_engine = compare(reference, native_reference, out / 'cross-engine-reference.diff.png',
+                           settings.diff_tool)
+    measurement.write_json(out / 'cross-engine-reference.json', cross_engine)
     replay = Replay(archive, out / 'replay')
     worker = threading.Thread(target=replay.server.serve_forever, daemon=True)
     worker.start()
@@ -171,6 +245,8 @@ def run(args):
         settings.brave_arguments = ['--ignore-certificate-errors-spki-list=' + spki,
                                    '--force-device-scale-factor=2', '--disable-backgrounding-occluded-windows']
         measurement.write_json(out / 'replay.json', replay.ready)
+        original_cdp = measurement.CDP
+        measurement.CDP = ChatGPTCDP
         with clean_observer_environment():
             for index in range(args.repeat):
                 pair = {}
@@ -191,6 +267,8 @@ def run(args):
                                       kernel_exit_status=row.get('kernel_exit_status'))
                                 for pair in pairs for engine, row in pair.items() if row.get('exit')])
     finally:
+        if 'original_cdp' in locals():
+            measurement.CDP = original_cdp
         replay.server.shutdown()
         replay.server.server_close()
         worker.join()
@@ -206,6 +284,10 @@ def main():
     parser.add_argument('--archive', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--expected', type=Path, required=True)
+    parser.add_argument('--expected-vox', type=Path,
+                        help='Existing native control reference; cross-engine differences remain reported')
+    parser.add_argument('--reference-audit', type=Path,
+                        help='Retained Brave audit beside its document.png; fixes viewport button identities')
     parser.add_argument('--title', required=True)
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--diff-tool', type=Path, required=True)
