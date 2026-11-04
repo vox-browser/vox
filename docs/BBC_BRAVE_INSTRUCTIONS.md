@@ -117,8 +117,18 @@ missed an overridden method; its correction encountered the unsupported
 `document.styleSheets` API. Both inconclusive observations remain retained.
 The successful version enumerates style elements and preserves exact pixels,
 complete content and all 72 external script hashes. This is diagnostic evidence
-only, with no instruction credit; the duplicate-removal fallback is still under
-investigation.
+only, with no instruction credit.
+
+A subsequent read-only LLDB probe finds matching URL, base, ownership flags and
+empty sheet media lists, but the removed sheet has `did_match=true` while the
+fresh following sheet has `did_match=none`. The existing guard rejects that
+pair before comparing rule sequences. The standalone, main-thread `v -profile`
+browser exits normally with exact pixels, full content and 72 exact external
+script evaluations. The probe's media-entry decoder is limited to the observed
+empty lists; no nonempty entry is interpreted. A snapshot-based condition proof
+is under focused validation and has no performance credit. See the
+[context ledger](performance/bbc-following-sheet-context-20261104.json) and
+[raw debugger evidence](performance/raw/bbc-following-sheet-context-20261104.tar.gz).
 
 ## Historical results on the earlier fixture
 
