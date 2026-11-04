@@ -78,7 +78,14 @@ def main():
             text = text.replace(
                 "\tapply_common_native_state(native, el)\n\treturn native",
                 "\tapply_common_native_state(native, el)\n\tapply_embedded_vector_path(native, el)\n\tapply_embedded_button_image(native, el)\n"
-                "\tapply_embedded_text_font(native, el)\n\treturn native",
+                "\treturn native",
+            )
+            # Apply a declared family as soon as a control exists. The tooltip
+            # installed later in render_element measures the button title, and
+            # measuring a symbol in the system face builds CoreText's fallback cascade.
+            text = text.replace(
+                "\t\tnative = native_create_element(create_el)\n",
+                "\t\tnative = native_create_element(create_el)\n\t\tapply_embedded_text_font(native, create_el)\n", 1,
             )
             # A native-styled transparent button is flat at rest. Let UI2's
             # backend supply the hover/pressed bezel, without browser subclasses.
