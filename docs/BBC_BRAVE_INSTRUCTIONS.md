@@ -1,7 +1,25 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Latest attempted cohort 85 retains all seven alternating
+`OPTIMIZED_SITES.md`.** Latest attempted cohort 86 retains all seven alternating
+Vox/Brave pairs. All native exits, complete-content, ownership and input-identity
+checks pass, but Brave pair 6 differs by 53,392 pixels (maximum channel error 6),
+invalidating acceptance. Every Vox capture preserves the original reference.
+Observed medians are **28,876,271,707 Vox** and **17,521,691,229 Brave lower-bound**
+instructions. The strict gate fails `295183012760 > 155986818651`, conservative
+ratio **1.703122826540811**. This is a current-production baseline with no new
+engine optimization or savings credit. Its pinned executable is
+`b82083b26572f1cbbe0302fdcc0ab954e37a3c2e290ee857aa745972d6f835a6`.
+
+Fresh headless and separate injected native checks pass after all three previous
+experiments were removed. The latter verifies all 72 original external author
+scripts before encoded PNG, complete content and exact pixels. The first attempt
+stops before acceptance when host load exceeds the predeclared 18-CPU gate;
+the unique recheck passes that same gate. Every attempt remains in the
+[cohort 86 ledger](performance/bbc-cohort86-baseline-20261104.json) and
+[verified raw evidence](performance/raw/bbc-cohort86-baseline-20261104.tar.gz).
+
+Earlier cohort 85 retains all seven alternating
 control/Vox/Brave triples. All 21 native exits, complete-content, ownership and
 input-identity checks pass, but control pair 1 differs by 546,867 pixels
 (maximum channel error 223) and Brave pair 4 by 53,392 (maximum error 6).
@@ -26,8 +44,9 @@ three failures. No full pass or cadence reset is claimed. All 18 rollback
 executions and 286 current instruction-tool tests pass. A first rollback attempt
 detects a source-hash change from a separate overflow-clip edit; its rejected
 receipt remains retained, and that separate change is excluded from the rollback.
-The latest inspected completed bundle still contains the direct-slot experiment,
-so native validation of its compiled removal remains pending a shared build.
+At that checkpoint the inspected completed bundle still contained the direct-slot
+experiment. Cohort 86's subsequent fresh native checks above validate its compiled
+removal in a newer shared bundle.
 See the [cohort 85 ledger](performance/bbc-cohort85-direct-fragments-20261104.json)
 and [verified raw evidence](performance/raw/bbc-cohort85-direct-fragments-20261104.tar.gz).
 
@@ -132,7 +151,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **85 cohorts / 1,905 attempted browser trials**, excluding separately
+History is **86 cohorts / 1,919 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 The requested `v -profile` follow-up now covers the main thread from V's main
