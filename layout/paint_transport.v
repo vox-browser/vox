@@ -4935,6 +4935,10 @@ fn append_translated_border_commands(mut commands []PaintCommand, border BoxEdge
 		width: int(math.round(x + width)) - left
 		height: int(math.round(y + height)) - top
 	}
+	if chromium && append_chromium_dashed_border(mut commands, border, colors, styles, radii, rect, opacity) {
+		set_force_dark_role_for_range(mut commands, start, commands.len, .border)
+		return
+	}
 	if chromium && append_chromium_uniform_border(mut commands, border, colors, styles, radii, rect, opacity) {
 		set_force_dark_role_for_range(mut commands, start, commands.len, .border)
 		return

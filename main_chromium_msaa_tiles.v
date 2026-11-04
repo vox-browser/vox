@@ -194,7 +194,8 @@ fn chromium_msaa_trigger_rect_with_transform(command &layout.PaintCommand,
 		'draw_svg_path' {
 			// Uniform CSS borders use rectangles. Differently colored sides
 			// also need diagonal corner clips, which take the path renderer.
-			if command.force_dark_role == .border && !chromium_border_has_diagonal_path(command) {
+			if command.force_dark_role == .border && !chromium_border_has_diagonal_path(command)
+				&& (command.svg_data == unsafe { nil } || command.svg_data.stroke_dasharray.len == 0) {
 				return none
 			}
 			// Read the retained payload without copying the command.

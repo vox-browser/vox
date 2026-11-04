@@ -22,6 +22,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_paint_containment_snaps_image_coordinates_inside_its_fragment(self):
         self.compare_fixture('contained-image-paint-origin', width=1024, height=768)
 
+    def test_single_dashed_borders_keep_chromium_spacing_and_path_coverage(self):
+        self.compare_fixture('chromium-single-dashed-border', width=1024, height=768)
+
     def test_svg_background_round_caps_and_curves_share_the_parent_picture(self):
         self.compare_fixture('register-svg-stroke-recording', width=1024, height=768)
 
