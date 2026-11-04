@@ -1,5 +1,37 @@
 # BBC homepage instruction comparison
 
+**Latest optimization follow-up:** committed layout can consume exact same-pass
+text measurements (`174b38300`), preserving the full geometry key, input checks,
+document ownership and copy-on-write. It does not populate or evict measurements
+on a committed miss. All **42 focused case executions** pass across enabled and
+disabled controls in default, no-GC and preallocation modes; executable test calls
+are verified. All **305 instruction-tool tests** pass. Separate fresh production
+diagnostics verify the path only in the candidate before PNG, all 72 original
+external scripts, unchanged actual native images, complete content, exact original
+pixels and normal exits in both arms. The selected executable is
+`4d55ec4468623f9d2449dd9fef4c3a34515da8ce9a0a99faf33035cab142bc34`.
+
+Acceptance cohort 90 is **not launched**: host load exceeds the predeclared
+18-CPU limit. A separately declared contended diagnostic retains seven matched
+control/Vox/Brave triples, plus four separate runtime discovery/validation
+launches. All 21 unprofiled captures pass original pixels, complete content,
+ownership, input identity and native exits. Medians are **29,695,581,679 Vox**,
+**30,458,334,333 control**, and **17,641,883,461 Brave lower bound** instructions.
+The median point difference is 762,752,654 (2.5042%), with five paired improvements
+and two regressions. The conservative control ratio **1.0704214450131349** fails;
+the controls vary substantially under contention, so no robust saving is credited.
+The strict Brave gate also fails `302741870920 > 157800881124`.
+
+Broader verification exercises **498 cases / 495 passes** in each default and
+no-GC mode, retaining the same three known failures and unchanged inputs. All
+three new cases pass. No full pass or cadence reset is claimed. The acceptance
+history remains **89 cohorts / 1,975 attempted browser trials**; the 21 contended
+diagnostic attempts remain separate. BBC is still absent from the catalog. The
+preceding read-only inline traces and a new 400-entry grid trace are retained as
+investigative leads, without instruction or timing credit. See the
+[optimization ledger](performance/bbc-committed-inline-20261104.json) and
+[raw evidence](performance/raw/bbc-committed-inline-20261104.tar.gz).
+
 **The requested 10% advantage remains open; BBC does not qualify for
 `OPTIMIZED_SITES.md`.** Corrected cohort 89 retains seven alternating Vox/Brave
 pairs. Median observations are **28,545,330,528 Vox** and **17,484,012,241 Brave
