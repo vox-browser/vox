@@ -104,6 +104,19 @@ $if prealloc {
 	}
 }
 
+// A reset cycle that used at most this many bytes keeps its pages warm. It
+// matches the runtime's first scope block, the smallest block an arena has, so
+// such a cycle never spills into a later block. Style computation resets font
+// scratch arenas once or twice per element; remapping them each time costs a
+// syscall and a fresh zero-filled page fault for a few hundred bytes.
+const arena_warm_reset_bytes = i64(256 * 1024)
+
+// Only large arenas whose last cycle wrote beyond the warm allowance remap
+// their pages on reset.
+fn arena_reset_retires_pages(used i64, capacity i64) bool {
+	return used > arena_warm_reset_bytes && capacity >= 1024 * 1024
+}
+
 // ArenaUsage describes a chain of arena blocks: bytes handed out by the bump
 // allocator and the capacity of the blocks behind them.
 pub struct ArenaUsage {
@@ -602,8 +615,10 @@ pub fn (mut arena Arena) reset() {
 		arena.tail.previous = unsafe { nil }
 		// Large high-water buffers can stay unused for the rest of a page.
 		// Keep their virtual capacity for reuse without retaining dirty payload
-		// pages. Small working arenas retain their warm backing pages.
-		if arena.usage().capacity >= 1024 * 1024 {
+		// pages. Small working arenas retain their warm backing pages, and so
+		// does a cycle that used at most a scope block: its writes fit in the
+		// first block, so remapping would only fault the same pages back in.
+		if arena_reset_retires_pages(usage.used, arena.usage().capacity) {
 			mut block := arena.scope.first
 			for block != unsafe { nil } && block.scope == scope {
 				if block.mmap_allocated && C.vox_retire_unused_arena_pages(block.start,

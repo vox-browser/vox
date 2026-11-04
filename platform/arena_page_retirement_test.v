@@ -4,6 +4,40 @@ module platform
 
 fn C.vox_arena_test_resident_bytes(start voidptr, bytes uint) uint
 
+fn test_reset_retirement_requires_large_capacity_and_a_cycle_beyond_one_scope_block() {
+	mib := i64(1024 * 1024)
+	// Per-element scratch cycles in pooled megabyte blocks stay warm.
+	assert !arena_reset_retires_pages(0, 4 * mib)
+	assert !arena_reset_retires_pages(300, mib)
+	assert !arena_reset_retires_pages(arena_warm_reset_bytes, 4 * mib)
+	assert arena_reset_retires_pages(arena_warm_reset_bytes + 1, 4 * mib)
+	assert arena_reset_retires_pages(4 * mib, 4 * mib)
+	// Small arenas keep their pages regardless of usage.
+	assert !arena_reset_retires_pages(mib - 1, mib - 1)
+}
+
+fn test_small_reset_cycles_reuse_resident_pages() {
+	mut arena := new_arena('small warm scratch')
+	defer { arena.release() }
+	$if prealloc {
+		mut previous := unsafe { nil }
+		for _ in 0 .. 3 {
+			entry := arena.enter()
+			small := []u8{len: 4096, init: 7}
+			arena.leave(entry)
+			if !arenas_poisoned() {
+				assert previous == unsafe { nil } || small.data == previous
+			}
+			previous = small.data
+			arena.reset()
+			assert arena.usage().used == 0
+			if !arenas_poisoned() {
+				assert C.vox_arena_test_resident_bytes(small.data, 4096) >= 4096
+			}
+		}
+	}
+}
+
 fn test_large_reset_arenas_keep_capacity_and_reuse_addresses_without_retaining_physical_pages() {
 	mut arena := new_arena('large empty payload')
 	defer { arena.release() }
