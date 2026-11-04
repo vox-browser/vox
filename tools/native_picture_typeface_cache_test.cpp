@@ -56,7 +56,7 @@ int main(int argc, char** argv)
         auto packet = vox_serialize_picture_typeface(face.get(), nullptr);
         assert(packet && packet->size() > 16);
         auto repeat = vox_serialize_picture_typeface(face.get(), nullptr);
-        assert(repeat && repeat->size() == packet->size()
+        assert(repeat && repeat.get() == packet.get() && repeat->size() == packet->size()
             && !std::memcmp(repeat->data(), packet->data(), packet->size()));
         packets.push_back(packet);
         std::vector<uint8_t> caller_bytes(static_cast<uint8_t const*>(packet->data()),
@@ -73,6 +73,45 @@ int main(int argc, char** argv)
     }
     assert(cache.entry_count() == faces.size());
     assert(cache.retained_bytes() <= 128 * 1024 * 1024);
+
+    // The serialization cache owns the face identity and exactly the existing
+    // wire packet. LRU eviction/clear must not invalidate caller-owned packets.
+    VoxPictureTypefaceSerializationCache serialized(64 * 1024 * 1024, 2);
+    auto first_packet = serialized.encode(faces[0].get());
+    auto first_hit = serialized.encode(faces[0].get());
+    assert(first_packet && first_hit.get() == first_packet.get());
+    assert(!std::memcmp(first_packet->data(), packets[0]->data(), first_packet->size()));
+    assert(serialized.encode(faces[1].get()));
+    assert(serialized.encode(faces[0].get()).get() == first_packet.get());
+    auto third_packet = serialized.encode(faces[2].get());
+    assert(third_packet);
+    assert(serialized.entry_count() == 2);
+    assert(serialized.encode(faces[0].get()).get() == first_packet.get());
+    assert(serialized.encode(faces[1].get()));
+    auto evicted = serialized.encode(faces[2].get());
+    assert(evicted && evicted.get() != third_packet.get());
+    assert(evicted->size() == packets[2]->size()
+        && !std::memcmp(evicted->data(), packets[2]->data(), evicted->size()));
+    serialized.clear();
+    assert(serialized.entry_count() == 0 && serialized.retained_bytes() == 0);
+    SkMemoryStream surviving(first_packet);
+    assert(cache.decode_stream(surviving) && surviving.isAtEnd());
+    VoxPictureTypefaceSerializationCache small(first_packet->size() - 1, 2);
+    assert(small.encode(faces[0].get()) && small.entry_count() == 0);
+    VoxPictureTypefaceSerializationCache disabled(64 * 1024 * 1024, 0);
+    assert(disabled.encode(faces[0].get()) && disabled.retained_bytes() == 0);
+    assert(!serialized.encode(nullptr));
+    size_t largest_packet = 0, largest_index = 0;
+    for (size_t i = 0; i < packets.size(); ++i)
+        if (packets[i]->size() > largest_packet) {
+            largest_packet = packets[i]->size(); largest_index = i;
+        }
+    VoxPictureTypefaceSerializationCache byte_bound(largest_packet, 64);
+    auto largest_retained = byte_bound.encode(faces[largest_index].get());
+    assert(byte_bound.encode(faces[(largest_index + 1) % faces.size()].get()));
+    auto reloaded = byte_bound.encode(faces[largest_index].get());
+    assert(reloaded && reloaded.get() != largest_retained.get());
+    assert(byte_bound.entry_count() == 1 && byte_bound.retained_bytes() == largest_packet);
 
     // Font names, weights and glyph pixels survive the real picture protocol.
     SkPictureRecorder recorder;

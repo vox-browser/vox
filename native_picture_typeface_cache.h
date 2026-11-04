@@ -8,13 +8,14 @@
 #include <cstdint>
 #include <cstring>
 #include <list>
+#include <mutex>
 #include <utility>
 
 inline constexpr uint8_t vox_picture_typeface_magic[8] {'V', 'X', 'T', 'F', 1, 0, 0, 0};
 
 // Frame SkPicture's ordinary embedded font bytes so the receiving Skia can
 // retain one decoded face without reparsing its descriptor to find its length.
-inline SkSerialReturnType vox_serialize_picture_typeface(SkTypeface* face, void*)
+inline sk_sp<SkData> vox_encode_picture_typeface(SkTypeface* face)
 {
     if (!face) return nullptr;
     auto font = face->serialize(SkTypeface::SerializeBehavior::kDoIncludeData);
@@ -27,6 +28,56 @@ inline SkSerialReturnType vox_serialize_picture_typeface(SkTypeface* face, void*
     for (int i = 0; i < 8; ++i) bytes[8 + i] = uint8_t(size >> (i * 8));
     std::memcpy(bytes + 16, font->data(), font->size());
     return packet;
+}
+
+// A typeface is immutable. Retain its identity with the complete packet so a
+// later picture need not serialize and copy the same font again. The strong
+// reference prevents a released face's address from becoming a false hit.
+// Owners serialize access; the callback below locks its shared instance.
+class VoxPictureTypefaceSerializationCache {
+    struct Entry {
+        sk_sp<SkTypeface> face;
+        sk_sp<SkData> packet;
+    };
+    std::list<Entry> entries;
+    size_t bytes = 0;
+    size_t byte_limit, entry_limit;
+public:
+    explicit VoxPictureTypefaceSerializationCache(size_t budget = 64 * 1024 * 1024,
+        size_t count = 64) : byte_limit(budget), entry_limit(count) { }
+
+    sk_sp<SkData> encode(SkTypeface* face)
+    {
+        if (!face) return nullptr;
+        for (auto it = entries.begin(); it != entries.end(); ++it) {
+            if (it->face.get() != face) continue;
+            auto packet = it->packet;
+            entries.splice(entries.begin(), entries, it);
+            return packet;
+        }
+        auto packet = vox_encode_picture_typeface(face);
+        if (!packet || !entry_limit || packet->size() > byte_limit) return packet;
+        while (!entries.empty()
+            && (entries.size() >= entry_limit || bytes > byte_limit - packet->size())) {
+            bytes -= entries.back().packet->size();
+            entries.pop_back();
+        }
+        bytes += packet->size();
+        entries.push_front({sk_ref_sp(face), packet});
+        return packet;
+    }
+
+    size_t entry_count() const { return entries.size(); }
+    size_t retained_bytes() const { return bytes; }
+    void clear() { entries.clear(); bytes = 0; }
+};
+
+inline SkSerialReturnType vox_serialize_picture_typeface(SkTypeface* face, void*)
+{
+    static std::mutex mutex;
+    static VoxPictureTypefaceSerializationCache cache;
+    std::lock_guard<std::mutex> lock(mutex);
+    return cache.encode(face);
 }
 
 // Access is serialized by the picture renderer's mutex. Keys own their bytes:
