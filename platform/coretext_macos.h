@@ -29,6 +29,7 @@ typedef struct {
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <os/lock.h>
 
 
 
@@ -215,12 +216,67 @@ static int vox_ct_collection_index(const char *path, CTFontRef font) {
 	return result;
 }
 
+// Size-independent CoreText results. Matching enumerates the installed family
+// and the collection lookup opens the font file; both are repeated for every
+// new point size of the same face. Metrics and variations are still read from
+// a font created at each requested size. A lock covers concurrent queries.
+static os_unfair_lock vox_ct_cache_lock = OS_UNFAIR_LOCK_INIT;
+static CFMutableDictionaryRef vox_ct_selection_cache;
+static CFMutableDictionaryRef vox_ct_collection_cache;
+
+static const void *vox_ct_cache_copy(CFMutableDictionaryRef *cache, CFStringRef key) {
+	os_unfair_lock_lock(&vox_ct_cache_lock);
+	const void *value = *cache ? CFDictionaryGetValue(*cache, key) : NULL;
+	if (value)
+		CFRetain(value);
+	os_unfair_lock_unlock(&vox_ct_cache_lock);
+	return value;
+}
+
+static void vox_ct_cache_store(CFMutableDictionaryRef *cache, CFStringRef key, const void *value) {
+	os_unfair_lock_lock(&vox_ct_cache_lock);
+	if (!*cache)
+		*cache = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks,
+			&kCFTypeDictionaryValueCallBacks);
+	if (*cache)
+		CFDictionarySetValue(*cache, key, value);
+	os_unfair_lock_unlock(&vox_ct_cache_lock);
+}
+
+static int vox_ct_cached_collection_index(const char *path, CTFontRef font) {
+	CFStringRef file = CFStringCreateWithFileSystemRepresentation(NULL, path);
+	CFStringRef postscript = CTFontCopyPostScriptName(font);
+	CFStringRef key = file && postscript
+		? CFStringCreateWithFormat(NULL, NULL, CFSTR("%@\x1f%@"), file, postscript) : NULL;
+	if (file)
+		CFRelease(file);
+	if (postscript)
+		CFRelease(postscript);
+	if (!key)
+		return vox_ct_collection_index(path, font);
+	CFNumberRef cached = (CFNumberRef)vox_ct_cache_copy(&vox_ct_collection_cache, key);
+	int index = 0;
+	if (cached) {
+		CFNumberGetValue(cached, kCFNumberIntType, &index);
+		CFRelease(cached);
+	} else {
+		index = vox_ct_collection_index(path, font);
+		CFNumberRef number = CFNumberCreate(NULL, kCFNumberIntType, &index);
+		if (number) {
+			vox_ct_cache_store(&vox_ct_collection_cache, key, number);
+			CFRelease(number);
+		}
+	}
+	CFRelease(key);
+	return index;
+}
+
 static int vox_ct_fill(CTFontRef font, vox_ct_face *face) {
 	CFURLRef url = (CFURLRef)CTFontCopyAttribute(font, kCTFontURLAttribute);
 	if (!url)
 		return 0;
 	int ok = CFURLGetFileSystemRepresentation(url, true, (UInt8 *)face->path, sizeof(face->path));
-	face->face_index = ok ? vox_ct_collection_index(face->path, font) : 0;
+	face->face_index = ok ? vox_ct_cached_collection_index(face->path, font) : 0;
 	face->family[0] = 0;
 	CFStringRef family = CTFontCopyFamilyName(font);
 	if (family) {
@@ -380,20 +436,49 @@ static int vox_ct_family_available(const char *family) {
 	return 1;
 }
 
+// The family member CSS selection would choose, retained, or NULL when the
+// family is not installed. Both outcomes are cached per request.
+static CTFontDescriptorRef vox_ct_selected_descriptor(const char *family, int weight, int italic) {
+	CFStringRef name = family ? CFStringCreateWithCString(NULL, family, kCFStringEncodingUTF8) : NULL;
+	CFStringRef key = name ? CFStringCreateWithFormat(NULL, NULL, CFSTR("%@\x1f%d\x1f%d"), name, weight, italic) : NULL;
+	if (name)
+		CFRelease(name);
+	const void *cached = key ? vox_ct_cache_copy(&vox_ct_selection_cache, key) : NULL;
+	if (cached) {
+		CFRelease(key);
+		if (cached == kCFNull) {
+			CFRelease(cached);
+			return NULL;
+		}
+		return (CTFontDescriptorRef)cached;
+	}
+	CTFontDescriptorRef selected = NULL;
+	CFArrayRef members = vox_ct_family_members(family);
+	if (members) {
+		int selected_weight = 400, selected_italic = 0;
+		selected = vox_ct_select(members, weight, italic, &selected_weight, &selected_italic);
+		if (selected)
+			CFRetain(selected);
+		CFRelease(members);
+	}
+	if (key) {
+		vox_ct_cache_store(&vox_ct_selection_cache, key, selected ? (const void *)selected : kCFNull);
+		CFRelease(key);
+	}
+	return selected;
+}
+
 static int vox_ct_match_family(const char *family, int weight, int italic, double size, vox_ct_face *face) {
 	memset(face, 0, sizeof(*face));
 	CTFontRef font = NULL;
 	if (vox_ct_is_system_ui_name(family)) {
 		font = vox_ct_system_font(weight, italic, size);
 	} else {
-		CFArrayRef members = vox_ct_family_members(family);
-		if (!members)
+		CTFontDescriptorRef selected = vox_ct_selected_descriptor(family, weight, italic);
+		if (!selected)
 			return 0;
-		int selected_weight = 400, selected_italic = 0;
-		CTFontDescriptorRef selected = vox_ct_select(members, weight, italic, &selected_weight, &selected_italic);
-		if (selected)
-			font = CTFontCreateWithFontDescriptor(selected, size, NULL);
-		CFRelease(members);
+		font = CTFontCreateWithFontDescriptor(selected, size, NULL);
+		CFRelease(selected);
 	}
 	if (!font)
 		return 0;
