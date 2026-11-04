@@ -721,12 +721,18 @@ fn C.free(voidptr)
 
 fn TokenizerInputArena.new(input string) TokenizerInputArena {
 	if input.len == 0 { return TokenizerInputArena{} }
-	storage := unsafe { C.malloc(uint(input.len) * (sizeof(u32) + sizeof(int))) }
+	// Current V uses 64-bit ints. An odd number of 32-bit code-point slots
+	// otherwise leaves the offset table misaligned, even though malloc itself
+	// supplies suitably aligned storage. Keep the tables in one allocation.
+	code_point_bytes := uint(input.len) * sizeof(u32)
+	offset_alignment := sizeof(int)
+	offset_start := (code_point_bytes + offset_alignment - 1) & ~(offset_alignment - 1)
+	storage := unsafe { C.malloc(offset_start + uint(input.len) * sizeof(int)) }
 	if storage == unsafe { nil } { panic('Unable to allocate CSS tokenizer input') }
 	mut arena := TokenizerInputArena{
 		storage: storage
 		code_points: unsafe { &u32(storage) }
-		byte_offsets: unsafe { &int(&u8(storage) + uint(input.len) * sizeof(u32)) }
+		byte_offsets: unsafe { &int(&u8(storage) + offset_start) }
 	}
 	// ASCII code points and byte offsets are identical. Avoid constructing an
 	// optional rune for each byte while filling these privately owned tables.
