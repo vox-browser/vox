@@ -19,6 +19,20 @@ static void changed(void *owner, int32_t kind, double *values, int32_t *flags) {
 }
 int main(int argc, char **argv) { @autoreleasepool {
     assert(argc == 2);
+    NSUserDefaults *defaults=NSUserDefaults.standardUserDefaults;
+    NSString *indexing=@"NSEnableWindowTabIndexing";
+    assert([defaults objectForKey:indexing]==nil);
+    native_window_register_indexing_default();
+    // Registration domain only: lowest precedence, never persisted.
+    assert([[defaults volatileDomainForName:NSRegistrationDomain][indexing] isEqual:@NO]);
+    assert([defaults objectForKey:indexing]!=nil && ![defaults boolForKey:indexing]);
+    // An explicit value (here the launch-argument domain) still enables indexing.
+    NSDictionary *arguments=[defaults volatileDomainForName:NSArgumentDomain];
+    NSMutableDictionary *enabled=[arguments mutableCopy];
+    enabled[indexing]=@YES;
+    [defaults setVolatileDomain:enabled forName:NSArgumentDomain];
+    assert([defaults boolForKey:indexing]);
+    [defaults setVolatileDomain:arguments forName:NSArgumentDomain];
     [NSApplication sharedApplication];
     UI2WindowOperationTest *window=[[UI2WindowOperationTest alloc] initWithContentRect:NSMakeRect(0,0,800,600)
         styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable

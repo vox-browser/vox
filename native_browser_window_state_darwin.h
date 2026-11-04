@@ -6,6 +6,17 @@
 // OS operations only. Validation, placement, persistence schema and transitions are V.
 typedef void (*VoxWindowEvent)(void *, int32_t, double *, int32_t *);
 static NSMutableArray *vox_window_observers;
+// AppKit donates every window to Spotlight as a com.apple.window-tab item. The
+// CascadeSets SetStoreUpdateService it starts runs in the browser's resource
+// coalition and retires about 240M instructions at each launch. Browser tabs are
+// UI2-owned, so only the window title is lost. Use the registration domain so an
+// explicit `defaults write ... NSEnableWindowTabIndexing -bool YES` still wins.
+// Call before the first window is created.
+static void native_window_register_indexing_default(void) {
+    @autoreleasepool {
+        [NSUserDefaults.standardUserDefaults registerDefaults:@{@"NSEnableWindowTabIndexing": @NO}];
+    }
+}
 static void native_window_snapshot(void *handle, double *values, int32_t *flags) {
     NSWindow *window = (__bridge NSWindow *)handle;
     NSRect frame = window.frame;

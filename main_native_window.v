@@ -24,6 +24,8 @@ fn (app &BrowserApp) update_window_title() {
 // context state before handing control to the browser's own window callback.
 fn configure_native_browser_context(mut context gg.Context) {
 	$if macos {
+		// Runs before the window exists; AppKit reads this when indexing it.
+		C.native_window_register_indexing_default()
 		if !context.native_rendering {
 			return
 		}

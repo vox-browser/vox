@@ -18,6 +18,7 @@ $if macos {
 	fn C.native_host_write_plist(&char, &u8, i32) i32
 	fn C.native_window_observe(voidptr, voidptr, fn (voidptr, i32, &f64, &i32))
 	fn C.native_window_stop_observing()
+	fn C.native_window_register_indexing_default()
 	fn C.free(voidptr)
 }
 
