@@ -4563,193 +4563,95 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			}
 			// Preserve the committed run instead of splitting it into words and
 			// making paint_commands() concatenate it again.
-			// Fill the final wide transport slots directly. The retained control
-			// transfers the original literal through V's array append path.
-			if retain_copied_text_fragment_append {
-				fragments << TextFragment{
-					x: absolute_x
-					y: absolute_y
-					paint_line_top: paint_line_top
-					width: fragment.width().to_double()
-					height: fragment.height().to_double()
-					text: text
-					color: color
-					font_size: computed.font_size().to_double()
-					bold: computed.font_weight() >= 600
-					italic: computed.font_slope() != 0
-					mono: computed_font_is_monospace(computed)
-					font_smoothing: computed.font_smoothing()
-					text_run_id: text_run_identity(fragment.layout_node_)
-					shape_as_run: resolved_text_spacing_for_shaping(fragment.layout_node_, .letter_spacing) == 0 && resolved_text_spacing_for_shaping(fragment.layout_node_, .word_spacing) == 0
-					inline_node_id: inline_node_id
-					fragment_left_edge_away: fragment_index == 0 && first_fragment_continues_previous_line
-					fragment_right_edge_away: fragment_index == line_box.fragments_.len - 1
-						&& last_fragment_continues_next_line
-					background_color: background
-					background_color_clip: background_color_clip
-					background_images: background_images
-					border: border
-					padding: padding
-					border_color: border_color
-					border_colors: border_colors
-					border_styles: border_styles
-					border_radius: radius
-					border_radii: radii
-					outline_width: outline_width
-					outline_offset: outline_offset
-					outline_color: outline_color
-					outline_style: outline_style
-					outline_is_auto: outline_is_auto
-					shadow: inline_shadow
-					shadows: inline_shadows
-					decoration: text_decoration_string(computed.text_decoration_line())
-					decoration_color: decoration_color
-					decoration_color_set: true
-					decoration_skip_ink: computed.text_decoration_skip_ink() != .none_
-					decoration_style: decoration_style
-					decoration_thickness: decoration_thickness
+			// Transfer the freshly projected payload directly. Appending a named
+			// record deep-clones its strings and arrays in current V.
+			fragments << TextFragment{
+				x: absolute_x
+				y: absolute_y
+				paint_line_top: paint_line_top
+				width: fragment.width().to_double()
+				height: fragment.height().to_double()
+				text: text
+				color: color
+				font_size: computed.font_size().to_double()
+				bold: computed.font_weight() >= 600
+				italic: computed.font_slope() != 0
+				mono: computed_font_is_monospace(computed)
+				font_smoothing: computed.font_smoothing()
+				text_run_id: text_run_identity(fragment.layout_node_)
+				shape_as_run: resolved_text_spacing_for_shaping(fragment.layout_node_, .letter_spacing) == 0 && resolved_text_spacing_for_shaping(fragment.layout_node_, .word_spacing) == 0
+				inline_node_id: inline_node_id
+				fragment_left_edge_away: fragment_index == 0 && first_fragment_continues_previous_line
+				fragment_right_edge_away: fragment_index == line_box.fragments_.len - 1
+					&& last_fragment_continues_next_line
+				background_color: background
+				background_color_clip: background_color_clip
+				background_images: background_images
+				border: border
+				padding: padding
+				border_color: border_color
+				border_colors: border_colors
+				border_styles: border_styles
+				border_radius: radius
+				border_radii: radii
+				outline_width: outline_width
+				outline_offset: outline_offset
+				outline_color: outline_color
+				outline_style: outline_style
+				outline_is_auto: outline_is_auto
+				shadow: inline_shadow
+				shadows: inline_shadows
+				decoration: text_decoration_string(computed.text_decoration_line())
+				decoration_color: decoration_color
+				decoration_color_set: true
+				decoration_skip_ink: computed.text_decoration_skip_ink() != .none_
+				decoration_style: decoration_style
+				decoration_thickness: decoration_thickness
+				baseline: fragment.baseline().to_double()
+				baseline_set: true
+				font_metrics_set: true
+				font_ascent: f64(font_metrics.ascent)
+				font_descent: f64(font_metrics.descent)
+				font_x_height: f64(font_metrics.x_height)
+				glyph_height: f64(font_metrics.size)
+				decoration_thickness_set: decoration_thickness_set
+				text_underline_offset: text_underline_offset
+				text_underline_position: text_underline_position
+				chromium_decorations: fragment.layout_node_.document().font_rendering_policy() == .chromium
+				text_underline_offset_auto: property_is_auto(computed, .text_underline_offset)
+				layout_handle: voidptr(fragment.layout_node_)
+				paintable_fragment: painting.PaintableFragment{
+					text_value: fragment_text_for_rendering
+					offset: painting.Point{absolute_x, absolute_y}
+					size: painting.Size{fragment.width().to_double(), fragment.height().to_double()}
+					start_offset: fragment.source_start()
+					uses_text_mapping:       fragment.layout_node_.is_text_node()
+					rendered_start_offset:   fragment.start()
+					source_range_start:      if mapped_text := fragment.layout_node_.as_text_node() {
+						mapped_text.source_range_start_
+					} else {
+						0
+					}
+					source_range_length:     if mapped_text := fragment.layout_node_.as_text_node() {
+						mapped_text.rendered_source_length_
+					} else {
+						fragment.length_in_code_units()
+					}
+					text_mapping_edits:      if mapped_text := fragment.layout_node_.as_text_node() {
+						mapped_text.rendered_text_edits_.clone()
+					} else {
+						[]platform.TextMappingEdit{}
+					}
+					length_in_code_units: fragment.length_in_code_units()
+					glyph_run: fragment.glyph_run()
 					baseline: fragment.baseline().to_double()
-					baseline_set: true
-					font_metrics_set: true
 					font_ascent: f64(font_metrics.ascent)
 					font_descent: f64(font_metrics.descent)
-					font_x_height: f64(font_metrics.x_height)
-					glyph_height: f64(font_metrics.size)
-					decoration_thickness_set: decoration_thickness_set
-					text_underline_offset: text_underline_offset
-					text_underline_position: text_underline_position
-					chromium_decorations: fragment.layout_node_.document().font_rendering_policy() == .chromium
-					text_underline_offset_auto: property_is_auto(computed, .text_underline_offset)
-					layout_handle: voidptr(fragment.layout_node_)
-					paintable_fragment: painting.PaintableFragment{
-						text_value: fragment_text_for_rendering
-						offset: painting.Point{absolute_x, absolute_y}
-						size: painting.Size{fragment.width().to_double(), fragment.height().to_double()}
-						start_offset: fragment.source_start()
-						uses_text_mapping:       fragment.layout_node_.is_text_node()
-						rendered_start_offset:   fragment.start()
-						source_range_start:      if mapped_text := fragment.layout_node_.as_text_node() {
-							mapped_text.source_range_start_
-						} else {
-							0
-						}
-						source_range_length:     if mapped_text := fragment.layout_node_.as_text_node() {
-							mapped_text.rendered_source_length_
-						} else {
-							fragment.length_in_code_units()
-						}
-						text_mapping_edits:      if mapped_text := fragment.layout_node_.as_text_node() {
-							mapped_text.rendered_text_edits_.clone()
-						} else {
-							[]platform.TextMappingEdit{}
-						}
-						length_in_code_units: fragment.length_in_code_units()
-						glyph_run: fragment.glyph_run()
-						baseline: fragment.baseline().to_double()
-						font_ascent: f64(font_metrics.ascent)
-						font_descent: f64(font_metrics.descent)
-						orientation: orientation
-						has_trailing_whitespace: fragment.has_trailing_whitespace()
-					}
-					text_shadows: computed_text_shadows(computed)
-					selection_style: selection_style(fragment.layout_node_)
+					orientation: orientation
+					has_trailing_whitespace: fragment.has_trailing_whitespace()
 				}
-			} else {
-				// Initialize the complete immutable record in its final capacity slot,
-				// then publish its length. No intermediate wide array-push argument.
-				assert fragments.len < fragments.cap
-				unsafe {
-					(&TextFragment(fragments.data))[fragments.len] = TextFragment{
-						x: absolute_x
-						y: absolute_y
-						paint_line_top: paint_line_top
-						width: fragment.width().to_double()
-						height: fragment.height().to_double()
-						text: text
-						color: color
-						font_size: computed.font_size().to_double()
-						bold: computed.font_weight() >= 600
-						italic: computed.font_slope() != 0
-						mono: computed_font_is_monospace(computed)
-						font_smoothing: computed.font_smoothing()
-						text_run_id: text_run_identity(fragment.layout_node_)
-						shape_as_run: resolved_text_spacing_for_shaping(fragment.layout_node_, .letter_spacing) == 0 && resolved_text_spacing_for_shaping(fragment.layout_node_, .word_spacing) == 0
-						inline_node_id: inline_node_id
-						fragment_left_edge_away: fragment_index == 0 && first_fragment_continues_previous_line
-						fragment_right_edge_away: fragment_index == line_box.fragments_.len - 1
-							&& last_fragment_continues_next_line
-						background_color: background
-						background_color_clip: background_color_clip
-						background_images: background_images
-						border: border
-						padding: padding
-						border_color: border_color
-						border_colors: border_colors
-						border_styles: border_styles
-						border_radius: radius
-						border_radii: radii
-						outline_width: outline_width
-						outline_offset: outline_offset
-						outline_color: outline_color
-						outline_style: outline_style
-						outline_is_auto: outline_is_auto
-						shadow: inline_shadow
-						shadows: inline_shadows
-						decoration: text_decoration_string(computed.text_decoration_line())
-						decoration_color: decoration_color
-						decoration_color_set: true
-						decoration_skip_ink: computed.text_decoration_skip_ink() != .none_
-						decoration_style: decoration_style
-						decoration_thickness: decoration_thickness
-						baseline: fragment.baseline().to_double()
-						baseline_set: true
-						font_metrics_set: true
-						font_ascent: f64(font_metrics.ascent)
-						font_descent: f64(font_metrics.descent)
-						font_x_height: f64(font_metrics.x_height)
-						glyph_height: f64(font_metrics.size)
-						decoration_thickness_set: decoration_thickness_set
-						text_underline_offset: text_underline_offset
-						text_underline_position: text_underline_position
-						chromium_decorations: fragment.layout_node_.document().font_rendering_policy() == .chromium
-						text_underline_offset_auto: property_is_auto(computed, .text_underline_offset)
-						layout_handle: voidptr(fragment.layout_node_)
-						paintable_fragment: painting.PaintableFragment{
-							text_value: fragment_text_for_rendering
-							offset: painting.Point{absolute_x, absolute_y}
-							size: painting.Size{fragment.width().to_double(), fragment.height().to_double()}
-							start_offset: fragment.source_start()
-							uses_text_mapping:       fragment.layout_node_.is_text_node()
-							rendered_start_offset:   fragment.start()
-							source_range_start:      if mapped_text := fragment.layout_node_.as_text_node() {
-								mapped_text.source_range_start_
-							} else {
-								0
-							}
-							source_range_length:     if mapped_text := fragment.layout_node_.as_text_node() {
-								mapped_text.rendered_source_length_
-							} else {
-								fragment.length_in_code_units()
-							}
-							text_mapping_edits:      if mapped_text := fragment.layout_node_.as_text_node() {
-								mapped_text.rendered_text_edits_.clone()
-							} else {
-								[]platform.TextMappingEdit{}
-							}
-							length_in_code_units: fragment.length_in_code_units()
-							glyph_run: fragment.glyph_run()
-							baseline: fragment.baseline().to_double()
-							font_ascent: f64(font_metrics.ascent)
-							font_descent: f64(font_metrics.descent)
-							orientation: orientation
-							has_trailing_whitespace: fragment.has_trailing_whitespace()
-						}
-						text_shadows: computed_text_shadows(computed)
-						selection_style: selection_style(fragment.layout_node_)
-					}
-					fragments.len++
-				}
-				report_direct_text_fragment_fill(container)
+				text_shadows: computed_text_shadows(computed)
+				selection_style: selection_style(fragment.layout_node_)
 			}
 		}
 		mut box_decorations := []TextFragment{}
