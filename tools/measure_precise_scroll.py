@@ -103,7 +103,7 @@ def records(log, prefix):
     return result
 
 
-def verify_native_images(log, binary, native_bridge=None, picture_bridge=None):
+def verify_native_images(log, binary, native_bridge=None, picture_bridge=None, image_bridge=None):
     images = {}
     for line in log.splitlines():
         if not line.startswith('SCROLL_IMAGE '):
@@ -115,6 +115,7 @@ def verify_native_images(log, binary, native_bridge=None, picture_bridge=None):
         path = Path(os.fsdecode(bytes.fromhex(encoded))).resolve()
         expected = (Path(native_bridge) if native_bridge and name == 'libLadybirdVSkiaText.dylib'
                     else Path(picture_bridge) if picture_bridge and name == 'libVoxGraphiteDawn.dylib'
+                    else Path(image_bridge) if image_bridge and name == 'libVoxGraphite.dylib'
                     else binary.parent / name).resolve()
         if name not in {'libLadybirdVSkiaText.dylib', 'libVoxGraphite.dylib',
                         'libVoxGraphiteDawn.dylib'} or path != expected:
@@ -124,6 +125,8 @@ def verify_native_images(log, binary, native_bridge=None, picture_bridge=None):
         raise ValueError('Missing native renderer image identity')
     if picture_bridge and 'libVoxGraphiteDawn.dylib' not in images:
         raise ValueError('Missing selected picture renderer image identity')
+    if image_bridge and 'libVoxGraphite.dylib' not in images:
+        raise ValueError('Missing selected image renderer image identity')
     return images
 
 
@@ -238,6 +241,8 @@ def main():
                         help="Explicit unpublished native candidate; require this exact loaded bridge instead of the bundle bridge")
     parser.add_argument("--picture-renderer-bridge", type=Path,
                         help="Explicit unpublished libVoxGraphiteDawn.dylib; pin and require this exact loaded picture renderer")
+    parser.add_argument("--image-renderer-bridge", type=Path,
+                        help="Explicit unpublished libVoxGraphite.dylib; pin and require this exact loaded image renderer")
     parser.add_argument("--env", action="append", default=[])
     parser.add_argument("--width", type=int, default=1024)
     parser.add_argument("--height", type=int, default=764, help="Document viewport height, without chrome")
@@ -324,6 +329,12 @@ def main():
             parser.error("--picture-renderer-bridge must name an existing libVoxGraphiteDawn.dylib")
         if picture_bridge not in libraries:
             libraries.insert(0, picture_bridge)
+    image_bridge = args.image_renderer_bridge.resolve() if args.image_renderer_bridge else None
+    if image_bridge:
+        if image_bridge.name != "libVoxGraphite.dylib" or not image_bridge.is_file():
+            parser.error("--image-renderer-bridge must name an existing libVoxGraphite.dylib")
+        if image_bridge not in libraries:
+            libraries.insert(0, image_bridge)
     # The signed bundle resolves its embedded bridges through @executable_path.
     # A global loader search override also changes transitive dependency lookup
     # and helper startup; exercise the bundle's ordinary loader configuration.
@@ -363,9 +374,10 @@ def main():
                                      "default bookmark bar; explicit direct networking"
                                      if args.allow_fixture_navigation else
                                      "empty private profile; default bookmark bar; no saved proxy override"),
-                    native_configuration="explicit unpublished native candidate" if native_bridge or picture_bridge else "installed bundle",
+                    native_configuration="explicit unpublished native candidate" if native_bridge or picture_bridge or image_bridge else "installed bundle",
                     native_renderer_bridge=str(native_bridge) if native_bridge else None,
                     picture_renderer_bridge=str(picture_bridge) if picture_bridge else None,
+                    image_renderer_bridge=str(image_bridge) if image_bridge else None,
                     chrome_height=args.chrome_height,
                     script_policy=args.script_policy,
                     viewport=[args.width, args.height], network_policy=args.network_policy,
@@ -398,7 +410,7 @@ def main():
         browser_log = (output / "browser.log").read_text(errors="replace")
         evidence['native_fault_recorded'] = bool(re.search(
             r'^SCROLL_FAULT_FIRST(?:\s|$)', browser_log, re.MULTILINE))
-        evidence['native_images'] = verify_native_images(browser_log, binary, native_bridge, picture_bridge)
+        evidence['native_images'] = verify_native_images(browser_log, binary, native_bridge, picture_bridge, image_bridge)
         if any(path not in hashes for path in evidence['native_images'].values()):
             raise RuntimeError('Loaded native image was not pinned before launch')
         summary = summarize(browser_log,

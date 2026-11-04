@@ -73,8 +73,15 @@ class PreciseScrollTests(unittest.TestCase):
     def test_packaged_codec_change_invalidates_completed_measurement(self):
         self.check_isolated_launch(False, mutate_packaged=True)
 
+    def test_explicit_image_renderer_is_loaded_and_pinned(self):
+        self.check_isolated_launch(False, image_bridge=True)
+
+    def test_image_renderer_change_invalidates_completed_measurement(self):
+        self.check_isolated_launch(False, image_bridge=True, mutate_image=True)
+
     def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False,
-                              capture_faults=False, mutate_worker=False, mutate_packaged=False):
+                              capture_faults=False, mutate_worker=False, mutate_packaged=False,
+                              image_bridge=False, mutate_image=False):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             binary = root / ("Vox.app/Contents/MacOS/Vox" if mutate_packaged else "Vox")
@@ -95,6 +102,10 @@ class PreciseScrollTests(unittest.TestCase):
 
             renderer = binary.parent / 'libLadybirdVSkiaText.dylib'
             renderer.write_bytes(b'fixture renderer')
+            if image_bridge:
+                image_renderer = root / 'candidate/libVoxGraphite.dylib'
+                image_renderer.parent.mkdir()
+                image_renderer.write_bytes(b'fixture image renderer')
             worker = binary.parent / 'VoxAdblockWorker'
             worker.write_bytes(b'fixture worker')
             if mutate_packaged:
@@ -125,6 +136,12 @@ class PreciseScrollTests(unittest.TestCase):
                 kwargs["stdout"].write(log_for())
                 kwargs["stdout"].write('SCROLL_IMAGE name=libLadybirdVSkiaText.dylib path_hex='
                                        + os.fsencode(renderer).hex() + '\n')
+                if image_bridge:
+                    self.assertIn(str(image_renderer), env['DYLD_INSERT_LIBRARIES'].split(':'))
+                    kwargs["stdout"].write('SCROLL_IMAGE name=libVoxGraphite.dylib path_hex='
+                                           + os.fsencode(image_renderer).hex() + '\n')
+                    if mutate_image:
+                        image_renderer.write_bytes(b'changed image renderer')
                 if mutate_worker:
                     worker.write_bytes(b'changed worker')
                     if mutate_worker == 'restore':
@@ -144,6 +161,8 @@ class PreciseScrollTests(unittest.TestCase):
                 arguments.append("--v-profile-reset")
             if capture_faults:
                 arguments.append("--capture-faults")
+            if image_bridge:
+                arguments.extend(['--image-renderer-bridge', str(image_renderer)])
             with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
                     mock.patch.object(measure_precise_scroll.sys, "argv", arguments), \
                     mock.patch.dict(measure_precise_scroll.os.environ,
@@ -160,7 +179,7 @@ class PreciseScrollTests(unittest.TestCase):
                                       side_effect=[(1, 2, 3), (4, 5, 6)]), \
                     mock.patch.object(measure_precise_scroll.time, "time", side_effect=[100, 200]), \
                     contextlib.redirect_stdout(io.StringIO()):
-                if mutate_worker or mutate_packaged:
+                if mutate_worker or mutate_packaged or mutate_image:
                     with self.assertRaisesRegex(RuntimeError, 'identity changed'):
                         measure_precise_scroll.main()
                 else:
@@ -168,11 +187,15 @@ class PreciseScrollTests(unittest.TestCase):
             evidence = json.loads((output / "run.json").read_text())
             self.assertEqual(evidence['runtime_input_sha256'][str(worker)],
                              hashlib.sha256(b'fixture worker').hexdigest())
-            if mutate_worker or mutate_packaged:
+            if mutate_worker or mutate_packaged or mutate_image:
                 self.assertFalse(evidence['valid'])
                 self.assertFalse((output / 'summary.json').exists())
                 return
             self.assertTrue(evidence["valid"])
+            if image_bridge:
+                self.assertEqual(evidence['image_renderer_bridge'], str(image_renderer))
+                self.assertEqual(evidence['source_and_binary_sha256'][str(image_renderer)],
+                                 hashlib.sha256(b'fixture image renderer').hexdigest())
             self.assertEqual(evidence["diagnostic_only"], v_profile_reset or capture_faults)
             header = Path(measure_precise_scroll.__file__).with_name("precise_scroll_faults.h")
             self.assertEqual(evidence["source_and_binary_sha256"][str(header)],
@@ -594,6 +617,23 @@ class RecordedNativeFaultTests(unittest.TestCase):
 
 
 class ExplicitNativeCandidateIdentityTests(unittest.TestCase):
+    def test_declared_image_backend_requires_exact_loaded_identity(self):
+        binary = Path('/bundle/Vox')
+        image = Path('/candidate/libVoxGraphite.dylib')
+        native = binary.parent / 'libLadybirdVSkiaText.dylib'
+        lines = ['SCROLL_IMAGE name=' + path.name + ' path_hex=' + os.fsencode(path).hex()
+                 for path in [native, image]]
+        log = '\n'.join(lines)
+        selected = measure_precise_scroll.verify_native_images(log, binary, image_bridge=image)
+        self.assertEqual(selected[image.name], str(image))
+        with self.assertRaises(ValueError):
+            measure_precise_scroll.verify_native_images(log, binary)
+        with self.assertRaisesRegex(ValueError, 'Missing selected image'):
+            measure_precise_scroll.verify_native_images(lines[0], binary, image_bridge=image)
+        wrong = log.replace(os.fsencode(image).hex(), os.fsencode(binary.parent / image.name).hex())
+        with self.assertRaises(ValueError):
+            measure_precise_scroll.verify_native_images(wrong, binary, image_bridge=image)
+
     def test_declared_candidate_keeps_other_libraries_in_bundle(self):
         binary = Path('/bundle/Vox')
         candidate = Path('/candidate/libLadybirdVSkiaText.dylib')
