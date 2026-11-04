@@ -7425,16 +7425,17 @@ fn (mut app BrowserApp) draw() {
 	} else { DocumentSubmissionClaim{} }
 	// Pixel reuse is decided after all scripts, layout and animation work.
 	mut stationary_reused := false
+	blank_canvas := app.frame_canvas_is_blank(paint_document)
 	$if macos {
 		if app.ctx.native_rendering {
-			if paint_document {
+			if !blank_canvas {
 				stationary_reused = app.begin_stationary_document_raster()
 			} else {
 				stationary_reused = begin_stationary_blank_raster()
 			}
 		}
 	}
-	if paint_document && !stationary_reused {
+	if !blank_canvas && !stationary_reused {
 		// Complete compositor pictures can omit their speculative leaf rasters.
 		// Retry painting once after a failed GPU publication; preparation,
 		// document scripts and rendering opportunities have already run.
@@ -7668,7 +7669,7 @@ fn (mut app BrowserApp) draw() {
 				C.native_discard_stationary_raster()
 			}
 		}
-	} else if !paint_document {
+	} else if blank_canvas {
 		$if macos { C.native_discard_scroll_raster() }
 		if !stationary_reused {
 			draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))

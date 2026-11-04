@@ -78,3 +78,14 @@ fn test_stationary_blank_raster_declines_without_a_native_frame() {
 	assert !begin_stationary_blank_raster()
 	assert stationary_blank_raster_owner != 0
 }
+
+fn test_frames_without_a_document_or_commands_are_blank() {
+	mut app := BrowserApp{}
+	assert app.frame_canvas_is_blank(true)
+	assert app.frame_canvas_is_blank(false)
+	app.paint_commands << layout.PaintCommand{
+		kind: 'fill_rect'
+	}
+	assert !app.frame_canvas_is_blank(true)
+	assert app.frame_canvas_is_blank(false)
+}

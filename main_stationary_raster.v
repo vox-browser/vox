@@ -93,6 +93,12 @@ fn (app &BrowserApp) begin_stationary_document_raster() bool {
 // clearing it.
 const stationary_blank_raster_owner = u64(0xffff_ffff_ffff_ffff)
 
+// Before navigation creates a document there is nothing to replay: the frame
+// is the same white fill as a document whose pixels are not ready yet.
+fn (app &BrowserApp) frame_canvas_is_blank(paint_document bool) bool {
+	return !paint_document || (app.document == unsafe { nil } && app.paint_commands.len == 0)
+}
+
 fn begin_stationary_blank_raster() bool {
 	$if macos {
 		$if vox_ui2 ? {
