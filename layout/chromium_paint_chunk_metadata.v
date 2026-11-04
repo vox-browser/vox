@@ -200,7 +200,10 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 		rect := chromium_hit_test_border_rect(box)
 		bounds := compatibility_affine_map_rect(box.paint_transform, rect)
 		context, state := chromium_metadata_state(box, result, &scratch)
-		if context < 0 || state.requires_root_raster { continue }
+		// Fully clipped boxes have neither painted ink nor hit-test bounds.
+		// Their invisible border must not move a visible sibling's raster origin.
+		if context < 0 || state.requires_root_raster
+			|| compatibility_context_is_fully_clipped(&result.visual_context_tree, context) { continue }
 		if interest := cull {
 			if !state.fixed_to_viewport && state.sticky_frame == 0
 				&& !chromium_layer_bounds_overlap(bounds, interest) { continue }
