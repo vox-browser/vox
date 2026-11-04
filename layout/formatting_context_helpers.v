@@ -487,6 +487,8 @@ fn layout_box_child_to_derive_baseline_from(state &LayoutState, box &Node, basel
 			continue
 		}
 		if child_state.line_boxes.len > 0
+			|| child_state.derived_first_baseline() != none
+			|| child_state.derived_last_baseline() != none
 			|| layout_box_child_to_derive_baseline_from(state, child, baseline_set) != none {
 			return child
 		}

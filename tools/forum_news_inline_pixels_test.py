@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_intrinsic_measurements_preserve_nested_button_and_flex_baselines(self):
+        self.compare_fixture('intrinsic-button-baseline', width=1024, height=768)
+
     def test_explicit_first_frame_policy_covers_file_and_data_gif_images(self):
         self.compare_fixture('image-first-frame-policy', width=1024, height=768,
                              image_animation_policy='none')

@@ -1228,6 +1228,12 @@ fn set_flex_abspos_static_positions(mut state LayoutState, container &Node, cont
 fn clear_intrinsic_flex_item_line_boxes(mut state LayoutState, node &Node) {
 	if styled := node.as_node_with_style() {
 		if mut values := state.try_get_mutable(styled) {
+			// Descendants may have been laid out in normal mode even though
+			// this ancestor is an intrinsic probe. Their flex/grid baselines
+			// must survive removal of the descendant text lines too.
+			if node.display().is_flex_inside() || node.display().is_grid_inside() {
+				cache_intrinsic_flex_baselines(mut state, node, values, .intrinsic_sizing)
+			}
 			values.line_boxes.clear()
 		}
 	}
@@ -1252,8 +1258,11 @@ fn resolve_inline_flex_auto_block_size_for_alignment(state &LayoutState, contain
 		available_space.height.to_px_or_zero(), container_state, false)
 }
 
-fn cache_intrinsic_inline_flex_baselines(mut state LayoutState, container &Node, container_state &UsedValues, layout_mode LayoutMode) {
-	if layout_mode != .intrinsic_sizing || !container.display().is_inline_outside() {
+// Block flex boxes also export baselines through enclosing inline blocks,
+// including a button's anonymous flex wrapper. Preserve both sets before an
+// intrinsic run discards descendant line boxes.
+fn cache_intrinsic_flex_baselines(mut state LayoutState, container &Node, container_state &UsedValues, layout_mode LayoutMode) {
+	if layout_mode != .intrinsic_sizing {
 		return
 	}
 	first := layout_box_baseline(state, container, .first).minus(container_state.margin_box_top())
@@ -1344,9 +1353,11 @@ fn flex_subtree_depends_on_definite_height(mut state LayoutState, node &Node) bo
 fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
 	mut geometry_scratch := begin_nested_geometry_scratch(container.document(), layout_mode)
 	defer { geometry_scratch.finish() }
+	container_state.set_derived_baselines(none, none)
 	direction := container.computed_values().effective_flex_direction()
 	if direction in [.column, .column_reverse] {
 		result := run_column_flex_formatting_context(mut state, container, mut container_state, layout_mode, available_space)
+		cache_intrinsic_flex_baselines(mut state, container, container_state, layout_mode)
 		if layout_mode == .intrinsic_sizing {
 			for child in container.children() {
 				clear_intrinsic_flex_item_line_boxes(mut state, child)
@@ -1673,7 +1684,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 			resolved_automatic_cross_size
 		}
 	}
-	cache_intrinsic_inline_flex_baselines(mut state, container, container_state, layout_mode)
+	cache_intrinsic_flex_baselines(mut state, container, container_state, layout_mode)
 	if layout_mode == .intrinsic_sizing {
 		for child in container.children() {
 			clear_intrinsic_flex_item_line_boxes(mut state, child)
@@ -1900,7 +1911,6 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		}
 	}
 	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().effective_flex_direction())
-	cache_intrinsic_inline_flex_baselines(mut state, container, container_state, layout_mode)
 	return FormattingContextResult{
 		automatic_content_width: container_width
 		automatic_content_height: if container_height != none { main_size } else { total_main }
