@@ -58,7 +58,7 @@ fn test_fresh_following_sheet_keeps_changed_declarations_targeted_and_pending_di
 	assert pending.needs_style_update()
 }
 
-fn test_fresh_following_sheet_rejects_stale_removed_media_and_already_evaluated_nested_media() {
+fn test_fresh_following_sheet_rejects_stale_conditions_and_preserves_initialized_matches() {
 	mut document, list, _ := fresh_following_media_fixture('@media(min-width:700px){.target{color:red}}')
 	defer { document.finalize() }
 	document.set_viewport_rect(dom.Rect{width:600,height:600})
@@ -67,7 +67,17 @@ fn test_fresh_following_sheet_rejects_stale_removed_media_and_already_evaluated_
 	mut following_media := list.sheets[1].rules.item(0)?
 	following_media.evaluate_media(document)
 	assert following_media.did_evaluate
+	assert (list.removal_following_sheet_changes(list.sheets[0]) != none) == !retain_unevaluated_following_sheet
+	assert following_media.did_evaluate
+	assert following_media.condition_matches()
+	// Updating only the removed sheet leaves a genuine pending change in the
+	// following rule. A snapshot must neither consume nor conceal that change.
+	document.set_viewport_rect(dom.Rect{width:600,height:600})
+	mut old := list.sheets[0]
+	old.evaluate_media_queries(document)
 	assert list.removal_following_sheet_changes(list.sheets[0]) == none
+	assert following_media.did_evaluate
+	assert following_media.condition_matches()
 	assert list.sheets[1].did_match == none
 }
 

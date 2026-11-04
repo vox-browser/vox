@@ -107,8 +107,10 @@ fn redundant_sheet_rule_sequences_match_with_media(left []&CSSRule, right []&CSS
 				media := a.media or { return false }
 				other := b.media or { return false }
 				if fresh_media {
-					if b.did_evaluate || !following_media_query_texts_equal(media, other)
-						|| a.condition_matches() != following_media_snapshot_matches(other, document) {
+					now_matches := following_media_snapshot_matches(other, document)
+					if !following_media_query_texts_equal(media, other)
+						|| a.condition_matches() != now_matches
+						|| (b.did_evaluate && b.condition_matches() != now_matches) {
 						return false
 					}
 				} else if media.media != other.media || a.condition_matches() != b.condition_matches() {
