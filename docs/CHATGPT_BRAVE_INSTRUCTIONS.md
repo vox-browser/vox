@@ -445,3 +445,35 @@ The [favicon discovery receipt](performance/chatgpt-favicon-discovery-20261104.j
 links durable raw commands, compiler/runtime identities, guards, audits, PNGs and
 every attempt. Trials use the retained SOCKS capture and original author-script
 bytes, with no additional live download or reference/tolerance change.
+
+The subsequent [favicon follow-up receipt](performance/chatgpt-favicon-followup-20261104.json)
+records a complete, separately pinned cohort using production executable
+`5aea11987f231d53605b77e66b3e53ea13be353e0a585710cd86be6e774fddf4`.
+The ownership checks remain unchanged. Two diagnostic pairs confirm live
+discovery and cached lookup, and four uninstrumented alternating browser pairs
+complete with exact pixels, content and author bootstrap. All browser and kernel
+exits are zero, adopted browser RSS is accounted for, and inputs stay unchanged.
+Vox's implementation order is control, candidate, candidate, control.
+
+| Two matched Vox trials per implementation | Launch-to-PNG instructions |
+| --- | ---: |
+| Original discovery median | 33,730,590,481.5 |
+| Cached discovery median | 33,454,034,495 |
+| Conservative reduction | 72,701,625 |
+
+The median reduction is 276,555,986.5 instructions, or 0.820%. The conservative
+reduction subtracts the highest candidate count from the lowest control count.
+This is a small matched experiment on one pinned build; shared host contention
+and every raw count remain recorded. It does not establish seven-pair acceptance
+against Brave. The mixed control/candidate cohort's worst Vox/Brave ratio is
+1.7934, and the 5% Brave target remains unmet.
+
+The saving crosses the 5,000,000-instruction regression threshold. The completed
+47-job checkpoint includes six pixel-diff controls, 20 visual cases, 11 native
+renderer tests, and all 100 upstream AST fixtures with default GC and `-gc none`.
+Seventeen visual cases are exact, including all nine SVG mutation cases; the
+other three pass their existing canonical tolerances. Every compile and runtime
+guard exits zero. Visual checks pin a later completed production bundle
+independently; they do not replace the performance cohort's executable identity.
+The broad-check instruction cadence resets after this checkpoint. The earlier
+ownership-rejected attempt remains retained in its original receipt.
