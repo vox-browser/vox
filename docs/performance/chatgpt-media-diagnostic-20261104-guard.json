@@ -1,0 +1,29 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-media-journal-20261104-1848/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {
+    "77267": "Wed Nov  4 18:51:55 2026    ",
+    "77270": "Wed Nov  4 18:51:55 2026    ",
+    "77651": "Wed Nov  4 18:52:06 2026    ",
+    "77653": "Wed Nov  4 18:52:06 2026    ",
+    "77666": "Wed Nov  4 18:52:06 2026    ",
+    "77667": "Wed Nov  4 18:52:06 2026    ",
+    "77669": "Wed Nov  4 18:52:06 2026    ",
+    "77972": "Wed Nov  4 18:52:18 2026    ",
+    "77978": "Wed Nov  4 18:52:18 2026    ",
+    "77983": "Wed Nov  4 18:52:18 2026    ",
+    "77984": "Wed Nov  4 18:52:18 2026    ",
+    "77985": "Wed Nov  4 18:52:19 2026    ",
+    "78329": "Wed Nov  4 18:52:32 2026    ",
+    "78331": "Wed Nov  4 18:52:32 2026    "
+  },
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 1718042624,
+  "elapsed_seconds": 59.415242917,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

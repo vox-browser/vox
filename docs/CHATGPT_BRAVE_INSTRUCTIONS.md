@@ -618,9 +618,10 @@ unchanged pixels, content, bootstrap and exits with stable inputs. The selected
 library is logged, but neither Vox run reports an executed mixed-alpha integer
 span. The older main executable still contains its previous static compositor;
 these diagnostics cannot establish eligibility of the new main-executable path.
-No unprofiled page comparison or broad-cadence advance is credited. A new shared
-production build is still needed for whole-browser validation, and the 5% Brave
-target remains unmet.
+At that point no unprofiled page comparison or broad-cadence advance was
+credited, and whole-browser validation required a newer shared production build.
+The production follow-up below establishes execution of the integer path, with
+no confirmed page-level saving. The 5% Brave target remains unmet.
 
 The [unit-opacity receipt](performance/chatgpt-unit-opacity-20261104.json) links
 all focused checks, component counts, both exact diagnostic pairs, source and
@@ -657,3 +658,86 @@ and must not be added or treated as CPU instruction partitions. The thirty-secon
 settle and profiling instrumentation differ from acceptance conditions. The
 repeated media-query traversal is a lead for a focused empty-child-list guard;
 this profile gives no page credit or broad-cadence advance.
+
+## Production follow-up and evidence retention
+
+An initial production unit-opacity follow-up completed its captures, but its
+raw `Build/` directory disappeared before durable archival. The separately
+[qualified historical record](performance/chatgpt-unit-opacity-production-20261104-missing.json)
+retains the values previously printed by the tools: control and candidate
+medians of 31,447,108,311 and 32,142,181,927 instructions, respectively. The
+original counters, PNGs, audits and guards cannot now be independently checked.
+Those figures receive no independently verified credit and have not been
+reconstructed as raw evidence.
+
+Fresh [production diagnostics](performance/chatgpt-media-diagnostic-20261104.json)
+pin executable
+`2550c9ecb64182bed1badb761c10ca6f11bdf116d0cfbf8a4a10d64a58428a44`.
+Both Vox processes independently report an executed integer mixed-alpha span
+of 1,596 pixels. All four Vox/Brave captures pass exact pixels, content, author
+bootstrap and browser/kernel exits with stable inputs. This closes the path
+eligibility gap without granting performance credit.
+
+The new controllers atomically journal the raw evidence under `docs/performance`
+after every observation, outside `Build/`. Their ZIPs retain earlier checkpoints,
+production and frozen compiler receipts, commands, logs, counters and PNGs.
+Archive writes occur after each browser's capture and teardown, outside its
+instruction interval. The initial preflight failure caused by a removed diff
+binary is retained too; the replacement diff tool passes strict unchanged and
+one-pixel-change controls. Actual controller and memory-guard exits are zero.
+The comparison driver returns one for the unmet Brave gate, separately from
+successful browser exits.
+
+## Empty nested media-query lists
+
+Commit `1c32ec1ef` checks each nested rule list's live length before recursing
+into it. Empty lists contain no media state to evaluate. The containing rule's
+condition and imported stylesheet media still run, and later CSSOM insertions
+and removals require no cache invalidation. Nonempty lists retain the previous
+traversal. `VOX_RETAIN_EMPTY_MEDIA_QUERY_RECURSION=1` selects the original control;
+`VOX_EMPTY_MEDIA_QUERY_LIST_DIAGNOSTICS=1` reports an executed skip once.
+
+Four new tests exercise first evaluation, viewport transitions, later nested
+insertion/removal/reinsertion, inactive supports groups, and imported empty
+stylesheets. They run in both GC modes with the guard enabled and disabled.
+Five existing media-query tests also pass in both GC modes, covering color
+scheme, fractional viewport units and display density: 26 test-function
+executions in total. Current V compilation and runtime guards all pass. The
+initial fixture compile error and its correction remain retained.
+
+Tooling commit `4aaa57922` measures 512 media evaluations on the two original
+archived CSS bodies after parsing and warmup. Their graph contains 10,159 child
+lists, including 8,436 empty ones. Control/candidate/candidate/control component
+runs produce identical zero-change checksums. Median instructions fall from
+194,624,178 to 166,144,462, a 14.633% reduction; the conservative component
+reduction is 27,907,522 instructions. Parsing, startup and teardown are excluded,
+so these figures do not establish a browser saving.
+
+The production diagnostic reports the empty-list skip only when enabled. A
+subsequent [unprofiled matched comparison](performance/chatgpt-media-matched-20261104.json)
+pins the newer completed executable
+`abd2573bff7d8b855a48fdf8822e1f1a381be2a6e2e669ede9144fa259cc8927`.
+Both builds' sealed media traversal and guard functions are byte-identical.
+Four fresh Vox processes run control/candidate/candidate/control, interleaved
+with four Brave references. Original scripts, private caches, viewport, five-second
+settle and launch-to-encoded-PNG boundaries remain matched.
+
+| Whole-page Vox result | Launch-to-PNG instructions |
+| --- | ---: |
+| Original recursion median | 32,177,240,225.5 |
+| Empty-list guard median | 32,309,902,899 |
+| Conservative reduction | −343,709,729 |
+
+All eight captures pass unchanged pixels, complete content, bootstrap and zero
+browser/kernel exits. Counts overlap, and the candidate median is 0.412% higher.
+Shared host load and settling work vary. No whole-page gain is established,
+and the broad-check cadence remains zero after the prior favicon checkpoint.
+This four-pair diagnostic cohort is not the required seven-pair acceptance
+cohort and does not meet the 5% Brave goal.
+
+The [empty-list receipt](performance/chatgpt-empty-media-20261104.json) links
+focused checks, component observations, both production identities, source
+excerpts, complete diagnostic and matched journals, memory guards and all failed
+attempts. No additional live download, author-script change, pixel reference or
+tolerance change was used. Results remain limited to the frozen anonymous
+homepage; live sign-in and submission behavior have not been established.

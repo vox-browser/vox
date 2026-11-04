@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "status": "Historical tool-output observations only; the original raw Build files disappeared before durable archival.",
+  "independently_verified": false,
+  "reported_executable_sha256": "70de4b58efdae04001ce2f15504dc8b736eb44f7443bb8f841f11d348766b5e4",
+  "reported_control": [
+    30644931813,
+    32249284809
+  ],
+  "reported_candidate": [
+    32037334427,
+    32247029427
+  ],
+  "reported_control_median": 31447108311.0,
+  "reported_candidate_median": 32142181927.0,
+  "reported_conservative_reduction": -1602097614,
+  "reported_frames": [
+    181,
+    230,
+    249,
+    240
+  ],
+  "reported_layout_checkpoints": [
+    12,
+    13,
+    13,
+    13
+  ],
+  "reported_order": [
+    "control",
+    "candidate",
+    "candidate",
+    "control"
+  ],
+  "source": "Values transcribed from retained tool outputs in this session. Original per-trial counters, commands, audits, PNGs, identities and guard receipts under Build/chatgpt-unit-opacity-production-20261104-1805 are no longer available for independent verification.",
+  "interpretation": "Reported candidate median was 2.210% higher; work and controls varied, so no page benefit was established. These historical figures grant no independently verified optimization credit.",
+  "fresh_validation": "docs/performance/chatgpt-media-diagnostic-20261104.json",
+  "acceptance": false,
+  "whole_page_credit": 0,
+  "broad_cadence_advance": 0
+}

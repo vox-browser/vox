@@ -1,0 +1,34 @@
+{
+  "executable": "/Users/alex/code/vox2/Build/pixel-tools/pixel_diff",
+  "sha256": "f340c01cfa7a91f03313608183160f2ecf7070edaee34ddacd47d7a5d83d9a91",
+  "controls": [
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/pixel-tools/pixel_diff",
+        "/Users/alex/code/vox2/Build/pixel-tools/known.png",
+        "/Users/alex/code/vox2/Build/pixel-tools/known.png",
+        "/Users/alex/code/vox2/Build/chatgpt-media-journal-20261104-1848/diff-control-0.png",
+        "0",
+        "0"
+      ],
+      "expected_exit": 0,
+      "exit": 0,
+      "stdout": "pixels: 4\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-media-journal-20261104-1848/diff-control-0.png\nPASS: within maximum_channel_error=0, different_pixels=0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/pixel-tools/pixel_diff",
+        "/Users/alex/code/vox2/Build/pixel-tools/known.png",
+        "/Users/alex/code/vox2/Build/pixel-tools/one-pixel.png",
+        "/Users/alex/code/vox2/Build/chatgpt-media-journal-20261104-1848/diff-control-1.png",
+        "0",
+        "0"
+      ],
+      "expected_exit": 1,
+      "exit": 1,
+      "stdout": "pixels: 4\ndifferent_pixels: 1 (25.0000%)\ndifference_bounds: 1,1 1x1\nmaximum_error_pixel: 1,1 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 1 (25.0000%)\npixels_over_10: 1 (25.0000%)\npixels_over_25: 1 (25.0000%)\npixels_over_50: 1 (25.0000%)\nmaximum_channel_error: 255\nmean_absolute_error: 47.8125\nrmse: 110.4182\ndiff: /Users/alex/code/vox2/Build/chatgpt-media-journal-20261104-1848/diff-control-1.png\nout_of_tolerance_pixel: 1,1 error=255 expected=0,0,0,255 actual=255,255,255,255\n",
+      "stderr": "FAIL: allowed maximum_channel_error=0, different_pixels=0\n"
+    }
+  ]
+}

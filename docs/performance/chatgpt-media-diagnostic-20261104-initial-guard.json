@@ -1,0 +1,14 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-media-journal-20261104-1848/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 1,
+  "adopted_processes": {},
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 32587776,
+  "elapsed_seconds": 2.7929195,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

@@ -1,0 +1,689 @@
+{
+  "version": 1,
+  "implementation_commit": "1c32ec1ef",
+  "benchmark_commit": "4aaa57922",
+  "status": "Empty child-list recursion is skipped without caching. Focused checks and exact production diagnostics pass. Archived-CSS component instructions fall 14.633%; matched whole-page ranges overlap and receive no credit.",
+  "sources": [
+    {
+      "path": "css/cssom_rules.v",
+      "sha256": "bc62e262e759d73f9aa001ac0fc31a65964208914235c6551495a6cf6fb18e49",
+      "bytes": 105885
+    },
+    {
+      "path": "css/empty_media_query_lists.v",
+      "sha256": "3f4ffd5ecf7a6cb5647c67811861a1104c35eee6b3ef7863466631c2ceefdbb8",
+      "bytes": 883
+    },
+    {
+      "path": "css/empty_media_query_lists_test.v",
+      "sha256": "9e39dcd44797407c47da5f2eb41fe65861abe11c3ff96a425885673be48f3757",
+      "bytes": 4212
+    },
+    {
+      "path": "tools/media_rule_list_benchmark.v",
+      "sha256": "2e4b4c7122afce0614ea2126675af4c0508cc36a9dcc1efae2921087f407beb2",
+      "bytes": 1765
+    }
+  ],
+  "behavior": "Before seven nested-list recursion sites, inspect the live list length. Skip lists that have no media state or evaluation effects. Keep every containing media condition and imported stylesheet evaluation. Later insertion/removal needs no cache invalidation; nonempty lists retain the original traversal.",
+  "control": "VOX_RETAIN_EMPTY_MEDIA_QUERY_RECURSION=1",
+  "diagnostic": "VOX_EMPTY_MEDIA_QUERY_LIST_DIAGNOSTICS=1",
+  "profiling_basis": "docs/performance/chatgpt-v-profile-refresh-20261104.json: 6,704,997 instrumented CSSRuleList.evaluate_media_queries calls identify the lead only; elapsed rows are not optimization evidence.",
+  "checks": {
+    "result": {
+      "complete": true,
+      "inputs_before": {
+        "/Users/alex/code/vox2/css/cssom_rules.v": "bc62e262e759d73f9aa001ac0fc31a65964208914235c6551495a6cf6fb18e49",
+        "/Users/alex/code/vox2/css/empty_media_query_lists.v": "3f4ffd5ecf7a6cb5647c67811861a1104c35eee6b3ef7863466631c2ceefdbb8",
+        "/Users/alex/code/vox2/css/empty_media_query_lists_test.v": "9e39dcd44797407c47da5f2eb41fe65861abe11c3ff96a425885673be48f3757",
+        "/Users/alex/code/vox2/css/media_evaluation_test.v": "9808b687eba34d06db09d71a85bc24b326b36e9f74cf7763bc32b49df2ed4dff"
+      },
+      "inputs_after": {
+        "/Users/alex/code/vox2/css/cssom_rules.v": "bc62e262e759d73f9aa001ac0fc31a65964208914235c6551495a6cf6fb18e49",
+        "/Users/alex/code/vox2/css/empty_media_query_lists.v": "3f4ffd5ecf7a6cb5647c67811861a1104c35eee6b3ef7863466631c2ceefdbb8",
+        "/Users/alex/code/vox2/css/empty_media_query_lists_test.v": "9e39dcd44797407c47da5f2eb41fe65861abe11c3ff96a425885673be48f3757",
+        "/Users/alex/code/vox2/css/media_evaluation_test.v": "9808b687eba34d06db09d71a85bc24b326b36e9f74cf7763bc32b49df2ed4dff"
+      },
+      "rows": [
+        {
+          "label": "compile-empty_media_query_lists-default",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "12",
+            "--timeout",
+            "600",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/compile-empty_media_query_lists-default.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/compile-empty_media_query_lists-default-guard.json",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-enable-globals",
+            "-nocache",
+            "-cflags",
+            "-O0",
+            "-ldflags",
+            "-framework CoreGraphics",
+            "-skip-running",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/empty_media_query_lists-default",
+            "/Users/alex/code/vox2/css/empty_media_query_lists_test.v"
+          ],
+          "environment": {},
+          "exit": 0
+        },
+        {
+          "label": "run-empty_media_query_lists-default-candidate",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "600",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-empty_media_query_lists-default-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-empty_media_query_lists-default-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/empty_media_query_lists-default"
+          ],
+          "environment": {
+            "VOX_RETAIN_EMPTY_MEDIA_QUERY_RECURSION": "",
+            "VOX_EMPTY_MEDIA_QUERY_LIST_DIAGNOSTICS": "1"
+          },
+          "exit": 0
+        },
+        {
+          "label": "run-empty_media_query_lists-default-control",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "600",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-empty_media_query_lists-default-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-empty_media_query_lists-default-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/empty_media_query_lists-default"
+          ],
+          "environment": {
+            "VOX_RETAIN_EMPTY_MEDIA_QUERY_RECURSION": "1",
+            "VOX_EMPTY_MEDIA_QUERY_LIST_DIAGNOSTICS": ""
+          },
+          "exit": 0
+        },
+        {
+          "label": "compile-media_evaluation-default",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "12",
+            "--timeout",
+            "600",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/compile-media_evaluation-default.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/compile-media_evaluation-default-guard.json",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-enable-globals",
+            "-nocache",
+            "-cflags",
+            "-O0",
+            "-ldflags",
+            "-framework CoreGraphics",
+            "-skip-running",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/media_evaluation-default",
+            "/Users/alex/code/vox2/css/media_evaluation_test.v"
+          ],
+          "environment": {},
+          "exit": 0
+        },
+        {
+          "label": "run-media_evaluation-default-candidate",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "600",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-media_evaluation-default-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-media_evaluation-default-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/media_evaluation-default"
+          ],
+          "environment": {
+            "VOX_RETAIN_EMPTY_MEDIA_QUERY_RECURSION": "",
+            "VOX_EMPTY_MEDIA_QUERY_LIST_DIAGNOSTICS": "1"
+          },
+          "exit": 0
+        },
+        {
+          "label": "compile-empty_media_query_lists-none",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "12",
+            "--timeout",
+            "600",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/compile-empty_media_query_lists-none.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/compile-empty_media_query_lists-none-guard.json",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-enable-globals",
+            "-nocache",
+            "-cflags",
+            "-O0",
+            "-ldflags",
+            "-framework CoreGraphics",
+            "-gc",
+            "none",
+            "-skip-running",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/empty_media_query_lists-none",
+            "/Users/alex/code/vox2/css/empty_media_query_lists_test.v"
+          ],
+          "environment": {},
+          "exit": 0
+        },
+        {
+          "label": "run-empty_media_query_lists-none-candidate",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "600",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-empty_media_query_lists-none-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-empty_media_query_lists-none-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/empty_media_query_lists-none"
+          ],
+          "environment": {
+            "VOX_RETAIN_EMPTY_MEDIA_QUERY_RECURSION": "",
+            "VOX_EMPTY_MEDIA_QUERY_LIST_DIAGNOSTICS": "1"
+          },
+          "exit": 0
+        },
+        {
+          "label": "run-empty_media_query_lists-none-control",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "600",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-empty_media_query_lists-none-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-empty_media_query_lists-none-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/empty_media_query_lists-none"
+          ],
+          "environment": {
+            "VOX_RETAIN_EMPTY_MEDIA_QUERY_RECURSION": "1",
+            "VOX_EMPTY_MEDIA_QUERY_LIST_DIAGNOSTICS": ""
+          },
+          "exit": 0
+        },
+        {
+          "label": "compile-media_evaluation-none",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "12",
+            "--timeout",
+            "600",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/compile-media_evaluation-none.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/compile-media_evaluation-none-guard.json",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-b",
+            "c",
+            "-cc",
+            "clang",
+            "-enable-globals",
+            "-nocache",
+            "-cflags",
+            "-O0",
+            "-ldflags",
+            "-framework CoreGraphics",
+            "-gc",
+            "none",
+            "-skip-running",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/media_evaluation-none",
+            "/Users/alex/code/vox2/css/media_evaluation_test.v"
+          ],
+          "environment": {},
+          "exit": 0
+        },
+        {
+          "label": "run-media_evaluation-none-candidate",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "600",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-media_evaluation-none-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/run-media_evaluation-none-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/media_evaluation-none"
+          ],
+          "environment": {
+            "VOX_RETAIN_EMPTY_MEDIA_QUERY_RECURSION": "",
+            "VOX_EMPTY_MEDIA_QUERY_LIST_DIAGNOSTICS": "1"
+          },
+          "exit": 0
+        }
+      ]
+    },
+    "new_functions": 4,
+    "new_function_executions": 16,
+    "existing_media_functions": 5,
+    "existing_function_executions": 10,
+    "modes": "Default GC and -gc none; new tests run with candidate and original-control flags. Current V, no compatibility fallback; 12 GiB compile and 3 GiB runtime guards.",
+    "coverage": "First media evaluation and viewport transitions with empty children; live nested insertion/removal/reinsertion; inactive supports and delayed child baselines; empty imported stylesheet media changes; existing color-scheme, fractional units and display-density behavior.",
+    "initial_failure": "The first test compile attempted to write immutable kind-data directly. The fixture now uses CSSImportRule.set_style_sheet without changing its assertions. The failed compile and guard remain retained."
+  },
+  "component": {
+    "result": {
+      "complete": true,
+      "inputs_before": {
+        "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/benchmark": "82329aff5c5b78eb7b77ae2fe1e2c4ceceff212efb6f06b7de35daac0250bd1b",
+        "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/css-paths.txt": "6e3b00324342629577aae3bf4e5a86447b3b33d5cdf98d7bed91ece0e1376f10",
+        "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/measure.py": "c2ce9d3b2c6c0a2d52370be703a07e052c3f0014a9fc3e192ae32dafc369e7e7",
+        "/Users/alex/code/vox2/tools/media_rule_list_benchmark.v": "2e4b4c7122afce0614ea2126675af4c0508cc36a9dcc1efae2921087f407beb2",
+        "/Users/alex/code/vox2/css/cssom_rules.v": "bc62e262e759d73f9aa001ac0fc31a65964208914235c6551495a6cf6fb18e49",
+        "/Users/alex/code/vox2/css/empty_media_query_lists.v": "3f4ffd5ecf7a6cb5647c67811861a1104c35eee6b3ef7863466631c2ceefdbb8",
+        "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8": "670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8",
+        "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b": "f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b"
+      },
+      "inputs_after": {
+        "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/benchmark": "82329aff5c5b78eb7b77ae2fe1e2c4ceceff212efb6f06b7de35daac0250bd1b",
+        "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/css-paths.txt": "6e3b00324342629577aae3bf4e5a86447b3b33d5cdf98d7bed91ece0e1376f10",
+        "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/measure.py": "c2ce9d3b2c6c0a2d52370be703a07e052c3f0014a9fc3e192ae32dafc369e7e7",
+        "/Users/alex/code/vox2/tools/media_rule_list_benchmark.v": "2e4b4c7122afce0614ea2126675af4c0508cc36a9dcc1efae2921087f407beb2",
+        "/Users/alex/code/vox2/css/cssom_rules.v": "bc62e262e759d73f9aa001ac0fc31a65964208914235c6551495a6cf6fb18e49",
+        "/Users/alex/code/vox2/css/empty_media_query_lists.v": "3f4ffd5ecf7a6cb5647c67811861a1104c35eee6b3ef7863466631c2ceefdbb8",
+        "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8": "670ffdda5fd275368bb978b0dbcf288241fe835b4be9cdee521f94f8646b6da8",
+        "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/bodies/f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b": "f4ae8de3060250d2baa04271afdf15576bd66447306d94595f5fd9cb08fc807b"
+      },
+      "identity_stable": true,
+      "observations": [
+        {
+          "variant": "control",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "120",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/component-0-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/component-0-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/benchmark",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/css-paths.txt"
+          ],
+          "host_before": {
+            "unix": 1793807507.869181,
+            "cpu_count": 18,
+            "load": [
+              16.2548828125,
+              20.62060546875,
+              25.0830078125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793807508.7504268,
+            "load": [
+              16.2548828125,
+              20.62060546875,
+              25.0830078125
+            ]
+          },
+          "instructions": 194564380,
+          "evaluations": 512,
+          "sheets": 2,
+          "child_lists": 10159,
+          "empty_lists": 8436,
+          "changes": 0
+        },
+        {
+          "variant": "candidate",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "120",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/component-1-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/component-1-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/benchmark",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/css-paths.txt"
+          ],
+          "host_before": {
+            "unix": 1793807508.764024,
+            "cpu_count": 18,
+            "load": [
+              16.2548828125,
+              20.62060546875,
+              25.0830078125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793807509.226451,
+            "load": [
+              16.2548828125,
+              20.62060546875,
+              25.0830078125
+            ]
+          },
+          "instructions": 166656858,
+          "evaluations": 512,
+          "sheets": 2,
+          "child_lists": 10159,
+          "empty_lists": 8436,
+          "changes": 0
+        },
+        {
+          "variant": "candidate",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "120",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/component-2-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/component-2-candidate-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/benchmark",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/css-paths.txt"
+          ],
+          "host_before": {
+            "unix": 1793807509.239545,
+            "cpu_count": 18,
+            "load": [
+              16.2548828125,
+              20.62060546875,
+              25.0830078125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793807509.703819,
+            "load": [
+              16.2548828125,
+              20.62060546875,
+              25.0830078125
+            ]
+          },
+          "instructions": 165632066,
+          "evaluations": 512,
+          "sheets": 2,
+          "child_lists": 10159,
+          "empty_lists": 8436,
+          "changes": 0
+        },
+        {
+          "variant": "control",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "120",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/component-3-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/component-3-control-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/benchmark",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/css-paths.txt"
+          ],
+          "host_before": {
+            "unix": 1793807509.7175622,
+            "cpu_count": 18,
+            "load": [
+              16.2548828125,
+              20.62060546875,
+              25.0830078125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793807510.206309,
+            "load": [
+              16.2548828125,
+              20.62060546875,
+              25.0830078125
+            ]
+          },
+          "instructions": 194683976,
+          "evaluations": 512,
+          "sheets": 2,
+          "child_lists": 10159,
+          "empty_lists": 8436,
+          "changes": 0
+        },
+        {
+          "variant": "diagnostic",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--timeout",
+            "120",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/component-4-diagnostic.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/component-4-diagnostic-guard.json",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/benchmark",
+            "/Users/alex/code/vox2/Build/chatgpt-empty-media-20261104-1825/css-paths.txt"
+          ],
+          "host_before": {
+            "unix": 1793807510.2212029,
+            "cpu_count": 18,
+            "load": [
+              16.2548828125,
+              20.62060546875,
+              25.0830078125
+            ]
+          },
+          "exit": 0,
+          "host_after": {
+            "unix": 1793807510.931576,
+            "load": [
+              19.7578125,
+              21.27392578125,
+              25.28759765625
+            ]
+          },
+          "instructions": 174238064,
+          "evaluations": 512,
+          "sheets": 2,
+          "child_lists": 10159,
+          "empty_lists": 8436,
+          "changes": 0
+        }
+      ],
+      "control_median": 194624178.0,
+      "candidate_median": 166144462.0,
+      "conservative_component_reduction": 27907522,
+      "whole_page_credit": 0
+    },
+    "median_reduction_fraction": 0.1463318498896884,
+    "scope": "Current V C-O2 component: 512 sheet evaluations, excluding parsing, graph inspection, launch and teardown. Read the two original archived CSS bodies (127104 and 509654 bytes) directly; document viewport 1024x768 and DPR 2. No HTML/script/live network workload.",
+    "graph": {
+      "child_lists": 10159,
+      "empty_lists": 8436
+    },
+    "qualification": "Two uninstrumented observations per implementation, control/candidate/candidate/control, and a separate diagnostic. Every scene reports 512 evaluations and zero changed matches; semantic transitions are tested separately. Component savings are not browser credit."
+  },
+  "production_diagnostic": {
+    "report": "docs/performance/chatgpt-media-diagnostic-20261104.json",
+    "evidence": {
+      "path": "docs/performance/chatgpt-media-diagnostic-20261104-evidence.zip",
+      "sha256": "7c79fb289174f0d4660f6c6c56fc681fdbd27c9c657ae76541e82d50f36b6254",
+      "bytes": 1354438,
+      "entries": 64,
+      "checkpoints": 6
+    },
+    "qualification": "Four exact instrumented captures on the completed production bundle. Unit-opacity integer execution is present in both Vox processes. The empty-list skip appears only in its enabled candidate. Stable inputs; all browser/kernel exits zero; raw evidence archived after every observation."
+  },
+  "matched": {
+    "report": "docs/performance/chatgpt-media-matched-20261104.json",
+    "evidence": {
+      "path": "docs/performance/chatgpt-media-matched-20261104-evidence.zip",
+      "sha256": "31c9163e37e6164b94c94034e4e4582b0020b472637e8ac3bbe9e286011af4f9",
+      "bytes": 2839631,
+      "entries": 93,
+      "checkpoints": 10
+    },
+    "control": [
+      {
+        "lower": 32084498608,
+        "upper": 32084498608
+      },
+      {
+        "lower": 32269981843,
+        "upper": 32269981843
+      }
+    ],
+    "candidate": [
+      {
+        "lower": 32191597461,
+        "upper": 32191597461
+      },
+      {
+        "lower": 32428208337,
+        "upper": 32428208337
+      }
+    ],
+    "control_median": 32177240225.5,
+    "candidate_median": 32309902899.0,
+    "conservative_reduction": -343709729,
+    "whole_page_credit": 0,
+    "qualification": "Two uninstrumented Vox observations per implementation interleaved with four Brave references, original author scripts and five-second settle. All eight captures exact and valid. Counts overlap; do not infer a confirmed whole-page benefit. The Brave goal also remains unmet."
+  },
+  "earlier_unit_cohort": "docs/performance/chatgpt-unit-opacity-production-20261104-missing.json retains explicitly historical tool-output figures after that cohort lost its Build files; they receive no independently verified credit.",
+  "broad_cadence": {
+    "previous_checkpoint": "docs/performance/chatgpt-favicon-followup-20261104.json",
+    "whole_page_credit": 0,
+    "advance": 0,
+    "threshold": 5000000,
+    "reason": "No conservative whole-page reduction; no broad suite due."
+  },
+  "acceptance": false,
+  "original_goal": "5% fewer launch-to-encoded-PNG instructions than Brave remains unmet",
+  "limitations": [
+    "Component gain and instrumented eligibility are separate from production performance credit",
+    "Frozen anonymous homepage only; no live-site, sign-in or submission claim",
+    "No reference/tolerance, author-script, ownership-policy, endpoint or failed-trial exclusion change"
+  ],
+  "evidence": {
+    "archive": {
+      "path": "docs/performance/chatgpt-empty-media-20261104-evidence.zip",
+      "sha256": "2ee7af9a59affb2267f185e542c3ff13d779e869996c57b46d8a1bfbe4b143d6",
+      "bytes": 34667
+    },
+    "entries": 45,
+    "unique_blobs": 44,
+    "format": "index.json maps original paths to hashes; blobs/<sha256> contains original bytes"
+  },
+  "production_source_proof": {
+    "variants": {
+      "diagnostic": {
+        "executable_sha256": "2550c9ecb64182bed1badb761c10ca6f11bdf116d0cfbf8a4a10d64a58428a44",
+        "frozen_preprocessed_path": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-183110-11afe203/frozen-compiler-inputs/0-Vox.c.i",
+        "frozen_preprocessed_sha256": "254640b4ec2894031414f786e99d3d7eba6a65828723804320f1ecbbb1967646",
+        "excerpt_path": "production-diagnostic-media-excerpts.c.txt",
+        "excerpt_sha256": "50ab2c782c154fb0266609be2401f95e782280a570d83f2217cda758520dc49d",
+        "nested_guards": 7,
+        "imported_sheet_evaluation_preserved": true,
+        "driver_exit": 1,
+        "controller_exit": 0,
+        "guard": {
+          "path": "docs/performance/chatgpt-media-diagnostic-20261104-guard.json",
+          "sha256": "77d2a0c5f776ec5cd9c74eb1234b185800d03cb04e71925612c1a6b0d68a5a7f"
+        }
+      },
+      "matched": {
+        "executable_sha256": "abd2573bff7d8b855a48fdf8822e1f1a381be2a6e2e669ede9144fa259cc8927",
+        "frozen_preprocessed_path": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-184326-31abd1c4/frozen-compiler-inputs/0-Vox.c.i",
+        "frozen_preprocessed_sha256": "e6b9f8644ce80f4ce1208541716755c1a4abe7e52ba0260e1f0235fc38c67fef",
+        "excerpt_path": "production-matched-media-excerpts.c.txt",
+        "excerpt_sha256": "50ab2c782c154fb0266609be2401f95e782280a570d83f2217cda758520dc49d",
+        "nested_guards": 7,
+        "imported_sheet_evaluation_preserved": true,
+        "driver_exit": 1,
+        "controller_exit": 0,
+        "guard": {
+          "path": "docs/performance/chatgpt-media-matched-20261104-guard.json",
+          "sha256": "23ad1ce9da3d089e87dc6cce56a8c79ffe44c0a2ba411e7c96ec40ac4f14e70b"
+        }
+      }
+    },
+    "qualification": "Both measured production inputs contain byte-identical preprocessed media traversal and live-length guard functions. The runtime path is independently confirmed only by the instrumented diagnostic. Production driver exit 1 reports the unmet Brave instruction gate; browser/kernel and outer controller/guard exits are zero."
+  }
+}
