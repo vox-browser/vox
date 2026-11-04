@@ -4132,9 +4132,21 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	mut overflow_clip := compatibility_overflow_clip(node, computed, used, paint_position, border_radii)
 	if node.is_svg_svg_box() {
 		if clip := overflow_clip {
+			mut clip_position := paint_position
+			if node.document().font_rendering_policy() == .chromium {
+				mut outermost := true
+				if parent := node.parent() {
+					outermost = !parent.is_svg_box() && !parent.is_svg_svg_box()
+				}
+				if outermost {
+					// The outer SVG's CSS clip snaps its original border edges.
+					// Its user-space paint origin has already been snapped separately.
+					clip_position = position
+				}
+			}
 			overflow_clip = CompatibilityOverflowClip{
 				...clip
-				rect: LayoutRect{paint_position.x().to_double(), paint_position.y().to_double(), paint_width, paint_height}
+				rect: LayoutRect{clip_position.x().to_double(), clip_position.y().to_double(), paint_width, paint_height}
 			}
 		}
 	}

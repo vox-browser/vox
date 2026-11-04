@@ -23,8 +23,6 @@ pub:
 	// The integer rectangle and radii may be snapped in device coordinates
 	// while their surrounding visual contexts still use layout coordinates.
 	device_pixel_scale f64 = 1.0
-	// SVG viewport clips retain their fractional layout edges.
-	layout_rect_override ?Rect
 }
 
 pub fn (clip ClipVisualData) contains(point IntPoint) bool {
@@ -37,17 +35,12 @@ pub fn (clip ClipVisualData) pixel_scale() f64 {
 }
 
 pub fn (clip ClipVisualData) layout_rect() Rect {
-	if rect := clip.layout_rect_override { return rect }
 	scale := clip.pixel_scale()
 	return Rect{clip.rect.x / scale, clip.rect.y / scale,
 		clip.rect.width / scale, clip.rect.height / scale}
 }
 
 pub fn (clip ClipVisualData) contains_layout_point(point Point) bool {
-	if rect := clip.layout_rect_override {
-		if !rect.contains(point) { return false }
-		if clip.corner_radii == CornerRadii{} { return true }
-	}
 	scale := clip.pixel_scale()
 	if scale != 1 && !clip.layout_rect().contains(point) { return false }
 	return clip.corner_radii.contains(IntPoint{int(point.x * scale), int(point.y * scale)}, clip.rect)
@@ -309,7 +302,7 @@ pub fn (mut tree AccumulatedVisualContextTree) append(data VisualContextData, pa
 		&& tree.nodes[parent].has_empty_effective_clip
 	if !empty_clip {
 		empty_clip = match data {
-			ClipVisualData { data.layout_rect().is_empty() }
+			ClipVisualData { data.rect.is_empty() }
 			ClipPathVisualData {
 				data.bounding_rect.is_empty()
 					|| (data.polygons.all(it.len < 3) && data.polygon.len < 3)

@@ -1,14 +1,5 @@
 module painting
 
-fn test_fractional_svg_clip_is_not_empty_when_integer_bounds_collapse() {
-	clip := ClipVisualData{layout_rect_override: Rect{0, 0, 0.25, 0.25}}
-	assert clip.contains_layout_point(Point{0.125, 0.125})
-	assert !clip.contains_layout_point(Point{0.3, 0.125})
-	mut tree := new_accumulated_visual_context_tree()
-	index := tree.append(clip, 0)
-	assert !tree.has_empty_effective_clip(index)
-}
-
 fn test_device_clip_hit_testing_keeps_fractional_layout_edges() {
 	clip := ClipVisualData{rect: IntRect{21, 41, 201, 61}, device_pixel_scale: 2}
 	assert clip.layout_rect() == Rect{10.5, 20.5, 100.5, 30.5}
