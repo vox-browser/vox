@@ -560,3 +560,59 @@ twenty-second finish wait. Two later three-second samplers exit zero and their
 four browser captures pass, but their empty graphs remain unusable for hotspot
 attribution. The receipt retains the failed attempt and both subsequent files;
 a successful sampler exit or present output file is not profiling evidence.
+
+## Unit-opacity integer compositing
+
+Commit `ba84455e0` replaces float normalization and fused arithmetic with an
+exact NEON integer calculation for mixed-alpha spans at group opacity 1 and
+round-to-nearest mode. It computes `s + round(d * (255 - a) / 255)` with bounded
+16-bit products and saturating byte addition. The odd denominator has no
+half-level ties. Empty and fully opaque vector blocks retain their existing
+shortcuts; scalar tails, other opacities and other rounding modes retain the
+previous arithmetic. `VOX_DISABLE_UNIT_OPACITY_INTEGER=1` selects the original
+float SIMD control.
+
+The independent float/FMA oracle matches all 134,217,728 exhaustive pixels in
+both ordinary and AddressSanitizer/UndefinedBehaviorSanitizer runs. Coverage
+includes every source/background byte and source coverage at eight opacities,
+varying backdrop alpha, invalid premultiplication, saturation, unaligned buffers,
+in-place output, vector tails, runtime control selection and rounding modes.
+Each run also passes 33,280 ink-bound cases. Native integration passes 144
+shared-layer scenes, 720 exact raster comparisons and empty-prefix ownership,
+backdrop and cleanup checks.
+
+Tooling commit `336f4cf49` adds a component benchmark. Every scene composites
+2,097,152 pixels across repeated 2048×128 surfaces. Process instruction snapshots
+bracket the compositing loops; input construction, checksums, startup and
+teardown are excluded. Two uninstrumented observations per implementation run
+in control/candidate/candidate/control order, followed by a separate diagnostic.
+All scene checksums match.
+
+| Component scene | Float control median | Integer candidate median | Conservative reduction |
+| --- | ---: | ---: | ---: |
+| Mixed alpha | 53,838,610 | 14,168,321.5 | 39,418,080 |
+| Mixed, empty and opaque blocks | 22,545,696 | 9,355,027 | 13,184,623 |
+| Sparse mixed alpha | 9,467,415.5 | 7,012,723 | 2,440,446 |
+| Opaque | 7,870,157.5 | 7,861,708.5 | 0 |
+| Empty | 6,551,063.5 | 6,550,963.5 | −25 |
+
+The mixed-alpha median reduction is 73.684%; mixed blocks improve by 58.506%
+and sparse blocks by 25.928%. The unchanged and negative controls remain in the
+report. These component results do not establish a ChatGPT saving.
+
+A separately compiled current graphics library was inserted into the latest
+completed browser for two diagnostic Vox/Brave pairs. All four captures pass
+unchanged pixels, content, bootstrap and exits with stable inputs. The selected
+library is logged, but neither Vox run reports an executed mixed-alpha integer
+span. The older main executable still contains its previous static compositor;
+these diagnostics cannot establish eligibility of the new main-executable path.
+No unprofiled page comparison or broad-cadence advance is credited. A new shared
+production build is still needed for whole-browser validation, and the 5% Brave
+target remains unmet.
+
+The [unit-opacity receipt](performance/chatgpt-unit-opacity-20261104.json) links
+all focused checks, component counts, both exact diagnostic pairs, source and
+library identities, commands, host loads and actual memory-guard exits. It also
+retains the initial benchmark compile failure caused by a POSIX macro hiding
+Darwin libproc types; the same source compiles after removing that flag. No
+additional live download, altered script, reference or tolerance was used.
