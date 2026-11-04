@@ -92,8 +92,8 @@ def fingerprint(paths):
             for path in sorted(set(Path(path).absolute() for path in paths))}
 
 
-def native_dependencies(binary):
-    """Resolve transitive non-system load commands under a clean dyld environment."""
+def native_dependencies(binary, extra_images=()):
+    """Resolve load commands, retaining executable rpaths for late-bound images."""
     main = binary.resolve()
     seen = set()
     main_rpaths = []
@@ -125,6 +125,8 @@ def native_dependencies(binary):
             require(resolved is not None, 'Unresolved non-system runtime: ' + name)
             visit(resolved, rpaths)
     visit(main, [])
+    for image in extra_images:
+        visit(Path(image), main_rpaths)
     return seen
 
 

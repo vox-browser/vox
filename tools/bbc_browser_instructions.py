@@ -222,8 +222,10 @@ def discover_runtime_libraries(args, apps, paths, pinned):
         # Include load-command dependencies of late-bound images too. Their
         # actual bytes are pinned before the first acceptance launch.
         runtime_paths = set(images)
-        for image in sorted(images):
-            runtime_paths.update(browser.native_dependencies(image))
+        for discovery in discoveries:
+            runtime_paths.update(browser.native_dependencies(
+                apps[discovery['engine']] / 'Contents/MacOS/Vox',
+                extra_images=[Path(image) for image in discovery['images']]))
         check_folder = args.output / 'runtime-discovery-input-check'
         check_folder.mkdir()
         verify_benchmark_inputs(paths, pinned, check_folder)

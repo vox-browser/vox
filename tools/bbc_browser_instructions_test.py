@@ -7,7 +7,7 @@ from bbc_browser_instructions import URL, audit_instruction_logging, discover_ru
 from types import SimpleNamespace
 from unittest.mock import patch
 from hacker_news_browser_instructions import evaluate_pairs
-from measure_sealed_github_instructions import fingerprint
+from measure_sealed_github_instructions import fingerprint, native_dependencies
 
 
 def document():
@@ -25,6 +25,29 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_late_library_dependencies_use_the_original_executable_rpaths(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            executable, sibling = root / 'Vox', root / 'sibling.dylib'
+            late = root / 'plugins/late.dylib'
+            dependency = root / 'libraries/dependency.dylib'
+            for path in [executable, sibling, late, dependency]:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'image')
+            def otool(command, text):
+                image = Path(command[-1])
+                if command[1] == '-l':
+                    return (f'cmd LC_RPATH\ncmdsize 64\npath {dependency.parent} (offset 12)\n'
+                            if image == executable else '')
+                if image == late:
+                    return (str(image) + ':\n\t@rpath/dependency.dylib (compatibility version 1.0)\n'
+                            '\t@executable_path/sibling.dylib (compatibility version 1.0)\n')
+                return str(image) + ':\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0)\n'
+            with patch('measure_sealed_github_instructions.subprocess.check_output', side_effect=otool):
+                self.assertEqual(native_dependencies(executable), {executable})
+                self.assertEqual(native_dependencies(executable, extra_images=[late]),
+                                 {executable, late, sibling, dependency})
+
     def test_runtime_images_belong_to_root_and_precede_png(self):
         with TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -76,8 +99,8 @@ class BBCInstructionTests(unittest.TestCase):
                     '{"label":"capture_document_encoded"}\n')
                 return dict(exit=0, kernel_exit_status=0, pixels_exact=True, content_exact=True,
                             root=dict(pid=42))
-            def dependencies(image):
-                return {image, dependency} if image == library else {image}
+            def dependencies(image, extra_images=()):
+                return {image, dependency, *extra_images}
             with patch('bbc_browser_instructions.run_trial', side_effect=trial), \
                  patch('bbc_browser_instructions.browser.native_dependencies', side_effect=dependencies):
                 expanded, pins = discover_runtime_libraries(args, apps, paths, fingerprint(paths))
@@ -115,7 +138,8 @@ class BBCInstructionTests(unittest.TestCase):
                     return dict(exit=0, kernel_exit_status=0,
                                 pixels_exact=failure != 'pixels', content_exact=True, root=dict(pid=42))
                 with patch('bbc_browser_instructions.run_trial', side_effect=trial), \
-                     patch('bbc_browser_instructions.browser.native_dependencies', side_effect=lambda p: {p}):
+                     patch('bbc_browser_instructions.browser.native_dependencies',
+                           side_effect=lambda p, extra_images=(): {p, *extra_images}):
                     with self.assertRaises(RuntimeError):
                         discover_runtime_libraries(args, apps, paths, fingerprint(paths))
                 self.assertIs(args.vox_environment, original)
