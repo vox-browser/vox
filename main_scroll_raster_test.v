@@ -733,9 +733,49 @@ fn test_scroll_raster_key_ink_stays_inside_the_clip_rectangle() {
 	assert keys[0].ink == layout.LayoutRect{33, 100, 958, 438}
 	assert plan_scroll_raster_skips([orbit], keys, scroll_raster_strip_region(4, 1024, 768), false) == [true]
 	assert plan_scroll_raster_skips([orbit], keys, [layout.LayoutRect{0, 530, 1024, 4}], false) == [false]
-	// Content clipped away entirely stays bounded by its clip.
+	// Content clipped away entirely paints nothing; it keeps a minimal bounded
+	// rectangle inside its clip, at the point nearest its ink.
 	hidden := layout.PaintCommand{ ...orbit, y: 900, height: 10 }
-	assert scroll_raster_frame_keys([hidden], 0, 1, 1024, 768)[0].ink == layout.LayoutRect{33, 100, 958, 438}
+	assert scroll_raster_frame_keys([hidden], 0, 1, 1024, 768)[0].ink == layout.LayoutRect{33, 537, 1, 1}
+	beside := layout.PaintCommand{ ...orbit, x: 1000, y: 200, width: 40, height: 10 }
+	assert scroll_raster_frame_keys([beside], 0, 1, 1024, 768)[0].ink == layout.LayoutRect{990, 200, 1, 1}
+	// A device pixel can straddle a sub-pixel gap between ink and clip; that
+	// sliver of the clip stays damaged and replayed.
+	straddling := layout.PaintCommand{ ...orbit, y: 539, height: 10 }
+	assert scroll_raster_frame_keys([straddling], 0, 1, 1024, 768)[0].ink == layout.LayoutRect{33, 537, 958, 1}
 	unclipped := layout.PaintCommand{ ...orbit, has_clip: false }
 	assert scroll_raster_frame_keys([unclipped], 0, 1, 1024, 768)[0].ink.width >= 1500
 }
+
+// vlang.io's demo text overflows its `overflow: hidden` card and enters or
+// leaves the recorded interest area as the page scrolls. Removing or adding
+// such invisible text must not damage the whole card and force a repaint.
+fn test_scroll_raster_invisible_clipped_text_does_not_damage_its_clip() {
+	card := layout.PaintCommand{ kind: 'fill_rect', x: 33, y: 100, width: 958, height: 438, color: 'navy' }
+	text := layout.PaintCommand{ kind: 'fill_rect', x: 1100, y: 300, width: 200, height: 20, color: 'white',
+		has_clip: true, clip_x: 33, clip_y: 100, clip_width: 958, clip_height: 438 }
+	previous := ScrollRasterKeyFrame{
+		valid:    true
+		document: 7
+		width:    1024
+		height:   768
+		keys:     scroll_raster_frame_keys([card, text], 0, 1, 1024, 768)
+	}
+	mut stats := ScrollRasterDiffStats{}
+	removed := scroll_raster_content_damage(&previous, scroll_raster_frame_keys([card], 0, 1, 1024, 768),
+		7, 0, 1024, 768, mut stats) or { panic('removing clipped text must reconcile') }
+	assert stats.changed == 1
+	mut area := 0.0
+	for rect in removed {
+		assert rect.x >= 33 - scroll_raster_damage_fringe - 1 && rect.x + rect.width <= 991 + scroll_raster_damage_fringe + 1
+		area += rect.width * rect.height
+	}
+	assert area <= 100
+	// Visible text inside the card still damages its own ink.
+	visible := layout.PaintCommand{ ...text, x: 400 }
+	visible_previous := ScrollRasterKeyFrame{ ...previous, keys: scroll_raster_frame_keys([card, visible], 0, 1, 1024, 768) }
+	shown := scroll_raster_content_damage(&visible_previous, scroll_raster_frame_keys([card], 0, 1, 1024, 768),
+		7, 0, 1024, 768, mut stats) or { panic('removing visible text must reconcile') }
+	assert shown == [layout.LayoutRect{397, 297, 206, 26}]
+}
+

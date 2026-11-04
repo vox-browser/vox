@@ -31,6 +31,11 @@ const disable_scroll_raster_content_damage = os.getenv('VOX_DISABLE_SCROLL_RASTE
 // Keep an extra CSS-pixel fringe beyond the native raster guards, including
 // fractional transforms and antialiased edges at either backing density.
 const scroll_raster_damage_fringe = 3.0
+// CSS pixels around a leaf's ink that a clip must miss before the leaf counts
+// as painting nothing; at least one device pixel at any supported density.
+const scroll_raster_clipped_ink_guard = 2.0
+// Same-binary control: a leaf clipped away entirely keeps its whole clip as ink.
+const disable_minimal_clipped_ink = os.getenv('VOX_DISABLE_MINIMAL_CLIPPED_SCROLL_INK') != ''
 // Fixed and sticky content counts as changed on every scrolled frame; the
 // area cap below bounds its repaint cost.
 const scroll_raster_max_changed_commands = 256
@@ -787,8 +792,21 @@ fn scroll_raster_key_ink(command &layout.PaintCommand) ?layout.LayoutRect {
 	clip := layout.LayoutRect{command.clip_x, command.clip_y, command.clip_width, command.clip_height}
 	if !scroll_raster_rect_valid(clip) { return ink }
 	clipped := layout.scroll_raster_rect_intersect(ink, clip)
-	// Nothing is visible; any bounded rectangle inside the clip is conservative.
-	return if clipped.width > 0 && clipped.height > 0 { clipped } else { clip }
+	if clipped.width > 0 && clipped.height > 0 { return clipped }
+	if disable_minimal_clipped_ink { return clip }
+	// Ink beside the clip paints nothing, unless a device pixel straddles a
+	// sub-pixel gap between them; keep that sliver of the clip.
+	guarded := layout.scroll_raster_rect_intersect(scroll_raster_inflate(ink,
+		scroll_raster_clipped_ink_guard), clip)
+	if guarded.width > 0 && guarded.height > 0 { return guarded }
+	// Nothing is visible, so any bounded rectangle inside the clip is
+	// conservative. Use the smallest one, nearest the ink: vlang.io's
+	// overflowing demo text enters and leaves the recorded interest area while
+	// clipped away, and the whole clip made that damage its entire card.
+	width := math.min(clip.width, 1.0)
+	height := math.min(clip.height, 1.0)
+	return layout.LayoutRect{math.min(math.max(ink.x, clip.x), clip.x + clip.width - width),
+		math.min(math.max(ink.y, clip.y), clip.y + clip.height - height), width, height}
 }
 
 // The root canvas background is recorded anchored to the viewport origin with
