@@ -42,35 +42,43 @@ fn is_ascii_alphanumeric(code_point u32) bool {
 
 // https://url.spec.whatwg.org/#c0-control-percent-encode-set
 pub fn code_point_is_in_percent_encode_set(code_point u32, set PercentEncodeSet) bool {
+	if !disable_url_ascii_membership {
+		if url_ascii_membership_diagnostics { report_url_ascii_membership(false) }
+		return percent_encode_set_ascii_membership(code_point, set)
+	}
+	return code_point_is_in_percent_encode_set_scanning(code_point, set)
+}
+
+fn code_point_is_in_percent_encode_set_scanning(code_point u32, set PercentEncodeSet) bool {
 	return match set {
 		.c0_control {
 			code_point < 0x20 || code_point > 0x7E
 		}
 		.fragment {
-			code_point_is_in_percent_encode_set(code_point, .c0_control)
+			code_point_is_in_percent_encode_set_scanning(code_point, .c0_control)
 				|| code_point_in(code_point, fragment_extra)
 		}
 		.query {
-			code_point_is_in_percent_encode_set(code_point, .c0_control)
+			code_point_is_in_percent_encode_set_scanning(code_point, .c0_control)
 				|| code_point_in(code_point, query_extra)
 		}
 		.special_query {
-			code_point_is_in_percent_encode_set(code_point, .query) || code_point == `'`
+			code_point_is_in_percent_encode_set_scanning(code_point, .query) || code_point == `'`
 		}
 		.path {
-			code_point_is_in_percent_encode_set(code_point, .query)
+			code_point_is_in_percent_encode_set_scanning(code_point, .query)
 				|| code_point_in(code_point, path_extra)
 		}
 		.userinfo {
-			code_point_is_in_percent_encode_set(code_point, .path)
+			code_point_is_in_percent_encode_set_scanning(code_point, .path)
 				|| code_point_in(code_point, userinfo_extra)
 		}
 		.component {
-			code_point_is_in_percent_encode_set(code_point, .userinfo)
+			code_point_is_in_percent_encode_set_scanning(code_point, .userinfo)
 				|| code_point_in(code_point, component_extra)
 		}
 		.application_x_www_form_urlencoded {
-			code_point_is_in_percent_encode_set(code_point, .component)
+			code_point_is_in_percent_encode_set_scanning(code_point, .component)
 				|| code_point_in(code_point, form_urlencoded_extra)
 		}
 		.encode_uri {

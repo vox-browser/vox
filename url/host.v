@@ -13,6 +13,10 @@ const forbidden_host_code_points = [u8(0x00), 0x09, 0x0A, 0x0D, 0x20, 0x23, 0x2F
 
 // https://url.spec.whatwg.org/#forbidden-host-code-point
 pub fn is_forbidden_host_code_point(code_point u32) bool {
+	if !disable_url_ascii_membership {
+		if url_ascii_membership_diagnostics { report_url_ascii_membership(true) }
+		return ascii_membership(code_point, host_ascii_lower, host_ascii_upper)
+	}
 	return code_point <= 0x7F && u8(code_point) in forbidden_host_code_points
 }
 
