@@ -375,6 +375,10 @@ fn invalidate_elements_matching_style_sheet_invalidation(root &dom.Node, result 
 	if !has_primary_set && !has_anchor_rules {
 		return
 	}
+	if style_sheet_primary_invalidation_is_covered(root, result) {
+		report_covered_style_sheet_invalidation()
+		return
+	}
 	primary_dom_set := invalidation_set_to_dom(result.invalidation_set)
 	invalidate_matching_style_sheet_subtree(root, result, has_primary_set, primary_dom_set,
 		shadow_host, rule_shadow_root)
