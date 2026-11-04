@@ -79,6 +79,7 @@
 #include "include/ports/SkTypeface_mac.h"
 #include <CoreText/CoreText.h>
 
+#include <array>
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -186,6 +187,12 @@ bool isolated_input_defers_leaf_raster(CGContextRef context)
     return found != s_isolated_input_recordings.end()
         && found->second->defer_leaf_raster && !found->second->unsupported;
 }
+
+// The strip and damage rectangles of a reused scroll frame, in top-left
+// canvas points, and the root canvas they were published for (see
+// ladybird_v_skia_set_scroll_damage_rects).
+static std::vector<SkRect> s_scroll_damage_rects;
+static CGContextRef s_scroll_damage_canvas = nullptr;
 
 // Only cached gradient-blur inputs carry a content identity.
 static bool isolated_input_defers_cached_blur_leaf(CGContextRef context)
@@ -2916,11 +2923,50 @@ static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop origin
         y1 = std::min(y1, long(std::ceil((canvas_height - CGRectGetMinY(clip)) * scale)));
     }
     if (x1 <= x0 || y1 <= y0) return 1;
+    // A reused frame clips to its strip and damage rectangles, whose common
+    // bounding box can span most of the blur. Blend only the rectangles,
+    // split into disjoint bands: the backdrop is the live destination.
+    std::vector<std::array<long, 4>> parts;
+    if (destination == s_scroll_damage_canvas && !s_scroll_damage_rects.empty()
+        && !std::getenv("VOX_DISABLE_ANCHORED_BLUR_DAMAGE_PARTS")) {
+        std::vector<std::array<long, 4>> rects;
+        std::vector<long> edges {y0, y1};
+        for (auto const& rect : s_scroll_damage_rects) {
+            long left = std::max(x0, long(std::floor(rect.left() * scale)));
+            long right = std::min(x1, long(std::ceil(rect.right() * scale)));
+            long top = std::max(y0, long(std::floor(rect.top() * scale)));
+            long bottom = std::min(y1, long(std::ceil(rect.bottom() * scale)));
+            if (right <= left || bottom <= top) continue;
+            rects.push_back({left, top, right, bottom});
+            edges.push_back(top);
+            edges.push_back(bottom);
+        }
+        std::sort(edges.begin(), edges.end());
+        edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
+        for (size_t band = 0; band + 1 < edges.size(); ++band) {
+            long top = edges[band], bottom = edges[band + 1];
+            std::vector<std::pair<long, long>> spans;
+            for (auto const& rect : rects)
+                if (rect[1] <= top && rect[3] >= bottom) spans.push_back({rect[0], rect[2]});
+            std::sort(spans.begin(), spans.end());
+            for (size_t i = 0; i < spans.size();) {
+                long left = spans[i].first, right = spans[i].second;
+                for (++i; i < spans.size() && spans[i].first <= right; ++i)
+                    right = std::max(right, spans[i].second);
+                parts.push_back({left, top, right, bottom});
+            }
+        }
+        if (parts.empty()) return 1;
+    } else {
+        parts.push_back({x0, y0, x1, y1});
+    }
     // Translucent backdrops keep the existing full-target replay.
-    for (long y = y0; y < y1; ++y) {
-        auto const* row = original.pixels + size_t(y) * original.pitch;
-        for (long x = x0; x < x1; ++x)
-            if (row[size_t(x) * 4 + 3] != 255) return -1;
+    for (auto const& part : parts) {
+        for (long y = part[1]; y < part[3]; ++y) {
+            auto const* row = original.pixels + size_t(y) * original.pitch;
+            for (long x = part[0]; x < part[2]; ++x)
+                if (row[size_t(x) * 4 + 3] != 255) return -1;
+        }
     }
     uint64_t key = recording.content_key;
     AnchoredGradientBlur const* layer = nullptr;
@@ -2990,25 +3036,36 @@ static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop origin
     if (std::getenv("VOX_DIRECT_GRADIENT_BLUR_DIAGNOSTICS"))
         std::fprintf(stderr, "VOX_ANCHORED_GRADIENT_BLUR cached=%d ink=%ld,%ld,%d,%d region=%ld,%ld,%ld,%ld\n",
             int(cache_hit), ink_x, ink_y, ink_width, ink_height, x0, y0, x1 - x0, y1 - y0);
-    int region_width = int(x1 - x0), region_height = int(y1 - y0);
-    std::vector<uint32_t> pixels(size_t(region_width) * region_height);
-    for (long y = y0; y < y1; ++y) {
-        auto const* backdrop = original.pixels + size_t(y) * original.pitch + size_t(x0) * 4;
-        auto const* source = layer->pixels.data() + size_t(y - ink_y) * ink_width + size_t(x0 - ink_x);
-        auto* output = reinterpret_cast<uint8_t*>(pixels.data() + size_t(y - y0) * region_width);
-        for (int x = 0; x < region_width; ++x, backdrop += 4, output += 4) {
-            uint32_t value = source[x];
-            unsigned inverse = 255 - (value >> 24);
-            // Premultiplied source-over onto opaque RGBA; BGRA output.
-            output[0] = uint8_t((value & 0xff) + (backdrop[2] * inverse + 127) / 255);
-            output[1] = uint8_t(((value >> 8) & 0xff) + (backdrop[1] * inverse + 127) / 255);
-            output[2] = uint8_t(((value >> 16) & 0xff) + (backdrop[0] * inverse + 127) / 255);
-            output[3] = 255;
+    // Blend every part from the unmodified backdrop before writing any.
+    std::vector<std::vector<uint32_t>> blended;
+    blended.reserve(parts.size());
+    for (auto const& part : parts) {
+        int region_width = int(part[2] - part[0]), region_height = int(part[3] - part[1]);
+        auto& pixels = blended.emplace_back(size_t(region_width) * region_height);
+        for (long y = part[1]; y < part[3]; ++y) {
+            auto const* backdrop = original.pixels + size_t(y) * original.pitch + size_t(part[0]) * 4;
+            auto const* source = layer->pixels.data() + size_t(y - ink_y) * ink_width + size_t(part[0] - ink_x);
+            auto* output = reinterpret_cast<uint8_t*>(pixels.data() + size_t(y - part[1]) * region_width);
+            for (int x = 0; x < region_width; ++x, backdrop += 4, output += 4) {
+                uint32_t value = source[x];
+                unsigned inverse = 255 - (value >> 24);
+                // Premultiplied source-over onto opaque RGBA; BGRA output.
+                output[0] = uint8_t((value & 0xff) + (backdrop[2] * inverse + 127) / 255);
+                output[1] = uint8_t(((value >> 8) & 0xff) + (backdrop[1] * inverse + 127) / 255);
+                output[2] = uint8_t(((value >> 16) & 0xff) + (backdrop[0] * inverse + 127) / 255);
+                output[3] = 255;
+            }
         }
     }
-    return composite_pixels(destination, std::move(pixels), region_width, region_height,
-        float(x0) / scale, canvas_height - float(y0 + region_height) / scale,
-        float(region_width) / scale, float(region_height) / scale, true);
+    int result = 1;
+    for (size_t index = 0; index < parts.size(); ++index) {
+        auto const& part = parts[index];
+        int region_width = int(part[2] - part[0]), region_height = int(part[3] - part[1]);
+        result &= composite_pixels(destination, std::move(blended[index]), region_width, region_height,
+            float(part[0]) / scale, canvas_height - float(part[1] + region_height) / scale,
+            float(region_width) / scale, float(region_height) / scale, true);
+    }
+    return result;
 }
 #ifdef VOX_TEST_CACHED_BLUR_INPUT
 static bool s_test_fail_gradient_blur_end = false;
@@ -3298,8 +3355,6 @@ static bool s_raster_layer_is_root = true;
 // coordinates, so a leaf crops to the ones it actually intersects. They
 // describe that canvas only: a full-canvas offscreen layer has no clip of its
 // own, and a filter can sample its pixels outside the rectangles.
-static std::vector<SkRect> s_scroll_damage_rects;
-static CGContextRef s_scroll_damage_canvas = nullptr;
 
 extern "C" void ladybird_v_skia_set_scroll_damage_rects(CGContextRef canvas,
     float const* rects, int count)

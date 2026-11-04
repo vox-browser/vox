@@ -26,9 +26,10 @@ static std::vector<uint8_t> backdrop(float scale, float offset)
 }
 
 // `strip_height` CSS rows starting at `strip_top` clip the replay, as a
-// reused viewport clips it to the rows a scroll exposes.
+// reused viewport clips it to the rows a scroll exposes. `damage` instead
+// clips to published rectangles, as a reused frame with in-page damage does.
 static std::vector<uint8_t> blurred(float scale, float sigma, float offset, uint64_t key = 0,
-    float strip_top = 0, float strip_height = 0)
+    float strip_top = 0, float strip_height = 0, std::vector<SkRect> const& damage = {})
 {
     int width = css_width * scale, height = css_height * scale, pitch = width * 4;
     auto pixels = backdrop(scale, offset);
@@ -41,6 +42,16 @@ static std::vector<uint8_t> blurred(float scale, float sigma, float offset, uint
     if (strip_height > 0)
         CGContextClipToRect(context, CGRectMake(0, css_height - strip_top - strip_height,
             css_width, strip_height));
+    std::vector<float> published;
+    if (!damage.empty()) {
+        std::vector<CGRect> clips;
+        for (auto const& rect : damage) {
+            clips.push_back(CGRectMake(rect.left(), css_height - rect.bottom(), rect.width(), rect.height()));
+            published.insert(published.end(), {rect.left(), rect.top(), rect.width(), rect.height()});
+        }
+        CGContextClipToRects(context, clips.data(), clips.size());
+    }
+    ladybird_v_skia_set_scroll_damage_rects(context, published.data(), int(published.size() / 4));
     ladybird_v_skia_set_chromium_painting(1);
     // vlang.io's `.showcase::before`: a translucent radial glow, blur(30px).
     auto bounds = SkRect::MakeXYWH(37, 61 + offset, 326, 171.5f);
@@ -60,6 +71,7 @@ static std::vector<uint8_t> blurred(float scale, float sigma, float offset, uint
     ladybird_v_skia_set_isolated_input_key(context, key);
     assert(ladybird_v_skia_end_css_gradient_blur(context, context, css_width, css_height,
         scale, sigma));
+    ladybird_v_skia_set_scroll_damage_rects(nullptr, nullptr, 0);
     CGContextFlush(context); CGContextRelease(context);
     return pixels;
 }
@@ -128,6 +140,32 @@ int main()
                     << " max=" << worst << " first_row=" << first_row << '\n';
             }
         }
+    }
+    // Separate and overlapping damage rectangles blend once each: inside
+    // them the pixels equal a complete replay, outside the backdrop remains.
+    for (float scale : {1.f, 2.f}) {
+        uint64_t key = 0x5eed1000 + uint64_t(scale);
+        auto full = blurred(scale, 30, 25, key);
+        std::vector<SkRect> damage {SkRect::MakeXYWH(0, 288, css_width, 12),
+            SkRect::MakeXYWH(60, 90, 140, 80), SkRect::MakeXYWH(150, 120, 120, 90)};
+        auto parts = blurred(scale, 30, 25, key, 0, 0, damage);
+        auto untouched = backdrop(scale, 25);
+        int width = css_width * scale, pitch = width * 4;
+        for (int y = 0; y < css_height * scale; ++y) for (int x = 0; x < width; ++x) {
+            bool inside = false;
+            for (auto const& rect : damage)
+                inside |= x >= rect.left() * scale && x < rect.right() * scale
+                    && y >= rect.top() * scale && y < rect.bottom() * scale;
+            auto const& expected = inside ? full : untouched;
+            if (!std::equal(parts.begin() + size_t(y) * pitch + x * 4,
+                    parts.begin() + size_t(y) * pitch + x * 4 + 4, expected.begin() + size_t(y) * pitch + x * 4)) {
+                ++failures;
+                std::cerr << "Damage-part blur differs: scale=" << scale << " at " << x << "," << y << '\n';
+                y = css_height * scale;
+                break;
+            }
+        }
+        ++cases;
     }
     if (failures) {
         std::cerr << failures << "/" << cases << " translated blur scenes differ\n";
