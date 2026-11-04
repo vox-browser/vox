@@ -4,6 +4,30 @@ import html
 import math
 import platform
 
+fn test_paragraph_final_word_wraps_whole_but_an_overlong_first_word_can_hyphenate() {
+	$if !macos { return }
+	for suffix in ['continue', '<span>continue</span>', 'continue   '] {
+		mut document := html.parse_document('<!doctype html><html lang="en-US"><style>
+			body{margin:0;font:16px/22.4px Arial}p{width:233.625px;hyphens:auto}
+		</style><p>Revised IPO filing warns 12x revenue growth is unlikely to ${suffix}</p>')
+		document.set_font_rendering_policy(.chromium)
+		root := layout_document_typed_in_viewport(document, 1024, 768)
+		commands := root.paint_commands().filter(it.kind == 'draw_text' && it.text.trim_space() != '')
+		assert commands.last().text.trim_space() == 'continue'
+		assert !commands.any(it.text == 'contin‐')
+		document.finalize()
+	}
+	mut document := html.parse_document('<!doctype html><html lang="en-US"><style>
+		body{margin:0;font:16px/24px Arial}p{width:40px;hyphens:auto}
+	</style><p>generated</p>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	root := layout_document_typed_in_viewport(document, 320, 240)
+	commands := root.paint_commands().filter(it.kind == 'draw_text')
+	assert commands.len > 1
+	assert commands.any(it.text.contains('‐'))
+}
+
 fn test_inserted_hyphen_does_not_kern_with_the_source_word() {
 	$if !macos { return }
 	font := &platform.Font{family: 'system-ui', point_size: 17, font_rendering_policy: .chromium}

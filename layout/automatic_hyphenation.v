@@ -123,9 +123,26 @@ fn (iterator &InlineLevelIterator) next_word_can_hyphenate(available CSSPixels) 
 	return false
 }
 
+// A final word can wrap intact instead of filling the preceding line with a
+// hyphenated prefix. Look across text-node boundaries in this inline paragraph;
+// out-of-flow items do not turn a final word into a nonfinal one.
+// This follows Blink's ShapingLineBreaker::ShouldHyphenate policy.
+fn (iterator &InlineLevelIterator) has_in_flow_content_after(index int) bool {
+	for i in index .. iterator.items.len {
+		item := unsafe { &iterator.items[i] }
+		if item.type_ == .block_level_box { return false }
+		if item.type_ == .element || (item.type_ == .text && !item.is_all_whitespace) {
+			return true
+		}
+	}
+	return false
+}
+
 fn break_automatically_hyphenated_item(mut builder LineBuilder, mut item InlineLevelItem,
-	following []InlineLevelItem) {
+	following []InlineLevelItem, final_word bool) {
 	for {
+		if final_word && !builder.available_width.is_min_content()
+			&& !builder.current_line_is_empty() { return }
 		remaining := builder.remaining_width_for_overflow_break() or { return }
 		if builder.projected_text_sequence_width(item, following).raw_value() <= remaining.raw_value() {
 			return

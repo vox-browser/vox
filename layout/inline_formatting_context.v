@@ -336,6 +336,9 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 						} else { item.border_box_width().plus(next_width) }
 						remaining := line_builder.remaining_width_for_overflow_break() or { CSSPixels.new(0) }
 						can_hyphenate := available_space.width.is_definite()
+							&& (node.document().font_rendering_policy() != .chromium
+								|| line_builder.current_line_is_empty()
+								|| iterator.has_in_flow_content_after(iterator.next_item_index + 1))
 							&& sequence_width.raw_value() > remaining.raw_value()
 							&& iterator.next_word_can_hyphenate(remaining.minus(item.border_box_width()))
 						broke_line := if can_hyphenate {
@@ -358,7 +361,9 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 						&& containing_block_used_values.line_boxes.last().ends_in_preserved_whitespace())
 					if !is_whitespace && style.hyphens() == .auto_ {
 						break_automatically_hyphenated_item(mut line_builder, mut item,
-							iterator.next_glued_text_items())
+							iterator.next_glued_text_items(),
+							node.document().font_rendering_policy() == .chromium
+								&& !iterator.has_in_flow_content_after(iterator.next_item_index))
 					}
 					if can_break_before_item && !is_whitespace {
 						glued := if node.document().font_rendering_policy() == .chromium {
