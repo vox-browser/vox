@@ -207,11 +207,19 @@ def evaluate_pairs(pairs, required_reduction=.15):
                 passed=max(vox) * target.denominator <= target.numerator * min(brave))
 
 
+def engine_reference(args, engine):
+    """A Vox-specific reference checks per-engine stability, not cross-browser equality."""
+    vox_reference = getattr(args, 'expected_vox', None)
+    return vox_reference if engine == 'vox' and vox_reference is not None else args.expected
+
+
 def pinned_inputs(args):
     from measure_sealed_github_instructions import native_dependencies
     paths = {args.html, args.expected, args.vox, args.brave, args.network_deny,
              getattr(args, 'diff_tool', REPO / 'Build/pixel-equality/pixel_diff'), *native_dependencies(args.vox),
              *args.vox.parent.glob('*.dylib')}
+    if getattr(args, 'expected_vox', None) is not None:
+        paths.add(args.expected_vox)
     for path in (args.vox.with_name('VoxAdblockWorker'),
                  args.vox.parent.parent / 'Resources/adblock.snapshot.bin'):
         if path.is_file():
@@ -229,6 +237,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--html', type=Path, required=True)
     parser.add_argument('--expected', type=Path, required=True)
+    parser.add_argument('--expected-vox', type=Path,
+                        help='Compare Vox captures with this fixed Vox reference instead of --expected. '
+                             'Brave still uses --expected; the summary records the cross-browser difference.')
     parser.add_argument('--cache', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--vox', type=Path, default=REPO/'Build/v/Vox.app/Contents/MacOS/Vox')
@@ -242,11 +253,16 @@ def main():
     args = parser.parse_args()
     if args.repeat < 1 or not 0 <= args.required_reduction < 1:
         parser.error('Invalid repeat count or required reduction')
-    for name in ['html', 'expected', 'cache', 'output', 'vox', 'brave', 'network_deny', 'diff_tool']:
-        setattr(args, name, getattr(args, name).resolve())
+    for name in ['html', 'expected', 'expected_vox', 'cache', 'output', 'vox', 'brave', 'network_deny', 'diff_tool']:
+        if getattr(args, name) is not None:
+            setattr(args, name, getattr(args, name).resolve())
     if not args.network_deny.is_file():
         parser.error('Build the process-local network deny dylib first')
     args.output.mkdir(parents=True, exist_ok=False, mode=0o700)
+    cross_browser = None
+    if args.expected_vox is not None:
+        cross_browser = compare(args.expected, args.expected_vox,
+                                args.output/'vox-reference-vs-brave-reference.diff.png', args.diff_tool)
     title, posts = document_identity(args.html)
     audit_config = args.output/'post-audit-config.json'
     audit_config.write_text(json.dumps(dict(selectors=[dict(name='posts',
@@ -286,7 +302,7 @@ def main():
             report_path.write_text(json.dumps(report, indent=2)+'\n')
             validate_document(report, config.url, title, posts, engine)
             report['content_exact'] = True
-            verdict = compare(args.expected, Path(report['screenshot']),
+            verdict = compare(engine_reference(args, engine), Path(report['screenshot']),
                               Path(str(prefix)+'.diff.png'), args.diff_tool)
             report['pixels_exact'] = verdict['exact']
             report['pixel_comparison'] = verdict
@@ -304,6 +320,8 @@ def main():
     if pinned != pinned_inputs(args) or cache_hash != fingerprint_tree(args.cache):
         raise RuntimeError('Pinned executable, runtime or benchmark input changed')
     summary = evaluate_pairs(pairs, args.required_reduction)
+    summary.update(reference_policy='per-engine fixed references' if cross_browser else 'shared Brave reference',
+                   cross_browser_reference_pixels=cross_browser)
     summary.update(pairs=pairs, pinned_sha256=pinned, cache_sha256=cache_hash,
                    selected_js_engines=dict(vox=args.vox_js_engine, brave='v8'),
                    title=title, post_ids=posts, sample_interval_seconds=.005,

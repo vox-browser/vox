@@ -77,6 +77,20 @@ class FrozenResponseTests(unittest.TestCase):
                 patch.object(benchmark,'digest',return_value='hash'):
             self.assertIn(str(args.diff_tool), benchmark.pinned_inputs(args))
 
+    def test_vox_reference_is_per_engine_pinned_and_absent_by_default(self):
+        args = SimpleNamespace(vox=Path('/Vox.app/Contents/MacOS/Vox'),
+            brave=Path('/Brave.app/Contents/MacOS/Brave Browser'), html=Path('/page.html'),
+            expected=Path('/brave.png'), network_deny=Path('/deny.dylib'), diff_tool=Path('/pixel_diff'))
+        self.assertEqual(benchmark.engine_reference(args, 'vox'), Path('/brave.png'))
+        args.expected_vox = None
+        self.assertEqual(benchmark.engine_reference(args, 'vox'), Path('/brave.png'))
+        args.expected_vox = Path('/vox.png')
+        self.assertEqual(benchmark.engine_reference(args, 'vox'), Path('/vox.png'))
+        self.assertEqual(benchmark.engine_reference(args, 'brave'), Path('/brave.png'))
+        with patch('measure_sealed_github_instructions.native_dependencies', return_value=[]), \
+                patch.object(benchmark, 'digest', return_value='hash'):
+            self.assertIn(str(Path('/vox.png').resolve()), benchmark.pinned_inputs(args))
+
 
 class DocumentIdentityTests(unittest.TestCase):
     def test_both_vox_backends_are_explicit_in_the_real_launch_arguments(self):
