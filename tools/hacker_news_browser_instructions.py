@@ -777,7 +777,8 @@ def run_browser(engine, app, folder, args):
             if getattr(args, 'brave_disable_javascript', False):
                 client.call('Emulation.setScriptExecutionDisabled', dict(value=True))
             result['native_viewport'] = configure_brave_viewport(browser, client, target, args)
-            client.call('Emulation.setFocusEmulationEnabled', dict(enabled=True))
+            client.call('Emulation.setFocusEmulationEnabled',
+                        dict(enabled=getattr(args, 'brave_focus_emulation', True)))
             counter = CoalitionCounter(api, cid)
             sampler = CounterSampler(counter, .002)
             sampler.__enter__()

@@ -194,7 +194,8 @@ def run(args):
         audit_vox_capture_ownership=True,
         content_validator=lambda audit: content_gate(audit, args.title, expected_content,
             reference_buttons=reference_buttons, require_bootstrap=True),
-        audit_expression=audit_expression(), brave_emulated_viewport=True)
+        audit_expression=audit_expression(), brave_emulated_viewport=True,
+        brave_focus_emulation=not args.unfocused)
     settings.readiness_expression = """location.href===URL && document.title===TITLE
         && document.readyState==='complete' && document.fonts.status==='loaded'
         && document.documentElement.dataset.octaneHomeBehaviorReady==='1'
@@ -202,6 +203,8 @@ def run(args):
         && [...document.querySelectorAll('textarea,[contenteditable=true]')].some(e=>{
             const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&!e.disabled})""".replace(
             'URL', json.dumps(URL)).replace('TITLE', json.dumps(args.title))
+    if args.unfocused:
+        settings.readiness_expression += ' && !document.hasFocus()'
     paths = {reference, native_reference, audit_config, settings.diff_tool, out / 'source-expectations.json'}
     paths.update(reference_audit_paths)
     paths.update(p for p in archive.rglob('*') if p.is_file())
@@ -226,6 +229,7 @@ def run(args):
             native_reference=str(native_reference),
             button_audit='Exact viewport identities from retained Brave audit' if reference_buttons else 'Exact SSR button count',
             author_readiness='ChatGPT home-behavior marker required in both engines',
+            document_focus='Unfocused in both engines' if args.unfocused else 'Focused in both engines; native caret blink suppressed',
             gate='100 * max(Vox upper) <= 95 * min(Brave lower), at least seven pairs')))
     cross_engine = compare(reference, native_reference, out / 'cross-engine-reference.diff.png',
                            settings.diff_tool)
@@ -239,7 +243,7 @@ def run(args):
         der = subprocess.check_output(['openssl', 'pkey', '-pubin', '-outform', 'der'], input=public)
         spki = base64.b64encode(hashlib.sha256(der).digest()).decode()
         settings.vox_environment = dict(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
-            VOX_BLOCK_COOKIE_BANNERS='0', VOX_CAPTURE_DOCUMENT_ACTIVE='1',
+            VOX_BLOCK_COOKIE_BANNERS='0', VOX_CAPTURE_DOCUMENT_ACTIVE='0' if args.unfocused else '1',
             LADYBIRD_ENABLE_SNAPSHOT_CACHE='0')
         settings.brave_proxy_argument = '--proxy-server=' + replay.ready['proxy'].replace('socks5h:', 'socks5:')
         settings.brave_arguments = ['--ignore-certificate-errors-spki-list=' + spki,
@@ -288,6 +292,8 @@ def main():
                         help='Existing native control reference; cross-engine differences remain reported')
     parser.add_argument('--reference-audit', type=Path,
                         help='Retained Brave audit beside its document.png; fixes viewport button identities')
+    parser.add_argument('--unfocused', action='store_true',
+                        help='Match unfocused documents in both engines; prevents a blinking reference caret')
     parser.add_argument('--title', required=True)
     parser.add_argument('--memory-guard-registry', type=Path, required=True)
     parser.add_argument('--diff-tool', type=Path, required=True)
