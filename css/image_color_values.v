@@ -271,6 +271,9 @@ pub mut:
 	alpha_        []StyleValue = [StyleValue(KeywordStyleValue{})]
 	color_syntax_ ColorSyntax
 	name_         ?string
+	// HSL conversion retains its float alpha in Chromium even when the
+	// computed RGB value uses the legacy serialization syntax.
+	preserve_float_alpha_ bool
 }
 
 pub fn RGBColorStyleValue.create(r StyleValue, g StyleValue, b StyleValue, alpha ?StyleValue, color_syntax ColorSyntax, name ?string) RGBColorStyleValue {
@@ -362,7 +365,8 @@ pub fn (style_value RGBColorStyleValue) to_color(color_resolution_context ColorR
 }
 
 pub fn (style_value RGBColorStyleValue) absolutized(context ComputationContext) RGBColorStyleValue {
-	return RGBColorStyleValue.create(style_value.r_[0].absolutized(context), style_value.g_[0].absolutized(context), style_value.b_[0].absolutized(context), style_value.alpha_[0].absolutized(context), style_value.color_syntax(), none)
+	value := RGBColorStyleValue.create(style_value.r_[0].absolutized(context), style_value.g_[0].absolutized(context), style_value.b_[0].absolutized(context), style_value.alpha_[0].absolutized(context), style_value.color_syntax(), none)
+	return RGBColorStyleValue{ ...value, preserve_float_alpha_: style_value.preserve_float_alpha_ }
 }
 
 // https://www.w3.org/TR/css-color-4/#serializing-sRGB-values
@@ -454,10 +458,11 @@ pub fn (style_value HSLColorStyleValue) absolutized(context ComputationContext) 
 		if element.document().font_rendering_policy() == .chromium {
 			components := ci_hsl_to_srgb(interpolation_color_components(resolved_h,
 				image_color_clamp(resolved_s / 100, 0, 1), image_color_clamp(resolved_l / 100, 0, 1), resolved_alpha))
-			return RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(components.values[0] * 255)),
+			value := RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(components.values[0] * 255)),
 				StyleValue(NumberStyleValue.create(components.values[1] * 255)),
 				StyleValue(NumberStyleValue.create(components.values[2] * 255)),
 				StyleValue(NumberStyleValue.create(resolved_alpha)), .legacy, none)
+			return RGBColorStyleValue{ ...value, preserve_float_alpha_: true }
 		}
 	}
 	return RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(color.red())), StyleValue(NumberStyleValue.create(color.green())), StyleValue(NumberStyleValue.create(color.blue())), StyleValue(NumberStyleValue.create(f64(color.alpha()) / 255.0)), .legacy, none)

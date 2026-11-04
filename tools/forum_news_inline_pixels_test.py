@@ -34,6 +34,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_flex_rows_enclose_both_sides_of_aligned_baselines(self):
         self.compare_fixture('flex-baseline-cross-size', width=1024, height=768)
 
+    def test_computed_hsl_colors_retain_float_alpha_in_text_and_paths(self):
+        self.compare_fixture('chromium-hsl-alpha', width=1024, height=768)
+
     def test_svg_background_round_caps_and_curves_share_the_parent_picture(self):
         self.compare_fixture('register-svg-stroke-recording', width=1024, height=768)
 
