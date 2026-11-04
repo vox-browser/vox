@@ -6923,7 +6923,17 @@ fn (e &Element) svg_use_reference_url() ?URL {
 	if href.len == 0 {
 		return none
 	}
-	return dom_url_parse(href, e.document().url, e.document().encoding_or_default())
+	mut base := e.document().base_url()
+	// A nested use cloned from an external symbol retains that symbol's URL
+	// as its reference base after adoption into the embedding document.
+	if shadow := e.as_node().root().as_shadow_root() {
+		if host := shadow.host() {
+			if host.is_svg_element() && host.local_name() == 'use' {
+				if reference := host.svg_use_reference_url() { base = reference }
+			}
+		}
+	}
+	return dom_url_parse(href, base, e.document().encoding_or_default())
 }
 
 fn (e &Element) svg_use_reference_is_same_document(reference URL) bool {
@@ -6943,7 +6953,8 @@ fn (e &Element) svg_use_referenced_element() ?&Element {
 	reference := e.svg_use_reference_url() or { return none }
 	fragment := reference.fragment() or { return none }
 	if !e.svg_use_reference_is_same_document(reference) {
-		return none
+		resource := e.document().svg_use_resource_document(reference) or { return none }
+		return resource.get_element_by_id(url_percent_decode(fragment))
 	}
 	return e.document().get_element_by_id(url_percent_decode(fragment))
 }
@@ -7014,6 +7025,19 @@ fn (mut e Element) svg_use_clone_element_tree_as_our_shadow_tree(target ?&Elemen
 		}
 	}
 	shadow_node.append_child(clone_node) or {}
+	// Initial loading has not run inserted()'s document-complete branch yet.
+	// Nested instances need their adopted shadow-tree base before first layout.
+	if !e.document().is_completely_loaded() {
+		clone_node.for_each_in_subtree(fn (node &Node) TraversalDecision {
+			if element := node.as_element() {
+				if element.is_svg_element() && element.local_name() == 'use' {
+					mut nested := unsafe { &Element(element) }
+					nested.svg_use_process_the_url()
+				}
+			}
+			return .@continue
+		})
+	}
 }
 
 fn (mut e Element) svg_use_process_the_url() {

@@ -1837,6 +1837,14 @@ pub:
 	callback DocumentRenderedTextCallback = unsafe { nil }
 }
 
+// The embedder supplies already fetched SVG documents without making DOM
+// depend on the image decoder or network loader.
+pub struct DocumentSVGUseResourceHook {
+pub:
+	target voidptr = unsafe { nil }
+	resolve fn (voidptr, URL) ?&Document = unsafe { nil }
+}
+
 // DOM cannot import ARIA/HTML, so Element::role_or_default() is supplied by
 // the owning document's HTML implementation through this module boundary.
 pub type DocumentElementAllowsNameFromContentCallback = fn (voidptr, &Element, bool) bool
@@ -5279,6 +5287,7 @@ pub mut:
 	font_size_keyword_policy_ FontSizeKeywordPolicy
 	font_rendering_policy_ FontRenderingPolicy
 	layout_coordinate_scale_ f64
+	svg_use_resource_hook_ ?DocumentSVGUseResourceHook
 	display_device_pixel_ratio_ f64
 	embedder_window_inactive_ bool
 

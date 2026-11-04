@@ -1376,7 +1376,9 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 		// caches are never populated from a temporarily unavailable remote image.
 		mut svg_images := css.query_selector_all(root, 'image')
 		svg_images << css.query_selector_all(root, 'feImage')
+		svg_images << css.query_selector_all(root, 'use')
 		for image in svg_images {
+			if !image.is_svg_element() { continue }
 			mut source := ''
 			if image.has_attribute('href') {
 				source = image.get_attribute_value('href').trim_space()
@@ -1386,7 +1388,14 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 			if source == '' {
 				continue
 			}
-			resource_url := resolve_document_reference(source, base_url)
+			mut resource_url := resolve_document_reference(source, base_url)
+			if image.local_name() == 'use' {
+				if source.starts_with('#') { continue }
+				resource_url = resource_url.all_before('#')
+				if parsed := dom.dom_url_parse(resource_url, document.url, 'UTF-8') {
+					if !parsed.origin().is_same_origin(document.origin()) { continue }
+				} else { continue }
+			}
 			if (resource_url.starts_with('http://') || resource_url.starts_with('https://'))
 				&& resource_url !in seen {
 				seen[resource_url] = true
@@ -3833,6 +3842,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		publish_browser_svg_resource(resource)
 	}
 	checkpoint = debug_timing_checkpoint('install_styles', checkpoint)
+	install_browser_svg_use_resources(app.document, preloaded_resources)
 	install_local_video_frames(app.document, resource_base_url, loaded.markup)
 	checkpoint = debug_timing_checkpoint('install_video_frames', checkpoint)
 	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)

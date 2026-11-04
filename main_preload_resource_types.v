@@ -10,6 +10,7 @@ fn document_svg_image_preload_urls(document &dom.Document, base_url string) map[
 	mut urls := map[string]bool{}
 	mut images := css.query_selector_all(document.as_node(), 'image')
 	images << css.query_selector_all(document.as_node(), 'feImage')
+	images << css.query_selector_all(document.as_node(), 'use')
 	for image in images {
 		if image.is_html_element() { continue }
 		source := if image.has_attribute('href') {
@@ -17,7 +18,10 @@ fn document_svg_image_preload_urls(document &dom.Document, base_url string) map[
 		} else {
 			image.get_attribute_value('xlink:href').trim_space()
 		}
-		if source != '' { urls[resolve_document_reference(source, base_url)] = true }
+		if source != '' {
+			address := resolve_document_reference(source, base_url)
+			urls[if image.local_name() == 'use' { address.all_before('#') } else { address }] = true
+		}
 	}
 	return urls
 }
