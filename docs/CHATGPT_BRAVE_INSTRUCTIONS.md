@@ -1153,3 +1153,21 @@ Original author scripts and the single SOCKS fixture remain unchanged, with no
 new live download. This frozen replay does not establish live sign-in or chat
 submission support. Four pairs do not establish acceptance; the requested 5%
 advantage over Brave remains unmet.
+
+## Shared layout reuse eligibility
+
+The separate [layout eligibility diagnostic](performance/chatgpt-layout-eligibility-verified-20261104.json)
+uses completed executable
+`f029d0f4ec0b2648879303914eff0cc151932e08a50bf2903258a52aded645e3`.
+It confirms actual flex-measurement replay, including unshifted relative boxes;
+the grid replay marker remains absent. Disabling both flex/grid replay produces
+none of those markers. All four captures pass unchanged pixels, content,
+JavaScriptCore bootstrap and browser/kernel exits, with stable identities and
+successful guard PID adoption.
+
+Instrumented launch counts are 32,947,401,474 for the candidate and
+32,673,424,561 for its control. They provide no unprofiled optimization credit
+or broad-cadence advance. This audit establishes execution of the shared path,
+not that layout reuse closes the ChatGPT/Brave gap. The initial preflight used
+an incorrect generated C symbol spelling and stopped before any browser launch;
+its failed script, log and actual guard exit remain in the diagnostic archive.

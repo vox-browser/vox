@@ -1,0 +1,30 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-layout-eligibility-20261104-2255/verified/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {
+    "62164": "Wed Nov  4 22:51:43 2026    ",
+    "62167": "Wed Nov  4 22:51:43 2026    ",
+    "62772": "Wed Nov  4 22:51:54 2026    ",
+    "62776": "Wed Nov  4 22:51:54 2026    ",
+    "62787": "Wed Nov  4 22:51:54 2026    ",
+    "62788": "Wed Nov  4 22:51:54 2026    ",
+    "62789": "Wed Nov  4 22:51:54 2026    ",
+    "63651": "Wed Nov  4 22:52:06 2026    ",
+    "63660": "Wed Nov  4 22:52:06 2026    ",
+    "63662": "Wed Nov  4 22:52:06 2026    ",
+    "63679": "Wed Nov  4 22:52:06 2026    ",
+    "63680": "Wed Nov  4 22:52:06 2026    ",
+    "63683": "Wed Nov  4 22:52:06 2026    ",
+    "64581": "Wed Nov  4 22:52:17 2026    ",
+    "64584": "Wed Nov  4 22:52:17 2026    "
+  },
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 1928577024,
+  "elapsed_seconds": 50.420227833999995,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}
