@@ -9,6 +9,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { captureArchive, captureEncodedResponseCache } from './capture_archive.mjs';
 import { createOracleProfile, saveClosedOracleProfile } from './oracle_profile.mjs';
+import {closeOracleBrowser} from './oracle_shutdown.mjs';
 import { capturePixelReference, referenceLaunchArguments, waitForPixelDocument } from './pixel_reference.mjs';
 import { navigationObservation } from './navigation.mjs';
 import { hasHeaderFilter, requestIdentity, summarizeRequestParity } from './request_stream.mjs';
@@ -162,7 +163,7 @@ const browser = spawn(options.brave, [
     ...referenceLaunchArguments(options),
     `--user-data-dir=${profile}`, `--load-extension=${extension}`, 'about:blank',
 ], { stdio: ['ignore', 'ignore', 'ignore'] });
-let background, page, completed = false;
+let background, page, browserControl, completed = false;
 try {
     let port;
     for (let attempt = 0; attempt < 300; attempt++) {
@@ -172,6 +173,8 @@ try {
         await pause(100);
     }
     if (!port) throw new Error('Brave remote debugger did not start');
+    const browserTarget=await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
+    browserControl=await new CDP().connect(browserTarget.webSocketDebuggerUrl);
     let targets;
     for (let attempt = 0; attempt < 300; attempt++) {
         targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
@@ -445,20 +448,17 @@ try {
     else if (!requests.length || (navigation && navigation.coverage !== 'page')) process.exitCode = 2;
     completed = !process.exitCode;
 } finally {
-    background?.close();
-    page?.close();
-    browser.kill('SIGTERM');
-    await new Promise(resolve => {
-        if (browser.exitCode !== null || browser.signalCode !== null) { resolve(); return; }
-        const force = setTimeout(() => browser.kill('SIGKILL'), 5000);
-        browser.once('exit', () => { clearTimeout(force); resolve(); });
-    });
     try {
+        await closeOracleBrowser(browser,()=>browserControl
+            ? browserControl.send('Browser.close') : Promise.reject(Error('No browser debugger')));
         if (completed && options['profile-output']) {
             if (browser.signalCode === 'SIGKILL') throw new Error('Cannot save a forcibly terminated oracle profile');
             await saveClosedOracleProfile(profile, options['profile-output']);
         }
     } finally {
+        background?.close();
+        page?.close();
+        browserControl?.close();
         await fs.rm(profile, { recursive: true, force: true });
     }
 }
