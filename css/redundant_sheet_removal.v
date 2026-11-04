@@ -86,6 +86,10 @@ fn redundant_sheet_rules_equal(left []&CSSRule, right []&CSSRule, document &dom.
 }
 
 fn redundant_sheet_rule_sequences_match(left []&CSSRule, right []&CSSRule, document &dom.Document, mut changed []&CSSRule) bool {
+	return redundant_sheet_rule_sequences_match_with_media(left, right, document, mut changed, false)
+}
+
+fn redundant_sheet_rule_sequences_match_with_media(left []&CSSRule, right []&CSSRule, document &dom.Document, mut changed []&CSSRule, fresh_media bool) bool {
 	mut i := 0
 	mut j := 0
 	for {
@@ -99,12 +103,19 @@ fn redundant_sheet_rule_sequences_match(left []&CSSRule, right []&CSSRule, docum
 			if serialize_a_group_of_selectors(a.selectors) != serialize_a_group_of_selectors(b.selectors) { return false }
 			if !redundant_sheet_declarations_equal(a, b) { changed << a }
 		} else {
-			if a.condition_matches() != b.condition_matches() { return false }
 			if a.type_ == .media {
 				media := a.media or { return false }
 				other := b.media or { return false }
-				if media.media != other.media { return false }
+				if fresh_media {
+					if b.did_evaluate || !following_media_query_texts_equal(media, other)
+						|| a.condition_matches() != following_media_snapshot_matches(other, document) {
+						return false
+					}
+				} else if media.media != other.media || a.condition_matches() != b.condition_matches() {
+					return false
+				}
 			} else {
+				if a.condition_matches() != b.condition_matches() { return false }
 				supports := a.supports or { return false }
 				other := b.supports or { return false }
 				// Supports is evaluated once at parse time. Its cached parser
@@ -115,7 +126,7 @@ fn redundant_sheet_rule_sequences_match(left []&CSSRule, right []&CSSRule, docum
 		}
 		if children := a.rules {
 			other := b.rules or { return false }
-			if !redundant_sheet_rule_sequences_match(children.rules, other.rules, document, mut changed) { return false }
+			if !redundant_sheet_rule_sequences_match_with_media(children.rules, other.rules, document, mut changed, fresh_media) { return false }
 		} else if children := b.rules {
 			if children.rules.len != 0 { return false }
 		}
@@ -145,13 +156,22 @@ fn (list &StyleSheetList) removal_following_sheet_changes(sheet &CSSStyleSheet) 
 	following_owner := following.base.owner_node or { return none }
 	if following.constructed || following.base.disabled
 		|| !following_owner.as_node().is_html_style_element()
-		|| sheet.base.location != following.base.location || sheet.base_url != following.base_url
-		|| sheet.base.media.media != following.base.media.media
+		|| sheet.base.location != following.base.location || sheet.base_url != following.base_url { return none }
+	fresh_media := !retain_unevaluated_following_sheet && sheet.did_match != none
+		&& following.did_match == none
+	if fresh_media {
+		previous := sheet.did_match or { return none }
+		if sheet.base.title != following.base.title || sheet.base.alternate != following.base.alternate
+			|| !following_media_query_texts_equal(sheet.base.media, following.base.media)
+			|| sheet.base.media.matches() != previous
+			|| following_media_snapshot_matches(following.base.media, list.document()) != previous { return none }
+	} else if sheet.base.media.media != following.base.media.media
 		|| sheet.did_match != following.did_match { return none }
 	mut changed := []&CSSRule{}
-	if !redundant_sheet_rule_sequences_match(sheet.rules.rules, following.rules.rules, list.document(), mut changed) {
+	if !redundant_sheet_rule_sequences_match_with_media(sheet.rules.rules, following.rules.rules, list.document(), mut changed, fresh_media) {
 		return none
 	}
+	if fresh_media { report_fresh_following_sheet_media(list.document()) }
 	return changed
 }
 
