@@ -4,7 +4,39 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
-import {capturePixelReference, referenceLaunchArguments, waitForPixelDocument} from './pixel_reference.mjs';
+import {capturePixelReference, pixelReferenceState, referenceLaunchArguments, waitForPixelDocument} from './pixel_reference.mjs';
+
+test('visible image decoding completes before paint, without decoding hidden or offscreen lazy images',async()=>{
+    const calls=[];let finish;
+    const image={src:'https://example.test/photo.webp',complete:true,naturalWidth:100,
+        getBoundingClientRect:()=>({x:10,y:10,width:100,height:100}),
+        decode:()=>{calls.push('decode');return new Promise(resolve=>{finish=resolve;});}};
+    const lazy={...image,complete:false,naturalWidth:0,
+        getBoundingClientRect:()=>({x:10,y:1000,width:100,height:100}),
+        decode:()=>{throw Error('Lazy image must remain deferred');}};
+    const hidden={...image,decode:()=>{throw Error('Hidden image must remain deferred');}};
+    const document={fonts:{ready:Promise.resolve(),status:'loaded'},images:[image,lazy,hidden],
+        readyState:'complete',title:'News',body:{innerText:'story '.repeat(300)},activeElement:null,
+        querySelectorAll:()=>[]};
+    const context={document,location:{href:'https://example.test/'},innerWidth:1024,innerHeight:768,
+        devicePixelRatio:1,getComputedStyle:e=>({display:'block',visibility:e===hidden?'hidden':'visible'}),
+        requestAnimationFrame:callback=>{calls.push('paint');callback();}};
+    let settled=false;
+    const pending=vm.runInNewContext('('+pixelReferenceState.toString()+')()',context)
+        .then(state=>{settled=true;return state;});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(settled,false);
+    assert.deepEqual(calls,['decode']);
+    finish();const state=await pending;
+    assert.deepEqual(calls,['decode','paint','paint']);
+    assert.equal(state.image_decode_preparation,'visible-image-decode');
+    assert.deepEqual(Array.from(state.decoded_images),[image.src]);
+    assert.equal(state.image_decode_errors.length,0);
+    image.decode=async()=>{throw Error('Invalid encoded bitmap');};
+    const failed=await vm.runInNewContext('('+pixelReferenceState.toString()+')()',context);
+    assert.equal(failed.image_decode_errors[0].url,image.src);
+    assert.equal(failed.image_decode_errors[0].error,'Invalid encoded bitmap');
+});
 
 test('capture waits for document load before the settle period',async()=>{
     let expression;
@@ -60,9 +92,10 @@ test('failed navigation, incomplete pages and missing visible images cannot beco
     await assert.rejects(capturePixelReference(page,file,{coverage:'challenge'}),/successful page coverage/);
     for (const change of [{ready:'loading'},{fonts:'loading'},{width:800},{scale:2},{text:'Access denied'},
         {url:'https://other.test/'},{images:[{url:'https://example.test/avatar.png',width:10,height:10,x:0,y:0,complete:true,naturalWidth:0}]},
-        {styles:[{url:'https://example.test/main.css',active:true,loaded:false}]}]) {
+        {styles:[{url:'https://example.test/main.css',active:true,loaded:false}]},
+        {image_decode_errors:[{url:'https://example.test/photo.webp',error:'Invalid encoded bitmap'}]}]) {
         await assert.rejects(capturePixelReference({...page,evaluate:async()=>({...state,...change})},file,nav),
-            /not ready|missing visible images|missing active stylesheets/);
+            /not ready|missing visible images|missing active stylesheets|image decode failures/);
         const diagnostic=JSON.parse(await fs.readFile(file+'.json','utf8'));
         assert.equal(diagnostic.stable,false);
         for (const [key,value] of Object.entries(change)) assert.deepEqual(diagnostic[key],value);

@@ -32,27 +32,47 @@ export function referenceLaunchArguments(options) {
     return args;
 }
 
+export async function pixelReferenceState() {
+    await document.fonts.ready;
+    // A complete response and natural dimensions do not establish decode
+    // completion. Await visible bitmaps before the paint checkpoint; a
+    // deferred decode can otherwise change pixels between fresh processes.
+    const visible=[...document.images].filter(image=>{
+        const r=image.getBoundingClientRect(),style=getComputedStyle(image);
+        return image.complete && image.naturalWidth>0 && r.width>0 && r.height>0
+            && r.x<innerWidth && r.y<innerHeight && r.x+r.width>0 && r.y+r.height>0
+            && style.visibility==='visible' && style.display!=='none';
+    });
+    const decodeErrors=[];
+    await Promise.all(visible.map(async image=>{
+        try {await image.decode();}
+        catch(error) {decodeErrors.push({url:image.currentSrc||image.src,
+            error:error?.message||String(error)});}
+    }));
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    return {url:location.href,title:document.title,ready:document.readyState,
+        image_decode_preparation:'visible-image-decode',
+        decoded_images:visible.map(image=>image.currentSrc||image.src),
+        image_decode_errors:decodeErrors,
+        active_element:document.activeElement ? {tag:document.activeElement.tagName,
+            id:document.activeElement.id||'',focus_visible:document.activeElement.matches(':focus-visible')} : null,
+        width:innerWidth,height:innerHeight,scale:devicePixelRatio,fonts:document.fonts.status,
+        text:document.body?.innerText||'',
+        styles:[...document.querySelectorAll('link[rel~="stylesheet"]')].map(link=>({
+            url:link.href,active:!link.disabled && (!link.media||matchMedia(link.media).matches),
+            loaded:Boolean(link.sheet)})),
+        images:[...document.images].map(image=>{const r=image.getBoundingClientRect();
+            return {url:image.currentSrc||image.src,complete:image.complete,naturalWidth:image.naturalWidth,
+                x:r.x,y:r.y,width:r.width,height:r.height};}),
+        rects:[...document.querySelectorAll('*')].map(element=>{
+            const r=element.getBoundingClientRect();
+            return {tag:element.tagName,id:element.id,classes:element.getAttribute('class'),
+                x:r.x,y:r.y,width:r.width,height:r.height};})};
+}
+
 export async function capturePixelReference(page, file, navigation) {
     if (navigation?.coverage !== 'page') throw new Error('Pixel reference requires successful page coverage');
-    const state = await page.evaluate(`(async()=>{
-        await document.fonts.ready;
-        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-        return {url:location.href,title:document.title,ready:document.readyState,
-            active_element:document.activeElement ? {tag:document.activeElement.tagName,
-                id:document.activeElement.id||'',focus_visible:document.activeElement.matches(':focus-visible')} : null,
-            width:innerWidth,height:innerHeight,scale:devicePixelRatio,fonts:document.fonts.status,
-            text:document.body?.innerText||'',
-            styles:[...document.querySelectorAll('link[rel~="stylesheet"]')].map(link=>({
-                url:link.href,active:!link.disabled && (!link.media||matchMedia(link.media).matches),
-                loaded:Boolean(link.sheet)})),
-            images:[...document.images].map(image=>{const r=image.getBoundingClientRect();
-                return {url:image.currentSrc||image.src,complete:image.complete,naturalWidth:image.naturalWidth,
-                    x:r.x,y:r.y,width:r.width,height:r.height};}),
-            rects:[...document.querySelectorAll('*')].map(element=>{
-                const r=element.getBoundingClientRect();
-                return {tag:element.tagName,id:element.id,classes:element.getAttribute('class'),
-                    x:r.x,y:r.y,width:r.width,height:r.height};})};
-    })()`);
+    const state = await page.evaluate(`(${pixelReferenceState.toString()})()`);
     // Retain readiness and resource failures even when no PNG can qualify as
     // a reference. A failed run must never leave a sidecar claiming stability.
     await fs.writeFile(file+'.json',JSON.stringify({...state,stable:false},null,2)+'\n');
@@ -66,6 +86,8 @@ export async function capturePixelReference(page, file, navigation) {
     const missingStyles=(state.styles||[]).filter(style=>style.active&&!style.loaded);
     if(missingStyles.length) throw new Error('Pixel reference has missing active stylesheets: '+
         missingStyles.map(style=>style.url).join(', '));
+    if(state.image_decode_errors?.length) throw new Error('Pixel reference has visible image decode failures: '+
+        state.image_decode_errors.map(image=>image.url+': '+image.error).join(', '));
     const capture = async()=>Buffer.from((await page.send('Page.captureScreenshot',
         {format:'png',captureBeyondViewport:false})).data,'base64');
     const first = await capture();
@@ -82,5 +104,6 @@ export async function capturePixelReference(page, file, navigation) {
     await fs.writeFile(file,second);
     await fs.writeFile(file+'.json',JSON.stringify({...state,stable:true},null,2)+'\n');
     return {file,sha256:crypto.createHash('sha256').update(second).digest('hex'),
-        width:state.width,height:state.height,scale:state.scale,stable:true};
+        width:state.width,height:state.height,scale:state.scale,stable:true,
+        image_decode_preparation:state.image_decode_preparation};
 }
