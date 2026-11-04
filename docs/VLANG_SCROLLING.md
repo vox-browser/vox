@@ -1016,3 +1016,110 @@ Next steps toward 60 FPS, in order of expected effect:
    beneath it.
 3. Raise `scroll_raster_max_changed_commands` only after (1) and (2); the 16
    `too-many-changes` frames are full repaints today.
+
+## Layer crops, video backdrop and tighter damage (2026-11-04)
+
+Leaf timing of bundle `698536dc…` (diagnostic run `rH-diag`) split reused
+frames into two populations: about 100 ms when the demo video had a new
+frame and about 40 ms otherwise. Two facts explained most of it.
+
+- The demo stage (commands ~357–441: its shadows, the two 958×438 radial
+  gradients, the rotated orbit decoration and the video) is Chromium raster
+  layer 10, not the root (`VOX_DIAGNOSTIC_PAINT_LAYER=1` prints each
+  command's owner). Every crop added so far required the root layer, so
+  these leaves were rasterized, read back and composited at full size for a
+  2-pixel strip.
+- Each new video frame damaged the video's rectangle. Every leaf beneath
+  it (both gradients at ~20 ms each, the stage and orbit shadows, the orbit
+  border) was rasterized again, although the video is the topmost content
+  there. Chromium keeps the video in its own layer and composites new frames
+  over raster it never invalidates.
+
+Changes, each with focused tests:
+
+- `3a182e1e2` crops strip and damage repaints in composited layers. Gradients
+  keep their complete GPU target and the layer's ordered-dither phase; outer
+  shadows use a new Graphite region draw that renders the complete
+  transparent shadow target and transfers only the visible rows. The
+  published damage rectangles now refine crops only on the canvas they were
+  published for, so a full-canvas offscreen filter layer is never cropped
+  by them. Native tests: 24 gradient and 22 shadow strips (root and layer)
+  equal complete replays exactly.
+- `4ce42bc35` composites new video frames over the pixels retained beneath
+  them. Just before a top-level video draws, the native ring stores the
+  freshly painted pixels under its damage rectangle in document device rows.
+  When the only change between frames is that video's frame (same ink,
+  nothing later in paint order touching it, an immediately drawing raster
+  layer), the planner emits a restore rectangle instead of damage: commands
+  beneath skip it, the backdrop is copied back and only the video draws. A
+  row stays valid only while it has remained in the viewport since capture;
+  complete repaints, other damage under the video and replays without capture
+  invalidate it, and a planned restore that does not run keeps the frame out
+  of the ring. `VOX_DISABLE_VIDEO_BACKDROPS=1` is the same-binary control.
+- `6ab4f3083` bounds leaf damage keys by the command's conservative clip
+  rectangle, as group keys already were. The orbit and its 60px shadow
+  (1509×1347 ink) sit inside the scene's `overflow: hidden` box and touched
+  every exposed strip.
+- `e9c9df672` skips untouched fill-and-border underlay pairs. The hero's
+  download button is such a pair and was never skipped; every reused frame
+  replayed its text-coverage group (~4.5 ms, a deferred inset batch with
+  full-surface transfers) although no damage reached it.
+- `de016d415` stores only the strip and damage rows back into the ring.
+  Any in-page damage previously stored all 1536 device rows (12.6 MB) each
+  frame; that copy was 12% of the settled frame loop.
+
+Diagnostic runs (leaf timing and damage diagnostics enabled, live page,
+same protocol as `rH-diag`; not acceptance measurements):
+
+| Run | Bundle | Reused replay median / p90 | Scrolled replay median / p90 | Diagnostic scroll FPS |
+| --- | --- | --- | --- | --- |
+| `rH-diag` | `698536dc…` | 34.5 / 112.7 ms | — | 14.2 |
+| `rI-diag` | `51e68e38…` (`3a182e1e2`, `4ce42bc35`) | 18.4 / 40.5 ms | 20.5 / 41.2 ms | 32.8 |
+| `rJ-diag` | `d63e1dc8…` (+ `6ab4f3083`, `e9c9df672`) | 13.4 / 23.6 ms | 14.8 / 23.7 ms | 31.2 |
+
+`rI-diag` planned 1,146 video restores. Settled frames (video only) fell to a
+2.8 ms replay median in `rJ-diag`. Its diagnostic FPS did not rise with the
+replay time: a scroll-window CPU sample (`rF-sampleJ.txt`, bundle
+`d63e1dc8…`) shows the main thread busy in frames 91% of the time, with the
+remaining replay spread over CoreGraphics glyph rendering of strip text
+(`aa_render`), per-leaf Graphite waits, and the video's CPU mipmap downscale
+of each 1426×1080 frame (12% of samples).
+
+Unprofiled cohort `rK` (2026-11-04 09:04–09:09 MSK, bundle `d63e1dc8…`, built
+from the tree at `e9c9df672` without `de016d415`; live `https://vlang.io/`,
+1024×768 viewport, 112-px chrome, backing scale 2, 600 precise wheel inputs
+of 2 px at 60 Hz reversing every 60, 30 s settle after the title, empty
+private profile and cache, OS caches retained). Control is the same binary
+with `VOX_DISABLE_VIDEO_BACKDROPS`, `VOX_DISABLE_CLIPPED_LAYER_GRADIENTS` and
+`VOX_DISABLE_CLIPPED_LAYER_SHADOWS`; clip-bounded keys and underlay pairs are
+in both arms. All six runs are retained; every browser and guard exit was 0.
+The host was heavily loaded by other work (1-minute load 26–48 on 18 cores),
+so absolute rates are depressed; the arms alternate under the same load.
+
+| Run | Scroll FPS | Median / p95 / max interval | Over 16.7 ms | Input delivery |
+| --- | ---: | --- | ---: | ---: |
+| control-1 | 10.8 | 105.6 / 155.4 / 729.0 ms | 80% | 46.1 Hz |
+| candidate-1 | 32.7 | 28.2 / 51.2 / 265.0 ms | 67% | 51.3 Hz |
+| control-2 | 10.9 | 113.5 / 147.0 / 439.1 ms | 85% | 46.0 Hz |
+| candidate-2 | 30.0 | 31.7 / 56.3 / 270.5 ms | 76% | 46.4 Hz |
+| control-3 | 8.7 | 118.8 / 187.6 / 1296.3 ms | 88% | 41.2 Hz |
+| candidate-3 | 30.5 | 29.9 / 60.6 / 321.6 ms | 69% | 50.7 Hz |
+
+The video backdrop and layer crops roughly triple scroll-changing publication
+rate on this page (3 of 3 pairs). This is still about half of the 60 FPS goal
+and two thirds of intervals miss the frame budget; the goal remains open.
+Production builds of `de016d415` failed three times because concurrent work
+changed repository inputs before C preprocessing (receipts
+`20261104-085810-4b8aec69`, `20261104-090008-0c1af8c6`,
+`20261104-090144-fd273186`), so that commit is not yet measured.
+
+Next steps, in order of expected effect:
+
+1. Draw video frames without the per-frame CPU mipmap downscale of the full
+   1426×1080 frame (12% of the scroll-window sample), as Chromium's
+   compositor samples the uploaded frame on the GPU.
+2. Batch the remaining strip leaves (text, decorations, layer-10 shadows when
+   the stage crosses the strip) into one GPU submission per frame instead of
+   one synchronous round trip per leaf.
+3. Find the 265–320 ms hitches (complete repaints from slide changes and
+   `too-many-changes` frames).
