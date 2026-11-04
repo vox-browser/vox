@@ -1202,3 +1202,42 @@ A scroll-window sample of `40174578…` still shows the complete renderer
 snapshot rebuild from the rendering update (~12% of the main thread), so
 something other than the progress bar's transform also requests it;
 `58dfb55e5` adds `VOX_PAINT_REFRESH_DIAGNOSTICS` to report the trigger.
+
+### The tab-progress rebuild, found (2026-11-04, afternoon)
+
+`VOX_PAINT_REFRESH_DIAGNOSTICS` on the live page showed every one of the
+411 full renderer rebuilds in a scroll window coming from the tab
+progress bar's style update, and the printed values explained why: the
+node retains its style in layout (device) coordinates, while the update
+check compared that with the incoming CSS-pixel style. At device scale 2 a
+`medium` border is 6px retained and 3px incoming, so every update looked
+like a geometry change. Three commits address the path:
+
+- `8798ef036` applies paint style updates to the viewport projection when
+  every updated box is retained and meets the paint interest, instead of
+  first restoring the complete transport.
+- `079e24965` lets unchanged values in new style objects pass the
+  compositor check through their CSS invalidation.
+- `cb4be9fa5` compares the update in layout units before the local and
+  compositor checks (`VOX_DISABLE_LAYOUT_UNIT_STYLE_COMPARISON` is the
+  control). A 2x test fails with the control set.
+
+On bundle `0994c97b…` (receipt `20261104-135552-90689c5a`) the diagnostic
+reports no full rebuild during the scroll window. Unprofiled cohort `rQ`
+(14:07–14:12 MSK, protocol of `rK`, control = the old unit comparison,
+load 19–40, every run and guard exit 0):
+
+| Run | Scroll FPS | Median / p95 / max interval | Over 16.7 ms | Input delivery |
+| --- | ---: | --- | ---: | ---: |
+| control-1 | 39.2 | 22.8 / 48.0 / 273.0 ms | 64% | 53.2 Hz |
+| candidate-1 | 45.5 | 17.0 / 39.0 / 276.5 ms | 52% | 57.5 Hz |
+| control-2 | 41.5 | 21.4 / 44.2 / 257.4 ms | 64% | 52.9 Hz |
+| candidate-2 | 47.7 | 16.6 / 35.6 / 265.0 ms | 50% | 57.3 Hz |
+| control-3 | 33.9 | 25.9 / 47.7 / 262.1 ms | 72% | 50.4 Hz |
+| candidate-3 | 47.7 | 16.9 / 38.0 / 226.9 ms | 54% | 57.1 Hz |
+
+The candidate's median interval now sits at the 60 Hz budget, but half the
+intervals still exceed it and the 227–277 ms maxima are complete repaints
+(slide changes). The 60 FPS goal remains open. The earlier evidence
+directory `Build/vlang-fps-20261103` was removed while the disk was full;
+new evidence is under `Build/vlang-fps-20261104`.
