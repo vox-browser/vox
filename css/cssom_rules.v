@@ -2805,7 +2805,8 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 
 	invalidate_css_style_scope_for_node(list.document_or_shadow_root)
 	if !list.document_or_shadow_root.is_shadow_root()
-		&& list.document_or_shadow_root.entire_subtree_needs_style_update() {
+		&& (list.document_or_shadow_root.entire_subtree_needs_style_update()
+		|| document_awaits_first_style_update(list.document())) {
 		return
 	}
 
@@ -2825,6 +2826,16 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 	}
 	invalidate_root_for_style_sheet_change(list.document_or_shadow_root, invalidation_result, .style_sheet_list_add_sheet, requires_broad_invalidation)
 	invalidate_root_for_keyframes_rules_in_sheet(list.document_or_shadow_root, sheet)
+}
+
+// Elements compute style only after their ancestors, so a document element
+// without computed properties means no element in the document has any. While
+// it still awaits that first update, every node the parser inserted is flagged
+// for it as well. Sheets added then (the initial link and style sheets) have
+// nothing to invalidate; walking the document for each of them is wasted work.
+fn document_awaits_first_style_update(document &dom.Document) bool {
+	root := document.document_element() or { return false }
+	return root.needs_style_update() && root.el_computed_properties() == none
 }
 
 fn (mut list StyleSheetList) insert_sheet_in_tree_order(sheet &CSSStyleSheet) {
