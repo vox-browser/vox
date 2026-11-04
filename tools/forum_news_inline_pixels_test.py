@@ -13,6 +13,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_downloaded_fonts_keep_the_platform_renderers_vertical_metrics(self):
+        self.compare_fixture('downloaded-font-metrics-policy', width=1024, height=768,
+                             settle_seconds=5)
+
     def test_intrinsic_measurements_preserve_nested_button_and_flex_baselines(self):
         self.compare_fixture('intrinsic-button-baseline', width=1024, height=768)
 
