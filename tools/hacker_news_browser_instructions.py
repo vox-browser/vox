@@ -361,6 +361,76 @@ def verified_preexisting_app_pids(process_api, coalition_api, cid, rows, existin
     return excluded
 
 
+def verified_preexisting_descendants(process_api, coalition_api, cid, app, pid,
+                                     rows, existing_processes, excluded):
+    """Authenticate new helpers of an already pinned, unrelated browser.
+
+    Existing interactive windows can spawn renderers during a trial. Require a
+    live ancestry chain to their pinned root, a common separate coalition and
+    stable creation times, executables and argv throughout both observations.
+    An escaped descendant of the measured root remains an ownership failure.
+    """
+    app = app.resolve()
+    by_pid = {row['pid']: row for row in rows}
+    previous = {row['pid']: row for row in existing_processes}
+    name = 'Brave Browser' if app.name == 'Brave Browser.app' else 'Vox'
+    binary = app / 'Contents/MacOS' / name
+
+    def identity(row):
+        try:
+            before = process_api.read(row['pid'])
+            executable = Path(process_api.path(row['pid'])).resolve()
+            coalition = coalition_api.resource_coalition(row['pid'])
+            after = process_api.read(row['pid'])
+        except OSError as error:
+            if error.errno in (2, 3):
+                return None
+            raise
+        if (before.exited or after.exited or before.start != after.start
+                or type(before.start) is not int or before.start <= 0
+                or type(coalition) is not int or coalition <= 0 or coalition == cid
+                or not executable.is_relative_to(app / 'Contents')):
+            return None
+        return dict(row, start_ticks=before.start, resource_coalition=coalition,
+                    executable=str(executable))
+
+    accepted = []
+    for row in rows:
+        if row['pid'] in excluded or row['pid'] == pid:
+            continue
+        chain, seen, current = [], set(), row['pid']
+        while current in by_pid and current not in seen and current != pid:
+            seen.add(current)
+            chain.append(by_pid[current])
+            if current in excluded:
+                break
+            current = by_pid[current].get('parent')
+        anchor = chain[-1] if chain else None
+        old = previous.get(anchor['pid']) if anchor else None
+        if (old is None or anchor['pid'] not in excluded
+                or not anchor['command'].startswith(str(binary) + ' ')):
+            continue
+        identities = [identity(item) for item in chain]
+        if any(item is None for item in identities):
+            continue
+        root = identities[-1]
+        if (root['start_ticks'] != old['start_ticks']
+                or root['resource_coalition'] != old['resource_coalition']
+                or root['executable'] != str(binary)):
+            continue
+        if any(child['resource_coalition'] != root['resource_coalition']
+               or child['start_ticks'] < parent['start_ticks']
+               for child, parent in zip(identities, identities[1:])):
+            continue
+        observed = {item['pid']: item for item in processes()}
+        if (any(observed.get(item['pid']) != item for item in chain)
+                or any(identity(item) != original for item, original in zip(chain, identities))):
+            continue
+        accepted.append(dict(identities[0], preexisting_root_pid=root['pid'],
+                             ancestry=identities[1:]))
+    return accepted
+
+
 def private_capture_marker(command, binary):
     """Recognize an explicit private instance, without guessing from its URL."""
     prefix = str(binary) + ' '
@@ -587,12 +657,16 @@ def membership(api, cid, app, pid, deadline, attempts, browser=None, existing_pr
                          if row['command'].startswith(str(app) + '/Contents/')]
         excluded = verified_preexisting_app_pids(process_api, api, cid, app_processes,
                                                 existing_processes)
+        preexisting_descendants = verified_preexisting_descendants(
+            process_api, api, cid, app, pid, app_processes, existing_processes, excluded)
+        excluded.update(row['pid'] for row in preexisting_descendants)
         concurrent_roots, concurrent_tasks = verified_concurrent_capture_tasks(
             process_api, api, cid, app, pid, app_processes)
         concurrent = {row['pid'] for row in concurrent_tasks}
         excluded |= concurrent
         owned = {row['pid'] for row in app_processes} - excluded
         scan['preexisting_app_pids'] = sorted(excluded - concurrent)
+        scan['preexisting_descendants'] = preexisting_descendants
         scan['concurrent_capture_roots'] = concurrent_roots
         scan['concurrent_capture_tasks'] = concurrent_tasks
         scan['private_app_pids'] = sorted(owned)
