@@ -997,9 +997,211 @@ renderer-fix claim.
 [cold-cache comparison](../Build/slate-final-cold-20261104/summary.json),
 [rendering suite](../Build/slate-contained-clip-20261104/final-inline-suite-results.json).
 
+## WIRED: exact frozen first-frame viewport (2026-11-05)
+
+The original registered WIRED archive, manifest
+`36ce372012656721fb98070682a309d5d7a621607748d9e7a61de3ba44dc213e`,
+is preserved byte for byte in
+[the ordinary-animation archive](../Tests/Browser/Brave/candidates/wired-original-animation-20261105.zip).
+Its reference fails stability: two original GIF responses loop indefinitely.
+All 94 files round-trip exactly. The replacement registered scene uses the
+explicit first-frame policy described below; the original GIF bytes remain
+intact.
+
+Commits `7541a3502` and `eea19aa09` add an explicit, recorded first-frame
+image policy to acquisition and replay. Brave pins its image-animation
+preference and Vox selects frame zero. An archive's policy cannot be silently
+overridden during replay. Commit `6aa870d92` adds a browser regression with
+external and embedded GIFs: its live source, two fresh full-uBO Brave replays,
+and Vox are exact. Optimized and sanitized native GIF-policy checks pass.
+This policy qualifies a static capture; it does not establish motion parity.
+
+WIRED also exposed lost author CSS in the archiver. Chromium serializes a
+CSSOM-inserted `font:var(...)` followed by `font-feature-settings` as empty
+font longhands. The live page retains its intended font, while the serialized
+page falls back to another face. Commit `ec5c6ba77` records original rule
+strings at insertion and verifies their serialized rule identity before
+freezing. Changed or unrecoverable rules fail acquisition. The reduced pending
+font regression has exact source, independent replay and native pixels.
+
+A new first-frame candidate preserves 2,254 inserted author rules. Its source
+and two independent frozen Brave references are exact. On executable
+`4eb56074784f880e3245713097e11e76d50187d1dc779974f94122517c140b04`,
+Vox still differs at **121,964 pixels**. Its manifest is
+`c70c845521149c08f0243e4529b8510581e47f9d7a56d4f3d9bb9ae4f9f90f7b`.
+The separate ordinary-animation candidate fails again: source/replay differs
+at **40,905 pixels**, and independent Brave replays at **44,080 pixels**.
+These archives contain different captured page/media bytes and are not a
+matched renderer comparison with each other. Commit `88671cbeb` preserves all
+99 files of that ordinary-animation candidate byte for byte in
+[its complete archive](../Tests/Browser/Brave/candidates/wired-author-animation-20261104.zip),
+retaining the failed motion workload for follow-up.
+
+Commit `0e2cb622f` preserves the then-unregistered first-frame candidate in
+[a complete archive](../Tests/Browser/Brave/candidates/wired-first-frame-20261104.zip).
+All 101 files round-trip exactly, including the original encoded responses,
+full-uBO provenance and source PNG. Its native result remained unqualified
+until the production checks below.
+
+Commit `649e52860` repairs a seven-pixel excess in the consent description's
+intrinsic height. Recursive flex cleanup discarded descendant text lines;
+enclosing blocks then overlooked saved baselines and synthesized a bottom-edge
+baseline for the inline button. The fix preserves nested flex/grid baseline
+sets and lets enclosing blocks find them. Nine focused layout checks pass in
+both GC modes, with every test call verified. The complete reduced banner's
+description now measures **288 pixels**, and its border box **522.40625 pixels**,
+matching Brave's geometry. These layout checks do not establish browser PNG
+equality. The committed browser regression retains the old bundle's
+**50,384-pixel** failure.
+
+Commit `107b15e10` uses CoreText's `hhea` vertical metrics for downloaded fonts
+under the macOS Chromium policy. WIRED's display font sets `USE_TYPO_METRICS`,
+but CoreText still uses the `hhea` values. The former selection put its
+headlines five pixels too high. Ten focused font checks pass in both GC modes;
+`7fbf7cebf` retains a browser regression using the original encoded font bytes.
+The intrinsic-baseline, downloaded-font and first-frame GIF browser regressions
+all reach **zero differing pixels** in published production browsers.
+
+Commit `74b5f4a3c` waits for decoding of visible, complete images before the
+stable reference check. Two identical PNGs alone did not prove that image decode
+preparation was complete: independent WIRED replays could differ by 28,297
+pixels across four WebP photographs. Three fresh diagnostic replays with
+explicit decoding match the unchanged saved source exactly. The shared capture
+helper now records decode preparation and rejects decode failures. It retains
+the consecutive-capture and independent replay gates. All **122 Node checks
+and 29 Python conformance checks pass**.
+
+The uniform protocol run on executable
+`f7a36b29f87e6b334ac7aa14e177598eeb5e6ec18648f4af26e8c973090ea18c`
+has **zero source/frozen and independent replay differences**, with **678 native
+differences**. Browser and tool inputs remain unchanged throughout that run.
+Thirteen disabled layout-reuse controls leave those 678 pixels unchanged;
+that diagnostic does not establish that every cache path is excluded.
+
+Commit `f73a2514a` corrects physical centering in reversed flex rows under the
+Chromium policy. Mirroring a truncated half-space shifted WIRED's action row
+by 1/64 pixel. Focused tests cover both text directions, normal/reversed rows
+and columns, positive/negative free space, and preserve LibWeb's remainder
+placement; both GC modes pass. On production executable
+`7ce37121784a00da11f4099f0df0fbabc8a68cc48a948625d1b40739457bc552`,
+WIRED drops to **198 native differences**, with source/frozen and independent
+replay still **zero**. All four browser regressions pass, and Hacker News is
+strict zero with a cold cache.
+
+Commit `2fdac92da` truncates Chromium letter- and word-spacing to signed 16.16
+text-run units before adding glyph advances. Five focused checks pass in both
+GC modes, including existing HarfBuzz and optional-ligature controls. The new
+browser fixture retains the previous bundle's 180-pixel failure with exact
+source and independent references. On production executable
+`efbd9bb05ad26dc97a1954934d4be54f0b7f2ffd9ef7eae1c273fa47fd396a2f`,
+WIRED drops to **9 native differences**, with exact source/frozen and independent
+Brave replay checks. All five focused browser regressions are exact. The
+remaining differences are one account-icon pixel and eight photo pixels, each
+with maximum channel error 1. A reduced photo with matching encoded bytes and
+two translucent scrims is exact; the full-page raster geometry still needs
+correction at that checkpoint.
+
+Commit `32b22bf9c` retains root-scroller hit-test metadata when fixed overlays
+cover a scrolling document. The source browser places this sparse photo in the
+1,024-pixel root raster, while Vox had isolated it in a 602-pixel card raster.
+Keeping the correct root tile geometry removes all eight photo differences.
+Sixteen focused controls pass in both GC modes. Production executable
+`c8a0f687…` leaves **one account-icon pixel**, with both reference gates exact.
+Commit `8dfa77247` makes the reduced regression establish its root scroll
+range explicitly; its original expected PNG remains byte-for-byte unchanged.
+The corrected reduced source, both fresh Brave replays and Vox are exact.
+
+Commit `b382d245d` permits a whole opaque header picture to resume after a
+disjoint captured SVG path mask, including retained native ellipse strokes.
+Seven focused predicate tests and 48 wider controls pass in both GC modes.
+However, production validation exposes an incomplete handoff: the native
+opaque-continuation flag was sent only for CSS-effect gaps. The header fixture
+and full WIRED page still differ at **seven pixels** on `809de706…`, with exact
+source and independent replay checks. A separate instrumented diagnostic that
+supplies the missing flag reaches zero on both; instrumentation is not accepted
+as production parity. Commit `3c4617f26` forwards the same proved continuation to the native
+compositor for both gap types. Eight focused tests pass in both GC modes,
+including the actual reduced header's layout and paint ownership. Native shared
+picture, opacity-continuation and large-layer controls pass. Uninstrumented
+production validation uses published executable
+`2e38a43647171308010b7cf1eeffd8aba34170b74400d15b5284b0c5d597318d`,
+receipt `20261105-002844-ad6b35b4`. The immutable preprocessed C contains the
+correct native handoff. All seven focused browser regressions pass. The same
+WIRED archive reaches **zero native, source/frozen and independent replay
+differences**, and Hacker News passes its strict cold-cache control.
+
+Commit `69c948cb3` registers the exact 101 files from first-frame
+candidate `c70c8455…`, including its original source PNG. The candidate's
+source PNG, encoded responses and zero-pixel threshold stayed unchanged
+throughout the rendering fixes. Both the former
+ordinary-animation scene and this first-frame candidate remain available as
+complete ZIP archives. This result covers the frozen guest homepage and its
+consent dialog, in a 1,024×768 document viewport at scale 1 under explicit
+image-animation policy `none`; live scripting,
+scrolling, motion and whole-site behavior remain outside the claim. Both
+registered-fixture cache checks, complete and cold, pass all strict gates at
+zero pixels on the same production executable. The first expanded rendering run completes 130 tests and 136 captures, but
+cannot establish a single-build result: the shared bundle changes from
+`2e38a436…` to `82b6eb4b…` during capture. It records the three earlier image
+failures, a four-pixel Stack Overflow header regression, and one rejected
+capture spanning the bundle replacement. A fresh pinned repeat confirms the
+four header pixels while the fixed-metadata control is exact.
+
+Commit `fa56dfd57` excludes fully clipped boxes from hit-test metadata, using
+the compact paint recorder's existing empty-clip proof. A collapsed hidden label
+had no paint but still extended its header from x=0 to x=-1, changing its raster
+tile origin. Both new baseline metadata assertions fail before the correction.
+All 19 metadata checks, including the three new tests, pass in both GC modes;
+thin nonempty clips remain represented. The actual header's bounds now match
+the control without the hidden label. Production executable
+`aa370dd4a75a63f6db5b233ba4c33732ced7381c1693f3b2c256b216f01e7274`,
+receipt `20261105-004824-8773f951`, contains the correction. All **nine focused
+browser regressions pass at zero pixels**, including the restored accessibility
+header and the fixed-metadata control. Registered WIRED passes every strict
+gate with both complete and cold caches; Hacker News's cold control is also
+exact. Independent Pillow decoding confirms equal RGBA bytes for all nine
+fixtures and all four WIRED source/reference/native images under each cache
+policy.
+
+Two further expanded runs each complete **130 tests / 136 captures**, with
+**132 exact captures**, the same three image failures, and one rejected capture
+spanning a shared bundle replacement. Fixtures, references and tool sources
+remain unchanged; the browser identity changes during each run. The three
+known pixel failures retain their previous counts: AVIF YUV sampling **34,796**,
+Pikabu hoisted image **1,097**, and Pikabu direct composited image **1,097**.
+The interrupted fixed-metadata, single-SVG-opacity and large-layer fixtures all
+pass a fresh focused run with unchanged executable/native-library identities.
+All three broad attempts remain retained; an uninterrupted single-build suite
+result is not established. WIRED's earlier strict complete/cold runs and its
+nine focused regressions remain qualified by their pinned executable above.
+
+The wider intermediate and final layout controls also fail two text-control
+expectations (13.5 versus 13, and radio baseline 16 versus 15). Their attribution
+remains unresolved. The retained broad baseline on `487c7846…` runs 126 tests
+and 132 captures: 128 captures are exact, four fail, and none error. A later
+broad run on `6c57297b…` has 128 tests / 134 captures: 131 exact, three failing,
+no errors, and unchanged browser/fixture/tool inputs. Downloaded fonts now pass;
+AVIF YUV sampling and two Pikabu image cases remain open. No full-suite pass
+is claimed.
+
+[Evidence and qualification](evidence/wired-parity-20261104.json),
+[site captures and checks](evidence/wired-parity-20261104-raw.zip),
+[4 November rendering captures](evidence/wired-rendering-20261104-raw.zip),
+[5 November rendering captures](evidence/wired-rendering-20261105-raw.zip).
+
 ## Run
 
 ```sh
+python3 -m zipfile -e \
+  Tests/Browser/Brave/candidates/wired-first-frame-20261104.zip \
+  Build/wired-first-frame-fixtures-UNIQUE
+python3 tools/forum_news_pixels.py --sites wired \
+  --fixtures Build/wired-first-frame-fixtures-UNIQUE \
+  --extension Build/wired-parity-20261104-inputs/extension/uBlock0.chromium \
+  --checker Build/wired-parity-20261104-inputs/adblock-check \
+  --diff-tool Build/pixel-tools/pixel_diff --cache-policy complete \
+  --output Build/wired-first-frame-replay-UNIQUE
+
 python3 tools/forum_news_pixels.py \
   --sites techcrunch,engadget,theregister,slate,wired \
   --extension Build/engadget-continue-20261103-1002/extension/uBlock0.chromium \
