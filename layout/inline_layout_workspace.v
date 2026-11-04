@@ -112,6 +112,10 @@ fn run_closed_inline_layout(mut state LayoutState, containing_block &BlockContai
 	used.line_boxes_are_shared_ = false
 	result := run_uncached_inline_formatting_context(mut state, containing_block, mut used, mode,
 		space, context)
-	used.line_boxes = own_inline_layout_lines(used.line_boxes)
+	// A measurement-cache hit already borrows immutable, document-owned lines
+	// and glyph runs. Keep that owner and the normal writable-detachment guard.
+	if !used.line_boxes_are_shared_ {
+		used.line_boxes = own_inline_layout_lines(used.line_boxes)
+	}
 	return result
 }
