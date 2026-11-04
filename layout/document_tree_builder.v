@@ -631,6 +631,7 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 		return unsafe { nil }
 	}
 	if previous_result != unsafe { nil } && previous_result.paint_recording_viewport_only {
+		if paint_refresh_diagnostics { eprintln('VOX_PAINT_REFRESH layout=viewport-projection') }
 		result.paint_projection_interest = viewport_paint_interest(document)
 	}
 	if previous_result != unsafe { nil } { result.paint_tree_pool = previous_result.paint_tree_pool }

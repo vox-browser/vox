@@ -98,7 +98,8 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 
 fn refresh_document_paint_tree_if_needed(mut result DocumentLayoutResult) bool {
 	if !result.paint_tree_needs_style_update { return false }
-	if restore_complete_paint_projection(mut result) { return true }
+	if !paint_style_updates_fit_projection(mut result)
+		&& restore_complete_paint_projection(mut result) { return true }
 	if !result.paint_style_update_requires_full_refresh
 		&& !compositor_style_refresh_preserves_box_categories(&result.paint_tree,
 			&result.paint_style_update_compositor_handles) {

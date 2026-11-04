@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import os
 
 // Only the native viewport recording path enables this projection. Layout and
 // DOM paintable geometry remain complete. Any scroll, geometry query, paint
@@ -83,8 +84,33 @@ fn fill_omitted_paint_box(node &Node, state &LayoutState, mut output BlockBox) {
 	}
 }
 
+// Same-binary control: every paint style update restores the full transport.
+const disable_projection_style_updates = os.getenv('VOX_DISABLE_PROJECTION_STYLE_UPDATES') != ''
+
+// A paint style update can apply to the viewport projection when every
+// updated box is retained and meets the paint interest: an omitted subtree's
+// root lies entirely outside it and its descendants are absent. vlang.io
+// updates a progress bar's transform every frame, and restoring the complete
+// transport for it rebuilt the whole document's renderer snapshot.
+fn paint_style_updates_fit_projection(mut result DocumentLayoutResult) bool {
+	if !result.paint_projection_incomplete || result.paint_style_update_requires_full_refresh
+		|| disable_projection_style_updates || result.paint_style_update_handles.len() == 0 {
+		return false
+	}
+	interest := result.paint_projection_interest or { return false }
+	for handle in result.paint_style_update_handles.items {
+		box := result.retained_box_for_layout(voidptr(handle)) or { return false }
+		if !(box.x < interest.x + interest.width && box.x + box.width > interest.x
+			&& box.y < interest.y + interest.height && box.y + box.height > interest.y) {
+			return false
+		}
+	}
+	return true
+}
+
 fn restore_complete_paint_projection(mut result DocumentLayoutResult) bool {
 	if !result.paint_projection_incomplete { return false }
+	if paint_refresh_diagnostics { eprintln('VOX_PAINT_REFRESH reason=restore-projection') }
 	result.paint_projection_interest = none
 	result.paint_projection_incomplete = false
 	viewport := result.document.viewport_rect()
