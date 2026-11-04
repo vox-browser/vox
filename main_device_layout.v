@@ -10,7 +10,8 @@ fn browser_document_supports_device_layout(document &dom.Document) bool {
 	for {
 		node := current or { break }
 		if element := node.as_element() {
-			svg_user_space := element.is_svg_element() && element.local_name() != 'foreignObject'
+			svg_user_space := !retain_css_layout_for_svg && element.is_svg_element()
+				&& element.local_name() != 'foreignObject'
 			if (!element.is_html_element() && !svg_user_space)
 				|| element.local_name() in ['iframe', 'object', 'embed', 'canvas', 'video', 'audio',
 				'foreignObject'] {
@@ -19,6 +20,9 @@ fn browser_document_supports_device_layout(document &dom.Document) bool {
 				// of text elsewhere in the document. Resolve current ancestor styles
 				// just as the preload planner does, including live display changes.
 				if !preload_element_has_no_display_box(element, mut hidden_by_element) {
+					if retain_css_layout_for_svg && element.is_svg_element() {
+						report_archived_svg_layout(document)
+					}
 					return false
 				}
 			}
