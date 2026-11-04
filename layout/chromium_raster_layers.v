@@ -318,10 +318,14 @@ fn chromium_user_scrollable_box(box &BlockBox) bool {
 	node := unsafe { &Node(box.layout_handle) }
 	if node.is_viewport() { return false }
 	computed := node.computed_values()
-	return computed.overflow_x() in [.auto_, .scroll] || computed.overflow_y() in [
-		.auto_,
-		.scroll,
-	]
+	overflow := box.scrollable_overflow or { return false }
+	// Overflow on a hidden axis does not make an inert auto axis scrollable.
+	// Promoting that content changes its raster origin even though it cannot
+	// move independently of the owning compositor layer.
+	return (computed.overflow_x() in [.auto_, .scroll]
+		&& overflow.width > box.width + box.padding.left + box.padding.right)
+		|| (computed.overflow_y() in [.auto_, .scroll]
+			&& overflow.height > box.height + box.padding.top + box.padding.bottom)
 }
 
 fn chromium_scrollport_has_range(box &BlockBox) bool {
