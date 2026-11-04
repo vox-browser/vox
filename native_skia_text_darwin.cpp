@@ -5725,6 +5725,33 @@ extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destinatio
 		if (bounds_paint.canComputeFastBounds())
 			device_bounds.join(bounds_paint.computeFastBounds(transformed_stroke_path.getBounds(), &stroke_bounds));
 	}
+    // A clipped opaque leaf needs the same GPU clip coverage as a complete
+    // SVG picture. Applying Quartz's clip to an already resolved leaf bitmap
+    // attenuates its edge samples again. The batch bridge retains the real
+    // clips and publishes without that second application when fully audited.
+    if (s_chromium_painting && has_fill && !has_stroke && fill_alpha == 255
+        && (!fill_components || fill_components[3] == 1)
+        && !shared_recording_canvas(destination)
+        && svg_batch_has_complete_raster_clips(destination, canvas_width, canvas_height,
+            raster_scale_for_context(destination))) {
+        RasterRegion bounds;
+        if (clipped_raster_region(device_bounds, canvas_width, canvas_height, 2, bounds)) {
+            VoxGraphitePath descriptor {};
+            descriptor.segments = data; descriptor.segment_count = segment_count;
+            descriptor.even_odd = even_odd;
+            descriptor.red = fill_red; descriptor.green = fill_green;
+            descriptor.blue = fill_blue; descriptor.alpha = fill_alpha;
+            descriptor.has_float_color = fill_components != nullptr;
+            if (fill_components) std::copy(fill_components, fill_components + 4, descriptor.float_color);
+            SkMatrix::MakeAll(transform_a, transform_c, transform_e,
+                transform_b, transform_d, transform_f, 0, 0, 1).get9(descriptor.matrix);
+            float identity[] {1, 0, 0, 1, 0, 0};
+            if (ladybird_v_skia_draw_svg_path_batch(destination, &descriptor, 1, identity,
+                    bounds.left - page_x, bounds.top - page_y + scroll_y,
+                    bounds.width(), bounds.height(), page_x, page_y, scroll_y,
+                    canvas_width, canvas_height, opaque_backdrop, nullptr)) return 1;
+        }
+    }
     if (auto* canvas = shared_recording_canvas(destination)) {
         shared_recording_content(destination, device_bounds, page_y, scroll_y);
         canvas->save();

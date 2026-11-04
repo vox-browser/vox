@@ -32,6 +32,7 @@ def main():
                    if not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_'))}
     environment['ASAN_OPTIONS'] = 'detect_leaks=0'
     for name, source in [('svg-clip', 'native_skia_svg_clip_test.cpp'),
+                         ('svg-leaf-clip', 'native_skia_svg_leaf_clip_test.cpp'),
                          ('svg-parent-msaa', 'native_skia_svg_parent_msaa_test.cpp'),
                          ('masked-image', 'native_skia_masked_image_test.cpp'),
                          ('svg-mask-backdrop', 'native_skia_svg_mask_backdrop_test.cpp'),
@@ -43,9 +44,9 @@ def main():
                          ('superellipse-geometry', 'native_chromium_superellipse_test.cpp'),
                          ('contoured-box', 'native_chromium_corner_shape_paint_test.cpp')]:
         executable = output / name
-        command = ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address,undefined',
+        command = ['clang++', '-std=c++20', '-O1', '-g', '-fno-rtti', '-fsanitize=address,undefined',
                    '-fno-omit-frame-pointer']
-        if name in ('svg-clip', 'svg-parent-msaa', 'masked-image', 'svg-mask-backdrop', 'svg-color', 'dashed-border', 'equal-image-clip', 'rounded-underlay-color',
+        if name in ('svg-clip', 'svg-leaf-clip', 'svg-parent-msaa', 'masked-image', 'svg-mask-backdrop', 'svg-color', 'dashed-border', 'equal-image-clip', 'rounded-underlay-color',
                     'uniform-border-clip-layer', 'superellipse-geometry', 'contoured-box'):
             command += ['-x', 'objective-c++', '-I' + str(skia / 'include/skia'),
                         '-I' + str(skia / 'include'), '-L' + str(skia / 'lib'), '-lskia',
