@@ -1,5 +1,46 @@
 # BBC homepage instruction comparison
 
+**Latest grid follow-up:** `7013bdd35` lets committed layout consume owned
+same-pass grid measurements. The root geometry and immediate containing block
+remain exact; a conservative proof can omit more distant ancestor heights when
+the captured subtree has no height-dependent layout. Percentage heights/gaps,
+explicit rows and flex height dependencies retain those checks. Committed misses
+do not populate, reject or evict measurements. All **48 focused executions** pass
+enabled/disabled across default, no-GC and preallocation modes, with executable
+test calls verified. All **306 instruction-tool tests** pass.
+
+Fresh diagnostics on executable
+`70de4b58efdae04001ce2f15504dc8b736eb44f7443bb8f841f11d348766b5e4`
+verify candidate-only reuse before PNG, exact original pixels/content, all 72
+original external scripts, actual native image coverage and normal exits in both
+arms. Acceptance cohort 90 remains **unlaunched** because its host gate fails.
+The separate contended seven-triple diagnostic retains **28,204,977,170 Vox** and
+**29,067,309,376 control** medians: a point difference of 862,332,206 (2.9667%),
+with four paired improvements and three regressions. Conservative control ratio
+**1.0704893742575525** fails, so no robust saving is credited. Brave pair 5 fails
+private-helper coalition ownership and has no selected launch interval or completed
+capture audit. The six available Brave counts are partial diagnostics; their
+best-case partial gate also fails `296326435080 > 158492923893`.
+
+The broader batch runs **501 unique cases / 498 passes** in each default and
+no-GC mode, retaining the same three baseline failures, unchanged inputs and no
+cadence reset. The acceptance history stays at **89 cohorts / 1,975 attempted
+browser trials**, with **42 separate contended diagnostic attempts** across the
+text and grid follow-ups. BBC still does not qualify for the catalog.
+
+At archival time, shared cleanup has removed this measured build's compiler
+receipt and generated C; the exact deletion time is unknown. Saved source-proof
+hashes and per-trial runtime fingerprints remain, but complete compiler inputs
+cannot now be independently reviewed. A reconstruction attempt does not match
+the original hash and earns no recovery credit. Tool fix `c42c1eede` preserves
+compiler JSON and preprocessed outputs before future launches, deduplicating shared
+controls and pinning the preserved copies. It leaves browser bundles, native
+libraries and repository tools in place. All **310 tool tests** and a separate
+integration on newer build `b8701f74` pass. That newer source is not substituted
+for the missing measured source. See the
+[grid ledger](performance/bbc-committed-grid-20261104.json) and
+[raw evidence](performance/raw/bbc-committed-grid-20261104.tar.gz).
+
 **Latest optimization follow-up:** committed layout can consume exact same-pass
 text measurements (`174b38300`), preserving the full geometry key, input checks,
 document ownership and copy-on-write. It does not populate or evict measurements
