@@ -12,6 +12,9 @@ fn chromium_transform_needs_surface(node &Node) bool {
 		return false
 	}
 	computed := node.computed_values()
+	// Backdrop filters are compositor effects in Blink, including a blur over
+	// a uniform backdrop. Their foreground picture has its own raster origin.
+	if computed.backdrop_filter().has_filters() { return true }
 	animation := chromium_compositor_animation_properties(node)
 	if animation.opacity || (animation.transform && node.is_transformable()) { return true }
 	if chromium_will_change_transform_needs_surface(node) {
