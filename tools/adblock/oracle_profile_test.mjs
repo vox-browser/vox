@@ -5,6 +5,21 @@ import path from 'node:path';
 import test from 'node:test';
 import { createOracleProfile, saveClosedOracleProfile } from './oracle_profile.mjs';
 
+test('image animation policy is pinned in fresh and copied profiles without changing the template', async t => {
+    const template = await createOracleProfile('', {imageAnimationPolicy:'none'});
+    const profiles = [template];
+    t.after(()=>Promise.all(profiles.map(p=>fs.rm(p,{recursive:true,force:true}))));
+    const prefs = p=>fs.readFile(path.join(p,'Default/Preferences'),'utf8').then(JSON.parse);
+    assert.equal((await prefs(template)).settings.a11y.animation_policy,'none');
+    const normal = await createOracleProfile(template);
+    const still = await createOracleProfile(template,{imageAnimationPolicy:'none'});
+    profiles.push(normal,still);
+    assert.equal((await prefs(normal)).settings.a11y.animation_policy,'allowed');
+    assert.equal((await prefs(still)).settings.a11y.animation_policy,'none');
+    assert.equal((await prefs(template)).settings.a11y.animation_policy,'none');
+    await assert.rejects(createOracleProfile('',{imageAnimationPolicy:'skip'}),/Unsupported/);
+});
+
 test('a closed warm profile retains encoded cache without overwriting another trial', async t => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vox-oracle-warm-'));
     t.after(() => fs.rm(root, {recursive: true, force: true}));

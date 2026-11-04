@@ -86,6 +86,9 @@ def seal_capture(capture, archive, report_file):
     """Import only bytes actually captured by full uBO; never fetch a gap."""
     report = read_json(report_file)
     check_filters(report)
+    animation_policy = report.get('oracle', {}).get('image_animation_policy', 'allowed')
+    if animation_policy not in ('allowed', 'none'):
+        raise RuntimeError('Unsupported source image animation policy')
     metadata = read_json(capture / 'archive.json')
     if metadata['url'] != report['navigation']['url']:
         raise RuntimeError('Capture and navigation identities differ')
@@ -119,6 +122,7 @@ def seal_capture(capture, archive, report_file):
     focus = captured_focus_state(metadata)
     write_json(archive / 'manifest.json', dict(version=1, url=metadata['url'],
         **(dict(focus_state=focus) if focus else {}),
+        **(dict(image_animation_policy=animation_policy) if animation_policy != 'allowed' else {}),
         source_document_request_method=metadata.get('document_request_method', 'GET'),
         sealed_unix=time.time(), responses=entries, workload='Frozen guest DOM; scripts removed; original resource bytes',
         live_png_sha256=digest((archive / 'live.png').read_bytes()),
@@ -173,7 +177,10 @@ def brave_identity(binary):
     return identity
 
 
-def native_capture_environment(profile, certificate, cache, audit, config, requests, settle):
+def native_capture_environment(profile, certificate, cache, audit, config, requests, settle,
+                               image_animation_policy='allowed'):
+    if image_animation_policy not in ('allowed', 'none'):
+        raise ValueError('Unsupported image animation policy')
     environment = {k: v for k, v in os.environ.items()
                    if not k.lower().endswith('_proxy') and not k.startswith(('VOX_', 'LADYBIRD_', 'DYLD_', 'GC_'))}
     # Compare the same full-uBO policy: Vox's additional banner blocker would
@@ -184,7 +191,20 @@ def native_capture_environment(profile, certificate, cache, audit, config, reque
         VOX_TEST_WINDOW='1', VOX_CAPTURE_AUDIT_PATH=str(audit),
         VOX_CAPTURE_AUDIT_CONFIG=str(config), VOX_ADBLOCK_LOG=str(requests),
         VOX_BLOCK_COOKIE_BANNERS='0')
+    if image_animation_policy == 'none':
+        environment['VOX_CAPTURE_IMAGE_ANIMATION_POLICY'] = 'none'
     return environment
+
+
+def archive_animation_policy(manifest, report, requested=None):
+    policy = manifest.get('image_animation_policy', 'allowed')
+    if policy not in ('allowed', 'none'):
+        raise RuntimeError('Unsupported archive image animation policy')
+    if policy != report.get('oracle', {}).get('image_animation_policy', 'allowed'):
+        raise RuntimeError('Source and archive image animation policies differ')
+    if requested is not None and requested != policy:
+        raise RuntimeError('Requested animation policy differs from the archive; capture a new candidate')
+    return policy
 
 
 def check_native(audit, reference):
@@ -236,6 +256,8 @@ def oracle_command(site, args):
                '--checker', str(args.checker), '--brave', str(args.brave), '--settle', str(args.settle)]
     if args.profile_template:
         command.extend(['--profile-template', str(args.profile_template)])
+    if getattr(args, 'image_animation_policy', None):
+        command.extend(['--image-animation-policy', args.image_animation_policy])
     return command
 
 
@@ -340,6 +362,10 @@ def capture_case(site, args, output):
         raise RuntimeError('Capture provenance changed')
     source_report = read_json(provenance)
     check_filters(source_report)
+    animation_policy = archive_animation_policy(manifest, source_report,
+                                                getattr(args, 'image_animation_policy', None))
+    if '--image-animation-policy' not in common:
+        common.extend(['--image-animation-policy', animation_policy])
     current = read_json(REPO / 'adblock/lists/manifest.json')
     if (source_report['engine'] != current['engine']
             or source_report['lists'] != [{k: entry[k] for k in ['name', 'sha256']} for entry in current['lists']]):
@@ -377,7 +403,7 @@ def capture_case(site, args, output):
         audit = output / 'vox.audit.json'
         actual = output / 'vox.png'
         environment = native_capture_environment(profile, replay.ready['ca'], output / 'vox-cache',
-            audit, config, requests, args.settle)
+            audit, config, requests, args.settle, animation_policy)
         if focus:
             environment.update(VOX_CAPTURE_FOCUS_ID=focus['id'], VOX_CAPTURE_DOCUMENT_ACTIVE='1')
         before = executable_identity(args.vox)
@@ -401,6 +427,7 @@ def capture_case(site, args, output):
         write_json(output / 'pixels.json', verdict)
         status = pixel_status(verdict, replay_verdict, repeat_verdict)
         return dict(status=status,
+                    image_animation_policy=animation_policy,
                     cache_policy=cache_policy,
                     different_pixels=verdict['different_pixels'], artifacts=str(output),
                     live_to_frozen_different_pixels=replay_verdict['different_pixels'],
@@ -427,6 +454,8 @@ def main():
     parser.add_argument('--vox', type=Path, default=VOX)
     parser.add_argument('--cache-policy', choices=['cold', 'complete'], default='cold',
                         help='Use an empty native cache, or warm live capture and both replay browsers in discarded processes first')
+    parser.add_argument('--image-animation-policy', choices=['allowed', 'none'],
+                        help='Record a matched image animation preference when acquiring a new archive; replay defaults to its recorded policy')
     parser.add_argument('--diff-tool', type=Path)
     parser.add_argument('--audit-config', type=Path, help='Native capture selectors for diagnosing a mismatch; include body and images')
     parser.add_argument('--settle', type=float, default=5)

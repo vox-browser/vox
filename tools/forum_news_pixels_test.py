@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from forum_news_pixels import (CATALOG, VOX_BUNDLED_ADBLOCK_ASSETS, VOX_RUNTIME_ASSETS, brave_identity, capture_replay_references, capture_site_archive, check_filters, check_native,
-                               executable_identity,
+                               executable_identity, archive_animation_policy,
                                captured_focus_state,
                                native_capture_environment, oracle_command, pixel_status, run_case, seal_capture,
                                warm_native_cache, warm_oracle_cache, write_json)
@@ -14,6 +14,30 @@ from page_archive import digest, load_archive
 
 
 class ForumNewsPixelTests(unittest.TestCase):
+    def test_animation_policy_requires_matching_source_provenance(self):
+        report = dict(oracle=dict(image_animation_policy='none'))
+        self.assertEqual(archive_animation_policy({}, {}), 'allowed')
+        self.assertEqual(archive_animation_policy(dict(image_animation_policy='none'), report), 'none')
+        with self.assertRaisesRegex(RuntimeError, 'Source and archive'):
+            archive_animation_policy(dict(image_animation_policy='none'), {})
+        with self.assertRaisesRegex(RuntimeError, 'capture a new candidate'):
+            archive_animation_policy({}, {}, 'none')
+        with self.assertRaisesRegex(RuntimeError, 'Unsupported'):
+            archive_animation_policy(dict(image_animation_policy='skip'), {})
+
+    def test_static_capture_forwards_an_explicit_policy_to_both_browsers(self):
+        args = SimpleNamespace(extension=Path('/extension'), checker=Path('/checker'),
+                               brave=Path('/brave'), settle=5, profile_template=None,
+                               image_animation_policy='none')
+        command = oracle_command(dict(url='https://news.example/'), args)
+        self.assertEqual(command[command.index('--image-animation-policy')+1], 'none')
+        env = native_capture_environment(Path('/profile'), Path('/ca'), Path('/cache'),
+            Path('/audit'), Path('/config'), Path('/requests'), 5, 'none')
+        self.assertEqual(env['VOX_CAPTURE_IMAGE_ANIMATION_POLICY'], 'none')
+        env = native_capture_environment(Path('/profile'), Path('/ca'), Path('/cache'),
+            Path('/audit'), Path('/config'), Path('/requests'), 5)
+        self.assertNotIn('VOX_CAPTURE_IMAGE_ANIMATION_POLICY', env)
+
     def test_source_focus_is_retained_as_interaction_metadata(self):
         self.assertIsNone(captured_focus_state({}))
         self.assertIsNone(captured_focus_state(dict(active_element=dict(tag='BODY',id='',focus_visible=False))))
@@ -483,6 +507,15 @@ class ForumNewsPixelTests(unittest.TestCase):
             self.assertIn(dict(name='Content-Security-Policy', value="default-src 'self'"), entry['headers'])
             self.assertEqual(manifest['capture_report_sha256'], digest((archive / 'capture.json').read_bytes()))
             self.assertEqual(manifest['live_png_sha256'], digest((archive / 'live.png').read_bytes()))
+            static_report = self.report()
+            static_report['oracle'] = dict(image_animation_policy='none')
+            write_json(report, static_report)
+            static_archive = root / 'static-archive'
+            seal_capture(capture, static_archive, report)
+            static_manifest = load_archive(static_archive)
+            self.assertEqual(static_manifest['image_animation_policy'], 'none')
+            self.assertEqual(archive_animation_policy(static_manifest, static_report), 'none')
+            self.assertEqual((static_archive / 'bodies' / entry['sha256']).read_bytes(), html)
             with self.assertRaises(FileExistsError):
                 seal_capture(capture, archive, report)
             (archive / 'bodies' / entry['sha256']).write_bytes(b'changed')

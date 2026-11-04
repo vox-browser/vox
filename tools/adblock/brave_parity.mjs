@@ -35,6 +35,7 @@ const options = {
     'cached-response-headers': '',
     'focus-state': '',
     'profile-template': '',
+    'image-animation-policy': 'allowed',
     'profile-output': '',
     'pixel-reference': '',
     'proxy-server': '',
@@ -159,7 +160,8 @@ const lists = await Promise.all(manifest.lists.map(async entry => {
 }));
 // Default to a clean profile; an explicit prepared template is copied into a
 // temporary directory. Neither mode launches against the source profile.
-const profile = await createOracleProfile(options['profile-template']);
+const profile = await createOracleProfile(options['profile-template'],
+    {imageAnimationPolicy:options['image-animation-policy']});
 const browser = spawn(options.brave, [
     '--headless=new', '--no-first-run', '--no-default-browser-check', '--disable-sync',
     '--disable-background-networking', '--remote-debugging-port=0', '--remote-allow-origins=*',
@@ -425,7 +427,7 @@ try {
         ...(archive ? {archive} : {}),
         visibility,
         input: recordedVox ? { mode: 'recorded-vox-network', file: path.resolve(options['vox-log']) } : requestedCorpus ? { mode: 'fixture-request-stream', file: path.resolve(options.requests) } : { mode: 'live-brave-network' },
-        oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'repository-selected lists; identical snapshots; empty user filters', profile: options['profile-template'] ? { kind: 'temporary-copy', template: path.resolve(options['profile-template']) } : { kind: 'fresh-temporary' } },
+        oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'repository-selected lists; identical snapshots; empty user filters', image_animation_policy:options['image-animation-policy'], profile: options['profile-template'] ? { kind: 'temporary-copy', template: path.resolve(options['profile-template']) } : { kind: 'fresh-temporary' } },
         engine: manifest.engine,
         lists: manifest.lists.map(({ name, sha256 }) => ({ name, sha256 })),
         list_identity:listIdentity,

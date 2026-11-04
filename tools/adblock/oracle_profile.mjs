@@ -21,7 +21,8 @@ export async function saveClosedOracleProfile(profile, destination) {
 
 // Copy a closed, explicitly supplied prepared profile. Never launch Brave
 // against the template or retain its process locks/debugging endpoint.
-export async function createOracleProfile(template = '') {
+export async function createOracleProfile(template = '', {imageAnimationPolicy = 'allowed'} = {}) {
+    if (!['allowed','none'].includes(imageAnimationPolicy)) throw Error('Unsupported image animation policy');
     const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'vox-adblock-parity-'));
     try {
         if (template) {
@@ -42,6 +43,11 @@ export async function createOracleProfile(template = '') {
         preferences.profile ??= {};
         preferences.profile.default_content_setting_values ??= {};
         preferences.profile.default_content_setting_values.braveShields = 2;
+        // Chromium's accessibility preference controls decoded image animation.
+        // Pin it explicitly so a prepared profile cannot change capture policy.
+        preferences.settings ??= {};
+        preferences.settings.a11y ??= {};
+        preferences.settings.a11y.animation_policy = imageAnimationPolicy;
         // Restore encoded HTTP/extension state, with no unmeasured page
         // navigation before the oracle target is sized and filtering is ready.
         // A restored tab can populate the shared image decode cache first.
