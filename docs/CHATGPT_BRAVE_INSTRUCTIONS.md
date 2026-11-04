@@ -1430,7 +1430,8 @@ The initial zeroed fixed-array vector descriptors produced wrong buckets and
 hit the 3 GiB runtime guard; explicit typed vector initialization fixes that
 attempt. Its actual failure and source remain in evidence.
 
-The final C-`-O2` preallocation component uses the captured HTML's 36-element
+The final C-`-O2` preallocation component uses V's default source conditions,
+the staged production allocator and the captured HTML's 36-element
 deepest chain and all 833 elements. Each measured pass resets buckets, balances
 push/pop and checks every scalar hash against an independent reference. Input
 construction, launch and teardown are excluded. Control/candidate/candidate/
@@ -1448,3 +1449,43 @@ links complete final and prototype observations, original failures, source
 proofs, diagnostics and guards. These component counts provide no browser
 instruction credit. A separate final production diagnostic and matched page
 comparison are required; the requested 5% Brave advantage remains unmet.
+
+#### Completed ancestor-cache production comparison
+
+The first production preflight rejects parenthesized shift operands in the
+generated C, before any browser launches. A corrected nonblocking lease attempt
+finds the build lock busy and exits 75 without collecting observations. The
+next attempt uses the available completed bundle immediately: all four
+diagnostic captures pass and verify a class-cache hit, but publication changes
+the bundle during the matched phase. Its partial cohort is rejected, retained
+and given no instruction credit.
+
+After publication, a nonblocking lease pins completed executable
+`1bf1abc80e1129b5ed9a2a731288de2a109921c9341f160a43145d960a04856f`
+across the final diagnostic and unprofiled comparison, then releases it. No
+bundle is copied and no separate build request is enqueued. All four diagnostic
+and eight unprofiled captures pass full content, JavaScriptCore bootstrap,
+exact reference pixels and browser/kernel exits. The marker occurs only with
+class reuse enabled.
+
+Scalar Vox counts are **33,092,910,315** and **32,395,850,447**, versus candidate
+counts **32,154,424,930** and **32,969,935,129**. Medians are
+**32,744,380,381** and **32,562,180,029.5**, an observed **0.556%** reduction.
+Ranges overlap substantially: the conservative separation is **−574,084,682**.
+No whole-page saving is credited. Frame checkpoints are 476, 489, 472 and 487;
+box-building checkpoints are 11, 10, 11 and 11. Starting loads range from 3.22
+to 4.61 on 18 CPUs. The work and host variation prevent a page-level attribution
+from this small cohort.
+
+The guard exits zero, adopts 42 process identities and observes peak aggregate
+RSS of 1,925,365,760 bytes. Both canonical drivers retain exit 1 because the
+Brave target and seven-pair minimum are unmet; validation controllers exit zero.
+The highest candidate count divided by the lowest Brave lower bound is 1.744,
+above the requested 0.95. No new broad checkpoint is due, and the broad cadence
+remains zero.
+
+The [completed ancestor-cache production receipt](performance/chatgpt-ancestor-production-20261105.json)
+links every attempt, raw counter, PNG, audit, source proof, guard and identity
+change. The original author scripts, fixture, five-second settle and references
+remain unchanged, with no new live download. This frozen-page diagnostic
+establishes neither the requested 5% Brave advantage nor live interaction parity.

@@ -1,0 +1,493 @@
+{
+  "version": 1,
+  "implementation_commits": [
+    "bad13c8f1",
+    "e768f1d1f"
+  ],
+  "production_executable_sha256": "1bf1abc80e1129b5ed9a2a731288de2a109921c9341f160a43145d960a04856f",
+  "scope": "Fresh canonical production browser, original author scripts, frozen single SOCKS capture, launch through encoded document PNG; ancestor hash cache control/candidate/candidate/control comparison. Four pairs are below seven-pair acceptance.",
+  "source_and_runtime_path_verified": true,
+  "diagnostic_captures": 4,
+  "unprofiled_captures": 8,
+  "all_pixels_content_bootstrap_browser_and_kernel_exits_pass": true,
+  "benchmark_driver_exits": {
+    "diagnostic": 1,
+    "matched": 1
+  },
+  "driver_qualification": "Both canonical drivers exit 1 because the Brave target and seven-pair minimum are unmet. Validation controllers and the enclosing guard exit 0.",
+  "control": [
+    {
+      "lower": 33092910315,
+      "upper": 33092910315
+    },
+    {
+      "lower": 32395850447,
+      "upper": 32395850447
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 32154424930,
+      "upper": 32154424930
+    },
+    {
+      "lower": 32969935129,
+      "upper": 32969935129
+    }
+  ],
+  "control_median": 32744380381.0,
+  "candidate_median": 32562180029.5,
+  "median_reduction_fraction": 0.005564324301757795,
+  "conservative_observed_page_instruction_reduction": -574084682,
+  "page_instruction_credit": 0,
+  "broad_checkpoint_required": false,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "work": [
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 476,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          3.21875,
+          4.5556640625,
+          7.05712890625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          3.361328125,
+          4.56298828125,
+          7.044921875
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 489,
+      "build_boxes_checkpoints": 10,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          4.025390625,
+          4.62548828125,
+          7.00830078125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          3.86279296875,
+          4.58154296875,
+          6.978515625
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 472,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          3.71337890625,
+          4.53857421875,
+          6.94921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          3.65625,
+          4.5126953125,
+          6.92578125
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 487,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          4.6083984375,
+          4.69873046875,
+          6.9375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          4.3193359375,
+          4.63720703125,
+          6.90234375
+        ]
+      }
+    }
+  ],
+  "contention": "18 CPUs; starting loads 3.22\u20134.61. Frame checkpoints vary 472\u2013489 and one candidate records ten rather than eleven box-building checkpoints. Ranges overlap; no full-page saving or isolated rendering attribution.",
+  "guard": {
+    "exit": 0,
+    "adopted_processes": 42,
+    "peak_rss_bytes": 1925365760,
+    "limit_bytes": 12884901888
+  },
+  "publication_lease": {
+    "released": true,
+    "identity_stable": true,
+    "woke_existing_request": false,
+    "new_build_requests_enqueued": 0
+  },
+  "earlier_attempts": {
+    "preflight_rejection": {
+      "lease": {
+        "started_unix": 1793829521.5360188,
+        "lock": "/Users/alex/code/vox2/Build/production-build/build.lock",
+        "acquired": true,
+        "scope": "Nonblocking publication lease across one diagnostic and one matched cohort; no build enqueued. Existing queued requests are woken on release.",
+        "rows": [
+          {
+            "name": "diagnostic",
+            "command": [
+              "/Library/Developer/CommandLineTools/usr/bin/python3",
+              "/Users/alex/code/vox2/Build/chatgpt-ancestor-production-20261105-r1/diagnostic/page.py"
+            ],
+            "exit": 1
+          }
+        ],
+        "request_before": {
+          "head": "e768f1d1f5f6e7727a01c8ee040edefaac94cb17",
+          "id": "523ae6d901ed4687bb2a40489109ced1"
+        },
+        "status": "rejected",
+        "production_before": {
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "e6f36b362a6b7a4448fd69f0203f5aaa0d90ced1608907e39f81db10d7941e54",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-005414-4e2d4f8d/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "b3a2e702235fd08355dbbf44e80becb6873277e5",
+            "repository_sha256": "7c37e81c374c781be0b430630fd49ea46179586f6b921ec352de2225e3ee10e3"
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "e768f1d1f5f6e7727a01c8ee040edefaac94cb17",
+            "repository_sha256": "d8ce0f7051b7cd845d6f9a28d5afd98c9c0086d49aa6376c5b7e7cd89064480c"
+          },
+          "request": {
+            "head": "b3a2e702235fd08355dbbf44e80becb6873277e5",
+            "id": "8f2e92cdd18e4b318416fa54b677d0c0"
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "b3a2e702235fd08355dbbf44e80becb6873277e5",
+            "repository_sha256": "bf1c7f9ab13737359668b0ea8756ed3fc9dc8bb6d696df35004f45786003f61d"
+          }
+        },
+        "production_after": {
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "e6f36b362a6b7a4448fd69f0203f5aaa0d90ced1608907e39f81db10d7941e54",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-005414-4e2d4f8d/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "b3a2e702235fd08355dbbf44e80becb6873277e5",
+            "repository_sha256": "7c37e81c374c781be0b430630fd49ea46179586f6b921ec352de2225e3ee10e3"
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "e768f1d1f5f6e7727a01c8ee040edefaac94cb17",
+            "repository_sha256": "d8ce0f7051b7cd845d6f9a28d5afd98c9c0086d49aa6376c5b7e7cd89064480c"
+          },
+          "request": {
+            "head": "b3a2e702235fd08355dbbf44e80becb6873277e5",
+            "id": "8f2e92cdd18e4b318416fa54b677d0c0"
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "b3a2e702235fd08355dbbf44e80becb6873277e5",
+            "repository_sha256": "bf1c7f9ab13737359668b0ea8756ed3fc9dc8bb6d696df35004f45786003f61d"
+          }
+        },
+        "request_after": {
+          "head": "e768f1d1f5f6e7727a01c8ee040edefaac94cb17",
+          "id": "523ae6d901ed4687bb2a40489109ced1"
+        },
+        "woke_existing_request": true,
+        "finished_unix": 1793829522.885801
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-ancestor-production-20261105-r1/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 235175936,
+        "elapsed_seconds": 1.454859125,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "busy_lock": {
+      "lease": {
+        "started_unix": 1793829639.990093,
+        "lock": "/Users/alex/code/vox2/Build/production-build/build.lock",
+        "acquired": false,
+        "scope": "Nonblocking publication lease across one diagnostic and one matched cohort; no build enqueued. Existing queued requests are woken on release.",
+        "rows": [],
+        "status": "busy",
+        "finished_unix": 1793829639.990149
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-ancestor-production-20261105-r2/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 75,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3457024,
+        "elapsed_seconds": 0.162734416,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "available_bundle_rejected": {
+      "controller": {
+        "started_unix": 1793829701.3660128,
+        "scope": "Use latest completed canonical bundle while the shared build lock is busy. No publication lease, copied bundle, queued build or waiting for compilation. Per-capture input fingerprints reject replacement.",
+        "rows": [
+          {
+            "phase": "diagnostic",
+            "command": [
+              "/Library/Developer/CommandLineTools/usr/bin/python3",
+              "/Users/alex/code/vox2/Build/chatgpt-ancestor-production-20261105-r3/diagnostic/page.py"
+            ],
+            "exit": 0
+          },
+          {
+            "phase": "matched",
+            "command": [
+              "/Library/Developer/CommandLineTools/usr/bin/python3",
+              "/Users/alex/code/vox2/Build/chatgpt-ancestor-production-20261105-r3/matched/page.py"
+            ],
+            "exit": 1
+          }
+        ],
+        "status": "rejected",
+        "production_before": {
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "e6f36b362a6b7a4448fd69f0203f5aaa0d90ced1608907e39f81db10d7941e54",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-005414-4e2d4f8d/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "b3a2e702235fd08355dbbf44e80becb6873277e5",
+            "repository_sha256": "7c37e81c374c781be0b430630fd49ea46179586f6b921ec352de2225e3ee10e3"
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "e768f1d1f5f6e7727a01c8ee040edefaac94cb17",
+            "repository_sha256": "d8ce0f7051b7cd845d6f9a28d5afd98c9c0086d49aa6376c5b7e7cd89064480c"
+          },
+          "request": {
+            "head": "b3a2e702235fd08355dbbf44e80becb6873277e5",
+            "id": "8f2e92cdd18e4b318416fa54b677d0c0"
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "b3a2e702235fd08355dbbf44e80becb6873277e5",
+            "repository_sha256": "bf1c7f9ab13737359668b0ea8756ed3fc9dc8bb6d696df35004f45786003f61d"
+          }
+        },
+        "finished_unix": 1793829778.068367,
+        "production_after": {
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "1bf1abc80e1129b5ed9a2a731288de2a109921c9341f160a43145d960a04856f",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-005844-f81d87c5/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "e768f1d1f5f6e7727a01c8ee040edefaac94cb17",
+            "repository_sha256": "2ec18f4964859edcca050925a8d8332a543700ed1605a20335ea8c30b579c286"
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "e768f1d1f5f6e7727a01c8ee040edefaac94cb17",
+            "repository_sha256": "89afebc8dbf1068df515f46beec99a79f4d14e9b3507ebba3cdfd4b95b372a6a"
+          },
+          "request": {
+            "head": "e768f1d1f5f6e7727a01c8ee040edefaac94cb17",
+            "id": "523ae6d901ed4687bb2a40489109ced1"
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "1e9ed158c2f0ad836acc5b31bf8a3758e84b0288c19240efe11a94cad49f10b0",
+            "dirty": true,
+            "head": "e768f1d1f5f6e7727a01c8ee040edefaac94cb17",
+            "repository_sha256": "2ec18f4964859edcca050925a8d8332a543700ed1605a20335ea8c30b579c286"
+          }
+        }
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-ancestor-production-20261105-r3/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "46539": "Thu Nov  5 01:01:45 2026    ",
+          "46542": "Thu Nov  5 01:01:45 2026    ",
+          "46939": "Thu Nov  5 01:01:53 2026    ",
+          "46943": "Thu Nov  5 01:01:53 2026    ",
+          "46951": "Thu Nov  5 01:01:53 2026    ",
+          "46952": "Thu Nov  5 01:01:53 2026    ",
+          "46953": "Thu Nov  5 01:01:53 2026    ",
+          "47210": "Thu Nov  5 01:02:02 2026    ",
+          "47213": "Thu Nov  5 01:02:02 2026    ",
+          "47218": "Thu Nov  5 01:02:02 2026    ",
+          "47219": "Thu Nov  5 01:02:02 2026    ",
+          "47220": "Thu Nov  5 01:02:02 2026    ",
+          "47505": "Thu Nov  5 01:02:11 2026    ",
+          "47507": "Thu Nov  5 01:02:11 2026    ",
+          "48325": "Thu Nov  5 01:02:23 2026    ",
+          "48327": "Thu Nov  5 01:02:23 2026    ",
+          "48991": "Thu Nov  5 01:02:31 2026    ",
+          "48998": "Thu Nov  5 01:02:32 2026    ",
+          "49008": "Thu Nov  5 01:02:32 2026    ",
+          "49009": "Thu Nov  5 01:02:32 2026    ",
+          "49011": "Thu Nov  5 01:02:32 2026    ",
+          "49739": "Thu Nov  5 01:02:40 2026    ",
+          "49745": "Thu Nov  5 01:02:41 2026    ",
+          "49755": "Thu Nov  5 01:02:41 2026    ",
+          "49756": "Thu Nov  5 01:02:41 2026    ",
+          "49758": "Thu Nov  5 01:02:41 2026    ",
+          "50428": "Thu Nov  5 01:02:49 2026    ",
+          "50435": "Thu Nov  5 01:02:49 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1914093568,
+        "elapsed_seconds": 76.768957,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "completed_diagnostic_captures": 4,
+      "partial_unprofiled_observations": 4,
+      "changed_inputs": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox"
+      ],
+      "page_instruction_credit": 0,
+      "qualification": "Used the latest completed bundle while publication lock was busy; publication changed it during capture. Complete diagnostic and all partial raw observations remain retained and unpooled."
+    }
+  },
+  "brave_intervals": [
+    {
+      "lower": 19002930441,
+      "upper": 19019247153
+    },
+    {
+      "lower": 20167031174,
+      "upper": 20215116851
+    },
+    {
+      "lower": 18902362624,
+      "upper": 18930831086
+    },
+    {
+      "lower": 19310969914,
+      "upper": 19339398533
+    }
+  ],
+  "candidate_worst_over_best_brave": 1.7442229728012226,
+  "observed_brave_inequality": false,
+  "acceptance": false,
+  "target_fraction": "0.95",
+  "qualification": "Four alternating Vox/Brave pairs, two observations per Vox variant, below seven-pair acceptance. Frozen single SOCKS capture, original author bytes, JSC bootstrap, private profiles/caches, viewport/scale, five-second settle and references unchanged. OS filesystem/shader caches retained. No new download, no live interaction claim, and no requested 5% Brave advantage.",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-ancestor-production-20261105-evidence.zip",
+      "sha256": "707485427af29a4fd80d4977945b3887441896e1c1832895b18bd736f4569252",
+      "bytes": 817801
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r1-lease-20261105.json",
+      "sha256": "3932904cdbc49d0046dd2f52eb150362dd477af7db3fb8e592008ebf218d81db",
+      "bytes": 3648
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r2-lease-20261105.json",
+      "sha256": "f34c9100cdb08a7c5fd05f88c0b0ba8738c7ccfe05e96995f900672e79391cbf",
+      "bytes": 358
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r4-lease-20261105.json",
+      "sha256": "e683c16987c027e512f1cde0ec13a6f85270dad18524587b856623e6b7ddb635",
+      "bytes": 3941
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r3-controller-20261105.json",
+      "sha256": "768a55695b21ddae06fb2a05e7d383759d19e709ef5afd259e4991e8b1b20793",
+      "bytes": 3574
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r3-diagnostic-20261105.json",
+      "sha256": "43004cebb45d696890126aad5a3cc674bbc31351f1b0b7feb383e1350a3c5062",
+      "bytes": 1787872
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r3-diagnostic-20261105-evidence.zip",
+      "sha256": "a129aabdb462252b26a65de760512689fa61ed61340df1890e8aea7505a2df72",
+      "bytes": 1328392
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r3-matched-20261105.json",
+      "sha256": "afffc663304730d7683ff988766938810d4af35742fdb74654212400cd414ec7",
+      "bytes": 1814579
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r3-matched-20261105-evidence.zip",
+      "sha256": "0e7872ca2c39b3705fe7810e8130b9ded144cc7b1ac44f2c66aa09d148dfc1d6",
+      "bytes": 1291437
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r4-diagnostic-20261105.json",
+      "sha256": "6fd0e19e9921ee7fa3bc0ec6546424947376565b8d71e69bf174ea037bc371b2",
+      "bytes": 1796400
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r4-diagnostic-20261105-evidence.zip",
+      "sha256": "acd8d4e9b808f84a98f87e81d487ed448a08928fecd7f29f93a6e59b8db130c5",
+      "bytes": 1330573
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r4-matched-20261105.json",
+      "sha256": "995e304721481a9042ca5bb2b0b15c2c48a0cc1d9c113d1024af41327e2ab4e9",
+      "bytes": 2723376
+    },
+    {
+      "path": "docs/performance/chatgpt-ancestor-cache-r4-matched-20261105-evidence.zip",
+      "sha256": "8bc600948b52715c4ae45f6be8a3417952fc7600a8f27530b30fca270d82ebbc",
+      "bytes": 2707774
+    }
+  ]
+}

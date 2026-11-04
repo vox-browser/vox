@@ -750,5 +750,11 @@
       "sha256": "3d248eb73b5497f104d3faf27e5f3b36dc5e78197aea0168875dbcbdc9a85e9a",
       "bytes": 401832
     }
-  ]
+  ],
+  "component_source_conditions": "V default source conditions, C -O2, staged production prealloc allocator and no GC; independent complete scalar references are checked inside the measured loop. Component only; no production browser instruction credit.",
+  "production_followup": {
+    "path": "docs/performance/chatgpt-ancestor-production-20261105.json",
+    "sha256": "ad33c66afc2901d9e88cd94975a9c66e7d7583c95460bffdfd44a1a48514e65f",
+    "qualification": "Final source and cache hit verified; all twelve pinned captures exact. Median 0.556% reduction with overlapping ranges and conservative separation -574,084,682. No page savings credit, no broad cadence advance, and no 5% Brave advantage. Earlier preflight, busy-lock and publication-change failures remain retained."
+  }
 }
