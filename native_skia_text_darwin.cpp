@@ -2901,6 +2901,7 @@ static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop origin
             }
         }
     }
+    bool cache_hit = layer != nullptr;
     AnchoredGradientBlur fresh;
     if (!layer) {
         fresh = {key, scale, sigma, bounds.width(), bounds.height(), phase_x, phase_y,
@@ -2951,7 +2952,7 @@ static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop origin
 #endif
     if (std::getenv("VOX_DIRECT_GRADIENT_BLUR_DIAGNOSTICS"))
         std::fprintf(stderr, "VOX_ANCHORED_GRADIENT_BLUR cached=%d ink=%ld,%ld,%d,%d region=%ld,%ld,%ld,%ld\n",
-            layer != &fresh, ink_x, ink_y, ink_width, ink_height, x0, y0, x1 - x0, y1 - y0);
+            int(cache_hit), ink_x, ink_y, ink_width, ink_height, x0, y0, x1 - x0, y1 - y0);
     int region_width = int(x1 - x0), region_height = int(y1 - y0);
     std::vector<uint32_t> pixels(size_t(region_width) * region_height);
     for (long y = y0; y < y1; ++y) {
