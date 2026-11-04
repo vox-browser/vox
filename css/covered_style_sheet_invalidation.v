@@ -27,6 +27,6 @@ fn style_sheet_primary_invalidation_is_covered(root &dom.Node, result &StyleShee
 fn report_covered_style_sheet_invalidation() {
 	if covered_style_sheet_diagnostics && !covered_style_sheet_reported {
 		covered_style_sheet_reported = true
-		eprintln('Vox stylesheet invalidation: pending full cascade covers primary walk')
+		eprintln('Vox stylesheet invalidation: pending full cascade covers primary walk (render requested)')
 	}
 }

@@ -376,6 +376,10 @@ fn invalidate_elements_matching_style_sheet_invalidation(root &dom.Node, result 
 		return
 	}
 	if style_sheet_primary_invalidation_is_covered(root, result) {
+		// Matching-node dirty marking also schedules repaint. Keep that side
+		// effect once per sheet change while the full cascade covers the flags.
+		mut document := unsafe { &dom.Document(root.document()) }
+		document.set_needs_repaint_with_invalidation(.no)
 		report_covered_style_sheet_invalidation()
 		return
 	}

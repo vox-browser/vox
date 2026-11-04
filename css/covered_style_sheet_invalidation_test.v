@@ -54,7 +54,9 @@ fn test_pending_full_cascade_covers_primary_sheet_insert_and_resolves_new_rule()
 	mut document, mut sheet, target, child := covered_sheet_test_fixture()
 	defer { document.finalize() }
 	document.set_needs_full_style_update(true)
+	paint_revision := document.paint_content_revision()
 	assert sheet.insert_rule('.target { color:red }', 0)! == 0
+	assert document.paint_content_revision() > paint_revision
 	assert sheet.insert_rule('.target::before { content:"x";color:blue }', 1)! == 1
 	assert target.needs_style_update() == retain_covered_style_sheet_walk
 	assert document.element_needs_style_update(target)
