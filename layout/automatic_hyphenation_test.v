@@ -28,6 +28,20 @@ fn test_paragraph_final_word_wraps_whole_but_an_overlong_first_word_can_hyphenat
 	assert commands.any(it.text.contains('‐'))
 }
 
+fn test_first_word_in_a_new_text_range_can_hyphenate_on_an_existing_line() {
+	$if !macos { return }
+	for word in ['generated', '<span>generated</span>'] {
+		mut document := html.parse_document('<!doctype html><html lang="en-US"><style>
+			body{margin:0;font:16px/24px Arial}p{width:100px;hyphens:auto}
+		</style><p>Some ${word}</p>')
+		document.set_font_rendering_policy(.chromium)
+		root := layout_document_typed_in_viewport(document, 320, 240)
+		commands := root.paint_commands().filter(it.kind == 'draw_text')
+		assert commands.any(it.text.contains('gener‐')) == word.starts_with('<span>')
+		document.finalize()
+	}
+}
+
 fn test_inserted_hyphen_does_not_kern_with_the_source_word() {
 	$if !macos { return }
 	font := &platform.Font{family: 'system-ui', point_size: 17, font_rendering_policy: .chromium}

@@ -138,6 +138,20 @@ fn (iterator &InlineLevelIterator) has_in_flow_content_after(index int) bool {
 	return false
 }
 
+fn (iterator &InlineLevelIterator) is_paragraph_final_word(index int) bool {
+	if index < 0 || index >= iterator.items.len { return false }
+	item := unsafe { &iterator.items[index] }
+	node := item.node or { return false }
+	text := node.as_text_node() or { return false }
+	// Blink's line-start exception also applies when a new text range starts
+	// inside an existing line, such as a word in a separate inline span.
+	if item.offset_in_node == 0
+		|| text.rendered_substring_for_line_box(0, item.offset_in_node).trim_space() == '' {
+		return false
+	}
+	return !iterator.has_in_flow_content_after(index + 1)
+}
+
 fn break_automatically_hyphenated_item(mut builder LineBuilder, mut item InlineLevelItem,
 	following []InlineLevelItem, final_word bool) {
 	for {
