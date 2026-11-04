@@ -649,6 +649,32 @@ def exact_coalition_membership(api, process_api, cid, app, pid, deadline, attemp
         time.sleep(.01)
 
 
+def rejected_process_identities(process_api, coalition_api, rows):
+    """Preserve transient helper identities on failure, never exempt them."""
+    result = []
+    for row in rows:
+        detail = dict(row, identity_stable=False)
+        try:
+            before = process_api.read(row['pid'])
+            cid = coalition_api.resource_coalition(row['pid'])
+            executable = str(Path(process_api.path(row['pid'])).resolve())
+            after = process_api.read(row['pid'])
+            end_cid = coalition_api.resource_coalition(row['pid'])
+            if (type(before.start) is not int or type(after.start) is not int
+                    or type(cid) is not int or type(end_cid) is not int
+                    or min(before.start, after.start, cid, end_cid) <= 0):
+                raise ValueError('Unavailable process creation time or coalition')
+            detail.update(start_ticks=before.start, end_start_ticks=after.start,
+                          resource_coalition=cid, end_resource_coalition=end_cid,
+                          executable=executable,
+                          identity_stable=before.start == after.start and cid == end_cid
+                          and not before.exited and not after.exited)
+        except (OSError, ValueError, TypeError) as error:
+            detail['identity_error'] = str(error)
+        result.append(detail)
+    return result
+
+
 def membership(api, cid, app, pid, deadline, attempts, browser=None, existing_processes=()):
     limit = min(deadline, time.monotonic() + 20)
     while True:
@@ -690,6 +716,12 @@ def membership(api, cid, app, pid, deadline, attempts, browser=None, existing_pr
             continue
         members = {row['pid'] for row in scan['members']}
         require(not (excluded & members), 'Measured coalition contains a preexisting browser task')
+        if not owned <= members:
+            # Only a rejected observation performs these extra reads. Helpers
+            # can exit before later investigation; retain their creation times,
+            # actual executable and coalition without changing the gate.
+            scan['unaccounted_private_processes'] = rejected_process_identities(
+                process_api, api, [row for row in app_processes if row['pid'] in owned - members])
         require(owned <= members, 'A private browser helper is outside its resource coalition')
         require({int(row['id']) for row in infos} <= members,
                 'A Brave browser task is outside its exclusive resource coalition')

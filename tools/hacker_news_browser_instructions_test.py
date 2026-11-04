@@ -530,11 +530,18 @@ class HackerNewsInstructionGateTests(unittest.TestCase):
                        return_value=scan), \
                  patch('hacker_news_browser_instructions.processes', return_value=rows):
                 with self.assertRaisesRegex(RuntimeError, 'outside its .*coalition'):
-                    membership(api, 10, app, 1, time.monotonic() + 10, [], browser)
+                    with patch('hacker_news_browser_instructions.rejected_process_identities',
+                               return_value=[dict(pid=2, identity_stable=False)]) as details:
+                        membership(api, 10, app, 1, time.monotonic() + 10, [], browser)
             self.assertTrue(scan['ownership_stable'])
             self.assertEqual(scan['observed_app_processes'], rows)
             if not cdp:
                 self.assertIn('--fetch-worker', scan['observed_app_processes'][1]['command'])
+                self.assertEqual(scan['unaccounted_private_processes'],
+                                 [dict(pid=2, identity_stable=False)])
+                details.assert_called_once()
+            else:
+                details.assert_not_called()
 
     def test_membership_churn_obeys_the_original_watchdog(self):
         import time
