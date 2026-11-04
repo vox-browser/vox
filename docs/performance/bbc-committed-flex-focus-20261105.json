@@ -1,0 +1,332 @@
+{
+  "status": "Committed flex consumer passes207focused executions(23cases across3GCmodes and3arms),282instruction-tool tests pass after initial missing-control-app guard failure. BBC production eligibility for new flex path pending; no performance credit. Fresh2e38native captures validate earlier styled-inline rollback and covered stylesheet shortcut, original references and72author scripts exact.",
+  "engine_commit": "d94c9b2e4",
+  "control_tool_commit": "9995fa5f2",
+  "focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-committed-control",
+        "exit": 0
+      },
+      {
+        "name": "default-flex-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-committed-control",
+        "exit": 0
+      },
+      {
+        "name": "none-flex-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-committed-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-flex-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+          "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+          "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+          "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "5326fd8fe0c93c52cca03c657d57635fe2ff768dfc81395b985b0f5715c2fe3e",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "bfd3a38293b6d18e2843f29f5fdcf7099b452a4fed8c30eb75e407357c1a0275",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "adcc2d90eec08a776e7fa1b342cc52a08f4ce72979b251cb45a76fe1494c149d",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "6041b182007228bd2bbdb42ea962381725a088857923db134e141748da786728",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace.v": "cca616e21e2b1d96a2ace5b6dba54cfc0f5564e4398696db1df15010e794d205",
+      "/Users/alex/code/vox2/layout/retained_inline_layout.v": "e7d067dcb7d10161c7c4111ad19c1d92bcdabc69d5dcec93245b33bc2e239fbd",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "a9b12fd7df188201d85a0d20ae24db038ad82c3de91b778df13050ad56595d30"
+    },
+    "unchanged": true,
+    "cases_per_run": 23,
+    "expected_cases": [
+      "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+      "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+      "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+      "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+      "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+      "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+      "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_flex_measurement_revalidates_svg_attributes_before_replay",
+      "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+      "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+      "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+      "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+      "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+      "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+      "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+      "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+      "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+      "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+      "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+      "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_grid_measurement_revalidates_svg_attributes_before_replay"
+    ]
+  },
+  "tool_tests": {
+    "passed": 282,
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*browser_instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 60260352,
+      "elapsed_seconds": 2.952626333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "initial_failure": "New flag was absent from existing control-app-required parser guard; first282case run fails1newcase. Corrected parser, all282pass. Original log/guard retained."
+  },
+  "revert_native": {
+    "production": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "2e38a43647171308010b7cf1eeffd8aba34170b74400d15b5284b0c5d597318d",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-002844-ad6b35b4/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "43886dda307a48d68e7b8656fac9b7ae1cee03898332b29fa2ac85345accd2a7",
+        "dirty": true,
+        "head": "3c4617f262654551e9ecd27981e0e8af6fc4beff",
+        "repository_sha256": "544f6e4a4c5e4848520c6d2915cdd4db2ec081ea5b945da4d6e0490b781ec5c4"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "ff59d6a9499bd3635319072012a7e926224086438ad66a32af2872192e95202c",
+        "dirty": true,
+        "head": "d5de340eb3bcb423735060bedc033c81ca1cf393",
+        "repository_sha256": "df00255300037c32a3e5e689dddb9b48af5cf63d5a4ab88c4218796a47d56a65"
+      },
+      "request": {
+        "head": "3c4617f262654551e9ecd27981e0e8af6fc4beff",
+        "id": "5f84275bc3784b53909e6cb696402181"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "43886dda307a48d68e7b8656fac9b7ae1cee03898332b29fa2ac85345accd2a7",
+        "dirty": true,
+        "head": "3c4617f262654551e9ecd27981e0e8af6fc4beff",
+        "repository_sha256": "544f6e4a4c5e4848520c6d2915cdd4db2ec081ea5b945da4d6e0490b781ec5c4"
+      }
+    },
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "original_external_sources_exact": true,
+        "path_before_png": true,
+        "runtime_images_pinned": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "original_external_sources_exact": true,
+        "path_before_png": false,
+        "runtime_images_pinned": true
+      }
+    ],
+    "source_revert_proof": {
+      "source_sha256": "ea41380c2b8d6376b9bae08093a8a1c2f917e9c662b51447e7ab9e3d3d8ebe61",
+      "styled_inline_snapshot_extension_absent": true,
+      "covered_stylesheet_wakeup_present": true,
+      "committed_flex_extension_absent": true
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-committed-flex-20261105-0039/revert-native-2e38/native-diagnostic.py",
+        "--capture-reference",
+        "--output",
+        "/Users/alex/code/vox2/Build/bbc-committed-flex-20261105-0039/revert-native-2e38/production/native-diagnostic",
+        "--archive",
+        "/Users/alex/code/vox2/Build/bbc-committed-flex-20261105-0039/revert-native-2e38/fixture/clock-archive-v3",
+        "--memory-guard-registry",
+        "/Users/alex/code/vox2/Build/bbc-committed-flex-20261105-0039/revert-native-2e38/production/native-pids.json",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--expected-vox",
+        "/Users/alex/code/vox2/Build/bbc-committed-flex-20261105-0039/revert-native-2e38/fixture/reference-complete/pair-1-vox/document.png",
+        "--expected-brave",
+        "/Users/alex/code/vox2/Build/bbc-committed-flex-20261105-0039/revert-native-2e38/fixture/reference-complete/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+        "--control-vox-app",
+        "Build/v/Vox.app",
+        "--control-retain-covered-style-sheet-walk",
+        "--retain-logical-paint-snapping",
+        "--retain-css-layout-for-svg"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "59186": "Thu Nov  5 00:38:56 2026    ",
+        "59193": "Thu Nov  5 00:38:56 2026    ",
+        "59816": "Thu Nov  5 00:39:02 2026    ",
+        "59823": "Thu Nov  5 00:39:02 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1444478976,
+      "elapsed_seconds": 14.998727665999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "target_met": false,
+  "catalog_entry_added": false,
+  "archive": {
+    "path": "docs/performance/raw/bbc-committed-flex-focus-20261105.tar.gz",
+    "bytes": 22570368,
+    "sha256": "86b49b5e5aac25ead9cc1656b357c49a716698f99bd56ac014ab4b2d59333742",
+    "members": 120,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793828720.353929,
+  "archive_completion_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-committed-flex-20261105-0039/archive-focused.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 138313728,
+    "elapsed_seconds": 2.796412834,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "native_followup": "Fresh ed203937 native launches both pass original pixels, content,72scripts and runtime-image pins, but candidate committed-flex marker absent. Generic within-pass flex marker present. Eligibility gate fails; no unprofiled cohort launched. Conservative unused-outer-height extension under focused verification."
+}

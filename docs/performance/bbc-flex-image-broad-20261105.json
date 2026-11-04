@@ -1,0 +1,55 @@
+{
+  "status": "Both broader GC modes execute521unique cases with518passes and exactly3known baseline failures. All7new committed-flex/image-tree cases pass. Checked inputs unchanged; no full pass or cadence reset.",
+  "trigger": "Cohort97 median matched-control point difference451255322 exceeds5million instructions; no robust performance saving credited.",
+  "modes": {
+    "default": {
+      "entered": 521,
+      "unique": 521,
+      "passed": 518,
+      "failures": [
+        "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+        "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+        "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+      ],
+      "inputs_unchanged": true
+    },
+    "none": {
+      "entered": 521,
+      "unique": 521,
+      "passed": 518,
+      "failures": [
+        "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+        "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+        "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+      ],
+      "inputs_unchanged": true
+    }
+  },
+  "controller_exit": {
+    "exit": 1,
+    "observed": "Exec session53015 completed;521entered perGCmode, three known failures each."
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-flex-image-broad-20261105.tar.gz",
+    "bytes": 9046572,
+    "sha256": "94ac151a6de1fbb2c2827c9ed4b1a6ce74c5e113e0a31d404955d669518cbaf1",
+    "members": 337,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793830362.541739,
+  "archive_completion_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-committed-flex-20261105-0039/archive-broad.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 78249984,
+    "elapsed_seconds": 1.0155297079999999,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "archive_preflight_correction": "Inherited archival driver file list referenced missing initial-driver names. Initial attempt failed before creating output; final explicit existing list plus initial script/guard retained. No tests or samples changed."
+}

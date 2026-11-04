@@ -5540,3 +5540,69 @@ BBC homepage stays outside `OPTIMIZED_SITES.md`. See the
 [broader checks](performance/bbc-covered-broad-20261105.json). Earlier
 [cohort 93](performance/bbc-relative-cohort93-20261104.json) and
 [cohort 94](performance/bbc-svg-cohort94-20261104.json) remain retained.
+
+
+## Final-flex measurement reuse and image trees (2026-11-05)
+
+Final flex layout can now consume a result already owned by the same layout
+pass. Exact keys preserve sizes, constraints, edges, immediate containing-block
+bases, parent identity and item roles. A guarded extension ignores distant
+ancestor heights only when the entire closed subtree proves them unused. Normal
+flex baseline clearing and descendant copy-on-write remain intact. The first
+exact-key version passes 207 focused executions but has no BBC hit. The
+height-independent extension passes 216 executions and has candidate-only
+pre-PNG native hits on builds `e6f36b36` and `1bf1abc8`. Each native arm keeps
+original pixels, complete content and 72 exact external author scripts through
+JavaScriptCore, with loaded native images pinned.
+
+Unchanged branches containing decoded raster images can also keep their tree
+structure while geometry runs in a fresh state. Every cached validation checks
+the live provider kind. SVG, unavailable, generated, positioned and CSS
+replacement images retain the complete builder path. Its 168 final executions
+pass across three memory modes and both arms, including source/natural-size
+changes, retained old pixels and full-builder oracles. Earlier inactive-document
+and unchanged-source fixture failures remain retained. The image-tree marker
+appears only in the candidate on `aa370dd4`; it is absent on `e6f36b36`, so no
+current isolated image-tree saving is attributed. All 283 instruction-tool
+tests pass. Three pinned production epochs pass the pixel-exact SVG source-switch
+reftest. The earlier styled-inline rollback is also validated on fresh
+production `2e38a436`.
+
+Cohort 96 is invalidated by shared bundle publication after two captures. Both
+individual captures pass their normal-exit, original-pixel and content audits;
+the partial comparison earns no acceptance or robust performance credit. An
+earlier image comparison identity preflight and a later storage preflight each
+launch no acceptance browser. They are retained separately. The footprint-based
+1,111,573,390-byte disk planning gate remains unchanged; only authenticated
+archived generated sources, completed test binaries and finished private
+profiles/caches are pruned to regain room.
+
+Cohort 97 completes seven alternating control/Vox/Brave triples on pinned
+`1bf1abc8`. All 14 Vox/control captures are exact. Brave pair 2 differs by
+171,581 pixels (maximum channel error 23), invalidating acceptance under the
+unchanged exact-reference requirement. All 21 browsers exit normally, content
+audits pass, ownership passes and identities stay pinned. Observed medians,
+including the failed capture, are **27,785,884,359 control**,
+**27,334,629,037 Vox**, and **17,413,804,570 Brave lower bound**. The 451,255,322
+median point difference (1.624%) has five improvements and two regressions;
+highest-candidate/lowest-control is 1.04061, so no robust saving is claimed.
+The strict target also fails: `278820577560 > 155650476906`, ratio **1.61219**.
+
+Both broader GC modes then enter all 521 selected cases: 518 pass and the same
+three known baseline failures remain. All seven new cases pass, checked input
+hashes are unchanged, and no full pass or cadence reset is claimed. History is
+**97 attempted cohorts / 2,108 acceptance browser attempts**, with runtime
+preflights and native diagnostics separate. The latest wholly valid comparison
+remains cohort 95, which also fails the target. BBC homepage stays outside
+`OPTIMIZED_SITES.md`.
+
+These are the same frozen original-origin 609-response, original-script,
+1024×768 CSS, scale-2 workload and launch-through-encoded-PNG boundary. Fresh
+private profiles/caches, retained OS caches, two-second readiness/decode settling,
+exclusive coalition ownership and all prior capture limits remain. Cross-browser
+pixel differences and incomplete DOM/script, performance.measure, local Arial
+fallback and paint_decoded=false limitations remain; this is no live-site,
+isolated rendering-time or scrolling claim. See the
+[focused exact-flex record](performance/bbc-committed-flex-focus-20261105.json),
+[all new evidence and exact counts](performance/bbc-flex-image-progress-20261105.json),
+and [521-case broader checks](performance/bbc-flex-image-broad-20261105.json).
