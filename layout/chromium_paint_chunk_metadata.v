@@ -232,16 +232,21 @@ fn chromium_collect_paint_metadata(result &DocumentLayoutResult, commands []Pain
 	// An unculled plan retains its established scrolling/image policy. Only
 	// fixed-container geometry is added when root culling cannot be projected.
 	if cull == none { return if has_fixed_metadata { .fixed_bounds } else { .none } }
+	// A scrolling document with fixed overlays still records root hit-test
+	// geometry even without a nested accelerated scroller. Keeping only fixed
+	// containers here made sparse ink on a transparent root acquire separate
+	// rasters: the unpainted document bounds must participate in layerization.
+	root_hit_test_geometry := has_fixed_metadata && chromium_scrollport_has_range(&result.paint_tree)
 	// A rounded image's ancestor can contribute a metadata-only chunk before
 	// its overflow clip. It still determines the picture's common clip state,
 	// even when the document has no independently scrolling contents.
-	if !has_scroll_marker {
+	if !has_scroll_marker && !root_hit_test_geometry {
 		for command in commands {
 			if command.kind != 'draw_replaced_image' || command.clip_list == unsafe { nil } { continue }
 			if command.clip_list.items.any(it.corner_radii != BoxRadii{}) { return .clipping }
 		}
 	}
-	return if has_scroll_marker { .geometry } else if has_fixed_metadata { .fixed_bounds } else { .none }
+	return if has_scroll_marker || root_hit_test_geometry { .geometry } else if has_fixed_metadata { .fixed_bounds } else { .none }
 }
 
 // Keep each paint client's hit-test and drawing bounds together. Combining
