@@ -21,6 +21,7 @@ fn C.vox_curl_setopt_long(handle voidptr, option i32, value i64) i32
 fn C.vox_curl_setopt_pointer(handle voidptr, option i32, value voidptr) i32
 fn C.vox_curl_setopt_write(handle voidptr, option i32, callback fn (voidptr, uint, uint, voidptr) uint) i32
 fn C.vox_curl_multi_setopt_pointer(handle voidptr, option i32, value voidptr) i32
+fn C.vox_curl_multi_setopt_long(handle voidptr, option i32, value i64) i32
 fn C.vox_curl_multi_setopt_socket(handle voidptr, callback fn (voidptr, i32, i32, voidptr, voidptr) i32) i32
 fn C.vox_curl_multi_setopt_timer(handle voidptr, callback fn (voidptr, i64, voidptr) i32) i32
 fn C.vox_curl_next_completion(handle voidptr, result &i32) voidptr

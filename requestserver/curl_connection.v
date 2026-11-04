@@ -8,6 +8,11 @@ module requestserver
 import platform
 import time
 
+// Leave descriptors for the window, document loader, and dispatch socket
+// duplicates under LaunchServices' 256-descriptor soft limit. libcurl queues
+// excess transfers and still multiplexes streams on established connections.
+const curl_max_total_connections = 32
+
 @[heap]
 pub struct CurlConnection {
 mut:
@@ -35,6 +40,8 @@ pub fn CurlConnection.create() !&CurlConnection {
 	if connection.multi_ == unsafe { nil } {
 		return error('Failed to initialize curl multi handle')
 	}
+	check_curl_result(C.vox_curl_multi_setopt_long(connection.multi_, C.CURLMOPT_MAX_TOTAL_CONNECTIONS,
+		curl_max_total_connections), C.CURLM_OK)
 	check_curl_result(C.vox_curl_multi_setopt_socket(connection.multi_, curl_socket_callback), C.CURLM_OK)
 	check_curl_result(C.vox_curl_multi_setopt_pointer(connection.multi_, C.CURLMOPT_SOCKETDATA, connection), C.CURLM_OK)
 	check_curl_result(C.vox_curl_multi_setopt_timer(connection.multi_, curl_timeout_callback), C.CURLM_OK)

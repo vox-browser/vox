@@ -92,6 +92,7 @@ static int vox_curl_setopt_long(void* handle, int option, long value) { return v
 static int vox_curl_setopt_pointer(void* handle, int option, void* value) { return vox_curl_api()->easy_setopt(handle, option, value); }
 static int vox_curl_setopt_write(void* handle, int option, size_t (*callback)(void*, size_t, size_t, void*)) { return vox_curl_api()->easy_setopt(handle, option, callback); }
 static int vox_curl_multi_setopt_pointer(void* handle, int option, void* value) { return vox_curl_api()->multi_setopt(handle, option, value); }
+static int vox_curl_multi_setopt_long(void* handle, int option, long value) { return vox_curl_api()->multi_setopt(handle, option, value); }
 static int vox_curl_multi_setopt_socket(void* handle, int (*callback)(void*, int, int, void*, void*)) { return vox_curl_api()->multi_setopt(handle, CURLMOPT_SOCKETFUNCTION, callback); }
 static int vox_curl_multi_setopt_timer(void* handle, int (*callback)(void*, long, void*)) { return vox_curl_api()->multi_setopt(handle, CURLMOPT_TIMERFUNCTION, callback); }
 static void* vox_curl_next_completion(void* multi, int* result) {

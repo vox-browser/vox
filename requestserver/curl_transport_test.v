@@ -219,6 +219,84 @@ fn test_actual_curl_socket_timer_transport_streams_into_owning_xhr_model() {
 	server.wait()
 }
 
+// Hold each connection until the incoming burst pauses, then finish the whole
+// batch. An unlimited multi opens all 64 at once; bounded transport must queue
+// the remainder without dropping requests or their completion events.
+fn serve_bounded_connection_burst(mut listener net.TcpListener, count int) int {
+	mut completed := 0
+	mut peak := 0
+	listener.set_accept_timeout(150 * time.millisecond)
+	for completed < count {
+		mut batch := []&net.TcpConn{}
+		for completed + batch.len < count {
+			mut socket := listener.accept() or { break }
+			batch << socket
+		}
+		if batch.len > peak { peak = batch.len }
+		assert batch.len > 0, 'Timed out waiting for queued curl transfers'
+		for mut socket in batch {
+			socket.set_read_timeout(3 * time.second)
+			mut request := ''
+			for !request.contains('\r\n\r\n') {
+				mut bytes := []u8{len: 4096}
+				n := socket.read(mut bytes) or { panic(err) }
+				assert n > 0
+				request += bytes[..n].bytestr()
+			}
+			socket.write_string('HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 5\r\nConnection: close\r\n\r\nqueue') or { panic(err) }
+			socket.close() or {}
+		}
+		completed += batch.len
+	}
+	return peak
+}
+
+fn test_curl_connection_queues_bursts_without_losing_completions() {
+	$if !darwin && !linux { return }
+	previous := os.getenv_opt('NO_PROXY')
+	previous_lower := os.getenv_opt('no_proxy')
+	os.setenv('NO_PROXY', '*', true)
+	os.setenv('no_proxy', '*', true)
+	defer {
+		restore_native_proxy_test_environment('NO_PROXY', previous)
+		restore_native_proxy_test_environment('no_proxy', previous_lower)
+	}
+	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+	defer { listener.close() or {} }
+	address := 'http://${listener.addr()!}/owner'
+	settings, owner := native_transport_settings(address)
+	mut connection := CurlConnection.create()!
+	defer { connection.close() }
+	server := spawn serve_bounded_connection_burst(mut listener, 64)
+	mut requests := []&xhr.XMLHttpRequest{}
+	for index in 0 .. 64 {
+		mut request := xhr.XMLHttpRequest.construct_in_settings(settings, connection.fetch_host())
+		request.open('GET', '/burst/${index}', true, none, none)!
+		request.send()!
+		requests << request
+	}
+	deadline := time.sys_mono_now() + 10 * time.second
+	mut loop := owner
+	loop.spin_until(fn [requests, deadline] () bool {
+		if time.sys_mono_now() >= deadline { return true }
+		for request in requests {
+			if request.state != .done { return false }
+		}
+		return true
+	})
+	assert connection.active_request_count() == 0
+	for request in requests {
+		assert request.state == .done
+		assert request.status() == 200
+		assert request.response_text()! == 'queue'
+		assert request.events.filter(it.type_ == 'load').len == 1
+		assert request.events.filter(it.type_ == 'loadend').len == 1
+	}
+	peak := server.wait()
+	assert peak > 1
+	assert peak <= 32
+}
+
 fn test_source_stop_fetch_removes_the_real_curl_request_from_multi() {
 	$if !darwin && !linux {
 		return
