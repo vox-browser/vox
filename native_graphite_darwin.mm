@@ -112,8 +112,10 @@ std::list<RegionTarget> region_targets;
 size_t region_target_bytes = 0;
 constexpr size_t region_target_limit = 64 * 1024 * 1024;
 
+void canvas_reset();
 void clear_region_targets()
 {
+    canvas_reset();
     region_targets.clear();
     region_target_bytes = 0;
     region_recorder.reset();
@@ -926,6 +928,8 @@ static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape
     else
         canvas->drawRRect(rounded_rect(shape.rect), paint);
 }
+
+#include "native_graphite_canvas.h"
 
 // Read back only the border of large rounded shapes. Opaque fills have a flat
 // interior; the original GPU draw supplies fractional edges, corners and

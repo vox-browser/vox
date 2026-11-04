@@ -870,9 +870,21 @@ extern "C" void ladybird_v_skia_finish_shared_recording()
     finish_shared_recording();
 }
 
+namespace {
+// The experimental GPU canvas consumes the color recorded just before the
+// platform adapter asks whether to skip its ordinary fill.
+uint8_t s_last_recorded_rect_rgba[4];
+int gpu_canvas_defer_rect(CGContextRef destination, float x, float y, float width, float height,
+    uint8_t const* rgba);
+}
+
 extern "C" void ladybird_v_skia_record_rect(CGContextRef destination, float x,
     float y, float width, float height, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
 {
+    s_last_recorded_rect_rgba[0] = red;
+    s_last_recorded_rect_rgba[1] = green;
+    s_last_recorded_rect_rgba[2] = blue;
+    s_last_recorded_rect_rgba[3] = alpha;
     // A viewport-sized uniform opaque fill is cheaper in Quartz than as
     // a GPU picture. Finish the preceding group and keep it in the prefix;
     // its viewport-relative rectangle must not churn document tile keys.
@@ -916,6 +928,7 @@ extern "C" void ladybird_v_skia_record_rect(CGContextRef destination, float x,
 extern "C" int ladybird_v_skia_defer_recorded_rect(CGContextRef destination,
     float x, float y, float width, float height)
 {
+    if (gpu_canvas_defer_rect(destination, x, y, width, height, s_last_recorded_rect_rgba)) return 1;
     if (!s_shared_root_recording || s_shared_root_recording->destination != destination
         || !s_shared_root_recording->speculative
         || !complete_speculative_picture_enabled()) return 0;

@@ -7488,6 +7488,13 @@ fn (mut app BrowserApp) draw() {
 			if !scroll_damage.unoptimized || scroll_damage.reused {
 				draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 			}
+			// Experiment: keep the repainted rectangles on the GPU for this frame.
+			mut gpu_canvas := false
+			$if macos {
+				if scroll_damage.reused && app.ctx.native_rendering {
+					gpu_canvas = C.native_gpu_canvas_begin() != 0
+				}
+			}
 			page_y := app.page_top()
 			mut culling := PaintCanvasCulling{}
 			$if macos {
@@ -7519,11 +7526,15 @@ fn (mut app BrowserApp) draw() {
 				if scroll_damage.separate_scrollbars && command.scrollbar_axis != ''
 					&& command_index >= scroll_damage.scrollbar_start { continue }
 				if scroll_damage.skips_index(app.paint_commands, command_index) { continue }
+				// GPU canvas leaves bypass the multi-command handlers below; any
+				// other command first reads the GPU results back to the CPU canvas.
+				gpu_leaf := gpu_canvas && gpu_canvas_command_supported(command)
 				$if macos {
 					if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len {
 						next_layer := app.chromium_raster_plan.command_layers[command_index]
 						if next_layer != raster_layer {
 							app.flush_rounded_rect_underlay(0, page_y, window.height)
+							if gpu_canvas { C.native_gpu_canvas_cpu_access() }
 							if text_scroll_layer { end_chromium_text_scroll_layer() }
 							app.select_chromium_raster_layer(next_layer)
 							text_scroll_layer = app.begin_chromium_text_scroll_layer(next_layer, command_index)
@@ -7532,7 +7543,7 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 				$if macos {
-					if command_index >= rect_prefetch_end && command.kind == 'fill_rect' {
+					if !gpu_leaf && command_index >= rect_prefetch_end && command.kind == 'fill_rect' {
 						rect_prefetch_end = app.prefetch_chromium_rects(command_index, page_y)
 					}
 				}
@@ -7543,7 +7554,7 @@ fn (mut app BrowserApp) draw() {
 						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
 					if shared_svg_end > command_index { continue }
 				}
-				if command.kind in ['fill_rect', 'fill_rounded_rect'] {
+				if !gpu_leaf && command.kind in ['fill_rect', 'fill_rounded_rect'] {
 					shared_svg_end = app.draw_chromium_rounded_image_pair(command_index, page_y, window.height)
 					if shared_svg_end > command_index { continue }
 				}
@@ -7567,14 +7578,14 @@ fn (mut app BrowserApp) draw() {
 						continue
 					}
 				}
-				if command.kind == 'paint_outer_box_shadow' {
+				if !gpu_leaf && command.kind == 'paint_outer_box_shadow' {
 					outer_end := app.draw_chromium_outer_decorations(command_index, page_y, window.height, mut culling)
 					if outer_end > command_index {
 						shared_svg_end = outer_end
 						continue
 					}
 				}
-				if command.kind in ['fill_rect', 'fill_rounded_rect'] {
+				if !gpu_leaf && command.kind in ['fill_rect', 'fill_rounded_rect'] {
 					coverage_end := app.draw_chromium_text_coverage_run(command_index, page_y, window.height)
 					if coverage_end > command_index {
 						shared_svg_end = coverage_end
@@ -7627,8 +7638,14 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 			}
+			$if macos {
+				if gpu_canvas { C.native_gpu_canvas_cpu_access() }
+			}
 			if text_scroll_layer { end_chromium_text_scroll_layer() }
 			app.flush_rounded_rect_underlay(0, page_y, window.height)
+			$if macos {
+				if gpu_canvas { C.native_gpu_canvas_end() }
+			}
 			$if macos {
 				// A planned video restore that never ran left pixels beneath it
 				// unpainted; never retain such a frame.

@@ -3439,6 +3439,7 @@ static bool apply_chromium_paint_origin(VoxGraphiteShape& shape,
 }
 
 #include "native_chromium_shared_recording.h"
+#include "native_skia_gpu_canvas.h"
 
 extern "C" void ladybird_v_skia_set_raster_layer(double x, double y, int root)
 {
@@ -4468,6 +4469,43 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         return 1;
     if (!leaf_raster_region_intersects_destination_clip(destination, canvas_height, region))
         return 1;
+    if (s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
+        std::vector<VoxGraphiteCanvasClip> clips;
+        if (auto* frame = gpu_canvas_for_leaf(destination, clips)) {
+            VoxGraphiteShape descriptor {
+                .matrix = {}, .rect = {x, y, rect_width, rect_height,
+                    top_left_x, top_left_y, top_right_x, top_right_y,
+                    bottom_right_x, bottom_right_y, bottom_left_x, bottom_left_y},
+                .thickness = thickness, .red = red, .green = green, .blue = blue, .alpha = alpha,
+                .fill = fill, .anti_alias = anti_alias, .force_msaa = 0,
+                .clip_outs = s_rect_clip_outs.empty() ? nullptr : s_rect_clip_outs.data(),
+                .clip_out_count = static_cast<int>(s_rect_clip_outs.size() / 4),
+                .has_underlay = has_underlay ? 1 : 0,
+                .has_float_color = has_float_color ? 1 : 0
+            };
+            std::copy_n(border_widths, 4, descriptor.border_widths);
+            if (has_float_color) std::copy_n(s_unrounded_paint_color, 4, descriptor.float_color);
+            if (has_underlay) {
+                std::copy(s_rounded_rect_underlay, s_rounded_rect_underlay + 12, descriptor.underlay_rect);
+                std::copy(s_rounded_rect_underlay_rgba, s_rounded_rect_underlay_rgba + 4,
+                    descriptor.underlay_rgba);
+                if (has_float_underlay_color) {
+                    descriptor.has_float_underlay_color = 1;
+                    std::copy_n(s_underlay_float_color, 4, descriptor.underlay_float_color);
+                }
+            }
+            auto device = SkMatrix::Scale(frame->scale, frame->scale);
+            SkMatrix::Concat(device, matrix).get9(descriptor.matrix);
+            auto bounds = device.mapRect(matrix.mapRect(local_bounds)).makeOutset(2, 2);
+            float device_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
+            if (gpu_canvas_api()->draw_shape(&descriptor, device_bounds, clips.data(), int(clips.size()))) {
+                gpu_canvas_name_leaf(*frame, "shape", bounds, fill, clips.size());
+                frame->cpu_stale = true;
+                ++frame->draws;
+                if (!gpu_canvas_verify()) return 1;
+            } else gpu_canvas_flush();
+        }
+    }
 
     auto destination_scale = screenshot_uses_logical_pixels()
         ? 1.0f
@@ -5044,6 +5082,22 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
         if (has_float_color) std::copy_n(s_unrounded_paint_color, 4, descriptor.float_color);
         return descriptor;
     };
+    if (s_gpu_canvas && s_gpu_canvas->destination == destination) {
+        std::vector<VoxGraphiteCanvasClip> clips;
+        if (auto* frame = gpu_canvas_for_leaf(destination, clips)) {
+            auto descriptor = shadow_descriptor();
+            auto device = SkMatrix::Scale(frame->scale, frame->scale);
+            SkMatrix::Concat(device, matrix).get9(descriptor.matrix);
+            auto bounds = device.mapRect(matrix.mapRect(local_bounds));
+            float device_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
+            if (gpu_canvas_api()->draw_shadow(&descriptor, device_bounds, clips.data(), int(clips.size()))) {
+                gpu_canvas_name_leaf(*frame, "shadow", bounds, 0, clips.size());
+                frame->cpu_stale = true;
+                ++frame->draws;
+                if (!gpu_canvas_verify()) return 1;
+            } else gpu_canvas_flush();
+        }
+    }
     // Root grid tiles are anchored to the document, so a pixel's value does
     // not depend on the requested region. A strip or damage repaint reads back
     // and composites only the clipped part of a large shadow, as Chromium

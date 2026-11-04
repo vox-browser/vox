@@ -2832,6 +2832,57 @@ void native_set_video_frame_image(int active) {
     native_video_frame_image = active != 0;
 }
 
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+extern int ladybird_v_skia_gpu_canvas_begin(CGContextRef, const int *, int);
+extern void ladybird_v_skia_gpu_canvas_cpu_access(void);
+extern void ladybird_v_skia_gpu_canvas_end(void);
+#endif
+
+// Experimental GPU canvas over the rectangles this reused scroll frame repaints.
+// Repainted rectangles are viewport device rows; the canvas also holds chrome.
+int native_gpu_canvas_begin(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	VoxScrollRaster *cache = &native_scroll_raster;
+	if (!cache->active || !cache->reused || !cache->damage_optimized || !cache->context
+		|| native_scroll_repainted_count <= 0 || native_scroll_repainted_count > 8) return 0;
+	int rects[8 * 4];
+	int count = 0;
+	for (int index = 0; index < native_scroll_repainted_count; ++index) {
+		const long *rect = native_scroll_repainted[index];
+		if (rect[2] <= rect[0] || rect[3] <= rect[1]) continue;
+		rects[count * 4] = (int)rect[0];
+		rects[count * 4 + 1] = (int)(rect[1] + (long)cache->top);
+		rects[count * 4 + 2] = (int)(rect[2] - rect[0]);
+		rects[count * 4 + 3] = (int)(rect[3] - rect[1]);
+		count++;
+	}
+	return count > 0 ? ladybird_v_skia_gpu_canvas_begin(cache->context, rects, count) : 0;
+#else
+	return 0;
+#endif
+}
+
+void native_gpu_canvas_cpu_access(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_gpu_canvas_cpu_access();
+#endif
+}
+
+int native_gpu_canvas_command(const char *kind, int kind_len, int flags) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	extern int ladybird_v_skia_gpu_canvas_command(const char *, int, int);
+	return ladybird_v_skia_gpu_canvas_command(kind, kind_len, flags);
+#else
+	return 0;
+#endif
+}
+
+void native_gpu_canvas_end(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_gpu_canvas_end();
+#endif
+}
+
 void native_reject_scroll_raster_frame(void) {
     native_scroll_raster_independent_content();
 }

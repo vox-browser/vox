@@ -223,6 +223,23 @@ int vox_graphite_draw_svg_pattern_pixels(uint8_t *pixels, int width, int height,
     const float *parent_matrix, const float *tile, const float *clip, float opacity, int linear);
 int vox_graphite_convert_icc_rgba(uint8_t *pixels, int count,
     const uint8_t *profile, int profile_size);
+// GPU-resident canvas (experiment). Device-pixel rectangles of the CPU canvas
+// are mirrored on GPU surfaces for one frame; leaves draw into them with
+// device-space matrices and the destination's rounded clips, and one read
+// returns every rectangle. Rectangles are x, y, width, height.
+typedef struct {
+    float rect[12];
+    float matrix[9];
+    int antialias;
+} VoxGraphiteCanvasClip;
+int vox_graphite_canvas_begin(const int *rects, int count);
+int vox_graphite_canvas_upload(int index, const uint8_t *bgra, int pitch);
+int vox_graphite_canvas_draw_shadow(const VoxGraphiteShadow *shadow, const float *device_bounds,
+    const VoxGraphiteCanvasClip *clips, int clip_count);
+int vox_graphite_canvas_draw_shape(const VoxGraphiteShape *shape, const float *device_bounds,
+    const VoxGraphiteCanvasClip *clips, int clip_count);
+int vox_graphite_canvas_read(const VoxGraphitePixelRegion *views, int count);
+void vox_graphite_canvas_end(void);
 #ifdef __cplusplus
 }
 #endif
