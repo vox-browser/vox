@@ -996,6 +996,7 @@ mut:
 	intrinsic_seed_epoch_ u32
 	inline_measurements_ map[u64][]&InlineMeasurementLayout
 	grid_measurements_ map[u64][]&GridMeasurementLayout
+	nested_inline_measurements_ map[u64][]&NestedInlineMeasurement
 	grid_measurement_rejections_ map[u64]bool
 }
 
@@ -1029,6 +1030,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	pool.intrinsic_seed_order_ = unsafe { nil }
 	pool.inline_measurements_ = map[u64][]&InlineMeasurementLayout{}
 	pool.grid_measurements_ = map[u64][]&GridMeasurementLayout{}
+	pool.nested_inline_measurements_ = map[u64][]&NestedInlineMeasurement{}
 	pool.grid_measurement_rejections_ = map[u64]bool{}
 	for chunk in pool.chunks {
 		free_measurement_allocation(chunk)
