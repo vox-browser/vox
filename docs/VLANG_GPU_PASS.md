@@ -160,3 +160,61 @@ idle ramp at fewer waits. At 120 Hz it keeps up with 1195 of 1200 inputs
 (115.5–116.5 FPS) versus 1168–1172 (103.9–107.6). Host load dominates the
 absolute numbers: the same control measured 77–80 FPS at 120 Hz under load
 40–80.
+
+## Rebase onto master, two ordering fixes and a test (2026-11-05)
+
+The branch was rebased onto master `03cb41715` without conflicts. Per-leaf
+verification of the rebased build then failed in 6 of 1317 frames by up to
+246 levels, deterministically at the same scroll positions: vlang.io's
+sidebar icons were present on the CPU canvas but not on the GPU canvas. Two
+master commits (`3c4617f26`, `b382d245d`) let SVG paths with ellipses join
+solid SVG groups, and the frame loop ran those groups for every
+`draw_svg_path` command, including commands the canvas had approved. A group
+draws several commands on the CPU canvas in one native batch, outside the
+canvas hooks, so the next readback erased them. Approved SVG commands now
+skip the groups and draw one leaf at a time on the canvas. Separately, the
+canvas now reads back and yields when a leaf's destination is recording into
+a shared compositor picture: that picture reaches the CPU canvas later, so
+GPU leaves drawn meanwhile would land beneath it and the next readback would
+erase it. vlang.io does not hit that case; the native test does.
+
+With both fixes, per-leaf verification on vlang.io (600 inputs, 607 canvas
+frames, 4166 GPU leaves, 173 million compared pixels) differs by at most 5
+levels, and no frame exceeds 20. `VOX_GPU_CANVAS_VERIFY=2` now also prints the
+worst pixel of a differing leaf with its CPU and GPU values.
+
+`tools/test_native_gpu_canvas.sh` drives the bridge as a reused frame does:
+a layer shadow, a rounded fill and a fractional border are drawn into a
+repainted strip through the per-leaf path and on the canvas, with a CPU fill
+from an unapproved command between them. It requires all three leaves on the
+canvas, one readback and re-upload around the CPU fill, the CPU fill's paint
+order, no change outside the strip and at most 3 levels of difference
+(currently identical); with a frame-wide shared recording the canvas must
+draw nothing and the result must be byte-identical. Point
+`NATIVE_GRAPHITE_DIR` at a `libVoxGraphite.dylib` that exports the
+`vox_graphite_canvas_*` functions.
+
+Cohorts on the rebased worktree executable `76c544bf…`, bridge `a5db0939…` and
+Graphite library `a8e4950d…` in both arms (the candidate only sets
+`VOX_EXPERIMENT_GPU_CANVAS=1`), live vlang.io, quiet host:
+
+| Run | Scroll FPS | Input delivery | Median / p95 / max interval | Inputs / scroll intervals | Leading gap | Load |
+| --- | ---: | ---: | --- | --- | ---: | ---: |
+| 60 Hz control-1 | 59.3 | 59.9 Hz | 16.7 / 20.9 / 33.2 ms | 600 / 593 | 92 ms | 3.4 |
+| 60 Hz candidate-1 | 59.9 | 60.0 Hz | 16.6 / 19.4 / 38.8 ms | 600 / 598 | 40 ms | 3.4 |
+| 60 Hz control-2 | 59.6 | 59.9 Hz | 16.6 / 20.9 / 34.5 ms | 600 / 596 | 90 ms | 4.3 |
+| 60 Hz candidate-2 | 59.9 | 60.0 Hz | 16.6 / 19.3 / 36.2 ms | 600 / 598 | 41 ms | 4.1 |
+| 120 Hz control-1 | 112.4 | 113.6 Hz | 8.3 / 13.8 / 29.9 ms | 1200 / 1187 | 77 ms | 3.6 |
+| 120 Hz candidate-1 | 119.1 | 119.3 Hz | 8.3 / 10.1 / 22.6 ms | 1200 / 1197 | 50 ms | 3.9 |
+| 120 Hz control-2 | 112.1 | 113.2 Hz | 8.3 / 14.3 / 30.6 ms | 1200 / 1187 | 87 ms | 3.8 |
+| 120 Hz candidate-2 | 119.2 | 119.5 Hz | 8.3 / 10.3 / 21.8 ms | 1200 / 1196 | 47 ms | 3.6 |
+
+All runs and guards exited 0 with unchanged identities. These are native
+layer publications, not display scanout. At 60 Hz both arms are near the
+input rate; the canvas trims the p95 interval and halves the scroll-start
+gap. At 120 Hz it keeps up with the input (119 FPS, p95 10 ms) where the
+control drops to 112 FPS with a 14 ms p95.
+
+The canvas stays opt-in. It only applies to reused scroll-raster frames with
+1–8 repainted rectangles; without the variable every hook returns at once and
+the frame loop is unchanged.
