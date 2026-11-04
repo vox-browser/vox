@@ -1,0 +1,1127 @@
+{
+ "date": "2026-11-04",
+ "request": "Clean stale LaunchServices registrations and implement the remaining 2.1B cost list",
+ "target": 2100000000,
+ "scope": "Same as hacker-news-window-indexing-2026-11-04.json: exclusive coalition counts through encoded document PNG",
+ "previous": {
+  "ledger": "hacker-news-2100-progress-2026-11-04.json",
+  "vox_medians": [
+   2429806150,
+   2415799258
+  ]
+ },
+ "environment_change": {
+  "launchservices": "699 LaunchServices bundle records whose paths no longer existed were unregistered with lsregister -u (user-approved); the ten Vox bundles still on disk stayed registered. tools/prune_stale_launchservices.py reports 0 stale records after the cohorts.",
+  "estimate": "About 240M per Vox launch from the earlier renamed-clone comparison; not separately re-measured"
+ },
+ "commits": {
+  "fc6f92871": "Link the case-mapping bridge to vcpkg ICU 78 instead of Homebrew ICU 79",
+  "1faaf32c4": "Keep toolbar symbols off CoreText's fallback cascade",
+  "684e1b64e": "Add a tool that prunes stale LaunchServices registrations",
+  "07bc5117f": "ui2: skip clearing a button image it never had",
+  "4099177ce": "ui2: apply a declared font family before installing tooltips"
+ },
+ "cohorts": {
+  "reached_1": {
+   "build": {
+    "executable_sha256_prefix": "5ec5d123",
+    "receipt": "20261104-094434-5b2699fb",
+    "head": "504cf01cc",
+    "note": "Shared dirty-tree build; includes concurrent sessions"
+   },
+   "vox_executable_sha256": "5ec5d123358d3356d1d2f6dfc157b46136f600f9524ff3231cc9480d3c16ead5",
+   "rows": [
+    {
+     "pair": 1,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2021169989,
+     "launch_upper": 2021169989,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      6.0673828125,
+      33.19677734375,
+      55.67236328125
+     ],
+     "started_unix": 1793775255.573132
+    },
+    {
+     "pair": 1,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 8063782936,
+     "launch_upper": 8080852618,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      5.8212890625,
+      32.6953125,
+      55.36328125
+     ],
+     "started_unix": 1793775258.939121
+    },
+    {
+     "pair": 2,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2031664578,
+     "launch_upper": 2031664578,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      5.43505859375,
+      32.1689453125,
+      55.04443359375
+     ],
+     "started_unix": 1793775267.159937
+    },
+    {
+     "pair": 2,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 8024928010,
+     "launch_upper": 8048287821,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      5.43505859375,
+      32.1689453125,
+      55.04443359375
+     ],
+     "started_unix": 1793775262.813604
+    },
+    {
+     "pair": 3,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2018950617,
+     "launch_upper": 2018950617,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      5.31982421875,
+      31.701171875,
+      54.7451171875
+     ],
+     "started_unix": 1793775270.509969
+    },
+    {
+     "pair": 3,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 8004267704,
+     "launch_upper": 8029033393,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      5.2138671875,
+      31.2412109375,
+      54.44775390625
+     ],
+     "started_unix": 1793775273.841024
+    },
+    {
+     "pair": 4,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2023037255,
+     "launch_upper": 2023037255,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      5.0361328125,
+      30.77197265625,
+      54.14599609375
+     ],
+     "started_unix": 1793775282.153329
+    },
+    {
+     "pair": 4,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 8048423500,
+     "launch_upper": 8063742799,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      5.0361328125,
+      30.77197265625,
+      54.14599609375
+     ],
+     "started_unix": 1793775278.246167
+    },
+    {
+     "pair": 5,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2026871799,
+     "launch_upper": 2026871799,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      4.953125,
+      30.3271484375,
+      53.85205078125
+     ],
+     "started_unix": 1793775285.492308
+    },
+    {
+     "pair": 5,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7990477907,
+     "launch_upper": 8017651811,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      5.03662109375,
+      29.9228515625,
+      53.5712890625
+     ],
+     "started_unix": 1793775288.835003
+    },
+    {
+     "pair": 6,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2020847948,
+     "launch_upper": 2020847948,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      5.033203125,
+      29.5087890625,
+      53.28662109375
+     ],
+     "started_unix": 1793775297.527607
+    },
+    {
+     "pair": 6,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 8004612725,
+     "launch_upper": 8004940613,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      5.033203125,
+      29.5087890625,
+      53.28662109375
+     ],
+     "started_unix": 1793775293.197011
+    },
+    {
+     "pair": 7,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2014572466,
+     "launch_upper": 2014572466,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      5.1103515625,
+      29.1181640625,
+      53.00927734375
+     ],
+     "started_unix": 1793775300.859543
+    },
+    {
+     "pair": 7,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 8110061965,
+     "launch_upper": 8144782257,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      4.94091796875,
+      28.68408203125,
+      52.7158203125
+     ],
+     "started_unix": 1793775304.203358
+    }
+   ],
+   "vox_median": 2021169989,
+   "vox_max": 2031664578,
+   "brave_median_lower": 8024928010,
+   "brave_min_lower": 7990477907,
+   "complete": true,
+   "gate_10x_vox_max_le_9x_brave_min": true,
+   "tool_summary": {
+    "passed": true,
+    "worst_vox_over_best_brave": 0.25426070901468545,
+    "error": null
+   },
+   "guard": {
+    "child_exit_code": 0,
+    "reason": "completed",
+    "peak_rss_bytes": 943652864
+   }
+  },
+  "reached_2": {
+   "build": {
+    "executable_sha256_prefix": "74270cfc",
+    "receipt": "20261104-100327-a67dd60d",
+    "head": "1d8447382",
+    "note": "Adds 07bc5117f; concurrent sessions included"
+   },
+   "vox_executable_sha256": "74270cfc54b3ed01ecd4559c8a27c92fa63179c7003ddc4df628df861a2f8729",
+   "rows": [
+    {
+     "pair": 1,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2063697542,
+     "launch_upper": 2063697542,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      12.3359375,
+      12.88720703125,
+      25.529296875
+     ],
+     "started_unix": 1793776231.027679
+    },
+    {
+     "pair": 1,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7949768020,
+     "launch_upper": 7974244569,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      12.30859375,
+      12.8720703125,
+      25.44970703125
+     ],
+     "started_unix": 1793776235.108883
+    },
+    {
+     "pair": 2,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2054851406,
+     "launch_upper": 2054851406,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      12.6484375,
+      12.92529296875,
+      25.3212890625
+     ],
+     "started_unix": 1793776244.9187999
+    },
+    {
+     "pair": 2,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7942602577,
+     "launch_upper": 7974522759,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      12.44384765625,
+      12.890625,
+      25.38232421875
+     ],
+     "started_unix": 1793776239.98651
+    },
+    {
+     "pair": 3,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2048165192,
+     "launch_upper": 2048165192,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      12.83642578125,
+      12.95947265625,
+      25.2607421875
+     ],
+     "started_unix": 1793776249.177283
+    },
+    {
+     "pair": 3,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7952215439,
+     "launch_upper": 7968592519,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      12.83642578125,
+      12.95947265625,
+      25.2607421875
+     ],
+     "started_unix": 1793776253.471262
+    },
+    {
+     "pair": 4,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2052553290,
+     "launch_upper": 2052553290,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      13.1181640625,
+      13.0107421875,
+      25.06298828125
+     ],
+     "started_unix": 1793776264.0602849
+    },
+    {
+     "pair": 4,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7969122901,
+     "launch_upper": 7969122901,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      12.78076171875,
+      12.94384765625,
+      25.11083984375
+     ],
+     "started_unix": 1793776258.7658198
+    },
+    {
+     "pair": 5,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2046185867,
+     "launch_upper": 2046185867,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      13.1181640625,
+      13.0107421875,
+      25.06298828125
+     ],
+     "started_unix": 1793776268.3662562
+    },
+    {
+     "pair": 5,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 8023689213,
+     "launch_upper": 8024528793,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      13.1083984375,
+      13.01025390625,
+      24.9921875
+     ],
+     "started_unix": 1793776272.485377
+    },
+    {
+     "pair": 6,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2040528353,
+     "launch_upper": 2040528353,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      13.26416015625,
+      13.04296875,
+      24.86376953125
+     ],
+     "started_unix": 1793776282.8589718
+    },
+    {
+     "pair": 6,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7991232150,
+     "launch_upper": 8014311313,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      12.939453125,
+      12.9765625,
+      24.91015625
+     ],
+     "started_unix": 1793776277.7018938
+    },
+    {
+     "pair": 7,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2039178418,
+     "launch_upper": 2039178418,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      13.00244140625,
+      12.9921875,
+      24.7763671875
+     ],
+     "started_unix": 1793776287.112739
+    },
+    {
+     "pair": 7,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 8029606462,
+     "launch_upper": 8029606462,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      12.681640625,
+      12.92578125,
+      24.68359375
+     ],
+     "started_unix": 1793776291.176877
+    }
+   ],
+   "vox_median": 2048165192,
+   "vox_max": 2063697542,
+   "brave_median_lower": 7969122901,
+   "brave_min_lower": 7942602577,
+   "complete": true,
+   "gate_10x_vox_max_le_9x_brave_min": true,
+   "tool_summary": {
+    "passed": true,
+    "worst_vox_over_best_brave": 0.2598263632094606,
+    "error": null
+   },
+   "guard": {
+    "child_exit_code": 0,
+    "reason": "completed",
+    "peak_rss_bytes": 943620096
+   }
+  },
+  "font_order_incomplete": {
+   "build": {
+    "executable_sha256_prefix": "642ceefd",
+    "receipt": "20261104-102329-8a5408fe",
+    "head": "71b04bb0a",
+    "note": "Adds the font-order fix; Brave pair 3 failed its ownership audit, so this is not an acceptance cohort"
+   },
+   "vox_executable_sha256": "642ceefd276fd3d49831ec85aabd4f702de34816fe3348c30b254eeba5ea6431",
+   "rows": [
+    {
+     "pair": 1,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2004117298,
+     "launch_upper": 2004117298,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      14.880859375,
+      12.4609375,
+      13.85595703125
+     ],
+     "started_unix": 1793777524.801717
+    },
+    {
+     "pair": 1,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7972846440,
+     "launch_upper": 7988671476,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      14.880859375,
+      12.4609375,
+      13.85595703125
+     ],
+     "started_unix": 1793777529.348806
+    },
+    {
+     "pair": 2,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2011557697,
+     "launch_upper": 2011557697,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      15.3994140625,
+      12.68505859375,
+      13.91015625
+     ],
+     "started_unix": 1793777540.356135
+    },
+    {
+     "pair": 2,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7977025822,
+     "launch_upper": 7996836262,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      14.8251953125,
+      12.52783203125,
+      13.86279296875
+     ],
+     "started_unix": 1793777534.894974
+    },
+    {
+     "pair": 3,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2004825612,
+     "launch_upper": 2004825612,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      15.20703125,
+      12.68994140625,
+      13.90478515625
+     ],
+     "started_unix": 1793777544.73394
+    },
+    {
+     "pair": 3,
+     "engine": "brave",
+     "exit": 1,
+     "error": "A private browser helper is outside its resource coalition",
+     "launch_lower": null,
+     "launch_upper": null,
+     "pixels_exact": null,
+     "content_exact": null,
+     "png_sha256": null,
+     "load_before": [
+      15.20703125,
+      12.68994140625,
+      13.90478515625
+     ],
+     "started_unix": 1793777549.076986
+    },
+    {
+     "pair": 4,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2016855385,
+     "launch_upper": 2016855385,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      15.38330078125,
+      12.81396484375,
+      13.9345703125
+     ],
+     "started_unix": 1793777558.425398
+    },
+    {
+     "pair": 4,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7938273088,
+     "launch_upper": 7956957565,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      15.5908203125,
+      12.81103515625,
+      13.9404296875
+     ],
+     "started_unix": 1793777553.2413352
+    },
+    {
+     "pair": 5,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2001375637,
+     "launch_upper": 2001375637,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      15.1923828125,
+      12.81689453125,
+      13.9287109375
+     ],
+     "started_unix": 1793777562.888407
+    },
+    {
+     "pair": 5,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7875087918,
+     "launch_upper": 7876084635,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      14.9365234375,
+      12.80322265625,
+      13.9169921875
+     ],
+     "started_unix": 1793777567.323184
+    },
+    {
+     "pair": 6,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2021506229,
+     "launch_upper": 2021506229,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      15.85546875,
+      13.07177734375,
+      13.9990234375
+     ],
+     "started_unix": 1793777578.7070148
+    },
+    {
+     "pair": 6,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 8070119731,
+     "launch_upper": 8076718856,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      15.58203125,
+      12.97216796875,
+      13.9697265625
+     ],
+     "started_unix": 1793777572.7630951
+    },
+    {
+     "pair": 7,
+     "engine": "vox",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 2090182179,
+     "launch_upper": 2090182179,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "load_before": [
+      15.86669921875,
+      13.1201171875,
+      14.0107421875
+     ],
+     "started_unix": 1793777583.206965
+    },
+    {
+     "pair": 7,
+     "engine": "brave",
+     "exit": 0,
+     "error": null,
+     "launch_lower": 7981654038,
+     "launch_upper": 7998305821,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "load_before": [
+      15.63671875,
+      13.11767578125,
+      14.00439453125
+     ],
+     "started_unix": 1793777587.806164
+    }
+   ],
+   "vox_median": 2011557697,
+   "vox_max": 2090182179,
+   "brave_median_lower": 7974936131.0,
+   "brave_min_lower": 7875087918,
+   "complete": false,
+   "gate_10x_vox_max_le_9x_brave_min": null,
+   "tool_summary": {
+    "passed": false,
+    "worst_vox_over_best_brave": null,
+    "error": "Every observation must exit successfully and match pixels and full row identity"
+   },
+   "guard": {
+    "child_exit_code": 1,
+    "reason": "completed",
+    "peak_rss_bytes": 943603712
+   }
+  }
+ },
+ "loaded_libraries": {
+  "method": "DYLD_PRINT_LIBRARIES=1 Vox --no-such-option on 642ceefd, filtered for icu/freetype/png/brotli",
+  "loaded": [
+   "vcpkg libicudata.78.2",
+   "vcpkg libicuuc.78.2",
+   "vcpkg libfreetype.6.20.2",
+   "vcpkg libpng16.16.50.0",
+   "vcpkg libbrotlicommon.1.2.0",
+   "vcpkg libbrotlidec.1.2.0",
+   "/usr/lib/libicucore.A.dylib (system)",
+   "ImageIO libPng.dylib (system)"
+  ],
+  "previous": "ICU 78.2 (vcpkg) and 79.1 (Homebrew) plus duplicate freetype, libpng and brotli copies"
+ },
+ "launch_floor": {
+  "description": "Vox --no-such-option with MallocSpaceEfficient=1 preset (as LaunchServices supplies), RUSAGE_INFO_V4 retired instructions read from the zombie; exit 2 is argument rejection",
+  "before_median_from_previous_ledger": 236000000,
+  "after": {
+   "executable_sha256": "69b3556cdccc3c5582fa552ea6e9805182e9a4dd97f81095eefb09e390993566",
+   "median": 143727433,
+   "counts": [
+    145797012,
+    143690459,
+    143868955,
+    143995878,
+    143727433,
+    143680419,
+    143544032
+   ],
+   "exits": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "after_without_preset": {
+   "executable_sha256": "69b3556cdccc3c5582fa552ea6e9805182e9a4dd97f81095eefb09e390993566",
+   "median": 252502360,
+   "counts": [
+    252447578,
+    252699394,
+    253362561,
+    252320108,
+    252636440,
+    252502360,
+    252453050
+   ],
+   "exits": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "note": "After build 69b3556c (receipt 20261104-101002-1300bbc9). The drop includes ICU 78-only linking and concurrent sessions' lazy libcurl loading and library deduplication."
+ },
+ "chrome_mount_probes": {
+  "note": "Per-thread inclusive instructions under lldb on the archived page; ~0.1M debugger overhead per nested stop",
+  "before_toolbar_fix": {
+   "BrowserApp__browser_chrome_ui_elements": [
+    195158,
+    174365,
+    170559
+   ],
+   "ui2__native_create_element": [
+    1094458,
+    1861763,
+    10620992,
+    2939240,
+    1365806,
+    890979,
+    29680639,
+    572566,
+    952884,
+    1454430,
+    1380736,
+    1346415,
+    568447,
+    534612,
+    477887,
+    1521218,
+    203723,
+    1252354,
+    211109,
+    260949,
+    262267
+   ],
+   "TFontCascade::CreateFallback": [
+    6737464,
+    27501719,
+    112807,
+    163603
+   ],
+   "ui2__native_hover_text": [
+    15612348,
+    129765,
+    140408,
+    101308,
+    113635,
+    127964,
+    114926,
+    121366,
+    126368,
+    96415,
+    107649,
+    874888,
+    117712,
+    105309,
+    114566,
+    99863,
+    95121,
+    106094,
+    98315,
+    95739,
+    97886,
+    102644,
+    96476,
+    100141,
+    100587,
+    95695,
+    99067,
+    106332,
+    111016,
+    111906,
+    111161,
+    106439,
+    95866,
+    95465,
+    97730,
+    114533,
+    209289,
+    115367,
+    107507,
+    117122
+   ],
+   "ui2__native_update_button_image": [
+    1634974,
+    338810,
+    237492,
+    28496476,
+    193600,
+    176863,
+    191022,
+    344981,
+    172741,
+    199723
+   ],
+   "ui2__native_update_button": [
+    3392970,
+    1266230,
+    650238,
+    28950169,
+    740683,
+    606831,
+    620643,
+    790017,
+    563016,
+    556652
+   ],
+   "BrowserApp__mount_ui2_chrome": [
+    112548270
+   ]
+  },
+  "after_1faaf32c4": {
+   "BrowserApp__browser_chrome_ui_elements": [
+    200325,
+    189971,
+    178680
+   ],
+   "ui2__native_create_element": [
+    1043057,
+    550359,
+    11602760,
+    2908931,
+    1327073,
+    1374632,
+    38628267,
+    692919,
+    914585,
+    1467384,
+    1262865,
+    1256962,
+    531044,
+    185273,
+    621264,
+    1348374,
+    181167,
+    1242519,
+    200416,
+    289725,
+    258324
+   ],
+   "ui2__native_hover_text": [
+    96789,
+    97483,
+    93465,
+    95982,
+    98193,
+    98519,
+    97401,
+    98517,
+    94399,
+    97315,
+    99337,
+    993400,
+    89820,
+    98187,
+    91248,
+    97299,
+    95829,
+    93911,
+    91007,
+    97657,
+    94925,
+    93673,
+    91715,
+    93966,
+    92901,
+    109719,
+    98823,
+    100507,
+    93418,
+    99796,
+    101115,
+    94522,
+    97352,
+    210407,
+    97353,
+    100587,
+    97449,
+    99006,
+    98046,
+    97439
+   ],
+   "ui2__native_update_button_image": [
+    2565148,
+    355981,
+    209890,
+    37542507,
+    196287,
+    178801,
+    165382,
+    266229,
+    167685,
+    179381
+   ],
+   "ui2__native_update_button": [
+    4379285,
+    1247918,
+    591224,
+    37926398,
+    745843,
+    591613,
+    582589,
+    656738,
+    566925,
+    502058
+   ],
+   "TFontCascade::CreateFallback": [
+    33608069
+   ],
+   "BrowserApp__mount_ui2_chrome": [
+    109386250
+   ]
+  },
+  "after_07bc5117f": {
+   "TFontCascade::CreateFallback": [
+    33726287
+   ],
+   "BrowserApp__mount_ui2_chrome": [
+    100594109
+   ]
+  },
+  "after_font_order_fix": {
+   "BrowserApp__mount_ui2_chrome": [
+    63777013
+   ]
+  }
+ },
+ "remaining_fallback": "After 07bc5117f one TFontCascade::CreateFallback (33.7M) remained: the tooltip installed in render_element measured the history button title (◷) in the 17 pt system face before the Menlo family was applied (probe-fb4 stack). 4099177ce applies the family right after creation; probe-fb5 on 642ceefd records no CreateFallback call.",
+ "toolbar_pixels": {
+  "method": "Diagnostic injected capture of the window chrome layer tree (1800x120 px) on a one-paragraph page",
+  "info_icon_vs_original": {
+   "different_pixels": 199,
+   "max_channel_difference": 43
+  },
+  "history_vs_original": {
+   "different_pixels": 0
+  },
+  "font_order_build_vs_1faaf32c4_build": {
+   "different_pixels": 0
+  },
+  "bookmark_placeholder": "Bookmark items without an icon show ○ instead of ◎ (deliberate glyph change; not covered by this capture)"
+ },
+ "not_implemented": {
+  "javascript_bytecode_cache": "System JavaScriptCore exposes JSScript caching only through an entitled data vault; no diskCachePath option. JSC_reportParseTimes/JSC_reportBytecodeCompileTimes show about 13.5 ms (367 functions) of parse+compile on HN, capping a rework at ~35-45M.",
+  "style_layout": "Profile is flat beyond the already-cached font matching; no single fix found.",
+  "writing_tools": "Opt-out rejected by another session: the cost moves to NSTextInputContext."
+ }
+}

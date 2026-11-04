@@ -1,5 +1,82 @@
 # Hacker News instructions against Brave, 2026-11-01
 
+## 2026-11-04: 2.1B reached
+
+The 2,100,000,000 target is met by two complete seven-pair cohorts:
+
+| Cohort | Shared build | Vox median | Vox maximum | Brave median lower | Brave minimum lower | Fewer |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | `5ec5d123` (receipt `20261104-094434-5b2699fb`, HEAD `504cf01cc`) | **2,021,169,989** | 2,031,664,578 | 8,024,928,010 | 7,990,477,907 | 74.81% |
+| 2 | `74270cfc` (receipt `20261104-100327-a67dd60d`, HEAD `1d8447382`) | **2,048,165,192** | 2,063,697,542 | 7,969,122,901 | 7,942,602,577 | 74.30% |
+
+All 14 launches in each cohort exit cleanly, match the reference at every pixel
+and retain all 30 story IDs; every helper stays in its coalition, so both are
+complete Vox/Brave acceptance cohorts (`passed: true`, guard exit 0). The
+conservative maximum-Vox/minimum-Brave ratios are 0.2543 and 0.2598. Host
+one-minute load was 5.0–6.1 for cohort 1 and 12.3–13.3 for cohort 2, while other
+sessions compiled. Both builds are dirty shared-tree builds that contain
+concurrent sessions' work, so the drop from the previous section's 2,415,799,258
+cannot be attributed only to the changes below.
+
+**Environment.** With the user's approval, 699 LaunchServices bundle records whose
+paths no longer existed were unregistered with `lsregister -u`. The ten Vox
+bundles still on disk stayed registered. The earlier renamed-clone comparison
+put this machine artifact at about 240M per Vox launch; it was not re-measured
+separately. `tools/prune_stale_launchservices.py` (`684e1b64e`) reports new
+stale records and, with `--apply`, unregisters only paths that are missing at
+that moment. It reported none after these cohorts.
+
+**Duplicate libraries.** The case-mapping bridge linked Homebrew ICU 79 while
+everything else used the vcpkg ICU 78 build, so both copies loaded. `fc6f92871`
+links the bridge to vcpkg ICU 78. `DYLD_PRINT_LIBRARIES` now shows one copy each of
+ICU 78.2, freetype, libpng and brotli, besides the system's own `libicucore`
+and ImageIO `libPng`. With `MallocSpaceEfficient=1` preset, as
+LaunchServices supplies it, `Vox --no-such-option` now retires a median of
+**143,727,433** instructions (seven launches on `69b3556c`), down from about 236M.
+The drop also contains concurrent sessions' lazy libcurl loading and library
+deduplication. Without the preset, Vox re-executes itself and the median is
+252,502,360.
+
+**Toolbar glyphs.** UI2's AppKit buttons and labels ignored
+`TextStyle.font_family`, so `ⓘ`, `◎` and `◷` were measured in the system face,
+which builds CoreText's fallback cascade (`TFontCascade::CreateFallback`).
+`1faaf32c4` applies a declared family to native labels and buttons. The
+history button names Menlo (pixel-identical), the address-bar `ⓘ` is a filled
+UI2 vector path (at most 43/255 channel difference on 199 pixels), and the
+bookmark placeholder is `○` instead of `◎`. `07bc5117f` stops UI2 from clearing an
+image a button never had, which measured the title before the family was
+applied. Probed `BrowserApp__mount_ui2_chrome` falls 112.5M → 109.4M → 100.6M.
+One 33.7M fallback remained after `07bc5117f`: the tooltip installed later in
+`render_element` measured the `◷` title in the 17 pt system face.
+`4099177ce` applies the family right after native creation instead; updates
+keep applying it. On `642ceefd` (receipt `20261104-102329-8a5408fe`) the probe
+records no `CreateFallback` call, the mount falls to **63.8M**, and a chrome
+capture is pixel-identical to the `1faaf32c4` build.
+
+A seven-pair cohort on `642ceefd` measures a **Vox median of 2,011,557,697**
+(maximum 2,090,182,179; all seven Vox launches pass pixels, stories and
+ownership; load 14.9–15.9). It is not an acceptance cohort: Brave pair 3
+failed its ownership audit because a helper left its coalition. It is
+retained, and no replacement cohort was run.
+
+**Not implemented.**
+
+- JavaScript bytecode caching: system JavaScriptCore offers `JSScript` caching
+  only through an entitled data vault and has no cache-path option.
+  `JSC_reportParseTimes` and `JSC_reportBytecodeCompileTimes` put all parse and
+  bytecode compilation on this page at about 13.5 ms (367 functions), so even
+  a bootstrap rework is capped at roughly 35–45M.
+- Style and layout: after the cached font matching above, the profile is flat
+  and no single hotspot remains.
+- Writing Tools: another session rejected the opt-out because its cost moves to
+  `NSTextInputContext`.
+
+Raw evidence is under `Build/hn-2100-20261104/` (`cohort3`, `cohort4`, `floor`,
+`probe-*`). The [ledger](benchmark-results/hacker-news-2100-reached-2026-11-04.json)
+retains every count, PNG hash, load, guard exit and probe, including the
+incomplete cohort. Broad suites have not
+run; the focused ICU, UI and bookmark tests pass in default and prealloc modes.
+
 ## 2026-11-04: progress toward 2.1B
 
 The follow-up target is a Vox median of **2,100,000,000**. It remains open.
