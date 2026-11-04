@@ -907,3 +907,100 @@ when it arrives, and remembered as absent after an error, so later frames are a
 map lookup. This mainly helps real profiles whose bookmark bar contains
 redirecting favicons; the empty-profile acceptance workload above does not
 isolate it.
+
+
+## Content-damage reuse and content-anchored gradient blur (2026-11-04)
+
+**The live 60 FPS goal remains open.** Viewport pixel reuse now engages on
+vlang.io during scrolling, but it does not yet raise throughput: the remaining
+frame cost is per-leaf GPU round trips for the large leaves that touch the
+exposed strip or in-page damage. Raw logs, summaries, guard reports and the CPU
+sample are in `Build/vlang-fps-20261103/` (`rE-*`, `rF-*`, `mini/*-H2-*`).
+
+`16692c6f4` commits the content-damage reuse that previously shipped only in
+dirty shared builds. Each frame records a scroll-normalized key per paint
+command; the retained and current frames are diffed, and only the exposed strip
+plus the old and new ink of changed commands is repainted. Its focused checks
+pass: `main_scroll_raster_test.v` (after correcting five stale calls to the
+five-argument key function), `layout/scroll_raster_eligibility_storage_test.v`
+and the native `tools/test_scroll_raster_darwin.m`.
+
+With that code alone (bundle `ee58ec95…`), a diagnostic run found every input
+frame eligible but none reused: 55 frames fell back with `damage-too-large` and
+8 with `too-many-changes`. The cause was `.showcase::before`, a faint radial
+glow with `filter: blur(30px)`. Its layer was forced to mismatch every frame, so
+its ~1024×611 ink was always damage. A new native test
+(`tools/test_native_css_blur_translation.sh`) shows why that was needed: Skia
+clips a filter layer to the canvas, and its downsampled blur follows the clipped
+layer origin. Once the gradient overhangs the canvas by more than 3σ, the same
+content rendered 1–2 levels differently at different whole-device-pixel offsets
+(12 of 32 scenes).
+
+`7f20f2ba3` rasterizes single-gradient blurs anchored to their content instead.
+The filter output is drawn once over its complete ink on a transparent surface,
+cached by a scroll-independent key from the paint commands, and blended over
+opaque backdrops on the CPU inside the current clip. Translucent backdrops keep
+the legacy GPU composite; `VOX_DISABLE_ANCHORED_GRADIENT_BLUR` restores it
+everywhere. Top-level single-gradient blurs keep their identity in the damage
+keys. Compared with the legacy composite, the 8-bit layer blend moves some
+pixels by one level; no screenshot reference uses this path. Checks:
+
+- The new native test: 28 scenes exact for translation, cached reuse and
+  strip-clipped replay.
+- The existing region test: 160 scenes exact.
+- The existing backdrop test (legacy path pinned): 48 comparisons exact.
+- `main_chromium_gradient_blur_test.v` and the new key test in
+  `main_scroll_raster_test.v`.
+
+On bundle `b6e4b222…` (receipt `20261104-014100-e011d913`), the diagnostic run
+reused 70 of 93 input frames; 16 fell back with `too-many-changes`. The anchored
+blur hit its cache on all 87 draws during input. The matched cohort below keeps
+the same protocol as before: live direct HTTPS, automatic scripts, empty
+private profile/cache, title readiness plus 30 s settle, 1024×768 viewport with
+112 px chrome at scale 2, and 600 precise delta-2 inputs at 60 Hz reversed every
+60. One-minute host load was ~12 for the first four trials and rose to ~44
+during control-3.
+
+| Trial | Reuse | Scroll FPS | Input Hz | Inputs / pubs | Median / p95 / max interval (ms) | Over 16.67 ms | Lead / trail gap (ms) |
+| --- | --- | ---: | ---: | --- | --- | ---: | --- |
+| control-1 | off | 7.010 | 46.66 | 600 / 91 | 142.3 / 237.2 / 354.8 | 99% | 162.6 / 141.5 |
+| candidate-1 | on | 6.869 | 45.72 | 600 / 91 | 138.7 / 246.1 / 304.9 | 100% | 117.3 / 157.7 |
+| control-2 | off | 7.072 | 46.05 | 600 / 93 | 143.9 / 228.8 / 281.7 | 97% | 125.3 / 69.3 |
+| candidate-2 | on | 6.421 | 45.79 | 600 / 85 | 153.1 / 238.3 / 276.5 | 100% | 158.1 / 169.2 |
+| control-3 | off | 7.072 | 46.05 | 600 / 93 | 143.8 / 233.3 / 303.4 | 100% | 113.7 / 0.2 |
+| candidate-3 | on | 7.801 | 46.73 | 600 / 101 | 135.9 / 214.0 / 265.2 | 97% | 141.1 / 0.2 |
+
+Reuse earns no FPS credit: the arms overlap and nearly every interval misses
+the 60 Hz budget. A reused frame replays only 37–66 of ~450 commands, yet costs
+about as much as a full repaint. The input-window CPU sample (`rF-sample3.txt`)
+explains this. The main thread is almost entirely in leaf replay: rounded rects,
+CSS gradient tiles, outer box shadows, images, glyph runs and SVG paths. Each
+leaf does its own Graphite submit, `waitUntilCompleted` and readback. Eight
+commands change on every frame: the playing demo video, nested display lists, a
+growing bar and animated text. Every large leaf that touches them or the strip
+is still rasterized at its full original size, because the strip path
+deliberately keeps leaf raster origins and dimensions. Damage-key hashing is
+negligible (2 of 391 main-thread samples).
+
+The fixture gate exposed an unrelated full-render bug. On a page of cards with
+both an outer and an inset `box-shadow`, scrolling by N px removed the bottom
+N px of every card background in ordinary full repaints. Reused frames looked
+correct only because they kept pixels painted at earlier offsets.
+`draw_chromium_inset_decorations` subtracted the root scroll a second time from
+commands whose transforms already include it, shifting the deferred decoration
+region up. `VOX_DISABLE_DEFERRED_DECORATIONS=1` avoided it. `7ec7e1ec6` computes
+the region from the transform alone, like ordinary replay, and adds a focused
+bounds test (`main_chromium_inset_decorations_test.v` passes). Its end-to-end
+fixture check waits for a production build; at this checkpoint the shared data
+volume had about 2.6 GiB free, and one build failed with `ENOSPC`.
+
+Next steps toward 60 FPS, in order of expected effect:
+
+1. Keep GPU work for strip and damage repaints in one submission per frame,
+   reading back only the clipped rows, instead of one synchronous round trip
+   per leaf.
+2. Give continuously changing content (video, animated nested display lists)
+   its own retained layer, so its damage stops re-rasterizing the leaves
+   beneath it.
+3. Raise `scroll_raster_max_changed_commands` only after (1) and (2); the 16
+   `too-many-changes` frames are full repaints today.
