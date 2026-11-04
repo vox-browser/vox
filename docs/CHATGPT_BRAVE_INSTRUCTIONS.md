@@ -395,3 +395,53 @@ five-second diagnostic and matched captures above remain separate and exact.
 The [arena scan receipt](performance/chatgpt-arena-words-20261104.json) and its
 linked evidence archive preserve every test, failed compile, diagnostic,
 control/candidate count, PNG, audit, native sample, input identity and guard exit.
+
+## Tab favicon discovery
+
+The exploratory native trace also showed repeated document-head walks and
+`link_relations` parsing beneath chrome favicon updates. That failed sampled
+capture supplied a hypothesis only. Commit `1f8baee0b` caches discovery using
+document identity, tree and attribute versions, document/base URLs and encoding.
+The new DOM attribute version tracks edits that leave tree structure unchanged.
+Chrome retains owned strings and scalar identities, and reuses the strings when
+an unrelated attribute edit invalidates discovery without changing either URL.
+The original live scan remains available with
+`VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE=1`.
+
+Five focused cache cases pass with default GC and the production allocator,
+including the original control and poisoned-memory runs. They cover live href,
+rel and node-backed attribute edits, head tree order/removal, base/document/about-
+base URL changes, encoding, empty results, navigation and retired caller/document
+storage. The allocation checks verify 128 warm lookups add zero arena bytes and
+128 unrelated invalidations retain fewer than 1,024 base-arena bytes. Separate
+DOM-version, base-element lifecycle and existing favicon image/fallback checks
+also pass. The final cache suite was recompiled after the string-retention
+refinement; prerequisite results retain their earlier source identities.
+
+Production executable
+`7aa5ec34a86aaf97eb46225343d5b608d9d01b74901b9c82c192790ecce0b489`
+contains the final retention guards, verified in its frozen generated function.
+Two separate diagnostic pairs confirm both initial scanning and cached lookups
+execute on ChatGPT. All four captures pass unchanged pixels, complete content,
+author bootstrap and kernel-exit checks with stable inputs. Four captures from
+the preceding implementation revision remain separately labelled.
+
+The uninstrumented control/candidate cohort stopped in its first pair. Vox's
+control observation completed, but Brave's ownership audit rejected a transient
+crash handler and code-sign cleanup helper outside the measured coalition. Both
+were observed with parent PID 1 and had exited before a later identity survey;
+their earlier ownership cannot be established. No candidate observation,
+instruction reduction or acceptance statistic can be computed from that cohort.
+It receives zero page credit and no broad-cadence advance. The 5% Brave goal
+remains unmet.
+
+Commits `9c4f681b5` and `8fb5d3f23` enrich future failure receipts with creation
+times, executable paths and coalition identities through two observations. These
+extra reads run only for rejected helpers; every ownership rejection remains in
+place. The final 268 instruction-tool tests and 15 helper-identity tests pass.
+This diagnostic improvement does not repair the earlier cohort.
+
+The [favicon discovery receipt](performance/chatgpt-favicon-discovery-20261104.json)
+links durable raw commands, compiler/runtime identities, guards, audits, PNGs and
+every attempt. Trials use the retained SOCKS capture and original author-script
+bytes, with no additional live download or reference/tolerance change.

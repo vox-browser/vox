@@ -1,0 +1,2619 @@
+{
+  "version": 1,
+  "implementation_commit": "1f8baee0b",
+  "status": "Favicon discovery cache passes focused ownership/invalidation checks and exact production page diagnostics; matched instruction cohort rejected by unchanged browser ownership gate",
+  "implementation": {
+    "sources": [
+      {
+        "path": "dom/document.v",
+        "sha256": "34fbcee5bb7a2cf1185e0c3cedbaea60d60ee36165e15c5b5c3b4b34818e9465",
+        "bytes": 468165
+      },
+      {
+        "path": "dom/element.v",
+        "sha256": "cb106f56e28259f530fc95786cd11dc1d35a6adb6f6f2a802cb3949bf177cba1",
+        "bytes": 239900
+      },
+      {
+        "path": "dom/attribute_version_test.v",
+        "sha256": "628f54b0ef7d328be95ee7a6d161ff94278d545ff1c616d89344dd849f408668",
+        "bytes": 1317
+      },
+      {
+        "path": "main_browser_text_cache.v",
+        "sha256": "d64959a646db64e84a005cf4ceb97489ad63bb277230446b722d6f79734084e5",
+        "bytes": 4136
+      },
+      {
+        "path": "main_browser_tab_favicon.v",
+        "sha256": "beaf7380e07dd04ea7ab826840445f73b8a7fa34ec816836f33916e7e2a408c5",
+        "bytes": 7211
+      },
+      {
+        "path": "main_browser_favicon_discovery_test.v",
+        "sha256": "8a737f1a9062876c775e7993d18f37b8560c4ed953d40d244c0813a30193a01f",
+        "bytes": 6567
+      }
+    ],
+    "behavior": "Cache head favicon discovery by document identity, tree/attribute versions, document/base URL and encoding. Retain strings and scalar IDs only. Preserve last-icon selection, URL safety, asynchronous image completion and fallback behavior. Reuse unchanged strings after unrelated attribute edits.",
+    "control": "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE=1 retains the original live discovery",
+    "diagnostic": "VOX_TAB_FAVICON_DISCOVERY_DIAGNOSTICS=1 verifies initial scan and cached lookup once per fresh process"
+  },
+  "profiling_basis": {
+    "receipt": "docs/performance/chatgpt-arena-words-20261104.json",
+    "finding": "Exploratory native trace contains browser_favicon_url_in_subtree/link_relations beneath browser_tab_favicon_id during chrome updates",
+    "limitation": "That earlier 15-second sample failed pixel conformance and provided a hypothesis only. The new five-second production diagnostics independently verify both cache paths."
+  },
+  "checks": {
+    "final_favicon_test_functions": 5,
+    "final_runtime_jobs": 5,
+    "final": {
+      "complete": true,
+      "inputs_before": {
+        "/Users/alex/code/vox2/dom/document.v": "34fbcee5bb7a2cf1185e0c3cedbaea60d60ee36165e15c5b5c3b4b34818e9465",
+        "/Users/alex/code/vox2/dom/element.v": "cb106f56e28259f530fc95786cd11dc1d35a6adb6f6f2a802cb3949bf177cba1",
+        "/Users/alex/code/vox2/dom/attribute_version_test.v": "628f54b0ef7d328be95ee7a6d161ff94278d545ff1c616d89344dd849f408668",
+        "/Users/alex/code/vox2/main_browser_text_cache.v": "d64959a646db64e84a005cf4ceb97489ad63bb277230446b722d6f79734084e5",
+        "/Users/alex/code/vox2/main_browser_tab_favicon.v": "beaf7380e07dd04ea7ab826840445f73b8a7fa34ec816836f33916e7e2a408c5",
+        "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v": "8a737f1a9062876c775e7993d18f37b8560c4ed953d40d244c0813a30193a01f"
+      },
+      "inputs_after": {
+        "/Users/alex/code/vox2/dom/document.v": "34fbcee5bb7a2cf1185e0c3cedbaea60d60ee36165e15c5b5c3b4b34818e9465",
+        "/Users/alex/code/vox2/dom/element.v": "cb106f56e28259f530fc95786cd11dc1d35a6adb6f6f2a802cb3949bf177cba1",
+        "/Users/alex/code/vox2/dom/attribute_version_test.v": "628f54b0ef7d328be95ee7a6d161ff94278d545ff1c616d89344dd849f408668",
+        "/Users/alex/code/vox2/main_browser_text_cache.v": "d64959a646db64e84a005cf4ceb97489ad63bb277230446b722d6f79734084e5",
+        "/Users/alex/code/vox2/main_browser_tab_favicon.v": "beaf7380e07dd04ea7ab826840445f73b8a7fa34ec816836f33916e7e2a408c5",
+        "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v": "8a737f1a9062876c775e7993d18f37b8560c4ed953d40d244c0813a30193a01f"
+      },
+      "rows": [
+        {
+          "label": "compile-favicon-production-prealloc-final",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-favicon-production-prealloc-final.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-favicon-production-prealloc-final.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+            "-memory-limit",
+            "10G",
+            "-b",
+            "c",
+            "-enable-globals",
+            "-nocache",
+            "-cc",
+            "clang",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-d",
+            "vox_sparse_ttf",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+            "-skip-running",
+            "-d",
+            "vox_ui2",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc-final",
+            "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler",
+          "exit": 0
+        },
+        {
+          "label": "run-favicon-production-prealloc-candidate-final",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-candidate-final.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-candidate-final.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc-final"
+          ],
+          "environment": {
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE": "",
+            "VOX_TAB_FAVICON_DISCOVERY_DIAGNOSTICS": "1"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "run-favicon-production-prealloc-control-final",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-control-final.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-control-final.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc-final"
+          ],
+          "environment": {
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE": "1"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "run-favicon-production-prealloc-poison-final",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-poison-final.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-poison-final.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc-final"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE": ""
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "compile-favicon-default-final",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-favicon-default-final.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-favicon-default-final.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-b",
+            "c",
+            "-enable-globals",
+            "-nocache",
+            "-cc",
+            "clang",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-d",
+            "vox_sparse_ttf",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+            "-skip-running",
+            "-d",
+            "vox_ui2",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default-final",
+            "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "run-favicon-default-candidate-final",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-default-candidate-final.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-default-candidate-final.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default-final"
+          ],
+          "environment": {
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE": "",
+            "VOX_TAB_FAVICON_DISCOVERY_DIAGNOSTICS": "1"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "run-favicon-default-control-final",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-default-control-final.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-default-control-final.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default-final"
+          ],
+          "environment": {
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE": "1"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        }
+      ]
+    },
+    "prerequisite_runtime_jobs": 9,
+    "prerequisites": {
+      "complete": true,
+      "inputs_before": {
+        "/Users/alex/code/vox2/dom/document.v": "34fbcee5bb7a2cf1185e0c3cedbaea60d60ee36165e15c5b5c3b4b34818e9465",
+        "/Users/alex/code/vox2/dom/element.v": "cb106f56e28259f530fc95786cd11dc1d35a6adb6f6f2a802cb3949bf177cba1",
+        "/Users/alex/code/vox2/dom/attribute_version_test.v": "628f54b0ef7d328be95ee7a6d161ff94278d545ff1c616d89344dd849f408668",
+        "/Users/alex/code/vox2/main_browser_text_cache.v": "d64959a646db64e84a005cf4ceb97489ad63bb277230446b722d6f79734084e5",
+        "/Users/alex/code/vox2/main_browser_tab_favicon.v": "e881350cc5608206b3d62386ec555e76876ffac3dff71ce21d570451c05a0a3f",
+        "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v": "9a91b230dd0124cde642a51f6785161f4c5f297628176e4170c77b94d063001d"
+      },
+      "inputs_after": {
+        "/Users/alex/code/vox2/dom/document.v": "34fbcee5bb7a2cf1185e0c3cedbaea60d60ee36165e15c5b5c3b4b34818e9465",
+        "/Users/alex/code/vox2/dom/element.v": "cb106f56e28259f530fc95786cd11dc1d35a6adb6f6f2a802cb3949bf177cba1",
+        "/Users/alex/code/vox2/dom/attribute_version_test.v": "628f54b0ef7d328be95ee7a6d161ff94278d545ff1c616d89344dd849f408668",
+        "/Users/alex/code/vox2/main_browser_text_cache.v": "d64959a646db64e84a005cf4ceb97489ad63bb277230446b722d6f79734084e5",
+        "/Users/alex/code/vox2/main_browser_tab_favicon.v": "e881350cc5608206b3d62386ec555e76876ffac3dff71ce21d570451c05a0a3f",
+        "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v": "9a91b230dd0124cde642a51f6785161f4c5f297628176e4170c77b94d063001d"
+      },
+      "rows": [
+        {
+          "label": "compile-favicon-production-prealloc",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-favicon-production-prealloc.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-favicon-production-prealloc.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+            "-memory-limit",
+            "10G",
+            "-b",
+            "c",
+            "-enable-globals",
+            "-nocache",
+            "-cc",
+            "clang",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-d",
+            "vox_sparse_ttf",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+            "-skip-running",
+            "-d",
+            "vox_ui2",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc",
+            "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler",
+          "exit": 0
+        },
+        {
+          "label": "run-favicon-production-prealloc-candidate",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-candidate.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc"
+          ],
+          "environment": {
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE": "",
+            "VOX_TAB_FAVICON_DISCOVERY_DIAGNOSTICS": "1"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "run-favicon-production-prealloc-control",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-control.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc"
+          ],
+          "environment": {
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE": "1"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "run-favicon-production-prealloc-poison",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-poison.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-production-prealloc-poison.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1",
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE": ""
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "compile-favicon-default",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-favicon-default.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-favicon-default.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-b",
+            "c",
+            "-enable-globals",
+            "-nocache",
+            "-cc",
+            "clang",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-d",
+            "vox_sparse_ttf",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+            "-skip-running",
+            "-d",
+            "vox_ui2",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default",
+            "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "run-favicon-default-candidate",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-default-candidate.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-default-candidate.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default"
+          ],
+          "environment": {
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE": "",
+            "VOX_TAB_FAVICON_DISCOVERY_DIAGNOSTICS": "1"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "run-favicon-default-control",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-default-control.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-favicon-default-control.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default"
+          ],
+          "environment": {
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE": "1"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "compile-attribute-default",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-attribute-default.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-attribute-default.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-nocache",
+            "-cc",
+            "clang",
+            "-skip-running",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/attribute-default",
+            "dom/attribute_version_test.v"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "run-attribute-default",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-attribute-default.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-attribute-default.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/attribute-default"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "compile-attribute-none",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-attribute-none.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-attribute-none.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-enable-globals",
+            "-nocache",
+            "-cc",
+            "clang",
+            "-skip-running",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/attribute-none",
+            "dom/attribute_version_test.v"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "run-attribute-none",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-attribute-none.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-attribute-none.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/attribute-none"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "compile-base-lifecycle",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-base-lifecycle.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-base-lifecycle.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+            "-memory-limit",
+            "10G",
+            "-b",
+            "c",
+            "-enable-globals",
+            "-nocache",
+            "-cc",
+            "clang",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-d",
+            "vox_sparse_ttf",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+            "-skip-running",
+            "-d",
+            "vox_ui2",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/base-lifecycle",
+            "/Users/alex/code/vox2/dom/html_base_element_lifecycle_test.v"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler",
+          "exit": 0
+        },
+        {
+          "label": "run-base-lifecycle",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-base-lifecycle.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-base-lifecycle.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/base-lifecycle"
+          ],
+          "environment": {
+            "VOX_ARENA_POISON": "1"
+          },
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        },
+        {
+          "label": "compile-existing-tab-favicon",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-existing-tab-favicon.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/compile-existing-tab-favicon.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+            "-memory-limit",
+            "10G",
+            "-b",
+            "c",
+            "-enable-globals",
+            "-nocache",
+            "-cc",
+            "clang",
+            "-exclude",
+            "@vlib/time/zoneinfo.native.v",
+            "-d",
+            "vox_sparse_ttf",
+            "-path",
+            "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+            "-skip-running",
+            "-prealloc",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/existing-tab-favicon",
+            "/Users/alex/code/vox2/main_browser_tab_favicon_test.v"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler",
+          "exit": 0
+        },
+        {
+          "label": "run-existing-tab-favicon",
+          "command": [
+            "python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-existing-tab-favicon.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/run-existing-tab-favicon.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/existing-tab-favicon"
+          ],
+          "environment": {},
+          "cwd": "/Users/alex/code/vox2",
+          "exit": 0
+        }
+      ]
+    },
+    "qualification": "Prerequisite runs precede the final unchanged-string retention refinement; final five-case suite recompiled and executed in both GC configurations afterward",
+    "cases": "Live href/rel/node-backed edits, tree order/removal, base/document/about-base URLs, encoding, empty discovery, navigation, caller/document retirement, warm allocation-free lookup and repeated invalidation without duplicate retained strings",
+    "allocator": "Default GC and production staged -prealloc -gc none; candidate/control plus poisoned-memory candidate. Current compiler with automatic compatibility fallback disabled.",
+    "base_environment": {
+      "V_MACOS_V3_NO_FALLBACK": "1",
+      "VOX_TEST_WINDOW": "1"
+    }
+  },
+  "production": {
+    "executable": {
+      "sha256": "7aa5ec34a86aaf97eb46225343d5b608d9d01b74901b9c82c192790ecce0b489",
+      "bytes": 32631776
+    },
+    "receipt": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "7aa5ec34a86aaf97eb46225343d5b608d9d01b74901b9c82c192790ecce0b489",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-162442-b73332f0/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "c002d7c862859a2cdb9cb89b8b3d8cd76f6ac5af325141a0c6e1e02cc0132b0c",
+        "dirty": true,
+        "head": "f79723f029ee97ff6e9e4626c0ecaa3caa3d4438",
+        "repository_sha256": "42c2e029c42910d391e95b7e65752c18b13894710a14a8b68d65128a004254a5"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "c002d7c862859a2cdb9cb89b8b3d8cd76f6ac5af325141a0c6e1e02cc0132b0c",
+        "dirty": true,
+        "head": "1f8baee0b37791c85b811f145b535d735386bf2d",
+        "repository_sha256": "bdf03a7a402e59427a111e5b76c3e00056f1b45936dcbb50f8c4d1003dc33757"
+      },
+      "request": {
+        "head": "f79723f029ee97ff6e9e4626c0ecaa3caa3d4438",
+        "id": "b209cdcc8f314765a2faaa7104ba9247"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "c002d7c862859a2cdb9cb89b8b3d8cd76f6ac5af325141a0c6e1e02cc0132b0c",
+        "dirty": true,
+        "head": "f79723f029ee97ff6e9e4626c0ecaa3caa3d4438",
+        "repository_sha256": "85c1097495ab769e05e93becf1c9e007c25b97ce1ec79655dc977862282a3a9c"
+      }
+    },
+    "receipt_identity": {
+      "path": "Build/production-build/receipts/20261104-162442-b73332f0/result.json",
+      "sha256": "52239e10185e919cab29a9f3b617503ee3a0d594a9d5914e33c3c6cf0e3012c9",
+      "bytes": 1298
+    },
+    "generated_identity": {
+      "path": "Build/production-build/receipts/20261104-162442-b73332f0/generated/Vox.c",
+      "sha256": "72be3d3344771408dbedb428fc6c96dd0a336ac03285b58fd36e3b7740157bea",
+      "bytes": 42247237
+    },
+    "unchanged_string_guards_verified": {
+      "favicon_discovery_document_url": true,
+      "favicon_discovery_base_url": true,
+      "favicon_discovery_encoding": true,
+      "favicon_declared_url": true,
+      "favicon_default_url": true
+    },
+    "qualification": "Shared build receipt predates the feature commit and contains the then-uncommitted implementation; its frozen generated function verifies all five final retention guards, and fresh processes verify the runtime paths"
+  },
+  "workload": {
+    "url": "https://chatgpt.com/",
+    "scope": "Fresh canonical production executable/dependencies, frozen original author scripts, launch through encoded document PNG; no injected library or alternative author-script policy",
+    "author_scripts": "Original bytes; JavaScriptCore bootstrap required and executed",
+    "network": "Original-origin disk-only replay of the retained single SOCKS capture; no new download",
+    "viewport_css": [
+      1024,
+      768
+    ],
+    "scale": 2,
+    "settle_seconds": 5,
+    "focus": "unfocused",
+    "caches": "Empty private profiles/caches for each observation; OS filesystem/shader caches retained"
+  },
+  "diagnostic": {
+    "instrumented": true,
+    "complete": true,
+    "path_verified": true,
+    "inputs_stable": true,
+    "observations": [
+      {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE=",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:61606",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TAB_FAVICON_DISCOVERY_DIAGNOSTICS=1",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "variant": "candidate",
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "error": null,
+        "launch_instruction_interval": {
+          "lower": 34113393741,
+          "upper": 34113393741
+        },
+        "instruction_interval": {
+          "lower": 33943142631,
+          "upper": 33943142631
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "content_audit": {
+          "title": "ChatGPT: Chat, Work, Create & Code with AI",
+          "counts": {
+            "headings": 1,
+            "editors": 1,
+            "buttons": 52,
+            "links": 27,
+            "images": 2,
+            "bootstrap": 1,
+            "performance_policy": 0
+          }
+        },
+        "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+        "root": {
+          "pid": 42019,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-vox/document.png https://chatgpt.com/"
+        },
+        "root_start_ticks": 1668588131991,
+        "resource_coalition": 16883,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            9.19580078125,
+            11.01123046875,
+            11.201171875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            10.140625,
+            11.1767578125,
+            11.25830078125
+          ]
+        },
+        "discovery_paths": {
+          "live_scan": true,
+          "cached_lookup": true
+        }
+      },
+      {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:61606",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-brave/profile",
+          "--ignore-certificate-errors-spki-list=azSsNJVHJgcJI4/ywtHSyqZdaLgIIowEQaj1PB5MzUg=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "variant": "reference",
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "error": null,
+        "launch_instruction_interval": {
+          "lower": 18755026051,
+          "upper": 18780104626
+        },
+        "instruction_interval": {
+          "lower": 12303884808,
+          "upper": 12369202934
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "content_audit": {
+          "title": "ChatGPT: Chat, Work, Create & Code with AI",
+          "counts": {
+            "headings": 1,
+            "editors": 1,
+            "buttons": 52,
+            "links": 27,
+            "images": 2,
+            "bootstrap": 1,
+            "performance_policy": 0
+          }
+        },
+        "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+        "root": {
+          "pid": 42749,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:61606 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-1-brave/profile --ignore-certificate-errors-spki-list=azSsNJVHJgcJI4/ywtHSyqZdaLgIIowEQaj1PB5MzUg= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows"
+        },
+        "root_start_ticks": 1668801616986,
+        "resource_coalition": 17071,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            10.12890625,
+            11.15673828125,
+            11.25048828125
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            12.0849609375,
+            11.5322265625,
+            11.38134765625
+          ]
+        },
+        "discovery_paths": null
+      },
+      {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:61606",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-brave/profile",
+          "--ignore-certificate-errors-spki-list=azSsNJVHJgcJI4/ywtHSyqZdaLgIIowEQaj1PB5MzUg=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "variant": "reference",
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "error": null,
+        "launch_instruction_interval": {
+          "lower": 18233530099,
+          "upper": 18246489385
+        },
+        "instruction_interval": {
+          "lower": 11816780893,
+          "upper": 11862967585
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "content_audit": {
+          "title": "ChatGPT: Chat, Work, Create & Code with AI",
+          "counts": {
+            "headings": 1,
+            "editors": 1,
+            "buttons": 52,
+            "links": 27,
+            "images": 2,
+            "bootstrap": 1,
+            "performance_policy": 0
+          }
+        },
+        "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+        "root": {
+          "pid": 43322,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:61606 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-brave/profile --ignore-certificate-errors-spki-list=azSsNJVHJgcJI4/ywtHSyqZdaLgIIowEQaj1PB5MzUg= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows"
+        },
+        "root_start_ticks": 1669063685383,
+        "resource_coalition": 17085,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            12.0849609375,
+            11.5322265625,
+            11.38134765625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            12.19970703125,
+            11.57861328125,
+            11.39990234375
+          ]
+        },
+        "discovery_paths": null
+      },
+      {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE=",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:61606",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TAB_FAVICON_DISCOVERY_DIAGNOSTICS=1",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "variant": "candidate",
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "error": null,
+        "launch_instruction_interval": {
+          "lower": 33672811914,
+          "upper": 33672811914
+        },
+        "instruction_interval": {
+          "lower": 33493421082,
+          "upper": 33493421082
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "content_audit": {
+          "title": "ChatGPT: Chat, Work, Create & Code with AI",
+          "counts": {
+            "headings": 1,
+            "editors": 1,
+            "buttons": 52,
+            "links": 27,
+            "images": 2,
+            "bootstrap": 1,
+            "performance_policy": 0
+          }
+        },
+        "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+        "root": {
+          "pid": 43868,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic-final/pair-2-vox/document.png https://chatgpt.com/"
+        },
+        "root_start_ticks": 1669312231262,
+        "resource_coalition": 17091,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            12.19970703125,
+            11.57861328125,
+            11.39990234375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            12.34375,
+            11.61865234375,
+            11.4150390625
+          ]
+        },
+        "discovery_paths": {
+          "live_scan": true,
+          "cached_lookup": true
+        }
+      }
+    ],
+    "all_browser_and_kernel_exits_zero": true,
+    "pixels_content_exact": true,
+    "earlier_revision": {
+      "executable": {
+        "sha256": "1c1d291714759657ede614650af13669a0ad1eae782ef830f6d0064121cc39d4",
+        "bytes": 32632768
+      },
+      "observations": [
+        {
+          "engine": "vox",
+          "command": [
+            "/usr/bin/open",
+            "-n",
+            "-g",
+            "-a",
+            "/Users/alex/code/vox2/Build/v/Vox.app",
+            "--stdout",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-vox/stdout.log",
+            "--stderr",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-vox/browser.log",
+            "--env",
+            "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-vox/cache",
+            "--env",
+            "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+            "--env",
+            "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5",
+            "--env",
+            "LADYBIRD_SCREENSHOT_SCALE=2",
+            "--env",
+            "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/replay/cert.pem",
+            "--env",
+            "VOX_BLOCK_COOKIE_BANNERS=0",
+            "--env",
+            "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/audit-config.json",
+            "--env",
+            "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-vox/audit.json",
+            "--env",
+            "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+            "--env",
+            "VOX_CAPTURE_DOCUMENT_ONLY=1",
+            "--env",
+            "VOX_COOKIE_FILE=",
+            "--env",
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE=",
+            "--env",
+            "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-vox/profile",
+            "--env",
+            "VOX_PROFILE_INSTRUCTIONS=1",
+            "--env",
+            "VOX_PROXY=socks5h://127.0.0.1:56764",
+            "--env",
+            "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+            "--env",
+            "VOX_TAB_FAVICON_DISCOVERY_DIAGNOSTICS=1",
+            "--env",
+            "VOX_TEST_WINDOW=1",
+            "--args",
+            "--screenshot-viewport-height",
+            "768",
+            "--js-engine=javascriptcore",
+            "--enable-javascript",
+            "--window-width",
+            "1024",
+            "--window-height",
+            "852",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-vox/document.png",
+            "https://chatgpt.com/"
+          ],
+          "variant": "candidate",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "error": null,
+          "launch_instruction_interval": {
+            "lower": 32807377792,
+            "upper": 32807377792
+          },
+          "instruction_interval": {
+            "lower": 32625753852,
+            "upper": 32625753852
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "content_audit": {
+            "title": "ChatGPT: Chat, Work, Create & Code with AI",
+            "counts": {
+              "headings": 1,
+              "editors": 1,
+              "buttons": 52,
+              "links": 27,
+              "images": 2,
+              "bootstrap": 1,
+              "performance_policy": 0
+            }
+          },
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "root": {
+            "pid": 5454,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-vox/document.png https://chatgpt.com/"
+          },
+          "root_start_ticks": 1651317302594,
+          "resource_coalition": 16151,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              13.3427734375,
+              10.3349609375,
+              11.0302734375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.33984375,
+              10.6513671875,
+              11.13427734375
+            ]
+          },
+          "discovery_paths": {
+            "live_scan": true,
+            "cached_lookup": true
+          }
+        },
+        {
+          "engine": "brave",
+          "command": [
+            "/usr/bin/open",
+            "-n",
+            "-g",
+            "-a",
+            "/Applications/Brave Browser.app",
+            "--stdout",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-brave/stdout.log",
+            "--stderr",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-brave/browser.log",
+            "--args",
+            "--no-startup-window",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--enable-automation",
+            "--disable-background-networking",
+            "--disable-sync",
+            "--proxy-server=socks5://127.0.0.1:56764",
+            "--hide-scrollbars",
+            "--force-color-profile=srgb",
+            "--lang=en-US",
+            "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+            "--remote-debugging-port=0",
+            "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-brave/profile",
+            "--ignore-certificate-errors-spki-list=CZlAqJLKADMc1kd67rLJGHtB4cO7OVdGtsPygHhVFzU=",
+            "--force-device-scale-factor=2",
+            "--disable-backgrounding-occluded-windows"
+          ],
+          "variant": "reference",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "error": null,
+          "launch_instruction_interval": {
+            "lower": 17856614627,
+            "upper": 17900980881
+          },
+          "instruction_interval": {
+            "lower": 11425096222,
+            "upper": 11489770367
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "content_audit": {
+            "title": "ChatGPT: Chat, Work, Create & Code with AI",
+            "counts": {
+              "headings": 1,
+              "editors": 1,
+              "buttons": 52,
+              "links": 27,
+              "images": 2,
+              "bootstrap": 1,
+              "performance_policy": 0
+            }
+          },
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "root": {
+            "pid": 6262,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:56764 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-1-brave/profile --ignore-certificate-errors-spki-list=CZlAqJLKADMc1kd67rLJGHtB4cO7OVdGtsPygHhVFzU= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows"
+          },
+          "root_start_ticks": 1651558411096,
+          "resource_coalition": 16153,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.33984375,
+              10.6513671875,
+              11.13427734375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              14.23291015625,
+              10.74560546875,
+              11.16162109375
+            ]
+          },
+          "discovery_paths": null
+        },
+        {
+          "engine": "brave",
+          "command": [
+            "/usr/bin/open",
+            "-n",
+            "-g",
+            "-a",
+            "/Applications/Brave Browser.app",
+            "--stdout",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-brave/stdout.log",
+            "--stderr",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-brave/browser.log",
+            "--args",
+            "--no-startup-window",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--enable-automation",
+            "--disable-background-networking",
+            "--disable-sync",
+            "--proxy-server=socks5://127.0.0.1:56764",
+            "--hide-scrollbars",
+            "--force-color-profile=srgb",
+            "--lang=en-US",
+            "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+            "--remote-debugging-port=0",
+            "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-brave/profile",
+            "--ignore-certificate-errors-spki-list=CZlAqJLKADMc1kd67rLJGHtB4cO7OVdGtsPygHhVFzU=",
+            "--force-device-scale-factor=2",
+            "--disable-backgrounding-occluded-windows"
+          ],
+          "variant": "reference",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "error": null,
+          "launch_instruction_interval": {
+            "lower": 18927053652,
+            "upper": 18936618229
+          },
+          "instruction_interval": {
+            "lower": 12409033836,
+            "upper": 12465097298
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "content_audit": {
+            "title": "ChatGPT: Chat, Work, Create & Code with AI",
+            "counts": {
+              "headings": 1,
+              "editors": 1,
+              "buttons": 52,
+              "links": 27,
+              "images": 2,
+              "bootstrap": 1,
+              "performance_policy": 0
+            }
+          },
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "root": {
+            "pid": 6928,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:56764 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-brave/profile --ignore-certificate-errors-spki-list=CZlAqJLKADMc1kd67rLJGHtB4cO7OVdGtsPygHhVFzU= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows"
+          },
+          "root_start_ticks": 1651828192294,
+          "resource_coalition": 16155,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              14.23291015625,
+              10.74560546875,
+              11.16162109375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              13.42138671875,
+              10.6875,
+              11.13623046875
+            ]
+          },
+          "discovery_paths": null
+        },
+        {
+          "engine": "vox",
+          "command": [
+            "/usr/bin/open",
+            "-n",
+            "-g",
+            "-a",
+            "/Users/alex/code/vox2/Build/v/Vox.app",
+            "--stdout",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-vox/stdout.log",
+            "--stderr",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-vox/browser.log",
+            "--env",
+            "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-vox/cache",
+            "--env",
+            "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+            "--env",
+            "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5",
+            "--env",
+            "LADYBIRD_SCREENSHOT_SCALE=2",
+            "--env",
+            "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/replay/cert.pem",
+            "--env",
+            "VOX_BLOCK_COOKIE_BANNERS=0",
+            "--env",
+            "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/audit-config.json",
+            "--env",
+            "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-vox/audit.json",
+            "--env",
+            "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+            "--env",
+            "VOX_CAPTURE_DOCUMENT_ONLY=1",
+            "--env",
+            "VOX_COOKIE_FILE=",
+            "--env",
+            "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE=",
+            "--env",
+            "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-vox/profile",
+            "--env",
+            "VOX_PROFILE_INSTRUCTIONS=1",
+            "--env",
+            "VOX_PROXY=socks5h://127.0.0.1:56764",
+            "--env",
+            "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+            "--env",
+            "VOX_TAB_FAVICON_DISCOVERY_DIAGNOSTICS=1",
+            "--env",
+            "VOX_TEST_WINDOW=1",
+            "--args",
+            "--screenshot-viewport-height",
+            "768",
+            "--js-engine=javascriptcore",
+            "--enable-javascript",
+            "--window-width",
+            "1024",
+            "--window-height",
+            "852",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-vox/document.png",
+            "https://chatgpt.com/"
+          ],
+          "variant": "candidate",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "error": null,
+          "launch_instruction_interval": {
+            "lower": 33494110231,
+            "upper": 33494110231
+          },
+          "instruction_interval": {
+            "lower": 33309054546,
+            "upper": 33309054546
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "content_audit": {
+            "title": "ChatGPT: Chat, Work, Create & Code with AI",
+            "counts": {
+              "headings": 1,
+              "editors": 1,
+              "buttons": 52,
+              "links": 27,
+              "images": 2,
+              "bootstrap": 1,
+              "performance_policy": 0
+            }
+          },
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "root": {
+            "pid": 7395,
+            "parent": 1,
+            "uid": 501,
+            "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/diagnostic/pair-2-vox/document.png https://chatgpt.com/"
+          },
+          "root_start_ticks": 1652081984768,
+          "resource_coalition": 16157,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              13.62744140625,
+              10.775390625,
+              11.16455078125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              13.4169921875,
+              10.77880859375,
+              11.16357421875
+            ]
+          },
+          "discovery_paths": {
+            "live_scan": true,
+            "cached_lookup": true
+          }
+        }
+      ],
+      "qualification": "Pre-retention-refinement revision, kept separately; no instruction credit"
+    }
+  },
+  "matched": {
+    "instrumented": false,
+    "planned_order": [
+      "control",
+      "candidate",
+      "candidate",
+      "control"
+    ],
+    "complete": false,
+    "observations": [
+      {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_DISABLE_TAB_FAVICON_DISCOVERY_CACHE=1",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:63312",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TAB_FAVICON_DISCOVERY_DIAGNOSTICS=",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "variant": "control",
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "error": null,
+        "launch_instruction_interval": {
+          "lower": 32924056024,
+          "upper": 32924056024
+        },
+        "instruction_interval": {
+          "lower": 32731705505,
+          "upper": 32731705505
+        },
+        "pixels_exact": true,
+        "content_exact": true,
+        "content_audit": {
+          "title": "ChatGPT: Chat, Work, Create & Code with AI",
+          "counts": {
+            "headings": 1,
+            "editors": 1,
+            "buttons": 52,
+            "links": 27,
+            "images": 2,
+            "bootstrap": 1,
+            "performance_policy": 0
+          }
+        },
+        "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+        "root": {
+          "pid": 47793,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-vox/document.png https://chatgpt.com/"
+        },
+        "root_start_ticks": 1670926385736,
+        "resource_coalition": 17123,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            15.40869140625,
+            12.32666015625,
+            11.6748046875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.17626953125,
+            12.53662109375,
+            11.75244140625
+          ]
+        },
+        "discovery_paths": null
+      },
+      {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:63312",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-brave/profile",
+          "--ignore-certificate-errors-spki-list=c9BtCRMDk2r/t1BDvXsXFNH63VYdTmW/Du4uVPzYJj4=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "variant": "reference",
+        "exit": 1,
+        "kernel_exit_status": null,
+        "error": "A private browser helper is outside its resource coalition",
+        "launch_instruction_interval": null,
+        "instruction_interval": {
+          "lower": 11130039061,
+          "upper": 11179423778
+        },
+        "pixels_exact": null,
+        "content_exact": null,
+        "content_audit": null,
+        "png_sha256": null,
+        "root": {
+          "pid": 48486,
+          "parent": 1,
+          "uid": 501,
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:63312 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/matched/pair-1-brave/profile --ignore-certificate-errors-spki-list=c9BtCRMDk2r/t1BDvXsXFNH63VYdTmW/Du4uVPzYJj4= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows"
+        },
+        "root_start_ticks": 1671164282060,
+        "resource_coalition": 17131,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            15.44140625,
+            12.4443359375,
+            11.72412109375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            15.48583984375,
+            12.5029296875,
+            11.7490234375
+          ]
+        },
+        "discovery_paths": null
+      }
+    ],
+    "driver_exit": 1,
+    "guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-favicon-discovery-20261104-1615/page.py",
+        "matched"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "47793": "Wed Nov  4 16:34:13 2026    ",
+        "47802": "Wed Nov  4 16:34:14 2026    ",
+        "48486": "Wed Nov  4 16:34:23 2026    ",
+        "48490": "Wed Nov  4 16:34:23 2026    ",
+        "48500": "Wed Nov  4 16:34:24 2026    ",
+        "48501": "Wed Nov  4 16:34:24 2026    ",
+        "48506": "Wed Nov  4 16:34:24 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1711964160,
+      "elapsed_seconds": 25.673747583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "inputs_stable": true,
+    "conservative_page_instruction_reduction": null,
+    "page_instruction_credit": 0,
+    "failure": "Unaccounted private Brave crash handler and code-sign-clone cleanup helper appeared after launch, both observed with parent PID 1. Their earlier ownership cannot be established; the unchanged gate rejected the cohort.",
+    "rejected_helpers": [
+      {
+        "pid": 48699,
+        "parent": 1,
+        "uid": 501,
+        "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --database=/Users/alex/Library/Application Support/BraveSoftware/Brave-Browser/Crashpad --url=https://cr.brave.com --annotation=plat=OS X --annotation=prod=Brave_Mac --annotation=ver=156.1.98.60 --handshake-fd=5"
+      },
+      {
+        "pid": 48900,
+        "parent": 1,
+        "uid": 501,
+        "command": "/Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/156.1.98.60/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper --type=code-sign-clone-cleanup --unique-temp-dir-suffix=25yVtW"
+      }
+    ],
+    "later_identity_survey": {
+      "unix": 1793799444.560663,
+      "qualification": "Read-only later identity survey; cannot authenticate earlier measurements or recover exited ownership",
+      "rows": [
+        {
+          "pid": 48699,
+          "error": "[Errno 3] No such process: '48699'"
+        },
+        {
+          "pid": 48900,
+          "error": "[Errno 3] No such process: '48900'"
+        },
+        {
+          "pid": 66371,
+          "start_ticks": 733041239164,
+          "resource_coalition": 14593,
+          "executable": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "identity_stable": true
+        }
+      ]
+    },
+    "interpretation": "Only the control Vox observation completed; no candidate/control reduction or Brave acceptance can be computed"
+  },
+  "tooling": {
+    "commits": [
+      "9c4f681b5",
+      "8fb5d3f23"
+    ],
+    "change": "Failure-only identity enrichment records transient creation times, actual executable and coalition through two observations. Successful measurement paths and every ownership rejection remain unchanged.",
+    "tests": {
+      "instruction-tools-final": {
+        "cases": 268,
+        "guard": {
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tools",
+            "-p",
+            "*browser*instructions_test.py"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 3221225472,
+          "observed_peak_rss_bytes": 65781760,
+          "elapsed_seconds": 2.549520708,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      },
+      "rejected-helpers-final": {
+        "cases": 15,
+        "guard": {
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tools",
+            "-p",
+            "*browser_helpers_test.py"
+          ],
+          "reason": "completed",
+          "child_exit_code": 0,
+          "adopted_processes": {},
+          "adoption_error": null,
+          "limit_bytes": 3221225472,
+          "observed_peak_rss_bytes": 2981888,
+          "elapsed_seconds": 0.181925375,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        }
+      }
+    },
+    "qualification": "The matched attempt preceded this diagnostic enhancement. No earlier observation was repaired or exempted."
+  },
+  "retained_attempts_and_refinement": [
+    "Initial browser unit compile used unstaged UI2 and omitted the Node.remove observer argument; corrected staged compilation and all assertions passed",
+    "Code review identified that invalidated discoveries would retain duplicate strings. Final retention guards and a repeated-invalidation allocation regression test passed; the earlier revision is retained separately"
+  ],
+  "guards": {
+    "run-favicon-default-candidate-final": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default-final"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.462941583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-base-lifecycle": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/base-lifecycle"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.319057209,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-attribute-none": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/attribute-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.303536959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-existing-tab-favicon": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/existing-tab-favicon"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.596827792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-favicon-default-final": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-b",
+        "c",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-skip-running",
+        "-d",
+        "vox_ui2",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default-final",
+        "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5433982976,
+      "elapsed_seconds": 89.370325167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-favicon-default-control": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.175029708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-favicon-default-control-final": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default-final"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.202667333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-favicon-production-prealloc-control-final": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc-final"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.211532667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-favicon-production-prealloc-poison": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 344064,
+      "elapsed_seconds": 0.20536012499999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-favicon-default-candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.42722974999999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "diagnostic-guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-favicon-discovery-20261104-1615/page.py",
+        "diagnostic"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "5454": "Wed Nov  4 16:20:36 2026    ",
+        "5459": "Wed Nov  4 16:20:36 2026    ",
+        "6262": "Wed Nov  4 16:20:46 2026    ",
+        "6266": "Wed Nov  4 16:20:47 2026    ",
+        "6293": "Wed Nov  4 16:20:47 2026    ",
+        "6294": "Wed Nov  4 16:20:47 2026    ",
+        "6297": "Wed Nov  4 16:20:47 2026    ",
+        "6928": "Wed Nov  4 16:20:58 2026    ",
+        "6931": "Wed Nov  4 16:20:58 2026    ",
+        "6939": "Wed Nov  4 16:20:58 2026    ",
+        "6940": "Wed Nov  4 16:20:58 2026    ",
+        "6941": "Wed Nov  4 16:20:58 2026    ",
+        "7395": "Wed Nov  4 16:21:08 2026    ",
+        "7398": "Wed Nov  4 16:21:08 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1726676992,
+      "elapsed_seconds": 48.510516625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "rejected-helpers-tests": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*browser_helpers_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 3424256,
+      "elapsed_seconds": 0.183177625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "diagnostic-final-guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-favicon-discovery-20261104-1615/page.py",
+        "diagnostic-final"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "42019": "Wed Nov  4 16:32:36 2026    ",
+        "42022": "Wed Nov  4 16:32:36 2026    ",
+        "42749": "Wed Nov  4 16:32:45 2026    ",
+        "42754": "Wed Nov  4 16:32:45 2026    ",
+        "42762": "Wed Nov  4 16:32:45 2026    ",
+        "42763": "Wed Nov  4 16:32:45 2026    ",
+        "42764": "Wed Nov  4 16:32:45 2026    ",
+        "42800": "Wed Nov  4 16:32:46 2026    ",
+        "42838": "Wed Nov  4 16:32:46 2026    ",
+        "43322": "Wed Nov  4 16:32:56 2026    ",
+        "43328": "Wed Nov  4 16:32:56 2026    ",
+        "43334": "Wed Nov  4 16:32:56 2026    ",
+        "43337": "Wed Nov  4 16:32:56 2026    ",
+        "43338": "Wed Nov  4 16:32:56 2026    ",
+        "43362": "Wed Nov  4 16:32:57 2026    ",
+        "43868": "Wed Nov  4 16:33:06 2026    ",
+        "43871": "Wed Nov  4 16:33:06 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1724252160,
+      "elapsed_seconds": 43.602966416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "instruction-tools-final": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*browser*instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 65781760,
+      "elapsed_seconds": 2.549520708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-favicon-production-prealloc-poison-final": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc-final"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.21471129100000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-favicon-production-prealloc-candidate-final": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc-final"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.46277999999999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-favicon-prealloc": {
+      "command": [
+        "Build/chatgpt-favicon-discovery-20261104-1615/favicon-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.456238042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-attribute-default": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/attribute-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.458026708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-favicon-production-prealloc-final": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-b",
+        "c",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-skip-running",
+        "-d",
+        "vox_ui2",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc-final",
+        "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5486460928,
+      "elapsed_seconds": 79.227073792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-favicon-prealloc": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-skip-running",
+        "-o",
+        "Build/chatgpt-favicon-discovery-20261104-1615/favicon-prealloc",
+        "main_browser_favicon_discovery_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2727477248,
+      "elapsed_seconds": 117.420672459,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "instruction-tools-tests": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*browser*instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 62160896,
+      "elapsed_seconds": 2.656821333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "rejected-helpers-final": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*browser_helpers_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 2981888,
+      "elapsed_seconds": 0.181925375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-favicon-default": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-b",
+        "c",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-skip-running",
+        "-d",
+        "vox_ui2",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-default",
+        "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5434294272,
+      "elapsed_seconds": 84.862292667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-attribute-default": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/attribute-default",
+        "dom/attribute_version_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1079541760,
+      "elapsed_seconds": 6.922559542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-existing-tab-favicon": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-b",
+        "c",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/existing-tab-favicon",
+        "/Users/alex/code/vox2/main_browser_tab_favicon_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5487214592,
+      "elapsed_seconds": 88.925120292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "matched-guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-favicon-discovery-20261104-1615/page.py",
+        "matched"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "47793": "Wed Nov  4 16:34:13 2026    ",
+        "47802": "Wed Nov  4 16:34:14 2026    ",
+        "48486": "Wed Nov  4 16:34:23 2026    ",
+        "48490": "Wed Nov  4 16:34:23 2026    ",
+        "48500": "Wed Nov  4 16:34:24 2026    ",
+        "48501": "Wed Nov  4 16:34:24 2026    ",
+        "48506": "Wed Nov  4 16:34:24 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1711964160,
+      "elapsed_seconds": 25.673747583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-favicon-production-prealloc-candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.48132341600000006,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-base-lifecycle": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-b",
+        "c",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-skip-running",
+        "-d",
+        "vox_ui2",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/base-lifecycle",
+        "/Users/alex/code/vox2/dom/html_base_element_lifecycle_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1117569024,
+      "elapsed_seconds": 6.1696539999999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-attribute-none": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/attribute-none",
+        "dom/attribute_version_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1042759680,
+      "elapsed_seconds": 5.631571666,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-attribute": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-skip-running",
+        "-o",
+        "Build/chatgpt-favicon-discovery-20261104-1615/attribute-test",
+        "dom/attribute_version_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1131888640,
+      "elapsed_seconds": 5.414273209,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-favicon-staged": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-d",
+        "vox_ui2",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-skip-running",
+        "-o",
+        "Build/chatgpt-favicon-discovery-20261104-1615/favicon-prealloc",
+        "main_browser_favicon_discovery_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5408899072,
+      "elapsed_seconds": 56.77358175,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-attribute": {
+      "command": [
+        "Build/chatgpt-favicon-discovery-20261104-1615/attribute-test"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.326264292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-favicon-production-prealloc-control": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.205713708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-favicon-production-prealloc": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-b",
+        "c",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-d",
+        "vox_sparse_ttf",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-skip-running",
+        "-d",
+        "vox_ui2",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-favicon-discovery-20261104-1615/favicon-production-prealloc",
+        "/Users/alex/code/vox2/main_browser_favicon_discovery_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5479202816,
+      "elapsed_seconds": 72.932384125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "broad_cadence": {
+    "whole_page_instruction_credit": 0,
+    "advance": 0,
+    "threshold": 5000000,
+    "reason": "Rejected/incomplete matched cohort supplies no measured whole-page saving"
+  },
+  "acceptance": false,
+  "original_goal": "5% fewer launch-to-encoded-PNG instructions than Brave remains unmet",
+  "limitations": [
+    "Production correctness and path eligibility are verified; instruction benefit remains unmeasured",
+    "Frozen anonymous homepage only; no live-site, sign-in, chat submission or complete scripting/DOM parity claim",
+    "Startup/capture workflow is not isolated rendering time or scrolling FPS; GPU execution and unrelated outside services excluded",
+    "No changed reference/tolerance, suppressed author script, excluded attempt or retry to obtain acceptance"
+  ],
+  "evidence": {
+    "archive": {
+      "path": "docs/performance/chatgpt-favicon-discovery-20261104-evidence.zip",
+      "sha256": "bda2922c71a4578abc78b6b439b06c2099387667090513e558898924e86e6adc",
+      "bytes": 1723163
+    },
+    "entries": 201,
+    "unique_blobs": 159,
+    "format": "index.json maps artifact paths to hashes; blobs/<sha256> contains original bytes"
+  }
+}
