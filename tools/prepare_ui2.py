@@ -110,6 +110,21 @@ def main():
                 "\t\tif disable_embedded_button_bezel_coalescing {\n"
                 "\t\t\tmacos.msg_void_bool(button_view, 'setShowsBorderOnlyWhileMouseInside:', true)\n\t\t}",
             )
+            # Clearing an image a button never had still makes AppKit measure its
+            # title. On creation that happens before a declared font family is
+            # applied, building CoreText's fallback cascade for symbol titles.
+            text = text.replace(
+                "\tif image_name.trim_space() == '' {\n"
+                "\t\tmacos.msg_void1(button_view, 'setImage:', macos.Id(unsafe { nil }))\n"
+                "\t\tmacos.msg_void_i64(button_view, 'setImagePosition:', 0)\n"
+                "\t\treturn\n\t}",
+                "\tif image_name.trim_space() == '' {\n"
+                "\t\tif !objc_is_nil(macos.msg_id(button_view, 'image')) {\n"
+                "\t\t\tmacos.msg_void1(button_view, 'setImage:', macos.Id(unsafe { nil }))\n\t\t}\n"
+                "\t\tif macos.msg_i64(button_view, 'imagePosition') != 0 {\n"
+                "\t\t\tmacos.msg_void_i64(button_view, 'setImagePosition:', 0)\n\t\t}\n"
+                "\t\treturn\n\t}",
+            )
             # Label and button updates reinstall the system face; keep a declared family.
             # Creation's match arms are values, so patch only the update function.
             head, marker, tail = text.partition("fn native_update_element(")
