@@ -34,8 +34,6 @@ struct GridMeasurementBasis {
 	height CSSPixels
 	definite_width bool
 	definite_height bool
-	width_constraint SizeConstraint
-	height_constraint SizeConstraint
 }
 
 @[heap]
@@ -56,7 +54,9 @@ struct GridMeasurementLayout {
 fn grid_measurement_key(state &LayoutState, root &Node, used &UsedValues, space AvailableSpace) GridMeasurementKey {
 	containing := used.containing_block_used_values_ or { return GridMeasurementKey{} }
 	// Nested intrinsic probes also copy the external ancestor chain. Preserve
-	// both the presence and resolved percentage bases of those copied records.
+	// its resolved percentage bases. The ancestors' min/max-content question
+	// does not change this normal layout at an already resolved grid width;
+	// the grid's own constraints remain part of the key above.
 	mut external_bases := []GridMeasurementBasis{}
 	mut ancestor := root.containing_block()
 	for ancestor != none {
@@ -70,8 +70,6 @@ fn grid_measurement_key(state &LayoutState, root &Node, used &UsedValues, space 
 				height: values.content_height()
 				definite_width: values.has_definite_width()
 				definite_height: values.has_definite_height()
-				width_constraint: values.width_constraint
-				height_constraint: values.height_constraint
 			}
 		} else {
 			external_bases << GridMeasurementBasis{ node: u64(voidptr(box)) }
@@ -175,7 +173,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		}
 		if grid_measurement_diagnostics && !grid_measurement_reuse_reported {
 			grid_measurement_reuse_reported = true
-			eprintln('Vox grid measurement: reused owned within-pass geometry')
+			eprintln('Vox grid measurement: reused resolved within-pass geometry')
 		}
 		return cached.result
 	}

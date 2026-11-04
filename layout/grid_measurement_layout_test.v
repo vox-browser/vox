@@ -57,10 +57,29 @@ fn grid_measurement_test_geometry(state &LayoutState, root &Node) []string {
 
 fn grid_measurement_test_compare(mut source LayoutState, root &Node, width int, height int,
 	parent_width int) bool {
+	return grid_measurement_test_compare_constraints(mut source, root, width, height,
+		parent_width, .none)
+}
+
+fn grid_measurement_test_set_ancestor_constraints(mut state LayoutState, root &Node,
+	constraint SizeConstraint) {
+	mut ancestor := root.containing_block()
+	for ancestor != none {
+		box := ancestor or { break }
+		mut values := state.get_mutable(unsafe { &NodeWithStyle(box) })
+		values.width_constraint = constraint
+		values.height_constraint = constraint
+		ancestor = unsafe { &Node(box) }.containing_block()
+	}
+}
+
+fn grid_measurement_test_compare_constraints(mut source LayoutState, root &Node, width int,
+	height int, parent_width int, ancestor_constraint SizeConstraint) bool {
 	space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(width)),
 		if height > 0 { AvailableSize.make_definite(CSSPixels.new(height)) } else { AvailableSize.make_indefinite() })
 	mut probe := source.new_measurement_for_subtree(root.as_node_with_style() or { panic('style') })
 	mut used := grid_measurement_test_prepare(mut probe, root, width, height, parent_width)
+	grid_measurement_test_set_ancestor_constraints(mut probe, root, ancestor_constraint)
 	used.offset = css.CSSPixelPoint.new(CSSPixels.new(11), CSSPixels.new(13))
 	used.set_relative_inset_basis(CSSPixels.new(731), CSSPixels.new(919))
 	actual := run_grid_formatting_context_internal(mut probe, root, mut used, .normal, space, false)
@@ -92,6 +111,7 @@ fn grid_measurement_test_compare(mut source LayoutState, root &Node, width int, 
 	// A separate unpooled oracle keeps every nested grid on the uncached path.
 	mut oracle := LayoutState.new_for_subtree(root.as_node_with_style() or { panic('style') })
 	mut expected := grid_measurement_test_prepare(mut oracle, root, width, height, parent_width)
+	grid_measurement_test_set_ancestor_constraints(mut oracle, root, ancestor_constraint)
 	expected.offset = css.CSSPixelPoint.new(CSSPixels.new(11), CSSPixels.new(13))
 	expected.set_relative_inset_basis(CSSPixels.new(731), CSSPixels.new(919))
 	result := run_uncached_grid_formatting_context_internal(mut oracle, root, mut expected,
@@ -208,9 +228,33 @@ fn test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges() {
 	assert key != grid_measurement_key(probe, root, used, space)
 	used.padding_left = CSSPixels.new(0)
 	assert key == grid_measurement_key(probe, root, used, space)
+	used.height_constraint = .min_content
+	assert key != grid_measurement_key(probe, root, used, space)
+	used.height_constraint = .none
 	parent := root.containing_block()?
 	ancestor := unsafe { &Node(parent) }.containing_block()?
 	mut external := probe.get_mutable(unsafe { &NodeWithStyle(ancestor) })
 	external.set_content_width(external.content_width().plus(CSSPixels.new(1)))
 	assert key != grid_measurement_key(probe, root, used, space)
+}
+
+fn test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions() {
+	mut document := html.parse_document('<!doctype html><main><section id="grid" style="display:grid;width:180px;grid-template-columns:minmax(0,1fr) 2fr;gap:7px"><div style="display:grid;grid-template-columns:1fr 1fr;max-width:90%"><p style="min-height:20%">Wrapping words alpha beta gamma.</p><p>More words.</p></div><p style="min-width:30%">Other content.</p></section></main>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 500, 400)
+	root := grid_measurement_test_node(document, 'grid')
+	mut inputs := []RetainedInlineInput{}
+	mut rejected := map[u64]bool{}
+	assert collect_grid_measurement_inputs(root, mut inputs, mut rejected)
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	defer { source.release_measurement_chunk_pool() }
+	assert !grid_measurement_test_compare_constraints(mut source, root, 180, 0, 500, .none)
+	// Adding an intrinsic constraint changes effective definiteness and must
+	// miss. Switching min to max preserves that basis and can reuse geometry.
+	assert !grid_measurement_test_compare_constraints(mut source, root, 180, 0, 500, .min_content)
+	for constraint in [SizeConstraint.max_content, .min_content, .max_content] {
+		assert grid_measurement_test_compare_constraints(mut source, root, 180, 0, 500,
+			constraint) == !disable_grid_measurement_reuse
+	}
 }
