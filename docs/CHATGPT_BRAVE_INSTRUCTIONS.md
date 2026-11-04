@@ -1008,3 +1008,47 @@ proofs, guards and raw PNGs. It also corrects the initial diagnostic controller'
 inherited implementation tag without modifying that raw report. Original author
 scripts, fixture bytes and references remain unchanged; no additional live
 download was performed.
+
+## Bulk URL authority encoding
+
+Commit `26d7b1f24` replaces repeated rune-string allocation and prefix
+concatenation while rebuilding a URL authority with V's bulk rune encoder.
+Both use the same underlying UTF-32 encoder. The temporary rune slice does not
+escape; the result owns its bytes. The existing parser and decoded input remain
+unchanged. `VOX_RETAIN_URL_AUTHORITY_CONCAT=1` selects the scalar control, and
+`VOX_URL_AUTHORITY_DIAGNOSTICS=1` reports candidate execution separately.
+
+The retained V profile records 96,958 calls to `parser_runes_to_string`.
+Thirty focused test-function executions pass across both GC modes, both paths,
+poisoned preallocation arenas and AddressSanitizer/UndefinedBehaviorSanitizer.
+They cover all 1,114,112 code-point values (including surrogate halves), further
+invalid rune values, mixed-string subranges, embedded nulls, independent result
+bytes and authority parsing. All 23 URL files pass in each GC mode. All 24
+compile/runtime guards exit zero with unchanged source identities.
+
+The existing canonical-reference benchmark supplies two unprofiled observations
+per path in control/candidate/candidate/control order, followed by separate
+positive and negative execution diagnostics.
+
+| Component scene | Scalar control median | Candidate median | Conservative reduction |
+| --- | ---: | ---: | ---: |
+| 9,952 archived URL parses | 523,618,631 | 509,860,353.5 | 9,666,108 |
+| 9,952 parses with edge controls | 517,168,700 | 501,376,831.5 | 14,031,640 |
+| 16,384 path overrides | 159,696,026.5 | 159,555,202 | −366,303 |
+
+The archived-URL median falls **2.628%**, and the edge-control median falls
+3.054%. Every full serialized reference, parse count and checksum matches.
+The path-override interval uses an already parsed seed and does not encode an
+authority; its overlapping variation supplies a neutral control. These remain
+current-process parse/serialize/reference/checksum intervals including allocation
+and GC, with input construction and warm validation outside the counters.
+
+The [authority receipt](performance/chatgpt-url-authority-20261104.json) retains
+raw observations, source and generated-helper proofs, pinned V encoder inputs,
+guards and test logs. The latest completed production executable
+`f7a36b29f87e6b334ac7aa14e177598eeb5e6ec18648f4af26e8c973090ea18c`
+still contains the scalar helper. The already-running shared build also sealed
+inputs without this change. No separate production build was queued. Production
+path verification, exact browser rendering and matched page measurements remain
+pending a completed bundle containing the bulk helper. Page credit and the
+broad cadence remain zero; the 5% Brave target remains unmet.

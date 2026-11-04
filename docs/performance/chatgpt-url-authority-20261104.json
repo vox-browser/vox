@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "implementation_commit": "26d7b1f24",
+  "profile_lead": {
+    "receipt": "docs/performance/chatgpt-v-profile-refresh-20261104.json",
+    "function": "url__parser_runes_to_string",
+    "instrumented_calls": 96958,
+    "self_ms": 56.87,
+    "inclusive_ms": 226.896,
+    "qualification": "Profile lead only; old production executed scalar helper. Neither time nor calls establish new production path execution or instruction savings."
+  },
+  "focused_test_function_executions": 30,
+  "full_url_module_files_per_gc": 23,
+  "gc_modes": [
+    "Boehm",
+    "none"
+  ],
+  "test_coverage": "All 1,114,112 code point values including surrogate halves, three additional invalid rune values, all subranges of mixed authority data, nulls, returned-byte ownership, canonical authority records and invalid hosts/ports.",
+  "prealloc_poison_and_sanitizers_pass": true,
+  "guards": [
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/compile-default-guard.json",
+      "peak_rss_bytes": 399867904,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/run-default-candidate-guard.json",
+      "peak_rss_bytes": 25722880,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/run-default-control-guard.json",
+      "peak_rss_bytes": 25722880,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/url-package-default-guard.json",
+      "peak_rss_bytes": 1884307456,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/compile-none-guard.json",
+      "peak_rss_bytes": 392396800,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/run-none-candidate-guard.json",
+      "peak_rss_bytes": 76251136,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/run-none-control-guard.json",
+      "peak_rss_bytes": 11239424,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/url-package-none-guard.json",
+      "peak_rss_bytes": 1844822016,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/compile-authority_encoding-prealloc-guard.json",
+      "peak_rss_bytes": 410959872,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/run-authority_encoding-prealloc-candidate-guard.json",
+      "peak_rss_bytes": 217284608,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/run-authority_encoding-prealloc-control-guard.json",
+      "peak_rss_bytes": 720896,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/compile-parser_workspace-prealloc-guard.json",
+      "peak_rss_bytes": 411795456,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/run-parser_workspace-prealloc-candidate-guard.json",
+      "peak_rss_bytes": 10174464,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/run-parser_workspace-prealloc-control-guard.json",
+      "peak_rss_bytes": 0,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/compile-sanitized-guard.json",
+      "peak_rss_bytes": 593887232,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/run-sanitized-candidate-guard.json",
+      "peak_rss_bytes": 414023680,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/run-sanitized-control-guard.json",
+      "peak_rss_bytes": 130433024,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/component-compile-guard.json",
+      "peak_rss_bytes": 542277632,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/component-0-control-guard.json",
+      "peak_rss_bytes": 4259840,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/component-1-candidate-guard.json",
+      "peak_rss_bytes": 7028736,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/component-2-candidate-guard.json",
+      "peak_rss_bytes": 4997120,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/component-3-control-guard.json",
+      "peak_rss_bytes": 7225344,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/component-4-diagnostic-guard.json",
+      "peak_rss_bytes": 26902528,
+      "exit": 0
+    },
+    {
+      "path": "Build/chatgpt-url-authority-20261104-2208/component-5-diagnostic-control-guard.json",
+      "peak_rss_bytes": 770048,
+      "exit": 0
+    }
+  ],
+  "compiler_sha256": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+  "compiled_test_c_sha256": "cd9d6e97f4c69a3854018c024c75c48129fa35179d4cb521554614d0f8fcd5ff",
+  "component_scenes": {
+    "archived-urls": {
+      "control": [
+        520449673,
+        526787589
+      ],
+      "candidate": [
+        508937142,
+        510783565
+      ],
+      "control_median": 523618631.0,
+      "candidate_median": 509860353.5,
+      "median_reduction_fraction": 0.026275378081419,
+      "conservative_component_reduction": 9666108
+    },
+    "edge-controls": {
+      "control": [
+        517273371,
+        517064029
+      ],
+      "candidate": [
+        499721274,
+        503032389
+      ],
+      "control_median": 517168700.0,
+      "candidate_median": 501376831.5,
+      "median_reduction_fraction": 0.03053523637451372,
+      "conservative_component_reduction": 14031640
+    },
+    "path-overrides": {
+      "control": [
+        159534986,
+        159857067
+      ],
+      "candidate": [
+        159209115,
+        159901289
+      ],
+      "control_median": 159696026.5,
+      "candidate_median": 159555202.0,
+      "median_reduction_fraction": 0.0008818284530078824,
+      "conservative_component_reduction": -366303
+    }
+  },
+  "component_scope": "Current-process C -O2 Boehm parse/serialize/full canonical equality/length checksum intervals after warm validation. Original 311 single-SOCKS resource URLs, no new download. Includes allocation and GC; excludes input construction and process startup/teardown.",
+  "component_diagnostics": "Candidate marker present and control marker absent in separate instrumented runs. Path-overrides scene resolves an already parsed seed without authority encoding in its measured loop; tiny overlapping variation is a neutral control.",
+  "production_status": "pending: completed production bundle and current sealed shared build lack the candidate; no production path or whole-page measurement yet",
+  "production_executable_sha256": "a1c3f8cfa94f9a77db005dbe0448049221f891bc9dd9392da9dd8ba20f643a1f",
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "brave_target_fraction": "0.95",
+  "evidence": {
+    "path": "docs/performance/chatgpt-url-authority-20261104-evidence.zip",
+    "sha256": "dbbf85d49fcd8b6a057463cc6b6bdbbb6bab9b5b72a8a0f20bda0694f856254d",
+    "bytes": 139386,
+    "entries": 73
+  }
+}
