@@ -13,6 +13,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_explicit_first_frame_policy_covers_file_and_data_gif_images(self):
+        self.compare_fixture('image-first-frame-policy', width=1024, height=768,
+                             image_animation_policy='none')
+
     def test_static_avif_images_decode_by_bytes_in_models_and_backgrounds(self):
         self.compare_fixture('avif-image-paths', width=1024, height=768)
 
@@ -215,7 +219,7 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         self.compare_fixture('verge-transformed-drop-shadow', width=1024, height=768)
 
     def compare_fixture(self, name, width=800, height=600, scroll_y=0, document_active=False,
-                        initial_viewport=False, settle_seconds=0):
+                        initial_viewport=False, settle_seconds=0, image_animation_policy=None):
         output = Path(tempfile.mkdtemp(prefix='forum-news-inline-', dir=REPO / 'Build'))
         fixture = REPO / 'Tests/Browser/Brave/input' / (name + '.html')
         reference = REPO / 'Tests/Browser/Brave/expected' / (name + '.png')
@@ -229,6 +233,10 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
             environment['VOX_CAPTURE_DOCUMENT_ACTIVE'] = '1'
         if initial_viewport:
             environment['VOX_CAPTURE_INITIAL_VIEWPORT'] = '1'
+        if image_animation_policy is not None:
+            if image_animation_policy != 'none':
+                raise ValueError('Unsupported capture image animation policy')
+            environment['VOX_CAPTURE_IMAGE_ANIMATION_POLICY'] = image_animation_policy
         identity = executable_identity(VOX)
         write_json(output / 'identity.json', identity)
         command = [VOX, '--window-width', str(width), '--window-height', str(height + 84)]
