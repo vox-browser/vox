@@ -125,10 +125,44 @@ fresh following sheet has `did_match=none`. The existing guard rejects that
 pair before comparing rule sequences. The standalone, main-thread `v -profile`
 browser exits normally with exact pixels, full content and 72 exact external
 script evaluations. The probe's media-entry decoder is limited to the observed
-empty lists; no nonempty entry is interpreted. A snapshot-based condition proof
-is under focused validation and has no performance credit. See the
+empty lists; no nonempty entry is interpreted. See the
 [context ledger](performance/bbc-following-sheet-context-20261104.json) and
 [raw debugger evidence](performance/raw/bbc-following-sheet-context-20261104.tar.gz).
+
+The fresh-following-sheet proof now passes 126 focused executions in each of
+two verified versions. It evaluates cloned media entries without consuming the
+live stylesheet's pending match state. A later read-only trace observes 338
+initialized nested-media pairs; the corrected proof accepts these only when
+both cached results agree with an independent current snapshot. Stale cached
+results remain rejected. The initial fixture failures and overly conservative
+nested-media rejection are retained.
+
+Production build `5283f5ee` executes the corrected path before encoded PNG in
+the candidate only. Both diagnostic arms retain exact original pixels, complete
+content, normal exits and all 72 exact external author-script evaluations.
+The first production diagnostic never reached the path. An earlier source
+checker incorrectly selected a call site as a function definition and falsely
+rejected a compatible bundle; the corrected source proof authenticates the
+sealed C definition. These injected diagnostics supply no instruction credit.
+
+The requested additional `v -profile` run instruments
+`CSSStyleSheetList.remove_sheet` and nested calls. The successful standalone
+diagnostic uses the actual V-generated instrumentation with a thread-local
+scope gate and C `-O0`. Both arms preserve pixels, content and script execution;
+198 control and 818 candidate profile rows are retained. The earlier C `-O1`
+compile was cancelled under contention; its guard cleanup raised a permission
+error and supplies no successful compile receipt. Root-scoped timings include
+different work and cannot establish whole-page savings.
+
+The next text-cache experiment passes 54 focused executions, with exact
+uncached line/glyph oracles, mutations and definite-height exclusions, plus
+289 current instruction-tool tests. BBC eligibility and unprofiled savings
+remain pending. No cohort 84 was launched by these archived diagnostics:
+the selected pre-acceptance load gate required one-minute load no higher than
+the CPU count, but observed 49.38 on 18 CPUs. The latest acceptance remains
+cohort 83, and BBC remains outside the catalog. See the
+[fresh-media/profile ledger](performance/bbc-fresh-media-profile-20261104.json)
+and [verified diagnostic archive](performance/raw/bbc-fresh-media-profile-20261104.tar.gz).
 
 ## Historical results on the earlier fixture
 
