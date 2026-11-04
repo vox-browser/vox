@@ -779,3 +779,33 @@ fn test_scroll_raster_invisible_clipped_text_does_not_damage_its_clip() {
 	assert shown == [layout.LayoutRect{397, 297, 206, 26}]
 }
 
+// The root background spans the document from the viewport origin. A taller
+// or shorter document changes only pixels far below the viewport.
+fn test_scroll_raster_viewport_filling_background_ignores_its_offscreen_extent() {
+	background := layout.PaintCommand{ kind: 'fill_rect', x: 0, y: 0, width: 1024, height: 12071.5, color: 'white' }
+	previous := ScrollRasterKeyFrame{
+		valid:    true
+		document: 7
+		width:    1024
+		height:   768
+		keys:     scroll_raster_frame_keys([background], 0, 1, 1024, 768)
+	}
+	mut stats := ScrollRasterDiffStats{}
+	shorter := scroll_raster_frame_keys([layout.PaintCommand{ ...background, height: 12027.7 }], 0, 1, 1024, 768)
+	assert (scroll_raster_content_damage(&previous, shorter, 7, 0, 1024, 768, mut stats) or {
+		panic('a document height change must reconcile')
+	}).len == 0
+	assert stats.changed == 0
+	// Its color, and a document that no longer fills the viewport, still damage it.
+	recolored := scroll_raster_frame_keys([layout.PaintCommand{ ...background, height: 12027.7, color: 'black' }], 0, 1, 1024, 768)
+	assert (scroll_raster_content_damage(&previous, recolored, 7, 0, 1024, 768, mut stats) or {
+		[layout.LayoutRect{0, 0, 1024, 768}]
+	}).len > 0
+	short := scroll_raster_frame_keys([layout.PaintCommand{ ...background, height: 600 }], 0, 1, 1024, 768)
+	assert (scroll_raster_content_damage(&previous, short, 7, 0, 1024, 768, mut stats) or {
+		[layout.LayoutRect{0, 0, 1024, 768}]
+	}).len > 0
+	// An ordinary rectangle keys its geometry.
+	box := layout.PaintCommand{ kind: 'fill_rect', x: 10, y: 10, width: 100, height: 100 }
+	assert scroll_raster_frame_keys([box], 0, 1, 1024, 768)[0].hash != scroll_raster_frame_keys([layout.PaintCommand{ ...box, height: 90 }], 0, 1, 1024, 768)[0].hash
+}

@@ -36,6 +36,8 @@ const scroll_raster_damage_fringe = 3.0
 const scroll_raster_clipped_ink_guard = 2.0
 // Same-binary control: a leaf clipped away entirely keeps its whole clip as ink.
 const disable_minimal_clipped_ink = os.getenv('VOX_DISABLE_MINIMAL_CLIPPED_SCROLL_INK') != ''
+// Same-binary control: a viewport-filling solid keys its complete geometry.
+const disable_viewport_fill_extent_reuse = os.getenv('VOX_DISABLE_VIEWPORT_FILL_EXTENT_REUSE') != ''
 // Fixed and sticky content counts as changed on every scrolled frame; the
 // area cap below bounds its repaint cost.
 const scroll_raster_max_changed_commands = 256
@@ -375,6 +377,8 @@ fn scroll_raster_command_hash(command &layout.PaintCommand, scroll f64) u64 {
 
 // `translation_free` ignores the command's own translation: a uniform fill
 // covering the whole viewport paints the same pixels wherever it is placed.
+// Its extent beyond the viewport is invisible too, so a document-height
+// change does not damage the viewport through the root background.
 // Clips keep the real scroll so a viewport-anchored clip stays identified.
 fn scroll_raster_command_hash_ex(command &layout.PaintCommand, scroll f64, translation_free bool) u64 {
 	mut h := srk_str(u64(0xcbf29ce484222325), command.kind)
@@ -384,10 +388,15 @@ fn scroll_raster_command_hash_ex(command &layout.PaintCommand, scroll f64, trans
 	// Canvas pixels change in place without a new bitmap or revision, so a
 	// canvas never matches the retained frame and is repainted every frame.
 	if command.kind == 'draw_canvas' { h = srk_mix(h, scroll_raster_canvas_nonce) }
-	h = srk_f64(h, command.x)
-	h = srk_f64(h, command.y)
-	h = srk_f64(h, command.width)
-	h = srk_f64(h, command.height)
+	if translation_free && !disable_viewport_fill_extent_reuse {
+		// Keep these keys apart from any ordinary key with equal fields.
+		h = srk_str(h, 'viewport-filling')
+	} else {
+		h = srk_f64(h, command.x)
+		h = srk_f64(h, command.y)
+		h = srk_f64(h, command.width)
+		h = srk_f64(h, command.height)
+	}
 	h = srk_str(h, command.color)
 	if command.srgb_color_data != unsafe { nil } {
 		for component in command.srgb_color_data.components {
