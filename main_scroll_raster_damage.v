@@ -1025,8 +1025,28 @@ fn plan_scroll_raster_skips_with_restores(commands []layout.PaintCommand, keys [
 			index++
 			continue
 		}
-		// Checkbox fills can defer their pixels to the following border draw.
-		// Keep both operations so culling cannot pair an underlay with a later box.
+		// Checkbox and button fills can defer their pixels to the following
+		// border draw. Decide both operations together so culling can never
+		// pair an underlay with a later box: skip the pair only when neither
+		// touches the damage, otherwise replay both.
+		if command.underlays_next && command.scrollbar_axis == '' && index + 1 < commands.len {
+			next := unsafe { &commands[index + 1] }
+			next_key := keys[index + 1]
+			if !next.underlays_next && next.scrollbar_axis == '' && !next.kind.starts_with('begin_')
+				&& !next.kind.starts_with('end_') {
+				touched := !key.has_ink || !next_key.has_ink
+					|| scroll_raster_ink_touches(key.ink, region)
+					|| scroll_raster_ink_touches(next_key.ink, region)
+					|| scroll_raster_restore_touches(key.ink, index, restores)
+					|| scroll_raster_restore_touches(next_key.ink, index + 1, restores)
+				if !touched {
+					skip[index] = true
+					skip[index + 1] = true
+				}
+				index += 2
+				continue
+			}
+		}
 		if command.underlays_next || command.kind == 'stroke_rounded_rect' || command.scrollbar_axis != '' {
 			index++
 			continue

@@ -515,6 +515,16 @@ fn test_scroll_raster_skip_plan_handles_groups_and_filters() {
 	assert plan_scroll_raster_skips(commands, keys, [layout.LayoutRect{0, 130, 200, 5}], false) == [true, false, true, true, false, false, false, false, true]
 	underlay := [layout.PaintCommand{ ...leaf, y: 10, underlays_next: true }]
 	assert !plan_scroll_raster_skips(underlay, scroll_raster_frame_keys(underlay, 0, 1, 1024, 768), strip, false)[0]
+	// A fill deferred to its border is skipped or replayed with that border.
+	pair := [layout.PaintCommand{ ...leaf, y: 10, underlays_next: true },
+		layout.PaintCommand{ ...leaf, kind: 'paint_uniform_border', y: 10 },
+		layout.PaintCommand{ ...leaf, y: 180 }]
+	pair_keys := scroll_raster_frame_keys(pair, 0, 1, 1024, 768)
+	assert plan_scroll_raster_skips(pair, pair_keys, strip, false) == [true, true, false]
+	assert plan_scroll_raster_skips(pair, pair_keys, [layout.LayoutRect{0, 25, 200, 5}], false) == [false, false, true]
+	wide := [layout.PaintCommand{ ...leaf, y: 10, underlays_next: true },
+		layout.PaintCommand{ ...leaf, kind: 'paint_uniform_border', y: 10, height: 185 }]
+	assert plan_scroll_raster_skips(wide, scroll_raster_frame_keys(wide, 0, 1, 1024, 768), strip, false) == [false, false]
 	image := [layout.PaintCommand{ ...leaf, kind: 'draw_replaced_image', y: 10 }]
 	assert !plan_scroll_raster_skips(image, scroll_raster_frame_keys(image, 0, 1, 1024, 768), strip, true)[0]
 	assert scroll_raster_strip_region(0, 200, 200).len == 0
