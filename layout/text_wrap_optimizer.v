@@ -97,6 +97,28 @@ fn score_text_wrap_items(items []InlineLevelItem, width f64, balance bool) []int
 	if points.len < 2 || points.len > 128 { return []int{} }
 	points << ScoredWrapPoint{items.len, position, trimmed}
 	last := points.len - 1
+	// Candidate lines must use the same merged advances and exposed boundary
+	// shaping as LineBuilder. Summing rounded word widths can make max-content
+	// text appear a LayoutUnit too wide and create a spurious pretty/balance line.
+	stride := points.len
+	mut widths := []f64{len: stride * stride}
+	defer { $if !prealloc { unsafe { widths.free() } } }
+	for begin in 0 .. last {
+		mut projection := ProjectedTextAdvance{}
+		mut advance := CSSPixels.new(0)
+		mut cursor := points[begin].item_index
+		for cursor < items.len && items[cursor].is_collapsible_whitespace { cursor++ }
+		for end in begin + 1 .. points.len {
+			end_index := points[end].item_index
+			mut visible_end := end_index
+			for visible_end > cursor && items[visible_end - 1].is_collapsible_whitespace { visible_end-- }
+			for cursor < visible_end {
+				advance = advance.plus(projection.append(items[cursor]))
+				cursor++
+			}
+			widths[begin * stride + end] = advance.plus(projection.chromium_line_end_correction()).to_double()
+		}
+	}
 	mut greedy := []int{len: 1}
 	defer { $if !prealloc {
 		unsafe { greedy.free() }
@@ -104,8 +126,8 @@ fn score_text_wrap_items(items []InlineLevelItem, width f64, balance bool) []int
 	mut start := 0
 	for start < last {
 		mut end := start + 1
-		if points[end].end - points[start].start > width { return []int{} }
-		for end < last && points[end + 1].end - points[start].start <= width { end++ }
+		if widths[start * stride + end] > width { return []int{} }
+		for end < last && widths[start * stride + end + 1] <= width { end++ }
 		greedy << end
 		start = end
 		if greedy.len > 7 { return []int{} }
@@ -115,10 +137,9 @@ fn score_text_wrap_items(items []InlineLevelItem, width f64, balance bool) []int
 	last_start := greedy[greedy.len - 2]
 	// Blink's pretty heuristic targets a short final line with a single word.
 	if !balance && (last - last_start > 1
-		|| points[last].end - points[last_start].start >= width / 3) {
+		|| widths[last_start * stride + last] >= width / 3) {
 		return []int{}
 	}
-	stride := points.len
 	mut scores := []f64{len: (lines + 1) * stride, init: 1e100}
 	mut previous := []int{len: scores.len, init: -1}
 	defer {
@@ -131,7 +152,7 @@ fn score_text_wrap_items(items []InlineLevelItem, width f64, balance bool) []int
 	for line in 1 .. lines + 1 {
 		for end in 1 .. points.len {
 			for begin in 0 .. end {
-				used := points[end].end - points[begin].start
+				used := widths[begin * stride + end]
 				if used > width || scores[(line - 1) * stride + begin] == 1e100 { continue }
 				slack := width - used
 				mut cost := if balance || end != last { slack * slack } else { f64(0) }

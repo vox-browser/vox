@@ -2,6 +2,28 @@ module layout
 
 import css
 import dom
+import html
+import platform
+
+fn test_pretty_and_balance_do_not_wrap_fractionally_spaced_max_content_text() {
+	font_path := platform.document_font_path(400) or { panic('fixture font') }
+	for wrap in ['pretty', 'balance'] {
+		for spacing in ['0.17px', '0.860448px', '-0.23px'] {
+			for text in ['Shirin Ali', '\n  Shirin Ali\n ', 'Jim Newell', 'AV To Wa'] {
+				mut document := html.parse_document('<!doctype html><style>@font-face{font-family:Fixture;src:url("file://${font_path}")}#label{display:inline-block;width:max-content;font:12.29px Fixture;letter-spacing:${spacing};text-transform:uppercase;text-wrap:${wrap}}</style><div id="label">${text}</div>')
+				defer { document.finalize() }
+				document.set_font_rendering_policy(.chromium)
+				_ = layout_document_typed_in_viewport(document, 800, 600)
+				result := document_layout_result(document) or { panic('layout') }
+				element := document.get_element_by_id('label') or { panic('label') }
+				bridge := element.as_node().layout_node() or { panic('bridge') }
+				node := unsafe { &Node(bridge.real_layout_handle()) }
+				used := result.state.try_get(node.as_node_with_style() or { panic('style') }) or { panic('used') }
+				assert used.line_boxes.len == 1, '${wrap} ${spacing} ${text.trim_space()}'
+			}
+		}
+	}
+}
 
 fn wrap_copy_lines(text string, declaration string, width int, mode LayoutMode) ([]string, []f64) {
 	mut document := dom.Document.create(dom.url_about_blank())
