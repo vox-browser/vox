@@ -66,3 +66,23 @@ fn test_libweb_contained_image_retains_its_existing_absolute_snapping() {
 	assert paintable.paint_offset_adjustment == painting.Point{}
 	assert contained_image_test_paint(command).bitmap.destination == painting.IntRect{356, 124, 260, 173}
 }
+
+fn test_nested_containment_overflow_clip_uses_the_same_fragment_origin_as_images() {
+	for chromium in [false, true] {
+		mut document := html.parse_document('<!doctype html><style>html,body{margin:0}.outer{position:absolute;left:10.25px;top:20.25px;width:500px;height:400px;contain:paint}.inner{position:absolute;left:10.25px;top:10.25px;width:259.421875px;height:50px;overflow:hidden}</style><div class="outer"><div id="target" class="inner" style="contain:paint"></div><div id="ordinary" class="inner" style="top:70.25px"></div></div>')
+		defer { document.finalize() }
+		if chromium { document.set_font_rendering_policy(.chromium) }
+		_ = layout_document_typed_in_viewport(document, 1024, 768)
+		result := document_layout_result(document) or { panic('layout') }
+		for id in ['target', 'ordinary'] {
+			element := document.get_element_by_id(id) or { panic(id) }
+			handle := element.as_node().unsafe_layout_node() or { panic('node') }
+			node := unsafe { &Node(handle.real_layout_handle()) }
+			box := block_box_from_typed_layout_shallow(node, result.state, [6]f64{})
+			clip := box.overflow_clip or { panic('clip') }
+			expected_x := if !chromium { 20.5 } else if id == 'target' { 20.0 } else { 20.25 }
+			expected_y := if id == 'target' { if chromium { 30.0 } else { 30.5 } } else { if chromium { 90.25 } else { 90.5 } }
+			assert clip.rect == LayoutRect{expected_x, expected_y, 259.421875, 50}
+		}
+	}
+}
