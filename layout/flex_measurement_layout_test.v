@@ -198,3 +198,80 @@ fn test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncache
 		source.release_measurement_chunk_pool()
 	}
 }
+
+fn flex_measurement_image_pixels(height int) html.DecodedImageData {
+	return html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{
+		frame: dom.DecodedImageFrame_.create(&dom.Bitmap_{
+			width: 8
+			height: height
+			pitch: 32
+			data: []u8{len: 32 * height, init: 255}
+			native_resource_replay_compatible: true
+		})
+	}], 0, false)
+}
+
+fn test_flex_measurement_replays_decoded_image_geometry_after_scratch_release() {
+	for rules in ['gap:7px', 'flex-wrap:wrap;direction:rtl;gap:3px',
+		'flex-direction:column;gap:2px'] {
+		address := dom.URL{value: 'https://flex-images.example/'}
+		mut document := html.parse_navigation_document('<!doctype html><main><section id="flex" style="display:flex;${rules}"><img id="photo" src="a.png" style="width:40px;height:auto;flex:none"><p>Wrapping words alpha beta gamma 😀 á.</p></section></main>', address, address.origin(), none) or { panic(err) }
+		document.enable_native_storage()
+		mut owner := document.enter_native_storage()
+		defer { owner.finish(); document.finalize(); document.release_native_storage() }
+		element := document.get_element_by_id('photo') or { panic('photo') }
+		mut image := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
+		image.set_fetch_hook(fn (_ dom.URL) !html.DecodedImageData { return flex_measurement_image_pixels(6) })
+		image.update_the_image_data(false, false)
+		assert image.complete()
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := flex_measurement_test_node(document, 'flex')
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		source.measurement_chunk_pool_.scratch_enabled_ = true
+		for height in [0, 160] {
+			assert !flex_measurement_test_compare(mut source, root, 180, height, .normal, '')
+			for _ in 0 .. 3 {
+				assert flex_measurement_test_compare(mut source, root, 180, height, .normal, '') == (!disable_flex_measurement_reuse && !disable_flex_image_measurement_reuse)
+			}
+		}
+		source.release_measurement_chunk_pool()
+	}
+}
+
+fn test_flex_measurement_revalidates_decoded_image_source_and_natural_size() {
+	address := dom.URL{value: 'https://flex-images.example/'}
+	mut document := html.parse_navigation_document('<!doctype html><main><section id="flex" style="display:flex;gap:7px;align-items:start"><img id="photo" src="a.png" style="width:40px;height:auto;flex:none"><p>Wrapping words alpha beta gamma.</p></section></main>', address, address.origin(), none) or { panic(err) }
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer { owner.finish(); document.finalize(); document.release_native_storage() }
+	mut element := document.get_element_by_id('photo') or { panic('photo') }
+	mut image := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
+	image.set_fetch_hook(fn (_ dom.URL) !html.DecodedImageData { return flex_measurement_image_pixels(6) })
+	image.update_the_image_data(false, false)
+	_ = layout_document_typed_in_viewport(document, 500, 400)
+	root := flex_measurement_test_node(document, 'flex')
+	photo := flex_measurement_test_node(document, 'photo')
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
+	assert flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') == (!disable_flex_measurement_reuse && !disable_flex_image_measurement_reuse)
+	// Same-size source replacement must reject the previous capture, too.
+	for taller in [false, true] {
+		if taller {
+			image.set_fetch_hook(fn (_ dom.URL) !html.DecodedImageData { return flex_measurement_image_pixels(12) })
+		}
+		element.set_attribute_value('src', if taller { 'taller.png' } else { 'other.png' })
+		image.update_the_image_data(false, false)
+		assert image.complete()
+		for cached in source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} } {
+			assert !grid_measurement_inputs_are_current(cached.inputs)
+		}
+		// Normal document relayout resets this ImageBox before the flex probe.
+		mut image_box := photo.as_image_box() or { panic('image box') }
+		image_box.reset_for_relayout()
+		assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
+		assert flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') == (!disable_flex_measurement_reuse && !disable_flex_image_measurement_reuse)
+	}
+	source.release_measurement_chunk_pool()
+}

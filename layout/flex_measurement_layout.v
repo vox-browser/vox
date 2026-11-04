@@ -6,9 +6,12 @@ import os
 import platform
 
 const disable_flex_measurement_reuse = os.getenv('VOX_DISABLE_FLEX_MEASUREMENT_REUSE') != ''
+const disable_flex_image_measurement_reuse = os.getenv('VOX_DISABLE_FLEX_IMAGE_MEASUREMENT_REUSE') != ''
 const flex_measurement_diagnostics = os.getenv('VOX_FLEX_MEASUREMENT_DIAGNOSTICS') != ''
+const flex_image_measurement_diagnostics = os.getenv('VOX_FLEX_IMAGE_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global flex_measurement_reuse_reported bool
+__global flex_image_measurement_reuse_reported bool
 
 struct FlexMeasurementQuestion {
 	// The complete grid measurement key also describes the scalar sizes,
@@ -74,15 +77,21 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			flex_measurement_reuse_reported = true
 			eprintln('Vox flex measurement: reused resolved within-pass geometry')
 		}
+		if flex_image_measurement_diagnostics && !flex_image_measurement_reuse_reported
+			&& cached.inputs.any(it.image != none) {
+			flex_image_measurement_reuse_reported = true
+			eprintln('Vox flex images: reused decoded image measurement')
+		}
 		return cached.result
 	}
 	mut retained_inputs := platform.enter_retained_allocations()
 	mut inputs := []RetainedInlineInput{}
 	mut eligible := collect_grid_measurement_inputs(container, mut inputs,
 		mut pool.flex_measurement_rejections_)
-	// Start with ordinary text/flow descendants; image and SVG integrations keep
-	// their full algorithms even where the committed block cache supports them.
-	if inputs.any(it.node.is_replaced_box()) { eligible = false }
+	// The shared collector accepts only available, non-SVG HTML images, and the
+	// live input validator checks their source and natural size before replay.
+	// Keep the earlier text-only policy as an isolated measurement control.
+	if disable_flex_image_measurement_reuse && inputs.any(it.node.is_replaced_box()) { eligible = false }
 	if !eligible { pool.flex_measurement_rejections_[node_key] = true }
 	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
 	if eligible {
