@@ -35,7 +35,10 @@ public:
     };
     Request prepare(VoxGraphiteImage const& image, int upload_width, int upload_height, bool mipmapped)
     {
-        size_t limit = std::min(byte_limit, size_t(8 * 1024 * 1024));
+        // One entry may use half the budget. A large decoded image (vlang.io's
+        // 1824x1468 DOOM screenshot, 13.4 MiB with its source copy) otherwise
+        // repeats its CPU scale and upload for every tile of every repaint.
+        size_t limit = byte_limit / 2;
         if (!entry_limit || !image.pixels || image.width <= 0 || image.height <= 0
             || upload_width <= 0 || upload_height <= 0 || image.pitch <= 0) return {};
         size_t row_bytes = size_t(image.width) * 4, rows = image.height, pitch = image.pitch;

@@ -17,6 +17,30 @@ static VoxGraphiteImage image(uint8_t const* pixels)
     return value;
 }
 
+// vlang.io's 1824x1468 screenshot uploads at 912x734. With its source copy the
+// entry costs 13.4 MiB: within half the default budget, so every tile and
+// repaint reuses one upload. An entry above half the budget still bypasses it.
+static void large_upload_admission()
+{
+    VoxGraphiteImageUploadCache<std::shared_ptr<int>> uploads;
+    std::vector<uint8_t> pixels(size_t(1824) * 1468 * 4, 37);
+    auto large = image(pixels.data());
+    large.width = 1824; large.height = 1468; large.pitch = 1824 * 4;
+    auto upload = uploads.prepare(large, 912, 734, false);
+    assert(!upload.texture && upload.pending);
+    auto texture = std::make_shared<int>(91);
+    uploads.finish(std::move(upload), texture);
+    assert(uploads.prepare(large, 912, 734, false).texture == texture);
+    pixels.back()++;
+    assert(!uploads.prepare(large, 912, 734, false).texture);
+    pixels.back()--;
+    std::vector<uint8_t> oversized(size_t(2048) * 2048 * 4, 5);
+    auto huge = image(oversized.data());
+    huge.width = 2048; huge.height = 2048; huge.pitch = 2048 * 4;
+    assert(!uploads.prepare(huge, 1024, 1024, false).pending);
+    assert(uploads.prepare(large, 912, 734, false).texture == texture);
+}
+
 static void large_draw_admission()
 {
     constexpr int width = 128, height = 128, pitch = width * 4 + 16;
@@ -125,6 +149,7 @@ int main(int argc, char** argv)
     setenv("VOX_ENABLE_CANONICAL_PATH_ADMISSION", "1", 1);
     unsetenv("VOX_DISABLE_CANONICAL_PATH_ADMISSION");
     large_draw_admission();
+    large_upload_admission();
     equivalent_path_admission(true);
     equivalent_path_admission(false);
     std::vector<uint8_t> source(16, 87), pixels(16, 31);
