@@ -102,6 +102,7 @@ fn refresh_document_paint_tree_if_needed(mut result DocumentLayoutResult) bool {
 	if !result.paint_style_update_requires_full_refresh
 		&& !compositor_style_refresh_preserves_box_categories(&result.paint_tree,
 			&result.paint_style_update_compositor_handles) {
+		if paint_refresh_diagnostics { eprintln('VOX_PAINT_REFRESH reason=compositor-category') }
 		result.paint_style_update_requires_full_refresh = true
 	}
 	if !result.paint_style_update_requires_full_refresh {
@@ -109,6 +110,9 @@ fn refresh_document_paint_tree_if_needed(mut result DocumentLayoutResult) bool {
 		return false
 	}
 	viewport := result.document.viewport_rect()
+	if paint_refresh_diagnostics {
+		eprintln('VOX_PAINT_REFRESH full handles=${result.paint_style_update_handles.len()} compositor=${result.paint_style_update_compositor_handles.len()}')
+	}
 	refresh_document_paint_tree(result.document, mut result, viewport.width, viewport.height)
 	viewport_refresh_scroll_state(voidptr(&result))
 	return true
@@ -219,6 +223,7 @@ fn viewport_layout_subtree_is_clipped_outside_viewport(target voidptr, layout_ha
 fn viewport_invalidate_scroll_state(target voidptr) {
 	mut result := viewport_layout_result(target)
 	if result.paint_projection_incomplete {
+		if paint_refresh_diagnostics { eprintln('VOX_PAINT_REFRESH reason=projection') }
 		result.paint_tree_needs_style_update = true
 		result.paint_style_update_requires_full_refresh = true
 	}

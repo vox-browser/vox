@@ -26,6 +26,7 @@ pub fn refresh_document_background_resources(document &dom.Document, changed map
 		// viewport relayout can retain geometry and ordinary paint snapshots.
 		// Otherwise a pending repaint can keep a previously unavailable image.
 		if !refreshed {
+			if paint_refresh_diagnostics { eprintln('VOX_PAINT_REFRESH reason=background-resource') }
 			result.paint_tree_needs_style_update = true
 			result.paint_style_update_requires_full_refresh = true
 			result.needs_repaint = true

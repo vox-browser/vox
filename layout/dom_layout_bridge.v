@@ -690,6 +690,9 @@ fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_han
 	can_refresh_locally := paint_style_update_can_be_local(node, styled.computed_values(), computed)
 	compositor_only := !can_refresh_locally && !disable_compositor_style_updates
 		&& paint_style_update_is_compositor_only(node, styled.computed_values(), computed)
+	if paint_refresh_diagnostics && !can_refresh_locally && !compositor_only {
+		report_paint_refresh_style(node, styled.computed_values(), computed)
+	}
 	mut mutable_styled := unsafe { &NodeWithStyle(styled) }
 	mutable_styled.apply_style(computed)
 	if mut result := document_layout_result(node.document()) {

@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import os
 import platform
 
 // Background, text color and underline changes leave geometry, visual contexts and
@@ -41,6 +42,30 @@ fn paint_style_update_is_compositor_only(node &Node, previous &css.ComputedValue
 		if !css.compute_property_invalidation(property, old_value, new_value).is_none() { return false }
 	}
 	return changed
+}
+
+// Diagnostics: why the retained renderer snapshot is rebuilt completely.
+const paint_refresh_diagnostics = os.getenv('VOX_PAINT_REFRESH_DIAGNOSTICS') != ''
+
+fn report_paint_refresh_style(node &Node, previous &css.ComputedValues, current &css.ComputedProperties) {
+	mut changed := []string{}
+	if previous.raw_property_count() == current.raw_property_count() {
+		for index in 0 .. previous.raw_property_count() {
+			before := previous.raw_property_at_index(index)
+			after := current.raw_property_at_index(index)
+			if before == after { continue }
+			property := unsafe { css.PropertyID(int(css.first_longhand_property_id()) + index) }
+			changed << '${property}'
+			if changed.len >= 8 { break }
+		}
+	}
+	mut name := '?'
+	if dom_node := node.dom_node() {
+		if element := dom_node.as_element() {
+			name = '${element.local_name()}#${element.get_attribute('id') or { '' }}.${element.get_attribute('class') or { '' }}'
+		}
+	}
+	eprintln('VOX_PAINT_REFRESH reason=style node=${name} animated=${previous.has_animated_properties()} compositor_node=${compositor_style_refresh_supports_node(node)} same=${voidptr(previous) == voidptr(current)} changed=${changed.join(',')}')
 }
 
 fn paint_style_update_can_be_local(node &Node, previous &css.ComputedValues, current &css.ComputedProperties) bool {
