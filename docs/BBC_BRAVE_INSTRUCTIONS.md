@@ -1,7 +1,37 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Latest attempted cohort 84 retains all seven alternating
+`OPTIMIZED_SITES.md`.** Latest attempted cohort 85 retains all seven alternating
+control/Vox/Brave triples. All 21 native exits, complete-content, ownership and
+input-identity checks pass, but control pair 1 differs by 546,867 pixels
+(maximum channel error 223) and Brave pair 4 by 53,392 (maximum error 6).
+These pixel failures invalidate acceptance; every candidate Vox capture is exact.
+Observed medians are **28,877,778,539 Vox**, **29,079,039,480 control**, and
+**17,617,633,127 Brave lower-bound** instructions. The strict gate fails
+`299167816790 > 157807174104`, ratio **1.706202754340908**.
+
+The direct text-fragment initialization experiment has a **201,260,941** marginal
+median reduction, four paired improvements and three regressions. Its
+conservative control ratio **1.1020105389179364** fails, with no robust gain
+credited. A separate warmed 100-by-37-fragment process-counter diagnostic also
+shows no improvement across four alternating pairs. That diagnostic lacks
+per-trial binary/native-library audits and supplies no acceptance credit. The
+experiment and its control are removed (`d972d9e61`, `010920639`). The original
+control constructor and generated operations were independently verified against
+the preceding production implementation.
+
+All 48 focused candidate/control executions pass; broad verification enters
+490 cases in each of default and no-GC modes, with 487 passing and the same
+three failures. No full pass or cadence reset is claimed. All 18 rollback
+executions and 286 current instruction-tool tests pass. A first rollback attempt
+detects a source-hash change from a separate overflow-clip edit; its rejected
+receipt remains retained, and that separate change is excluded from the rollback.
+The latest inspected completed bundle still contains the direct-slot experiment,
+so native validation of its compiled removal remains pending a shared build.
+See the [cohort 85 ledger](performance/bbc-cohort85-direct-fragments-20261104.json)
+and [verified raw evidence](performance/raw/bbc-cohort85-direct-fragments-20261104.tar.gz).
+
+Earlier cohort 84 retains all seven alternating
 control/Vox/Brave triples. All fourteen Vox captures preserve original pixels,
 complete content, ownership, input identities and normal exits. Brave pair 2
 fails helper ownership validation before capture, invalidating acceptance;
@@ -102,7 +132,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **84 cohorts / 1,884 attempted browser trials**, excluding separately
+History is **85 cohorts / 1,905 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 The requested `v -profile` follow-up now covers the main thread from V's main
