@@ -120,6 +120,11 @@ fn parser_processed_input(raw_input string) []rune {
 	for end > start && u32(input[end - 1]) <= 0x20 {
 		end--
 	}
+	if !retain_url_input_copy {
+		length := compact_url_input(mut input, start, end)
+		input.trim(length)
+		return input
+	}
 	mut output := []rune{cap: end - start}
 	for index := start; index < end; index++ {
 		if input[index] !in [`\t`, `\n`, `\r`] {
@@ -133,6 +138,12 @@ fn parser_processed_input(raw_input string) []rune {
 // URL Standard does not trim leading or trailing C0 controls/spaces. It still
 // removes ASCII tabs and newlines.
 fn parser_processed_override_input(raw_input string) []rune {
+	if !retain_url_input_copy {
+		mut input := raw_input.runes()
+		length := compact_url_input(mut input, 0, input.len)
+		input.trim(length)
+		return input
+	}
 	mut output := []rune{cap: raw_input.len}
 	for code_point in raw_input.runes() {
 		if code_point !in [`\t`, `\n`, `\r`] {
