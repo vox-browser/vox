@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8"><title>Relative paint clients stay disjoint around backdrop surfaces</title>
+<style>
+html,body{margin:0;background:white;color:#222;font:14px/18px Arial}
+.grid{position:absolute;left:15px;top:263px;display:grid;grid-template-columns:197px 560px 197px;gap:20px;width:994px}
+.hero{grid-row:1;grid-column:2;position:relative}
+.news{grid-row:1;grid-column:1}.right{grid-row:1;grid-column:3;padding-top:19px}
+.photo{background:#ddd;backdrop-filter:blur(0px);height:374px;contain:strict;overflow:hidden}
+.news .photo{height:132px;margin-bottom:8px}
+.teaser{position:relative;display:block;margin-bottom:12px}
+.author{font:12.29px/14px Arial;letter-spacing:.860448px;color:hsla(0,0%,13.3333333333%,.85);margin-bottom:1px}
+h2{font:bold 18px/20px Arial;margin:0 0 8px;color:white}
+.right h2{font:14px/18px Arial}
+footer{position:fixed;bottom:0;left:0;width:1024px;height:188px;overflow:auto;background:white}
+</style>
+<div class="grid">
+<section class="hero"><div class="photo"></div><h2>Central story with a backdrop surface</h2></section>
+<aside class="news"><a class="teaser"><div class="photo"></div><div class="author">FIRST AUTHOR</div><h2>First line of a story<br>Second story line<br>Third story line<br>Fourth story line</h2></a><a class="teaser"><div class="author">SECOND AUTHOR</div><h2>Another independent story<br>after the image.</h2></a></aside>
+<aside class="right"><a class="teaser"><h2>Disjoint right column<br>First story headline</h2></a><a class="teaser"><h2>A second right column story</h2></a></aside>
+</div><footer><div style="height:500px"></div></footer><article style="position:absolute;top:1800px">
+Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. Relative paint clients must not combine disjoint columns into an overlapping compositor picture. </article>

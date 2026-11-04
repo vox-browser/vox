@@ -257,9 +257,9 @@ fn chromium_paint_client(box &BlockBox) u64 {
 			// Blink records an inline SVG viewport as one paint client. Its
 			// individual paths must not merge into unrelated overlap layers.
 			if node.is_svg_svg_box() { return u64(voidptr(node)) }
-			// Out-of-flow metadata must not expand the following normal-flow
-			// chunk into an otherwise disjoint scroll overlay's bounds.
-			if positioned == 0 && node.is_absolutely_positioned() {
+			// Positioned paint clients, including relative containers, keep
+			// their metadata from expanding a disjoint sibling's paint chunk.
+			if positioned == 0 && node.is_positioned() {
 				positioned = u64(voidptr(node))
 			}
 			ancestor = node.parent()
