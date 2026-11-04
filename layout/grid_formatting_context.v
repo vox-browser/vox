@@ -2614,7 +2614,7 @@ fn measure_grid_intrinsic_width(mut state LayoutState, container &Node,
 		.normal, available_space, width_only).automatic_content_width
 }
 
-fn run_grid_formatting_context_internal(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace, width_only bool) FormattingContextResult {
+fn run_uncached_grid_formatting_context_internal(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace, width_only bool) FormattingContextResult {
 	diagnose_block_reuse := os.getenv('VOX_GRID_BLOCK_REUSE_DIAGNOSTICS') == '1'
 	enable_block_reuse := os.getenv('VOX_DISABLE_GRID_BLOCK_REUSE') != '1'
 	// A resolved block size can be reused during intrinsic measurement. An
