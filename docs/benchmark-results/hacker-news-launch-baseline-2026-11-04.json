@@ -1,0 +1,263 @@
+{
+  "date": "2026-11-04",
+  "purpose": "Preserve HN handoff tools and establish a six-trial baseline on the latest completed shared browser; investigate the increase from 1.786B",
+  "acceptance": false,
+  "engine_changes": false,
+  "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+  "production_receipt": "20261104-165354-07f93a6d",
+  "executable_sha256": "4d55ec4468623f9d2449dd9fef4c3a34515da8ce9a0a99faf33035cab142bc34",
+  "previous": {
+    "ledger": "hacker-news-1800-reached-2026-11-04.json",
+    "receipt": "20261104-162442-b73332f0",
+    "executable_sha256": "7aa5ec34a86aaf97eb46225343d5b608d9d01b74901b9c82c192790ecce0b489",
+    "median": 1786202362
+  },
+  "baseline": {
+    "all_gates": true,
+    "completed": 6,
+    "counts": [
+      2132098294,
+      2064577562,
+      2055458163,
+      2041934049,
+      2037540082,
+      2053014282
+    ],
+    "expected": 6,
+    "max": 2132098294,
+    "median": 2054236222.5
+  },
+  "median_increase": 268033860.5,
+  "median_increase_percent": 15.005794763359525,
+  "phases": {
+    "accepted_1786": {
+      "rows": [
+        {
+          "startup": 156468495,
+          "final_frame": 156410115,
+          "before_final_frame": 1385500442,
+          "after_final_frame_to_capture": 17294307,
+          "capture": 34458606,
+          "native_js": 81321029,
+          "relayout": 303213925,
+          "bootstrap": 79875759
+        },
+        {
+          "startup": 155856256,
+          "final_frame": 161712126,
+          "before_final_frame": 1383108971,
+          "after_final_frame_to_capture": 21264034,
+          "capture": 34305381,
+          "native_js": 81541740,
+          "relayout": 303617043,
+          "bootstrap": 80384013
+        },
+        {
+          "startup": 159584719,
+          "final_frame": 163274025,
+          "before_final_frame": 1379806989,
+          "after_final_frame_to_capture": 22868513,
+          "capture": 34336408,
+          "native_js": 81290844,
+          "relayout": 304408295,
+          "bootstrap": 78388294
+        },
+        {
+          "startup": 156591115,
+          "final_frame": 159641133,
+          "before_final_frame": 1394644215,
+          "after_final_frame_to_capture": 20760683,
+          "capture": 34293982,
+          "native_js": 81887805,
+          "relayout": 304930633,
+          "bootstrap": 80453766
+        },
+        {
+          "startup": 158613509,
+          "final_frame": 160996892,
+          "before_final_frame": 1397825258,
+          "after_final_frame_to_capture": 19036064,
+          "capture": 34299909,
+          "native_js": 81323490,
+          "relayout": 306964352,
+          "bootstrap": 79943191
+        },
+        {
+          "startup": 155947644,
+          "final_frame": 157529631,
+          "before_final_frame": 1389848115,
+          "after_final_frame_to_capture": 14961176,
+          "capture": 34318192,
+          "native_js": 81344023,
+          "relayout": 305249373,
+          "bootstrap": 79818683
+        },
+        {
+          "startup": 156047918,
+          "final_frame": 159395135,
+          "before_final_frame": 1380760182,
+          "after_final_frame_to_capture": 21123908,
+          "capture": 34266296,
+          "native_js": 81364120,
+          "relayout": 304428161,
+          "bootstrap": 80085328
+        }
+      ],
+      "medians": {
+        "startup": 156468495,
+        "final_frame": 159641133,
+        "before_final_frame": 1385500442,
+        "after_final_frame_to_capture": 20760683,
+        "capture": 34305381,
+        "native_js": 81344023,
+        "relayout": 304428161,
+        "bootstrap": 79943191
+      }
+    },
+    "baseline_2054": {
+      "rows": [
+        {
+          "startup": 167488900,
+          "final_frame": 418937278,
+          "before_final_frame": 1458704376,
+          "after_final_frame_to_capture": 23862360,
+          "capture": 34906020,
+          "native_js": 87616423,
+          "relayout": 326600894,
+          "bootstrap": 80549638
+        },
+        {
+          "startup": 156059756,
+          "final_frame": 398776245,
+          "before_final_frame": 1415188504,
+          "after_final_frame_to_capture": 23793104,
+          "capture": 34697002,
+          "native_js": 82991450,
+          "relayout": 310585633,
+          "bootstrap": 81556275
+        },
+        {
+          "startup": 157004501,
+          "final_frame": 387638667,
+          "before_final_frame": 1407616959,
+          "after_final_frame_to_capture": 35862455,
+          "capture": 34325406,
+          "native_js": 82733818,
+          "relayout": 306877774,
+          "bootstrap": 80398447
+        },
+        {
+          "startup": 156064009,
+          "final_frame": 394676349,
+          "before_final_frame": 1401470383,
+          "after_final_frame_to_capture": 23281950,
+          "capture": 34469388,
+          "native_js": 82935661,
+          "relayout": 305786329,
+          "bootstrap": 80538491
+        },
+        {
+          "startup": 156187745,
+          "final_frame": 390703037,
+          "before_final_frame": 1403431049,
+          "after_final_frame_to_capture": 19351974,
+          "capture": 34279548,
+          "native_js": 82625585,
+          "relayout": 306063885,
+          "bootstrap": 80381870
+        },
+        {
+          "startup": 158035594,
+          "final_frame": 396978120,
+          "before_final_frame": 1408138996,
+          "after_final_frame_to_capture": 24333351,
+          "capture": 34437773,
+          "native_js": 82066427,
+          "relayout": 308384532,
+          "bootstrap": 81172165
+        }
+      ],
+      "medians": {
+        "startup": 156596123.0,
+        "final_frame": 395827234.5,
+        "before_final_frame": 1407877977.5,
+        "after_final_frame_to_capture": 23827732.0,
+        "capture": 34453580.5,
+        "native_js": 82834739.5,
+        "relayout": 307631153.0,
+        "bootstrap": 80544064.5
+      }
+    }
+  },
+  "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+  "diagnostics": {
+    "scroll_damage_control": {
+      "default": {
+        "all_gates": true,
+        "completed": 3,
+        "counts": [
+          2058622714,
+          2039676739,
+          2034236236
+        ],
+        "expected": 3,
+        "max": 2058622714,
+        "median": 2039676739
+      },
+      "legacy_damage": {
+        "all_gates": true,
+        "completed": 3,
+        "counts": [
+          2046076215,
+          2036657132,
+          2033968793
+        ],
+        "expected": 3,
+        "max": 2046076215,
+        "median": 2036657132,
+        "paired_saving_vs_default": {
+          "median": 3019607,
+          "values": [
+            12546499,
+            3019607,
+            267443
+          ]
+        }
+      }
+    },
+    "svg_probe": "Two diagnostic launches: 42 SVG path calls use 278446592 and 266204761 browser-process instructions; glyph drawing uses 112067128 and 114384237. Exact pixels/content and counters pass. Interposer/observer costs and concurrent threads mean these are not optimization acceptance counts.",
+    "likely_path": "The newer native renderer contains the clipped opaque SVG leaf -> SVG batch path added by 8c5d9c80e. This is a leading suspect, not a controlled proof of a causal commit.",
+    "quartz_probe": "Clip calls total about 3.1M; image calls about 6.3-6.6M, white fills about 8.3-8.4M. Nested counters overlap; do not sum with Skia entry-point counters.",
+    "sampling": "Both sample commands exit 0, but the worker graph is empty and Vox has only 12 busy samples. This observation is inconclusive. The committed sampler now rejects empty call graphs."
+  },
+  "retained_failures": {
+    "baseline": "All six planned trials refused before launch because NO_PROXY remained set; no median. Corrected command removes all eight proxy variants and reruns a complete pilot.",
+    "glyph_diagnostic": "Initial strong Skia symbol import could not run in the worker and yielded invalid ownership observations; retained without credit. Weak imports correct this."
+  },
+  "host": {
+    "cpu_count": 18,
+    "baseline_one_minute_load": [
+      64.646484375,
+      70.43994140625,
+      69.603515625,
+      68.91455078125,
+      69.32177734375,
+      71.1376953125
+    ],
+    "note": "Heavy simultaneous host load; historical comparison is not a matched control/candidate optimization attribution. Disk free fell from about 12 GiB to about 3 GiB while other sessions were active."
+  },
+  "verification": {
+    "python_tests": 52,
+    "native_probes": "All five probe sources compile with -Wall -Wextra -Werror; diagnostic runs above retain actual guard/browser exits. No application code changed and no instruction savings credited; broad suites not triggered."
+  },
+  "evidence": {
+    "raw": "hacker-news-launch-baseline-2026-11-04-raw.json.gz",
+    "sha256": "21e379dc7f72f8f9df4af99ca1f9dde9b3968c70836053a6cd06ab429d80eafa",
+    "build_directory": "Build/hn-launch-handoff-20261104"
+  },
+  "remaining": "1.6B is not reached. No engine optimization is claimed. Preserve these results and use a controlled SVG path comparison before assigning the regression to a commit.",
+  "tool_commits": [
+    "182bd5a40",
+    "6e2eae3ff"
+  ]
+}
