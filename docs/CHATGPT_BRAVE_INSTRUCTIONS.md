@@ -280,3 +280,43 @@ every count, command, guard exit and identity, including the two preflight failu
 that occurred before compilation/browser launch. Its linked evidence archive
 preserves raw logs, counters, audits and PNGs independently of `Build/` cleanup.
 No additional live download or reference/tolerance change was made.
+
+## CSS numeric dimension iteration
+
+The retained V profile recorded 713,035 calls to numeric-type entry selection.
+Commit `22f933332` replaces the repeatedly allocated seven-dimension vector with
+a fixed array, retaining the order and all eleven callers' numeric algorithms.
+The profile used the earlier archived page; a production run on the replacement
+fixture is still required before attributing a whole-page gain.
+
+All 78,125 combinations of absent, zero, negative and positive exponents pass in
+default GC, `-gc none`, and `-prealloc -gc none` modes. The checks cover dimension
+matching, copying, inversion, percentage hints, cancellation and serialization
+order. Another 32 existing calculation/resolution tests pass in both GC modes.
+Under `-prealloc`, 4,096 visits to the dimension list consume zero arena bytes.
+
+An optimized component benchmark compares the old dynamic-list selector with
+the public fixed-array selector in one executable. All four alternating trials
+verify equal results over the complete exponent corpus before measurement.
+Counters surround 781,250 selections, excluding corpus construction and launch.
+
+| Two component trials per implementation | Retired CPU instructions |
+| --- | ---: |
+| Dynamic-list control median | 126,292,238.5 |
+| Fixed-array candidate median | 24,950,272.5 |
+| Conservative component reduction | 100,538,370 |
+
+The component median falls 80.24%. This is not a page or Brave gain and receives
+zero whole-page credit or broad-cadence advance. The latest completed production
+bundle recorded in the receipt predates this CSS change. Shared builds own the
+pending replacement; no duplicate production build was queued.
+
+The first optimized component compile also exposed a deprecated `usize` in an
+existing allocator helper. Commit `1d90f6b86` uses explicit 64-bit address
+arithmetic. Production-mode idle-page retirement and cross-thread pool tests
+pass, followed by the successful optimized component build.
+
+The [numeric iteration receipt](performance/chatgpt-numeric-iteration-20261104.json)
+and its linked evidence archive preserve every compile attempt, command, guard,
+counter, checksum and source identity, including the one-off benchmark input.
+Production ChatGPT validation and the requested 5% Brave advantage remain open.

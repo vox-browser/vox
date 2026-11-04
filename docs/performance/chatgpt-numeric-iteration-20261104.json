@@ -1,0 +1,1374 @@
+{
+  "version": 1,
+  "implementation_commit": "22f933332",
+  "allocator_compile_fix_commit": "1d90f6b86",
+  "status": "Fixed numeric dimension arrays pass focused checks and component counters; production ChatGPT validation remains pending",
+  "profiling_basis": {
+    "receipt": "docs/performance/chatgpt-v-profile-20261104.json",
+    "function": "css__NumericType__entry_with_value_1_while_all_others_are_0",
+    "calls": 713035,
+    "limitation": "The retained V profile used the earlier archived homepage, not the replacement fixture. It identifies a candidate cost; it does not verify a new production page gain."
+  },
+  "implementation": {
+    "source": {
+      "path": "css/style_values_core.v",
+      "sha256": "45deda2cb199514f8704f8ecb6a512a48bb66b9745657b3bf232eac5b5d56e0c",
+      "bytes": 286191
+    },
+    "tests": {
+      "path": "css/numeric_type_iteration_test.v",
+      "sha256": "925dcfdec79e02902efdaeee0c46f86300cb183fface37430cac2d1570078cae",
+      "bytes": 3359
+    },
+    "allocator_source": {
+      "path": "platform/prealloc_arena.v",
+      "sha256": "ce90fdd26159da2f63907153fb03ba2beabd9fe62405ba12bd8c250e34177b2f",
+      "bytes": 23033
+    },
+    "behavior": "All eleven dimension-list traversals retain the same seven dimensions and order; fixed arrays remove per-visit vector allocation. Numeric algorithms are unchanged."
+  },
+  "checks": {
+    "exhaustive_combinations_per_mode": 78125,
+    "modes": [
+      "default GC",
+      "-gc none",
+      "-prealloc -gc none"
+    ],
+    "numeric_test_functions": 3,
+    "calculation_test_functions": 13,
+    "calculation_resolution_test_functions": 19,
+    "calculation_gc_modes": [
+      "default GC",
+      "-gc none"
+    ],
+    "sample_arena": "4,096 iterations consume zero arena bytes",
+    "allocator": "Production -prealloc -gc none: two idle-page tests and one cross-thread shared-pool test passed",
+    "commands": [
+      {
+        "label": "run-numeric-default",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-numeric-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-numeric-default.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/numeric-default"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793794938.029432,
+          "cpu_count": 18,
+          "load": [
+            26.20458984375,
+            22.0986328125,
+            20.318359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793794938.64929,
+          "load": [
+            26.20458984375,
+            22.0986328125,
+            20.318359375
+          ]
+        }
+      },
+      {
+        "label": "compile-numeric-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-numeric-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-numeric-none.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/numeric-none",
+          "css/numeric_type_iteration_test.v"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793794938.6500769,
+          "cpu_count": 18,
+          "load": [
+            26.20458984375,
+            22.0986328125,
+            20.318359375
+          ]
+        },
+        "host_after": {
+          "unix": 1793794976.098805,
+          "load": [
+            30.533203125,
+            23.64794921875,
+            20.95458984375
+          ]
+        }
+      },
+      {
+        "label": "run-numeric-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-numeric-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-numeric-none.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/numeric-none"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793794976.099493,
+          "cpu_count": 18,
+          "load": [
+            30.533203125,
+            23.64794921875,
+            20.95458984375
+          ]
+        },
+        "host_after": {
+          "unix": 1793794976.802645,
+          "load": [
+            30.533203125,
+            23.64794921875,
+            20.95458984375
+          ]
+        }
+      },
+      {
+        "label": "compile-numeric-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-numeric-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-numeric-prealloc.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/numeric-prealloc",
+          "css/numeric_type_iteration_test.v"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793794976.803262,
+          "cpu_count": 18,
+          "load": [
+            30.533203125,
+            23.64794921875,
+            20.95458984375
+          ]
+        },
+        "host_after": {
+          "unix": 1793795012.4768488,
+          "load": [
+            37.67724609375,
+            26.27734375,
+            22.0361328125
+          ]
+        }
+      },
+      {
+        "label": "run-numeric-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-numeric-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-numeric-prealloc.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/numeric-prealloc"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793795012.477558,
+          "cpu_count": 18,
+          "load": [
+            37.67724609375,
+            26.27734375,
+            22.0361328125
+          ]
+        },
+        "host_after": {
+          "unix": 1793795013.135647,
+          "load": [
+            37.67724609375,
+            26.27734375,
+            22.0361328125
+          ]
+        }
+      },
+      {
+        "label": "compile-calc-default",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-calc-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-calc-default.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc-default",
+          "css/calc_test.v"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793795013.136288,
+          "cpu_count": 18,
+          "load": [
+            37.67724609375,
+            26.27734375,
+            22.0361328125
+          ]
+        },
+        "host_after": {
+          "unix": 1793795054.772396,
+          "load": [
+            38.05908203125,
+            27.7685546875,
+            22.77392578125
+          ]
+        }
+      },
+      {
+        "label": "run-calc-default",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-calc-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-calc-default.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc-default"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793795054.773171,
+          "cpu_count": 18,
+          "load": [
+            38.05908203125,
+            27.7685546875,
+            22.77392578125
+          ]
+        },
+        "host_after": {
+          "unix": 1793795055.370729,
+          "load": [
+            38.05908203125,
+            27.7685546875,
+            22.77392578125
+          ]
+        }
+      },
+      {
+        "label": "compile-calc_resolve-default",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-calc_resolve-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-calc_resolve-default.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc_resolve-default",
+          "css/calc_resolve_test.v"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793795055.3714502,
+          "cpu_count": 18,
+          "load": [
+            38.05908203125,
+            27.7685546875,
+            22.77392578125
+          ]
+        },
+        "host_after": {
+          "unix": 1793795104.692256,
+          "load": [
+            38.4853515625,
+            29.7275390625,
+            23.79833984375
+          ]
+        }
+      },
+      {
+        "label": "run-calc_resolve-default",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-calc_resolve-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-calc_resolve-default.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc_resolve-default"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793795104.6932359,
+          "cpu_count": 18,
+          "load": [
+            38.4853515625,
+            29.7275390625,
+            23.79833984375
+          ]
+        },
+        "host_after": {
+          "unix": 1793795105.276065,
+          "load": [
+            38.4853515625,
+            29.7275390625,
+            23.79833984375
+          ]
+        }
+      },
+      {
+        "label": "compile-calc-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-calc-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-calc-none.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc-none",
+          "css/calc_test.v"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793795105.2769,
+          "cpu_count": 18,
+          "load": [
+            38.4853515625,
+            29.7275390625,
+            23.79833984375
+          ]
+        },
+        "host_after": {
+          "unix": 1793795136.125918,
+          "load": [
+            37.4150390625,
+            30.2451171875,
+            24.1865234375
+          ]
+        }
+      },
+      {
+        "label": "run-calc-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-calc-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-calc-none.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc-none"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793795136.126851,
+          "cpu_count": 18,
+          "load": [
+            37.4150390625,
+            30.2451171875,
+            24.1865234375
+          ]
+        },
+        "host_after": {
+          "unix": 1793795136.752737,
+          "load": [
+            37.4150390625,
+            30.2451171875,
+            24.1865234375
+          ]
+        }
+      },
+      {
+        "label": "compile-calc_resolve-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-calc_resolve-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/compile-calc_resolve-none.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc_resolve-none",
+          "css/calc_resolve_test.v"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793795136.753612,
+          "cpu_count": 18,
+          "load": [
+            37.4150390625,
+            30.2451171875,
+            24.1865234375
+          ]
+        },
+        "host_after": {
+          "unix": 1793795162.332455,
+          "load": [
+            33.99169921875,
+            30.24658203125,
+            24.40478515625
+          ]
+        }
+      },
+      {
+        "label": "run-calc_resolve-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-calc_resolve-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/run-calc_resolve-none.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc_resolve-none"
+        ],
+        "exit": 0,
+        "host_before": {
+          "unix": 1793795162.33356,
+          "cpu_count": 18,
+          "load": [
+            33.99169921875,
+            30.24658203125,
+            24.40478515625
+          ]
+        },
+        "host_after": {
+          "unix": 1793795162.768071,
+          "load": [
+            33.99169921875,
+            30.24658203125,
+            24.40478515625
+          ]
+        }
+      }
+    ],
+    "allocator_commands": [
+      {
+        "label": "allocator-idle_arena_pages-compile",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/allocator-idle_arena_pages-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/allocator-idle_arena_pages-compile.json",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-prod",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/idle_arena_pages",
+          "platform/idle_arena_pages_test.v"
+        ],
+        "exit": 0
+      },
+      {
+        "label": "allocator-idle_arena_pages-run",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/allocator-idle_arena_pages-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/allocator-idle_arena_pages-run.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/idle_arena_pages"
+        ],
+        "exit": 0
+      },
+      {
+        "label": "allocator-prealloc_shared_pool-compile",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "12",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/allocator-prealloc_shared_pool-compile.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/allocator-prealloc_shared_pool-compile.json",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-prod",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/prealloc_shared_pool",
+          "platform/prealloc_shared_pool_test.v"
+        ],
+        "exit": 0
+      },
+      {
+        "label": "allocator-prealloc_shared_pool-run",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/allocator-prealloc_shared_pool-run.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/allocator-prealloc_shared_pool-run.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/prealloc_shared_pool"
+        ],
+        "exit": 0
+      }
+    ]
+  },
+  "component": {
+    "scope": "Component only: 781,250 numeric-type entry selections on all 78,125 optional-exponent combinations. Counters surround only the selection loops; excludes corpus construction and launch.",
+    "control": "Independent old dynamic-list entry-selection algorithm in benchmark.v; not an old production browser",
+    "raw_control": [
+      125737066,
+      126847411
+    ],
+    "raw_candidate": [
+      24701849,
+      25198696
+    ],
+    "control_median": 126292238.5,
+    "candidate_median": 24950272.5,
+    "median_reduction_fraction": 0.802440175292324,
+    "conservative_component_reduction": 100538370,
+    "operations_per_trial": 781250,
+    "checksum": 17920,
+    "order": [
+      "control",
+      "candidate",
+      "candidate",
+      "control"
+    ],
+    "compiler_flags": [
+      "-prod",
+      "-prealloc",
+      "-gc none",
+      "-nocache",
+      "-cc clang",
+      "-memory-limit 10G"
+    ],
+    "executable": {
+      "path": "Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+      "sha256": "f091404582dce91d36b6fc57011ddf8fe6e81aee7eecd57bd94de1115f6276ff",
+      "bytes": 33650928
+    },
+    "benchmark_source": {
+      "path": "Build/chatgpt-numeric-iteration-20261104-1530/benchmark.v",
+      "sha256": "3e8085e1feee090a76ba2e40a5ed31cc05addc16d4442a177338f7a1b38415cb",
+      "bytes": 1915
+    },
+    "observations": [
+      {
+        "variant": "control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/component-0-control.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+          "control"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            18.32666015625,
+            22.35205078125,
+            22.27099609375
+          ],
+          "unix": 1793795436.7032561
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793795437.584447,
+          "load": [
+            17.97998046875,
+            22.21337890625,
+            22.22216796875
+          ]
+        },
+        "instructions": 125737066,
+        "checksum": 17920,
+        "operations": 781250
+      },
+      {
+        "variant": "candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/component-1-candidate.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+          "candidate"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            17.97998046875,
+            22.21337890625,
+            22.22216796875
+          ],
+          "unix": 1793795437.674994
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793795437.848038,
+          "load": [
+            17.97998046875,
+            22.21337890625,
+            22.22216796875
+          ]
+        },
+        "instructions": 24701849,
+        "checksum": 17920,
+        "operations": 781250
+      },
+      {
+        "variant": "candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/component-2-candidate.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+          "candidate"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            17.97998046875,
+            22.21337890625,
+            22.22216796875
+          ],
+          "unix": 1793795437.9305532
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793795438.1096,
+          "load": [
+            17.97998046875,
+            22.21337890625,
+            22.22216796875
+          ]
+        },
+        "instructions": 25198696,
+        "checksum": 17920,
+        "operations": 781250
+      },
+      {
+        "variant": "control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/component-3-control.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+          "control"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            17.97998046875,
+            22.21337890625,
+            22.22216796875
+          ],
+          "unix": 1793795438.1943521
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793795438.506773,
+          "load": [
+            17.97998046875,
+            22.21337890625,
+            22.22216796875
+          ]
+        },
+        "instructions": 126847411,
+        "checksum": 17920,
+        "operations": 781250
+      }
+    ],
+    "identity_stable": true,
+    "attribution": "Independent old-list algorithm versus the public optimized selector in one executable. Process instruction snapshots cover selection loops only. This is not whole-page or Brave credit."
+  },
+  "production": {
+    "status": "Latest completed shared bundle predates the CSS array and allocator corrections; shared worker owns newer builds. No duplicate build queued or hours-long wait.",
+    "latest_completed": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "f77039aab243cb98afa3de679163424b99e1bde3948fc2c7741aa8de97f8e07a",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-151223-21d94207/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "f2beaba81eb692a8f9ea7ec7b910e1f408d3145e1c98fd13bcaf434232b8a67b",
+        "dirty": true,
+        "head": "6d335d14a33ef5ee8ba9b894a49faa556b20ccd5",
+        "repository_sha256": "c4afe7f83ca4caa543e601db142d1ac3b92ac3a0e364c5353f67e7362673d229"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "ca9ab671c7df907cd99761ef1aa548a576ba01222f1e3fbe5f9eb876ecd7774b",
+        "dirty": true,
+        "head": "b75a8b9ab8c24146b48d27978b2a93b0f80e6596",
+        "repository_sha256": "05fd513c6537a3c452b8c1308303792978663a5a52ee6cdb5430c57dcfc97f86"
+      },
+      "request": {
+        "head": "6d335d14a33ef5ee8ba9b894a49faa556b20ccd5",
+        "id": "a2107657597d47c0bb7d498b472458a0"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "f2beaba81eb692a8f9ea7ec7b910e1f408d3145e1c98fd13bcaf434232b8a67b",
+        "dirty": true,
+        "head": "6d335d14a33ef5ee8ba9b894a49faa556b20ccd5",
+        "repository_sha256": "c4afe7f83ca4caa543e601db142d1ac3b92ac3a0e364c5353f67e7362673d229"
+      }
+    },
+    "queued_request": {
+      "head": "1d90f6b8697c7904123efb09aa51f11e94f8200a",
+      "id": "26e6d921af2a4622a7eafb690faa66a5"
+    },
+    "acceptance": false,
+    "live_site_validation": false
+  },
+  "failures_retained": [
+    "Initial new-test compile required explicit optional unwrapping; corrected test passed with all assertions retained",
+    "Initial optimized component compile rejected deprecated usize in the preexisting allocator helper; explicit u64 address arithmetic passed production-mode allocator checks and the optimized component build"
+  ],
+  "broad_cadence": {
+    "whole_page_instruction_credit": 0,
+    "advance": 0,
+    "threshold": 5000000,
+    "reason": "Component savings do not advance the conservative whole-page cadence"
+  },
+  "acceptance": false,
+  "original_goal": "5% fewer launch-to-encoded-PNG instructions than Brave remains unmet",
+  "network": "No new page download; the retained SOCKS capture remains the only input for subsequent page replay",
+  "guards": {
+    "component-compile": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-prod",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+        "Build/chatgpt-numeric-iteration-20261104-1530/benchmark.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 727367680,
+      "elapsed_seconds": 1.884084417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-default": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-enable-globals",
+        "-skip-running",
+        "-o",
+        "Build/chatgpt-numeric-iteration-20261104-1530/numeric-default",
+        "css/numeric_type_iteration_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1236910080,
+      "elapsed_seconds": 18.880752125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-numeric-prealloc": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/numeric-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 19038208,
+      "elapsed_seconds": 0.5860308750000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-numeric-default": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/numeric-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 19333120,
+      "elapsed_seconds": 0.542341625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "component-0-control": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+        "control"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.804477125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-calc-none": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-enable-globals",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc-none",
+        "css/calc_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2548514816,
+      "elapsed_seconds": 30.778688582999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-calc-none": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.553105917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-calc_resolve-default": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc_resolve-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1097728,
+      "elapsed_seconds": 0.506897625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "allocator-idle_arena_pages-run": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/idle_arena_pages"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.41785191699999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "component-3-control": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+        "control"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 475136,
+      "elapsed_seconds": 0.241052416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "component-compile-fixed": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-prod",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+        "Build/chatgpt-numeric-iteration-20261104-1530/benchmark.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2523136000,
+      "elapsed_seconds": 95.798936,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "allocator-idle_arena_pages-compile": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-prod",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/idle_arena_pages",
+        "platform/idle_arena_pages_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 395952128,
+      "elapsed_seconds": 8.391816125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "allocator-prealloc_shared_pool-compile": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-prod",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/prealloc_shared_pool",
+        "platform/prealloc_shared_pool_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 407437312,
+      "elapsed_seconds": 5.134221,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "component-2-candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+        "candidate"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 475136,
+      "elapsed_seconds": 0.103592583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-default-fixed": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-enable-globals",
+        "-skip-running",
+        "-o",
+        "Build/chatgpt-numeric-iteration-20261104-1530/numeric-default",
+        "css/numeric_type_iteration_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1927479296,
+      "elapsed_seconds": 32.668731709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-calc_resolve-default": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-enable-globals",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc_resolve-default",
+        "css/calc_resolve_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1921286144,
+      "elapsed_seconds": 49.253352625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-calc-default": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 278528,
+      "elapsed_seconds": 0.516224875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-numeric-none": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/numeric-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 22396928,
+      "elapsed_seconds": 0.6255587499999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-calc_resolve-none": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc_resolve-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 933888,
+      "elapsed_seconds": 0.36732316600000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-numeric-none": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-enable-globals",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/numeric-none",
+        "css/numeric_type_iteration_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2586345472,
+      "elapsed_seconds": 37.363920541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-numeric-prealloc": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-enable-globals",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/numeric-prealloc",
+        "css/numeric_type_iteration_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1932247040,
+      "elapsed_seconds": 35.601791207999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-calc_resolve-none": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-enable-globals",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc_resolve-none",
+        "css/calc_resolve_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2534801408,
+      "elapsed_seconds": 25.498832125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "allocator-prealloc_shared_pool-run": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/prealloc_shared_pool"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.43241175,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-calc-default": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-enable-globals",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/calc-default",
+        "css/calc_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1931165696,
+      "elapsed_seconds": 41.552897125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "component-1-candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-numeric-iteration-20261104-1530/benchmark",
+        "candidate"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 393216,
+      "elapsed_seconds": 0.10141704199999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "limitations": [
+    "Component results do not establish page instructions, isolated rendering time or FPS",
+    "All attempts retained, including failed compiles; no changed page bytes, references or tolerances",
+    "The new fixed-array path has not yet been verified in a fresh production ChatGPT page process"
+  ],
+  "evidence": {
+    "archive": {
+      "path": "docs/performance/chatgpt-numeric-iteration-20261104-evidence.zip",
+      "sha256": "e5c8c660d159b97aa828203cda92e565a8d86979999159c0574964f12b53f0a4",
+      "bytes": 51194
+    },
+    "entries": 60,
+    "unique_blobs": 60,
+    "format": "index.json maps original artifact paths to hashes; blobs/<sha256> holds their original bytes"
+  }
+}
