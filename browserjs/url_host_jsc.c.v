@@ -125,9 +125,7 @@ pub fn (runtime &Runtime) native_url(value voidptr) !&domurl.DOMURL {
 }
 
 fn (host &URLHost) dom_string(value voidptr) !libjs.Utf16String {
-	actual := host.runtime.call_javascript_function(host.to_dom_string,
-		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
-	return host.runtime.native_utf16_string(actual)
+	return host.runtime.url_binding_dom_string(host.to_dom_string, value)
 }
 
 fn (host &URLHost) usv_string(value voidptr) !string {

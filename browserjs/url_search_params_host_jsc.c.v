@@ -122,9 +122,7 @@ pub fn (runtime &Runtime) native_url_search_params(value voidptr) !&domurl.URLSe
 }
 
 fn (host &URLSearchParamsHost) usv_string(value voidptr) !string {
-	actual := host.runtime.call_javascript_function(host.to_dom_string,
-		C.vox_jsc_JSValueMakeUndefined(host.runtime.context), [value])!
-	return host.runtime.native_utf16_string(actual)!.to_well_formed().str()
+	return host.runtime.url_binding_dom_string(host.to_dom_string, value)!.to_well_formed().str()
 }
 
 fn (mut host URLSearchParamsHost) string_value(text string) !voidptr {
