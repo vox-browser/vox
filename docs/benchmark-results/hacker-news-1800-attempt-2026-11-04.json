@@ -751,5 +751,120 @@
   "layout": "table wrapper shrink-to-fit 68.5M, mostly min-content inline layout of every cell",
   "paint": "final frame 156M, mostly first-time glyph rasterization",
   "worker": "~205M: engine.js parse/compile ~58M, VM creation ~36M, snapshot CRC and faults ~18M, trie checksum ~14M"
- }
+ },
+ "addenda": [
+  {
+   "date": "2026-11-04",
+   "commit": "060ae56ce",
+   "corrects": "private_api_findings.vm_creation",
+   "finding": "The earlier mini-VM A/B is retained but its conclusion is superseded. forceMiniVMMode alone also selects the denser mini heap-growth default, and the extra collections cancel the skipped time-zone canonicalization. Keeping mini mode with JSC_miniVMHeapGrowthFactor=2 (the small-heap factor) retains the saving; 060ae56ce applies this to the filter worker only, and caller-set options keep their whole configuration.",
+   "scope": "Vox-only pilot, not an acceptance cohort: 3 trials per variant in rotated order, no Brave pairs, variants set by environment on the existing Build/v/Vox.app rather than a build containing 060ae56ce. Launch through encoded PNG, per-process counts. Every trial passed pixel, content, ownership and pin gates with exit 0.",
+   "host": {
+    "cpu": 18,
+    "load_at_start": [
+     22.19140625,
+     27.72265625,
+     29.09228515625
+    ]
+   },
+   "variants": {
+    "base": {},
+    "mg2": {
+     "JSC_forceMiniVMMode": "1",
+     "JSC_miniVMHeapGrowthFactor": "2"
+    },
+    "mg4": {
+     "JSC_forceMiniVMMode": "1",
+     "JSC_miniVMHeapGrowthFactor": "4"
+    }
+   },
+   "median_total": {
+    "base": 1890143646,
+    "mg2": 1874085048,
+    "mg4": 1875999575
+   },
+   "median_worker": {
+    "base": 206446645,
+    "mg2": 187778999,
+    "mg4": 183611371
+   },
+   "trials": [
+    {
+     "trial": 1,
+     "variant": "base",
+     "total": 1954979279,
+     "vox": 1681779485,
+     "worker": 208018096,
+     "load": 22.19140625
+    },
+    {
+     "trial": 1,
+     "variant": "mg2",
+     "total": 1874085048,
+     "vox": 1703813418,
+     "worker": 189006548,
+     "load": 22.416015625
+    },
+    {
+     "trial": 1,
+     "variant": "mg4",
+     "total": 1873218146,
+     "vox": 1624163459,
+     "worker": 183995048,
+     "load": 23.58349609375
+    },
+    {
+     "trial": 2,
+     "variant": "base",
+     "total": 1879798858,
+     "vox": 1608115185,
+     "worker": 206446645,
+     "load": 24.50244140625
+    },
+    {
+     "trial": 2,
+     "variant": "mg2",
+     "total": 1878756776,
+     "vox": 1625908342,
+     "worker": 187701610,
+     "load": 24.50244140625
+    },
+    {
+     "trial": 2,
+     "variant": "mg4",
+     "total": 1880723778,
+     "vox": 1631684626,
+     "worker": 183611371,
+     "load": 23.93701171875
+    },
+    {
+     "trial": 3,
+     "variant": "base",
+     "total": 1890143646,
+     "vox": 1619912037,
+     "worker": 204942723,
+     "load": 24.5419921875
+    },
+    {
+     "trial": 3,
+     "variant": "mg2",
+     "total": 1873390792,
+     "vox": 1620343049,
+     "worker": 187778999,
+     "load": 23.93798828125
+    },
+    {
+     "trial": 3,
+     "variant": "mg4",
+     "total": 1875999575,
+     "vox": 1627554948,
+     "worker": 183290881,
+     "load": 23.38232421875
+    }
+   ],
+   "focused_tests": "adblock/filter_worker_startup_test.v: 2 cases pass in default and prealloc builds (test and 3 GiB guard exits 0)",
+   "target_met": false,
+   "evidence": "Build/hn-1800b-20261104/{mini,nojit,mg,jitbench,tests}"
+  }
+ ]
 }
