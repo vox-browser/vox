@@ -87,3 +87,49 @@ python3 tools/summarize_v_profile.py \
 
 The summary tool's eight tests cover units, independent rankings, mixed-process
 duplicate rejection, malformed counters and negative-self diagnostics.
+
+## Selective performance collection experiment
+
+An offline audit of 292 saved scripts found four review candidates. Existing
+EasyPrivacy rules already block ChatGPT's event endpoints. The analytics module
+has eight static importers, and native telemetry also performs service-worker
+cleanup and lifecycle work, so a filename-based block would remove required
+behavior. The [tracking audit](performance/chatgpt-tracking-audit-20261104.json)
+retains the dependency graph and rule decisions.
+
+The comparison tool now accepts `--script-policy chatgpt-home-performance` for
+an explicit experiment on the sealed anonymous homepage. It verifies the exact
+manifest and script hashes, creates an independent derived fixture, and bypasses
+performance collection while preserving the module's exports, promise contract,
+queue/observer cleanup and original fallback for other pages and authenticated
+users. The HTML and other scripts retain their original bytes. Both browsers
+receive the same changed script policy; this supplies no engine optimization
+credit or live-site result. Default production filtering is unchanged.
+
+A separate `--policy-diagnostics` run confirms that the guard executes in both
+engines, with bootstrap completion and exact pixels in all four captures. Eight
+uninstrumented observations then alternate original/suppressed/suppressed/original
+policy pairs, using production executable
+`19356cf6d7702f408fcb22c0a4a9ebdd40d069d6c3da630ecdd3af77ff80619e`.
+
+| Two-trial diagnostic median | Original instructions | Suppressed instructions |
+| --- | ---: | ---: |
+| Vox | 33,536,277,314.5 | 33,139,297,591 |
+| Brave lower bound | 16,369,831,910 | 16,358,415,242.5 |
+
+The observed Vox median reduction is 1.184%; the small cohort's conservative
+reduction is 205,996,983 instructions (0.616%). Brave's ranges overlap. All eight
+browser/kernel exits are zero and every content/pixel check passes, with stable
+inputs. Each one-pair API invocation retains its ordinary summary error because
+that summary requires two pairs. Aggregating the two retained pairs per policy
+provides diagnostic statistics only; the seven-pair acceptance minimum remains
+enforced. Host load is 42–45 on 18 logical CPUs, limiting attribution.
+
+Both original trials request the performance module twice and web-vitals once;
+suppression requests neither, while native telemetry and service-worker cleanup
+remain requested in both engines. Complete original web-vitals execution in Vox
+is unproven. Visible homepage correctness does not establish signed-in or chat
+submission behavior. Suppressed Vox still costs about twice Brave. The
+[experiment receipt](performance/chatgpt-performance-policy-20261104.json)
+preserves exact counts, all attempts, hashes, ownership audits, commands and guard
+exits. The original 5% goal remains open.
