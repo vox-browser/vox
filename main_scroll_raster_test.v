@@ -451,7 +451,7 @@ fn test_scroll_raster_content_damage_covers_only_changed_commands() {
 	}
 	// Old and new ink of the changed command, both in current viewport space,
 	// with the raster fringe snapped outward to whole pixels.
-	assert rects.len == 2
+	assert rects.len == 1
 	for rect in rects {
 		assert rect == layout.LayoutRect{27, 47, 26, 26}
 	}
@@ -483,9 +483,7 @@ fn test_scroll_raster_content_damage_covers_only_changed_commands() {
 	fixed_rects := scroll_raster_content_damage(&fixed_previous, scroll_raster_frame_keys([fixed], 10, 1, 1024, 768), 7, 10, 200, 200, mut stats) or {
 		panic('fixed content must reconcile')
 	}
-	assert fixed_rects.len == 2
-	assert layout.LayoutRect{17, 87, 46, 16} in fixed_rects
-	assert layout.LayoutRect{17, 97, 46, 16} in fixed_rects
+	assert fixed_rects == [layout.LayoutRect{17, 87, 46, 26}]
 	// Without a scroll change the same fixed command needs no repaint.
 	assert (scroll_raster_content_damage(&fixed_previous, scroll_raster_frame_keys([fixed], 0, 1, 1024, 768), 7, 0, 200, 200, mut stats) or {
 		panic('stationary fixed content must reconcile')
@@ -691,7 +689,7 @@ fn test_scroll_raster_video_frame_damage_restores_backdrop() {
 		panic('an unmarked video frame must reconcile')
 	}
 	assert plain.restores.len == 0
-	assert plain_rects == [restore.rect, restore.rect]
+	assert plain_rects == [restore.rect]
 	// Other damage under the video would be overwritten by the old backdrop.
 	mut changed := scroll_raster_frame_keys([scrolled[0], layout.PaintCommand{ ...scrolled[1], color: 'green' },
 		scrolled[2], scrolled[3]], 10, 1, 1024, 768)
@@ -711,7 +709,7 @@ fn test_scroll_raster_video_frame_damage_restores_backdrop() {
 		panic('a moved video must reconcile')
 	}
 	assert moved_stats.restores.len == 0
-	assert moved_rects.len == 2
+	assert moved_rects == [layout.LayoutRect{36, 36, 89, 48}]
 }
 
 fn test_scroll_raster_video_backdrop_requires_nothing_above() {

@@ -35,6 +35,9 @@ const scroll_raster_damage_fringe = 3.0
 // area cap below bounds its repaint cost.
 const scroll_raster_max_changed_commands = 256
 const scroll_raster_max_damage_fraction = 0.5
+// Match the bounded native damage list, after merging overlapping ink.
+const scroll_raster_max_damage_rects = 48
+const disable_coalesced_scroll_damage = os.getenv('VOX_DISABLE_COALESCED_SCROLL_DAMAGE') != ''
 
 // One command's retained identity. The hash covers every pixel-affecting field
 // after removing the viewport scroll translation, so the same content at a
@@ -886,7 +889,7 @@ fn scroll_raster_content_damage(previous &ScrollRasterKeyFrame, current []Scroll
 		stats.fallback = 'paint-order-changed'
 		return none
 	}
-	if changed > scroll_raster_max_changed_commands {
+	if disable_coalesced_scroll_damage && changed > scroll_raster_max_changed_commands {
 		stats.fallback = 'too-many-changes'
 		return none
 	}
@@ -918,7 +921,10 @@ fn scroll_raster_content_damage(previous &ScrollRasterKeyFrame, current []Scroll
 			document: layout.LayoutRect{whole.x, whole.y + scroll, whole.width, whole.height}
 		}
 	}
-	if area > scroll_raster_max_damage_fraction * width * height {
+	if disable_coalesced_scroll_damage && area > scroll_raster_max_damage_fraction * width * height {
+		if scroll_raster_damage_diagnostics {
+			eprintln('VOX_SCROLL_RASTER_AREA legacy=true area=${area} limit=${scroll_raster_max_damage_fraction * width * height} rects=${clamped} restores=${restores.len}')
+		}
 		stats.fallback = 'damage-too-large'
 		return none
 	}
@@ -936,8 +942,78 @@ fn scroll_raster_content_damage(previous &ScrollRasterKeyFrame, current []Scroll
 			stats.restores << restore
 		}
 	}
+	if !disable_coalesced_scroll_damage {
+		for {
+			clamped = scroll_raster_coalesce_damage(clamped) or {
+				stats.fallback = 'too-many-damage-rects'
+				return none
+			}
+			// A conservative bounding join can newly touch a video's saved
+			// backdrop. Convert that restore to ordinary damage, then merge
+			// again until no remaining restore intersects the published ink.
+			mut untouched := []ScrollRasterVideoRestore{}
+			for restore in stats.restores {
+				if clamped.any(scroll_raster_rects_overlap(it, restore.rect)) {
+					clamped << restore.rect
+				} else {
+					untouched << restore
+				}
+			}
+			if untouched.len == stats.restores.len { break }
+			stats.restores = untouched
+		}
+		if clamped.len + stats.restores.len > scroll_raster_max_damage_rects {
+			stats.fallback = 'too-many-damage-rects'
+			return none
+		}
+		// Changed command count and summed per-command ink do not describe
+		// repaint work: old/new ink, shadows and group extents often cover the
+		// same pixels. Bound the conservative rectangles actually published.
+		area = 0
+		for rect in clamped { area += rect.width * rect.height }
+		for restore in stats.restores { area += restore.rect.width * restore.rect.height }
+		if area > scroll_raster_max_damage_fraction * width * height {
+			if scroll_raster_damage_diagnostics {
+				eprintln('VOX_SCROLL_RASTER_AREA legacy=false area=${area} limit=${scroll_raster_max_damage_fraction * width * height} rects=${clamped} restores=${stats.restores.len}')
+			}
+			stats.fallback = 'damage-too-large'
+			return none
+		}
+	}
 	stats.rects = clamped.len
 	return clamped
+}
+
+// Each join conservatively covers both inputs. Restart after a join because
+// its bounding rectangle can meet an earlier rectangle. The final rectangles
+// are disjoint, so their summed area is an upper bound on actual damage, and
+// neither duplicate old/new ink nor a parent group's ink is charged twice.
+fn scroll_raster_coalesce_damage(rects []layout.LayoutRect) ?[]layout.LayoutRect {
+	mut merged := []layout.LayoutRect{}
+	for rect in rects {
+		mut bounds := rect
+		mut index := 0
+		for index < merged.len {
+			other := merged[index]
+			if bounds.x <= other.x + other.width && other.x <= bounds.x + bounds.width
+				&& bounds.y <= other.y + other.height && other.y <= bounds.y + bounds.height {
+				left := math.min(bounds.x, other.x)
+				top := math.min(bounds.y, other.y)
+				right := math.max(bounds.x + bounds.width, other.x + other.width)
+				bottom := math.max(bounds.y + bounds.height, other.y + other.height)
+				bounds = layout.LayoutRect{left, top, right - left, bottom - top}
+				merged.delete(index)
+				index = 0
+			} else {
+				index++
+			}
+		}
+		merged << bounds
+		// Declining early may miss a later rectangle that would join these,
+		// but prevents a large disjoint display list from quadratic work.
+		if merged.len > scroll_raster_max_damage_rects { return none }
+	}
+	return merged
 }
 
 // Snap outward to whole CSS pixels so device clips stay conservative.
