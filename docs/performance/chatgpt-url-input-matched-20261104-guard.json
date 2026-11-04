@@ -1,0 +1,14 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-url-input-20261104-2107/matched/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 1,
+  "adopted_processes": {},
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 287342592,
+  "elapsed_seconds": 12.172836459,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

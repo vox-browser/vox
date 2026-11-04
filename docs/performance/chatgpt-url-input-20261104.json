@@ -1,0 +1,239 @@
+{
+  "version": 1,
+  "implementation_commit": "6f1b280b2",
+  "tooling_commit": "d4c61162a",
+  "focused_test_function_executions": 38,
+  "full_url_module_files_per_gc": 22,
+  "gc_modes": [
+    "Boehm",
+    "none"
+  ],
+  "prealloc_poison_and_sanitizers_pass": true,
+  "focused_guards_all_zero": true,
+  "component_scenes": {
+    "archived-urls": {
+      "control": [
+        546295619,
+        538982423
+      ],
+      "candidate": [
+        525558511,
+        522516554
+      ],
+      "control_median": 542639021.0,
+      "candidate_median": 524037532.5,
+      "median_reduction_fraction": 0.034279673558529455,
+      "conservative_component_reduction": 13423912
+    },
+    "edge-controls": {
+      "control": [
+        533153128,
+        528298190
+      ],
+      "candidate": [
+        512625937,
+        513808388
+      ],
+      "control_median": 530725659.0,
+      "candidate_median": 513217162.5,
+      "median_reduction_fraction": 0.03298973057566079,
+      "conservative_component_reduction": 14489802
+    },
+    "path-overrides": {
+      "control": [
+        164607336,
+        165371374
+      ],
+      "candidate": [
+        153190073,
+        157891866
+      ],
+      "control_median": 164989355.0,
+      "candidate_median": 155540969.5,
+      "median_reduction_fraction": 0.05726663699000456,
+      "conservative_component_reduction": 6715470
+    }
+  },
+  "component_scope": "Current-process C -O2 Boehm parse/serialize/full canonical equality/length checksum intervals after input construction and warm validation; includes allocator and GC. Not pure filtering or whole-page costs.",
+  "component_variant_diagnostics": "Candidate marker present; scalar control marker absent in separate instrumented runs.",
+  "rejected_component_attempts": [
+    "Initial C compile failed due to optional-base value/pointer mismatch; corrected before any trial.",
+    "First nominal cohort used UTF16 environment variables, making every variant a URL candidate. Missing branch marker caught misconfiguration. All observations invalid, zero credit. Corrected controller reuses identical compiled binary with correct URL flags."
+  ],
+  "production_executable_sha256": "f7a36b29f87e6b334ac7aa14e177598eeb5e6ec18648f4af26e8c973090ea18c",
+  "production_diagnostic_captures": 8,
+  "unprofiled_captures": 8,
+  "all_collected_pixels_and_content_exact": true,
+  "all_browser_and_kernel_exits_zero": true,
+  "control": [
+    32320301665,
+    32920228923
+  ],
+  "candidate": [
+    32959754305,
+    32567672273
+  ],
+  "control_median": 32620265294.0,
+  "candidate_median": 32763713289.0,
+  "median_reduction_fraction": -0.004397511599220083,
+  "conservative_page_instruction_reduction": -639452640,
+  "work": [
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 339,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          37.78955078125,
+          39.099609375,
+          46.9189453125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          37.16552734375,
+          38.9482421875,
+          46.8193359375
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 389,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          33.06591796875,
+          37.8759765625,
+          46.1630859375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          32.259765625,
+          37.62890625,
+          46.02734375
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 364,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          33.43994140625,
+          37.7841796875,
+          46.03271484375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          33.32421875,
+          37.68798828125,
+          45.9501953125
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 355,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          31.06396484375,
+          36.5693359375,
+          45.20458984375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          30.978515625,
+          36.4599609375,
+          45.115234375
+        ]
+      }
+    }
+  ],
+  "page_instruction_credit": 0,
+  "acceptance": false,
+  "broad_cadence_after": 0,
+  "qualification": "Candidate median regresses with overlapping observed ranges; no whole-page saving, attribution or acceptance credit. Initial matched preflight observed executable replacement, rejected before collecting a sample; refreshed diagnostic and matched cohort use f7a36b29f87e6b334ac7aa14e177598eeb5e6ec18648f4af26e8c973090ea18c throughout. All attempts retained.",
+  "metadata_correction": "The initial diagnostic controller retained the UTF16 implementation tag b92a8c9f1. Its archived URL compactor/preprocessor source proof, flags and runtime markers identify the actual feature as 6f1b280b2. The refreshed reports use the correct tag; original raw report remains unchanged.",
+  "brave_target_fraction": "0.95",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-url-input-diagnostic-20261104.json",
+      "sha256": "3b04cf5f6cebcbab1544af273978c60447b6027896185192b343099fa8d31a8e",
+      "bytes": 1378954
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-diagnostic-20261104-evidence.zip",
+      "sha256": "f05f28160e7e902988cef8cc89cda26cb30e1de20a96fb9be24b09c6b02c77b1",
+      "bytes": 1259301
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-diagnostic-20261104-guard.json",
+      "sha256": "424de5eab341d42069e42b4ab57b1b5be67410de68c93b805ae48371b3b32655",
+      "bytes": 1021
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-diagnostic-refresh-20261104.json",
+      "sha256": "b8bcd473b12dbf5f56f6e1ebe65e2e8902e86af106dad209e83ac367d2ab2a52",
+      "bytes": 1373750
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-diagnostic-refresh-20261104-evidence.zip",
+      "sha256": "9cd1b7d2668351b479beaca5e5d300c1a18244bbb3f1c75ec729863d096ad7a0",
+      "bytes": 1254876
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-diagnostic-refresh-20261104-guard.json",
+      "sha256": "87a796bf46611768015559fe52dee0f2f86ffc1c296c6e05d719a72aec7d5c30",
+      "bytes": 1031
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-matched-20261104.json",
+      "sha256": "e9a07f7e37527638dc20f61773cb29ba88888b55d7f032f2cf00d4faa5d27c87",
+      "bytes": 767942
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-matched-20261104-evidence.zip",
+      "sha256": "73649933d43ca12e981931300d5beb6f8559aee71eeb4d1578c8ef77867bc7c0",
+      "bytes": 230915
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-matched-20261104-guard.json",
+      "sha256": "cedfda11a502d45975ed006a7cb7b2326606fe128ecc34716aff00ef02f2fa7d",
+      "bytes": 387
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-matched-refresh-20261104.json",
+      "sha256": "6a564cbd5c342825ae1bed0c663a461e0d01004a280c12d5532c9cf99c0e7836",
+      "bytes": 2020765
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-matched-refresh-20261104-evidence.zip",
+      "sha256": "0766161dba033da4af50e97b98384186a71faa9d960059b56e528608918ac666",
+      "bytes": 2511409
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-matched-refresh-20261104-guard.json",
+      "sha256": "e3607ef3a4f2e1d4ca178ef7e02afc6e77951aeeb34c7da0054b0a6a74105321",
+      "bytes": 1754
+    },
+    {
+      "path": "docs/performance/chatgpt-url-input-20261104-evidence.zip",
+      "sha256": "5ff451ee7238ef7be02e549e4d7c81dd581a5942063f8d74f05af3cff835b38f",
+      "bytes": 71880
+    }
+  ]
+}

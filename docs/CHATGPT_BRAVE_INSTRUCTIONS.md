@@ -954,3 +954,57 @@ links source proofs, original commands, raw counters, PNGs, host conditions,
 guards and completed broad checks. This four-pair diagnostic does not establish
 seven-pair acceptance or the requested 5% advantage over Brave. Original author
 scripts and the single SOCKS capture remain unchanged.
+
+## Owned URL input filtering
+
+Commit `6f1b280b2` compacts the freshly decoded rune array instead of allocating
+a second filtered array. Normal parsing still trims leading/trailing C0 controls
+and spaces; state-override setters retain them. Both remove only TAB, LF and CR
+internally. The UTF-8 decoder and parsed URL ownership remain unchanged.
+
+Thirty-eight focused test-function executions pass across normal/no GC,
+preallocation with poisoned arenas, and AddressSanitizer/UndefinedBehaviorSanitizer
+with both implementations. All 22 URL module files also pass in each GC mode.
+Cases cover every byte, BMP scalars, invalid UTF-8, control policies, independent
+returned arrays and component setters. Every selected guard exits zero.
+
+Tooling commit `d4c61162a` validates full serialized output against the 311 frozen
+canonical resource URLs and fixed setter references. Separate branch diagnostics
+confirm that the corrected control disables compaction.
+
+| Component scene | Copy control median | Candidate median | Median reduction |
+| --- | ---: | ---: | ---: |
+| 9,952 archived URL parses | 542,639,021 | 524,037,532.5 | 3.428% |
+| 9,952 parses with edge controls | 530,725,659 | 513,217,162.5 | 3.299% |
+| 16,384 path overrides | 164,989,355 | 155,540,969.5 | 5.727% |
+
+These current-process intervals include parsing, serialization, full reference
+comparison, checksum, allocation and GC. Input construction and warm validation
+precede the counters. They do not establish a whole-page saving. An initial C
+compile failed before measurement; a subsequent controller used the wrong
+environment-variable names, making every variant a candidate. Its branch check
+rejected the entire cohort. Both attempts remain retained with zero credit.
+
+Production diagnostics on two successive shared builds pass all eight exact
+pixel/content captures and confirm compaction only in the candidate. The first
+matched preflight rejects an executable replacement before collecting a capture.
+The replacement is independently revalidated, then pinned as
+`f7a36b29f87e6b334ac7aa14e177598eeb5e6ec18648f4af26e8c973090ea18c`
+throughout a fresh unprofiled four-pair comparison.
+
+All eight matched captures pass unchanged pixels, content, JavaScriptCore
+bootstrap and browser/kernel exits. The Vox control median is
+**32,620,265,294**, versus **32,763,713,289** for the candidate: a **0.440%
+regression**, with overlapping ranges. The conservative reduction is
+−639,452,640 instructions. Frame checkpoints are 339, 389, 364 and 355;
+all four have eleven box-building passes. Starting host load ranges from 31.1
+to 37.8 on 18 CPUs. This result earns zero page-level credit and leaves the
+broad cadence at zero after the prior encoder checkpoint. It does not meet
+the 5% Brave target.
+
+The [URL input receipt](performance/chatgpt-url-input-20261104.json) retains
+the component failures, rejected preflight, all successful observations, source
+proofs, guards and raw PNGs. It also corrects the initial diagnostic controller's
+inherited implementation tag without modifying that raw report. Original author
+scripts, fixture bytes and references remain unchanged; no additional live
+download was performed.
