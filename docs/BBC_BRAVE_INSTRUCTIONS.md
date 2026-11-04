@@ -1,5 +1,12 @@
 # BBC homepage instruction comparison
 
+The latest **514-case broad-check receipts** are now durable in the
+[broad ledger](performance/bbc-svg-measurement-broad-20261104.json) and
+[raw checks](performance/raw/bbc-svg-measurement-broad-20261104.tar.gz).
+Each GC mode has 511 passes and the same three baseline failures, with no input
+changes. Cohort 94 has two rejected disk preflights and no acceptance browser
+launches yet; these preflights do not increase the 2,043 browser-attempt history.
+
 **Latest completed comparison — cohort 93:** seven alternating control/Vox/Brave
 triples complete on executable
 `f029d0f4ec0b2648879303914eff0cc151932e08a50bf2903258a52aded645e3`.

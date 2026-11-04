@@ -1,0 +1,53 @@
+{
+  "status": "Both broader GC modes execute514unique cases with511passes and exactly3known baseline failures. All10new image/relative/SVG cases pass. Checked inputs unchanged; no full pass or cadence reset.",
+  "trigger": "Cohort93 median matched-control point difference251570425 exceeds5million instructions; no robust performance saving credited.",
+  "modes": {
+    "default": {
+      "entered": 514,
+      "unique": 514,
+      "passed": 511,
+      "failures": [
+        "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+        "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+        "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+      ],
+      "inputs_unchanged": true
+    },
+    "none": {
+      "entered": 514,
+      "unique": 514,
+      "passed": 511,
+      "failures": [
+        "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+        "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+        "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+      ],
+      "inputs_unchanged": true
+    }
+  },
+  "controller_exit": {
+    "exit": 1
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-svg-measurement-broad-20261104.tar.gz",
+    "bytes": 9016332,
+    "sha256": "a4de8cd2d53c6b00078df3111334845820bb6bf193524abe54f36cb53a784322",
+    "members": 331,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793823068.582927,
+  "archive_completion_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-svg-measurement-20261104-2250/archive-broad.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 47251456,
+    "elapsed_seconds": 1.709024041,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
