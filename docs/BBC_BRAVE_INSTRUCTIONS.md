@@ -1,13 +1,30 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** The November 4 continuation has committed selector-targeted
-invalidation for deleted style-only conditional groups, with 78 focused
-executions passing. A newer shared SVG layout policy changes 445,313 pixels
-against the original reference in both control and candidate. This rejected
-diagnostic earns no instruction credit and does not constitute cohort 82.
-An explicit common historical SVG-layout option passes 42 focused executions;
-the unchanged-reference production check and matched cohort are pending.
+`OPTIMIZED_SITES.md`.** Cohort 82 retains all seven alternating
+control/Vox/Brave triples. Vox's median is **29,135,895,526** instructions,
+control **29,718,522,931**, and Brave's lower-bound median **17,449,185,825**.
+The strict gate fails `309753061950 > 155568327714`, ratio
+**1.7919955806654342**. Brave pair 4 differs by 53,392 pixels with maximum
+channel error 6, invalidating acceptance; all fourteen Vox captures remain exact.
+All native exits, full content audits and pinned-input checks pass.
+
+The conditional-deletion change has a **582,627,405 (1.960%)** marginal median
+reduction, four paired improvements and three regressions. The conservative
+control ratio **1.0637923593249565** fails, so no robust saving is credited.
+Both Vox arms explicitly retain the original logical paint/font grids and
+CSS-coordinate inline-SVG layout. The explicit SVG policy restores the fixed
+reference after a shared default-policy change; it earns no optimization credit.
+Earlier prechecks with 445,313 changed pixels and the unsuccessful historical
+WebP diagnostic remain retained. See the [cohort 82 ledger](performance/bbc-cohort82-conditional-deletion-20261104.json)
+and [verified raw receipts](performance/raw/bbc-cohort82-conditional-deletion-20261104.tar.gz).
+
+The conditional-deletion fix passes 78 focused executions, the historical SVG
+option passes 42, and 269 instruction-tool tests pass. Broad checks enter all
+490 cases in each of default and no-GC modes: 487 pass, with the same three
+recorded failures. No full-pass or cadence reset is claimed. A separate
+declaration-free leaf change passes 114 focused executions and 271 tool tests;
+production path/pixel checks and cohort 83 are pending.
 
 Cohort 81 completes seven alternating control/Vox/Brave
 triples on the 609-response frozen 2026-11-03 homepage. All 21 captures pass
@@ -51,7 +68,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **81 cohorts / 1,821 attempted browser trials**, excluding separately
+History is **82 cohorts / 1,842 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 The requested `v -profile` follow-up now covers the main thread from V's main
