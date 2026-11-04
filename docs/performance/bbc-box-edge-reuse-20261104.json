@@ -1,0 +1,724 @@
+{
+  "status": "Engine change committed and222 focused executions pass. Native candidate validation and cohort91 remain pending: available completed bundles lack the new path while shared production build is busy. No instruction saving or catalog qualification claimed.",
+  "engine_commit": "99ee0f99f",
+  "control_tool_commit": "0dd85ac67",
+  "change": "Reuse scalar absolute and percentage margin/padding/border results. Key percentage basis in CSSPixels and actual absolute-length rounding policy; invalidate via every typed edge setter after normal COW. Relative units and calculations keep live resolution; derived memo is excluded from geometry snapshot equality.",
+  "profile_basis": {
+    "path": "docs/performance/bbc-main-profile-runtime-audit-20261104.json",
+    "raw": "docs/performance/raw/bbc-main-profile-runtime-audit-20261104.tar.gz",
+    "diagnostic_counts": {
+      "resolve_box_model_length": 3394640,
+      "resolved_box_model_edges": 424330
+    },
+    "qualification": "Earlier validated v -profile diagnostic identifies repeated work. Counts and timings do not establish candidate eligibility, instruction saving or current live performance."
+  },
+  "initial_focus": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 139
+      },
+      {
+        "name": "default-control",
+        "exit": 139
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 139
+      },
+      {
+        "name": "none-control",
+        "exit": 139
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 139
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 139
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_resolved_edges_keep_absolute_unit_rounding_auto_margins_and_saturation",
+          "test_resolved_edges_keep_percentage_and_live_relative_calculation_contexts",
+          "test_resolved_edges_follow_animation_changes_and_copy_on_write_styles",
+          "test_resolved_edges_keep_both_document_rounding_policies",
+          "test_resolved_edge_reuse_keys_quantized_percentages_and_live_rounding_policy",
+          "test_resolved_edge_reuse_invalidates_typed_setters_and_keeps_shared_styles_independent",
+          "test_resolved_edge_reuse_keeps_relative_units_live_and_ignores_memos_when_sharing_geometry",
+          "test_exact_layout_lengths_preserve_every_sampled_fixed_point_value_and_both_policies",
+          "test_fractional_layout_lengths_keep_the_document_rounding_policy",
+          "test_absolute_zero_units_keep_positive_and_negative_zero_results",
+          "test_nonfinite_and_out_of_range_lengths_keep_saturation_and_nan_behavior",
+          "test_absolute_length_zero_shortcut_preserves_randomized_float_inputs",
+          "test_idle_snapshot_sharing_preserves_independent_writes_and_value_copies",
+          "test_idle_snapshot_sharing_checks_values_outside_its_coarse_hash",
+          "test_idle_snapshot_sharing_leaves_unresolved_rare_and_writable_styles_local",
+          "test_idle_snapshot_sharing_keeps_even_equal_background_layers_local",
+          "test_idle_shared_snapshot_reresolves_against_each_raw_graph_and_document",
+          "test_idle_shared_snapshot_does_not_retain_an_obsolete_owner",
+          "test_idle_snapshot_pool_handles_more_than_one_coarse_bucket_of_geometry",
+          "test_geometry_snapshot_keys_keep_signed_zero_and_unhashed_fields_correct",
+          "test_chromium_fixed_line_height_rounds_only_after_device_projection",
+          "test_device_layout_ex_width_uses_the_selected_unrounded_x_height",
+          "test_device_layout_style_scales_lengths_without_mutating_cssom_or_colors",
+          "test_device_layout_calculations_scale_dimensions_and_keep_percentage_bases",
+          "test_device_layout_projection_reuses_only_matching_source_revisions_and_scales",
+          "test_device_layout_fonts_preserve_optical_axes_and_physical_cache_precision",
+          "test_device_layout_fractional_comment_header_uses_physical_font_precision",
+          "test_anonymous_layout_wrappers_keep_their_projected_font_and_scale",
+          "test_direct_anonymous_clones_preserve_layout_coordinates_before_resolution",
+          "test_transferred_wrapper_properties_keep_the_scaled_font_after_mutations",
+          "test_device_layout_verdana_normal_strut_rounds_the_physical_font",
+          "test_device_layout_projection_preserves_unscaled_values_and_keyword_widths",
+          "test_device_layout_projection_preserves_used_color_scheme_in_nested_values",
+          "test_device_projection_absolute_units_match_complete_length_context",
+          "test_device_projection_relative_and_nested_values_keep_complete_length_context",
+          "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+          "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_resolved_edges_keep_absolute_unit_rounding_auto_margins_and_saturation",
+          "test_resolved_edges_keep_percentage_and_live_relative_calculation_contexts",
+          "test_resolved_edges_follow_animation_changes_and_copy_on_write_styles",
+          "test_resolved_edges_keep_both_document_rounding_policies",
+          "test_resolved_edge_reuse_keys_quantized_percentages_and_live_rounding_policy",
+          "test_resolved_edge_reuse_invalidates_typed_setters_and_keeps_shared_styles_independent",
+          "test_resolved_edge_reuse_keeps_relative_units_live_and_ignores_memos_when_sharing_geometry",
+          "test_exact_layout_lengths_preserve_every_sampled_fixed_point_value_and_both_policies",
+          "test_fractional_layout_lengths_keep_the_document_rounding_policy",
+          "test_absolute_zero_units_keep_positive_and_negative_zero_results",
+          "test_nonfinite_and_out_of_range_lengths_keep_saturation_and_nan_behavior",
+          "test_absolute_length_zero_shortcut_preserves_randomized_float_inputs",
+          "test_idle_snapshot_sharing_preserves_independent_writes_and_value_copies",
+          "test_idle_snapshot_sharing_checks_values_outside_its_coarse_hash",
+          "test_idle_snapshot_sharing_leaves_unresolved_rare_and_writable_styles_local",
+          "test_idle_snapshot_sharing_keeps_even_equal_background_layers_local",
+          "test_idle_shared_snapshot_reresolves_against_each_raw_graph_and_document",
+          "test_idle_shared_snapshot_does_not_retain_an_obsolete_owner",
+          "test_idle_snapshot_pool_handles_more_than_one_coarse_bucket_of_geometry",
+          "test_geometry_snapshot_keys_keep_signed_zero_and_unhashed_fields_correct",
+          "test_chromium_fixed_line_height_rounds_only_after_device_projection",
+          "test_device_layout_ex_width_uses_the_selected_unrounded_x_height",
+          "test_device_layout_style_scales_lengths_without_mutating_cssom_or_colors",
+          "test_device_layout_calculations_scale_dimensions_and_keep_percentage_bases",
+          "test_device_layout_projection_reuses_only_matching_source_revisions_and_scales",
+          "test_device_layout_fonts_preserve_optical_axes_and_physical_cache_precision",
+          "test_device_layout_fractional_comment_header_uses_physical_font_precision",
+          "test_anonymous_layout_wrappers_keep_their_projected_font_and_scale",
+          "test_direct_anonymous_clones_preserve_layout_coordinates_before_resolution",
+          "test_transferred_wrapper_properties_keep_the_scaled_font_after_mutations",
+          "test_device_layout_verdana_normal_strut_rounds_the_physical_font",
+          "test_device_layout_projection_preserves_unscaled_values_and_keyword_widths",
+          "test_device_layout_projection_preserves_used_color_scheme_in_nested_values",
+          "test_device_projection_absolute_units_match_complete_length_context",
+          "test_device_projection_relative_and_nested_values_keep_complete_length_context",
+          "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+          "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_resolved_edges_keep_absolute_unit_rounding_auto_margins_and_saturation",
+          "test_resolved_edges_keep_percentage_and_live_relative_calculation_contexts",
+          "test_resolved_edges_follow_animation_changes_and_copy_on_write_styles",
+          "test_resolved_edges_keep_both_document_rounding_policies",
+          "test_resolved_edge_reuse_keys_quantized_percentages_and_live_rounding_policy",
+          "test_resolved_edge_reuse_invalidates_typed_setters_and_keeps_shared_styles_independent",
+          "test_resolved_edge_reuse_keeps_relative_units_live_and_ignores_memos_when_sharing_geometry",
+          "test_exact_layout_lengths_preserve_every_sampled_fixed_point_value_and_both_policies",
+          "test_fractional_layout_lengths_keep_the_document_rounding_policy",
+          "test_absolute_zero_units_keep_positive_and_negative_zero_results",
+          "test_nonfinite_and_out_of_range_lengths_keep_saturation_and_nan_behavior",
+          "test_absolute_length_zero_shortcut_preserves_randomized_float_inputs",
+          "test_idle_snapshot_sharing_preserves_independent_writes_and_value_copies",
+          "test_idle_snapshot_sharing_checks_values_outside_its_coarse_hash",
+          "test_idle_snapshot_sharing_leaves_unresolved_rare_and_writable_styles_local",
+          "test_idle_snapshot_sharing_keeps_even_equal_background_layers_local",
+          "test_idle_shared_snapshot_reresolves_against_each_raw_graph_and_document",
+          "test_idle_shared_snapshot_does_not_retain_an_obsolete_owner",
+          "test_idle_snapshot_pool_handles_more_than_one_coarse_bucket_of_geometry",
+          "test_geometry_snapshot_keys_keep_signed_zero_and_unhashed_fields_correct",
+          "test_chromium_fixed_line_height_rounds_only_after_device_projection",
+          "test_device_layout_ex_width_uses_the_selected_unrounded_x_height",
+          "test_device_layout_style_scales_lengths_without_mutating_cssom_or_colors",
+          "test_device_layout_calculations_scale_dimensions_and_keep_percentage_bases",
+          "test_device_layout_projection_reuses_only_matching_source_revisions_and_scales",
+          "test_device_layout_fonts_preserve_optical_axes_and_physical_cache_precision",
+          "test_device_layout_fractional_comment_header_uses_physical_font_precision",
+          "test_anonymous_layout_wrappers_keep_their_projected_font_and_scale",
+          "test_direct_anonymous_clones_preserve_layout_coordinates_before_resolution",
+          "test_transferred_wrapper_properties_keep_the_scaled_font_after_mutations",
+          "test_device_layout_verdana_normal_strut_rounds_the_physical_font",
+          "test_device_layout_projection_preserves_unscaled_values_and_keyword_widths",
+          "test_device_layout_projection_preserves_used_color_scheme_in_nested_values",
+          "test_device_projection_absolute_units_match_complete_length_context",
+          "test_device_projection_relative_and_nested_values_keep_complete_length_context",
+          "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+          "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/css/resolved_box_model_edges_test.v": "c2861da68747eb0e601838de331b7b7ce5596fda3a3e65907a004d5089cf5861",
+      "/Users/alex/code/vox2/css/exact_layout_lengths_test.v": "f1e408161e4ccc8575febe741d2166c9033286c7c69808e47ef13c0010f5603a",
+      "/Users/alex/code/vox2/css/idle_layout_snapshots_test.v": "01caa9a864883793f3f8326d547c5c2793016c0d6d2f9c9e36f04b813464bb94",
+      "/Users/alex/code/vox2/css/device_layout_style_test.v": "b91eedc304be72ec6c81d595d34ebbc04d693bc7de5c34739ec0f52cc926e2a2",
+      "/Users/alex/code/vox2/css/calculated_snapshot_ownership_test.v": "638f06894a3e32d15f35acef18c5bdd6c58b1c94c42aad064ac9386e9cd98866",
+      "/Users/alex/code/vox2/css/resolved_box_model_edges.v": "0b75b2e1f3df9dfa2fbcad651141c74ac2e7b5e2e0b12a86320af06d3f8786f9",
+      "/Users/alex/code/vox2/css/computed_layout_cache.v": "9c29032eab6f0da0d7b527807ed810cb097f1d20cad884e1cdda95e24267d4f8",
+      "/Users/alex/code/vox2/css/computed_values.v": "e1dbaee3b5562dba21ee534a37c443a0b171fd8541ed0af718035b2ae1691f3d",
+      "/Users/alex/code/vox2/css/computed_length.v": "855adcd5f0d8be73427ee1702f0ffa9408c3770f6368b4acfd93da8fa6711e00",
+      "/Users/alex/code/vox2/css/idle_layout_snapshots.v": "c98d23dedf17fb0defdf0f64b1961e51b4e776937bb414b438019330236adfa2"
+    },
+    "unchanged": false,
+    "cases_per_run": 37,
+    "expected_cases": [
+      "test_resolved_edges_keep_absolute_unit_rounding_auto_margins_and_saturation",
+      "test_resolved_edges_keep_percentage_and_live_relative_calculation_contexts",
+      "test_resolved_edges_follow_animation_changes_and_copy_on_write_styles",
+      "test_resolved_edges_keep_both_document_rounding_policies",
+      "test_resolved_edge_reuse_keys_quantized_percentages_and_live_rounding_policy",
+      "test_resolved_edge_reuse_invalidates_typed_setters_and_keeps_shared_styles_independent",
+      "test_resolved_edge_reuse_keeps_relative_units_live_and_ignores_memos_when_sharing_geometry",
+      "test_exact_layout_lengths_preserve_every_sampled_fixed_point_value_and_both_policies",
+      "test_fractional_layout_lengths_keep_the_document_rounding_policy",
+      "test_absolute_zero_units_keep_positive_and_negative_zero_results",
+      "test_nonfinite_and_out_of_range_lengths_keep_saturation_and_nan_behavior",
+      "test_absolute_length_zero_shortcut_preserves_randomized_float_inputs",
+      "test_idle_snapshot_sharing_preserves_independent_writes_and_value_copies",
+      "test_idle_snapshot_sharing_checks_values_outside_its_coarse_hash",
+      "test_idle_snapshot_sharing_leaves_unresolved_rare_and_writable_styles_local",
+      "test_idle_snapshot_sharing_keeps_even_equal_background_layers_local",
+      "test_idle_shared_snapshot_reresolves_against_each_raw_graph_and_document",
+      "test_idle_shared_snapshot_does_not_retain_an_obsolete_owner",
+      "test_idle_snapshot_pool_handles_more_than_one_coarse_bucket_of_geometry",
+      "test_geometry_snapshot_keys_keep_signed_zero_and_unhashed_fields_correct",
+      "test_chromium_fixed_line_height_rounds_only_after_device_projection",
+      "test_device_layout_ex_width_uses_the_selected_unrounded_x_height",
+      "test_device_layout_style_scales_lengths_without_mutating_cssom_or_colors",
+      "test_device_layout_calculations_scale_dimensions_and_keep_percentage_bases",
+      "test_device_layout_projection_reuses_only_matching_source_revisions_and_scales",
+      "test_device_layout_fonts_preserve_optical_axes_and_physical_cache_precision",
+      "test_device_layout_fractional_comment_header_uses_physical_font_precision",
+      "test_anonymous_layout_wrappers_keep_their_projected_font_and_scale",
+      "test_direct_anonymous_clones_preserve_layout_coordinates_before_resolution",
+      "test_transferred_wrapper_properties_keep_the_scaled_font_after_mutations",
+      "test_device_layout_verdana_normal_strut_rounds_the_physical_font",
+      "test_device_layout_projection_preserves_unscaled_values_and_keyword_widths",
+      "test_device_layout_projection_preserves_used_color_scheme_in_nested_values",
+      "test_device_projection_absolute_units_match_complete_length_context",
+      "test_device_projection_relative_and_nested_values_keep_complete_length_context",
+      "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+      "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+    ]
+  },
+  "initial_qualification": "All six runtime arms crashed139. New test fixtures passed optional parsed pointers directly into setters; corrected fixtures bind them first. Earlier source inputs changed during that failed investigation and unchanged=false is retained. No correctness credit from initial runs.",
+  "focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_resolved_edges_keep_absolute_unit_rounding_auto_margins_and_saturation",
+          "test_resolved_edges_keep_percentage_and_live_relative_calculation_contexts",
+          "test_resolved_edges_follow_animation_changes_and_copy_on_write_styles",
+          "test_resolved_edges_keep_both_document_rounding_policies",
+          "test_resolved_edge_reuse_keys_quantized_percentages_and_live_rounding_policy",
+          "test_resolved_edge_reuse_invalidates_typed_setters_and_keeps_shared_styles_independent",
+          "test_resolved_edge_reuse_keeps_relative_units_live_and_ignores_memos_when_sharing_geometry",
+          "test_exact_layout_lengths_preserve_every_sampled_fixed_point_value_and_both_policies",
+          "test_fractional_layout_lengths_keep_the_document_rounding_policy",
+          "test_absolute_zero_units_keep_positive_and_negative_zero_results",
+          "test_nonfinite_and_out_of_range_lengths_keep_saturation_and_nan_behavior",
+          "test_absolute_length_zero_shortcut_preserves_randomized_float_inputs",
+          "test_idle_snapshot_sharing_preserves_independent_writes_and_value_copies",
+          "test_idle_snapshot_sharing_checks_values_outside_its_coarse_hash",
+          "test_idle_snapshot_sharing_leaves_unresolved_rare_and_writable_styles_local",
+          "test_idle_snapshot_sharing_keeps_even_equal_background_layers_local",
+          "test_idle_shared_snapshot_reresolves_against_each_raw_graph_and_document",
+          "test_idle_shared_snapshot_does_not_retain_an_obsolete_owner",
+          "test_idle_snapshot_pool_handles_more_than_one_coarse_bucket_of_geometry",
+          "test_geometry_snapshot_keys_keep_signed_zero_and_unhashed_fields_correct",
+          "test_chromium_fixed_line_height_rounds_only_after_device_projection",
+          "test_device_layout_ex_width_uses_the_selected_unrounded_x_height",
+          "test_device_layout_style_scales_lengths_without_mutating_cssom_or_colors",
+          "test_device_layout_calculations_scale_dimensions_and_keep_percentage_bases",
+          "test_device_layout_projection_reuses_only_matching_source_revisions_and_scales",
+          "test_device_layout_fonts_preserve_optical_axes_and_physical_cache_precision",
+          "test_device_layout_fractional_comment_header_uses_physical_font_precision",
+          "test_anonymous_layout_wrappers_keep_their_projected_font_and_scale",
+          "test_direct_anonymous_clones_preserve_layout_coordinates_before_resolution",
+          "test_transferred_wrapper_properties_keep_the_scaled_font_after_mutations",
+          "test_device_layout_verdana_normal_strut_rounds_the_physical_font",
+          "test_device_layout_projection_preserves_unscaled_values_and_keyword_widths",
+          "test_device_layout_projection_preserves_used_color_scheme_in_nested_values",
+          "test_device_projection_absolute_units_match_complete_length_context",
+          "test_device_projection_relative_and_nested_values_keep_complete_length_context",
+          "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+          "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_resolved_edges_keep_absolute_unit_rounding_auto_margins_and_saturation",
+          "test_resolved_edges_keep_percentage_and_live_relative_calculation_contexts",
+          "test_resolved_edges_follow_animation_changes_and_copy_on_write_styles",
+          "test_resolved_edges_keep_both_document_rounding_policies",
+          "test_resolved_edge_reuse_keys_quantized_percentages_and_live_rounding_policy",
+          "test_resolved_edge_reuse_invalidates_typed_setters_and_keeps_shared_styles_independent",
+          "test_resolved_edge_reuse_keeps_relative_units_live_and_ignores_memos_when_sharing_geometry",
+          "test_exact_layout_lengths_preserve_every_sampled_fixed_point_value_and_both_policies",
+          "test_fractional_layout_lengths_keep_the_document_rounding_policy",
+          "test_absolute_zero_units_keep_positive_and_negative_zero_results",
+          "test_nonfinite_and_out_of_range_lengths_keep_saturation_and_nan_behavior",
+          "test_absolute_length_zero_shortcut_preserves_randomized_float_inputs",
+          "test_idle_snapshot_sharing_preserves_independent_writes_and_value_copies",
+          "test_idle_snapshot_sharing_checks_values_outside_its_coarse_hash",
+          "test_idle_snapshot_sharing_leaves_unresolved_rare_and_writable_styles_local",
+          "test_idle_snapshot_sharing_keeps_even_equal_background_layers_local",
+          "test_idle_shared_snapshot_reresolves_against_each_raw_graph_and_document",
+          "test_idle_shared_snapshot_does_not_retain_an_obsolete_owner",
+          "test_idle_snapshot_pool_handles_more_than_one_coarse_bucket_of_geometry",
+          "test_geometry_snapshot_keys_keep_signed_zero_and_unhashed_fields_correct",
+          "test_chromium_fixed_line_height_rounds_only_after_device_projection",
+          "test_device_layout_ex_width_uses_the_selected_unrounded_x_height",
+          "test_device_layout_style_scales_lengths_without_mutating_cssom_or_colors",
+          "test_device_layout_calculations_scale_dimensions_and_keep_percentage_bases",
+          "test_device_layout_projection_reuses_only_matching_source_revisions_and_scales",
+          "test_device_layout_fonts_preserve_optical_axes_and_physical_cache_precision",
+          "test_device_layout_fractional_comment_header_uses_physical_font_precision",
+          "test_anonymous_layout_wrappers_keep_their_projected_font_and_scale",
+          "test_direct_anonymous_clones_preserve_layout_coordinates_before_resolution",
+          "test_transferred_wrapper_properties_keep_the_scaled_font_after_mutations",
+          "test_device_layout_verdana_normal_strut_rounds_the_physical_font",
+          "test_device_layout_projection_preserves_unscaled_values_and_keyword_widths",
+          "test_device_layout_projection_preserves_used_color_scheme_in_nested_values",
+          "test_device_projection_absolute_units_match_complete_length_context",
+          "test_device_projection_relative_and_nested_values_keep_complete_length_context",
+          "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+          "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_resolved_edges_keep_absolute_unit_rounding_auto_margins_and_saturation",
+          "test_resolved_edges_keep_percentage_and_live_relative_calculation_contexts",
+          "test_resolved_edges_follow_animation_changes_and_copy_on_write_styles",
+          "test_resolved_edges_keep_both_document_rounding_policies",
+          "test_resolved_edge_reuse_keys_quantized_percentages_and_live_rounding_policy",
+          "test_resolved_edge_reuse_invalidates_typed_setters_and_keeps_shared_styles_independent",
+          "test_resolved_edge_reuse_keeps_relative_units_live_and_ignores_memos_when_sharing_geometry",
+          "test_exact_layout_lengths_preserve_every_sampled_fixed_point_value_and_both_policies",
+          "test_fractional_layout_lengths_keep_the_document_rounding_policy",
+          "test_absolute_zero_units_keep_positive_and_negative_zero_results",
+          "test_nonfinite_and_out_of_range_lengths_keep_saturation_and_nan_behavior",
+          "test_absolute_length_zero_shortcut_preserves_randomized_float_inputs",
+          "test_idle_snapshot_sharing_preserves_independent_writes_and_value_copies",
+          "test_idle_snapshot_sharing_checks_values_outside_its_coarse_hash",
+          "test_idle_snapshot_sharing_leaves_unresolved_rare_and_writable_styles_local",
+          "test_idle_snapshot_sharing_keeps_even_equal_background_layers_local",
+          "test_idle_shared_snapshot_reresolves_against_each_raw_graph_and_document",
+          "test_idle_shared_snapshot_does_not_retain_an_obsolete_owner",
+          "test_idle_snapshot_pool_handles_more_than_one_coarse_bucket_of_geometry",
+          "test_geometry_snapshot_keys_keep_signed_zero_and_unhashed_fields_correct",
+          "test_chromium_fixed_line_height_rounds_only_after_device_projection",
+          "test_device_layout_ex_width_uses_the_selected_unrounded_x_height",
+          "test_device_layout_style_scales_lengths_without_mutating_cssom_or_colors",
+          "test_device_layout_calculations_scale_dimensions_and_keep_percentage_bases",
+          "test_device_layout_projection_reuses_only_matching_source_revisions_and_scales",
+          "test_device_layout_fonts_preserve_optical_axes_and_physical_cache_precision",
+          "test_device_layout_fractional_comment_header_uses_physical_font_precision",
+          "test_anonymous_layout_wrappers_keep_their_projected_font_and_scale",
+          "test_direct_anonymous_clones_preserve_layout_coordinates_before_resolution",
+          "test_transferred_wrapper_properties_keep_the_scaled_font_after_mutations",
+          "test_device_layout_verdana_normal_strut_rounds_the_physical_font",
+          "test_device_layout_projection_preserves_unscaled_values_and_keyword_widths",
+          "test_device_layout_projection_preserves_used_color_scheme_in_nested_values",
+          "test_device_projection_absolute_units_match_complete_length_context",
+          "test_device_projection_relative_and_nested_values_keep_complete_length_context",
+          "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+          "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/css/resolved_box_model_edges_test.v": "1b5cb3a18fb7ca0c4129b19f2fee88ca409b9d08fefd1cbc5b149f4184609454",
+      "/Users/alex/code/vox2/css/exact_layout_lengths_test.v": "f1e408161e4ccc8575febe741d2166c9033286c7c69808e47ef13c0010f5603a",
+      "/Users/alex/code/vox2/css/idle_layout_snapshots_test.v": "01caa9a864883793f3f8326d547c5c2793016c0d6d2f9c9e36f04b813464bb94",
+      "/Users/alex/code/vox2/css/device_layout_style_test.v": "b91eedc304be72ec6c81d595d34ebbc04d693bc7de5c34739ec0f52cc926e2a2",
+      "/Users/alex/code/vox2/css/calculated_snapshot_ownership_test.v": "638f06894a3e32d15f35acef18c5bdd6c58b1c94c42aad064ac9386e9cd98866",
+      "/Users/alex/code/vox2/css/resolved_box_model_edges.v": "0b75b2e1f3df9dfa2fbcad651141c74ac2e7b5e2e0b12a86320af06d3f8786f9",
+      "/Users/alex/code/vox2/css/computed_layout_cache.v": "04c7b01e0cb5282d960114001cb2eca7cf29fd01e10b890954fc8b0fa0d4ae4b",
+      "/Users/alex/code/vox2/css/computed_values.v": "e1dbaee3b5562dba21ee534a37c443a0b171fd8541ed0af718035b2ae1691f3d",
+      "/Users/alex/code/vox2/css/computed_length.v": "5ea9b4c2284f32560cff12892b039251506d463cb7dc6655f714b6d0fbc64c3a",
+      "/Users/alex/code/vox2/css/idle_layout_snapshots.v": "c98d23dedf17fb0defdf0f64b1961e51b4e776937bb414b438019330236adfa2"
+    },
+    "unchanged": true,
+    "cases_per_run": 37,
+    "expected_cases": [
+      "test_resolved_edges_keep_absolute_unit_rounding_auto_margins_and_saturation",
+      "test_resolved_edges_keep_percentage_and_live_relative_calculation_contexts",
+      "test_resolved_edges_follow_animation_changes_and_copy_on_write_styles",
+      "test_resolved_edges_keep_both_document_rounding_policies",
+      "test_resolved_edge_reuse_keys_quantized_percentages_and_live_rounding_policy",
+      "test_resolved_edge_reuse_invalidates_typed_setters_and_keeps_shared_styles_independent",
+      "test_resolved_edge_reuse_keeps_relative_units_live_and_ignores_memos_when_sharing_geometry",
+      "test_exact_layout_lengths_preserve_every_sampled_fixed_point_value_and_both_policies",
+      "test_fractional_layout_lengths_keep_the_document_rounding_policy",
+      "test_absolute_zero_units_keep_positive_and_negative_zero_results",
+      "test_nonfinite_and_out_of_range_lengths_keep_saturation_and_nan_behavior",
+      "test_absolute_length_zero_shortcut_preserves_randomized_float_inputs",
+      "test_idle_snapshot_sharing_preserves_independent_writes_and_value_copies",
+      "test_idle_snapshot_sharing_checks_values_outside_its_coarse_hash",
+      "test_idle_snapshot_sharing_leaves_unresolved_rare_and_writable_styles_local",
+      "test_idle_snapshot_sharing_keeps_even_equal_background_layers_local",
+      "test_idle_shared_snapshot_reresolves_against_each_raw_graph_and_document",
+      "test_idle_shared_snapshot_does_not_retain_an_obsolete_owner",
+      "test_idle_snapshot_pool_handles_more_than_one_coarse_bucket_of_geometry",
+      "test_geometry_snapshot_keys_keep_signed_zero_and_unhashed_fields_correct",
+      "test_chromium_fixed_line_height_rounds_only_after_device_projection",
+      "test_device_layout_ex_width_uses_the_selected_unrounded_x_height",
+      "test_device_layout_style_scales_lengths_without_mutating_cssom_or_colors",
+      "test_device_layout_calculations_scale_dimensions_and_keep_percentage_bases",
+      "test_device_layout_projection_reuses_only_matching_source_revisions_and_scales",
+      "test_device_layout_fonts_preserve_optical_axes_and_physical_cache_precision",
+      "test_device_layout_fractional_comment_header_uses_physical_font_precision",
+      "test_anonymous_layout_wrappers_keep_their_projected_font_and_scale",
+      "test_direct_anonymous_clones_preserve_layout_coordinates_before_resolution",
+      "test_transferred_wrapper_properties_keep_the_scaled_font_after_mutations",
+      "test_device_layout_verdana_normal_strut_rounds_the_physical_font",
+      "test_device_layout_projection_preserves_unscaled_values_and_keyword_widths",
+      "test_device_layout_projection_preserves_used_color_scheme_in_nested_values",
+      "test_device_projection_absolute_units_match_complete_length_context",
+      "test_device_projection_relative_and_nested_values_keep_complete_length_context",
+      "test_calculated_dimensions_are_not_document_wide_scalar_snapshots",
+      "test_calculated_dimensions_keep_style_local_storage_across_raw_graph_replacement"
+    ]
+  },
+  "focused_executions": 222,
+  "tool_tests": {
+    "cases": 312,
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 84590592,
+      "elapsed_seconds": 6.350359791,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "sampled_baseline_checks": [
+    {
+      "attempt": 3,
+      "capture_exit": 0,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "original_external_sources": 72,
+      "external_source_hashes_exact": true,
+      "runtime_images_pinned": true,
+      "sample_exit": 0,
+      "sample_pid": 42895,
+      "capture_pid": 42895,
+      "actual_guard_exit": 0,
+      "interpretation": "Inconclusive: short-lived launch PID differs from actual document PID; two dyld samples and no binary image map."
+    },
+    {
+      "attempt": 4,
+      "capture_exit": 0,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "original_external_sources": 72,
+      "external_source_hashes_exact": true,
+      "runtime_images_pinned": true,
+      "sample_exit": 0,
+      "sample_pid": 50926,
+      "capture_pid": 50926,
+      "actual_guard_exit": 0,
+      "interpretation": "Correct PID and executable image, but retained main-thread samples cover teardown after PNG, not loading cost. No pre-PNG cost attribution."
+    },
+    {
+      "attempt": 5,
+      "capture_exit": 0,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "original_external_sources": 72,
+      "external_source_hashes_exact": true,
+      "runtime_images_pinned": true,
+      "sample_exit": 0,
+      "sample_pid": 67270,
+      "capture_pid": 67270,
+      "actual_guard_exit": 0,
+      "interpretation": "Correct PID and executable image, but empty call graph. No usable CPU evidence."
+    }
+  ],
+  "sampling_preflights": [
+    "First observer ended before guard/browser creation; no browser trial, observer exit unavailable.",
+    "Second observer created the trial directory before the canonical driver; FileExistsError before browser launch, actual guard exit1."
+  ],
+  "pending_build": {
+    "status": "Native validation and cohort91 pending; completed bundle lacks box-edge memo marker. Shared production build already running with latest request coalesced; no duplicate production build queued.",
+    "latest": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-195503-2126b5b2/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "d4dbd6dbb64c52326bcdb03b321bf6db255514e5f2db553f723e84b107719408",
+        "dirty": true,
+        "head": "b37cb3bf5f82a6880b53f6a658881ff2847250f7",
+        "repository_sha256": "09d4dad0754d871116f013eb1d0bd859a94b3ea6d652b52acfe41dfef64c0f71"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "07d8f8bd6dab2b437bc1bec3e3b0c4ce56b41b80a42a02492ded7b6d254e4f63",
+        "dirty": true,
+        "head": "b3ba5fbd8cbdea8331425b0edc696cd546c078eb",
+        "repository_sha256": "8e42353b0a8fed15082c6645d2bf585d839745dd8de7352ab85169fc928bafc6"
+      },
+      "request": {
+        "head": "b37cb3bf5f82a6880b53f6a658881ff2847250f7",
+        "id": "1dc87dccbe6b4b95ba928d0d7f81340c"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "d4dbd6dbb64c52326bcdb03b321bf6db255514e5f2db553f723e84b107719408",
+        "dirty": true,
+        "head": "b37cb3bf5f82a6880b53f6a658881ff2847250f7",
+        "repository_sha256": "ed99072bfca5433975c1aa3086532b85acc4cd728a096d5a761853f176ae317f"
+      }
+    },
+    "queued_request": {
+      "head": "99ee0f99f8efae4d9ea2b6c4c2b15550b91115eb",
+      "id": "e018ad71260d483591edc1b1e0235a22"
+    },
+    "implementation_commit": "99ee0f99f",
+    "focused_cases": 222,
+    "tool_tests": 312
+  },
+  "watch_at_archival": {
+    "status": "Watching completed shared bundle; no build queued by this watcher.",
+    "observations": [
+      {
+        "unix": 1793815057.4079628,
+        "executable_sha256": "b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815072.440814,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815087.470444,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815102.502157,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815117.541006,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815132.571438,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815147.596354,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815162.629866,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815177.658056,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815192.68399,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815207.7108538,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815222.7455812,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815237.767186,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815252.792578,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815267.8251789,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815282.8577979,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815297.888443,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815312.9252858,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815327.9524102,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      }
+    ]
+  },
+  "acceptance_history": {
+    "attempted_cohorts": 90,
+    "attempted_browser_trials": 1989,
+    "cohort91_launched": false
+  },
+  "broader_cadence": "Prior flex batch504unique/501passes in each default and noGC; exactly three retained baseline failures, no reset. No measured marginal edge saving yet to trigger next batch.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-box-edge-reuse-20261104.tar.gz",
+    "sha256": "eb50b7b1cb41ae3128beb244fca44fecfaaa2acb3f596cd0e40f8877edbdf9ee",
+    "bytes": 32460383,
+    "members": 243,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793815364.3008142,
+  "archive_job": {
+    "command": [
+      "python3",
+      "Build/bbc-edge-reuse-20261104-2030/archive-edge-checks.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 135626752,
+    "elapsed_seconds": 55.249370709,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

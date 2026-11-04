@@ -1,5 +1,38 @@
 # BBC homepage instruction comparison
 
+**Latest box-edge follow-up:** `99ee0f99f` reuses resolved absolute and
+percentage margin/padding/border edges. Percentage bases remain quantized to
+`CSSPixels`; the memo also checks the actual rounding policy. Every typed edge
+setter invalidates it after normal copy-on-write. Relative units and calculations
+keep their live font/viewport/container context. Snapshot sharing ignores this
+derived scalar memo. Isolated control `0dd85ac67` disables only this reuse.
+
+All **222 focused executions** pass: 37 cases enabled/disabled across default,
+no-GC and preallocation modes, with executable calls verified and unchanged final
+inputs. All **312 instruction-tool tests** pass. Initial runtime crashes are
+retained: the new fixtures passed optional parsed pointers directly to setters;
+binding checked locals fixes those fixtures in all modes. Those initial runs
+also record changed inputs during the failed investigation and earn no correctness
+credit. The existing validated `v -profile` diagnostic identified repeated edge
+resolution; its instrumentation is separate from instruction acceptance.
+
+Native candidate validation and cohort **91 remain unlaunched**. Completed shared
+bundles `b3e94706` and then `487c7846` lack this path; a shared production build
+already has the latest request coalesced. No duplicate production build is queued.
+Three separate sampled baseline captures pass native exit, original content/pixels,
+all 72 external scripts and native image pins, but their CPU samples are
+inconclusive: a launch PID, teardown after PNG, and an empty call graph. Two earlier
+observer preflights fail before browser launch. These attempts remain separate;
+none validates the new cache or supplies instruction improvement credit.
+
+The last broader cadence is still **504 unique cases / 501 passes** in each
+default and no-GC mode, retaining the same three baseline failures. Acceptance
+history remains **90 attempted cohorts / 1,989 attempted browser trials**. The
+latest complete target cohort still has a conservative ratio of **1.8101137514618793**,
+which fails the required 0.9. BBC remains absent from `OPTIMIZED_SITES.md`.
+See the [box-edge ledger](performance/bbc-box-edge-reuse-20261104.json) and
+[raw focused/diagnostic evidence](performance/raw/bbc-box-edge-reuse-20261104.tar.gz).
+
 **Latest flex follow-up and cohort 90:** `0eb0c00f9` retains owned closed
 flex measurements within one layout pass, with an exact root/ancestor key,
 style/tree/text/font checks and normal copy-on-write restoration. The isolated
