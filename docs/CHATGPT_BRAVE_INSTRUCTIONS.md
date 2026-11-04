@@ -477,3 +477,53 @@ guard exits zero. Visual checks pin a later completed production bundle
 independently; they do not replace the performance cohort's executable identity.
 The broad-check instruction cadence resets after this checkpoint. The earlier
 ownership-rejected attempt remains retained in its original receipt.
+
+## Overlapping scroll-raster rows
+
+Commit `19ab7a17f` forms the union of exposed and damaged device-row intervals
+before storing the final canvas in the scroll raster ring. Damage rectangles can
+cover the same rows even when they are separate horizontally. The planner uses
+a fixed 49-entry stack array, bounds every interval, and merges adjacent or
+overlapping ranges without allocating. The existing pitched ring-copy helper
+stores each resulting range once.
+
+The planner passes 39,000 coverage/canary cases plus `SIZE_MAX` boundaries.
+Another 395,136 scalar/union pixel cases exercise every tested ring origin,
+padded pitches, zero/full/partial exposed strips, and zero through 48 damage
+rectangles. Both suites pass normally and with AddressSanitizer and
+UndefinedBehaviorSanitizer. Existing scroll-raster regression checks pass too.
+
+Production executable
+`4d55ec4468623f9d2449dd9fef4c3a34515da8ce9a0a99faf33035cab142bc34`
+contains the development implementation, verified against its frozen compiler
+input. Two separate diagnostic pairs pass exact content, author bootstrap,
+pixels and exits; each Vox run reports an initial union avoiding 72 duplicate
+rows across 16 input ranges. The optional diagnostic in this bundle predates
+the extra owner/dimension fields; its uninstrumented planner and copying work
+match the committed implementation.
+
+| Two matched Vox trials per implementation | Launch-to-PNG instructions |
+| --- | ---: |
+| Original separate stores median | 31,527,939,267.5 |
+| Union stores median | 32,154,424,113.5 |
+| Conservative reduction | −701,563,198 |
+
+All eight uninstrumented browser captures pass with stable inputs. The candidate
+median regresses by 626,484,846 instructions, or 1.987%. It also completes 250
+and 266 settling frames, compared with controls' 196 and 220. A layout checkpoint
+differs too, and shared host load is high and variable. These differences leave
+causal attribution unresolved; reduced duplicate copying has not established a
+whole-page gain. No saving or broad-cadence advance is credited.
+
+Commit `4debf9168` therefore keeps the original default and requires
+`VOX_ENABLE_SCROLL_RASTER_ROW_UNION=1` to opt into the experiment.
+`VOX_DISABLE_SCROLL_RASTER_ROW_UNION=1` still forces the original path. The final
+focused suites repeat every case and compare default, forced scalar and explicit
+union results in both sanitizer modes. They all pass. Production validation of
+this final opt-in gate awaits the shared build; the measured executable cannot
+validate code added afterward.
+
+The [row-union receipt](performance/chatgpt-row-union-20261104.json) links both
+focused revisions, all diagnostic and matched observations, PNGs, counters,
+commands, host loads, frozen function excerpts and memory-guard exits. The
+original 5% Brave goal remains unmet.
