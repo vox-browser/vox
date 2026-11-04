@@ -1164,7 +1164,7 @@ struct MediaFeatureValueLocal {
 	text        string
 	name        string
 	value       f64
-	typed_value ?StyleValue
+	typed_value ?&StyleValue
 }
 
 enum MediaFeatureComparison {
@@ -1426,13 +1426,17 @@ fn parse_media_feature_value_with_parser(mut parser Parser, feature_name string,
 
 fn media_feature_value_from_style_value(feature_name string, style_value StyleValue) MediaFeatureValueLocal {
 	text := style_value.serialize(.normal)
+	// The parameter is an owned value. Retain that copy once: embedding the
+	// entire StyleValue union made every optional feature argument copy its
+	// largest variant, including when evaluating an untyped environment value.
+	retained := &style_value
 	return match style_value {
 		KeywordStyleValue {
 			MediaFeatureValueLocal{
 				kind: .ident
 				text: text
 				name: string_from_keyword(style_value.keyword())
-				typed_value: style_value
+				typed_value: retained
 			}
 		}
 		IntegerStyleValue {
@@ -1440,42 +1444,42 @@ fn media_feature_value_from_style_value(feature_name string, style_value StyleVa
 				kind: .integer
 				text: text
 				value: f64(style_value.integer())
-				typed_value: style_value
+				typed_value: retained
 			}
 		}
 		LengthStyleValue {
 			MediaFeatureValueLocal{
 				kind: .length
 				text: text
-				typed_value: style_value
+				typed_value: retained
 			}
 		}
 		RatioStyleValue {
 			MediaFeatureValueLocal{
 				kind: .ratio
 				text: text
-				typed_value: style_value
+				typed_value: retained
 			}
 		}
 		ResolutionStyleValue {
 			MediaFeatureValueLocal{
 				kind: .resolution
 				text: text
-				typed_value: style_value
+				typed_value: retained
 			}
 		}
 		CalculatedStyleValue {
 			MediaFeatureValueLocal{
 				kind: media_feature_calculated_value_kind(feature_name)
 				text: text
-				typed_value: style_value
+				typed_value: retained
 			}
 		}
 		else {
 			MediaFeatureValueLocal{
 				kind: .unknown
 				text: text
-				typed_value: style_value
+				typed_value: retained
 			}
 		}
 	}
