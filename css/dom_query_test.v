@@ -64,6 +64,27 @@ fn test_query_selector_all() {
 	assert query_selector_all(root, 'ul, li').len == 4
 }
 
+fn test_universal_query_lists_every_descendant_element_in_tree_order() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut root := build_tree(doc)
+	mut svg := doc.create_element_ns('http://www.w3.org/2000/svg', 'svg') or { panic('${err}') }
+	root.append_child(svg.as_node()) or { panic('${err}') }
+	mut svg_node := svg.as_node()
+	circle := doc.create_element_ns('http://www.w3.org/2000/svg', 'circle') or { panic('${err}') }
+	svg_node.append_child(circle.as_node()) or { panic('${err}') }
+	root.append_child(doc.create_text_node('text').as_node()) or { panic('${err}') }
+	universal := query_selector_all(root, '*')
+	assert universal.map(it.local_name()) == ['ul', 'li', 'li', 'a', 'li', 'svg', 'circle']
+	// The fast path returns the same elements as the general matcher, and
+	// excludes the root itself.
+	general := query_selector_all(root, ':not(#none)')
+	assert universal.len == general.len
+	for index, element in universal {
+		assert voidptr(element) == voidptr(general[index])
+	}
+	assert query_selector_all(circle.as_node(), '*').len == 0
+}
+
 fn test_query_selector_pseudo_and_attr() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := build_tree(doc)

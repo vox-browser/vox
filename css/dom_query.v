@@ -219,6 +219,13 @@ pub fn query_selector(root &dom.Node, selector_text string) ?&dom.Element {
 
 // https://dom.spec.whatwg.org/#dom-parentnode-queryselectorall
 pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
+	// The universal selector matches every element in any namespace. Native
+	// script hosts index whole documents this way, so skip the matcher.
+	if selector_text == '*' {
+		mut elements := []&dom.Element{}
+		collect_descendant_elements(root, mut elements)
+		return elements
+	}
 	selectors := document_query_selector_list(root.document(), selector_text) or { return []&dom.Element{} }
 	scratch := platform.begin_thread_scratch('independent DOM query')
 	if compounds := independent_query_compounds(selectors) {
@@ -238,6 +245,13 @@ pub fn query_selector_all(root &dom.Node, selector_text string) []&dom.Element {
 	mut results := []&dom.Element{}
 	query_selector_all_in(root, selectors, mut results)
 	return results
+}
+
+fn collect_descendant_elements(root &dom.Node, mut elements []&dom.Element) {
+	for child in root.children {
+		if element := child.as_element() { elements << element }
+		if child.children.len > 0 { collect_descendant_elements(child, mut elements) }
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-element-closest
