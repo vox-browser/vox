@@ -140,6 +140,9 @@ fn (iterator &InlineLevelIterator) has_in_flow_content_after(index int) bool {
 
 fn (iterator &InlineLevelIterator) is_paragraph_final_word(index int) bool {
 	if index < 0 || index >= iterator.items.len { return false }
+	// Reject nonfinal words before inspecting the text prefix, so a long
+	// paragraph does not repeatedly copy every preceding code unit.
+	if iterator.has_in_flow_content_after(index + 1) { return false }
 	item := unsafe { &iterator.items[index] }
 	node := item.node or { return false }
 	text := node.as_text_node() or { return false }
@@ -149,7 +152,7 @@ fn (iterator &InlineLevelIterator) is_paragraph_final_word(index int) bool {
 		|| text.rendered_substring_for_line_box(0, item.offset_in_node).trim_space() == '' {
 		return false
 	}
-	return !iterator.has_in_flow_content_after(index + 1)
+	return true
 }
 
 fn break_automatically_hyphenated_item(mut builder LineBuilder, mut item InlineLevelItem,
