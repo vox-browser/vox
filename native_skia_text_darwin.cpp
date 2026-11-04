@@ -348,6 +348,23 @@ auto graphite_image_region_draw()
     return draw;
 }
 
+auto graphite_image_regions_draw()
+{
+    static auto draw = [] {
+        void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL);
+        return library ? reinterpret_cast<decltype(&vox_graphite_draw_image_regions_pixels)>(
+            dlsym(library, "vox_graphite_draw_image_regions_pixels")) : nullptr;
+    }();
+    return draw;
+}
+
+static bool image_tile_batch_enabled()
+{
+    auto* enabled = std::getenv("VOX_ENABLE_IMAGE_TILE_BATCH");
+    return enabled && !std::strcmp(enabled, "1")
+        && !std::getenv("VOX_DISABLE_IMAGE_TILE_BATCH");
+}
+
 auto graphite_image_tiles_draw()
 {
     static auto draw = [] {
@@ -5921,6 +5938,15 @@ static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
 {
     auto draw = graphite_image_draw();
     auto draw_region = graphite_image_region_draw();
+    if (std::getenv("VOX_IMAGE_BATCH_DIAGNOSTICS")) {
+        using Clock = double (*)();
+        static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
+        std::fprintf(stderr, "VOX_IMAGE_BATCH_GATE root=%d direct=%d backdrop=%d raster=%dx%d source=%dx%d grid=%dx%d/%d layer=%g,%g flags=%d t_us=%.3f\n",
+            s_raster_layer_is_root, s_direct_image_layer, has_background, raster_width, raster_height,
+            descriptor.width, descriptor.height, s_msaa_grid_width, s_msaa_grid_height,
+            s_msaa_grid_columns, s_raster_layer_width, s_raster_layer_height, descriptor.flags,
+            clock ? clock() : -1.0);
+    }
     if (s_direct_image_layer && scale == 1) {
         auto direct = graphite_direct_image_draw();
         int width = s_shared_viewport_width, height = s_shared_viewport_height;
@@ -5943,6 +5969,37 @@ static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
                 return true;
             }
         }
+    }
+
+    if (auto batch = image_tile_batch_enabled() ? graphite_image_regions_draw() : nullptr;
+        batch && has_background
+        && s_msaa_grid_columns > 0
+        && s_msaa_grid_width > 2 && s_msaa_grid_height > 2) {
+        long first_x = std::lround((region.left - page_x
+            - (s_raster_layer_is_root ? 0 : s_raster_origin_x)) * scale);
+        long first_y = std::lround((region.top - page_y + scroll_y + s_root_raster_scroll_y
+            - (s_raster_layer_is_root ? 0 : s_raster_origin_y)) * scale);
+        int content_height = std::max(1, int(std::ceil(s_raster_layer_height * scale)));
+        int rows = std::max(1, (content_height - 2 + s_msaa_grid_height - 3) / (s_msaa_grid_height - 2));
+        VoxChromiumRasterGrid grid{s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_columns, rows};
+        if (vox_draw_chromium_raster_grid_batch(pixels, raster_width, raster_height,
+                first_x, first_y, grid, [&](auto& tiles) {
+                    std::vector<VoxGraphitePixelRegion> views;
+                    std::vector<VoxGraphiteImage> images;
+                    for (auto& tile : tiles) {
+                        views.push_back({tile.x, tile.y, tile.width, tile.height, tile.width * 4,
+                            reinterpret_cast<uint8_t*>(tile.pixels.data())});
+                        auto image = descriptor;
+                        image.matrix[2] += tile.offset_x;
+                        image.matrix[5] += tile.offset_y;
+                        bool msaa = std::binary_search(s_msaa_grid_tiles.begin(), s_msaa_grid_tiles.end(), tile.cell);
+                        image.flags = (image.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
+                            | (msaa ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0);
+                        images.push_back(image);
+                    }
+                    return batch(views.data(), images.data(), int(views.size()),
+                        grid.width, grid.height, 1) != 0;
+                }, 4 * 1024 * 1024)) return true;
     }
 
     // Image interpolation depends on the complete raster extent. Independent

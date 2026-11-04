@@ -176,6 +176,11 @@ int vox_graphite_draw_picture_regions_with_backdrop_pixels(const VoxGraphitePict
 // CPU backdrop; the rest is transparent. Failure leaves the region untouched.
 int vox_graphite_draw_image_region_pixels(const VoxGraphitePixelRegion *region,
     int surface_width, int surface_height, int has_background, const VoxGraphiteImage *image);
+// Independent image tiles keep their original surface extent and sampling.
+// Inputs stay immutable during the call; failure leaves all output untouched.
+int vox_graphite_draw_image_regions_pixels(const VoxGraphitePixelRegion *regions,
+    const VoxGraphiteImage *images, int count, int surface_width, int surface_height,
+    int has_background);
 // Retain full GPU coordinates while writing at most four disjoint CPU views.
 // Unsupported shapes and failures leave every view and its padding untouched.
 int vox_graphite_draw_rounded_parts_pixels(const VoxGraphitePixelRegion *regions, int count,

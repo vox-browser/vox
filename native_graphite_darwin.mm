@@ -824,6 +824,8 @@ int vox_graphite_draw_image_region_pixels(VoxGraphitePixelRegion const* region,
     return 1;
 }
 
+#include "native_graphite_image_batch.h"
+
 // Placements of images drawn in turn over one raster, as Chromium draws a
 // background's tiles in one GPU pass: one backdrop upload and one readback
 // replace one of each per placement. Each placement draws exactly as
