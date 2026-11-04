@@ -408,7 +408,8 @@ def verified_preexisting_descendants(process_api, coalition_api, cid, app, pid,
         anchor = chain[-1] if chain else None
         old = previous.get(anchor['pid']) if anchor else None
         if (old is None or anchor['pid'] not in excluded
-                or not anchor['command'].startswith(str(binary) + ' ')):
+                or not (anchor['command'] == str(binary)
+                        or anchor['command'].startswith(str(binary) + ' '))):
             continue
         identities = [identity(item) for item in chain]
         if any(item is None for item in identities):

@@ -45,6 +45,29 @@ class PreexistingBrowserHelpersTests(unittest.TestCase):
         self.assertEqual(result[0]['ancestry'][0]['start_ticks'],123)
         self.assertEqual(result[0]['preexisting_root_pid'],99)
 
+    def test_pinned_interactive_root_without_arguments_is_authenticated(self):
+        self.rows[1]['command'] = self.binary
+        self.previous[0]['command'] = self.binary
+        self.assertEqual([row['pid'] for row in self.run_check()], [100])
+
+    def test_argument_free_root_keeps_all_identity_and_ancestry_guards(self):
+        for change in ['root_start', 'root_coalition', 'helper_coalition', 'parent', 'prefix']:
+            with self.subTest(change=change):
+                self.setUp()
+                self.rows[1]['command'] = self.binary
+                self.previous[0]['command'] = self.binary
+                if change == 'root_start':
+                    self.starts[99] += 1
+                elif change == 'root_coalition':
+                    self.coalitions[99] = 30
+                elif change == 'helper_coalition':
+                    self.coalitions[100] = 10
+                elif change == 'parent':
+                    self.rows[2]['parent'] = 1
+                else:
+                    self.rows[1]['command'] = self.binary + '-other'
+                self.assertEqual(self.run_check(), [])
+
     def test_helper_in_measured_coalition_is_never_exempt(self):
         self.coalitions[100]=10
         self.assertEqual(self.run_check(),[])
