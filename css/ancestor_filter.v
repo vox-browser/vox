@@ -14,6 +14,10 @@ fn selector_ascii_lowercase_hash(value string) u32 {
 // Visit hashes synchronously. Class spans are borrowed only while hashing;
 // neither an intermediate token vector nor folded strings escape this call.
 fn (mut filter CountingBloomFilter) update_element_hashes(element &dom.Element, adding bool) {
+	filter.update_element_hashes_with_cache(element, adding)
+}
+
+fn (mut filter CountingBloomFilter) update_element_hashes_uncached(element &dom.Element, adding bool) {
 	filter.update_element_hash(selector_ascii_lowercase_hash(element.local_name()), adding)
 	quirks := element.document() != unsafe { nil } && element.document().in_quirks_mode()
 	if id := element.id() {

@@ -10732,6 +10732,7 @@ mut:
 	ancestor_visits []AncestorFilterVisit
 	ancestor_hashes []u32
 	record_ancestor_hashes bool
+	ancestor_hash_cache_ &AncestorHashCache = unsafe { nil }
 }
 
 pub fn CountingBloomFilter.new() CountingBloomFilter {
