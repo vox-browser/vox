@@ -1,9 +1,11 @@
 import unittest
 import json
+import hashlib
+import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from bbc_browser_instructions import URL, audit_instruction_logging, discover_runtime_libraries, loaded_native_images, evaluate_cohort, jsc_baseline_environment, parse_args, replay_vox_environment, trial_order, run_trial, validate_document, verify_benchmark_inputs
+from bbc_browser_instructions import URL, audit_instruction_logging, discover_runtime_libraries, loaded_native_images, evaluate_cohort, jsc_baseline_environment, parse_args, preserve_production_compilation, replay_vox_environment, trial_order, run_trial, validate_document, verify_benchmark_inputs
 from types import SimpleNamespace
 from unittest.mock import patch
 from hacker_news_browser_instructions import evaluate_pairs
@@ -25,6 +27,96 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def compilation_fixture(self, root):
+        app = root / 'Build/v/Vox.app'
+        binary = app / 'Contents/MacOS/Vox'
+        binary.parent.mkdir(parents=True)
+        binary.write_bytes(b'pinned browser')
+        source = root / 'Build/receipt/0-Vox.c.i'
+        source.parent.mkdir()
+        source.write_bytes(b'generated compiler input')
+        library = root / 'library.dylib'
+        library.write_bytes(b'native library stays in place')
+        metadata = source.parent / 'frozen-compile.json'
+        metadata.write_text(json.dumps(dict(sealed_inputs={
+            str(source): hashlib.sha256(source.read_bytes()).hexdigest(),
+            str(library): hashlib.sha256(library.read_bytes()).hexdigest()})))
+        published = root / 'Build/production-build/latest.json'
+        published.parent.mkdir()
+        published.write_text(json.dumps(dict(exit=0, executable=str(binary),
+            executable_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            frozen_compilation=str(metadata))))
+        output = root / 'observations'
+        output.mkdir()
+        return app, binary, source, metadata, published, output
+
+    def test_compilation_evidence_survives_original_receipt_pruning_and_deduplicates_controls(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            app, binary, source, metadata, published, output = self.compilation_fixture(root)
+            with patch('bbc_browser_instructions.REPO', root):
+                paths = preserve_production_compilation(output, dict(vox=app, control=app),
+                                                       fingerprint({binary}))
+            pins = fingerprint(paths)
+            manifest = json.loads((output / 'production-compilation.json').read_text())
+            self.assertTrue(manifest['passed'])
+            self.assertEqual(manifest['engines']['vox'], manifest['engines']['control'])
+            self.assertEqual(len(manifest['files']), 3)
+            self.assertFalse(any(path.name.endswith('.dylib') or path.name == 'Vox' for path in paths))
+            source.unlink()
+            metadata.unlink()
+            published.unlink()
+            self.assertEqual(fingerprint(paths), pins)
+            self.assertEqual(len(list((output / 'production-compilation').rglob('*.i'))), 1)
+            self.assertEqual(binary.read_bytes(), b'pinned browser')
+
+    def test_compilation_preservation_rejects_wrong_receipt_missing_or_changed_sources(self):
+        for failure in ['wrong_executable', 'missing_source', 'changed_source', 'missing_main']:
+            with self.subTest(failure=failure), TemporaryDirectory() as directory:
+                root = Path(directory).resolve()
+                app, binary, source, metadata, published, output = self.compilation_fixture(root)
+                if failure == 'wrong_executable':
+                    receipt = json.loads(published.read_text())
+                    receipt['executable_sha256'] = 'wrong'
+                    published.write_text(json.dumps(receipt))
+                elif failure == 'missing_source':
+                    source.unlink()
+                elif failure == 'changed_source':
+                    source.write_bytes(b'replaced compiler input')
+                else:
+                    metadata.write_text(json.dumps(dict(sealed_inputs={})))
+                with patch('bbc_browser_instructions.REPO', root):
+                    with self.assertRaises((RuntimeError, FileNotFoundError)):
+                        preserve_production_compilation(output, dict(vox=app), fingerprint({binary}))
+                self.assertFalse(json.loads((output / 'production-compilation.json').read_text())['passed'])
+
+    def test_compilation_preservation_rejects_browser_or_publication_changes_during_copy(self):
+        original_copy = shutil.copyfile
+        for failure in ['browser', 'publication']:
+            with self.subTest(failure=failure), TemporaryDirectory() as directory:
+                root = Path(directory).resolve()
+                app, binary, source, metadata, published, output = self.compilation_fixture(root)
+                def replace(source_path, target_path):
+                    original_copy(source_path, target_path)
+                    (binary if failure == 'browser' else published).write_bytes(b'changed')
+                with patch('bbc_browser_instructions.REPO', root), \
+                     patch('bbc_browser_instructions.shutil.copyfile', side_effect=replace):
+                    with self.assertRaises(RuntimeError):
+                        preserve_production_compilation(output, dict(vox=app), fingerprint({binary}))
+                self.assertFalse(json.loads((output / 'production-compilation.json').read_text())['passed'])
+
+    def test_external_comparison_app_does_not_claim_canonical_compiler_evidence(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            output = root / 'observations'
+            output.mkdir()
+            with patch('bbc_browser_instructions.REPO', root):
+                paths = preserve_production_compilation(output, dict(vox=root / 'External.app'), {})
+            self.assertEqual(paths, {output / 'production-compilation.json'})
+            manifest = json.loads((output / 'production-compilation.json').read_text())
+            self.assertTrue(manifest['passed'])
+            self.assertEqual(manifest['engines'], {})
+
     def test_late_library_dependencies_use_the_original_executable_rpaths(self):
         with TemporaryDirectory() as directory:
             root = Path(directory).resolve()

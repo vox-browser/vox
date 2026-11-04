@@ -630,6 +630,66 @@ def replay_vox_environment(args, ready):
     return environment
 
 
+def preserve_production_compilation(output, apps, pinned):
+    """Archive generated compiler evidence before shared receipts can retire."""
+    canonical = (REPO / 'Build/v/Vox.app').resolve()
+    manifest_path = output / 'production-compilation.json'
+    manifest = dict(passed=False, scope='Compiler receipts and preprocessed outputs only; '
+                    'browser bundles, native libraries and repository tools remain in place.',
+                    engines={}, files={})
+    preserved = {manifest_path}
+    try:
+        selected = [engine for engine in ('vox', 'control')
+                    if engine in apps and apps[engine].resolve() == canonical]
+        if selected:
+            binary = canonical / 'Contents/MacOS/Vox'
+            expected = pinned[str(binary)]['sha256']
+            published_path = REPO / 'Build/production-build/latest.json'
+            published = published_path.read_bytes()
+            receipt = json.loads(published)
+            browser.require(receipt.get('exit') == 0 and
+                            Path(receipt['executable']).resolve() == binary and
+                            receipt['executable_sha256'] == expected,
+                            'Production receipt does not match the pinned executable')
+            meta_path = Path(receipt['frozen_compilation'])
+            metadata = meta_path.read_bytes()
+            frozen = json.loads(metadata)
+            sources = [(Path(path), digest) for path, digest in frozen['sealed_inputs'].items()
+                       if Path(path).name.endswith('.i')]
+            browser.require(any(path.name == '0-Vox.c.i' for path, _ in sources),
+                            'Production receipt lacks preprocessed browser C')
+            folder = output / 'production-compilation' / expected
+            folder.mkdir(parents=True, exist_ok=False)
+            for name, origin, data in [('published-receipt.json', published_path, published),
+                                       ('frozen-compile.json', meta_path, metadata)]:
+                target = folder / name
+                target.write_bytes(data)
+                preserved.add(target)
+                manifest['files'][str(target)] = dict(source=str(origin),
+                    sha256=hashlib.sha256(data).hexdigest(), bytes=len(data))
+            for index, (source, digest) in enumerate(sorted(sources)):
+                target = folder / f'{index}-{source.name}'
+                shutil.copyfile(source, target)
+                actual = browser.fingerprint({target})[str(target)]
+                browser.require(actual['sha256'] == digest,
+                                f'Compiler artifact changed while preserving it: {source}')
+                preserved.add(target)
+                manifest['files'][str(target)] = dict(source=str(source), **actual)
+            browser.require(published_path.read_bytes() == published and
+                            browser.fingerprint({binary})[str(binary)]['sha256'] == expected,
+                            'Production browser or receipt changed during preservation')
+            for engine in selected:
+                manifest['engines'][engine] = dict(executable_sha256=expected,
+                    evidence_directory=str(folder))
+        manifest['passed'] = True
+    except Exception as error:
+        manifest['error'] = str(error)
+        raise
+    finally:
+        browser.write_json(manifest_path, manifest)
+    return preserved
+
+
 def main():
     args = parse_args()
     expected = fixture_expectations(args.archive)
@@ -681,9 +741,15 @@ def main():
     if args.preserve_inputs:
         paths.add(args.preserve_inputs)
     pinned = browser.fingerprint(paths)
+    compilation_paths = preserve_production_compilation(args.output, apps, pinned)
+    browser.require(browser.fingerprint(paths) == pinned,
+                    'Pinned inputs changed during compiler evidence preservation')
+    paths.update(compilation_paths)
+    pinned.update(browser.fingerprint(compilation_paths))
     if preserved:
         verify_preservation_identity(preserved, pinned)
     browser.write_json(args.output / 'inputs.json', dict(files=pinned, scope=SCOPE,
+        production_compilation_evidence=str(args.output / 'production-compilation.json'),
         preserved_input_archive=preserved,
         font_generation_diagnostic_policy='Per-cache-hit tracing is rejected outside reference diagnostics; counting alone must not enable it',
         fixture=expected, original_scripts_retained=True, author_javascript_enabled=True,
