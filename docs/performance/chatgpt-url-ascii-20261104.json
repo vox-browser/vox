@@ -1,0 +1,930 @@
+{
+  "version": 1,
+  "implementation_commit": "bec575426",
+  "test_compatibility_commit": "621afce5f",
+  "status": "URL ASCII membership optimization; full ChatGPT 5% Brave goal remains unmet",
+  "changes": {
+    "host": "Two fixed ASCII words replace the 17-byte membership scan",
+    "percent_encoding": "All nine sets use bounded masks and common C0 checks; no recursive set scans",
+    "unicode": "Non-ASCII and out-of-range values preserve original classification; shifts are bounded",
+    "control": "VOX_DISABLE_URL_ASCII_MEMBERSHIP=1 retains the scanning implementations",
+    "diagnostic": "VOX_URL_ASCII_MEMBERSHIP_DIAGNOSTICS=1 reports host and percent paths once, using atomic markers",
+    "scripts": "Original author scripts retained; no tracker/performance policy suppression"
+  },
+  "profile_basis": {
+    "receipt": "docs/performance/chatgpt-v-profile-20261104.json",
+    "instrumented_calls": {
+      "is_forbidden_host_code_point": 1057335,
+      "code_point_in": 2798357
+    },
+    "limitation": "Profile calls locate the work; instrumented times do not establish instruction savings"
+  },
+  "focused_checks": {
+    "files": 21,
+    "cases": 103,
+    "modes": [
+      "default GC",
+      "GC none"
+    ],
+    "implementations": [
+      "masks",
+      "scanning control"
+    ],
+    "case_executions": 412,
+    "candidate": "Each mode combines 20 passing unchanged files with the recovered file-origin test; original failed wrappers retained",
+    "control": "All 21 files pass together in each GC mode",
+    "exhaustive": "All U+0000..U+10FFFF, including surrogate code points, plus large/invalid u32 values; host/domain and every percent-encode set checked against independent character lists",
+    "compiler_cache_failure": "Initial cached run: four pass, seventeen fail; later fresh Clang runs avoid cached bridge symbols",
+    "compiler_test_failure": "Existing file-origin test narrowed Origin before a later sum-type method dispatch. Assertions reordered, all retained; recovery executed with explicit v test in both modes",
+    "compile_only_credit": "The earlier origin-recovery invocation has no explicit v test log and receives no test-execution credit"
+  },
+  "focused_receipts": {
+    "default-tests": {
+      "identity": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/default-tests-guard.json",
+        "sha256": "166b0c3e8da6879c828995fe40c3e0147c6d5743957a4179fda1abe0045fbd9e",
+        "bytes": 418
+      },
+      "report": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "test",
+          "url"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3851255808,
+        "elapsed_seconds": 54.097724375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/default-tests.log",
+        "sha256": "eff5990129c602fec28b099602493a70ac79b6aa03b41080ba9cfbafeda24ca4",
+        "bytes": 8439
+      }
+    },
+    "fresh-tests": {
+      "identity": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/fresh-tests-guard.json",
+        "sha256": "f396032d372778f6e3a764bc93b4946acfceb86148eb4133132d9b8eb4ddac05",
+        "bytes": 454
+      },
+      "report": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "test",
+          "url"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 864583680,
+        "elapsed_seconds": 56.941316,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/fresh-tests.log",
+        "sha256": "48c7bfdd6d6f8b85d2dd61502dc4f438b440e143b470e45a87fc8bf1effbe260",
+        "bytes": 4589
+      }
+    },
+    "none-tests": {
+      "identity": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/none-tests-guard.json",
+        "sha256": "b2b9f4c2795aec7fde1f8b66d94f504f46f03cb95fa21c28383c2b7a5a84a5c7",
+        "bytes": 480
+      },
+      "report": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-gc",
+          "none",
+          "test",
+          "url"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 853868544,
+        "elapsed_seconds": 36.382492083,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/none-tests.log",
+        "sha256": "b4b855c5a2cbca17fe87a6e9cbeeb2bdfb40f0ba201638cd71bde4571d056ee8",
+        "bytes": 4617
+      }
+    },
+    "origin-recovery": {
+      "identity": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/origin-recovery-guard.json",
+        "sha256": "354df2cb7a122be4505d37c5eab238f489abb0cb9b6848647004780cf2c5e269",
+        "bytes": 470
+      },
+      "report": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "url/file_origin_policy_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 492863488,
+        "elapsed_seconds": 4.442863209,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/origin-recovery.log",
+        "sha256": "98f05b9ff76fef5aba6d0b7defe805692f0444d1a6c76080737adf6e119dadb8",
+        "bytes": 414
+      }
+    },
+    "origin-default": {
+      "identity": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/origin-default-guard.json",
+        "sha256": "12c5c01665237445c373cdab7c50f3135df67647c46f1c5f9c7f6655db0bde23",
+        "bytes": 481
+      },
+      "report": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "test",
+          "url/file_origin_policy_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 497483776,
+        "elapsed_seconds": 10.9571295,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/origin-default.log",
+        "sha256": "a479902d9f463ebce6804c2c1ed81acea1975f9e33c8920f1f5a805d5523c0d4",
+        "bytes": 774
+      }
+    },
+    "origin-none": {
+      "identity": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/origin-none-guard.json",
+        "sha256": "b61e06334e3bf098e5393f8a006c655705f07441f9f26b032fd615d5f6ac235d",
+        "bytes": 502
+      },
+      "report": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-gc",
+          "none",
+          "test",
+          "url/file_origin_policy_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 489078784,
+        "elapsed_seconds": 8.025139,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/origin-none.log",
+        "sha256": "53d3de8ba550e561e26696f93e88499dd9d345553ec6aae460005086ced95910",
+        "bytes": 787
+      }
+    },
+    "control-default": {
+      "identity": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/control-default-guard.json",
+        "sha256": "09c9a9e363174a7c273e61b20312b98e464df081ce7358702ea55a257b440fec",
+        "bytes": 454
+      },
+      "report": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "test",
+          "url"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 865124352,
+        "elapsed_seconds": 32.853477,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/control-default.log",
+        "sha256": "f239793caca7cdfa0e783dacd73e9d5e7a585636496b79b2c2f098e69692ae82",
+        "bytes": 2612
+      }
+    },
+    "control-none": {
+      "identity": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/control-none-guard.json",
+        "sha256": "f1f1b9d9613a3eb05dc94700793f0e50449e08f7ff7ddb586a36829911ac0e1f",
+        "bytes": 480
+      },
+      "report": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-gc",
+          "none",
+          "test",
+          "url"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 852770816,
+        "elapsed_seconds": 32.695207583,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/control-none.log",
+        "sha256": "c804bc4487a2a503a959093a2860764ab1650c7b00443e5c016bdf5f7d287370",
+        "bytes": 2631
+      }
+    },
+    "component-compile": {
+      "identity": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/component-compile-guard.json",
+        "sha256": "129842e06e6f4c599857360486a4f7469bc42b8c20fd126b89725237ac86b0b3",
+        "bytes": 598
+      },
+      "report": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-prod",
+          "-gc",
+          "none",
+          "-o",
+          "Build/chatgpt-url-ascii-20261104-1330/benchmark",
+          "Build/chatgpt-url-ascii-20261104-1330/benchmark.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 569655296,
+        "elapsed_seconds": 11.283984459000001,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "log": {
+        "path": "Build/chatgpt-url-ascii-20261104-1330/component-compile.log",
+        "sha256": "7f4742c0381c8896b01d938789ebe964f2ab6e76d21211b1ce86a645d282579e",
+        "bytes": 522
+      }
+    }
+  },
+  "component": {
+    "scope": "Optimized component: 30,500 parse/serialize operations on the 305 saved response URLs. Process instructions sampled around the loop; excludes launch/file input. No browser/Brave or page credit.",
+    "source_identity": {
+      "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/benchmark": "36cad39383216aa275a26d7d8c99d60d8dea6ffc926f719349c5b9a5c4247d85",
+      "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/benchmark.v": "364174389b417a161ee5fe5d38a88cbd6f73fdf297b781dfc2c09b89f7be1da4",
+      "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/addresses.txt": "7ed1626ac0eb53caa76807341bfc5e72bf1dc3b35aa2559ff2928560c731ad25",
+      "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/measure.py": "1529a17eafab4d30a30523755b23edd273c299a763a5ef0470429b037bbf061c",
+      "/Users/alex/code/vox2/Build/chatgpt-instructions-input-20261104-0830/manifest.json": "5c59adf716301d5a32484f67343db29ba026fa3f8527daa1c8c14c6ae78d9a59",
+      "/Users/alex/code/vox2/tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979",
+      "/Users/alex/code/vox2/tools/measure_sealed_github_instructions.py": "6f739dd165765beb19ec0ea0d5b98444fde1b931a0e9e5f3dafe41f0ef1d0019",
+      "/Users/alex/code/v/v": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+      "/Users/alex/code/vox2/url/blob_url_entry.v": "f7d106676ba30bbdbca6503c0016b0039941c3d09866d03ee4e2faf91224d368",
+      "/Users/alex/code/vox2/url/idna_bridge.h": "9b8451f9dc688b6543c24e115687ed8411d490f16814ba5037de37cd30c2d4bf",
+      "/Users/alex/code/vox2/url/percent_encoding.v": "1833d9f1d09b003c4e7f7df49f884bd9486c7486f16ff8a2fb50ee4d718963c0",
+      "/Users/alex/code/vox2/url/data_url.v": "1bd6dbd0ee9f004d9c193f1dcbc8ab791004cdb1a6613c55601ab427922e5564",
+      "/Users/alex/code/vox2/url/host_record.v": "4c34c93dc2566cc94d0afe84e823ff8fc4e401d4ecf47627f48734a1f98810cc",
+      "/Users/alex/code/vox2/url/parser_workspace.v": "c85eba56a860171748ab90036918dce12180d804412eae9a056c4236faca69b3",
+      "/Users/alex/code/vox2/url/ipv6.v": "9a9c1ebfab676ef7940496d7f5a9560e2b3cca5238070d3382edf8d77187ba6b",
+      "/Users/alex/code/vox2/url/url_record.v": "c9ed27e5c2132068990df3739834b49554646937906b6b0900831ad9f4041a5c",
+      "/Users/alex/code/vox2/url/file_origin_policy.v": "42da86f65c13f81ae59efc40528273ee0f0ab5409a9e45e4d740dbcd416dfc57",
+      "/Users/alex/code/vox2/url/host.v": "531d4288b369ae5f4774874e686fc4c6b4db8b8fffdf723d831f69b2f487c69f",
+      "/Users/alex/code/vox2/url/origin.v": "8b24a46fde794f83cc0a5af3289bad76ab42ab6f8249b804f7248aa24d2b563f",
+      "/Users/alex/code/vox2/url/public_suffix.v": "cb05466112684dbec2cf0da0b081ab9ad963f011200a143238e015c9c0518e99",
+      "/Users/alex/code/vox2/url/internal_urls.v": "328c9586c9120acfa3535e914109fd55e31c3a4c91a99a2fa11c4e51279bbb66",
+      "/Users/alex/code/vox2/url/parser.v": "8e5f1751472589b74fcf1b8cd9abd7bee337bb72fdbeceba2a21d74a2e4041ab",
+      "/Users/alex/code/vox2/url/idna.c.v": "c0fb1ba77a0d679b8ae4f49f5b926f86cdea5125cac0a5bd2c3d91c1356ed98c",
+      "/Users/alex/code/vox2/url/ipv4.v": "a45e93c9f77a4ba9779055d53e2e238ad3a262ef6675fd6a76c7c5dab2d5b1cb",
+      "/Users/alex/code/vox2/url/ascii_membership.v": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68",
+      "/Users/alex/code/vox2/platform/closure_release_test.h": "8816a0c4549f9afd3e18bb2cbf688d703463989aa52ebba4e23546ff3cd9f1a5",
+      "/Users/alex/code/vox2/platform/timer_host.c.v": "ab0fc6a1fba11b3129e25527ebb0e41716484e7f5167de5a5cf68978026c2d88",
+      "/Users/alex/code/vox2/platform/web_font_decode.c.v": "08e477aee0363ba85b37c15ada7754e1052e8229ad692d92a44eee9f44d4ddf0",
+      "/Users/alex/code/vox2/platform/supported_image_types.v": "542d2fd4288c83cdee27a7ee87685bf544ad52bbd2ac53ddd00ca3a30714dee2",
+      "/Users/alex/code/vox2/platform/timer.v": "c8ec75651aa701e703d09efd6a7eb8647bcbeaeac7aee911c5dd3f1112332a6e",
+      "/Users/alex/code/vox2/platform/font_rendering_policy.v": "ea927bd725bab513ece5ba023a7d47da5b2f136c7239e9fad5a064caba8ab2ef",
+      "/Users/alex/code/vox2/platform/layout_font_policy.v": "33f081c2ddcebe7c3ef7107b1d5cd91dee26c805a3132678f0663797b8e3f855",
+      "/Users/alex/code/vox2/platform/embedded_text.v": "42e3c24e20a3fe4ba26a9faeeff1c58778da1baaa8d7c04b1e3913ab380b0b1f",
+      "/Users/alex/code/vox2/platform/unicode_case_mapping.c.v": "5822faceb3f008f8c5a06f084f859edb20a158e6296bc6dd64bfd07d6ef10f3b",
+      "/Users/alex/code/vox2/platform/hyphenation.c.v": "e869c978198cc5b37e761afb5292f3362c6bde05604f6b1165272be8a5064c69",
+      "/Users/alex/code/vox2/platform/fallback_font_metrics.v": "713b314bb8342fadc96e9d8d513ca6c89c57884cc8a53e267edcd6408b09e0a6",
+      "/Users/alex/code/vox2/platform/harfbuzz_idle.v": "118efc509899141b881393858f5bd4ded8415e8ff7562e4662775c5f5d67c9bc",
+      "/Users/alex/code/vox2/platform/coretext_macos.h": "b5074efc00832a618f68844f5c199835cfa0930d7495bcd23457d4f31aede38f",
+      "/Users/alex/code/vox2/platform/coretext_macos.c.v": "b8744289f71c875e09eda2a77649095ecfc59bd58db1f1a134a0801e053fc695",
+      "/Users/alex/code/vox2/platform/browser_activity_heap.v": "f3df9519a47f08bc940bf661e86cbd5bba253e27b1eed589e2087ae3101034cf",
+      "/Users/alex/code/vox2/platform/chromium_glyph_intercepts.v": "34fa5002dae06438ab7cf00233d1d18e73132b52c13fb09a5691b2b2903d1b27",
+      "/Users/alex/code/vox2/platform/gc_linux.c.v": "32daffc226c24aec719003fa5333f16224e772b4ea7505c6b674d8748283497f",
+      "/Users/alex/code/vox2/platform/arena_page_retirement_test.h": "15975bc2426c58676914bdbae61cdab4050fdb34942deb58d945874210b7a89b",
+      "/Users/alex/code/vox2/platform/glyph_run.v": "6dc28268b6a9c89bcb1497b3071d047e21fcb1034b54ba57271987125eb1f89e",
+      "/Users/alex/code/vox2/platform/harfbuzz_coretext_macos.h": "ee821efecca98a83a14662c37d65c26cd81608d165b286deb8a4acb3e57d58da",
+      "/Users/alex/code/vox2/platform/native_deferred.c.v": "811e6a16a78e713f7b8c29df407005c93d2c8d1635b2b4cdc342ee7cd0752590",
+      "/Users/alex/code/vox2/platform/font_plugin.v": "49c771d665234ff7a707009f6d2546583a896c1d17566b35865b0e84c8d5a547",
+      "/Users/alex/code/vox2/platform/boehm_gc.h": "0de0de0e53c52cb5c80c67dd3f3dc777a1788cbfdd0f26ddbb8707583eddc8b6",
+      "/Users/alex/code/vox2/platform/shaping_safe_break.v": "7e15d7386eb4de6aba101ad66922926f9f0c6bd1d23a7ca4816f63888c0dd77c",
+      "/Users/alex/code/vox2/platform/arena_page_retirement.h": "cc6242bffb02ae575371ea44871677911fda477a8ddf7fc2d5f0afd7a3ac84a1",
+      "/Users/alex/code/vox2/platform/browser_memory_unmap_test.h": "1267276cb272127124bcd318578a7318ee626b96385b5fecb9c934c7698159da",
+      "/Users/alex/code/vox2/platform/shaping_cache.v": "f7509c7f9e52f5b265b80a78b4fa1034ea0dee1103b225594c44d222a90210b4",
+      "/Users/alex/code/vox2/platform/inline_font_metrics.v": "f94effb06239924c6ff24f34e39ce811580363c6fa91efe36e95deca78e45eac",
+      "/Users/alex/code/vox2/platform/document_heap.v": "d46193c4c850eecc597c8fa4d78a3a2ef3b6662e5eb0fbbb4795aeb632d14ed4",
+      "/Users/alex/code/vox2/platform/archived_inline_font_grid.v": "def8dfd6c0a4d56333cdda97ed5a3ce4c9e4c8bc8141be0fe0a9d7cbb6953658",
+      "/Users/alex/code/vox2/platform/browser_heap_policy.v": "f48d760943d5462497558a04887d3ecbf28f135e0dc1e0dea43f1772e0141816",
+      "/Users/alex/code/vox2/platform/unicode_case.c.v": "609325aadf64b61a360f497150c68bf93fc920077134104e2ab6ac2689605abc",
+      "/Users/alex/code/vox2/platform/unicode_case_mapping.h": "11a23f94381b2a79019d896d7d091e2b0fe3f98baff5cd36d697237ceac9717a",
+      "/Users/alex/code/vox2/platform/unicode_case_bridge.h": "43c79cda0e2592c5640026f8ec2ccfad47da968329ada86973c907be1b99fe8e",
+      "/Users/alex/code/vox2/platform/thread_scratch_leases.h": "d274f7eacc01f90125def063babc55b11c740e93549014dbe7f0b85a0cf5fdc5",
+      "/Users/alex/code/vox2/platform/arena_poison_report.h": "e37ad5cd00b61c8db22cc1630d597ab812afeec695f97cec2ba162321393f768",
+      "/Users/alex/code/vox2/platform/native_state.h": "16d33f19ab8512c18f6e38d0be73cdf437d060b53033ba1489d615348f11eaa0",
+      "/Users/alex/code/vox2/platform/fontconfig_linux.c.v": "2077946b3872e6ee0f0730bd4d805334fc29cf6a028272d5540f16b5415d6887",
+      "/Users/alex/code/vox2/platform/arena_phase_diagnostics.v": "3b8d717852100495afa80fcb25ac86bd209050cca204bc0aef1fd9f390ba7583",
+      "/Users/alex/code/vox2/platform/unicode_categories_bridge.h": "f0b462845959cfbf9c4dbe9c4c79c697bfb2a2fad5e1a5db95c48299b4d2c9e5",
+      "/Users/alex/code/vox2/platform/font_cmap.v": "dff19fecf5933a6978c236e71bcb6bd2591cb4f32eaf47795156dca4def69be9",
+      "/Users/alex/code/vox2/platform/layout_font_policy.h": "0067d78da55fdd4490385a2960b572ac11be57948f83a7985aabf8e302c60eb7",
+      "/Users/alex/code/vox2/platform/text_mapping.v": "90be8e8db81ec255f15c6c10119f560374c50bb56b521c9112ecabd9c1f2131e",
+      "/Users/alex/code/vox2/platform/form_control_font_metrics.v": "ebdeec0cf31cbcb4a35b45dacda7dfaa079dfeb1bf8469a645dcf3d7b0903230",
+      "/Users/alex/code/vox2/platform/event_loop_plugin.v": "3556cfa84bf5218d248824b634df9fa6010c76ddb59c5353bd788747ca20a0ed",
+      "/Users/alex/code/vox2/platform/browser_memory.v": "16b489d02a7847f16c26e08986f3d63e7fadf15d699e18248a753743a6e96590",
+      "/Users/alex/code/vox2/platform/retained_arena_mapping_test.h": "9bcf0ccdefdda3b7b060c2f03246e3e40c10dfe3c368ba26daeb4012f9adeca1",
+      "/Users/alex/code/vox2/platform/harfbuzz.c.v": "6b5da5e53140a001a67c434be18fd18e1d3a74df6c293ac5b19ef3f13edf9711",
+      "/Users/alex/code/vox2/platform/font_synthesis.v": "d94cc29ff2eca6584a34ba78e869381f0f6d3d255bd20d742a69c24bed33a2eb",
+      "/Users/alex/code/vox2/platform/image_codec_plugin.v": "6eb5a115258ebffbc191e2f44e390e9415d4e0bb5b92a5dd8b37525d3eb90443",
+      "/Users/alex/code/vox2/platform/unicode_categories.c.v": "cd76157ca74b16863e5b82411ecc747c38ab1095cd992ed87fe411569727c40a",
+      "/Users/alex/code/vox2/platform/hyphenation_bridge.h": "67d8a0f521fe8b864ef9e3ea57009fd40ef3813bca67d57ee81e443955882e44",
+      "/Users/alex/code/vox2/platform/variable_font.v": "50fe45ea5b6d057b77ca1925d341629d073b209a472bc42ce284b65b4c9b53ea",
+      "/Users/alex/code/vox2/platform/system_font_matching.v": "29cedcfa260e42cb1bfacb83ae0fc1e0fff94abc493430066ad9b949a9c04c31",
+      "/Users/alex/code/vox2/platform/timer_host_bridge.h": "8c61907360f2b76a50b25995e4ad5def9ae0283cca397b0df8573f45bbe677d0",
+      "/Users/alex/code/vox2/platform/retained_arena.v": "f5887cec86302503422a2faea9481e70379c6136baabc0f0cceb3b4e0f3e1bcb",
+      "/Users/alex/code/vox2/platform/thread_scratch.v": "ac880c7ace9b16e3ab79a174ea00c5acb824782253f29763e63829badff6890d",
+      "/Users/alex/code/vox2/platform/gc_linux.h": "bce19c675211d6519c7038122d9a6639470ab90199924df815aa40adf692627d",
+      "/Users/alex/code/vox2/platform/native_event_fairness_test.h": "3858fc40946b65ee72be48c3bc093d220408da0e589fd868a84982756dae9f69",
+      "/Users/alex/code/vox2/platform/cooperative_work.v": "26c8cc23a17ab8bef9bb7e77501db96d25d9ecc45980fd885a0774033ce01011",
+      "/Users/alex/code/vox2/platform/synthetic_ascii_caps.v": "58a53291a2ff9c855a3025e47abbbc95b22f075491db007e1a2960096ba0de78",
+      "/Users/alex/code/vox2/platform/linux_event_context.h": "1ef72227efd552b1b731a8ed9d03297e6099bed729dde88b9a26319dc4636bc4",
+      "/Users/alex/code/vox2/platform/prealloc_arena.v": "050be46b5fe4b1b06176b5bed7eca8d5d4a8ad65c66197ed52f7fc174c4d92c7",
+      "/Users/alex/code/vox2/platform/native_deferred_bridge.h": "82b70378d1308ba75037eac956bb7d25afdc3d6b50b5a6c6598790cd755628ee",
+      "/Users/alex/code/vox2/platform/sfnt_face_storage.v": "9a3597567e4eb4e7fdb929ee3850fa4c3b7972dd64211432fa7d0683dae01948",
+      "/Users/alex/code/vox2/platform/fontconfig_linux.h": "1d2524b89cea93c04817c187cde7d8366b94326dd0e00232b29fe209e09677d8",
+      "/Users/alex/code/vox2/platform/closure_release.v": "98470892e2dd0dfe3fd1e9511d9204064f7c6833d4418709b9f4ab08c0e047fb",
+      "/Users/alex/code/vox2/platform/retained_allocations.v": "25126d30a12196f6d38235ba854ecd48c2506e7222ff70af89b1258c7b0cd793",
+      "/Users/alex/code/vox2/processmetrics/instructions.v": "33fd2cbeae71f755a10a0341f0fb806bbc3d46d502fc2b7a12949c9afa0f72e4",
+      "/Users/alex/code/vox2/processmetrics/instruction_counter_darwin.h": "c19e671a522707a5668996fd2d31c6529bb938ad33840b9350056198f4d09cb8",
+      "/Users/alex/code/vox2/processmetrics/memory.v": "52dffac94d24261ff471b840568a7aa997e8bfcdb2a92622f6a2fecf54a71870",
+      "/Users/alex/code/vox2/processmetrics/memory_darwin.c.v": "154e0de9987053027e23138e1995ec2632af665defef6afb8bb6f23abb18bc08",
+      "/Users/alex/code/vox2/processmetrics/memory_default.v": "5576c48dc43bf4144a2e57095db8a1f96c9e8067d3479101318fc29f7618c643",
+      "/Users/alex/code/vox2/processmetrics/instructions_darwin.c.v": "20c18d889e61aebff62a3ca32e9b02d6f84894ca20530c24a6b3a25f33a757bf",
+      "/Users/alex/code/vox2/processmetrics/memory_darwin.h": "442bd654b41eb1ae8ba21834cd3aacc8d8d8a6b79b1830797805eb795b687786",
+      "/Users/alex/code/vox2/processmetrics/coalition_instructions.v": "79a9c834ec5203b387626b96e2006df255a654cb34453dd07787f9dec1dc030a",
+      "/Users/alex/code/vox2/processmetrics/instructions_default.v": "14cf07a9937deb58983dad6bbeb1f125279a50e8d031d48183158a3a857c0561"
+    },
+    "trials": [
+      {
+        "variant": "control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/0-control.guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "120",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/benchmark",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/addresses.txt"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            29.99169921875,
+            31.9736328125,
+            30.65283203125
+          ],
+          "unix": 1793788210.7004411
+        },
+        "exit": 0,
+        "host_after": {
+          "cpu_count": 18,
+          "load": [
+            29.99169921875,
+            31.9736328125,
+            30.65283203125
+          ],
+          "unix": 1793788211.234744
+        },
+        "instructions": 1956526687,
+        "checksum": 1761500,
+        "parses": 30500,
+        "identity_stable": true
+      },
+      {
+        "variant": "candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/1-candidate.guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "120",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/benchmark",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/addresses.txt"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            29.99169921875,
+            31.9736328125,
+            30.65283203125
+          ],
+          "unix": 1793788211.2753978
+        },
+        "exit": 0,
+        "host_after": {
+          "cpu_count": 18,
+          "load": [
+            29.99169921875,
+            31.9736328125,
+            30.65283203125
+          ],
+          "unix": 1793788211.5549
+        },
+        "instructions": 1811800684,
+        "checksum": 1761500,
+        "parses": 30500,
+        "identity_stable": true
+      },
+      {
+        "variant": "candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/2-candidate.guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "120",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/benchmark",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/addresses.txt"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            29.99169921875,
+            31.9736328125,
+            30.65283203125
+          ],
+          "unix": 1793788211.5931258
+        },
+        "exit": 0,
+        "host_after": {
+          "cpu_count": 18,
+          "load": [
+            29.99169921875,
+            31.9736328125,
+            30.65283203125
+          ],
+          "unix": 1793788211.866793
+        },
+        "instructions": 1822256280,
+        "checksum": 1761500,
+        "parses": 30500,
+        "identity_stable": true
+      },
+      {
+        "variant": "control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/3-control.guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "120",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/benchmark",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/addresses.txt"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            29.99169921875,
+            31.9736328125,
+            30.65283203125
+          ],
+          "unix": 1793788211.9074812
+        },
+        "exit": 0,
+        "host_after": {
+          "cpu_count": 18,
+          "load": [
+            29.99169921875,
+            31.9736328125,
+            30.65283203125
+          ],
+          "unix": 1793788212.1813529
+        },
+        "instructions": 1958619144,
+        "checksum": 1761500,
+        "parses": 30500,
+        "identity_stable": true
+      },
+      {
+        "variant": "diagnostic",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/4-diagnostic.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/4-diagnostic.guard.json",
+          "--limit-gib",
+          "3",
+          "--timeout",
+          "120",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/benchmark",
+          "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/addresses.txt"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            29.99169921875,
+            31.9736328125,
+            30.65283203125
+          ],
+          "unix": 1793788212.221916
+        },
+        "exit": 0,
+        "host_after": {
+          "cpu_count": 18,
+          "load": [
+            29.99169921875,
+            31.9736328125,
+            30.65283203125
+          ],
+          "unix": 1793788212.497662
+        },
+        "instructions": 1817845835,
+        "checksum": 1761500,
+        "parses": 30500,
+        "path_verified": true,
+        "identity_stable": true
+      }
+    ],
+    "page_instruction_credit": 0,
+    "complete": true,
+    "control_median": 1957572915.5,
+    "candidate_median": 1817028482.0,
+    "conservative_component_reduction": 134270407
+  },
+  "component_median_reduction_percent": 7.179524828279634,
+  "production_attempts": [
+    {
+      "folder": "Build/production-build/receipts/20261104-132831-ff605e56",
+      "log": null,
+      "failure": "No space left on device",
+      "result": null,
+      "memory_guard": null,
+      "original_receipt_missing": true,
+      "limitation": "Shared receipt directory disappeared during external disk cleanup. Its failure was inspected in tool output before disappearance; no original-file hash is available.",
+      "transcript_observation": {
+        "exit": 1,
+        "observed_peak_rss_bytes": 9444950016,
+        "elapsed_seconds": 482.30584583300003,
+        "stderr": "ld: write() failed, errno=28 (No space left on device) for '/Users/alex/code/vox2/Build/.production-output-9wl6286x/compiler-output.Cw1Syd/Vox'"
+      }
+    },
+    {
+      "folder": "Build/production-build/receipts/20261104-133636-8e0b9a9f",
+      "log": {
+        "path": "Build/production-build/receipts/20261104-133636-8e0b9a9f/build.log",
+        "sha256": "08f59fb83f9bb29a85dc85f6c02b09171f279da4b12f541150bb7dfa26635d15",
+        "bytes": 7238
+      },
+      "failure": "No space left on device",
+      "result": null,
+      "memory_guard": null
+    }
+  ],
+  "browser_validation": {
+    "status": "Pending production bundle containing the change",
+    "launches": {
+      "wait_started": 1793789243.97902,
+      "reason": "Available production bundle lacks committed URL masks; reuse the first completed bundle which contains them",
+      "runs": [],
+      "complete": false,
+      "error": "Shared production replacement still unavailable after six minutes",
+      "finished": 1793789604.575448
+    },
+    "pending_shared_receipt": "Build/production-build/receipts/20261104-134245-a18d4b67",
+    "limitation": "The completed production bundle available during the wait lacks this change. The shared replacement was still compiling after the bounded wait; no full-page instruction or pixel credit is taken."
+  },
+  "page_instruction_credit": 0,
+  "broad_instruction_cadence_advanced": 0,
+  "acceptance": false,
+  "artifacts": [
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/0-control.guard.json",
+      "sha256": "ab478bdeecca0a276f1a9d93a5d8a72cdf611938ba0ddc67a1606fa3bfb23f0b",
+      "bytes": 474
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/0-control.log",
+      "sha256": "9d55fa79a13ee955577014204c4bc146fae6191241b1c72504f04ded1e6f8300",
+      "bytes": 504
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/1-candidate.guard.json",
+      "sha256": "62da4b0c48ea4579f42b083eae224a51f89aa9807320fd47269aec09d72c9f95",
+      "bytes": 474
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/1-candidate.log",
+      "sha256": "7c88eba22bad75819927acbfdbe59ebd59ce1a54faf39e2838380749ea3faec2",
+      "bytes": 504
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/2-candidate.guard.json",
+      "sha256": "88a23484a1c3d9c7eefa777ac8a6880543972c4f7a0f8b5a5e1a0662c7cc1a24",
+      "bytes": 465
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/2-candidate.log",
+      "sha256": "794a19e9ae4596b973e0680cf69c76c1c378f7783fd87a03552c1b8aa74bf6ca",
+      "bytes": 495
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/3-control.guard.json",
+      "sha256": "be753f0c0dbd0b2f8e8e74c93b500db028d03a7ba840f3b4d6dff1530c2362a8",
+      "bytes": 464
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/3-control.log",
+      "sha256": "7dd9289a1f0035785f35949d4794e493af871dc1e6dcc99ed3550c0d8c6b8c17",
+      "bytes": 494
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/4-diagnostic.guard.json",
+      "sha256": "c8e837c9f759ebddaf5d3a67eeee3483cc85d1fc87c71b0703e1f6c7495801b5",
+      "bytes": 473
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/4-diagnostic.log",
+      "sha256": "29afc4106cc977f2e1f3ed72f7dbb46459451ed60198897fffd9fc2f7b3d6e1d",
+      "bytes": 605
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/addresses.txt",
+      "sha256": "7ed1626ac0eb53caa76807341bfc5e72bf1dc3b35aa2559ff2928560c731ad25",
+      "bytes": 17920
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/await_browser.py",
+      "sha256": "d4fbb554f488e62d2364db9d2605c47319757c57eb1e465bb7e2283409e572a8",
+      "bytes": 1595
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/benchmark.v",
+      "sha256": "364174389b417a161ee5fe5d38a88cbd6f73fdf297b781dfc2c09b89f7be1da4",
+      "bytes": 586
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/browser-launches.json",
+      "sha256": "27d747a54b23e9e6f1d2bc6045ce6d2421bdd60f793cb6a354b3ade49b52e688",
+      "bytes": 310
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/browser-launches.log",
+      "sha256": "1e5373515c982e029c7311a247f1773d0af23ac19c48a8b8b566f90e00299249",
+      "bytes": 296
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/browser.py",
+      "sha256": "ce94c2cdadb21d9f7fc32e0fbf34b8d336d107f693f31f9974cf0db424baa035",
+      "bytes": 5099
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/component-compile-guard.json",
+      "sha256": "129842e06e6f4c599857360486a4f7469bc42b8c20fd126b89725237ac86b0b3",
+      "bytes": 598
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/component-compile.log",
+      "sha256": "7f4742c0381c8896b01d938789ebe964f2ab6e76d21211b1ce86a645d282579e",
+      "bytes": 522
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/component-results.json",
+      "sha256": "845934de4beafa7d3b7b972ddcc1abc4135bfe1df8f5bb9e8fa302f1843269d8",
+      "bytes": 18880
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/control-default-guard.json",
+      "sha256": "09c9a9e363174a7c273e61b20312b98e464df081ce7358702ea55a257b440fec",
+      "bytes": 454
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/control-default.log",
+      "sha256": "f239793caca7cdfa0e783dacd73e9d5e7a585636496b79b2c2f098e69692ae82",
+      "bytes": 2612
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/control-none-guard.json",
+      "sha256": "f1f1b9d9613a3eb05dc94700793f0e50449e08f7ff7ddb586a36829911ac0e1f",
+      "bytes": 480
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/control-none.log",
+      "sha256": "c804bc4487a2a503a959093a2860764ab1650c7b00443e5c016bdf5f7d287370",
+      "bytes": 2631
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/default-tests-guard.json",
+      "sha256": "166b0c3e8da6879c828995fe40c3e0147c6d5743957a4179fda1abe0045fbd9e",
+      "bytes": 418
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/default-tests.log",
+      "sha256": "eff5990129c602fec28b099602493a70ac79b6aa03b41080ba9cfbafeda24ca4",
+      "bytes": 8439
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/fresh-tests-guard.json",
+      "sha256": "f396032d372778f6e3a764bc93b4946acfceb86148eb4133132d9b8eb4ddac05",
+      "bytes": 454
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/fresh-tests.log",
+      "sha256": "48c7bfdd6d6f8b85d2dd61502dc4f438b440e143b470e45a87fc8bf1effbe260",
+      "bytes": 4589
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/measure.log",
+      "sha256": "86b3153dc0c0015ceb584b99fd1701ca919288971962707dbbd9c6859c3c9bc7",
+      "bytes": 4407
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/measure.py",
+      "sha256": "1529a17eafab4d30a30523755b23edd273c299a763a5ef0470429b037bbf061c",
+      "bytes": 3290
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/none-tests-guard.json",
+      "sha256": "b2b9f4c2795aec7fde1f8b66d94f504f46f03cb95fa21c28383c2b7a5a84a5c7",
+      "bytes": 480
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/none-tests.log",
+      "sha256": "b4b855c5a2cbca17fe87a6e9cbeeb2bdfb40f0ba201638cd71bde4571d056ee8",
+      "bytes": 4617
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/origin-default-guard.json",
+      "sha256": "12c5c01665237445c373cdab7c50f3135df67647c46f1c5f9c7f6655db0bde23",
+      "bytes": 481
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/origin-default.log",
+      "sha256": "a479902d9f463ebce6804c2c1ed81acea1975f9e33c8920f1f5a805d5523c0d4",
+      "bytes": 774
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/origin-none-guard.json",
+      "sha256": "b61e06334e3bf098e5393f8a006c655705f07441f9f26b032fd615d5f6ac235d",
+      "bytes": 502
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/origin-none.log",
+      "sha256": "53d3de8ba550e561e26696f93e88499dd9d345553ec6aae460005086ced95910",
+      "bytes": 787
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/origin-recovery-guard.json",
+      "sha256": "354df2cb7a122be4505d37c5eab238f489abb0cb9b6848647004780cf2c5e269",
+      "bytes": 470
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/origin-recovery.log",
+      "sha256": "98f05b9ff76fef5aba6d0b7defe805692f0444d1a6c76080737adf6e119dadb8",
+      "bytes": 414
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/record.py",
+      "sha256": "c634f2aef42a2f37f89e9a35b72c5f3f2fd7f16945886007611fc0933455be0a",
+      "bytes": 6501
+    }
+  ],
+  "source_files": {
+    "url/ascii_membership.v": {
+      "path": "url/ascii_membership.v",
+      "sha256": "517e5fc199e90e17a22499b1d4a23003e034b6dbff25ee35d596ac84cb8d8b68",
+      "bytes": 3281
+    },
+    "url/ascii_membership_test.v": {
+      "path": "url/ascii_membership_test.v",
+      "sha256": "c5e70fb6f89e4679babdae43d52d71833a2157c056ab7b2d093cf86939c1a849",
+      "bytes": 2686
+    },
+    "url/host.v": {
+      "path": "url/host.v",
+      "sha256": "531d4288b369ae5f4774874e686fc4c6b4db8b8fffdf723d831f69b2f487c69f",
+      "bytes": 3681
+    },
+    "url/percent_encoding.v": {
+      "path": "url/percent_encoding.v",
+      "sha256": "1833d9f1d09b003c4e7f7df49f884bd9486c7486f16ff8a2fb50ee4d718963c0",
+      "bytes": 4934
+    },
+    "url/file_origin_policy_test.v": {
+      "path": "url/file_origin_policy_test.v",
+      "sha256": "992d014ae94d235990c7a33798b15e719b3905cd1650c49c0ee85f432ba21634",
+      "bytes": 2671
+    }
+  }
+}

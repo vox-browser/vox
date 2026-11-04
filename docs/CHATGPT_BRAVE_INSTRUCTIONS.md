@@ -133,3 +133,47 @@ submission behavior. Suppressed Vox still costs about twice Brave. The
 [experiment receipt](performance/chatgpt-performance-policy-20261104.json)
 preserves exact counts, all attempts, hashes, ownership audits, commands and guard
 exits. The original 5% goal remains open.
+
+## URL ASCII classification
+
+The next engine change replaces repeated character-array scans with bounded
+64-bit membership masks. It covers forbidden host characters and all nine
+percent-encode sets. Unicode, invalid code-point values and the boundary between
+the two ASCII words retain their original behavior. The earlier V profile
+recorded 1,057,335 host checks and 2,798,357 extra-character membership checks.
+The original implementations remain available with
+`VOX_DISABLE_URL_ASCII_MEMBERSHIP=1` for matched controls; a separate
+`VOX_URL_ASCII_MEMBERSHIP_DIAGNOSTICS=1` run verifies both optimized paths.
+
+All 103 URL cases pass in both GC modes with both implementations, including an
+independent exhaustive comparison across U+0000–U+10FFFF and large invalid
+values. Candidate verification combines twenty passing files with the recovered
+file-origin test. That preexisting test required sum-type method dispatch before
+narrowing for the current compiler; every assertion is retained. The initial
+cached bridge-link failures and original narrowing failures remain recorded.
+
+A separate optimized component benchmark parses and serializes the saved
+archive's 305 response URLs one hundred times. Its matched
+control/candidate/candidate/control trials preserve the same result checksum.
+
+| 30,500 URL parse/serialize operations | Retired CPU instructions |
+| --- | ---: |
+| Control median | 1,957,572,915.5 |
+| Candidate median | 1,817,028,482 |
+| Conservative reduction | 134,270,407 |
+
+The component median falls 7.18%. These counters cover the parsing loop only,
+excluding launch and input loading; they do not establish a page or Brave gain.
+Original author scripts remain unchanged. The
+[URL optimization receipt](performance/chatgpt-url-ascii-20261104.json)
+records the exact commands, raw counts, checks and production validation status.
+
+Production page validation is pending. The first shared replacement failed at
+linking when the disk filled; the next attempt also failed with insufficient
+space and could not finish its guard receipt. Space later became available and
+another shared build began. The completed bundle available during the bounded
+wait lacks the URL masks, so it cannot validate this code. The failed attempts
+and the pending build are recorded; one earlier failed receipt disappeared
+during external disk cleanup, and the receipt distinguishes its captured
+transcript from original files. No page instruction saving, broad-cadence
+advance or Brave acceptance credit is claimed for this change yet.
