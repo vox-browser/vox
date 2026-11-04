@@ -10,6 +10,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 import hacker_news_launch_pilot as driver  # noqa: E402
+from hn_launch_cost import aggregate  # noqa: E402
 hn = driver.hn
 
 
@@ -21,6 +22,15 @@ def children(pid):
         if len(parts) == 3 and parts[1].isdigit() and int(parts[1]) == pid:
             rows.append((int(parts[0]), parts[2]))
     return rows
+
+
+def sample_statistics(folder):
+    records = {}
+    for name in ['vox', 'worker']:
+        path = folder / f'sample-{name}.txt'
+        trees = aggregate.parse(path) if path.is_file() else []
+        records[name] = dict(threads=len(trees), busy_samples=sum(aggregate.busy(tree) for tree in trees))
+    return records
 
 
 def main():
@@ -81,8 +91,10 @@ def main():
             result = driver.checked_trial(args, variant, run, paths, pinned)
             thread.join()
             result['sampler_exits'] = [process.wait() for process in samplers]
-            if len(samplers) != 2 or any(result['sampler_exits']):
-                result.update(exit=1, error='Both browser and worker samples must finish successfully')
+            result['samples'] = sample_statistics(folder)
+            if (len(samplers) != 2 or any(result['sampler_exits'])
+                    or not all(record['threads'] for record in result['samples'].values())):
+                result.update(exit=1, error='Both browser and worker samples must contain stacks and finish successfully')
             rows.append(result)
             hn.write_json(args.output / 'rows.json', rows)
             print(run, result, [p.name for p in folder.glob('sample-*.txt')], flush=True)

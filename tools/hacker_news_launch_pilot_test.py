@@ -6,6 +6,7 @@ import unittest
 
 import hacker_news_launch_pilot as pilot
 from hn_launch_cost import aggregate
+from hn_launch_cost.sampler import sample_statistics
 
 
 def observation(trial, name, instructions):
@@ -114,6 +115,15 @@ class LaunchPilotTests(unittest.TestCase):
 
 
 class SampleAggregationTests(unittest.TestCase):
+    def test_successful_sample_command_with_empty_call_graph_has_no_coverage(self):
+        with tempfile.TemporaryDirectory() as temp:
+            folder = Path(temp)
+            (folder / 'sample-worker.txt').write_text('Header\nCall graph:\n\nTotal number in stack\n')
+            (folder / 'sample-vox.txt').write_text('Header\nCall graph:\n    4 Main Thread\n    + 4 render (in Vox)\nTotal number in stack\n')
+            records = sample_statistics(folder)
+        self.assertEqual(records['worker'], dict(threads=0, busy_samples=0))
+        self.assertEqual(records['vox'], dict(threads=1, busy_samples=4))
+
     def test_waiting_samples_and_recursive_calls_do_not_inflate_busy_counts(self):
         tree = ['Main Thread', 10, [
             ['render [Vox]', 6, [['render [Vox]', 4, []]]],

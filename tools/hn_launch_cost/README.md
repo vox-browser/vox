@@ -17,8 +17,8 @@ memory guard receipt when assessing variation.
 A six-trial Vox-only baseline (choose a new output name):
 
 ```sh
-env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY \
-    -u all_proxy -u http_proxy -u https_proxy \
+env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY -u NO_PROXY \
+    -u all_proxy -u http_proxy -u https_proxy -u no_proxy \
   python3 tools/run_memory_bounded.py \
     --lock Build/hn-pilot-UNIQUE.lock --report Build/hn-pilot-UNIQUE-guard.json \
     --adopt-pids-from Build/hn-pilot-UNIQUE-pids.json -- \
@@ -55,7 +55,9 @@ Run `tools/hn_launch_cost/sampler.py OUTPUT RUNS --delay-library DYLIB
 and proxy variables removed, as for the pilot. It attaches `/usr/bin/sample` to
 Vox and its adblock worker. It deliberately delays load/exit to retain symbols;
 counts from these runs cannot establish performance gains. It records both
-sampler exits and rejects missing samples. `--app`, `--seconds` and `--diff-tool`
+sampler exits, thread/busy counts, and rejects missing or empty call graphs.
+Nonempty samples can still miss startup; inspect the function coverage before
+attributing costs. `--app`, `--seconds` and `--diff-tool`
 are optional.
 
 Analyze the resulting samples without browser launches:
@@ -78,3 +80,15 @@ counts nonwhite rows. Hashing scans and faults in frame memory: its instruction
 counts must never supply optimization credit. See `hn-launch-cost-map.md` in the
 original memory directory and `docs/benchmark-results/hacker-news-1800-reached-2026-11-04.json`
 for the earlier cost map and accepted 1.8B result.
+
+`glyphs.c` interposes the Skia glyph and colored SVG path entry points and reports
+aggregate call, glyph and browser-process instruction counts at exit. Compile with the same
+CoreGraphics command plus `-undefined dynamic_lookup`. Its weak import allows
+the adblock worker to inherit the probe without linking Skia. Process-counter
+reads include their own overhead and concurrent browser threads; use only to
+locate work, with unchanged pixels/content, never as an acceptance result.
+
+`coregraphics.c` similarly counts clipping, image, rectangle and path API calls.
+Compile with the CoreGraphics command. Nested API totals overlap, and totals
+include startup/chrome calls as well as document rendering. Do not add them to
+each other or to the glyph probe's total.
