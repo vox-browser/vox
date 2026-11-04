@@ -380,5 +380,5 @@ with live scripting, scrolling and whole-site behavior outside that claim.
 | [TechCrunch](https://techcrunch.com/) | Open: 34,710 native pixels; source fidelity passes | [Current checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
 | [Engadget](https://www.engadget.com/) | Open: pinned cold/complete native 0; source gap 221; earlier replay variation retained | [Engadget checkpoint](docs/FORUM_NEWS_EXPANSION.md) |
 | [The Register](https://www.theregister.com/) | Open: fresh candidate native 246 pixels; source/replay 0; SVG-picture fix awaits production validation | [Register checkpoint](docs/FORUM_NEWS_EXPANSION.md), [evidence](docs/evidence/register-parity-20261104.json) |
-| [Slate](https://slate.com/) | Open: initial native gap 221,448; source gap 19,064 pixels | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |
+| [Slate](https://slate.com/) | Open: AVIF decoding added; native gap 180,821; source gap 19,064 pixels; replay 0 | [Slate checkpoint](docs/FORUM_NEWS_EXPANSION.md), [evidence](docs/evidence/slate-parity-20261104.json) |
 | [WIRED](https://www.wired.com/) | Open: frozen reference changes between captures | [Five-site baseline](docs/FORUM_NEWS_EXPANSION.md) |

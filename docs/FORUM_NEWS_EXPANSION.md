@@ -830,6 +830,55 @@ the new regression, the earlier controls, the Register candidate and Hacker News
 [completed follow-up validation](../Build/register-parity-20261104/followup-validation.json),
 [SVG-picture validation](../Build/register-parity-20261104/svg-followup-validation.json).
 
+## Slate: AVIF image decoding (2026-11-04)
+
+Slate is the next active site. The registered archive remains unchanged at
+`e28a9ed9…`. On executable `289eb15e…`, the complete-cache comparison reproduces
+the initial **221,448 native pixels**, **19,064 source/frozen pixels** and
+**0 independent Brave replay pixels**. The photos are original AVIF responses
+at `.jpeg` URLs; the old image model has zero natural dimensions and no decoded
+pixels. The missing logo and icons use external SVG `<use>` sprites.
+
+Commit `393a45902` adds static sRGB AVIF decoding through the existing libavif
+dependency. Models keep straight, top-down RGBA; native painting premultiplies
+before byte output. Images, CSS backgrounds and local files sniff the encoded
+bytes, so JPEG-labelled resources follow the same decoder. The macOS build
+packages `libVoxAVIF.dylib`; the Linux build wires the helper when libavif is
+available through pkg-config. Runtime validation here is macOS only.
+Animation, ICC profiles and image transformations remain unsupported; input,
+dimensions and decoded-pixel counts are bounded before output allocation.
+
+All **19 native decoding/alpha/error controls pass optimized and sanitized**.
+All **three V integration tests pass with default GC and GC disabled**, and all
+**four existing JPEG XL controls pass** after the local-file sniffing change.
+The two publisher AVIF files retain their original encoded hashes. Generated
+alpha, animation, size and ICC controls have committed provenance.
+
+Executable `ea74a6fa…` contains the new image paths and bundled decoder. It
+renders both photos and reduces the registered page's native gap to **180,821
+pixels**. Source/frozen still differs by **19,064**, while the two fresh Brave
+processes agree exactly. A separate comparison confirms that its bundled helper
+and the checked helper return identical straight and premultiplied RGBA bytes
+for both publisher images and the opaque/alpha controls.
+
+The registered `avif-image-paths` browser regression has exact full-uBO source
+fidelity and two identical Brave references. The old browser differs at
+**46,189 pixels**. The AVIF-capable browser differs at **26,279**: both alpha
+panels are exact, but the opaque red panel has 8,192 one-byte differences and
+the scaled photo has 18,087 differences. The two Slate photos are 8-bit,
+full-range BT.601 **4:2:2** images. The existing planar renderer handles 4:2:0
+and 4:4:4; 4:2:2 painting remains a separate rendering gap. No tolerance or
+previous golden changed, and this is not a complete Slate parity result.
+
+Fresh acquisition failed the required page-coverage gate both directly and
+through the configured SOCKS proxy. Both failed attempts are retained and
+neither replaced the registered archive. The consent banner remains part of
+the frozen guest workload. Source qualification, opaque AVIF painting and the
+external SVG sprites remain open.
+[Durable evidence](evidence/slate-parity-20261104.json),
+[original baseline](../Build/slate-parity-20261104/baseline/summary.json),
+[AVIF-capable browser](../Build/slate-parity-20261104/avif-installed/summary.json).
+
 ## Run
 
 ```sh

@@ -26,6 +26,12 @@ On Linux, `V_BIN` accepts a command on `PATH` (for example, `V_BIN=v`), an
 absolute executable path, or a path relative to the directory from which you
 invoke the build script. The build resolves that path before changing directories.
 
+Optional `libavif-dev` enables the static sRGB AVIF helper when its pkg-config
+entry is available. The helper supports image elements, CSS backgrounds and
+local files; animation, embedded ICC profiles and image transformations remain
+unsupported. The initial decoder checks ran on macOS; Linux runtime conformance
+for this path remains unverified.
+
 ```sh
 # Builds pinned Skia 144 under Build/deps; subsequent runs reuse it.
 python3 tools/build_linux_skia.py
