@@ -156,6 +156,39 @@ decltype(&vox_graphite_draw_picture_pixels) shared_picture_draw()
     return draw;
 }
 
+// A tiled compositor picture has one immutable payload. The existing region
+// backend can deserialize it once while retaining full GPU targets and the
+// grid's original border ownership. CPU views remain bounded and publish only
+// after every tile succeeds; declined batches use the serial renderer below.
+static bool draw_shared_picture_tile_batch(std::vector<uint32_t>& pixels,
+    int width, int height, long first_x, long first_y, VoxChromiumRasterGrid grid,
+    SkData const* bytes, float const* matrix)
+{
+    auto draw = picture_regions_draw();
+    if (!draw || !bytes || !matrix || !bytes->size() || bytes->size() > 64 * 1024 * 1024
+        || std::getenv("VOX_DISABLE_SHARED_PICTURE_TILE_BATCH")) return false;
+    return vox_draw_chromium_raster_grid_batch(pixels, width, height,
+        first_x, first_y, grid, [&](auto& tiles) {
+            std::vector<VoxGraphitePictureRegion> requests;
+            requests.reserve(tiles.size());
+            for (auto& tile : tiles) {
+                VoxGraphitePictureRegion request {
+                    {tile.x, tile.y, tile.width, tile.height, tile.width * 4,
+                        reinterpret_cast<uint8_t*>(tile.pixels.data())},
+                    bytes->data(), bytes->size(), {}};
+                std::copy(matrix, matrix + 9, request.matrix);
+                request.matrix[2] += tile.offset_x;
+                request.matrix[5] += tile.offset_y;
+                requests.push_back(request);
+            }
+            int result = draw(requests.data(), int(requests.size()), grid.width, grid.height);
+            if (result && std::getenv("VOX_PICTURE_REGION_DIAGNOSTICS"))
+                std::fprintf(stderr, "VOX_PICTURE_BATCH shared tiles=%zu target=%dx%d\n",
+                    requests.size(), grid.width, grid.height);
+            return result != 0;
+        }, 4 * 1024 * 1024);
+}
+
 SkCanvas* shared_recording_canvas(CGContextRef destination)
 {
     if (auto* canvas = isolated_input_recording_canvas(destination)) return canvas;
@@ -564,7 +597,9 @@ void finish_shared_recording()
         if (draw_retained_layer_tiles(*group, picture.get(), pixels, width, height, left, top)) {
             // Retained transparent ink joins the same backdrop/publication path.
         } else if ((bytes = picture->serialize(&procs)) && bytes->size() <= 64 * 1024 * 1024 && tiled) {
-            if (!vox_draw_chromium_raster_grid(pixels, width, height,
+            if (!draw_shared_picture_tile_batch(pixels, width, height,
+                    std::lround(first_x), std::lround(first_y), grid, bytes.get(), matrix)
+                && !vox_draw_chromium_raster_grid(pixels, width, height,
                     std::lround(first_x), std::lround(first_y), grid,
                     [&](auto& tile, long offset_x, long offset_y, int) {
                         float tile_matrix[9];

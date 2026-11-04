@@ -1,5 +1,6 @@
 // A compositor picture must rasterize in local coordinates at every page offset.
 #include "../native_skia_text_darwin.cpp"
+#include "include/ports/SkTypeface_mac.h"
 #include <cassert>
 #include <iostream>
 
@@ -62,11 +63,19 @@ static void tiled_layer(int scale, int scroll_y, bool projected_root_scroll = fa
     auto* reference_canvas = recorder.beginRecording(SkRect::MakeWH(layer_width, layer_height));
     auto draw = [](SkCanvas* canvas) {
         SkPaint paint; paint.setAntiAlias(true);
+        auto system = CTFontCreateWithName(CFSTR("HelveticaNeue"), 13, nullptr);
+        assert(system);
+        SkFont font(SkMakeTypefaceFromCTFont(system), 13);
+        CFRelease(system);
+        font.setSubpixel(true);
         for (int row = 0; row < 4; ++row) {
             paint.setColor(SkColorSetRGB(0, 119, 255));
             canvas->drawRRect(SkRRect::MakeRectXY(
                 SkRect::MakeXYWH(247, 201 + row * 220, 218, 40), 8, 8), paint);
             canvas->save(); canvas->translate(245, 190 + row * 220); icon(canvas); canvas->restore();
+            paint.setColor(SkColorSetARGB(213, 31, 41, 59));
+            canvas->drawSimpleText("ChatGPT tiles", 13, SkTextEncoding::kUTF8,
+                247.25f, 252.5f + row * 220, font, paint);
         }
     };
     draw(reference_canvas);
@@ -116,6 +125,21 @@ static void tiled_layer(int scale, int scroll_y, bool projected_root_scroll = fa
         std::cerr << "Tiled layer differs: scale=" << scale << " scroll=" << scroll_y << '\n';
     assert(actual == expected);
     CGContextRelease(destination); CGContextRelease(control);
+}
+
+static void failed_tile_batch_preserves_pixels()
+{
+    std::vector<uint32_t> pixels(64, 0x795a3917);
+    auto original = pixels;
+    uint8_t invalid[] {1, 2, 3, 4};
+    auto bytes = SkData::MakeWithCopy(invalid, sizeof(invalid));
+    float matrix[] {1, 0, 0, 0, 1, 0, 0, 0, 1};
+    assert(!draw_shared_picture_tile_batch(pixels, 8, 8, 0, 0,
+        {6, 6, 2, 2}, bytes.get(), matrix));
+    assert(pixels == original);
+    assert(!draw_shared_picture_tile_batch(pixels, 8, 8, 0, 0,
+        {10, 10, 1, 1}, bytes.get(), matrix));
+    assert(pixels == original);
 }
 
 static void root_background(int scale)
@@ -552,6 +576,7 @@ static void invalid_gradient_batch()
 
 int main()
 {
+    failed_tile_batch_preserves_pixels();
     assert(shared_picture_draw() && graphite_shape_draw());
     ladybird_v_skia_set_chromium_painting(1);
     invalid_gradient_batch();
