@@ -11,7 +11,8 @@
   "commits": {
     "connection_limit": "88f1120f0",
     "capture_and_comparison": "028ba7127",
-    "source_content_audit": "7c6fbfd06"
+    "source_content_audit": "7c6fbfd06",
+    "font_lookup": "7251651bc"
   },
   "download": {
     "proxy": "socks5h://127.0.0.1:1337",
@@ -157,7 +158,11 @@
     "confirmed_probe_line": "VOX_SOCKET_PROBE pid=44934 fd=49 command=67 result=-1 errno=24 nofile=256/9223372036854775807",
     "probe": "Build/chatgpt-instructions-socket-diagnostic-20261104-0830/run-v2/pair-1-vox/browser.log",
     "fix": "Set CURLMOPT_MAX_TOTAL_CONNECTIONS=32 on every CurlConnection; libcurl queues excess transfers and may multiplex established connections. No scripts, page content, pixel references, or tolerances removed.",
-    "limitation": "Bounds each connection manager; does not guarantee arbitrary multi-tab descriptor exhaustion is impossible."
+    "limitation": "Bounds each connection manager; does not guarantee arbitrary multi-tab descriptor exhaustion is impossible.",
+    "primary_references": [
+      "https://curl.se/libcurl/c/CURLMOPT_MAX_TOTAL_CONNECTIONS.html",
+      "https://curl.se/libcurl/c/CURLMOPT_SOCKETFUNCTION.html"
+    ]
   },
   "diagnostic": {
     "folder": "Build/chatgpt-instructions-profile-20261104-0830",
@@ -262,17 +267,23 @@
   "production": {
     "latest_completed_receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-082044-8804e823/frozen-compile.json",
     "latest_completed_executable_sha256": "5283f5ee09518e8ebb402232412c7789d4a7d357c99757ee69c1472bb84d96ee",
-    "candidate_validation": "Pending: latest completed production bundle lacks the connection cap. Shared production worker was already running; no duplicate production build was requested.",
+    "candidate_validation": "Pending for both changes. Shared worker has frozen a connection-cap build and is still compiling it; the font-cache change is coalesced into the existing queue by the commit hook.",
     "rejected_receipt": "Build/production-build/receipts/20261104-083318-b45cfe0f",
     "rejected_reason": "Repository inputs changed before C preprocessing",
     "next_existing_receipt": "Build/production-build/receipts/20261104-083807-772efa2a",
-    "policy": "Reuse the shared bundle, retain its memory guard and input checks, and reject any cohort whose executable/native libraries change."
+    "policy": "Reuse the shared bundle, retain its memory guard and input checks, and reject any cohort whose executable/native libraries change.",
+    "frozen_connection_limit_input": {
+      "path": "Build/production-build/receipts/20261104-083807-772efa2a/frozen-compiler-inputs/0-Vox.c.i",
+      "sha256": "98e63f40f82f9ff8c597aadfce6bec9c0409bb99225b747836a38ee511d3efab",
+      "bytes": 76328982
+    },
+    "frozen_connection_limit_verified": "Generated CurlConnection.create calls vox_curl_multi_setopt_long with CURLMOPT_MAX_TOTAL_CONNECTIONS and 32. The already running build predates the later font-cache change."
   },
   "optimization_credit": false,
   "accepted_pairs": 0,
   "optimized_sites_entry_added": false,
   "remaining": [
-    "Validate a stable completed production bundle containing 88f1120f0 under normal LaunchServices descriptor limits.",
+    "Validate stable completed production bundles containing the connection cap and font-cache optimization, using normal LaunchServices limits. A bundle without either change cannot validate it.",
     "Resolve the unchanged-reference pixel mismatch and verify author-script/fixture readiness and source identity in both browsers.",
     "Collect at least seven complete unprofiled alternating pairs on one pinned build and the same sealed page bytes; retain every attempt and require the exact 5% integer gate.",
     "Use matched before/after controls and an independently verified executed path before attributing any instruction reduction to an optimization."
@@ -312,7 +323,320 @@
       "path": "tools/page_archive.py",
       "sha256": "05d2b13aba6e42c66fea166cf2035263579a47828b7627ad112720755d328524",
       "bytes": 20223
+    },
+    {
+      "path": "native_picture_typeface_cache.h",
+      "sha256": "c83381057fe364e9d71e8fd25d30dcfa0b6c9c3deb7b55cc26ac4d665962cb2f",
+      "bytes": 4551
+    },
+    {
+      "path": "tools/native_picture_typeface_cache_test.cpp",
+      "sha256": "6d797d8c6d21e6480a9b01719b9ccbb479964485aeb4dc8299c62ff0383be356",
+      "bytes": 8525
     }
   ],
-  "workspace_note": "Canonical master retains unrelated concurrent edits. Native curl header includes independently owned native-state changes in the working tree; feature commit includes only the new long-option adapter in that header."
+  "workspace_note": "Canonical master retains unrelated concurrent edits. Native curl header includes independently owned native-state changes in the working tree; feature commit includes only the new long-option adapter in that header.",
+  "font_cache_optimization": {
+    "change": "Remove the per-byte FNV hash before complete byte identity checks in the bounded picture typeface LRU. Retain owned keys, complete memcmp, LRU ordering, byte budget, entry budget, oversized-face behavior, and legacy stream fallback.",
+    "sampled_executed_path": {
+      "profile": {
+        "path": "Build/chatgpt-instructions-profile2-20261104-0830/sample.txt",
+        "sha256": "ffbfa84572229d7fa3bc9a7c8260e994939fd9074c4808358dab842d16d2925a",
+        "bytes": 424174
+      },
+      "result": {
+        "browser_exit": 0,
+        "sample_exit": 0,
+        "identity_stable": true,
+        "acceptance": false
+      },
+      "site": "Original ChatGPT archive; author scripts enabled; independent instrumented diagnostic, elevated fd limit 4096.",
+      "observed_stack": "BrowserApp.draw -> finish_shared_recording -> vox_graphite_draw_picture_region_pixels -> SkPicture.MakeFromData -> VoxPictureTypefaceCache.decode_stream -> decode",
+      "top_of_stack_samples_in_decode": 134,
+      "main_thread_samples": 402,
+      "limitation": "Sampling establishes an executed candidate path, not a retired-instruction share or unprofiled page reduction."
+    },
+    "focused_test_guard": {
+      "command": [
+        "env",
+        "NATIVE_SKIA_TEST_OUTPUT_DIR=/Users/alex/code/vox2/Build/chatgpt-font-cache-check-20261104-0830",
+        "sh",
+        "tools/test_native_picture_typeface_cache.sh"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 211877888,
+      "elapsed_seconds": 4.663861084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focused_checks": "Four embedded fonts reuse owned packets; mixed-font picture pixels match exactly; eviction, clear, oversize, legacy, invalid streams and keys differing only in the final byte pass.",
+    "component_scope": "One cache-hit loop over complete public decode calls, process-thread hardware retired instructions. Includes both buffer addresses and glyph checksum; excludes font/cache setup. Component diagnostic only, no page or browser acceptance.",
+    "component_build": [
+      {
+        "mode": "control",
+        "header_sha256": "efb3bb59b92e98164d7d90f5c7db7c8d8f4779a093e156a9e38efc18291d502c",
+        "generated_cpp_sha256": "62b8e7e2a2353874c2b0509375927bb5f1ed843ba230d5c72de45927c8facba7",
+        "command": [
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-x",
+          "c++-cpp-output",
+          "/Users/alex/code/vox2/Build/chatgpt-font-cache-benchmark-20261104-0830/control.ii",
+          "-x",
+          "none",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-font-cache-benchmark-20261104-0830/control"
+        ],
+        "executable_sha256": "b5a91aeb2e381714e422088d7e860cfc3bcb1a39350dda298afe6806369ff3e2"
+      },
+      {
+        "mode": "candidate",
+        "header_sha256": "c83381057fe364e9d71e8fd25d30dcfa0b6c9c3deb7b55cc26ac4d665962cb2f",
+        "generated_cpp_sha256": "d7e92af32e062e2becef8fe494f5b4666637349e29ae212ccc9c7a8e7d86e62f",
+        "command": [
+          "clang++",
+          "-std=c++20",
+          "-O2",
+          "-x",
+          "c++-cpp-output",
+          "/Users/alex/code/vox2/Build/chatgpt-font-cache-benchmark-20261104-0830/candidate.ii",
+          "-x",
+          "none",
+          "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-lskia",
+          "-framework",
+          "CoreFoundation",
+          "-framework",
+          "CoreGraphics",
+          "-framework",
+          "CoreText",
+          "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-font-cache-benchmark-20261104-0830/candidate"
+        ],
+        "executable_sha256": "76107bdecb8da16dd4f8fd2ddcab548596cc8aaafb1710be5c7c2eb139f61675"
+      }
+    ],
+    "component_build_guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-font-cache-benchmark-20261104-0830/build.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 156811264,
+      "elapsed_seconds": 4.964236,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "component_results": [
+      {
+        "pair": 1,
+        "mode": "control",
+        "exit": 0,
+        "data": {
+          "instructions": 595417178,
+          "lookups": 128,
+          "font_bytes": 712390,
+          "checksum": 6016,
+          "cache_entries": 1
+        },
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            48.43408203125,
+            47.42626953125,
+            38.3828125
+          ],
+          "unix": 1793771237.4245918
+        },
+        "inputs_stable": true
+      },
+      {
+        "pair": 1,
+        "mode": "candidate",
+        "exit": 0,
+        "data": {
+          "instructions": 45779831,
+          "lookups": 128,
+          "font_bytes": 712390,
+          "checksum": 6016,
+          "cache_entries": 1
+        },
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            48.43408203125,
+            47.42626953125,
+            38.3828125
+          ],
+          "unix": 1793771238.016858
+        },
+        "inputs_stable": true
+      },
+      {
+        "pair": 2,
+        "mode": "candidate",
+        "exit": 0,
+        "data": {
+          "instructions": 45777138,
+          "lookups": 128,
+          "font_bytes": 712390,
+          "checksum": 6016,
+          "cache_entries": 1
+        },
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            48.43408203125,
+            47.42626953125,
+            38.3828125
+          ],
+          "unix": 1793771238.343868
+        },
+        "inputs_stable": true
+      },
+      {
+        "pair": 2,
+        "mode": "control",
+        "exit": 0,
+        "data": {
+          "instructions": 595412307,
+          "lookups": 128,
+          "font_bytes": 712390,
+          "checksum": 6016,
+          "cache_entries": 1
+        },
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            48.43408203125,
+            47.42626953125,
+            38.3828125
+          ],
+          "unix": 1793771238.540446
+        },
+        "inputs_stable": true
+      },
+      {
+        "pair": 3,
+        "mode": "control",
+        "exit": 0,
+        "data": {
+          "instructions": 594833985,
+          "lookups": 128,
+          "font_bytes": 712390,
+          "checksum": 6016,
+          "cache_entries": 1
+        },
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            48.43408203125,
+            47.42626953125,
+            38.3828125
+          ],
+          "unix": 1793771239.142588
+        },
+        "inputs_stable": true
+      },
+      {
+        "pair": 3,
+        "mode": "candidate",
+        "exit": 0,
+        "data": {
+          "instructions": 45850065,
+          "lookups": 128,
+          "font_bytes": 712390,
+          "checksum": 6016,
+          "cache_entries": 1
+        },
+        "host": {
+          "cpu_count": 18,
+          "load_average": [
+            48.43408203125,
+            47.42626953125,
+            38.3828125
+          ],
+          "unix": 1793771239.628465
+        },
+        "inputs_stable": true
+      }
+    ],
+    "component_summary": {
+      "control_median_instructions": 595412307,
+      "candidate_median_instructions": 45779831,
+      "reduction_fraction": 0.9231123870605517,
+      "all_pairs_improve": true,
+      "scope": "Component-only cache-hit diagnostic; no browser instruction credit or acceptance",
+      "inputs_stable": true
+    },
+    "component_cohort_guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-font-cache-benchmark-20261104-0830/run.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 57245696,
+      "elapsed_seconds": 2.605181584,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "optimization_credit_for_page": 0,
+    "production_validation": "Pending: no completed production bundle contains this feature at report time.",
+    "tradeoff": "The bounded list now performs size-filtered complete byte comparisons directly. A miss among many equal-length keys may compare more bytes than a hash-filtered miss; cache hit behavior is the measured improvement."
+  },
+  "additional_diagnostic": {
+    "folder": "Build/chatgpt-instructions-profile2-20261104-0830",
+    "result": {
+      "browser_exit": 0,
+      "sample_exit": 0,
+      "identity_stable": true,
+      "acceptance": false
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-instructions-profile2-20261104-0830/driver.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1864384512,
+      "elapsed_seconds": 9.883346167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native_error_count": 0,
+    "javascript_diagnostics": [],
+    "content_counts": {
+      "headings": 1,
+      "editors": 1,
+      "buttons": 48,
+      "links": 27,
+      "images": 2
+    },
+    "native_reference_pixels": "Zero differing pixels versus the preceding elevated-fd native capture. Both still differ at 60 pixels from the unchanged Brave reference.",
+    "semantic_limitation": "This run has 48 buttons versus 52 in the archived SSR source; hydration/readiness equivalence requires investigation despite unchanged viewport pixels. The new strict content gate rejects it.",
+    "acceptance": false
+  }
 }
