@@ -133,6 +133,16 @@ extern "C" int ladybird_v_skia_draw_contoured_box(CGContextRef destination,
     if (auto* canvas=shared_recording_canvas(destination)) {
         canvas->save();shared_recording_clip(destination,canvas);draw(canvas,matrix);canvas->restore();
         shared_recording_content(destination,matrix.mapRect(recording_bounds),page_y,scroll_y);
+        // A complete isolated-layer picture will rasterize this contour. The
+        // shared guard also protects clips, blocked content and publication
+        // bounds; failed publication requests an ordinary frame replay.
+        auto* disabled=std::getenv("VOX_DISABLE_CONTOURED_LEAF_DEFER");
+        bool deferred=!(disabled && *disabled)
+            && shared_recording_defers_leaf_raster(destination,matrix.mapRect(bounds).makeOutset(2,2));
+        auto* diagnostics=std::getenv("VOX_CONTOURED_LEAF_DIAGNOSTICS");
+        if (diagnostics && *diagnostics)
+            std::fprintf(stderr,"VOX_CONTOURED_LEAF mode=%d deferred=%d\n",mode,int(deferred));
+        if (deferred) return 1;
     }
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(bounds),canvas_width,canvas_height,2,region)) return 1;
