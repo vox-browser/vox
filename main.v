@@ -1012,6 +1012,19 @@ fn try_write_browser_cache_entry(path string, contents string) bool {
 	return true
 }
 
+// Readers reject an empty or unparsable header list and require an exact status
+// before using a resource body, so such a companion seen empty or half-written
+// is only a cache miss. Writing it in place skips the temporary file and rename
+// the body needs (about 0.6M instructions of filesystem work per file).
+fn try_write_browser_cache_metadata(path string, contents string) bool {
+	if contents.len == 0 || contents.len > max_disk_cache_entry_size {
+		return false
+	}
+	os.mkdir_all(os.dir(path)) or { return false }
+	os.write_file(path, contents) or { return false }
+	return true
+}
+
 $if test {
 	fn read_cached_page(resource_url string) ?LoadedPage {
 		if !resource_url.starts_with('http://') && !resource_url.starts_with('https://') {
@@ -1028,15 +1041,17 @@ $if test {
 			content_type: read_browser_cache_entry(path + '.content-type') or { 'text/html' }
 		}
 	}
-}
 
-fn cache_loaded_page(loaded LoadedPage) {
-	if !loaded.content_type.to_lower().contains('html') {
-		return
+	// Navigation no longer reads cached pages (a stale copy flashed before the
+	// network response). Tests seed such entries to verify they stay unused.
+	fn cache_loaded_page(loaded LoadedPage) {
+		if !loaded.content_type.to_lower().contains('html') {
+			return
+		}
+		path := browser_cache_entry_path(browser_cache_root(), 'pages', loaded.url)
+		write_browser_cache_entry(path, loaded.markup)
+		write_browser_cache_entry(path + '.content-type', loaded.content_type)
 	}
-	path := browser_cache_entry_path(browser_cache_root(), 'pages', loaded.url)
-	write_browser_cache_entry(path, loaded.markup)
-	write_browser_cache_entry(path + '.content-type', loaded.content_type)
 }
 
 fn read_cached_resource(resource_url string) ?string {
@@ -1063,11 +1078,12 @@ fn cache_resource_response_headers_with_status(resource_url string, final_url st
 	// Discard old status provenance before replacing any part of the response.
 	os.rm(path + '.status') or {}
 	body_written := try_write_browser_cache_entry(path, body)
+	// A torn URL would be filtered as a different request, so keep it atomic.
 	url_written := try_write_browser_cache_entry(path + '.url', final_url)
-	headers_written := try_write_browser_cache_entry(path + '.headers.json', json2.encode(headers, escape_unicode: true))
+	headers_written := try_write_browser_cache_metadata(path + '.headers.json', json2.encode(headers, escape_unicode: true))
 	if status_code >= 100 && status_code <= 599 {
 		if body_written && url_written && headers_written {
-			write_browser_cache_entry(path + '.status', status_code.str())
+			_ = try_write_browser_cache_metadata(path + '.status', status_code.str())
 		}
 	}
 }
@@ -1119,10 +1135,6 @@ fn fetch_page(address string, base string) !LoadedPage {
 		markup: markup
 		status: 'HTTP ${response.status_code} · ${response.body.len} bytes'
 		content_type: content_type
-	}
-	// A challenge or server error must not replace a cached successful page.
-	if response.status_code < 400 {
-		cache_loaded_page(loaded)
 	}
 	debug_timing_checkpoint('main_resource_cache', cache_start)
 	return loaded
