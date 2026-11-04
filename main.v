@@ -7459,7 +7459,9 @@ fn (mut app BrowserApp) draw() {
 			mut early_partial_headers := []int{}
 			mut shared_svg_end := 0
 			mut rect_prefetch_end := 0
+			mut leaf_timing := new_leaf_timing()
 			for command_index in 0 .. app.paint_commands.len {
+				leaf_timing.mark(command_index)
 				if command_index < shared_svg_end || command_index in early_partial_headers { continue }
 				$if macos {
 					if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len
@@ -7582,6 +7584,7 @@ fn (mut app BrowserApp) draw() {
 			}
 			if text_scroll_layer { end_chromium_text_scroll_layer() }
 			app.flush_rounded_rect_underlay(0, page_y, window.height)
+			leaf_timing.finish(app.paint_commands, &scroll_damage)
 			app.scroll_profile_mark('replay')
 			for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {
 				app.ctx.remove_cached_image_by_idx(app.portable_shadow_images[index].image_id)
