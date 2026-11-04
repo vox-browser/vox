@@ -28,15 +28,9 @@ fn paint_style_update_is_compositor_only(node &Node, previous &css.ComputedValue
 			changed = true
 			continue
 		}
-		// These are refreshed by the box's local paint update, which the
-		// compositor refresh does not run.
-		match property {
-			.background_color, .text_decoration_line, .cursor, .color, .outline_color, .outline_width,
-			.outline_style, .outline_offset {
-				return false
-			}
-			else {}
-		}
+		// Equal values in new style objects have no invalidation. Any real
+		// change, including the paint-only ones the box's local refresh
+		// handles, keeps that refresh, which the compositor path does not run.
 		old_value := if before == unsafe { nil } { ?&dom.StyleValue(none) } else { ?&dom.StyleValue(before) }
 		new_value := if after == unsafe { nil } { ?&dom.StyleValue(none) } else { ?&dom.StyleValue(after) }
 		if !css.compute_property_invalidation(property, old_value, new_value).is_none() { return false }
@@ -55,7 +49,9 @@ fn report_paint_refresh_style(node &Node, previous &css.ComputedValues, current 
 			after := current.raw_property_at_index(index)
 			if before == after { continue }
 			property := unsafe { css.PropertyID(int(css.first_longhand_property_id()) + index) }
-			changed << '${property}'
+			old_text := if before == unsafe { nil } { 'nil' } else { before.css_text }
+			new_text := if after == unsafe { nil } { 'nil' } else { after.css_text }
+			changed << '${property}[${old_text}->${new_text}]'
 			if changed.len >= 8 { break }
 		}
 	}

@@ -247,15 +247,19 @@ fn test_script_transform_and_opacity_updates_patch_the_retained_tree() {
 	_ = record_retained_display_list(mut document) or { panic('missing initial paint') }
 	mut paint_children := result.paint_tree.children.data
 	// Opacity crossing 1 changes the box's category and rebuilds the tree.
+	// Redundant declarations of unchanged values still patch the tree; a
+	// real color change beside the transform needs the box's own refresh.
 	for step in [['transform:scaleX(0.75)', 'retained', '0.75'],
 		['transform:scaleX(0.75);opacity:0.5', 'rebuilt', '0.75'],
-		['transform:scaleX(1);opacity:0.25', 'retained', '1']] {
+		['transform:scaleX(1);opacity:0.25', 'retained', '1'],
+		['transform:scaleX(0.875);opacity:0.25;float:none;outline-width:medium', 'retained', '0.875'],
+		['transform:scaleX(0.625);opacity:0.25;color:rgb(1 2 3)', 'rebuilt', '0.625']] {
 		bar.set_attribute_value('style', step[0])
 		document.update_layout(.html_event_loop_rendering_update)
 		local := record_retained_display_list(mut document) or { panic('missing updated paint') }
 		assert (result.paint_tree.children.data == paint_children) == (step[1] == 'retained')
 		box := animation_paint_box_for_handle(&result.paint_tree, placeholder.layout_handle) or { panic('missing retained bar') }
-		assert box.own_paint_transform[0] == step[2].f64()
+		assert math.abs(box.own_paint_transform[0] - step[2].f64()) < 0.000001, '${step[0]}: ${box.own_paint_transform}'
 		local_dump := local.dump()
 		refresh_document_paint_tree(document, mut result, 320, 200)
 		assert (record_retained_display_list(mut document) or { panic('missing full paint') }).dump() == local_dump
