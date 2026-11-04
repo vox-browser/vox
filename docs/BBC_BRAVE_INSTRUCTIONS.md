@@ -1,7 +1,23 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Cohort 82 retains all seven alternating
+`OPTIMIZED_SITES.md`.** Cohort 83 completes seven alternating
+control/Vox/Brave triples, with all 21 original pixel, content, ownership,
+native-exit and input-identity checks passing. Vox's median is
+**29,609,230,829**, control **29,758,720,791**, and Brave's lower-bound median
+**17,280,904,967** instructions. The strict gate fails
+`299764328070 > 153994347684`, conservative ratio **1.7519337515985396**.
+Skipping declaration-free conditional leaves gives a **149,489,962 (0.502%)**
+marginal median reduction, five paired improvements and two regressions.
+The conservative control ratio **1.0232730099238514** fails; no robust gain
+is credited. The path executes before encoded PNG only in the candidate;
+all 114 focused executions and 271 tool tests pass. Broad checks again enter
+490 cases in each memory mode, with 487 passing and the same three failures.
+Both Vox arms retain the explicitly declared historical rendering policies.
+See the [cohort 83 ledger](performance/bbc-cohort83-empty-conditional-20261104.json)
+and [authenticated raw receipts](performance/raw/bbc-cohort83-empty-conditional-20261104.tar.gz).
+
+Cohort 82 retains all seven alternating
 control/Vox/Brave triples. Vox's median is **29,135,895,526** instructions,
 control **29,718,522,931**, and Brave's lower-bound median **17,449,185,825**.
 The strict gate fails `309753061950 > 155568327714`, ratio
@@ -22,9 +38,7 @@ and [verified raw receipts](performance/raw/bbc-cohort82-conditional-deletion-20
 The conditional-deletion fix passes 78 focused executions, the historical SVG
 option passes 42, and 269 instruction-tool tests pass. Broad checks enter all
 490 cases in each of default and no-GC modes: 487 pass, with the same three
-recorded failures. No full-pass or cadence reset is claimed. A separate
-declaration-free leaf change passes 114 focused executions and 271 tool tests;
-production path/pixel checks and cohort 83 are pending.
+recorded failures. No full-pass or cadence reset is claimed.
 
 Cohort 81 completes seven alternating control/Vox/Brave
 triples on the 609-response frozen 2026-11-03 homepage. All 21 captures pass
@@ -68,7 +82,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **82 cohorts / 1,842 attempted browser trials**, excluding separately
+History is **83 cohorts / 1,863 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 The requested `v -profile` follow-up now covers the main thread from V's main
@@ -95,6 +109,16 @@ unsupported `performance.measure` call and incomplete image-paint audit fields
 remain limitations; this is a limited functional check, not full BBC scripting
 or rendering parity. See the [profile and rule-deletion ledger](performance/bbc-main-profile-rule-deletion-20261104.json)
 and [verified raw diagnostic evidence](performance/raw/bbc-main-profile-rule-deletion-20261104.tar.gz).
+
+A separate invasive hydration probe records removal of an 819-rule server
+stylesheet. Removing its 139 `data-styled` metadata rules leaves exactly the
+following live stylesheet's 680 rules, in the same order. The initial probe
+missed an overridden method; its correction encountered the unsupported
+`document.styleSheets` API. Both inconclusive observations remain retained.
+The successful version enumerates style elements and preserves exact pixels,
+complete content and all 72 external script hashes. This is diagnostic evidence
+only, with no instruction credit; the duplicate-removal fallback is still under
+investigation.
 
 ## Historical results on the earlier fixture
 
