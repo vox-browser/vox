@@ -7,6 +7,7 @@ import os
 fn C.native_begin_scroll_raster(u64, u64, f64, f64, f64, f64, int, &f64, &f64, int, int) int
 fn C.native_end_scroll_raster()
 fn C.native_discard_scroll_raster()
+fn C.native_set_scroll_damage_rects(rects &f32, count i32)
 
 struct ScrollRasterDamage {
 mut:
@@ -85,6 +86,12 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			region << rects
 			damage.skip_plan = plan_scroll_raster_skips(app.paint_commands, keys, region,
 				damage.unoptimized)
+			// Leaf rasters crop to the clip rectangles they intersect rather
+			// than to the bounding box Quartz reports for all of them.
+			canvas_rects := scroll_raster_canvas_rects(region, app.page_top())
+			C.native_set_scroll_damage_rects(unsafe { &f32(canvas_rects.data) }, i32(region.len))
+		} else {
+			C.native_set_scroll_damage_rects(unsafe { nil }, i32(0))
 		}
 		if scroll_raster_damage_diagnostics && revision != scroll_raster_dumped_revision {
 			scroll_raster_dumped_revision = revision
@@ -154,6 +161,18 @@ fn (damage &ScrollRasterDamage) skips_index(commands []layout.PaintCommand, inde
 
 // Raster eligibility defers only the trailing viewport scrollbars. Find that
 // suffix without walking the document commands again after painting it.
+// Viewport rectangles as x, y, width, height in top-left canvas points.
+fn scroll_raster_canvas_rects(region []layout.LayoutRect, page_top f64) []f32 {
+	mut values := []f32{cap: region.len * 4}
+	for rect in region {
+		values << f32(rect.x)
+		values << f32(page_top + rect.y)
+		values << f32(rect.width)
+		values << f32(rect.height)
+	}
+	return values
+}
+
 fn scroll_raster_scrollbar_start(commands []layout.PaintCommand) int {
 	return layout.scroll_raster_trailing_scrollbar_start(commands)
 }

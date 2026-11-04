@@ -219,6 +219,7 @@ extern int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
 	float opacity, int nearest_neighbor, int image_flags, float const *clip_radii);
 extern int ladybird_v_skia_begin_isolated_input(CGContextRef context, float width, float height);
 extern void ladybird_v_skia_set_isolated_input_key(CGContextRef context, uint64_t key);
+extern void ladybird_v_skia_set_scroll_damage_rects(float const *rects, int count);
 extern void *ladybird_v_skia_take_isolated_input(CGContextRef context);
 extern void ladybird_v_skia_discard_isolated_input(void *input);
 extern int ladybird_v_skia_begin_inset_decorations(CGContextRef, float, float, float, float,
@@ -2789,6 +2790,16 @@ void native_record_css_svg_filter_input(float a, float b, float c, float d, floa
 	layer->svg_filter_page_origin[1] = page_y;
 	layer->svg_filter_recording = ladybird_v_skia_begin_isolated_input(layer->context,
 		layer->canvas_width, layer->canvas_height);
+#endif
+}
+
+// The strip and damage rectangles a reused scroll frame clips to, as x, y,
+// width, height in top-left canvas points; zero rectangles clear them.
+void native_set_scroll_damage_rects(float const *rects, int count) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    ladybird_v_skia_set_scroll_damage_rects(rects, count);
+#else
+    (void)rects; (void)count;
 #endif
 }
 

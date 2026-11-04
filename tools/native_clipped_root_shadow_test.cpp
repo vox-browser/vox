@@ -22,7 +22,8 @@ static std::vector<uint8_t> backdrop()
     return pixels;
 }
 
-static std::vector<uint8_t> draw_card_shadow(float scroll, float strip_top, float strip_height)
+static std::vector<uint8_t> draw_card_shadow(float scroll, float strip_top, float strip_height,
+    std::vector<SkRect> const& extra = {})
 {
     int width = css_width * scale, height = css_height * scale;
     auto pixels = backdrop();
@@ -32,15 +33,26 @@ static std::vector<uint8_t> draw_card_shadow(float scroll, float strip_top, floa
             | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big));
     CGColorSpaceRelease(color); assert(context);
     CGContextScaleCTM(context, scale, scale);
-    if (strip_height > 0)
-        CGContextClipToRect(context, CGRectMake(0, css_height - strip_top - strip_height,
-            css_width, strip_height));
+    std::vector<CGRect> clips;
+    std::vector<float> published;
+    if (strip_height > 0) {
+        clips.push_back(CGRectMake(0, css_height - strip_top - strip_height, css_width, strip_height));
+        published.insert(published.end(), {0, strip_top, float(css_width), strip_height});
+    }
+    for (auto const& rect : extra) {
+        clips.push_back(CGRectMake(rect.left(), css_height - rect.bottom(), rect.width(), rect.height()));
+        published.insert(published.end(), {rect.left(), rect.top(), rect.width(), rect.height()});
+    }
+    if (!clips.empty()) CGContextClipToRects(context, clips.data(), clips.size());
+    // A reused frame publishes the same rectangles it clips to.
+    ladybird_v_skia_set_scroll_damage_rects(published.data(), int(published.size() / 4));
     s_root_raster_scroll_y = scroll;
     // vlang.io-like card: 0 20px 50px #0009 around a 16px rounded box.
     float x = 64.25f, y = 120.5f, w = 896, h = 520;
     assert(ladybird_v_skia_draw_outer_box_shadow(context, x, y + 20, w, h, 16, 16, 16, 16,
         16, 16, 16, 16, x, y, w, h, 16, 16, 16, 16, 16, 16, 16, 16, 1, 0, 0, 1, 0, 0, 0, 0,
         0, css_width, css_height, 50, 0, 0, 0, 153, 1));
+    ladybird_v_skia_set_scroll_damage_rects(nullptr, 0);
     CGContextFlush(context); CGContextRelease(context);
     return pixels;
 }
@@ -76,5 +88,27 @@ int main()
             ++cases;
         }
     }
+    // A damage rectangle far from the shadow widens Quartz's clip bounds to
+    // the whole viewport; the published rectangles keep the crop to the strip.
+    auto full = draw_card_shadow(0, 0, 0);
+    auto far = SkRect::MakeXYWH(1000, 4, 20, 20);
+    auto before = s_test_clipped_root_shadows;
+    auto split = draw_card_shadow(0, 700, 20, {far});
+    assert(s_test_clipped_root_shadows == before + 1);
+    for (int y = 0; y < css_height * scale; ++y) {
+        bool strip_row = y >= 1400 && y < 1440;
+        for (int x = 0; x < css_width * scale; ++x) {
+            bool in_far = x >= 2000 && y >= 8 && y < 48;
+            auto const& expected = strip_row || in_far ? full : untouched;
+            for (int c = 0; c < 4; ++c) {
+                size_t at = (size_t(y) * width + x) * 4 + c;
+                if (split[at] != expected[at]) {
+                    std::cerr << "Split clip differs at " << x << "," << y << '\n';
+                    return 1;
+                }
+            }
+        }
+    }
+    ++cases;
     std::cout << cases << " clipped root shadow strips match complete replays exactly\n";
 }

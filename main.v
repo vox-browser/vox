@@ -7597,6 +7597,7 @@ fn (mut app BrowserApp) draw() {
 				if app.ctx.native_rendering && app.document != unsafe { nil }
 					&& app.document.font_rendering_policy() == .chromium {
 					C.native_end_scroll_raster()
+					C.native_set_scroll_damage_rects(unsafe { nil }, i32(0))
 					if scroll_damage.separate_scrollbars {
 						app.draw_scroll_raster_scrollbars(page_y, window.height)
 					}

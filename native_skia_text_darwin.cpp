@@ -898,29 +898,6 @@ bool leaf_raster_region_intersects_destination_clip(CGContextRef destination,
         && region.top < canvas_height - CGRectGetMinY(clip) + fringe;
 }
 
-// The part of a leaf's raster region inside the destination clip's bounds,
-// with two logical pixels of guard. Callers keep their full GPU target or
-// document-anchored tiles, so cropping changes only how many pixels are
-// read back and composited. Unclipped and mostly visible leaves keep their
-// complete region.
-static bool visible_raster_region(CGContextRef destination, float canvas_height,
-    RasterRegion const& region, RasterRegion& visible)
-{
-    auto clip = CGContextGetClipBoundingBox(destination);
-    if (CGRectIsEmpty(clip) || CGRectIsInfinite(clip) || CGRectIsNull(clip)
-        || !std::isfinite(CGRectGetMinX(clip)) || !std::isfinite(CGRectGetMaxX(clip))
-        || !std::isfinite(CGRectGetMinY(clip)) || !std::isfinite(CGRectGetMaxY(clip))) return false;
-    // Clamp before integer conversion, including extreme finite clip bounds.
-    visible = RasterRegion {
-        int(std::floor(std::clamp(CGRectGetMinX(clip) - 2, double(region.left), double(region.right)))),
-        int(std::floor(std::clamp(double(canvas_height) - CGRectGetMaxY(clip) - 2, double(region.top), double(region.bottom)))),
-        int(std::ceil(std::clamp(CGRectGetMaxX(clip) + 2, double(region.left), double(region.right)))),
-        int(std::ceil(std::clamp(double(canvas_height) - CGRectGetMinY(clip) + 2, double(region.top), double(region.bottom))))
-    };
-    return visible.width() > 0 && visible.height() > 0
-        && size_t(visible.width()) * visible.height() * 2 <= size_t(region.width()) * region.height();
-}
-
 struct RasterCommandGroup {
     CGContextRef destination { nullptr };
     float canvas_height { 0.0f };
@@ -3230,6 +3207,63 @@ static double s_root_raster_scroll_y = 0;
 static double s_raster_origin_x = 0, s_raster_origin_y = 0;
 static double s_raster_layer_width = 0, s_raster_layer_height = 0;
 static bool s_raster_layer_is_root = true;
+
+// The part of a leaf's raster region inside the destination clip's bounds,
+// with two logical pixels of guard. Callers keep their full GPU target or
+// document-anchored tiles, so cropping changes only how many pixels are
+// read back and composited. Unclipped and mostly visible leaves keep their
+// complete region.
+// A reused scroll frame clips the root canvas to its exposed strip and to
+// separate damage rectangles. Quartz reports only their common bounding box,
+// which spans most of the viewport once a strip and an in-page change are
+// far apart. The frame publishes the rectangles themselves, top-left canvas
+// coordinates, so a leaf crops to the ones it actually intersects.
+static std::vector<SkRect> s_scroll_damage_rects;
+
+extern "C" void ladybird_v_skia_set_scroll_damage_rects(float const* rects, int count)
+{
+    s_scroll_damage_rects.clear();
+    for (int index = 0; rects && index < count; ++index) {
+        auto rect = SkRect::MakeXYWH(rects[index * 4], rects[index * 4 + 1],
+            rects[index * 4 + 2], rects[index * 4 + 3]);
+        if (rect.isFinite() && !rect.isEmpty()) s_scroll_damage_rects.push_back(rect);
+    }
+}
+
+static bool visible_raster_region(CGContextRef destination, float canvas_height,
+    RasterRegion const& region, RasterRegion& visible)
+{
+    auto clip = CGContextGetClipBoundingBox(destination);
+    if (CGRectIsEmpty(clip) || CGRectIsInfinite(clip) || CGRectIsNull(clip)
+        || !std::isfinite(CGRectGetMinX(clip)) || !std::isfinite(CGRectGetMaxX(clip))
+        || !std::isfinite(CGRectGetMinY(clip)) || !std::isfinite(CGRectGetMaxY(clip))) return false;
+    double left = CGRectGetMinX(clip), top = double(canvas_height) - CGRectGetMaxY(clip);
+    double right = CGRectGetMaxX(clip), bottom = double(canvas_height) - CGRectGetMinY(clip);
+    if (s_raster_layer_is_root && !s_scroll_damage_rects.empty()) {
+        // The published rectangles contain the root clip; nested clips can
+        // only shrink it further.
+        SkRect hit = SkRect::MakeEmpty();
+        auto leaf = SkRect::MakeLTRB(region.left - 2, region.top - 2, region.right + 2, region.bottom + 2);
+        for (auto const& rect : s_scroll_damage_rects)
+            if (SkRect part; part.intersect(rect, leaf)) hit.join(part);
+        if (hit.isEmpty()) return false;
+        left = std::max(left, double(hit.left()));
+        top = std::max(top, double(hit.top()));
+        right = std::min(right, double(hit.right()));
+        bottom = std::min(bottom, double(hit.bottom()));
+        if (!(right > left && bottom > top)) return false;
+    }
+    // Clamp before integer conversion, including extreme finite clip bounds.
+    visible = RasterRegion {
+        int(std::floor(std::clamp(left - 2, double(region.left), double(region.right)))),
+        int(std::floor(std::clamp(top - 2, double(region.top), double(region.bottom)))),
+        int(std::ceil(std::clamp(right + 2, double(region.left), double(region.right)))),
+        int(std::ceil(std::clamp(bottom + 2, double(region.top), double(region.bottom))))
+    };
+    return visible.width() > 0 && visible.height() > 0
+        && size_t(visible.width()) * visible.height() * 2 <= size_t(region.width()) * region.height();
+}
+
 static bool s_direct_image_layer = false;
 static bool s_has_explicit_paint_origin = false;
 static double s_paint_origin_x = 0, s_paint_origin_y = 0;

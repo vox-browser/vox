@@ -632,3 +632,9 @@ fn test_scroll_raster_keys_identify_nested_viewports_by_value() {
 	assert scroll_raster_frame_keys([layout.PaintCommand{ ...nested, nested_viewport_paintable: rebuilt }], 0, 1, 1024, 768)[0].hash == key
 	assert scroll_raster_frame_keys([layout.PaintCommand{ ...nested, nested_viewport_paintable: moved }], 0, 1, 1024, 768)[0].hash != key
 }
+
+fn test_scroll_raster_publishes_clip_rectangles_in_canvas_points() {
+	region := [layout.LayoutRect{0, 740, 1024, 28}, layout.LayoutRect{63, 239.5, 330, 251}]
+	assert scroll_raster_canvas_rects(region, 112) == [f32(0), 852, 1024, 28, 63, 351.5, 330, 251]
+	assert scroll_raster_canvas_rects([], 112).len == 0
+}
