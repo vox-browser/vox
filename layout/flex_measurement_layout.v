@@ -83,6 +83,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			eprintln('Vox flex images: reused decoded image measurement')
 		}
 		report_relative_measurement_reuse(cached.inputs)
+		report_svg_measurement_reuse(cached.inputs)
 		return cached.result
 	}
 	mut retained_inputs := platform.enter_retained_allocations()
@@ -92,7 +93,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	// The shared collector accepts only available, non-SVG HTML images, and the
 	// live input validator checks their source and natural size before replay.
 	// Keep the earlier text-only policy as an isolated measurement control.
-	if disable_flex_image_measurement_reuse && inputs.any(it.node.is_replaced_box()) { eligible = false }
+	if disable_flex_image_measurement_reuse && inputs.any(it.image != none) { eligible = false }
 	if !eligible { pool.flex_measurement_rejections_[node_key] = true }
 	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
 	if eligible {

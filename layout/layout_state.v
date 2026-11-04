@@ -1395,7 +1395,11 @@ fn (mut state LayoutState) restore_retained_values(node &NodeWithStyle,
 	values.containing_block_used_values_ = containing
 	values.borrow_retained_line_boxes(snapshot.line_boxes)
 	if rare := snapshot.rare_ {
-		values.rare_ = rare.clone()
+		mut restored := rare.clone()
+		if path := rare.computed_svg_path_ {
+			restored.computed_svg_path_ = own_measurement_svg_path(path)
+		}
+		values.rare_ = restored
 		values.rare_is_shared_ = false
 	}
 	return values

@@ -9,9 +9,20 @@ const disable_grid_measurement_reuse = os.getenv('VOX_DISABLE_GRID_MEASUREMENT_R
 const grid_measurement_diagnostics = os.getenv('VOX_GRID_MEASUREMENT_DIAGNOSTICS') != ''
 const disable_relative_measurement_reuse = os.getenv('VOX_DISABLE_RELATIVE_MEASUREMENT_REUSE') != ''
 const relative_measurement_diagnostics = os.getenv('VOX_RELATIVE_MEASUREMENT_DIAGNOSTICS') != ''
+const disable_svg_measurement_reuse = os.getenv('VOX_DISABLE_SVG_MEASUREMENT_REUSE') != ''
+const svg_measurement_diagnostics = os.getenv('VOX_SVG_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global grid_measurement_reuse_reported bool
 __global relative_measurement_reuse_reported bool
+__global svg_measurement_reuse_reported bool
+
+fn report_svg_measurement_reuse(inputs []RetainedInlineInput) {
+	if !svg_measurement_diagnostics || svg_measurement_reuse_reported { return }
+	if inputs.any(it.simple_svg != none) {
+		svg_measurement_reuse_reported = true
+		eprintln('Vox SVG measurement: reused owned closed shape geometry')
+	}
+}
 
 fn report_relative_measurement_reuse(inputs []RetainedInlineInput) {
 	if !relative_measurement_diagnostics || relative_measurement_reuse_reported { return }
@@ -114,6 +125,11 @@ fn grid_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 	// inputs, as the closed inline measurement cache does, without clearing them.
 	if !inline_measurement_inputs_are_current(inputs) { return false }
 	for input in inputs {
+		if saved := input.simple_svg {
+			owner := input.node.dom_node() or { return false }
+			if saved.elements.len == 0 || voidptr(owner) != voidptr(saved.elements[0].element.as_node())
+				|| !retained_simple_svg_input_is_current(saved) { return false }
+		}
 		if image := input.image {
 			if (retained_block_image_input(input.node) or { return false }) != image { return false }
 		}
@@ -129,12 +145,14 @@ fn collect_grid_measurement_inputs(root &Node, mut inputs []RetainedInlineInput,
 	mut rejected map[u64]bool) bool {
 	if !collect_retained_block_inputs(root, mut inputs, mut rejected) { return false }
 	for index, input in inputs {
-		// SVG, controls, subgrids, floats, fragmentation and shifted positions
+		// Controls, subgrids, floats, fragmentation and shifted positions
 		// keep their full algorithms. Every containing block must be inside the
 		// captured subtree; only the root may depend on the keyed outer block.
 		// The shared collector already proves relative insets are all auto and
 		// rejects any out-of-flow descendants, as for committed block retention.
-		if input.node.is_svg_box() || input.simple_svg != none
+		// It also admits only closed SVG shapes, with complete DOM attributes
+		// and child identities retained under the caller's document owner.
+		if (disable_svg_measurement_reuse && (input.node.is_svg_box() || input.simple_svg != none))
 			|| (disable_relative_measurement_reuse && input.node.is_positioned())
 			|| line_clamp_is_active(input.style) { return false }
 		if index > 0 {
@@ -196,6 +214,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 		}
 		if committed { report_committed_grid_measurement_reuse() }
 		report_relative_measurement_reuse(cached.inputs)
+		report_svg_measurement_reuse(cached.inputs)
 		return cached.result
 	}
 	// A committed miss must not populate, reject or evict disposable entries.

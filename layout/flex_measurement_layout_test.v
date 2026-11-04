@@ -44,6 +44,10 @@ fn flex_measurement_test_geometry(state &LayoutState, root &Node) []string {
 	if styled := root.as_node_with_style() {
 		if used := state.try_get(styled) {
 			result << '${used.content_width()} ${used.content_height()} ${used.has_definite_width()} ${used.has_definite_height()} ${used.offset} ${used.relative_inset_basis_width()} ${used.relative_inset_basis_height()}'
+			if used.has_computed_svg_transforms() {
+				result << '${used.svg_transform()} ${used.svg_viewport_transform()} ${used.svg_rendering_disabled()}'
+			}
+			if path := used.computed_svg_path() { result << path.serialize() }
 			for line in used.line_boxes {
 				result << '${line.width()} ${line.height()} ${line.baseline()}'
 				for fragment in line.fragments_ {
@@ -76,7 +80,29 @@ fn flex_measurement_test_compare(mut source LayoutState, root &Node, width int, 
 	mut reused := false
 	if source.measurement_chunk_pool_ != unsafe { nil } {
 		for entry in source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} } {
+			mut replayed_entry := false
+			for candidate in entry.values {
+				if candidate.values.line_boxes.len == 0 { continue }
+				if current := probe.try_get(candidate.node) {
+					if current.line_boxes.data == candidate.values.line_boxes.data { replayed_entry = true }
+				}
+			}
 			for snapshot in entry.values {
+				if saved := snapshot.values.computed_svg_path() {
+					if !replayed_entry { continue }
+					if current := probe.try_get(snapshot.node) {
+						if path := current.computed_svg_path() {
+							before := saved.serialize()
+							for instruction in path.instructions {
+								if instruction.data.len == 0 { continue }
+								mut borrowed := unsafe { instruction.data }
+								borrowed[0] += 123
+								break
+							}
+							assert saved.serialize() == before
+						}
+					}
+				}
 				if snapshot.values.line_boxes.len == 0 { continue }
 				if current := probe.try_get(snapshot.node) {
 					if current.line_boxes.data == snapshot.values.line_boxes.data {
@@ -176,7 +202,7 @@ fn test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry() {
 fn test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached() {
 	for contents in ['<div style="position:absolute">Positioned.</div>',
 		'<div style="position:relative;left:2px">Shifted relative.</div>', '<div><div style="float:left">Float in ordinary flow.</div></div>',
-		'<svg width="20" height="20"><rect width="10" height="10"/></svg>',
+		'<svg width="20" height="20"><text>Unsupported text</text></svg>',
 		'<p style="max-lines:1;continue:collapse">Clamped content.</p>', '<input value="Control">',
 		'<img width="20" height="20">', '<p>Plain content.</p>'] {
 		mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex">${contents}<p>Other content.</p></section></main>')
@@ -314,4 +340,46 @@ fn test_flex_measurement_rejects_relative_geometry_after_insets_change() {
 	item.apply_style(css.css_style_computer_for(document).compute_style(dom.AbstractElement.new(element, none)))
 	for _ in 0 .. 2 { assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') }
 	source.release_measurement_chunk_pool()
+}
+
+fn test_flex_measurement_owns_closed_svg_shapes_across_scratch_release() {
+	mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex;position:relative;gap:7px"><svg id="icon" width="24" height="24" viewBox="0 0 24 24"><g transform="translate(1 2)"><path id="path" d="M0 0H18V12H0Z" fill="red"/><rect x="1" y="2" width="50%" height="6" fill="green"/><circle cx="6" cy="6" r="3" fill="blue"/></g></svg><p>Wrapping alpha beta gamma 😀.</p></section></main>')
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer { owner.finish(); document.finalize(); document.release_native_storage() }
+	_ = layout_document_typed_in_viewport(document, 500, 400)
+	root := flex_measurement_test_node(document, 'flex')
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	source.measurement_chunk_pool_.scratch_enabled_ = true
+	assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
+	for _ in 0 .. 4 { assert flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') == (!disable_flex_measurement_reuse && !disable_svg_measurement_reuse && !disable_retained_simple_svg && !disable_relative_measurement_reuse && !disable_relative_flow_layout_reuse) }
+	source.release_measurement_chunk_pool()
+}
+
+fn test_flex_measurement_revalidates_svg_attributes_before_replay() {
+	for change in ['d', 'viewBox', 'transform', 'namespaced'] {
+		mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex;position:relative;gap:7px"><svg id="icon" width="24" height="24" viewBox="0 0 24 24"><g transform="translate(1 2)"><path id="path" d="M0 0H18V12H0Z" fill="red"/><rect x="1" y="2" width="50%" height="6" fill="green"/><circle cx="6" cy="6" r="3" fill="blue"/></g></svg><p>Wrapping alpha beta gamma 😀.</p></section></main>')
+		defer { document.finalize() }
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := flex_measurement_test_node(document, 'flex')
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
+		assert flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') == (!disable_flex_measurement_reuse && !disable_svg_measurement_reuse && !disable_retained_simple_svg && !disable_relative_measurement_reuse && !disable_relative_flow_layout_reuse)
+		mut target := document.get_element_by_id(if change == 'viewBox' { 'icon' } else { 'path' }) or { panic('target') }
+		match change {
+			'd' { target.set_attribute_value('d', 'M0 0H4V20H0Z') }
+			'viewBox' { target.set_attribute_value('viewBox', '0 0 48 48') }
+			'transform' { target.set_attribute_value('transform', 'translate(4 5)') }
+			else { target.set_attribute_value_ns('test', 'value', 'x', 'urn:svg-measurement-test') }
+		}
+		for cached in source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} } {
+			assert !grid_measurement_inputs_are_current(cached.inputs)
+		}
+		document.update_style()
+		assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
+		assert flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') == (!disable_flex_measurement_reuse && !disable_svg_measurement_reuse && !disable_retained_simple_svg && !disable_relative_measurement_reuse && !disable_relative_flow_layout_reuse)
+		source.release_measurement_chunk_pool()
+	}
 }
