@@ -34,9 +34,24 @@ fn temporary_file_font_pixel_metrics(family string, point_size f32, source_path 
 	if platform_font_face_attempted[cache_key] {
 		return none
 	}
+	if cached := platform_fallback_face_units[cache_key] {
+		return font.scaled_face_pixel_metrics(cached.units, f32(cached.zero_advance) * point_size / f32(cached.units.units_per_em))
+	}
 	mut bytes := read_outline_face_bytes(path, face_index)?
 	mut face := decode_outline_face(mut bytes)
 	glyph := font_cmap_glyph(face.buf, u32(`0`))
 	advance, _ := face.get_horizontal_metrics(glyph)
-	return font.decoded_face_pixel_metrics(face, f32(advance) * point_size / f32(face.units_per_em))
+	units := decoded_face_metric_units(face)
+	// Keep only the face's design-unit scalars: each new point size would
+	// otherwise reread and decode the whole file again.
+	persistent := enter_persistent()
+	platform_fallback_face_units[cache_key.clone()] = FallbackFaceUnits{ units: units, zero_advance: advance }
+	leave_persistent(persistent)
+	return font.scaled_face_pixel_metrics(units, f32(advance) * point_size / f32(units.units_per_em))
+}
+
+// Design-unit metrics of a fallback face that is not retained for shaping.
+struct FallbackFaceUnits {
+	units        FaceMetricUnits
+	zero_advance int
 }

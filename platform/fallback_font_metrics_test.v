@@ -97,3 +97,25 @@ fn test_unreadable_temporary_metrics_do_not_publish_a_failed_face_attempt() {
 	assert '${path}|0' !in platform_font_faces
 	assert '${path}|0' !in platform_font_face_attempted
 }
+
+fn test_temporary_metrics_reuse_design_units_for_new_sizes_without_rereading_the_face() {
+	reference := fallback_metrics_test_source()
+	defer { os.rm(reference) or {} }
+	path := fallback_metrics_test_source()
+	sizes := [f32(0), 9, 10.5, 24, 41.125]
+	mut expected := []FontPixelMetrics{}
+	for size in sizes {
+		font := Font{ family: 'UnitMetricsFixture', point_size: size, source_path: reference }
+		expected << font.pixel_metrics()
+	}
+	first := temporary_file_font_pixel_metrics('UnitMetricsFixture', sizes[0], path) or { panic('missing temporary face') }
+	assert first == expected[0]
+	// Later sizes are scaled from the cached design units: the file is gone.
+	os.rm(path) or { panic(err) }
+	for index, size in sizes {
+		actual := temporary_file_font_pixel_metrics('UnitMetricsFixture', size, path) or { panic('missing cached units') }
+		assert actual == expected[index]
+	}
+	assert '${path}|0' !in platform_font_faces
+	assert '${path}|0' !in platform_font_face_attempted
+}

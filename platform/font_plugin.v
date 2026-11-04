@@ -15,6 +15,7 @@ __global (
 	platform_font_face_attempted = map[string]bool{}
 	platform_font_plugin         &FontPlugin
 	platform_glyph_units_cache   = map[string]GlyphUnitsEntry{}
+	platform_fallback_face_units = map[string]FallbackFaceUnits{}
 )
 
 // GlyphUnitsEntry memoizes a glyph's point-size-independent metrics: the raw
@@ -285,7 +286,21 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 // Only scalar metrics escape this calculation. Callers that need no retained
 // font can supply a temporary decoded face and its unrounded zero advance.
 fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32) FontPixelMetrics {
-	units_per_em := f32(face.units_per_em)
+	return font.scaled_face_pixel_metrics(decoded_face_metric_units(face), zero_advance)
+}
+
+// The size-independent design-unit metrics of a decoded face, as selected by
+// decoded_face_pixel_metrics(). They are small enough to keep without the face.
+struct FaceMetricUnits {
+	units_per_em u16
+	ascent       i16
+	descent      i16
+	line_gap     i16
+	x_height     i16
+	cap_height   i16
+}
+
+fn decoded_face_metric_units(face &ttf.TTF_File) FaceMetricUnits {
 	mut ascent_units := face.ascent
 	mut descent_units := i16(-face.descent)
 	mut line_gap_units := face.line_gap
@@ -337,6 +352,18 @@ fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32)
 		_, _, _, cap_max_y := mutable_face.read_glyph_dim(cap_glyph)
 		if cap_max_y > 0 { cap_height_units = i16(cap_max_y) }
 	}
+	return FaceMetricUnits{
+		units_per_em: face.units_per_em
+		ascent:       ascent_units
+		descent:      descent_units
+		line_gap:     line_gap_units
+		x_height:     x_height_units
+		cap_height:   cap_height_units
+	}
+}
+
+fn (font &Font) scaled_face_pixel_metrics(units FaceMetricUnits, zero_advance f32) FontPixelMetrics {
+	units_per_em := f32(units.units_per_em)
 	// SkFont preserves the typeface's one-pixel metrics when constructed with a
 	// zero text size, even though glyph advances are zero. Gfx::Font copies
 	// those metrics verbatim. Chromium HTML inline layout separately suppresses
@@ -354,8 +381,8 @@ fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32)
 		&& os.getenv('LADYBIRD_LAYOUT_TEST_FONT') == '' && font.source_path == ''
 	return FontPixelMetrics{
 		size:                  font.point_size
-		x_height:              f32(x_height_units) * scale
-		cap_height:            f32(cap_height_units) * scale
+		x_height:              f32(units.x_height) * scale
+		cap_height:            f32(units.cap_height) * scale
 		advance_of_ascii_zero: f32(math.round(f64(zero_advance)))
 		// Ladybird's CoreText generic-serif cascade exposes typographic metrics
 		// with a 3:1 ascent/descent split while retaining the concrete Times New
@@ -364,14 +391,14 @@ fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32)
 		ascent:                if generic_serif {
 			metric_size * 0.75
 		} else {
-			f32(ascent_units) * scale
+			f32(units.ascent) * scale
 		}
 		descent:               if generic_serif {
 			metric_size * 0.25
 		} else {
-			f32(descent_units) * scale
+			f32(units.descent) * scale
 		}
-		line_gap:              f32(line_gap_units) * scale
+		line_gap:              f32(units.line_gap) * scale
 	}
 }
 
