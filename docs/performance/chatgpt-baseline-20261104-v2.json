@@ -1,0 +1,1943 @@
+{
+  "version": 1,
+  "status": "Seven complete replacement-fixture pairs; requested 5% Brave advantage remains unmet",
+  "fixture_commit": "91f556c29",
+  "capture_fixes": [
+    "f610ca708",
+    "f03960d8f"
+  ],
+  "production": {
+    "identity": {
+      "path": "Build/production-build/receipts/20261104-141838-3903fa5e/result.json",
+      "sha256": "482559d732659e218846394190a88f5098f1c4e13a3aba871b3c61ddc85e45b4",
+      "bytes": 1298
+    },
+    "receipt": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "95bb7c3db15e05f49facaac092c1e83c012adddaed3c24c3ad74d4a452b21240",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-141838-3903fa5e/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "e8eab204ad621cf02fa9f31c3b74a678dc914bd37e1dd9cff59ef671ad64f804",
+        "dirty": true,
+        "head": "f610ca7081b9f8f1bb90e5e243c307189eba62d1",
+        "repository_sha256": "3c61878085505714d4055e6bd14f7fb81ecb2b01a2927f9ddec7021b2011ccd6"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "e8eab204ad621cf02fa9f31c3b74a678dc914bd37e1dd9cff59ef671ad64f804",
+        "dirty": true,
+        "head": "443ec470f8f2d8f4a69be35e0f7fb7833bbebadc",
+        "repository_sha256": "51e5968914d486993efc941b1424e3f562ed22cefcf1fa2fbad6cb5e78dfaf90"
+      },
+      "request": {
+        "head": "f610ca7081b9f8f1bb90e5e243c307189eba62d1",
+        "id": "91daf4f2a1794d12bb3456d9b22870ea"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "e8eab204ad621cf02fa9f31c3b74a678dc914bd37e1dd9cff59ef671ad64f804",
+        "dirty": true,
+        "head": "f03960d8f4ac74b1e88aa14e8d2a6a8935188164",
+        "repository_sha256": "308c46fbf412d2ac98ada2782dc3b8e131bb54b5847ff8deabcae55dc5972bca"
+      }
+    }
+  },
+  "workload": {
+    "url": "https://chatgpt.com/",
+    "archive": {
+      "path": "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/manifest.json",
+      "sha256": "7b13757f970e2f615267938bd52f902b852da239962fa265660db813622923f7",
+      "bytes": 608737
+    },
+    "document_sha256": "446498cdb6bca7b8d06c58bb9245168b5790315ca9ff69f64cf1318491092808",
+    "reference": {
+      "path": "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+      "sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+      "bytes": 165383
+    },
+    "reference_audit": {
+      "path": "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/audit.json",
+      "sha256": "613b9899ab3a07d6cb77b5ec6dd0448efde45e9ae9a27da1b8289a2170d1dbc2",
+      "bytes": 22780
+    },
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "viewport_css": [
+      1024,
+      768
+    ],
+    "scale": 2,
+    "focus": "unfocused",
+    "settle_seconds": 5,
+    "network": "Original-origin disk-only replay of 311 frozen first responses; no forwarding",
+    "author_scripts": "Original bytes; JavaScriptCore author bootstrap required and executed; no optional reporting suppression",
+    "caches": "Empty private profiles/caches; OS filesystem/shader caches retained",
+    "validation": "Exact heading, full 27-link/editor identity, visible button identities, no reported script/native errors and unchanged PNG"
+  },
+  "capture": {
+    "attempts": 2,
+    "first": "Generic 15-second socket timeout before any captured response; original failed attempt retained",
+    "second": "Configured watchdog; 311 response URLs saved, then raw capture remained unsealed because three response URLs varied",
+    "recovery": "Disk-only first-response snapshot, all alternate bodies retained; no extra resource fetch or body substitutions",
+    "limitation": "Frozen preparation/API responses are not a request-dependent API emulator; sign-in, submission and live Vox behavior are outside this result",
+    "source_progress": {
+      "path": "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/capture-watchdog/archive/capture-progress.json",
+      "sha256": "8c09bd8ca212c4bdcf250ec372e69403cf66fbf10c9d77a10f1945505edbbd1b",
+      "bytes": 607614
+    },
+    "variations": [
+      {
+        "url": "https://chatgpt.com/",
+        "error": "Response varied within the single capture"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/sentinel/chat-requirements/prepare",
+        "error": "Response varied within the single capture"
+      },
+      {
+        "url": "https://chatgpt.com/unauth-mweb/conversation/prepare?lightweight_authenticated=0",
+        "error": "Response varied within the single capture"
+      }
+    ],
+    "reference_validation": "Initial Brave seed plus two independent exact replay captures",
+    "historical_reference": "Replacement reference PNG is byte-identical to the historical 6e81a153... PNG. The source archive differs, so counts cannot be credited across workloads"
+  },
+  "summary": {
+    "author_scripts": "original bytes retained",
+    "brave_median_lower_bound_instructions": 20843396122,
+    "diagnostic_only": false,
+    "instruction_scope": "launch",
+    "instrumented_diagnostic": false,
+    "minimum_pairs": 7,
+    "optimization_credit": false,
+    "pairs": 7,
+    "passed": false,
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "script_policy": null,
+    "target_vox_fraction": 0.95,
+    "vox_median_instructions": 33643398375,
+    "worst_vox_over_best_brave": 2.010921080659035
+  },
+  "raw_counts": {
+    "vox_upper": [
+      33711641623,
+      33573170141,
+      33542558009,
+      33643398375,
+      33697533545,
+      33641835463,
+      33852620702
+    ],
+    "brave_lower": [
+      20724560442,
+      20155558816,
+      20843396122,
+      20854647314,
+      21984433162,
+      21706617885,
+      16834385510
+    ]
+  },
+  "integer_gate": {
+    "left": 3385262070200,
+    "right": 1599266623450,
+    "expression": "100 * max(Vox upper) <= 95 * min(Brave lower)",
+    "passed": false
+  },
+  "pairs": [
+    {
+      "brave": {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:49233",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-brave/profile",
+          "--ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 20724560442,
+          "upper": 20729412550
+        },
+        "instruction_interval": {
+          "lower": 14185634009,
+          "upper": 14215100469
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-brave/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-brave/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-brave/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+        "resource_coalition": 15900,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:49233 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-brave/profile --ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+          "parent": 1,
+          "pid": 73118,
+          "uid": 501
+        },
+        "root_start_ticks": 1513180210127,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            17.7373046875,
+            16.22607421875,
+            18.478515625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            17.0888671875,
+            16.13623046875,
+            18.419921875
+          ]
+        }
+      },
+      "vox": {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5.0",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:49233",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 33711641623,
+          "upper": 33711641623
+        },
+        "instruction_interval": {
+          "lower": 33530048604,
+          "upper": 33530048604
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-vox/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-vox/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+        "resource_coalition": 15898,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-1-vox/document.png https://chatgpt.com/",
+          "parent": 1,
+          "pid": 70656,
+          "uid": 501
+        },
+        "root_start_ticks": 1512965113572,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            17.095703125,
+            16.04833984375,
+            18.443359375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            17.7373046875,
+            16.22607421875,
+            18.478515625
+          ]
+        }
+      }
+    },
+    {
+      "brave": {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:49233",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-brave/profile",
+          "--ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 20155558816,
+          "upper": 20175734542
+        },
+        "instruction_interval": {
+          "lower": 13711704872,
+          "upper": 13754497002
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-brave/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-brave/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-brave/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+        "resource_coalition": 15902,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:49233 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-brave/profile --ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+          "parent": 1,
+          "pid": 75485,
+          "uid": 501
+        },
+        "root_start_ticks": 1513415650320,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            17.0888671875,
+            16.13623046875,
+            18.419921875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.82177734375,
+            16.11376953125,
+            18.384765625
+          ]
+        }
+      },
+      "vox": {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5.0",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:49233",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 33573170141,
+          "upper": 33573170141
+        },
+        "instruction_interval": {
+          "lower": 33377591620,
+          "upper": 33377591620
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-vox/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-vox/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+        "resource_coalition": 15904,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-2-vox/document.png https://chatgpt.com/",
+          "parent": 1,
+          "pid": 78035,
+          "uid": 501
+        },
+        "root_start_ticks": 1513646941313,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            16.82177734375,
+            16.11376953125,
+            18.384765625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.435546875,
+            16.04541015625,
+            18.34716796875
+          ]
+        }
+      }
+    },
+    {
+      "brave": {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:49233",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-brave/profile",
+          "--ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 20843396122,
+          "upper": 20879256229
+        },
+        "instruction_interval": {
+          "lower": 14354948004,
+          "upper": 14414837319
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-brave/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-brave/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-brave/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+        "resource_coalition": 15908,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:49233 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-brave/profile --ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+          "parent": 1,
+          "pid": 82486,
+          "uid": 501
+        },
+        "root_start_ticks": 1514058407303,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            16.2080078125,
+            16.01025390625,
+            18.3076171875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.4892578125,
+            16.07568359375,
+            18.3037109375
+          ]
+        }
+      },
+      "vox": {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5.0",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:49233",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 33542558009,
+          "upper": 33542558009
+        },
+        "instruction_interval": {
+          "lower": 33361601105,
+          "upper": 33361601105
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-vox/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-vox/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+        "resource_coalition": 15906,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-3-vox/document.png https://chatgpt.com/",
+          "parent": 1,
+          "pid": 80226,
+          "uid": 501
+        },
+        "root_start_ticks": 1513850955566,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            16.435546875,
+            16.04541015625,
+            18.34716796875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.2080078125,
+            16.01025390625,
+            18.3076171875
+          ]
+        }
+      }
+    },
+    {
+      "brave": {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:49233",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-brave/profile",
+          "--ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 20854647314,
+          "upper": 20860739120
+        },
+        "instruction_interval": {
+          "lower": 14346028641,
+          "upper": 14375994592
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-brave/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-brave/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-brave/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+        "resource_coalition": 15910,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:49233 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-brave/profile --ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+          "parent": 1,
+          "pid": 85189,
+          "uid": 501
+        },
+        "root_start_ticks": 1514290477198,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            16.4892578125,
+            16.07568359375,
+            18.3037109375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.1123046875,
+            16.00732421875,
+            18.2529296875
+          ]
+        }
+      },
+      "vox": {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5.0",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:49233",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 33643398375,
+          "upper": 33643398375
+        },
+        "instruction_interval": {
+          "lower": 33462253506,
+          "upper": 33462253506
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-vox/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-vox/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+        "resource_coalition": 15912,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-4-vox/document.png https://chatgpt.com/",
+          "parent": 1,
+          "pid": 87518,
+          "uid": 501
+        },
+        "root_start_ticks": 1514523976427,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            16.1123046875,
+            16.00732421875,
+            18.2529296875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.9560546875,
+            16.1884765625,
+            18.2900390625
+          ]
+        }
+      }
+    },
+    {
+      "brave": {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:49233",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-brave/profile",
+          "--ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 21984433162,
+          "upper": 22000864677
+        },
+        "instruction_interval": {
+          "lower": 15394740049,
+          "upper": 15412922016
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-brave/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-brave/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-brave/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+        "resource_coalition": 15916,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:49233 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-brave/profile --ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+          "parent": 1,
+          "pid": 91890,
+          "uid": 501
+        },
+        "root_start_ticks": 1514954955291,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            17.04248046875,
+            16.2314453125,
+            18.2802734375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            17.279296875,
+            16.2939453125,
+            18.2900390625
+          ]
+        }
+      },
+      "vox": {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5.0",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:49233",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 33697533545,
+          "upper": 33697533545
+        },
+        "instruction_interval": {
+          "lower": 33525492801,
+          "upper": 33525492801
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-vox/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-vox/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+        "resource_coalition": 15914,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-5-vox/document.png https://chatgpt.com/",
+          "parent": 1,
+          "pid": 89822,
+          "uid": 501
+        },
+        "root_start_ticks": 1514738967478,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            16.9560546875,
+            16.1884765625,
+            18.2900390625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.95947265625,
+            16.20166015625,
+            18.2822265625
+          ]
+        }
+      }
+    },
+    {
+      "brave": {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:49233",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-brave/profile",
+          "--ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 21706617885,
+          "upper": 21717903999
+        },
+        "instruction_interval": {
+          "lower": 15216685427,
+          "upper": 15270501777
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-brave/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-brave/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-brave/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+        "resource_coalition": 15918,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:49233 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-brave/profile --ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+          "parent": 1,
+          "pid": 93392,
+          "uid": 501
+        },
+        "root_start_ticks": 1515187581245,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            17.0166015625,
+            16.255859375,
+            18.2646484375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.85498046875,
+            16.23486328125,
+            18.2451171875
+          ]
+        }
+      },
+      "vox": {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5.0",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:49233",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 33641835463,
+          "upper": 33641835463
+        },
+        "instruction_interval": {
+          "lower": 33459981471,
+          "upper": 33459981471
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-vox/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-vox/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+        "resource_coalition": 15920,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-6-vox/document.png https://chatgpt.com/",
+          "parent": 1,
+          "pid": 93661,
+          "uid": 501
+        },
+        "root_start_ticks": 1515425875382,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            16.6259765625,
+            16.19775390625,
+            18.22021484375
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.49560546875,
+            16.177734375,
+            18.201171875
+          ]
+        }
+      }
+    },
+    {
+      "brave": {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:49233",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-brave/profile",
+          "--ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 16834385510,
+          "upper": 16841876429
+        },
+        "instruction_interval": {
+          "lower": 10402841973,
+          "upper": 10437313740
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-brave/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-brave/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-brave/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+        "resource_coalition": 15924,
+        "root": {
+          "command": "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser --no-startup-window --no-first-run --no-default-browser-check --enable-automation --disable-background-networking --disable-sync --proxy-server=socks5://127.0.0.1:49233 --hide-scrollbars --force-color-profile=srgb --lang=en-US --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1 --remote-debugging-port=0 --user-data-dir=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-brave/profile --ignore-certificate-errors-spki-list=1ttSWfsEA2rOHjvHnsGAMwdGwpZGGP1/OOBvt8z12k4= --force-device-scale-factor=2 --disable-backgrounding-occluded-windows",
+          "parent": 1,
+          "pid": 94320,
+          "uid": 501
+        },
+        "root_start_ticks": 1515844771820,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            16.43798828125,
+            16.171875,
+            18.1748046875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            17.82470703125,
+            16.46533203125,
+            18.25439453125
+          ]
+        }
+      },
+      "vox": {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=5.0",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:49233",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "launch_instruction_interval": {
+          "lower": 33852620702,
+          "upper": 33852620702
+        },
+        "instruction_interval": {
+          "lower": 33672648652,
+          "upper": 33672648652
+        },
+        "content_audit": {
+          "counts": {
+            "bootstrap": 1,
+            "buttons": 52,
+            "editors": 1,
+            "headings": 1,
+            "images": 2,
+            "links": 27,
+            "performance_policy": 0
+          },
+          "title": "ChatGPT: Chat, Work, Create & Code with AI"
+        },
+        "content_exact": true,
+        "pixel_comparison": {
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-vox/document.diff.png",
+          "different_pixels": 0,
+          "exact": true,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-vox/document.diff.png\n"
+        },
+        "pixels_exact": true,
+        "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+        "resource_coalition": 15922,
+        "root": {
+          "command": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox --screenshot-viewport-height 768 --js-engine=javascriptcore --enable-javascript --window-width 1024 --window-height 852 --screenshot /Users/alex/code/vox2/Build/chatgpt-recapture-20261104-1415/seven-pairs/pair-7-vox/document.png https://chatgpt.com/",
+          "parent": 1,
+          "pid": 93977,
+          "uid": 501
+        },
+        "root_start_ticks": 1515636796837,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            16.49560546875,
+            16.177734375,
+            18.201171875
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            16.43798828125,
+            16.171875,
+            18.1748046875
+          ]
+        }
+      }
+    }
+  ],
+  "url_masks": {
+    "raw_vox_counts": {
+      "control": [
+        {
+          "lower": 33560848389,
+          "upper": 33560848389
+        },
+        {
+          "lower": 33825741734,
+          "upper": 33825741734
+        }
+      ],
+      "candidate": [
+        {
+          "lower": 33565923051,
+          "upper": 33565923051
+        },
+        {
+          "lower": 33676095422,
+          "upper": 33676095422
+        }
+      ]
+    },
+    "control_median": 33693295061.5,
+    "candidate_median": 33621009236.5,
+    "conservative_page_instruction_reduction": -115247033,
+    "diagnostic_paths_verified": true,
+    "identity_stable": true,
+    "page_instruction_credit": 0,
+    "interpretation": "Two alternating trials per implementation, identical build and fixture; ranges overlap despite a 72,285,825 median point reduction. No conservative whole-page credit"
+  },
+  "guards": {
+    "capture": {
+      "command": [
+        "python3",
+        "tools/capture_chatgpt_archive.py",
+        "--output",
+        "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/capture",
+        "--proxy",
+        "socks5h://127.0.0.1:1337",
+        "--timeout",
+        "180",
+        "--settle-seconds",
+        "5"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1227800576,
+      "elapsed_seconds": 19.846439042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "capture-watchdog": {
+      "command": [
+        "python3",
+        "tools/capture_chatgpt_archive.py",
+        "--output",
+        "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/capture-watchdog",
+        "--proxy",
+        "socks5h://127.0.0.1:1337",
+        "--timeout",
+        "180",
+        "--settle-seconds",
+        "5"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1762115584,
+      "elapsed_seconds": 37.418774375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "tests": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "chatgpt*test.py",
+        "-v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 30195712,
+      "elapsed_seconds": 0.5444592500000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "watchdog-tests": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "chatgpt*test.py",
+        "-v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 28131328,
+      "elapsed_seconds": 0.35682491699999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "transport": {
+      "command": [
+        "python3",
+        "Build/chatgpt-recapture-20261104-1415/transport_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 873988096,
+      "elapsed_seconds": 1.539078333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "reference": {
+      "command": [
+        "python3",
+        "Build/chatgpt-recapture-20261104-1415/reference.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "59286": "Wed Nov  4 14:24:55 2026    ",
+        "59289": "Wed Nov  4 14:24:55 2026    ",
+        "59297": "Wed Nov  4 14:24:55 2026    ",
+        "59298": "Wed Nov  4 14:24:55 2026    ",
+        "59299": "Wed Nov  4 14:24:55 2026    ",
+        "59487": "Wed Nov  4 14:25:04 2026    ",
+        "59489": "Wed Nov  4 14:25:04 2026    ",
+        "59495": "Wed Nov  4 14:25:04 2026    ",
+        "59496": "Wed Nov  4 14:25:04 2026    ",
+        "59498": "Wed Nov  4 14:25:04 2026    ",
+        "59513": "Wed Nov  4 14:25:04 2026    ",
+        "59517": "Wed Nov  4 14:25:05 2026    ",
+        "59675": "Wed Nov  4 14:25:13 2026    ",
+        "59679": "Wed Nov  4 14:25:13 2026    ",
+        "59683": "Wed Nov  4 14:25:13 2026    ",
+        "59684": "Wed Nov  4 14:25:13 2026    ",
+        "59685": "Wed Nov  4 14:25:13 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1123598336,
+      "elapsed_seconds": 30.296524875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "diagnostic": {
+      "command": [
+        "python3",
+        "Build/chatgpt-recapture-20261104-1415/matched.py",
+        "diagnostic"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "60601": "Wed Nov  4 14:26:46 2026    ",
+        "60604": "Wed Nov  4 14:26:46 2026    ",
+        "60994": "Wed Nov  4 14:26:56 2026    ",
+        "60996": "Wed Nov  4 14:26:56 2026    ",
+        "61000": "Wed Nov  4 14:26:56 2026    ",
+        "61001": "Wed Nov  4 14:26:56 2026    ",
+        "61004": "Wed Nov  4 14:26:56 2026    ",
+        "61239": "Wed Nov  4 14:27:07 2026    ",
+        "61243": "Wed Nov  4 14:27:07 2026    ",
+        "61247": "Wed Nov  4 14:27:07 2026    ",
+        "61249": "Wed Nov  4 14:27:07 2026    ",
+        "61250": "Wed Nov  4 14:27:07 2026    ",
+        "61266": "Wed Nov  4 14:27:08 2026    ",
+        "61269": "Wed Nov  4 14:27:08 2026    ",
+        "61466": "Wed Nov  4 14:27:18 2026    ",
+        "61468": "Wed Nov  4 14:27:18 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1720107008,
+      "elapsed_seconds": 46.985847875000005,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "matched": {
+      "command": [
+        "python3",
+        "Build/chatgpt-recapture-20261104-1415/matched.py",
+        "matched"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "64536": "Wed Nov  4 14:28:24 2026    ",
+        "64539": "Wed Nov  4 14:28:24 2026    ",
+        "64894": "Wed Nov  4 14:28:34 2026    ",
+        "64897": "Wed Nov  4 14:28:34 2026    ",
+        "64901": "Wed Nov  4 14:28:34 2026    ",
+        "64902": "Wed Nov  4 14:28:34 2026    ",
+        "64903": "Wed Nov  4 14:28:34 2026    ",
+        "65222": "Wed Nov  4 14:28:45 2026    ",
+        "65227": "Wed Nov  4 14:28:45 2026    ",
+        "65234": "Wed Nov  4 14:28:45 2026    ",
+        "65235": "Wed Nov  4 14:28:45 2026    ",
+        "65236": "Wed Nov  4 14:28:45 2026    ",
+        "65704": "Wed Nov  4 14:28:56 2026    ",
+        "65706": "Wed Nov  4 14:28:56 2026    ",
+        "66455": "Wed Nov  4 14:29:06 2026    ",
+        "66458": "Wed Nov  4 14:29:06 2026    ",
+        "66949": "Wed Nov  4 14:29:16 2026    ",
+        "66953": "Wed Nov  4 14:29:16 2026    ",
+        "66959": "Wed Nov  4 14:29:16 2026    ",
+        "66960": "Wed Nov  4 14:29:16 2026    ",
+        "66963": "Wed Nov  4 14:29:16 2026    ",
+        "67437": "Wed Nov  4 14:29:27 2026    ",
+        "67444": "Wed Nov  4 14:29:27 2026    ",
+        "67449": "Wed Nov  4 14:29:28 2026    ",
+        "67450": "Wed Nov  4 14:29:28 2026    ",
+        "67452": "Wed Nov  4 14:29:28 2026    ",
+        "67715": "Wed Nov  4 14:29:39 2026    ",
+        "67717": "Wed Nov  4 14:29:39 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1723711488,
+      "elapsed_seconds": 91.339095416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "seven-pairs": {
+      "command": [
+        "python3",
+        "tools/chatgpt_browser_instructions.py",
+        "--archive",
+        "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive",
+        "--output",
+        "Build/chatgpt-recapture-20261104-1415/seven-pairs",
+        "--expected",
+        "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+        "--reference-audit",
+        "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/audit.json",
+        "--title",
+        "ChatGPT: Chat, Work, Create & Code with AI",
+        "--diff-tool",
+        "Build/chatgpt-url-ascii-20261104-1330/diff-verification/pixel_diff",
+        "--memory-guard-registry",
+        "Build/chatgpt-recapture-20261104-1415/seven-pairs-pids.json",
+        "--repeat",
+        "7",
+        "--timeout",
+        "120",
+        "--settle-seconds",
+        "5",
+        "--unfocused"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "70656": "Wed Nov  4 14:30:17 2026    ",
+        "70661": "Wed Nov  4 14:30:17 2026    ",
+        "73118": "Wed Nov  4 14:30:26 2026    ",
+        "73141": "Wed Nov  4 14:30:26 2026    ",
+        "73174": "Wed Nov  4 14:30:26 2026    ",
+        "73175": "Wed Nov  4 14:30:26 2026    ",
+        "73178": "Wed Nov  4 14:30:26 2026    ",
+        "73318": "Wed Nov  4 14:30:27 2026    ",
+        "73337": "Wed Nov  4 14:30:27 2026    ",
+        "75485": "Wed Nov  4 14:30:36 2026    ",
+        "75492": "Wed Nov  4 14:30:36 2026    ",
+        "75544": "Wed Nov  4 14:30:36 2026    ",
+        "75545": "Wed Nov  4 14:30:36 2026    ",
+        "75547": "Wed Nov  4 14:30:36 2026    ",
+        "78035": "Wed Nov  4 14:30:45 2026    ",
+        "78042": "Wed Nov  4 14:30:45 2026    ",
+        "80226": "Wed Nov  4 14:30:54 2026    ",
+        "80232": "Wed Nov  4 14:30:54 2026    ",
+        "82486": "Wed Nov  4 14:31:02 2026    ",
+        "82492": "Wed Nov  4 14:31:03 2026    ",
+        "82556": "Wed Nov  4 14:31:03 2026    ",
+        "82557": "Wed Nov  4 14:31:03 2026    ",
+        "82559": "Wed Nov  4 14:31:03 2026    ",
+        "85189": "Wed Nov  4 14:31:12 2026    ",
+        "85203": "Wed Nov  4 14:31:12 2026    ",
+        "85250": "Wed Nov  4 14:31:12 2026    ",
+        "85251": "Wed Nov  4 14:31:12 2026    ",
+        "85261": "Wed Nov  4 14:31:12 2026    ",
+        "87518": "Wed Nov  4 14:31:22 2026    ",
+        "87523": "Wed Nov  4 14:31:22 2026    ",
+        "89822": "Wed Nov  4 14:31:31 2026    ",
+        "89826": "Wed Nov  4 14:31:31 2026    ",
+        "91890": "Wed Nov  4 14:31:40 2026    ",
+        "91923": "Wed Nov  4 14:31:40 2026    ",
+        "91952": "Wed Nov  4 14:31:40 2026    ",
+        "91953": "Wed Nov  4 14:31:40 2026    ",
+        "91963": "Wed Nov  4 14:31:40 2026    ",
+        "93392": "Wed Nov  4 14:31:50 2026    ",
+        "93396": "Wed Nov  4 14:31:50 2026    ",
+        "93401": "Wed Nov  4 14:31:50 2026    ",
+        "93402": "Wed Nov  4 14:31:50 2026    ",
+        "93403": "Wed Nov  4 14:31:50 2026    ",
+        "93661": "Wed Nov  4 14:31:59 2026    ",
+        "93664": "Wed Nov  4 14:31:59 2026    ",
+        "93977": "Wed Nov  4 14:32:08 2026    ",
+        "93979": "Wed Nov  4 14:32:08 2026    ",
+        "94320": "Wed Nov  4 14:32:17 2026    ",
+        "94325": "Wed Nov  4 14:32:17 2026    ",
+        "94337": "Wed Nov  4 14:32:17 2026    ",
+        "94338": "Wed Nov  4 14:32:17 2026    ",
+        "94339": "Wed Nov  4 14:32:17 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1767833600,
+      "elapsed_seconds": 135.060875792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "checks": {
+    "tooling_tests": 34,
+    "loopback_transport": "HTML, module JavaScript, binary body and redirect passed in a real private Brave process",
+    "native_comparison_observations": 12,
+    "seven_pair_observations": 14,
+    "all_browser_kernel_exits_zero": true,
+    "compared_captures_exact": 28,
+    "reference_seed_additional": 1,
+    "inputs_stable": true
+  },
+  "broad_cadence": {
+    "whole_page_instruction_credit": 0,
+    "advance": 0,
+    "reason": "Component gain and overlapping page trial ranges do not advance the 5,000,000-instruction broad-check cadence"
+  },
+  "acceptance": false,
+  "limitations": [
+    "Frozen anonymous homepage; full scripting/DOM parity and chat submission unproven",
+    "CPU startup/capture workflow includes native PNG encoding and Brave CDP delivery; not isolated rendering time or FPS",
+    "Exclusive resource coalitions include exited helpers; GPU execution and unrelated outside services excluded",
+    "Every sample retained, including Brave pair 7 lower count; no retries/exclusions or changed references/tolerances",
+    "Earlier missing raw Build evidence remains historical; this replacement does not recreate the deleted page bytes"
+  ],
+  "evidence": {
+    "archive": {
+      "path": "docs/performance/chatgpt-baseline-20261104-v2-evidence.zip",
+      "sha256": "5ccc36e9006847b84f7ec613fba9b1abfa828be4500b159aca5e7404343b4881",
+      "bytes": 2888574
+    },
+    "entries": 300,
+    "unique_blobs": 189,
+    "format": "ZIP index.json maps canonical relative artifact paths to byte hashes; blobs/<sha256> contains original bytes"
+  }
+}

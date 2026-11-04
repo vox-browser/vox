@@ -1,33 +1,35 @@
 # ChatGPT instruction comparison
 
-The requested 5% advantage over Brave remains **unmet**. The latest recorded complete
-cohort uses production executable `401745782b25ace562042922ce4511c6138e41f1b15ee0aa0c146c72e3fe207b`
+The requested 5% advantage over Brave remains **unmet**. The latest complete
+cohort uses production executable `95bb7c3db15e05f49facaac092c1e83c012adddaed3c24c3ad74d4a452b21240`
 and seven alternating fresh Vox/Brave pairs. All fourteen observations exited
 successfully and matched the retained document PNG exactly, with complete content,
 readiness, bootstrap and ownership audits.
 
-Those checks were verified when collected. Subsequent disk cleanup removed the
-saved page, pixel references and earlier raw `Build/` evidence directories.
-Durable counts below survive, but the missing files cannot now be independently
-rehashed or replayed. The new production bundle passes startup; its full-page
-comparison requires restored inputs or an explicitly authorized fresh capture.
+It uses the authorized replacement fixture, now committed under
+[`Tests/Browser/Brave/archives/chatgpt-home-20261104-v2`](../Tests/Browser/Brave/archives/chatgpt-home-20261104-v2).
+Its reference was established once and validated in two additional fresh Brave
+replays before measurements. Raw evidence is also packaged in version control
+so another `Build/` cleanup will not remove it.
 
 | Launch through document PNG encoding | Retired CPU instructions |
 | --- | ---: |
-| Vox median | 32,363,448,715 |
-| Brave median lower bound | 16,375,554,889 |
-| Highest Vox upper bound | 33,451,751,487 |
-| Lowest Brave lower bound | 16,289,804,431 |
+| Vox median | 33,643,398,375 |
+| Brave median lower bound | 20,843,396,122 |
+| Highest Vox upper bound | 33,852,620,702 |
+| Lowest Brave lower bound | 16,834,385,510 |
 
-The conservative observed ratio is 2.0535. The exact gate
-fails: `100 * 33451751487 > 95 * 16289804431`. Raw counts, all previous
-attempts and their failures, commands, identities, counter boundaries, host
-load, guards and hashes are retained in the
-[durable receipt](performance/chatgpt-instructions-20261104.json).
+The conservative observed ratio is 2.0109. The exact gate fails:
+`100 * 33852620702 > 95 * 16834385510`. Every sample is retained, including the
+lower-count seventh Brave observation. All browser/kernel exits are zero; driver
+and guard child exits are one solely because the requested threshold fails.
+Exact counts, commands, identities, ownership audits and boundaries are in the
+[replacement receipt](performance/chatgpt-baseline-20261104-v2.json), with
+[complete controlled-job evidence](performance/chatgpt-baseline-20261104-v2-evidence.zip).
 No qualifying entry is added to `OPTIMIZED_SITES.md`.
 
-The workload replays the original anonymous homepage captured through SOCKS
-once. No further live download was made. Original author scripts remain
+The workload replays the new anonymous homepage captured through SOCKS; all
+measurement runs use disk replay without forwarding. Original author scripts remain
 enabled under JavaScriptCore; the homepage bootstrap executes. Both engines
 use a 1024×768 CSS viewport, scale 2, unfocused documents, five-second settle
 period and fresh private profiles/caches. OS filesystem and shader caches are
@@ -35,6 +37,26 @@ retained. Exclusive resource-coalition counters include startup and exited
 helpers; GPU execution and outside services are excluded. Brave's endpoint
 also includes CDP PNG delivery. These are startup/capture workflow counts,
 with no live-site, signed-in conversation, isolated-render-time or FPS claim.
+
+The earlier `401745782b25...` cohort recorded Vox/Brave medians of
+32,363,448,715 / 16,375,554,889 and a conservative ratio of 2.0535. Its raw
+`Build/` inputs were deleted by disk cleanup; historical counts survive in the
+[earlier receipt](performance/chatgpt-instructions-20261104.json). The replacement
+does not reconstruct those deleted source bytes. Its reference PNG happens to
+have the same `6e81a153...` byte hash, but differing archives prevent crediting
+instruction changes across these workloads.
+
+The first replacement attempt timed out at the CDP socket's generic fifteen-second
+limit before recording any response. The corrected watchdog completed the page
+and saved 311 response URLs. The raw capture remained unsealed because the
+homepage and two preparation endpoints varied during that navigation. Disk-only
+sealing preserved the first response for each URL and all alternate bodies;
+no further fetch or body substitution was used. This frozen-response fixture
+does not emulate request-dependent APIs or establish chat-submission behavior.
+
+The capture fixes pass 34 tooling tests and a real loopback Brave check of HTML,
+module JavaScript, binary bodies and redirects. Browser profiles remain in
+`Build/`; the source fixture, reference and capture provenance are committed.
 
 The probed native ink scan showed a 144,206,062-instruction conservative saving
 in its matched component-library page trials. Its broad checkpoint passed ten
@@ -205,3 +227,22 @@ the audit's companion PNG, executable checks and input preservation. The
 records the startup, recovery, preflight failure and exact missing-input hashes.
 The original single-download restriction requires authorization before replacing
 the lost fixture with a fresh SOCKS capture and a separately labelled baseline.
+
+That authorization was subsequently supplied by the user's continuation. The
+replacement above now completes production page validation. A separate two-pair
+diagnostic confirms both URL mask paths execute on this exact production build.
+All four diagnostic captures and eight uninstrumented matched captures pass the
+same pixel/content checks with stable inputs.
+
+| Two matched Vox trials per implementation | Launch-to-PNG instructions |
+| --- | ---: |
+| Scanning control median | 33,693,295,061.5 |
+| Mask candidate median | 33,621,009,236.5 |
+| Conservative reduction | −115,247,033 |
+
+The median point reduction is 72,285,825 instructions, but the trial ranges
+overlap. The URL masks receive zero conservative page credit, and the cumulative
+5,000,000-instruction broad-check cadence does not advance. Their isolated 7.18%
+component gain is not a whole-page gain. The replacement receipt retains every
+control, candidate and diagnostic observation separately from the seven-pair
+Brave comparison. No reference or tolerance was changed to obtain credit.
