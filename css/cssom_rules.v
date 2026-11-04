@@ -496,7 +496,7 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 		match rule.type_ {
 			.container_rule {
 				if mut child_rules := rule.rules {
-					if child_rules.evaluate_media_queries(document) {
+					if child_rules.should_evaluate_nested_media_queries() && child_rules.evaluate_media_queries(document) {
 						any_media_queries_changed_match_state = true
 					}
 				}
@@ -510,14 +510,14 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 			}
 			.layer_block {
 				if mut child_rules := rule.rules {
-					if child_rules.evaluate_media_queries(document) {
+					if child_rules.should_evaluate_nested_media_queries() && child_rules.evaluate_media_queries(document) {
 						any_media_queries_changed_match_state = true
 					}
 				}
 			}
 			.function_rule {
 				if mut child_rules := rule.rules {
-					if child_rules.evaluate_media_queries(document) {
+					if child_rules.should_evaluate_nested_media_queries() && child_rules.evaluate_media_queries(document) {
 						any_media_queries_changed_match_state = true
 					}
 				}
@@ -531,7 +531,7 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 				}
 				if now_matches {
 					if mut child_rules := rule.rules {
-						if child_rules.evaluate_media_queries(document) {
+						if child_rules.should_evaluate_nested_media_queries() && child_rules.evaluate_media_queries(document) {
 							any_media_queries_changed_match_state = true
 						}
 					}
@@ -540,7 +540,7 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 			.supports {
 				if rule.condition_matches() {
 					if mut child_rules := rule.rules {
-						if child_rules.evaluate_media_queries(document) {
+						if child_rules.should_evaluate_nested_media_queries() && child_rules.evaluate_media_queries(document) {
 							any_media_queries_changed_match_state = true
 						}
 					}
@@ -548,14 +548,14 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 			}
 			.scope {
 				if mut child_rules := rule.rules {
-					if child_rules.evaluate_media_queries(document) {
+					if child_rules.should_evaluate_nested_media_queries() && child_rules.evaluate_media_queries(document) {
 						any_media_queries_changed_match_state = true
 					}
 				}
 			}
 			.style {
 				if mut child_rules := rule.rules {
-					if child_rules.evaluate_media_queries(document) {
+					if child_rules.should_evaluate_nested_media_queries() && child_rules.evaluate_media_queries(document) {
 						any_media_queries_changed_match_state = true
 					}
 				}
