@@ -1156,3 +1156,49 @@ the run is retained and excluded. The crash is outside rendering and is not
 investigated here. Both valid pairs keep the roughly 2.5–3× separation; with
 replay now at a 14 ms median, the 50 Hz input delivery and host contention
 bound the remaining rate. The 60 FPS goal remains open.
+
+## Decoration crops, cached blur input and script transforms (2026-11-04, later)
+
+A scroll-window sample of bundle `f492d6c7…` attributed the remaining replay
+to per-leaf Graphite waits (28%), CPU clears and copies (16%) and
+CoreGraphics glyph rendering (8%). The largest owners were addressed:
+
+- `70a969669` crops decoration groups (card shadows, rounded fills and
+  borders batched through the document-anchored root grid) to the rows a
+  strip or damage repaint publishes. 24 strips equal complete replays.
+- `de93a3faf` skips rasterizing the showcase glow's gradient into the
+  full-canvas filter layer once its blurred output is cached for the same
+  content identity (~4.7 ms in 226 of 362 scrolled frames). The input
+  is still recorded; a failed native blur replays it into the layer first.
+- `f5fa57246` blends that cached blur only inside the published damage
+  rectangles, in disjoint bands, instead of the clip's bounding box.
+- `f41bebdf4` patches script `transform`/`opacity`-only style updates into
+  the retained paint tree, as CSS animation samples already were. vlang.io
+  sets the tab progress bar's `scaleX` every animation frame, and each such
+  update rebuilt the whole document's renderer snapshot (~11% of the main
+  thread). Category changes and other properties keep the full rebuild;
+  every tested update paints exactly like a full refresh.
+
+Diagnostic run `rN-diag` (bundle `cbcd8202…`, first three changes): scrolled
+replay median 11.2 ms (p90 21.0), from 14.1 ms in `rM-diag`; the filter
+layer's total time fell from 671 to 84 ms.
+
+Two unprofiled alternating cohorts used the protocol of `rK`. The host was
+shared with a QEMU VM (~670% CPU) and compiles, so absolute rates are low
+and drift with load; only paired differences are meaningful.
+
+| Cohort | Bundle | Control disables | Control FPS | Candidate FPS | Load |
+| --- | --- | --- | --- | --- | --- |
+| `rO` | `cbcd8202…` | first three changes | 18.6 / 16.5 / 18.7 | 17.8 / 21.5 / 25.1 | 19–38 |
+| `rP` | `40174578…` | all four changes | 23.5 / 24.6 / 23.3 | 28.6 / 30.4 / 36.7 | 19–36 |
+
+`rP` candidate medians were 31.6 / 28.4 / 24.3 ms (p95 63.8 / 62.2 /
+48.7 ms, max 264–294 ms), and every run and guard exited 0. The earlier
+`rL` reached 33 FPS on bundle `1f6b4cd9…` under a different load mix;
+across bundles built from other sessions' intervening work, no comparison
+is drawn. The 60 FPS goal remains open.
+
+A scroll-window sample of `40174578…` still shows the complete renderer
+snapshot rebuild from the rendering update (~12% of the main thread), so
+something other than the progress bar's transform also requests it;
+`58dfb55e5` adds `VOX_PAINT_REFRESH_DIAGNOSTICS` to report the trigger.
