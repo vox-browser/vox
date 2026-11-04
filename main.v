@@ -7564,7 +7564,9 @@ fn (mut app BrowserApp) draw() {
 						app.chromium_raster_plan.command_layers, command_index, 0, page_y)
 					if shared_svg_end > command_index { continue }
 				}
-				if command.kind == 'draw_svg_path' {
+				// SVG groups draw several commands on the CPU canvas in one batch,
+				// out of the GPU canvas's sight; its leaves draw one by one.
+				if !gpu_leaf && command.kind == 'draw_svg_path' {
 					shared_svg_end = app.draw_chromium_svg_gradient_group(command_index, page_y)
 					if shared_svg_end == command_index {
 						shared_svg_end = app.draw_chromium_svg_solid_group(app.paint_commands,
