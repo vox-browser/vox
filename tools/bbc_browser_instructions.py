@@ -360,6 +360,8 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_DISABLE_COMMITTED_INLINE_MEASUREMENT_REUSE'] = '1'
             if getattr(args, 'control_disable_committed_grid_measurement_reuse', False):
                 args.vox_environment['VOX_DISABLE_COMMITTED_GRID_MEASUREMENT_REUSE'] = '1'
+            if getattr(args, 'control_disable_svg_measurement_reuse', False):
+                args.vox_environment['VOX_DISABLE_SVG_MEASUREMENT_REUSE'] = '1'
             if getattr(args, 'control_disable_relative_measurement_reuse', False):
                 args.vox_environment['VOX_DISABLE_RELATIVE_MEASUREMENT_REUSE'] = '1'
             if getattr(args, 'control_disable_flex_image_measurement_reuse', False):
@@ -515,6 +517,8 @@ def parse_args(argv=None):
                         help='Rerun measured text when committing geometry in the matched Vox control')
     parser.add_argument('--control-disable-committed-grid-measurement-reuse', action='store_true',
                         help='Rerun measured grids when committing geometry in the matched Vox control')
+    parser.add_argument('--control-disable-svg-measurement-reuse', action='store_true',
+                        help='Keep closed SVG shapes out of temporary grid/flex reuse in the matched Vox control')
     parser.add_argument('--control-disable-relative-measurement-reuse', action='store_true',
                         help='Keep unshifted relative boxes out of temporary grid/flex reuse in the matched Vox control')
     parser.add_argument('--control-disable-flex-image-measurement-reuse', action='store_true',
@@ -581,7 +585,7 @@ def parse_args(argv=None):
             parser.error('JSC baseline warmup must be a positive signed 32-bit integer')
     if args.control_jsc_baseline_warmup is not None and not args.control_vox_app:
         parser.error('The JSC baseline control needs --control-vox-app')
-    if any((args.control_disable_relative_measurement_reuse, args.control_disable_flex_image_measurement_reuse, args.control_disable_resolved_edge_reuse, args.control_disable_flex_measurement_reuse, args.control_disable_committed_grid_measurement_reuse, args.control_disable_committed_inline_measurement_reuse, args.control_disable_compact_query_envelope, args.control_disable_grid_measurement_reuse, args.control_retain_empty_deleted_conditional_targets, args.control_retain_broad_conditional_rule_deletion, args.control_retain_descendant_navigable_scan, args.control_retain_uncached_item_paint, args.control_retain_inline_measurement_indefinite_height, args.control_retain_initial_resource_viewport_after_style, args.control_retain_parent_longhand_hashing, args.control_retain_invalidation_value_copies, args.control_retain_cascade_value_copies, args.control_retain_absolute_length_context, args.control_retain_image_attribute_source_parse, args.control_retain_flow_style_identities, args.control_retain_ancestor_rehash, args.control_disable_retained_formatting_trees, args.control_retain_property_edge_resolution, args.control_disable_retained_simple_svg, args.control_retain_definite_intrinsic_measurement, args.control_retain_selector_substring_scan, args.control_retain_redundant_sheet_removal, args.control_retain_full_font_input_scan, args.control_disable_early_text_font_requests, args.control_retain_selector_rule_font_sync, args.control_retain_empty_procedural_styles, args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
+    if any((args.control_disable_svg_measurement_reuse, args.control_disable_relative_measurement_reuse, args.control_disable_flex_image_measurement_reuse, args.control_disable_resolved_edge_reuse, args.control_disable_flex_measurement_reuse, args.control_disable_committed_grid_measurement_reuse, args.control_disable_committed_inline_measurement_reuse, args.control_disable_compact_query_envelope, args.control_disable_grid_measurement_reuse, args.control_retain_empty_deleted_conditional_targets, args.control_retain_broad_conditional_rule_deletion, args.control_retain_descendant_navigable_scan, args.control_retain_uncached_item_paint, args.control_retain_inline_measurement_indefinite_height, args.control_retain_initial_resource_viewport_after_style, args.control_retain_parent_longhand_hashing, args.control_retain_invalidation_value_copies, args.control_retain_cascade_value_copies, args.control_retain_absolute_length_context, args.control_retain_image_attribute_source_parse, args.control_retain_flow_style_identities, args.control_retain_ancestor_rehash, args.control_disable_retained_formatting_trees, args.control_retain_property_edge_resolution, args.control_disable_retained_simple_svg, args.control_retain_definite_intrinsic_measurement, args.control_retain_selector_substring_scan, args.control_retain_redundant_sheet_removal, args.control_retain_full_font_input_scan, args.control_disable_early_text_font_requests, args.control_retain_selector_rule_font_sync, args.control_retain_empty_procedural_styles, args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
             args.control_disable_grid_width_only, args.control_disable_stationary_raster,
             args.control_disable_client_geometry_index,
             args.control_disable_tracked_persistent_shortcut, args.control_disable_attribute_case_buckets,
@@ -843,6 +847,7 @@ def main():
         control_disable_compact_query_envelope=args.control_disable_compact_query_envelope,
         control_disable_committed_inline_measurement_reuse=args.control_disable_committed_inline_measurement_reuse,
         control_disable_committed_grid_measurement_reuse=args.control_disable_committed_grid_measurement_reuse,
+        control_disable_svg_measurement_reuse=args.control_disable_svg_measurement_reuse,
         control_disable_relative_measurement_reuse=args.control_disable_relative_measurement_reuse,
         control_disable_flex_image_measurement_reuse=args.control_disable_flex_image_measurement_reuse,
         control_disable_flex_measurement_reuse=args.control_disable_flex_measurement_reuse,
