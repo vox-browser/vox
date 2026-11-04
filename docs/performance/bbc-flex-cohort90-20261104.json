@@ -1,0 +1,830 @@
+{
+  "status": "Target failed. Seven complete Vox/Brave pairs pass required capture audits. Flex cache marginal performance remains unmeasured; no optimization credit from this cross-build target-only cohort. BBC remains absent from OPTIMIZED_SITES.md.",
+  "engine_commit": "0eb0c00f9",
+  "control_tool_commit": "304751f0e",
+  "compiler_preservation_commit": "c42c1eede",
+  "scope": {
+    "cohort": 90,
+    "comparison": "Target-only seven alternating Vox/Brave target pairs. No marginal flex reduction is attributed by this target-only cohort. Separate traced runtime discovery and pinned-set validation precede acceptance. Every attempt retained; no profiler/probe/dyld tracing in acceptance. No credit from protocol corrections or historical cross-build differences.",
+    "scope": "Exclusive coalition creation through encoded document PNG; startup and native window/target setup included. Vox endpoint before filewrite; Brave includes CDP delivery. Content audits and teardown follow endpoint. GPU/outside services excluded.",
+    "workload": "Unchanged609response replay, originalauthor scripts,1024x768CSS,DPR/capture2,two-second settle after identity/readiness/visibledecode,fresh profiles/caches,OSfilesystem/shadercaches retained. Fixed original references; historical logical font/paint and CSS SVG fallback common to both Voxarms.",
+    "host_gate": "Record variable host load without a launch-load cap; free disk>=2GiB before launch. Native exits, ownership, content, exact pixels and all pinned inputs required. Strict goal10maxVoxUpper<=9minBraveLower.",
+    "engine_commit": "0eb0c00f9",
+    "control_tool_commit": "304751f0e",
+    "runtime_tool_commits": [
+      "cd836ed37",
+      "2b7c4428f"
+    ],
+    "production": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-193803-9b4dfb12/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "1b648b5bde36b2509286609f1ae283bb8d9d3ca75d6d6071b9617d22a75971d4",
+        "dirty": true,
+        "head": "6aa870d924e1f43377fdb2a1767ce31b108fa471",
+        "repository_sha256": "af0ea6fd5edf4d8ca21664865ac5911d4d2e561c118988716cfe39fc51fa9317"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "82fe4843a3428a1939145be88a3ff654727d13371b2a9b438726d30c9797775d",
+        "dirty": true,
+        "head": "ec5c6ba773d87a87af226fe88b18b43a6bfefbff",
+        "repository_sha256": "59aeea291afd0cd645bcd9bd82a79ea9460f344c6b4192cbd255552200b1acaa"
+      },
+      "request": {
+        "head": "6aa870d924e1f43377fdb2a1767ce31b108fa471",
+        "id": "d62d8161e85342b2b60dd677af93ca73"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "1b648b5bde36b2509286609f1ae283bb8d9d3ca75d6d6071b9617d22a75971d4",
+        "dirty": true,
+        "head": "6aa870d924e1f43377fdb2a1767ce31b108fa471",
+        "repository_sha256": "bb188a5b2134ca5f2ebf3c810f94a4960e65836203321e637248aa5825060c46"
+      }
+    }
+  },
+  "protocol_correction": {
+    "chosen_before_trials": true,
+    "scope": "Fresh exclusive coalition through encoded document PNG; original bytes/scripts/viewports/scales/settle/references unchanged.",
+    "comparison": "Seven alternating Vox/Brave pairs; marginal flex attribution requires a separate matched control.",
+    "host_policy": "Record per-trial host load and retain all variation. No launch-load cap.12GiB aggregate guard and2GiB disk prerequisite unchanged.",
+    "qualification": "New prospective policy only; no engine credit from changing this additional host prerequisite. Earlier preflight rejections and separate diagnostics retained."
+  },
+  "focused_initial": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 1
+      },
+      {
+        "name": "default-flex-control",
+        "exit": 0
+      },
+      {
+        "name": "default-grid-control",
+        "exit": 1
+      },
+      {
+        "name": "default-both-controls",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 1
+      },
+      {
+        "name": "none-flex-control",
+        "exit": 0
+      },
+      {
+        "name": "none-grid-control",
+        "exit": 1
+      },
+      {
+        "name": "none-both-controls",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 1
+      },
+      {
+        "name": "prealloc-flex-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-grid-control",
+        "exit": 1
+      },
+      {
+        "name": "prealloc-both-controls",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "9aa5f28fde735cab607e311199b39529348a39690678e507113b939befe20336",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "d9bad9cd0fcaf92866bf7a2792e3bf58bbbad53f27451dbf2fab688cc4215760",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "243af6d848188425cf5bb53c8da7f8fe65602642568206d93b4d7f3fdbf77ef2",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "b2e7e20f4340767f21eebda0b16891bb80ce3881fb41661dc4ccfc2d6dbd4eeb",
+      "/Users/alex/code/vox2/layout/layout_state.v": "c466642eff49e10902cfd634353b720413be4322c00c4e00931849a033e71f23",
+      "/Users/alex/code/vox2/layout/flex_formatting_context.v": "7b072f7941975240a22f39ea5cef11d5543486f09657846d643dfdba8f0a5aa7",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "26c69bc13bebf1e99371f8c954bf3576cff23604578f3707cd3ab364d788bb9e"
+    },
+    "unchanged": true,
+    "cases_per_run": 11,
+    "expected_cases": [
+      "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+      "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+      "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+      "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+      "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+      "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+      "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+      "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+      "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+      "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+      "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached"
+    ]
+  },
+  "focused_refined": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-flex-control",
+        "exit": 0
+      },
+      {
+        "name": "default-grid-control",
+        "exit": 0
+      },
+      {
+        "name": "default-both-controls",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-flex-control",
+        "exit": 0
+      },
+      {
+        "name": "none-grid-control",
+        "exit": 0
+      },
+      {
+        "name": "none-both-controls",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-flex-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-grid-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-both-controls",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "9aa5f28fde735cab607e311199b39529348a39690678e507113b939befe20336",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "b48e8507162044e0e84d2b06f97c590f7c87f0f8c29ac5f1f2466b1b306c3328",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "243af6d848188425cf5bb53c8da7f8fe65602642568206d93b4d7f3fdbf77ef2",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "b2e7e20f4340767f21eebda0b16891bb80ce3881fb41661dc4ccfc2d6dbd4eeb",
+      "/Users/alex/code/vox2/layout/layout_state.v": "c466642eff49e10902cfd634353b720413be4322c00c4e00931849a033e71f23",
+      "/Users/alex/code/vox2/layout/flex_formatting_context.v": "7b072f7941975240a22f39ea5cef11d5543486f09657846d643dfdba8f0a5aa7",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "26c69bc13bebf1e99371f8c954bf3576cff23604578f3707cd3ab364d788bb9e"
+    },
+    "unchanged": true,
+    "cases_per_run": 11,
+    "expected_cases": [
+      "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+      "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+      "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+      "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+      "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+      "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+      "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+      "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+      "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+      "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+      "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached"
+    ]
+  },
+  "focused_note": "Initial candidate/grid-control runs failed a float exclusion fixture: CSS ignores float on direct flex items. Refined fixture nests a real float in block flow; all132 executions across3GC modes and4runtime arms pass, with11 executable case calls verified. Original failures retained.",
+  "tool_tests": {
+    "cases": 311,
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 64421888,
+      "elapsed_seconds": 3.853776333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "native_checks": [
+    {
+      "arm": "vox",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": true,
+      "runtime_images_pinned": true
+    },
+    {
+      "arm": "control",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": false,
+      "runtime_images_pinned": true
+    }
+  ],
+  "production": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-193803-9b4dfb12/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "1b648b5bde36b2509286609f1ae283bb8d9d3ca75d6d6071b9617d22a75971d4",
+      "dirty": true,
+      "head": "6aa870d924e1f43377fdb2a1767ce31b108fa471",
+      "repository_sha256": "af0ea6fd5edf4d8ca21664865ac5911d4d2e561c118988716cfe39fc51fa9317"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "82fe4843a3428a1939145be88a3ff654727d13371b2a9b438726d30c9797775d",
+      "dirty": true,
+      "head": "ec5c6ba773d87a87af226fe88b18b43a6bfefbff",
+      "repository_sha256": "59aeea291afd0cd645bcd9bd82a79ea9460f344c6b4192cbd255552200b1acaa"
+    },
+    "request": {
+      "head": "6aa870d924e1f43377fdb2a1767ce31b108fa471",
+      "id": "d62d8161e85342b2b60dd677af93ca73"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "1b648b5bde36b2509286609f1ae283bb8d9d3ca75d6d6071b9617d22a75971d4",
+      "dirty": true,
+      "head": "6aa870d924e1f43377fdb2a1767ce31b108fa471",
+      "repository_sha256": "bb188a5b2134ca5f2ebf3c810f94a4960e65836203321e637248aa5825060c46"
+    }
+  },
+  "cohort": {
+    "number": 90,
+    "pairs": 7,
+    "counts": {
+      "vox": [
+        {
+          "lower": 30399670398,
+          "upper": 30399670398
+        },
+        {
+          "lower": 30605800297,
+          "upper": 30605800297
+        },
+        {
+          "lower": 31556666668,
+          "upper": 31556666668
+        },
+        {
+          "lower": 28979312004,
+          "upper": 28979312004
+        },
+        {
+          "lower": 28974287319,
+          "upper": 28974287319
+        },
+        {
+          "lower": 30077729256,
+          "upper": 30077729256
+        },
+        {
+          "lower": 32164694066,
+          "upper": 32164694066
+        }
+      ],
+      "brave": [
+        {
+          "lower": 17905060740,
+          "upper": 17906211066
+        },
+        {
+          "lower": 18145550568,
+          "upper": 18162377109
+        },
+        {
+          "lower": 17769432468,
+          "upper": 17791320728
+        },
+        {
+          "lower": 17833401218,
+          "upper": 17849171686
+        },
+        {
+          "lower": 18059419832,
+          "upper": 18061834466
+        },
+        {
+          "lower": 18158352178,
+          "upper": 18158951367
+        },
+        {
+          "lower": 18002315523,
+          "upper": 18003097381
+        }
+      ]
+    },
+    "audits": [
+      {
+        "pair": 1,
+        "engine": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 17905060740,
+          "upper": 17906211066
+        },
+        "ownership_passed": true,
+        "png_sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+      },
+      {
+        "pair": 1,
+        "engine": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 30399670398,
+          "upper": 30399670398
+        },
+        "ownership_passed": true,
+        "png_sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+      },
+      {
+        "pair": 2,
+        "engine": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 18145550568,
+          "upper": 18162377109
+        },
+        "ownership_passed": true,
+        "png_sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+      },
+      {
+        "pair": 2,
+        "engine": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 30605800297,
+          "upper": 30605800297
+        },
+        "ownership_passed": true,
+        "png_sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+      },
+      {
+        "pair": 3,
+        "engine": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 17769432468,
+          "upper": 17791320728
+        },
+        "ownership_passed": true,
+        "png_sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+      },
+      {
+        "pair": 3,
+        "engine": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 31556666668,
+          "upper": 31556666668
+        },
+        "ownership_passed": true,
+        "png_sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+      },
+      {
+        "pair": 4,
+        "engine": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 17833401218,
+          "upper": 17849171686
+        },
+        "ownership_passed": true,
+        "png_sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+      },
+      {
+        "pair": 4,
+        "engine": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 28979312004,
+          "upper": 28979312004
+        },
+        "ownership_passed": true,
+        "png_sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+      },
+      {
+        "pair": 5,
+        "engine": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 18059419832,
+          "upper": 18061834466
+        },
+        "ownership_passed": true,
+        "png_sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+      },
+      {
+        "pair": 5,
+        "engine": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 28974287319,
+          "upper": 28974287319
+        },
+        "ownership_passed": true,
+        "png_sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+      },
+      {
+        "pair": 6,
+        "engine": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 18158352178,
+          "upper": 18158951367
+        },
+        "ownership_passed": true,
+        "png_sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+      },
+      {
+        "pair": 6,
+        "engine": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 30077729256,
+          "upper": 30077729256
+        },
+        "ownership_passed": true,
+        "png_sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+      },
+      {
+        "pair": 7,
+        "engine": "brave",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 18002315523,
+          "upper": 18003097381
+        },
+        "ownership_passed": true,
+        "png_sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+      },
+      {
+        "pair": 7,
+        "engine": "vox",
+        "exit": 0,
+        "native_exit": 0,
+        "pixels_exact": true,
+        "content_exact": true,
+        "launch_interval": {
+          "lower": 32164694066,
+          "upper": 32164694066
+        },
+        "ownership_passed": true,
+        "png_sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+      }
+    ],
+    "summary": {
+      "brave_median_lower_bound_instructions": 18002315523,
+      "cross_browser_pixels": {
+        "actual": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/fixture/reference-complete/pair-1-vox/document.png",
+        "diff": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/cross-browser.diff.png",
+        "different_pixels": 2602001,
+        "exact": false,
+        "expected": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/fixture/reference-complete/pair-1-brave/document.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90/cross-browser.diff.png\n"
+      },
+      "instruction_scope": "launch",
+      "pairs": 7,
+      "passed": false,
+      "target_vox_fraction": 0.9,
+      "vox_median_instructions": 30399670398,
+      "worst_vox_over_best_brave": 1.8101137514618793
+    },
+    "strict_gate": {
+      "left": 321646940660,
+      "right": 159924892212,
+      "passed": false
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/target-with-host-observations.py",
+        "--output",
+        "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort-90",
+        "--repeat",
+        "7",
+        "--archive",
+        "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/fixture/clock-archive-v3",
+        "--memory-guard-registry",
+        "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/acceptance/cohort90-pids.json",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--expected-vox",
+        "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/fixture/reference-complete/pair-1-vox/document.png",
+        "--expected-brave",
+        "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/recorded-load-195049/fixture/reference-complete/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+        "--retain-logical-paint-snapping",
+        "--retain-css-layout-for-svg"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "40081": "Wed Nov  4 19:51:41 2026    ",
+        "40095": "Wed Nov  4 19:51:41 2026    ",
+        "43774": "Wed Nov  4 19:51:55 2026    ",
+        "43788": "Wed Nov  4 19:51:55 2026    ",
+        "45993": "Wed Nov  4 19:52:06 2026    ",
+        "45999": "Wed Nov  4 19:52:06 2026    ",
+        "48204": "Wed Nov  4 19:52:16 2026    ",
+        "48230": "Wed Nov  4 19:52:16 2026    ",
+        "48381": "Wed Nov  4 19:52:17 2026    ",
+        "48382": "Wed Nov  4 19:52:17 2026    ",
+        "48384": "Wed Nov  4 19:52:17 2026    ",
+        "50091": "Wed Nov  4 19:52:25 2026    ",
+        "50104": "Wed Nov  4 19:52:26 2026    ",
+        "50163": "Wed Nov  4 19:52:26 2026    ",
+        "50164": "Wed Nov  4 19:52:26 2026    ",
+        "50173": "Wed Nov  4 19:52:26 2026    ",
+        "51678": "Wed Nov  4 19:52:34 2026    ",
+        "51692": "Wed Nov  4 19:52:34 2026    ",
+        "54432": "Wed Nov  4 19:52:48 2026    ",
+        "54448": "Wed Nov  4 19:52:48 2026    ",
+        "56790": "Wed Nov  4 19:53:01 2026    ",
+        "56804": "Wed Nov  4 19:53:01 2026    ",
+        "56890": "Wed Nov  4 19:53:02 2026    ",
+        "56891": "Wed Nov  4 19:53:02 2026    ",
+        "56896": "Wed Nov  4 19:53:02 2026    ",
+        "57131": "Wed Nov  4 19:53:03 2026    ",
+        "58671": "Wed Nov  4 19:53:10 2026    ",
+        "58691": "Wed Nov  4 19:53:10 2026    ",
+        "58745": "Wed Nov  4 19:53:10 2026    ",
+        "58746": "Wed Nov  4 19:53:10 2026    ",
+        "58748": "Wed Nov  4 19:53:11 2026    ",
+        "59122": "Wed Nov  4 19:53:12 2026    ",
+        "60272": "Wed Nov  4 19:53:18 2026    ",
+        "60274": "Wed Nov  4 19:53:19 2026    ",
+        "62075": "Wed Nov  4 19:53:30 2026    ",
+        "62088": "Wed Nov  4 19:53:30 2026    ",
+        "63921": "Wed Nov  4 19:53:41 2026    ",
+        "63933": "Wed Nov  4 19:53:41 2026    ",
+        "63997": "Wed Nov  4 19:53:41 2026    ",
+        "63998": "Wed Nov  4 19:53:41 2026    ",
+        "64000": "Wed Nov  4 19:53:41 2026    ",
+        "65468": "Wed Nov  4 19:53:50 2026    ",
+        "65478": "Wed Nov  4 19:53:50 2026    ",
+        "65547": "Wed Nov  4 19:53:50 2026    ",
+        "65548": "Wed Nov  4 19:53:50 2026    ",
+        "65559": "Wed Nov  4 19:53:50 2026    ",
+        "67020": "Wed Nov  4 19:53:59 2026    ",
+        "67033": "Wed Nov  4 19:53:59 2026    ",
+        "68871": "Wed Nov  4 19:54:11 2026    ",
+        "68875": "Wed Nov  4 19:54:11 2026    ",
+        "70240": "Wed Nov  4 19:54:22 2026    ",
+        "70247": "Wed Nov  4 19:54:22 2026    ",
+        "70270": "Wed Nov  4 19:54:23 2026    ",
+        "70271": "Wed Nov  4 19:54:23 2026    ",
+        "70273": "Wed Nov  4 19:54:23 2026    ",
+        "70274": "Wed Nov  4 19:54:23 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1504526336,
+      "elapsed_seconds": 177.377815083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "exit": {
+      "driver_guard_exit": 1
+    },
+    "runtime_preflights": 2
+  },
+  "history": {
+    "acceptance_cohorts": 90,
+    "attempted_acceptance_browser_trials": 1989,
+    "separate_contended_diagnostic_attempts": 42,
+    "separate_contended_runtime_preflights": 8
+  },
+  "limitations": [
+    "Frozen original-origin replay, not live-site performance. OS filesystem and shader caches retained; private profiles/caches fresh.",
+    "Host load recorded without an absolute launch cap prospectively for cohort90. Earlier host rejections and separate contended diagnostics retain their classification. No instruction credit from this policy correction.",
+    "Per-engine exact references; cross-engine rendering differs82.7154%. Unsupported performance.measure, incomplete script/DOM behavior, local Arial/Bold fallback availability and paint_decoded=false remain disclosed in prior report.",
+    "Exclusive coalition includes exited work but cannot recover individual exited task identities. GPU/outside services excluded.",
+    "No isolated flex ROI or live-site optimization claim; profile/probes kept separate."
+  ],
+  "fixed_inputs": {
+    "path": "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+    "sha256": "c0ca0ae22f7ee3125d25f5ffb9163b40917e38ec656591c408cab1dba482e490"
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-flex-cohort90-20261104.tar.gz",
+    "sha256": "4181f23cc307394f72569c036eeb3529ec1d46009c7cbada260105aebb8673ea",
+    "bytes": 54896093,
+    "members": 461,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793812244.720536,
+  "archive_job": {
+    "command": [
+      "python3",
+      "Build/bbc-flex-measurement-20261104-1910/archive-cohort90.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 174768128,
+    "elapsed_seconds": 114.879182875,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

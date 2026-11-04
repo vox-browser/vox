@@ -1,0 +1,627 @@
+{
+  "status": "Seven matched pairs valid. Median point difference258510094instructions(0.8993%), four improvements and three regressions; conservative saving fails, no robust reduction credited. No Brave process launched or target evaluated. Broad checks due at observed>=5000000 cadence.",
+  "scope": {
+    "comparison": "Seven alternating Vox/control-only pairs; same production executable and all common settings. Only flex reuse disabled in control. All attempts retained. No Brave target evaluated.",
+    "scope": "Exclusive coalition creation through encoded document PNG; startup/native window included; before filewrite. Audits and teardown after endpoint.",
+    "workload": "Original609response frozen replay, all author scripts,1024x768CSS,DPR2,two-second settle after readiness/visibledecode,fresh profiles/caches; OS caches retained. Original per-engine references.",
+    "host_policy": "Record per-trial CPU/load/timestamps; no launch-load cap. Disk>=2GiB, memory guard12GiB and registry adoption; no own profiling/compilation during measurements.",
+    "production": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-195503-2126b5b2/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "d4dbd6dbb64c52326bcdb03b321bf6db255514e5f2db553f723e84b107719408",
+        "dirty": true,
+        "head": "b37cb3bf5f82a6880b53f6a658881ff2847250f7",
+        "repository_sha256": "09d4dad0754d871116f013eb1d0bd859a94b3ea6d652b52acfe41dfef64c0f71"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "07d8f8bd6dab2b437bc1bec3e3b0c4ce56b41b80a42a02492ded7b6d254e4f63",
+        "dirty": true,
+        "head": "b3ba5fbd8cbdea8331425b0edc696cd546c078eb",
+        "repository_sha256": "8e42353b0a8fed15082c6645d2bf585d839745dd8de7352ab85169fc928bafc6"
+      },
+      "request": {
+        "head": "b37cb3bf5f82a6880b53f6a658881ff2847250f7",
+        "id": "1dc87dccbe6b4b95ba928d0d7f81340c"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "d4dbd6dbb64c52326bcdb03b321bf6db255514e5f2db553f723e84b107719408",
+        "dirty": true,
+        "head": "b37cb3bf5f82a6880b53f6a658881ff2847250f7",
+        "repository_sha256": "ed99072bfca5433975c1aa3086532b85acc4cd728a096d5a761853f176ae317f"
+      }
+    },
+    "chosen_before_trials": true
+  },
+  "summary": {
+    "acceptance": false,
+    "brave_target_evaluated": false,
+    "comparison": "Flex measurement reuse versus same executable with only this cache disabled; diagnostic only. No Brave process launched.",
+    "conservative_any_saving": false,
+    "control_median_lower_bound_instructions": 28745107426,
+    "counts": {
+      "control_lower": [
+        28371890756,
+        29822865114,
+        28745107426,
+        29760318749,
+        29422533141,
+        27873748583,
+        28062461728
+      ],
+      "vox_upper": [
+        28486597332,
+        28831955052,
+        28546137319,
+        27160836443,
+        29496839730,
+        28308161940,
+        27516147231
+      ]
+    },
+    "cross_browser_pixels": {
+      "actual": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/fixture/reference-complete/pair-1-vox/document.png",
+      "diff": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/cross-browser.diff.png",
+      "different_pixels": 2602001,
+      "exact": false,
+      "expected": "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/fixture/reference-complete/pair-1-brave/document.png",
+      "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex/cross-browser.diff.png\n"
+    },
+    "instruction_scope": "launch",
+    "median_point_fraction": 0.008993185872256549,
+    "median_point_reduction": 258510094,
+    "paired_improvements": 4,
+    "paired_regressions": 3,
+    "pairs": 7,
+    "passed": true,
+    "vox_median_instructions": 28486597332,
+    "worst_vox_over_best_control": 1.0582300992694578
+  },
+  "audits": [
+    {
+      "pair": 1,
+      "arm": "control",
+      "interval": {
+        "lower": 28371890756,
+        "upper": 28371890756
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          64.140625,
+          62.8857421875,
+          45.7490234375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          64.130859375,
+          62.94873046875,
+          45.97314453125
+        ]
+      }
+    },
+    {
+      "pair": 1,
+      "arm": "vox",
+      "interval": {
+        "lower": 28486597332,
+        "upper": 28486597332
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          63.3994140625,
+          62.81640625,
+          46.02587890625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          61.68505859375,
+          62.46142578125,
+          46.09521484375
+        ]
+      }
+    },
+    {
+      "pair": 2,
+      "arm": "control",
+      "interval": {
+        "lower": 29822865114,
+        "upper": 29822865114
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          62.4130859375,
+          62.60205078125,
+          46.52685546875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          62.02880859375,
+          62.51513671875,
+          46.68359375
+        ]
+      }
+    },
+    {
+      "pair": 2,
+      "arm": "vox",
+      "interval": {
+        "lower": 28831955052,
+        "upper": 28831955052
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          63.1513671875,
+          62.75244140625,
+          46.29345703125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          61.9267578125,
+          62.51123046875,
+          46.400390625
+        ]
+      }
+    },
+    {
+      "pair": 3,
+      "arm": "control",
+      "interval": {
+        "lower": 28745107426,
+        "upper": 28745107426
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          60.7451171875,
+          62.24072265625,
+          46.67919921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          57.5166015625,
+          61.505859375,
+          46.60009765625
+        ]
+      }
+    },
+    {
+      "pair": 3,
+      "arm": "vox",
+      "interval": {
+        "lower": 28546137319,
+        "upper": 28546137319
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          56.35400390625,
+          61.1982421875,
+          46.57861328125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          55.5205078125,
+          60.875,
+          46.63525390625
+        ]
+      }
+    },
+    {
+      "pair": 4,
+      "arm": "control",
+      "interval": {
+        "lower": 29760318749,
+        "upper": 29760318749
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          55.93212890625,
+          60.59716796875,
+          46.86474609375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          58.02099609375,
+          60.8896484375,
+          47.12890625
+        ]
+      }
+    },
+    {
+      "pair": 4,
+      "arm": "vox",
+      "interval": {
+        "lower": 27160836443,
+        "upper": 27160836443
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          54.677734375,
+          60.611328125,
+          46.62548828125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          56.1005859375,
+          60.708984375,
+          46.82275390625
+        ]
+      }
+    },
+    {
+      "pair": 5,
+      "arm": "control",
+      "interval": {
+        "lower": 29422533141,
+        "upper": 29422533141
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          56.81787109375,
+          60.59228515625,
+          47.1044921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          53.56201171875,
+          59.7666015625,
+          46.96826171875
+        ]
+      }
+    },
+    {
+      "pair": 5,
+      "arm": "vox",
+      "interval": {
+        "lower": 29496839730,
+        "upper": 29496839730
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          53.56201171875,
+          59.7666015625,
+          46.96826171875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          56.125,
+          60.0361328125,
+          47.28857421875
+        ]
+      }
+    },
+    {
+      "pair": 6,
+      "arm": "control",
+      "interval": {
+        "lower": 27873748583,
+        "upper": 27873748583
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          58.56640625,
+          60.353515625,
+          47.69873046875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          57.796875,
+          60.12744140625,
+          47.76611328125
+        ]
+      }
+    },
+    {
+      "pair": 6,
+      "arm": "vox",
+      "interval": {
+        "lower": 28308161940,
+        "upper": 28308161940
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          56.51513671875,
+          60.0517578125,
+          47.36865234375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          58.703125,
+          60.41015625,
+          47.64404296875
+        ]
+      }
+    },
+    {
+      "pair": 7,
+      "arm": "control",
+      "interval": {
+        "lower": 28062461728,
+        "upper": 28062461728
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          57.09228515625,
+          59.9423828125,
+          47.77294921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          58.53173828125,
+          60.14404296875,
+          47.98583984375
+        ]
+      }
+    },
+    {
+      "pair": 7,
+      "arm": "vox",
+      "interval": {
+        "lower": 27516147231,
+        "upper": 27516147231
+      },
+      "pixels_exact": true,
+      "content_exact": true,
+      "endpoint_ownership": true,
+      "native_exit": 0,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          59.12939453125,
+          60.2412109375,
+          48.09130859375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          58.04541015625,
+          59.9697265625,
+          48.13623046875
+        ]
+      }
+    }
+  ],
+  "native_checks": [
+    {
+      "arm": "vox",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": true,
+      "runtime_images_pinned": true
+    },
+    {
+      "arm": "control",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": false,
+      "runtime_images_pinned": true
+    }
+  ],
+  "production": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-195503-2126b5b2/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "d4dbd6dbb64c52326bcdb03b321bf6db255514e5f2db553f723e84b107719408",
+      "dirty": true,
+      "head": "b37cb3bf5f82a6880b53f6a658881ff2847250f7",
+      "repository_sha256": "09d4dad0754d871116f013eb1d0bd859a94b3ea6d652b52acfe41dfef64c0f71"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "07d8f8bd6dab2b437bc1bec3e3b0c4ce56b41b80a42a02492ded7b6d254e4f63",
+      "dirty": true,
+      "head": "b3ba5fbd8cbdea8331425b0edc696cd546c078eb",
+      "repository_sha256": "8e42353b0a8fed15082c6645d2bf585d839745dd8de7352ab85169fc928bafc6"
+    },
+    "request": {
+      "head": "b37cb3bf5f82a6880b53f6a658881ff2847250f7",
+      "id": "1dc87dccbe6b4b95ba928d0d7f81340c"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "d4dbd6dbb64c52326bcdb03b321bf6db255514e5f2db553f723e84b107719408",
+      "dirty": true,
+      "head": "b37cb3bf5f82a6880b53f6a658881ff2847250f7",
+      "repository_sha256": "ed99072bfca5433975c1aa3086532b85acc4cd728a096d5a761853f176ae317f"
+    }
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/matched-with-host.py",
+      "--output",
+      "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/matched-flex",
+      "--repeat",
+      "7",
+      "--archive",
+      "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/fixture/clock-archive-v3",
+      "--memory-guard-registry",
+      "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/measurement/pids.json",
+      "--diff-tool",
+      "Build/pixel-tools/pixel_diff",
+      "--expected-vox",
+      "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/fixture/reference-complete/pair-1-vox/document.png",
+      "--expected-brave",
+      "/Users/alex/code/vox2/Build/bbc-flex-measurement-20261104-1910/matched-control-201038/fixture/reference-complete/pair-1-brave/document.png",
+      "--preserve-inputs",
+      "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+      "--control-vox-app",
+      "Build/v/Vox.app",
+      "--control-disable-flex-measurement-reuse",
+      "--retain-logical-paint-snapping",
+      "--retain-css-layout-for-svg"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {
+      "49230": "Wed Nov  4 20:11:32 2026    ",
+      "49237": "Wed Nov  4 20:11:32 2026    ",
+      "50358": "Wed Nov  4 20:11:44 2026    ",
+      "50363": "Wed Nov  4 20:11:44 2026    ",
+      "52198": "Wed Nov  4 20:12:03 2026    ",
+      "52205": "Wed Nov  4 20:12:03 2026    ",
+      "53220": "Wed Nov  4 20:12:14 2026    ",
+      "53225": "Wed Nov  4 20:12:14 2026    ",
+      "54738": "Wed Nov  4 20:12:26 2026    ",
+      "54744": "Wed Nov  4 20:12:26 2026    ",
+      "56341": "Wed Nov  4 20:12:38 2026    ",
+      "56346": "Wed Nov  4 20:12:38 2026    ",
+      "58370": "Wed Nov  4 20:12:53 2026    ",
+      "58373": "Wed Nov  4 20:12:53 2026    ",
+      "60384": "Wed Nov  4 20:13:08 2026    ",
+      "60390": "Wed Nov  4 20:13:08 2026    ",
+      "62226": "Wed Nov  4 20:13:24 2026    ",
+      "62233": "Wed Nov  4 20:13:24 2026    ",
+      "64028": "Wed Nov  4 20:13:38 2026    ",
+      "64030": "Wed Nov  4 20:13:39 2026    ",
+      "65835": "Wed Nov  4 20:13:52 2026    ",
+      "65846": "Wed Nov  4 20:13:52 2026    ",
+      "67695": "Wed Nov  4 20:14:07 2026    ",
+      "67699": "Wed Nov  4 20:14:07 2026    ",
+      "69262": "Wed Nov  4 20:14:22 2026    ",
+      "69269": "Wed Nov  4 20:14:22 2026    ",
+      "70805": "Wed Nov  4 20:14:36 2026    ",
+      "70813": "Wed Nov  4 20:14:36 2026    ",
+      "72683": "Wed Nov  4 20:14:53 2026    ",
+      "72686": "Wed Nov  4 20:14:53 2026    ",
+      "76203": "Wed Nov  4 20:15:09 2026    ",
+      "76206": "Wed Nov  4 20:15:09 2026    ",
+      "78124": "Wed Nov  4 20:15:23 2026    ",
+      "78133": "Wed Nov  4 20:15:23 2026    ",
+      "80344": "Wed Nov  4 20:15:38 2026    ",
+      "80349": "Wed Nov  4 20:15:38 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1425473536,
+    "elapsed_seconds": 273.757365667,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "exit": {
+    "driver_guard_exit": 0
+  },
+  "runtime_preflights": 2,
+  "separate_matched_diagnostic_attempts": 14,
+  "archive": {
+    "path": "docs/performance/raw/bbc-flex-matched-control-20261104.tar.gz",
+    "sha256": "5554744040fa2f5cedce335c460248ccaf98664194f702ef727b39d3063a502d",
+    "bytes": 14702482,
+    "members": 238,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793812939.4418502,
+  "archive_job": {
+    "command": [
+      "python3",
+      "Build/bbc-flex-measurement-20261104-1910/archive-matched-flex.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 95387648,
+    "elapsed_seconds": 24.684177333,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

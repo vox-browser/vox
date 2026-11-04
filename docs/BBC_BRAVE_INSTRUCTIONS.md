@@ -1,5 +1,54 @@
 # BBC homepage instruction comparison
 
+**Latest flex follow-up and cohort 90:** `0eb0c00f9` retains owned closed
+flex measurements within one layout pass, with an exact root/ancestor key,
+style/tree/text/font checks and normal copy-on-write restoration. The isolated
+control is `304751f0e`. All **132 refined focused executions** pass across three
+GC modes and four runtime arms, with 11 executable test calls verified. Initial
+failures came from an exclusion fixture treating a direct flex item's ignored
+`float` as an actual float; those failed attempts remain in the archive. The
+refined fixture nests a real float in block flow. All **311 tool tests** pass.
+Separate native diagnostics verify candidate-only reuse before PNG, all 72
+original external scripts, unchanged complete content and exact original pixels,
+normal exits and pinned actual native images.
+
+Cohort **90** now has seven complete alternating Vox/Brave pairs on executable
+`e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c`.
+All 14 capture audits pass, but the target fails: medians are **30,399,670,398
+Vox** and **18,002,315,523 Brave lower bound** instructions. Conservative ratio
+is **1.8101137514618793**; the strict gate fails
+`321646940660 > 159924892212`. This target-only cohort does not establish a
+marginal flex saving. A separate seven-pair enabled/disabled run on one newer executable has medians
+**28,486,597,332 candidate** and **28,745,107,426 control**: a point difference of
+258,510,094 (0.8993%), four paired improvements and three regressions. Its
+conservative ratio **1.0582300992694578** fails, so no robust saving is credited.
+All 14 capture audits pass; no Brave process is launched or target evaluated in
+that diagnostic. Its two runtime preflights remain separate. The observed point
+difference triggers the broad cadence: the default batch has exercised all 504
+cases with the same three known failures; no-GC validation is pending. No full
+pass or cadence reset is claimed. See the
+[matched-control ledger](performance/bbc-flex-matched-control-20261104.json) and
+[raw matched evidence](performance/raw/bbc-flex-matched-control-20261104.tar.gz).
+
+Before this new cohort, the additional absolute 18-CPU host-load launch cap was
+removed prospectively. Repository policy requires recording contention, rather
+than this extra cap. Per-trial load/timestamps, the memory guard, private PID
+adoption, unchanged endpoints and all input/content/pixel/ownership checks remain
+required. This policy correction earns no engine optimization credit. Earlier
+rejected preflights and the 42 contended diagnostic attempts retain their original
+classification. Acceptance history is now **90 attempted cohorts / 1,989 attempted
+browser trials**, plus separate runtime diagnostics. Full compiler receipts and
+preprocessed inputs are preserved before launch and in the durable archive.
+
+These are frozen original-origin replay results, with startup through encoded
+document PNG included and OS filesystem/shader caches retained. Per-engine
+references are exact; cross-engine pixels still differ 82.7154%. The scripting,
+font and rendering limitations below remain. BBC still does not qualify for
+`OPTIMIZED_SITES.md`. See the [flex/cohort ledger](performance/bbc-flex-cohort90-20261104.json)
+and [raw evidence](performance/raw/bbc-flex-cohort90-20261104.tar.gz).
+
+The following follow-ups describe their historical, earlier states.
+
 **Latest grid follow-up:** `7013bdd35` lets committed layout consume owned
 same-pass grid measurements. The root geometry and immediate containing block
 remain exact; a conservative proof can omit more distant ancestor heights when
