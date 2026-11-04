@@ -2814,6 +2814,13 @@ void native_invalidate_video_backdrop(double x, double y, double width, double h
     native_video_backdrop_invalidate(x, y, width, height);
 }
 
+// The next image draws are frames of a playing video.
+static int native_video_frame_image;
+
+void native_set_video_frame_image(int active) {
+    native_video_frame_image = active != 0;
+}
+
 void native_reject_scroll_raster_frame(void) {
     native_scroll_raster_independent_content();
 }
@@ -5747,7 +5754,8 @@ static int native_begin_skia_image_source(CGContextRef context, gg__Image *image
 		    | (image->nr_channels == 10 ? 28 : 0)
 		    | (image->nr_channels == 12 ? (12 | VOX_GRAPHITE_IMAGE_YUV422) : 0)
 		    | ((context == native_font_compositing_context
-		        && native_font_compositing_transparency_depth == 0) ? 2 : 0),
+		        && native_font_compositing_transparency_depth == 0) ? 2 : 0)
+		    | (native_video_frame_image ? VOX_GRAPHITE_IMAGE_VIDEO_FRAME : 0),
 	};
 	return 1;
 }

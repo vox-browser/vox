@@ -462,8 +462,12 @@ static void plan_image_draw(VoxGraphiteImage const* image, PreparedImageDraw& pr
     float sy = std::hypot(image->matrix[1], image->matrix[4])
         * image->destination[3] / image->source[3];
     bool planar_nearest = image->nearest && (image->flags & 4);
+    bool video_frame = image->flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME;
     int decode_level = image->nearest && !planar_nearest ? 0 : vox_image_decode_level(image->flags);
-    if (decode_level >= 0) {
+    if (video_frame) {
+        // Upload the complete frame and filter it once on the GPU, without a
+        // CPU resize or a mip chain for every new frame.
+    } else if (decode_level >= 0) {
         upload_width = vox_image_decode_axis(image->width, decode_level);
         upload_height = vox_image_decode_axis(image->height, decode_level);
     } else if (!image->nearest || planar_nearest) {
@@ -484,7 +488,7 @@ static void plan_image_draw(VoxGraphiteImage const* image, PreparedImageDraw& pr
     // need them. Chromium serializes the decode request with the complete
     // image bounds, including when the eventual draw crops the source.
     // Cropped draws retain strict source bounds below.
-    bool needs_mips = !image->nearest
+    bool needs_mips = !image->nearest && !video_frame
         && image->width * sx < upload_width && image->height * sy < upload_height;
     prepared.upload_width = upload_width;
     prepared.upload_height = upload_height;

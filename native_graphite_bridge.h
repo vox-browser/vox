@@ -11,7 +11,10 @@ enum {
     VOX_GRAPHITE_IMAGE_REPEAT_Y = 128,
     // A separately composited opaque CSS mask at the image clip's rounded box.
     VOX_GRAPHITE_IMAGE_ROUNDED_ALPHA_MASK = 256,
-    VOX_GRAPHITE_IMAGE_YUV422 = 512
+    VOX_GRAPHITE_IMAGE_YUV422 = 512,
+    // A media frame: Chromium's compositor samples the uploaded frame
+    // directly instead of resizing it through the image decode cache.
+    VOX_GRAPHITE_IMAGE_VIDEO_FRAME = 1024
 };
 
 enum {

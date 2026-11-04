@@ -52,6 +52,7 @@ def main():
                  'native_skia_shared_layer_test', 'native_picture_image_transport_test',
                  'native_chromium_image_resize_test',
                  'native_skia_profiled_image_picture_test', 'native_graphite_mipped_image_test',
+                 'native_graphite_video_frame_test',
                  'native_skia_scrolled_image_grid_test', 'native_skia_image_root_rows_test',
                  'native_skia_image_decoding_hints_test']:
         executable = output / test
@@ -59,7 +60,8 @@ def main():
         run_command = [str(executable)]
         if test == 'native_chromium_image_resize_test':
             run_command += [str(native / 'libVoxGraphite.dylib')]
-        if test in ['native_skia_gradient_interpolation_test', 'native_graphite_mipped_image_test']:
+        if test in ['native_skia_gradient_interpolation_test', 'native_graphite_mipped_image_test',
+                    'native_graphite_video_frame_test']:
             # Build the independent reference with the same pinned Chromium
             # Skia as the isolated GPU libraries, rather than LibWeb's ABI.
             source = REPO / 'Build/deps/skia-brave/source'
