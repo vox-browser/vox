@@ -1,0 +1,339 @@
+{
+  "status": "Cohort93 completes7alternating triples, all21native/content/pixel/ownership audits pass with unchanged input identities. Strict10percent goal fails. Relative point saving251570425(0.9091percent),5wins2regressions; conservative control fails, no robust saving credited. Broad cadence triggered. BBC homepage not cataloged.",
+  "engine_commit": "f9cfbc509",
+  "control_commit": "472936232",
+  "native_checks": [
+    {
+      "arm": "vox",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": true,
+      "runtime_images_pinned": true
+    },
+    {
+      "arm": "control",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": false,
+      "runtime_images_pinned": true
+    }
+  ],
+  "production": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "f029d0f4ec0b2648879303914eff0cc151932e08a50bf2903258a52aded645e3",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-224156-b82a47d6/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "101a2c94c0d4f788c9b67467f220189d8b10284c4884b45263c398e6f0c74bed",
+      "dirty": true,
+      "head": "55b404beb37ff61a230fbc1e9b0aa912f6c96f9c",
+      "repository_sha256": "efe26961a31066979afa7120d53c2926f2965885c1b8321a584b6486eb7fd57b"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "54d216cd24cdacc8fee1d85c768bed9f22df81ff8ec17c553fbaf5245fba07db",
+      "dirty": true,
+      "head": "6a183285d1eb13ddfb88babd6af994468b80ce0d",
+      "repository_sha256": "43af8907525f45d4127d74a20abcdbb8052ca6a361193166ce992be267b5f433"
+    },
+    "request": {
+      "head": "55b404beb37ff61a230fbc1e9b0aa912f6c96f9c",
+      "id": "8d7669609fcb45a8a8fb20650e5e3eff"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "101a2c94c0d4f788c9b67467f220189d8b10284c4884b45263c398e6f0c74bed",
+      "dirty": true,
+      "head": "55b404beb37ff61a230fbc1e9b0aa912f6c96f9c",
+      "repository_sha256": "600ceeb5916d6f6f49657f6782c696e007ac3ede6f0d8d05c84db89be4ef9832"
+    }
+  },
+  "source_proof": {
+    "preserved_source": "/Users/alex/code/vox2/Build/bbc-relative-measurement-20261104-2240/production/native-diagnostic/production-compilation/f029d0f4ec0b2648879303914eff0cc151932e08a50bf2903258a52aded645e3/0-0-Vox.c.i",
+    "sha256": "1a1828aec4e89cd240e277e336ef8274aa54ecfb18c60fe7018854744c0c9b0f",
+    "witnesses": {
+      "Vox relative measurement: reused unshifted positioned geometry": true,
+      "layout__retained_layout_position_is_unshifted": true,
+      "layout__report_relative_measurement_reuse": true,
+      "disable_relative_measurement_reuse": true
+    },
+    "hash_matches": true
+  },
+  "preflight_correction": "Earlier native diagnostic fails before windowed browser launch because a relative fixture symlink resolves inside Build twice. Headless smoke passes. Links corrected to absolute existing fixture; original failed preflight retained. No acceptance samples retried or excluded.",
+  "cohort": {
+    "number": 93,
+    "triples": 7,
+    "attempted_browser_trials": 21,
+    "runtime_discovery_validation_launches": 4,
+    "capture_audits_passed": 21,
+    "vox_upper": [
+      28169503392,
+      27629069366,
+      26785839584,
+      27422343588,
+      27638624589,
+      26498901039,
+      26785180120
+    ],
+    "control_lower": [
+      28008915361,
+      27886379799,
+      26922626743,
+      27851974436,
+      26257797915,
+      27673914013,
+      27591379403
+    ],
+    "brave_lower": [
+      17811402665,
+      17634178221,
+      17457341325,
+      17435577987,
+      17472541148,
+      17394832415,
+      17337793156
+    ],
+    "medians": {
+      "vox": 27422343588,
+      "control": 27673914013,
+      "brave_lower": 17457341325
+    },
+    "matched_control": {
+      "median_point_difference": 251570425,
+      "median_point_percent": 0.9090525643818332,
+      "paired_improvements": 5,
+      "paired_regressions": 2,
+      "conservative_ratio": 1.0728052475378342,
+      "robust_saving": false
+    },
+    "strict_target": {
+      "left": 281695033920,
+      "right": 156040138404,
+      "passed": false,
+      "conservative_ratio": 1.624745614308562
+    },
+    "summary": {
+      "brave_median_lower_bound_instructions": 17457341325,
+      "cross_browser_pixels": {
+        "actual": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-vox/document.png",
+        "diff": "/Users/alex/code/vox2/Build/bbc-relative-measurement-20261104-2240/cohort93/cohort-93/cross-browser.diff.png",
+        "different_pixels": 2602001,
+        "exact": false,
+        "expected": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-relative-measurement-20261104-2240/cohort93/cohort-93/cross-browser.diff.png\n"
+      },
+      "instruction_scope": "launch",
+      "matched_control": {
+        "brave_median_lower_bound_instructions": 27673914013,
+        "instruction_scope": "launch",
+        "pairs": 7,
+        "passed": false,
+        "target_vox_fraction": 0.9,
+        "vox_median_instructions": 27422343588,
+        "worst_vox_over_best_brave": 1.0728052475378342
+      },
+      "pairs": 7,
+      "passed": false,
+      "target_vox_fraction": 0.9,
+      "vox_median_instructions": 27422343588,
+      "worst_vox_over_best_brave": 1.624745614308562
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-relative-measurement-20261104-2240/cohort-with-host.py",
+        "--output",
+        "/Users/alex/code/vox2/Build/bbc-relative-measurement-20261104-2240/cohort93/cohort-93",
+        "--repeat",
+        "7",
+        "--control-vox-app",
+        "Build/v/Vox.app",
+        "--control-disable-relative-measurement-reuse",
+        "--archive",
+        "/Users/alex/code/vox2/Build/bbc-relative-measurement-20261104-2240/fixture/clock-archive-v3",
+        "--memory-guard-registry",
+        "/Users/alex/code/vox2/Build/bbc-relative-measurement-20261104-2240/cohort93/cohort93-pids.json",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--expected-vox",
+        "/Users/alex/code/vox2/Build/bbc-relative-measurement-20261104-2240/fixture/reference-complete/pair-1-vox/document.png",
+        "--expected-brave",
+        "/Users/alex/code/vox2/Build/bbc-relative-measurement-20261104-2240/fixture/reference-complete/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+        "--retain-logical-paint-snapping",
+        "--retain-css-layout-for-svg"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "74952": "Wed Nov  4 22:55:50 2026    ",
+        "74963": "Wed Nov  4 22:55:50 2026    ",
+        "75365": "Wed Nov  4 22:55:57 2026    ",
+        "75368": "Wed Nov  4 22:55:57 2026    ",
+        "76066": "Wed Nov  4 22:56:07 2026    ",
+        "76069": "Wed Nov  4 22:56:07 2026    ",
+        "76553": "Wed Nov  4 22:56:14 2026    ",
+        "76555": "Wed Nov  4 22:56:14 2026    ",
+        "77168": "Wed Nov  4 22:56:21 2026    ",
+        "77171": "Wed Nov  4 22:56:21 2026    ",
+        "78193": "Wed Nov  4 22:56:28 2026    ",
+        "78195": "Wed Nov  4 22:56:28 2026    ",
+        "78922": "Wed Nov  4 22:56:35 2026    ",
+        "78931": "Wed Nov  4 22:56:35 2026    ",
+        "78962": "Wed Nov  4 22:56:35 2026    ",
+        "78963": "Wed Nov  4 22:56:35 2026    ",
+        "78967": "Wed Nov  4 22:56:35 2026    ",
+        "79038": "Wed Nov  4 22:56:36 2026    ",
+        "79040": "Wed Nov  4 22:56:36 2026    ",
+        "79080": "Wed Nov  4 22:56:36 2026    ",
+        "79849": "Wed Nov  4 22:56:42 2026    ",
+        "79858": "Wed Nov  4 22:56:42 2026    ",
+        "79866": "Wed Nov  4 22:56:42 2026    ",
+        "79868": "Wed Nov  4 22:56:42 2026    ",
+        "79874": "Wed Nov  4 22:56:42 2026    ",
+        "79923": "Wed Nov  4 22:56:43 2026    ",
+        "79924": "Wed Nov  4 22:56:43 2026    ",
+        "79970": "Wed Nov  4 22:56:43 2026    ",
+        "80407": "Wed Nov  4 22:56:48 2026    ",
+        "80411": "Wed Nov  4 22:56:48 2026    ",
+        "81056": "Wed Nov  4 22:56:55 2026    ",
+        "81059": "Wed Nov  4 22:56:55 2026    ",
+        "81810": "Wed Nov  4 22:57:02 2026    ",
+        "81815": "Wed Nov  4 22:57:02 2026    ",
+        "82401": "Wed Nov  4 22:57:09 2026    ",
+        "82403": "Wed Nov  4 22:57:09 2026    ",
+        "83167": "Wed Nov  4 22:57:16 2026    ",
+        "83169": "Wed Nov  4 22:57:16 2026    ",
+        "83183": "Wed Nov  4 22:57:17 2026    ",
+        "83184": "Wed Nov  4 22:57:17 2026    ",
+        "83186": "Wed Nov  4 22:57:17 2026    ",
+        "83918": "Wed Nov  4 22:57:22 2026    ",
+        "83921": "Wed Nov  4 22:57:22 2026    ",
+        "83932": "Wed Nov  4 22:57:22 2026    ",
+        "83933": "Wed Nov  4 22:57:22 2026    ",
+        "83940": "Wed Nov  4 22:57:22 2026    ",
+        "84600": "Wed Nov  4 22:57:29 2026    ",
+        "84604": "Wed Nov  4 22:57:29 2026    ",
+        "85542": "Wed Nov  4 22:57:36 2026    ",
+        "85547": "Wed Nov  4 22:57:37 2026    ",
+        "86276": "Wed Nov  4 22:57:44 2026    ",
+        "86281": "Wed Nov  4 22:57:44 2026    ",
+        "87008": "Wed Nov  4 22:57:51 2026    ",
+        "87011": "Wed Nov  4 22:57:51 2026    ",
+        "87829": "Wed Nov  4 22:57:58 2026    ",
+        "87833": "Wed Nov  4 22:57:58 2026    ",
+        "87851": "Wed Nov  4 22:57:58 2026    ",
+        "87852": "Wed Nov  4 22:57:58 2026    ",
+        "87857": "Wed Nov  4 22:57:58 2026    ",
+        "87899": "Wed Nov  4 22:57:59 2026    ",
+        "88672": "Wed Nov  4 22:58:05 2026    ",
+        "88677": "Wed Nov  4 22:58:05 2026    ",
+        "88691": "Wed Nov  4 22:58:05 2026    ",
+        "88692": "Wed Nov  4 22:58:05 2026    ",
+        "88696": "Wed Nov  4 22:58:05 2026    ",
+        "88726": "Wed Nov  4 22:58:05 2026    ",
+        "88727": "Wed Nov  4 22:58:05 2026    ",
+        "88799": "Wed Nov  4 22:58:06 2026    ",
+        "89379": "Wed Nov  4 22:58:10 2026    ",
+        "89386": "Wed Nov  4 22:58:11 2026    ",
+        "90276": "Wed Nov  4 22:58:18 2026    ",
+        "90283": "Wed Nov  4 22:58:18 2026    ",
+        "91072": "Wed Nov  4 22:58:25 2026    ",
+        "91077": "Wed Nov  4 22:58:25 2026    ",
+        "91917": "Wed Nov  4 22:58:32 2026    ",
+        "91922": "Wed Nov  4 22:58:32 2026    ",
+        "92751": "Wed Nov  4 22:58:39 2026    ",
+        "92760": "Wed Nov  4 22:58:39 2026    ",
+        "92774": "Wed Nov  4 22:58:40 2026    ",
+        "92775": "Wed Nov  4 22:58:40 2026    ",
+        "92778": "Wed Nov  4 22:58:40 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1450393600,
+      "elapsed_seconds": 179.52091975,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controller_exit": {
+      "exit": 1
+    },
+    "scope": {
+      "cohort": 93,
+      "comparison": "Seven alternating matched control/Vox/Brave triples. Same executable in both Vox arms, only unshifted-relative grid/flex reuse disabled in control. Target evaluates Vox/Brave; marginal relative-measurement comparison reported separately. Separate traced runtime discovery and pinned-set validation precede acceptance. Every attempt retained; no profiler/probe/dyld tracing in acceptance. No credit from protocol corrections or historical cross-build differences.",
+      "scope": "Exclusive coalition creation through encoded document PNG; startup and native window/target setup included. Vox endpoint before filewrite; Brave includes CDP delivery. Content audits and teardown follow endpoint. GPU/outside services excluded.",
+      "workload": "Unchanged609response replay, originalauthor scripts,1024x768CSS,DPR/capture2,two-second settle after identity/readiness/visibledecode,fresh profiles/caches,OSfilesystem/shadercaches retained. Fixed original references; historical logical font/paint and CSS SVG fallback common to both Voxarms.",
+      "host_gate": "Record variable host load without a launch-load cap; free disk>=2GiB before launch. Native exits, ownership, content, exact pixels and all pinned inputs required. Strict goal10maxVoxUpper<=9minBraveLower.",
+      "engine_commit": "f9cfbc509",
+      "control_tool_commit": "472936232993ef620324307b08f424e2093d6d72",
+      "runtime_tool_commits": [
+        "cd836ed37",
+        "2b7c4428f"
+      ],
+      "production": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "f029d0f4ec0b2648879303914eff0cc151932e08a50bf2903258a52aded645e3",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-224156-b82a47d6/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "101a2c94c0d4f788c9b67467f220189d8b10284c4884b45263c398e6f0c74bed",
+          "dirty": true,
+          "head": "55b404beb37ff61a230fbc1e9b0aa912f6c96f9c",
+          "repository_sha256": "efe26961a31066979afa7120d53c2926f2965885c1b8321a584b6486eb7fd57b"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "54d216cd24cdacc8fee1d85c768bed9f22df81ff8ec17c553fbaf5245fba07db",
+          "dirty": true,
+          "head": "6a183285d1eb13ddfb88babd6af994468b80ce0d",
+          "repository_sha256": "43af8907525f45d4127d74a20abcdbb8052ca6a361193166ce992be267b5f433"
+        },
+        "request": {
+          "head": "55b404beb37ff61a230fbc1e9b0aa912f6c96f9c",
+          "id": "8d7669609fcb45a8a8fb20650e5e3eff"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "101a2c94c0d4f788c9b67467f220189d8b10284c4884b45263c398e6f0c74bed",
+          "dirty": true,
+          "head": "55b404beb37ff61a230fbc1e9b0aa912f6c96f9c",
+          "repository_sha256": "600ceeb5916d6f6f49657f6782c696e007ac3ede6f0d8d05c84db89be4ef9832"
+        }
+      }
+    }
+  },
+  "history": {
+    "attempted_cohorts": 93,
+    "attempted_browser_trials": 2043
+  },
+  "target_met": false,
+  "catalog_entry_added": false,
+  "broad_due": true,
+  "archive": {
+    "path": "docs/performance/raw/bbc-relative-cohort93-20261104.tar.gz",
+    "bytes": 15983108,
+    "sha256": "be89dcd76115383d624c04c3715a760180fe150da79b61f1dc048516097efb59",
+    "members": 320,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793822566.4875698,
+  "archive_completion_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-relative-measurement-20261104-2240/archive-cohort93.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 108642304,
+    "elapsed_seconds": 8.506211083,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "brave_ownership_recheck": "All seven before/after ownership inventories are all_owned; all capture exits/content/pixels valid. Raw exited-task aggregates and allowed services retained. The initial archiver expected the Vox-only capture_ownership_audit field on Brave; corrected to retain the backend-specific Brave before/after inventories without changing raw trials."
+}

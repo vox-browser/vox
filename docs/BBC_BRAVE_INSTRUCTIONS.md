@@ -1,5 +1,40 @@
 # BBC homepage instruction comparison
 
+**Latest completed comparison — cohort 93:** seven alternating control/Vox/Brave
+triples complete on executable
+`f029d0f4ec0b2648879303914eff0cc151932e08a50bf2903258a52aded645e3`.
+All **21 native/content/pixel/ownership audits** pass with unchanged pinned inputs.
+Medians are **27,422,343,588 Vox**, **27,673,914,013 control** and
+**17,457,341,325 Brave lower bound** instructions. The strict target fails
+`281695033920 > 156040138404`; conservative Vox/Brave ratio is
+**1.624745614308562**. Relative reuse has a median point difference of 251,570,425
+(0.9091%), five improvements and two regressions; conservative control ratio
+**1.0728052475378342** fails, so no robust saving is credited. History is now
+**93 attempted cohorts / 2,043 attempted browser trials**. The earlier fixture-link
+preflight failed before windowed browser launch and is retained separately.
+See the [cohort ledger](performance/bbc-relative-cohort93-20261104.json) and
+[raw evidence](performance/raw/bbc-relative-cohort93-20261104.tar.gz).
+
+**Closed SVG follow-up:** `1606bff4c` admits only the existing closed SVG shape
+subset into grid/flex measurements. Complete SVG attribute/child identity checks
+run before replay. Both path array levels are owned beyond producer scratch, and
+restored consumers get separate writable arrays. All **306 refined focused
+executions** pass: 34 cases across three GC modes and three arms, with executable
+calls verified and unchanged final inputs. Initial compile failures from a test
+array alias remain recorded. Control `27b30a001` isolates SVG eligibility;
+**279 browser-instruction tests** pass. See the
+[focused ledger](performance/bbc-svg-measurement-focus-20261104.json) and
+[raw checks](performance/raw/bbc-svg-measurement-focus-20261104.tar.gz).
+
+Separate fresh production diagnostics now verify candidate-only SVG reuse before
+PNG, both original captures, complete content, all 72 original external scripts,
+actual native-image pins and normal exits. The broader cadence exercises **514
+unique cases / 511 passes** in each default/no-GC mode, retaining exactly the same
+three baseline failures and unchanged checked inputs. No full pass or cadence
+reset is claimed. Cohort 94 remains **unlaunched** after the disk preflight fails;
+no instruction saving or target acceptance is credited to SVG yet. BBC homepage
+still does not qualify for `OPTIMIZED_SITES.md`.
+
 **Unshifted-relative measurement follow-up:** `f9cfbc509` extends grid/flex
 measurement reuse to relative boxes whose insets are all `auto`, using the shared
 closed-flow proof. Out-of-flow descendants, shifted/sticky positions and SVG

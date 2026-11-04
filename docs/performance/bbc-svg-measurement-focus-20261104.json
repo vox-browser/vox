@@ -1,0 +1,279 @@
+{
+  "status": "Closed SVG measurement reuse passes306refined focused executions across3GCmodes and3arms, with34executable calls verified. LiveSVGattributes, scratch path ownership and independent writable replay arrays match uncached geometry. Initial3compile failures from an unsafe-alias test fixture are retained; the refined fixture explicitly aliases consumer arrays only after a verified cache replay. Native workload eligibility and instruction comparison still required.",
+  "engine_commit": "1606bff4c",
+  "control_commit": "27b30a001",
+  "focused": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-svg-control",
+        "exit": 0
+      },
+      {
+        "name": "default-all-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-svg-control",
+        "exit": 0
+      },
+      {
+        "name": "none-all-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-svg-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-all-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint",
+          "test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes",
+          "test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands",
+          "test_unavailable_images_and_other_replaced_elements_reject_block_retention",
+          "test_static_svg_parent_grid_reuses_geometry_after_movement_and_keeps_old_paint",
+          "test_svg_attribute_inputs_reject_path_viewbox_transform_and_namespace_mutations",
+          "test_static_svg_cache_rechecks_css_geometry_and_parent_size",
+          "test_svg_resource_instances_text_animation_and_foreign_content_keep_the_full_path",
+          "test_svg_input_rejects_inserted_nonlayout_animation_children_and_reordered_shapes",
+          "test_svg_snapshot_bounds_and_css_resource_dependencies_keep_the_full_path",
+          "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+          "test_measurement_grid_array_borrows_remain_independent_across_population",
+          "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint",
+          "test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes",
+          "test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands",
+          "test_unavailable_images_and_other_replaced_elements_reject_block_retention",
+          "test_static_svg_parent_grid_reuses_geometry_after_movement_and_keeps_old_paint",
+          "test_svg_attribute_inputs_reject_path_viewbox_transform_and_namespace_mutations",
+          "test_static_svg_cache_rechecks_css_geometry_and_parent_size",
+          "test_svg_resource_instances_text_animation_and_foreign_content_keep_the_full_path",
+          "test_svg_input_rejects_inserted_nonlayout_animation_children_and_reordered_shapes",
+          "test_svg_snapshot_bounds_and_css_resource_dependencies_keep_the_full_path",
+          "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+          "test_measurement_grid_array_borrows_remain_independent_across_population",
+          "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint",
+          "test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes",
+          "test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands",
+          "test_unavailable_images_and_other_replaced_elements_reject_block_retention",
+          "test_static_svg_parent_grid_reuses_geometry_after_movement_and_keeps_old_paint",
+          "test_svg_attribute_inputs_reject_path_viewbox_transform_and_namespace_mutations",
+          "test_static_svg_cache_rechecks_css_geometry_and_parent_size",
+          "test_svg_resource_instances_text_animation_and_foreign_content_keep_the_full_path",
+          "test_svg_input_rejects_inserted_nonlayout_animation_children_and_reordered_shapes",
+          "test_svg_snapshot_bounds_and_css_resource_dependencies_keep_the_full_path",
+          "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+          "test_measurement_grid_array_borrows_remain_independent_across_population",
+          "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "bfd3a38293b6d18e2843f29f5fdcf7099b452a4fed8c30eb75e407357c1a0275",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "7a1f4af3eae40683e26a8081cdf26e8d9df03ac994beeda813f5fbaf5f61c30c",
+      "/Users/alex/code/vox2/layout/retained_block_images_test.v": "62ca7a15cfa9267ac9ddf4c88c21cf7cc65845ba2b994a1e37024e195bc56a56",
+      "/Users/alex/code/vox2/layout/retained_simple_svg_test.v": "02e21d9d47f78ac0c62a991194dfafab31e8601151efc7cad79b64b52ba86ab9",
+      "/Users/alex/code/vox2/layout/measurement_rare_data_lifetime_test.v": "8cfb78169db046a12ed1f3af96d293e5000e947be1385d37b5a66c5c41f51f3e",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "ed41347a3ddcea41018a7eda9f518e24c7dede8b4922d6fee7e4c57777fc518b",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "a9b12fd7df188201d85a0d20ae24db038ad82c3de91b778df13050ad56595d30",
+      "/Users/alex/code/vox2/layout/retained_block_layout.v": "cbea30eb0ae0000c61b7d9996145f28a04ce73fb7bfcb39a6f5ce65ca1abacd9",
+      "/Users/alex/code/vox2/layout/retained_block_images.v": "bd9727a3566ceaf4ef55fdeb950ee8db43d7e099d233cafa71c13833d38e7f62",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc"
+    },
+    "unchanged": true,
+    "cases_per_run": 34,
+    "expected_cases": [
+      "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+      "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+      "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+      "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+      "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+      "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+      "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+      "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+      "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+      "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_grid_measurement_revalidates_svg_attributes_before_replay",
+      "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+      "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+      "test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached",
+      "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+      "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+      "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+      "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_flex_measurement_revalidates_svg_attributes_before_replay",
+      "test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint",
+      "test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes",
+      "test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands",
+      "test_unavailable_images_and_other_replaced_elements_reject_block_retention",
+      "test_static_svg_parent_grid_reuses_geometry_after_movement_and_keeps_old_paint",
+      "test_svg_attribute_inputs_reject_path_viewbox_transform_and_namespace_mutations",
+      "test_static_svg_cache_rechecks_css_geometry_and_parent_size",
+      "test_svg_resource_instances_text_animation_and_foreign_content_keep_the_full_path",
+      "test_svg_input_rejects_inserted_nonlayout_animation_children_and_reordered_shapes",
+      "test_svg_snapshot_bounds_and_css_resource_dependencies_keep_the_full_path",
+      "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+      "test_measurement_grid_array_borrows_remain_independent_across_population",
+      "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+    ]
+  },
+  "tool_tests": {
+    "command": "python3 -m unittest discover -s tools -p *browser_instructions_test.py",
+    "tests": 279,
+    "passed": true,
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*browser_instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 96272384,
+      "elapsed_seconds": 3.448150041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-svg-measurement-focus-20261104.tar.gz",
+    "bytes": 12207560,
+    "sha256": "7f5a0c7c6b8a9e21886a08b971830a05419a4d4f4874e6d9bb2a6be6dbf04ebf",
+    "members": 80,
+    "all_members_verified": true
+  },
+  "target_met": false,
+  "catalog_entry_added": false,
+  "recorded_unix": 1793822704.2127879,
+  "archive_completion_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-svg-measurement-20261104-2250/archive-focused.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 71041024,
+    "elapsed_seconds": 2.012678625,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
