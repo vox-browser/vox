@@ -743,11 +743,11 @@ header / 956 body pixels**. That candidate remains separate from the registered
 archive until the full gate passes. Live scripting and whole-site behavior are
 outside this frozen viewport result.
 
-Production pixel validation of the fix is pending. The shared compile receipt
-`20261103-192306-58b60ec7` contains the implementation; the currently published
-bundle predates it. A five-minute bounded validation job checks the new
-regression, candidate and Hacker News control if a qualified replacement is
-published during its observation window; its linked status records any timeout.
+At the initial checkpoint, production pixel validation was pending. The shared
+compile receipt `20261103-192306-58b60ec7` contained the implementation while the
+published bundle predated it. A five-minute bounded validation job checked the new
+regression, candidate and Hacker News control if a qualified replacement was
+published during its observation window; its linked status records the timeout.
 Earlier failed builds rejected repository changes before C preprocessing.
 The initial fixture's uBO startup failure, SOCKS acquisition timeout and attempt
 using the retired HTTP proxy port are retained; none supplied reference credit.
@@ -755,6 +755,80 @@ using the retired HTTP proxy port are retained; none supplied reference credit.
 [original baseline](../Build/register-parity-20261103-next/baseline/summary.json),
 [fresh candidate](../Build/register-parity-20261103-next/fresh-current-http/summary.json),
 [publication validation status](../Build/register-parity-20261103-next/published-validation.json).
+
+### Register production checks and remaining pixels (2026-11-04)
+
+Production executable `9ebd66e2…` contains the block-alignment implementation.
+The same source-qualified candidate improves from **7,465 to 982 native pixels**;
+source/frozen and independent Brave replay comparisons remain **0**. The header
+is now positioned correctly. Its authored regression has **80 pixels** of
+one-byte edge error on a white rectangle inheriting a fractional translation.
+
+The main remaining text error was automatic hyphenation of the final word in
+the IPO subtitle. Commit `81434ddb0` follows Blink's
+[paragraph-final-word policy](https://github.com/chromium/chromium/blob/main/third_party/blink/renderer/platform/fonts/shaping/shaping_line_breaker.cc),
+keeping that word intact when it can move to the next line. On production
+executable `1af7388d…`, the same candidate improves to **246 pixels**, with
+**0 source/frozen and independent replay differences**. The residual is **26
+header SVG pixels and 220 photo pixels**, with a maximum channel error of 13.
+This remains a failing zero-pixel gate.
+
+The new authored `paragraph-final-hyphenation` reference has two identical fresh
+Brave/uBO captures and exact source fidelity. The initial implementation fixed
+its ordinary paragraph but exposed a separate span-boundary case, retaining a
+942-pixel failure. Follow-up commit `da87d7d92` preserves Blink's exception at
+the start of a new text range. All **eight hyphenation tests pass in both GC
+modes**, including the ordinary/span distinction, long first words, nonfinal
+words, language and intrinsic-size controls.
+
+Commit `ca4549005` extends the existing Skia-coverage flag to plain backgrounds
+inheriting a fractional translation. The failing control confirms that the
+descendant previously missed that flag; all **eight background tests pass in
+both GC modes** after the fix. The existing 80-pixel browser regression covers
+the actual drawing path. Direct GPU and adapter probes produce the expected
+half-coverage byte; they do not replace a complete production screenshot check.
+
+Production executable `698536dc…` contains both follow-ups. All **three authored
+browser controls pass at zero pixels**: final-word hyphenation, block alignment
+and translated solid backgrounds. The source-qualified Register candidate still
+differs at **246 pixels**, with both Brave comparisons exact. The **Hacker News
+control passes all strict gates at zero pixels**. A subsequent lookup cleanup,
+`e560b618d`, rejects nonfinal words before inspecting their text prefix; the eight
+hyphenation checks pass in both GC modes with that change too.
+Its browser regression also passes at zero pixels on executable `289eb15e…`,
+whose generated code contains the lookup cleanup.
+
+The full site's CSS replaces Foundation Icons glyphs with SVG backgrounds.
+A preliminary font-only control is exact but does not reproduce that path.
+The original SVG bytes in an isolated background fixture differ at **seven
+one-byte pixels**, with source/frozen and independent Brave references exact.
+Its first pair matches Vox's full-page icon pixels, while Brave changes coverage
+in the full page. This narrows the next investigation to the SVG drawing context.
+The registered Register archive remains `44f76a95…`; candidate `4f343769…` stays
+separate while its strict gate fails.
+
+Commit `d4f0561a5` addresses the SVG-picture rejection. Round-capped and curved
+solid SVG strokes can stay in the complete picture, whose native recorder
+computes their stroked bounds. Compact scalar batches retain their previous
+straight, butt-ended stroke restriction. All **five picture-policy tests pass
+in both GC modes**, including curves, caps, joins, dashed and non-scaling
+fallbacks and the existing effect/clip/repetition controls.
+All **11 existing scalar SVG tests also pass** with default GC.
+
+The new registered `register-svg-stroke-recording` browser regression preserves
+the two original SVG byte streams and adds a distant curved path. Its source
+and two fresh Brave/uBO references agree at zero pixels; the available browser
+differs by **107 pixels**, reproducing the larger coverage error. An earlier
+attempt was rejected because the shared bundle changed during comparison; that
+failure is retained alongside the qualified repeat. Production validation of
+`d4f0561a5` remains pending: the existing shared compile predates the policy
+change. Its five-minute publication observation ended without a qualifying
+bundle, retaining a pending receipt. The prepared validation command covers
+the new regression, the earlier controls, the Register candidate and Hacker News.
+[Durable evidence](evidence/register-parity-20261104.json),
+[measured candidate](../Build/register-parity-20261104/hyphen-fixed-candidate/summary.json),
+[completed follow-up validation](../Build/register-parity-20261104/followup-validation.json),
+[SVG-picture validation](../Build/register-parity-20261104/svg-followup-validation.json).
 
 ## Run
 

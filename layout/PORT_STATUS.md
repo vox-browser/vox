@@ -13,6 +13,16 @@ formatting tests pass. Table/multicol and vertical writing remain separate work;
 this does not establish complete CSS Align syntax or upstream method parity.
 See [the Register checkpoint](../docs/FORUM_NEWS_EXPANSION.md).
 
+The 2026-11-04 Register compatibility follow-up keeps a paragraph's final word
+intact under Chromium's automatic-hyphenation policy, while retaining the
+line-start exception for a new text range. Plain backgrounds also retain Skia
+coverage when a fractional translation is inherited from an ancestor. The eight
+hyphenation and eight background tests pass with default GC and GC disabled.
+The pinned full-page gap is 246 pixels. Production build `698536dc…` passes the
+hyphenation, block-alignment and translated-background browser controls at zero
+pixels, as well as the strict Hacker News control. These are Chromium
+compatibility rules and do not establish full upstream layout or live-site parity.
+
 All 50 upstream Layout `.cpp` units have filename-level homes in the typed V
 Layout package. That inventory does not establish body-level parity: the
 current semantic audit reports 4 unmatched Layout implementations, and the
