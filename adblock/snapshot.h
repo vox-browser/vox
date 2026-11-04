@@ -46,7 +46,17 @@ static JSValueRef vox_adblock_trie_checksum(JSContextRef context,
     if (length && !base) return vox_adblock_snapshot_error(context, "Missing Uint32Array trie bytes", exception);
     const uint32_t *words = length ? (const uint32_t *)(base + offset) : NULL;
     uint32_t hash = 177573u ^ (uint32_t)length;
-    for (size_t index = 0; index < length; ++index) hash = hash * 33u ^ words[index];
+    // The recurrence is serial; unrolling only removes per-word loop overhead
+    // and lets the compiler pair the loads (5 -> 3 instructions per word).
+    size_t index = 0;
+    for (; index + 8 <= length; index += 8) {
+        const uint32_t *w = words + index;
+        hash = hash * 33u ^ w[0]; hash = hash * 33u ^ w[1];
+        hash = hash * 33u ^ w[2]; hash = hash * 33u ^ w[3];
+        hash = hash * 33u ^ w[4]; hash = hash * 33u ^ w[5];
+        hash = hash * 33u ^ w[6]; hash = hash * 33u ^ w[7];
+    }
+    for (; index < length; ++index) hash = hash * 33u ^ words[index];
     return JSValueMakeNumber(context, (int32_t)hash);
 }
 
