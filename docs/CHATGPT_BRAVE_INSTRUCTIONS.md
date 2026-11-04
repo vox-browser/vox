@@ -44,3 +44,46 @@ window spawned a new renderer during measurement. Commit `9dfcb790e` verifies
 the new helper's pinned ancestry, creation times, executable and separate
 coalition before excluding it; ninety counter/harness tests pass. The failed
 cohort is retained. This audit correction earns no engine optimization credit.
+
+## V compiler profile
+
+The requested `v -profile` diagnostic now completes on the same saved page with
+the original scripts, bootstrap marker and **zero differing pixels**. It uses
+`-profile - -profile-no-inline -profile-fns main__main`, an instrumented `-O1`
+standalone executable, and the canonical installed native libraries. Generated
+compiler inputs and the executable are pinned; the shared source checkout
+changed during generation, so this identifies an executable rather than a clean
+source commit. No app bundle or source tree was copied.
+
+| V function boundary | Calls | Inclusive ms | Self ms |
+| --- | ---: | ---: | ---: |
+| `end_chromium_text_scroll_layer` | 43 | 3,779.516 | 3,779.516 |
+| `array.get` | 166,018,177 | 1,592.800 | 1,592.800 |
+| `ModuleHost.supply` | 265 | 12,975.292 | 1,157.963 |
+| `Runtime.call_engine_function` | 2,887 | 8,312.833 | 924.719 |
+| `BrowserApp.draw_command` | 609 | 1,198.354 | 836.845 |
+
+These are instrumented elapsed times. Self time includes native/JavaScriptCore
+calls, waits and instrumentation overhead; it cannot separate CPU work from
+GPU or OS waits. Inclusive rows overlap, and a recursive function's aggregate
+inclusive time can exceed the run's wall time. The main-thread scope excludes
+V module initialization and unscoped background-thread counters.
+
+Short-settle captures ended before the author bootstrap and are retained as
+failures. The successful diagnostic explicitly uses a **30-second settle**,
+versus five seconds for acceptance. Its standalone filter-worker entry also
+differs from the production minimal helper. It earns no instruction or Brave
+acceptance credit. The [profile receipt](performance/chatgpt-v-profile-20261104.json)
+records all attempts, rankings from the 11,269-function report, input identities,
+compiler flags, memory guards and the raw report hash. The original 5% goal remains open.
+
+Summarize the retained raw report with:
+
+```sh
+python3 tools/summarize_v_profile.py \
+  Build/chatgpt-v-profile-20261104-1230/current-settled/profile.txt \
+  --output Build/chatgpt-v-profile-20261104-1230/current-settled/summary.json
+```
+
+The summary tool's eight tests cover units, independent rankings, mixed-process
+duplicate rejection, malformed counters and negative-self diagnostics.
