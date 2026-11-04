@@ -174,6 +174,37 @@ int vox_graphite_canvas_draw_path(VoxGraphitePath const* path, float const* boun
     return result && drawn;
 }
 
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_image(VoxGraphiteImage const* image, float const* bounds,
+    VoxGraphiteCanvasClip const* clips, int clip_count)
+{
+    if (!image || !image_draw_is_valid(image)) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if (!canvas_recorder) return 0;
+    PreparedImageDraw prepared;
+    plan_image_draw(image, prepared);
+    if (!prepare_image_texture(canvas_recorder.get(), image, prepared)) return 0;
+    if (prepared.upload.pending) {
+        // A new upload enters the shared upload cache below. Queue its texture
+        // writes and mipmap generation now, ahead of any other recorder that
+        // finds the cached texture before this canvas is read back.
+        auto* gpu = context();
+        if (auto recording = canvas_recorder->snap(); gpu && recording) {
+            skgpu::graphite::InsertRecordingInfo insertion;
+            insertion.fRecording = recording.get();
+            if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
+        }
+    }
+    int result = canvas_draw(bounds, clips, clip_count, [&](SkCanvas* canvas, CanvasTile const& tile) {
+        auto local = *image;
+        local.flags &= ~VOX_GRAPHITE_IMAGE_FORCE_MSAA;
+        canvas_local_matrix(image->matrix, local.matrix, tile);
+        draw_prepared_image(canvas, &local, prepared);
+    });
+    image_upload_cache.finish(std::move(prepared.upload), prepared.texture);
+    return result;
+}
+
 // Premultiplied BGRA pixels rasterized on a transparent CPU target, composited
 // source-over at an integral device position: text and other CPU-only leaves.
 extern "C" __attribute__((visibility("default")))

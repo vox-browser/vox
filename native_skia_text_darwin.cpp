@@ -1445,6 +1445,12 @@ namespace {
 int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
     int region_left, int region_top, char const* name, std::function<bool(uint32_t*)> const& raster);
 void gpu_canvas_decline(CGContextRef destination);
+// Whether a root-layer leaf's region overlaps a Chromium MSAA raster tile.
+bool gpu_canvas_root_msaa_overlap(CGContextRef destination, RasterRegion const& region,
+    float page_x, float page_y, float scroll_y);
+int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
+    VoxGraphiteImage const& descriptor, SkRect device_bounds, RasterRegion const& region,
+    float page_x, float page_y, float scroll_y, bool rounded_mask);
 }
 
 static int draw_retained_glyph_run(CGContextRef destination,
@@ -2357,6 +2363,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
             || !clip_radii || image_border_width > 0)) return 0;
     std::vector<uint32_t> pixels;
     bool has_background = false;
+    if (!s_chromium_painting) gpu_canvas_decline(destination);
     if (s_chromium_painting) {
         VoxGraphiteImage descriptor {
             .matrix = {},
@@ -2383,6 +2390,8 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
             shared_recording_speculative_content(destination, ink, page_y, scroll_y);
             if (shared_recording_defers_leaf_raster(destination, ink)) return 1;
         }
+        if (gpu_canvas_draw_image(destination, matrix, descriptor, device_bounds, region,
+                page_x, page_y, scroll_y, rounded_mask) == 2) return 1;
         pixels.resize(size_t(raster_width) * raster_height);
         has_background = (image_flags & 2) && copy_backdrop(destination,
             region, destination_scale, raster_width, raster_height, pixels);
@@ -4498,16 +4507,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         return 1;
     // Chromium rasterizes a root tile containing paths with MSAA; this leaf's
     // own path reproduces that per tile, while the GPU canvas has no tiles yet.
-    bool root_msaa_tile = false;
-    if (s_gpu_canvas && s_gpu_canvas->destination == destination && s_raster_layer_is_root
-        && s_msaa_grid_columns > 0 && !s_msaa_grid_tiles.empty()) {
-        auto scale = raster_scale_for_context(destination);
-        int width = raster_dimension(region.width(), scale), height = raster_dimension(region.height(), scale);
-        long first_x = std::lround((region.left - page_x - s_raster_origin_x) * scale);
-        long first_y = std::lround((region.top - page_y + scroll_y - s_raster_origin_y + s_root_raster_scroll_y) * scale);
-        vox_chromium_msaa_rects(width, height, first_x, first_y, s_msaa_grid_width, s_msaa_grid_height,
-            s_msaa_grid_columns, s_msaa_grid_tiles, [&](int, int, int, int) { root_msaa_tile = true; });
-    }
+    bool root_msaa_tile = gpu_canvas_root_msaa_overlap(destination, region, page_x, page_y, scroll_y);
     if (root_msaa_tile) gpu_canvas_decline(destination);
     if (!root_msaa_tile && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
         std::vector<VoxGraphiteCanvasClip> clips;

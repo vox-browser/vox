@@ -42,6 +42,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_read) read = nullptr;
     decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
+    decltype(&vox_graphite_canvas_draw_image) draw_image = nullptr;
     decltype(&vox_graphite_canvas_end) end = nullptr;
 };
 
@@ -58,11 +59,12 @@ GpuCanvasApi const* gpu_canvas_api()
         value.read = reinterpret_cast<decltype(value.read)>(dlsym(library, "vox_graphite_canvas_read"));
         value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
         value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
+        value.draw_image = reinterpret_cast<decltype(value.draw_image)>(dlsym(library, "vox_graphite_canvas_draw_image"));
         value.end = reinterpret_cast<decltype(value.end)>(dlsym(library, "vox_graphite_canvas_end"));
         return value;
     }();
     return api.begin && api.upload && api.draw_shadow && api.draw_shape && api.read && api.end
-        && api.draw_pixels && api.draw_path
+        && api.draw_pixels && api.draw_path && api.draw_image
         ? &api : nullptr;
 }
 
@@ -245,7 +247,7 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
         return true;
     if (kind == "fill_rect") return !(flags & (1 | 2 | 4 | 64));
     if (kind == "draw_text") return !gpu_canvas_text_disabled();
-    if (kind == "draw_svg_path" || kind == "fill_gradient") return true;
+    if (kind == "draw_svg_path" || kind == "fill_gradient" || kind == "draw_replaced_image") return true;
     return false;
 }
 
@@ -289,6 +291,48 @@ int gpu_canvas_defer_rect(CGContextRef destination, float x, float y, float widt
 }
 
 namespace {
+bool gpu_canvas_root_msaa_overlap(CGContextRef destination, RasterRegion const& region,
+    float page_x, float page_y, float scroll_y)
+{
+    if (!s_gpu_canvas || s_gpu_canvas->destination != destination || !s_raster_layer_is_root
+        || s_msaa_grid_columns <= 0 || s_msaa_grid_tiles.empty()) return false;
+    auto scale = raster_scale_for_context(destination);
+    int width = raster_dimension(region.width(), scale), height = raster_dimension(region.height(), scale);
+    long first_x = std::lround((region.left - page_x - s_raster_origin_x) * scale);
+    long first_y = std::lround((region.top - page_y + scroll_y - s_raster_origin_y + s_root_raster_scroll_y) * scale);
+    bool overlap = false;
+    vox_chromium_msaa_rects(width, height, first_x, first_y, s_msaa_grid_width, s_msaa_grid_height,
+        s_msaa_grid_columns, s_msaa_grid_tiles, [&](int, int, int, int) { overlap = true; });
+    return overlap;
+}
+
+int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
+    VoxGraphiteImage const& descriptor, SkRect device_bounds, RasterRegion const& region,
+    float page_x, float page_y, float scroll_y, bool rounded_mask)
+{
+    if (!s_gpu_canvas || s_gpu_canvas->destination != destination) return 0;
+    if (rounded_mask || gpu_canvas_root_msaa_overlap(destination, region, page_x, page_y, scroll_y)) {
+        gpu_canvas_decline(destination);
+        return 0;
+    }
+    std::vector<VoxGraphiteCanvasClip> clips;
+    auto* frame = gpu_canvas_for_leaf(destination, clips);
+    if (!frame) return 0;
+    auto scale = SkMatrix::Scale(frame->scale, frame->scale);
+    auto gpu = descriptor;
+    SkMatrix::Concat(scale, matrix).get9(gpu.matrix);
+    auto bounds = scale.mapRect(device_bounds).makeOutset(2, 2);
+    float canvas_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
+    if (!gpu_canvas_api()->draw_image(&gpu, canvas_bounds, clips.data(), int(clips.size()))) {
+        gpu_canvas_flush();
+        return 0;
+    }
+    gpu_canvas_name_leaf(*frame, "image", bounds, descriptor.flags, clips.size());
+    frame->cpu_stale = true;
+    ++frame->draws;
+    return gpu_canvas_verify() ? 1 : 2;
+}
+
 int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
     int region_left, int region_top, char const* name, std::function<bool(uint32_t*)> const& raster)
 {
