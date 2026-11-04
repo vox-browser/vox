@@ -720,5 +720,286 @@
     "observed_peak_rss_bytes": 135626752,
     "elapsed_seconds": 55.249370709,
     "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "completed_build_watch": {
+    "exit": 2,
+    "duration_limit_seconds": 600,
+    "observations": [
+      {
+        "unix": 1793815057.4079628,
+        "executable_sha256": "b3e9470671f7a1e315a7ab093c7b24492b97d8cfcbfc1d443a8c2c0abd6fefeb",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815072.440814,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815087.470444,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815102.502157,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815117.541006,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815132.571438,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815147.596354,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815162.629866,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815177.658056,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815192.68399,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815207.7108538,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815222.7455812,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815237.767186,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815252.792578,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815267.8251789,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815282.8577979,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815297.888443,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815312.9252858,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815327.9524102,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815342.981836,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815358.0049438,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815373.0268521,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815388.063691,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815403.093364,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815418.1200461,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815433.148492,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815448.170603,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815463.195104,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815478.2331572,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815493.260979,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815508.2900229,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815523.310834,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815538.34039,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815553.368499,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815568.399224,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815583.426435,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815598.452471,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815613.491967,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815628.517571,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      },
+      {
+        "unix": 1793815643.5498261,
+        "executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+        "receipt_matches": true,
+        "contains_edge_marker": false
+      }
+    ],
+    "result": "No completed bundle containing edge-reuse marker; no native candidate epoch and no cohort91 launched. Latest request remains coalesced into shared production worker."
+  },
+  "shared_build_rejection": {
+    "path": "Build/production-build/receipts/20261104-205756-720b17c5",
+    "result": {
+      "exit": 1,
+      "inputs": {
+        "build_inputs_sha256": "f8a7999c389b9b4cf7c4878be2aa7c97edd7e78d297874ffcfff02a8e56fb5f2",
+        "dirty": true,
+        "head": "0e2cb622f813550302bcadb1a79017977bff8d7f",
+        "repository_sha256": "5e47f95a149b6f9d77604be1e943c5f98b50d2dd1a21181ba322beb687ac4396"
+      },
+      "request": {
+        "head": "0e2cb622f813550302bcadb1a79017977bff8d7f",
+        "id": "8c84bac1a6554940ab3130cc852547a9"
+      }
+    },
+    "memory_guard": {
+      "command": [
+        "sh",
+        "-c",
+        "exec sh -c \"$(cat)\" \"$0\"",
+        "/Users/alex/code/vox2/build-prod-browser.sh"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5927010304,
+      "elapsed_seconds": 530.410936125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "log_tail": "cument_heap.v:3:8: warning: module 'os' is imported but never used. Use `import os as _`, to silence this warning, or just remove the unused import line\n    1 | module platform\n    2 | \n    3 | import os\n      |        ~~\n    4 | \n    5 | pub const document_heap_element_threshold = 1024\n/Users/alex/code/ui2/ui/zz_tooltip_demo_tmp.v:3:8: warning: module 'os' is imported but never used. Use `import os as _`, to silence this warning, or just remove the unused import line\n    1 | module ui2\n    2 | \n    3 | import os\n      |        ~~\n    4 | import time\n    5 |\n/Users/alex/code/ui2/ui/zz_tooltip_demo_tmp.v:4:8: warning: module 'time' is imported but never used. Use `import time as _`, to silence this warning, or just remove the unused import line\n    2 | \n    3 | import os\n    4 | import time\n      |        ~~~~\n    5 | \n    6 | __global tooltip_demo_frames = 0\nTraceback (most recent call last):\n  File \"/Users/alex/code/vox2/tools/freeze_browser_compile.py\", line 296, in <module>\n    raise SystemExit(main())\n  File \"/Users/alex/code/vox2/tools/freeze_browser_compile.py\", line 283, in main\n    data = prepare(args.root, args.stage, args.receipt, args.source, args.flags, args.output)\n  File \"/Users/alex/code/vox2/tools/freeze_browser_compile.py\", line 198, in prepare\n    raise RuntimeError('Repository inputs changed before C preprocessing')\nRuntimeError: Repository inputs changed before C preprocessing\n{\"command\": [\"sh\", \"-c\", \"exec sh -c \\\"$(cat)\\\" \\\"$0\\\"\", \"/Users/alex/code/vox2/build-prod-browser.sh\"], \"reason\": \"completed\", \"child_exit_code\": 1, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 12884901888, \"observed_peak_rss_bytes\": 5927010304, \"elapsed_seconds\": 530.410936125, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n",
+    "reason": "Repository inputs changed before C preprocessing; build rejected correctly, previous completed bundle retained. Shared worker has started a newer coalesced request. No guard bypass and no candidate acceptance launch."
   }
 }

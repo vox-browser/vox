@@ -19,6 +19,10 @@ resolution; its instrumentation is separate from instruction acceptance.
 Native candidate validation and cohort **91 remain unlaunched**. Completed shared
 bundles `b3e94706` and then `487c7846` lack this path; a shared production build
 already has the latest request coalesced. No duplicate production build is queued.
+The bounded watcher finishes with no qualifying bundle. Build `205756-720b17c5`
+fails correctly before C preprocessing because repository inputs changed; its
+actual guard exit 1 and error are retained in the ledger. The shared worker has
+started a newer coalesced request. A stable completed bundle is still required.
 Three separate sampled baseline captures pass native exit, original content/pixels,
 all 72 external scripts and native image pins, but their CPU samples are
 inconclusive: a launch PID, teardown after PNG, and an empty call graph. Two earlier
