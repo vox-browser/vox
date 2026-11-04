@@ -26,6 +26,7 @@ static void native_capture_instruction_checkpoint(const char *label) {
 
 #include "native_layer_presentation_darwin.h"
 #include "native_presented_capture_darwin.h"
+#include "native_image_capture_policy_darwin.h"
 #include "native_scroll_raster_darwin.h"
 #include "native_stationary_raster_darwin.h"
 #include "native_deferred_font_darwin.h"
@@ -5603,8 +5604,9 @@ static void native_update_animated_image_frame(NSImage *image) {
 	// The screenshot JavaScript host resolves its image-animation checkpoint at
 	// frame 1. Keep native decoding at the same checkpoint; otherwise the capture
 	// delay can wrap a looping GIF back to frame 0 after the test has completed.
-	if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
-		[animated_representation setProperty:NSImageCurrentFrame withValue:@(MIN(1, frame_count - 1))];
+	if (vox_apply_image_capture_policy(animated_representation,
+		getenv("VOX_CAPTURE_IMAGE_ANIMATION_POLICY"),
+		getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL)) {
 		return;
 	}
 	static NSMutableDictionary<NSValue *, NSNumber *> *animation_start_times;
