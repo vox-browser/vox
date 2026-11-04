@@ -29,6 +29,8 @@ struct GpuCanvasFrame {
     // other commands use the CPU canvas so their own CPU drawing stays ordered.
     bool in_gpu_command = false;
     std::map<std::string, unsigned> flush_reasons;
+    // Diagnostics: why GPU-capable leaves still used their own raster path.
+    std::map<std::string, unsigned> leaf_misses;
     uint64_t leaf_differing = 0;
     int leaf_error = 0;
 };
@@ -43,6 +45,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
     decltype(&vox_graphite_canvas_draw_image) draw_image = nullptr;
+    decltype(&vox_graphite_canvas_draw_shape_msaa) draw_shape_msaa = nullptr;
     decltype(&vox_graphite_canvas_end) end = nullptr;
 };
 
@@ -60,11 +63,12 @@ GpuCanvasApi const* gpu_canvas_api()
         value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
         value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
         value.draw_image = reinterpret_cast<decltype(value.draw_image)>(dlsym(library, "vox_graphite_canvas_draw_image"));
+        value.draw_shape_msaa = reinterpret_cast<decltype(value.draw_shape_msaa)>(dlsym(library, "vox_graphite_canvas_draw_shape_msaa"));
         value.end = reinterpret_cast<decltype(value.end)>(dlsym(library, "vox_graphite_canvas_end"));
         return value;
     }();
     return api.begin && api.upload && api.draw_shadow && api.draw_shape && api.read && api.end
-        && api.draw_pixels && api.draw_path && api.draw_image
+        && api.draw_pixels && api.draw_path && api.draw_image && api.draw_shape_msaa
         ? &api : nullptr;
 }
 
@@ -196,6 +200,15 @@ void gpu_canvas_name_leaf(GpuCanvasFrame& frame, char const* kind, SkRect bounds
     std::snprintf(frame.leaf, sizeof frame.leaf, "%s fill=%d root=%d clips=%zu msaa_grid=%zu bounds=%.0f,%.0f,%.0fx%.0f",
         kind, fill, int(s_raster_layer_is_root), clips, s_msaa_grid_tiles.size(),
         bounds.left(), bounds.top(), bounds.width(), bounds.height());
+}
+
+void gpu_canvas_note_miss(CGContextRef destination, char const* leaf, bool msaa)
+{
+    auto* frame = s_gpu_canvas.get();
+    if (!frame || !gpu_canvas_diagnostics()) return;
+    char const* reason = frame->destination != destination ? "offscreen"
+        : msaa ? "msaa" : !frame->in_gpu_command ? "unapproved" : "other";
+    ++frame->leaf_misses[std::string(leaf) + ":" + reason];
 }
 
 // The canvas for `destination`, ready for a GPU leaf, with its clips in device
@@ -427,6 +440,12 @@ extern "C" void ladybird_v_skia_gpu_canvas_end()
             s_gpu_canvas->flushes, s_gpu_canvas->declined,
             (unsigned long long)s_gpu_canvas->compared, (unsigned long long)s_gpu_canvas->differing,
             s_gpu_canvas->max_error);
+    if (gpu_canvas_diagnostics() && !s_gpu_canvas->leaf_misses.empty()) {
+        std::string misses;
+        for (auto const& [name, count] : s_gpu_canvas->leaf_misses)
+            misses += " " + name + "=" + std::to_string(count);
+        std::fprintf(stderr, "VOX_GPU_CANVAS_MISSES%s\n", misses.c_str());
+    }
     if (gpu_canvas_diagnostics() && !s_gpu_canvas->flush_reasons.empty()) {
         std::string reasons;
         for (auto const& [name, count] : s_gpu_canvas->flush_reasons)

@@ -159,6 +159,50 @@ int vox_graphite_canvas_draw_shape(VoxGraphiteShape const* shape, float const* b
     });
 }
 
+// A root shape inside a Chromium MSAA tile: its own leaf path draws over the
+// backdrop in a multisampled pass, then publishes under the destination clips.
+// Do the same on the GPU: copy the canvas area to a scratch surface, draw the
+// shape there in a multisampled pass, and copy it back through the clips.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_shape_msaa(VoxGraphiteShape const* shape, float const* bounds,
+    VoxGraphiteCanvasClip const* clips, int clip_count)
+{
+    if (!shape || !bounds) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if (!canvas_recorder) return 0;
+    SkPaint copy;
+    copy.setBlendMode(SkBlendMode::kSrc);
+    for (auto& tile : canvas_tiles) {
+        auto area = SkRect::MakeLTRB(bounds[0] - tile.x, bounds[1] - tile.y,
+            bounds[2] - tile.x, bounds[3] - tile.y).roundOut();
+        if (!area.intersect(tile.clip)) continue;
+        auto snapshot = tile.surface->makeImageSnapshot(area);
+        auto scratch = snapshot ? SkSurfaces::RenderTarget(canvas_recorder.get(),
+            canvas_info(area.width(), area.height())) : nullptr;
+        if (!scratch) return 0;
+        auto* draw = scratch->getCanvas();
+        draw->drawImage(snapshot, 0, 0, SkSamplingOptions(), &copy);
+        auto local = *shape;
+        local.force_msaa = 1;
+        SkMatrix matrix;
+        matrix.set9(shape->matrix);
+        matrix.postTranslate(-(tile.x + area.x()), -(tile.y + area.y()));
+        matrix.get9(local.matrix);
+        draw_shape_on_canvas(draw, local, area.width(), area.height());
+        auto result = scratch->makeImageSnapshot();
+        if (!result) return 0;
+        auto* canvas = tile.surface->getCanvas();
+        canvas->save();
+        canvas->resetMatrix();
+        canvas->clipRect(SkRect::Make(area));
+        apply_canvas_clips(canvas, tile, clips, clip_count);
+        canvas->resetMatrix();
+        canvas->drawImage(result, area.x(), area.y(), SkSamplingOptions(), &copy);
+        canvas->restore();
+    }
+    return 1;
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_draw_path(VoxGraphitePath const* path, float const* bounds,
     VoxGraphiteCanvasClip const* clips, int clip_count)

@@ -1445,6 +1445,7 @@ namespace {
 int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
     int region_left, int region_top, char const* name, std::function<bool(uint32_t*)> const& raster);
 void gpu_canvas_decline(CGContextRef destination);
+void gpu_canvas_note_miss(CGContextRef destination, char const* leaf, bool msaa);
 // Whether a root-layer leaf's region overlaps a Chromium MSAA raster tile.
 bool gpu_canvas_root_msaa_overlap(CGContextRef destination, RasterRegion const& region,
     float page_x, float page_y, float scroll_y);
@@ -4507,9 +4508,23 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         return 1;
     // Chromium rasterizes a root tile containing paths with MSAA; this leaf's
     // own path reproduces that per tile, while the GPU canvas has no tiles yet.
-    bool root_msaa_tile = gpu_canvas_root_msaa_overlap(destination, region, page_x, page_y, scroll_y);
-    if (root_msaa_tile) gpu_canvas_decline(destination);
-    if (!root_msaa_tile && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
+    // Multisampling changes only partially covered pixels. A filled, unclipped-out
+    // rectangle on whole device pixels covers each pixel fully either way.
+    bool msaa_invariant = false;
+    if (fill == 1 && rounded_rect.isRect() && !has_underlay && s_rect_clip_outs.empty()
+        && matrix.isScaleTranslate()) {
+        auto scale = raster_scale_for_context(destination);
+        auto device = SkMatrix::Scale(scale, scale).mapRect(matrix.mapRect(rounded_rect.rect()));
+        msaa_invariant = true;
+        for (float edge : {device.left(), device.top(), device.right(), device.bottom()})
+            msaa_invariant = msaa_invariant && std::abs(edge - std::round(edge)) <= 0.001f;
+    }
+    bool root_msaa_tile = !msaa_invariant
+        && gpu_canvas_root_msaa_overlap(destination, region, page_x, page_y, scroll_y);
+    static bool const msaa_subpass = !std::getenv("VOX_GPU_CANVAS_DISABLE_MSAA_SUBPASS");
+    if (root_msaa_tile && !msaa_subpass) gpu_canvas_decline(destination);
+    bool rounded_on_canvas = false;
+    if ((!root_msaa_tile || msaa_subpass) && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
         std::vector<VoxGraphiteCanvasClip> clips;
         if (auto* frame = gpu_canvas_for_leaf(destination, clips)) {
             VoxGraphiteShape descriptor {
@@ -4538,14 +4553,17 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             SkMatrix::Concat(device, matrix).get9(descriptor.matrix);
             auto bounds = device.mapRect(matrix.mapRect(local_bounds)).makeOutset(2, 2);
             float device_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
-            if (gpu_canvas_api()->draw_shape(&descriptor, device_bounds, clips.data(), int(clips.size()))) {
+            if (root_msaa_tile ? gpu_canvas_api()->draw_shape_msaa(&descriptor, device_bounds, clips.data(), int(clips.size()))
+                    : gpu_canvas_api()->draw_shape(&descriptor, device_bounds, clips.data(), int(clips.size()))) {
                 gpu_canvas_name_leaf(*frame, "shape", bounds, fill, clips.size());
                 frame->cpu_stale = true;
                 ++frame->draws;
+                rounded_on_canvas = true;
                 if (!gpu_canvas_verify()) return 1;
             } else gpu_canvas_flush();
         }
     }
+    if (!rounded_on_canvas) gpu_canvas_note_miss(destination, s_raster_layer_is_root ? "shape-root" : "shape-layer", root_msaa_tile);
 
     auto destination_scale = screenshot_uses_logical_pixels()
         ? 1.0f
