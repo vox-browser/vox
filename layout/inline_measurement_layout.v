@@ -32,6 +32,7 @@ struct InlineMeasurementLayout {
 	font_policy dom.FontRenderingPolicy
 	style_environment u64
 	initial_height CSSPixels
+	initial_available_height AvailableSize
 	lines []LineBox
 	inline_end ?StaticPositionRect
 	result InlineFormattingResult
@@ -43,7 +44,9 @@ fn inline_measurement_key(used &UsedValues, mode LayoutMode, space AvailableSpac
 	return InlineMeasurementKey{
 		mode: mode
 		width_only: width_only
-		space: space
+		space: if !retain_inline_measurement_block_space && !definite_height {
+			AvailableSpace.new(space.width, AvailableSize.make_indefinite())
+		} else { space }
 		width: used.content_width()
 		height: if !retain_inline_measurement_indefinite_height && !definite_height {
 			CSSPixels.from_raw(0)
@@ -118,6 +121,9 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 			&& cached.font_policy == root.document().font_rendering_policy()
 			&& cached.style_environment == root.document().style_environment_version()
 			&& inline_measurement_inputs_are_current(cached.inputs) {
+			if cached.initial_available_height != space.height {
+				report_inline_measurement_block_space(root)
+			}
 			if !key.definite_height && cached.initial_height != used.content_height() {
 				report_indefinite_inline_measurement_height(root)
 			}
@@ -159,6 +165,7 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 		font_policy: root.document().font_rendering_policy()
 		style_environment: root.document().style_environment_version()
 		initial_height: used.content_height()
+		initial_available_height: space.height
 		lines: own_inline_layout_lines(used.line_boxes)
 		inline_end: used.inline_end_static_position_rect()
 		result: result
