@@ -24,7 +24,9 @@
     "wide_ink_scan_probed": "64e0780be",
     "native_test_rtti": "c250dfddb",
     "initial_font_literal_media_cache": "2fcfdc1cc",
-    "fixed_font_cache_lookup": "7dd0b9c10"
+    "fixed_font_cache_lookup": "7dd0b9c10",
+    "primitive_url_string_conversion": "c2b556e21",
+    "preexisting_browser_helper_audit": "9dfcb790e"
   },
   "download": {
     "proxy": "socks5h://127.0.0.1:1337",
@@ -8232,6 +8234,2379 @@
       "Reduce preparation/script/rendering work further; retain matched controls and all failures.",
       "Pass seven complete alternating pairs with 100*max(Vox upper) <= 95*min(Brave lower).",
       "Keep live-site behavior separate from frozen-page evidence."
+    ]
+  },
+  "continuation_20261104_1210": {
+    "status": "Requested 5% acceptance remains open",
+    "production": {
+      "result": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "401745782b25ace562042922ce4511c6138e41f1b15ee0aa0c146c72e3fe207b",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-115248-2abbbcf0/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "b70a7c3d6ad769f497d86922cee49319540bccf3b3f002aa3caf26e449be00d9",
+          "dirty": true,
+          "head": "0e6682e1aae4ea2d42277bb3a0d1857e91fe385b",
+          "repository_sha256": "c4a67d2065522773ba3765863601624eda6070784602c3c21418d8651d9117a6"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "c76a54d7b725560cc0018d4321993f20f5fb3ac8124240db32f7a56c1c1195f7",
+          "dirty": true,
+          "head": "6acc0a5a21787c0645e76f10d7852b60ec215090",
+          "repository_sha256": "759d34bb01ce4d99e632ffa98c8652b8772c8f4270fe95bd0bfcfac38d18abf5"
+        },
+        "request": {
+          "head": "0e6682e1aae4ea2d42277bb3a0d1857e91fe385b",
+          "id": "1d3ca576046746518932f3cec68be371"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "b70a7c3d6ad769f497d86922cee49319540bccf3b3f002aa3caf26e449be00d9",
+          "dirty": true,
+          "head": "0e6682e1aae4ea2d42277bb3a0d1857e91fe385b",
+          "repository_sha256": "c4a67d2065522773ba3765863601624eda6070784602c3c21418d8651d9117a6"
+        }
+      },
+      "receipt": {
+        "path": "Build/production-build/receipts/20261104-115248-2abbbcf0/result.json",
+        "sha256": "9bdb31f73ccd3e52e0f47f37af334d58102aadc418b62cdbb87330de7dc81f10",
+        "bytes": 1298
+      },
+      "frozen_compilation": {
+        "path": "Build/production-build/receipts/20261104-115248-2abbbcf0/frozen-compile.json",
+        "sha256": "a283ecda2da9b9126863aaa1fcbe5be1e85a9e32bdfa443aea7b57bb846376a1",
+        "bytes": 132557
+      },
+      "generated_c": {
+        "path": "Build/production-build/receipts/20261104-115248-2abbbcf0/generated/Vox.c",
+        "sha256": "13d9da9d5582ad976e4b2113cdbdebaa424b8d2b1da0f7be5327d6bfce71b7e2",
+        "bytes": 42175794
+      },
+      "identity": "401745782b25ace562042922ce4511c6138e41f1b15ee0aa0c146c72e3fe207b",
+      "code_verification": "Canonical generated C contains Runtime.url_binding_dom_string and its two callers; the obsolete MediaQueryInitialFontMetrics/viewport_font_metrics fields are absent. Production inputs were dirty before c2b556e21 committed those same tested sources; identify by executable/frozen-input hashes rather than build request HEAD alone."
+    },
+    "feature": {
+      "commit": "c2b556e21",
+      "change": "Project actual primitive strings directly in URL and URLSearchParams DOMString conversion. Preserve existing ECMAScript conversion for other inputs, raw UTF-16 for DOMString, and well-formed replacement for USVString.",
+      "focused_validation": {
+        "path": "Build/chatgpt-url-string-validation-20261104-1152/results.json",
+        "sha256": "aeeb716a81ddef968ce27b8c88a0542e107346c66ed340da3609fa3d67adb651",
+        "bytes": 49812
+      },
+      "test_cases": 22,
+      "modes": [
+        "default",
+        "-gc none"
+      ],
+      "control_modes": "Each case also executes with the old string conversion enabled: 88 successful test executions in 30 compile/run/control steps.",
+      "coverage": "Primitive ASCII/non-ASCII/empty/NUL/supplementary/lone-surrogate values; object conversion hint/order and original exceptions; Symbol rejection; constructor/static operations; query ownership/iterators; Blob revocation; metadata/subclasses and closed contexts.",
+      "component": {
+        "results": {
+          "source_sha256": {
+            "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/benchmark": "3ca0a8842ab0f086bb5a159528746ffe32e5b541d84493053a0b1240537c1e2c",
+            "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/benchmark.v": "e20cfc19492ae3b4e14e5bd7e7ea845cbfdbec3aca1790800507e76b5142d886",
+            "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/measure.py": "ce2b4dbc26bd2aa60b74026d7a1aa5781126672a2178a85aaa5ad8c1ba276406",
+            "browserjs/url_string_conversion_jsc.c.v": "c3279b7bcd38672a8934538e1b6209b57874535c0f00ccf511a67e2df879519d",
+            "browserjs/url_host_jsc.c.v": "8f66ae5a367d1f4af63894db6371adebc3bb5823a6055176142504bc78f7bb00",
+            "browserjs/url_search_params_host_jsc.c.v": "8f1809ac17c38d281be8aade57bced4cd9e781fd3042cace1f5c53e687e512bc"
+          },
+          "trials": [
+            {
+              "variant": "control",
+              "exit": 0,
+              "command": [
+                "python3",
+                "tools/run_memory_bounded.py",
+                "--limit-gib",
+                "3",
+                "--lock",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/0-control.lock",
+                "--report",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/0-control.guard.json",
+                "--timeout",
+                "120",
+                "--",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/benchmark"
+              ],
+              "host_before": {
+                "cpu_count": 18,
+                "load": [
+                  44.458984375,
+                  45.255859375,
+                  42.6220703125
+                ],
+                "unix": 1793782542.192204
+              },
+              "host_after": {
+                "cpu_count": 18,
+                "load": [
+                  44.458984375,
+                  45.255859375,
+                  42.6220703125
+                ],
+                "unix": 1793782544.0980322
+              },
+              "instructions": 7690627723,
+              "iterations": 20000,
+              "checksum": 500000,
+              "component_only": true
+            },
+            {
+              "variant": "candidate",
+              "exit": 0,
+              "command": [
+                "python3",
+                "tools/run_memory_bounded.py",
+                "--limit-gib",
+                "3",
+                "--lock",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/1-candidate.lock",
+                "--report",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/1-candidate.guard.json",
+                "--timeout",
+                "120",
+                "--",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/benchmark"
+              ],
+              "host_before": {
+                "cpu_count": 18,
+                "load": [
+                  44.458984375,
+                  45.255859375,
+                  42.6220703125
+                ],
+                "unix": 1793782544.107255
+              },
+              "host_after": {
+                "cpu_count": 18,
+                "load": [
+                  44.458984375,
+                  45.255859375,
+                  42.6220703125
+                ],
+                "unix": 1793782545.348624
+              },
+              "instructions": 7273400794,
+              "iterations": 20000,
+              "checksum": 500000,
+              "component_only": true
+            },
+            {
+              "variant": "candidate",
+              "exit": 0,
+              "command": [
+                "python3",
+                "tools/run_memory_bounded.py",
+                "--limit-gib",
+                "3",
+                "--lock",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/2-candidate.lock",
+                "--report",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/2-candidate.guard.json",
+                "--timeout",
+                "120",
+                "--",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/benchmark"
+              ],
+              "host_before": {
+                "cpu_count": 18,
+                "load": [
+                  44.458984375,
+                  45.255859375,
+                  42.6220703125
+                ],
+                "unix": 1793782545.3585029
+              },
+              "host_after": {
+                "cpu_count": 18,
+                "load": [
+                  44.458984375,
+                  45.255859375,
+                  42.6220703125
+                ],
+                "unix": 1793782546.574189
+              },
+              "instructions": 7278843632,
+              "iterations": 20000,
+              "checksum": 500000,
+              "component_only": true
+            },
+            {
+              "variant": "control",
+              "exit": 0,
+              "command": [
+                "python3",
+                "tools/run_memory_bounded.py",
+                "--limit-gib",
+                "3",
+                "--lock",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/3-control.lock",
+                "--report",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/3-control.guard.json",
+                "--timeout",
+                "120",
+                "--",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/benchmark"
+              ],
+              "host_before": {
+                "cpu_count": 18,
+                "load": [
+                  44.458984375,
+                  45.255859375,
+                  42.6220703125
+                ],
+                "unix": 1793782546.587167
+              },
+              "host_after": {
+                "cpu_count": 18,
+                "load": [
+                  44.181640625,
+                  45.18505859375,
+                  42.6123046875
+                ],
+                "unix": 1793782547.985441
+              },
+              "instructions": 7679561475,
+              "iterations": 20000,
+              "checksum": 500000,
+              "component_only": true
+            },
+            {
+              "variant": "diagnostic",
+              "exit": 0,
+              "command": [
+                "python3",
+                "tools/run_memory_bounded.py",
+                "--limit-gib",
+                "3",
+                "--lock",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/4-diagnostic.lock",
+                "--report",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/4-diagnostic.guard.json",
+                "--timeout",
+                "120",
+                "--",
+                "/Users/alex/code/vox2/Build/chatgpt-url-string-component-20261104-1153/benchmark"
+              ],
+              "host_before": {
+                "cpu_count": 18,
+                "load": [
+                  44.181640625,
+                  45.18505859375,
+                  42.6123046875
+                ],
+                "unix": 1793782547.996449
+              },
+              "host_after": {
+                "cpu_count": 18,
+                "load": [
+                  44.181640625,
+                  45.18505859375,
+                  42.6123046875
+                ],
+                "unix": 1793782549.36751
+              },
+              "instructions": 7259759802,
+              "iterations": 20000,
+              "checksum": 500000,
+              "component_only": true,
+              "path_verified": true
+            }
+          ],
+          "scope": "Unoptimized component binary, 20,000 URL construction/query mutation cycles; not a browser measurement, no page instruction credit"
+        },
+        "receipt": {
+          "path": "Build/chatgpt-url-string-component-20261104-1153/results.json",
+          "sha256": "b561c672ce1879901e67c4911b8fab726ccacdac3733c46fe15983590488607c",
+          "bytes": 6342
+        },
+        "control": [
+          7690627723,
+          7679561475
+        ],
+        "candidate": [
+          7273400794,
+          7278843632
+        ],
+        "conservative_saving": 400717843,
+        "qualification": "Unoptimized component binary; 20,000 URL construction/query mutation cycles. Not page-level credit or a Brave comparison. Initial O3 compilation was stopped to fix a checksum and avoid an expensive unrelated full-package O3 compile; cancellation/guard receipts remain, and no browser trial was cancelled.",
+        "cancelled_compile": {
+          "path": "Build/chatgpt-url-string-component-20261104-1153/compile-guard.json",
+          "sha256": "b43e01c35bce0f0a43aea36b9428b1f504f0ca1114767169e2c9792f546047a4",
+          "bytes": 592
+        },
+        "compile": {
+          "path": "Build/chatgpt-url-string-component-20261104-1153/compile2-guard.json",
+          "sha256": "15cd49900f0aa64f6cdc7fe71aae9c49384d976997427a27a112021040a8adf6",
+          "bytes": 555
+        }
+      },
+      "production_path_diagnostic": {
+        "directory": "Build/chatgpt-url-string-cohort-20261104-1203/diagnostic",
+        "observations": [
+          {
+            "pair": 1,
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "url_string_variant": "candidate",
+            "launch_instruction_interval": {
+              "lower": 30536209768,
+              "upper": 30536209768
+            },
+            "instruction_interval": {
+              "lower": 30339172735,
+              "upper": 30339172735
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+            "resource_coalition": 15593,
+            "root_start_ticks": 1302403258235,
+            "started_unix": 1793783043.780891,
+            "finished_unix": 1793783053.226233,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                19.93505859375,
+                25.02001953125,
+                32.9150390625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                21.212890625,
+                25.11962890625,
+                32.857421875
+              ]
+            }
+          }
+        ],
+        "summary": {
+          "author_scripts": "original, enabled",
+          "error": "Declared native-only URL projection eligibility diagnostic; no Brave observation",
+          "observation_errors": [],
+          "optimization_credit": false,
+          "pairs": 0,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work."
+        },
+        "guard": {
+          "command": [
+            "python3",
+            "Build/chatgpt-url-string-cohort-20261104-1203/measure.py",
+            "diagnostic",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-url-string-cohort-20261104-1203/diagnostic",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-url-string-cohort-20261104-1203/diagnostic-pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "59554": "Wed Nov  4 12:04:03 2026    ",
+            "59561": "Wed Nov  4 12:04:04 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1682718720,
+          "elapsed_seconds": 18.849180791000002,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "receipts": {
+          "pairs.json": {
+            "path": "Build/chatgpt-url-string-cohort-20261104-1203/diagnostic/pairs.json",
+            "sha256": "3587263d023da63cac35614f2afb79ef924b6e89182c257460f76da9a743d81a",
+            "bytes": 198014
+          },
+          "summary.json": {
+            "path": "Build/chatgpt-url-string-cohort-20261104-1203/diagnostic/summary.json",
+            "sha256": "b097a9b656e390ba9bc41024b4bd50c7662fbda25e87916fdd51c565fb606d22",
+            "bytes": 613
+          },
+          "inputs.json": {
+            "path": "Build/chatgpt-url-string-cohort-20261104-1203/diagnostic/inputs.json",
+            "sha256": "355cfa0c1af40674381c0f86a8fd837169219f5c833642e41bdc3f4b3c6c5a7f",
+            "bytes": 379050
+          },
+          "browser-apps.json": {
+            "path": "Build/chatgpt-url-string-cohort-20261104-1203/diagnostic/browser-apps.json",
+            "sha256": "7d43b751b8a4c279e5ecf94fae797e4152e72fe01fdddfb3f5ae5c7e0fc20926",
+            "bytes": 208
+          }
+        },
+        "guard_receipt": {
+          "path": "Build/chatgpt-url-string-cohort-20261104-1203/diagnostic-guard.json",
+          "sha256": "238b0e7a391928bf7a4d85fb5524502ca07122db8fd47eca66fe7bc7d219aa10",
+          "bytes": 1215
+        }
+      },
+      "production_eligibility": {
+        "backend": "javascriptcore",
+        "literal_font_media_cache": true,
+        "primitive_url_projection": true
+      },
+      "eligibility_receipt": {
+        "path": "Build/chatgpt-url-string-cohort-20261104-1203/diagnostic/pair-1-vox/eligibility.json",
+        "sha256": "7841cbd067a8ef4b259cd8408bc0239e91ada23df127bd83fb3c882928d79a6a",
+        "bytes": 106
+      },
+      "matched_whole_page": {
+        "directory": "Build/chatgpt-url-string-cohort-20261104-1203/alternating",
+        "observations": [
+          {
+            "pair": 1,
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "url_string_variant": "control",
+            "launch_instruction_interval": {
+              "lower": 31135348089,
+              "upper": 31135348089
+            },
+            "instruction_interval": {
+              "lower": 30956934137,
+              "upper": 30956934137
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+            "resource_coalition": 15595,
+            "root_start_ticks": 1303157069876,
+            "started_unix": 1793783075.243598,
+            "finished_unix": 1793783084.384386,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                22.3828125,
+                25.15380859375,
+                32.6904296875
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                22.30419921875,
+                25.04833984375,
+                32.56494140625
+              ]
+            }
+          },
+          {
+            "pair": 1,
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "url_string_variant": null,
+            "launch_instruction_interval": {
+              "lower": 16466183001,
+              "upper": 16472368209
+            },
+            "instruction_interval": {
+              "lower": 9828627289,
+              "upper": 9850687797
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+            "resource_coalition": 15597,
+            "root_start_ticks": 1303418226402,
+            "started_unix": 1793783086.159433,
+            "finished_unix": 1793783097.68991,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                22.30419921875,
+                25.04833984375,
+                32.56494140625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                26.49658203125,
+                25.84423828125,
+                32.7177734375
+              ]
+            }
+          },
+          {
+            "pair": 2,
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "url_string_variant": "candidate",
+            "launch_instruction_interval": {
+              "lower": 30670070169,
+              "upper": 30670070169
+            },
+            "instruction_interval": {
+              "lower": 30485865443,
+              "upper": 30485865443
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+            "resource_coalition": 15601,
+            "root_start_ticks": 1304154297040,
+            "started_unix": 1793783116.810246,
+            "finished_unix": 1793783127.503523,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                29.94873046875,
+                26.662109375,
+                32.89013671875
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                31.634765625,
+                27.19921875,
+                32.97265625
+              ]
+            }
+          },
+          {
+            "pair": 2,
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "url_string_variant": null,
+            "launch_instruction_interval": {
+              "lower": 16599230006,
+              "upper": 16599291267
+            },
+            "instruction_interval": {
+              "lower": 9854575575,
+              "upper": 9861791111
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+            "resource_coalition": 15599,
+            "root_start_ticks": 1303799035741,
+            "started_unix": 1793783102.007311,
+            "finished_unix": 1793783113.75821,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                28.69873046875,
+                26.3115234375,
+                32.84228515625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                29.94873046875,
+                26.662109375,
+                32.89013671875
+              ]
+            }
+          },
+          {
+            "pair": 3,
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "url_string_variant": "candidate",
+            "launch_instruction_interval": {
+              "lower": 31447107283,
+              "upper": 31447107283
+            },
+            "instruction_interval": {
+              "lower": 31271015628,
+              "upper": 31271015628
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+            "resource_coalition": 15603,
+            "root_start_ticks": 1304472282744,
+            "started_unix": 1793783130.075287,
+            "finished_unix": 1793783139.7133791,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                31.634765625,
+                27.19921875,
+                32.97265625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                33.06103515625,
+                27.65283203125,
+                33.06591796875
+              ]
+            }
+          },
+          {
+            "pair": 3,
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "url_string_variant": null,
+            "launch_instruction_interval": {
+              "lower": 16446565534,
+              "upper": 16452984746
+            },
+            "instruction_interval": {
+              "lower": 9834654957,
+              "upper": 9871747053
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+            "resource_coalition": 15605,
+            "root_start_ticks": 1304747611240,
+            "started_unix": 1793783141.5390232,
+            "finished_unix": 1793783151.886129,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                33.06103515625,
+                27.65283203125,
+                33.06591796875
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                33.47314453125,
+                28.01123046875,
+                33.09912109375
+              ]
+            }
+          },
+          {
+            "pair": 4,
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "url_string_variant": "control",
+            "launch_instruction_interval": {
+              "lower": 31175647576,
+              "upper": 31175647576
+            },
+            "instruction_interval": {
+              "lower": 31000084848,
+              "upper": 31000084848
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+            "resource_coalition": 15609,
+            "root_start_ticks": 1305342854963,
+            "started_unix": 1793783166.31523,
+            "finished_unix": 1793783176.026847,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                31.1865234375,
+                27.6982421875,
+                32.92822265625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                33.41845703125,
+                28.29833984375,
+                33.080078125
+              ]
+            }
+          },
+          {
+            "pair": 4,
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "url_string_variant": null,
+            "launch_instruction_interval": {
+              "lower": 16393790040,
+              "upper": 16406035429
+            },
+            "instruction_interval": {
+              "lower": 9781913281,
+              "upper": 9808034479
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+            "resource_coalition": 15607,
+            "root_start_ticks": 1305039705927,
+            "started_unix": 1793783153.7120671,
+            "finished_unix": 1793783163.8828979,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                33.47314453125,
+                28.01123046875,
+                33.09912109375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                31.1865234375,
+                27.6982421875,
+                32.92822265625
+              ]
+            }
+          }
+        ],
+        "summary": {
+          "author_scripts": "original, enabled",
+          "brave_median_lower_bound_instructions": 16456374267.5,
+          "diagnostic_only": true,
+          "instruction_scope": "launch",
+          "minimum_pairs": 7,
+          "optimization_credit": false,
+          "pairs": 4,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+          "target_vox_fraction": 0.95,
+          "vox_median_instructions": 31155497832.5,
+          "worst_vox_over_best_brave": 1.9182328922275254
+        },
+        "guard": {
+          "command": [
+            "python3",
+            "Build/chatgpt-url-string-cohort-20261104-1203/measure.py",
+            "alternating",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-url-string-cohort-20261104-1203/alternating",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-url-string-cohort-20261104-1203/alternating-pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "4",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "60867": "Wed Nov  4 12:04:35 2026    ",
+            "60870": "Wed Nov  4 12:04:35 2026    ",
+            "61385": "Wed Nov  4 12:04:46 2026    ",
+            "61388": "Wed Nov  4 12:04:46 2026    ",
+            "61406": "Wed Nov  4 12:04:46 2026    ",
+            "61407": "Wed Nov  4 12:04:46 2026    ",
+            "61412": "Wed Nov  4 12:04:46 2026    ",
+            "61465": "Wed Nov  4 12:04:47 2026    ",
+            "61481": "Wed Nov  4 12:04:47 2026    ",
+            "62362": "Wed Nov  4 12:05:02 2026    ",
+            "62364": "Wed Nov  4 12:05:02 2026    ",
+            "62391": "Wed Nov  4 12:05:02 2026    ",
+            "62392": "Wed Nov  4 12:05:02 2026    ",
+            "62393": "Wed Nov  4 12:05:02 2026    ",
+            "62496": "Wed Nov  4 12:05:03 2026    ",
+            "62512": "Wed Nov  4 12:05:03 2026    ",
+            "63937": "Wed Nov  4 12:05:16 2026    ",
+            "63939": "Wed Nov  4 12:05:16 2026    ",
+            "65329": "Wed Nov  4 12:05:30 2026    ",
+            "65338": "Wed Nov  4 12:05:30 2026    ",
+            "66905": "Wed Nov  4 12:05:41 2026    ",
+            "66918": "Wed Nov  4 12:05:41 2026    ",
+            "66964": "Wed Nov  4 12:05:41 2026    ",
+            "66965": "Wed Nov  4 12:05:41 2026    ",
+            "66971": "Wed Nov  4 12:05:42 2026    ",
+            "68346": "Wed Nov  4 12:05:53 2026    ",
+            "68356": "Wed Nov  4 12:05:53 2026    ",
+            "68393": "Wed Nov  4 12:05:54 2026    ",
+            "68394": "Wed Nov  4 12:05:54 2026    ",
+            "68398": "Wed Nov  4 12:05:54 2026    ",
+            "69946": "Wed Nov  4 12:06:06 2026    ",
+            "69951": "Wed Nov  4 12:06:06 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1718665216,
+          "elapsed_seconds": 109.75895725,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "receipts": {
+          "pairs.json": {
+            "path": "Build/chatgpt-url-string-cohort-20261104-1203/alternating/pairs.json",
+            "sha256": "a1b8acbaee546b7d2b387b8f885ea05ea0fffcf9ba4d0f36204c8c5d3449fcc4",
+            "bytes": 1436503
+          },
+          "summary.json": {
+            "path": "Build/chatgpt-url-string-cohort-20261104-1203/alternating/summary.json",
+            "sha256": "da437a2f608c380c3f3045ab7e3f32d684fb864a21f359a5be10043f61fd7e71",
+            "bytes": 756
+          },
+          "inputs.json": {
+            "path": "Build/chatgpt-url-string-cohort-20261104-1203/alternating/inputs.json",
+            "sha256": "85650f66f2d4985d1def12623bdb3fbd6f4ee828f27af19bdfa0fa819ca038df",
+            "bytes": 379052
+          },
+          "browser-apps.json": {
+            "path": "Build/chatgpt-url-string-cohort-20261104-1203/alternating/browser-apps.json",
+            "sha256": "7d43b751b8a4c279e5ecf94fae797e4152e72fe01fdddfb3f5ae5c7e0fc20926",
+            "bytes": 208
+          }
+        },
+        "guard_receipt": {
+          "path": "Build/chatgpt-url-string-cohort-20261104-1203/alternating-guard.json",
+          "sha256": "6ed598528ecfdeb3e1ddebc94bab0550c1477006d23e7fb650f2f4694ddcd942",
+          "bytes": 2562
+        },
+        "matched_counts": {
+          "control": [
+            31135348089,
+            31175647576
+          ],
+          "candidate": [
+            30670070169,
+            31447107283
+          ]
+        },
+        "medians": {
+          "control": 31155497832.5,
+          "candidate": 31058588726.0
+        },
+        "conservative_control_minus_candidate": -311759194,
+        "interpretation": "Median point improvement of 96,909,106.5 instructions, but ranges overlap. No conservative whole-page URL optimization credit. This four-pair attribution diagnostic is not the seven-pair acceptance cohort."
+      },
+      "page_instruction_credit": 0
+    },
+    "media_simplification": "7dd0b9c10 is now exercised by the completed production bundle. The same diagnostic confirms an initial-font query cache hit with exact original content and pixels. The new seven-pair cohort tests the combined production browser; it does not isolate media-cache instruction savings.",
+    "acceptance": {
+      "directory": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3",
+      "observations": [
+        {
+          "pair": 1,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 33451751487,
+            "upper": 33451751487
+          },
+          "instruction_interval": {
+            "lower": 33274578776,
+            "upper": 33274578776
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15639,
+          "root_start_ticks": 1316327901023,
+          "started_unix": 1793783624.021185,
+          "finished_unix": 1793783633.174761,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              45.3369140625,
+              40.64404296875,
+              37.40283203125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              45.9638671875,
+              40.921875,
+              37.53857421875
+            ]
+          }
+        },
+        {
+          "pair": 1,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16289804431,
+            "upper": 16289804431
+          },
+          "instruction_interval": {
+            "lower": 9742837171,
+            "upper": 9754456994
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15641,
+          "root_start_ticks": 1316614551186,
+          "started_unix": 1793783636.010498,
+          "finished_unix": 1793783651.584926,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              45.9638671875,
+              40.921875,
+              37.53857421875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              52.8291015625,
+              42.6484375,
+              38.2109375
+            ]
+          }
+        },
+        {
+          "pair": 2,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 32193830972,
+            "upper": 32193830972
+          },
+          "instruction_interval": {
+            "lower": 32015640642,
+            "upper": 32015640642
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15645,
+          "root_start_ticks": 1317389666607,
+          "started_unix": 1793783668.3072581,
+          "finished_unix": 1793783677.9569101,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              49.26123046875,
+              42.517578125,
+              38.26806640625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              46.04638671875,
+              42.0546875,
+              38.1533203125
+            ]
+          }
+        },
+        {
+          "pair": 2,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16395749045,
+            "upper": 16398029537
+          },
+          "instruction_interval": {
+            "lower": 9863757695,
+            "upper": 9872536080
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15643,
+          "root_start_ticks": 1317058756309,
+          "started_unix": 1793783654.529776,
+          "finished_unix": 1793783665.1797,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              52.4423828125,
+              42.73681640625,
+              38.26806640625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              50.58984375,
+              42.66162109375,
+              38.29345703125
+            ]
+          }
+        },
+        {
+          "pair": 3,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 32363448715,
+            "upper": 32363448715
+          },
+          "instruction_interval": {
+            "lower": 32184166281,
+            "upper": 32184166281
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15647,
+          "root_start_ticks": 1317683295338,
+          "started_unix": 1793783680.546475,
+          "finished_unix": 1793783690.210361,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              46.04638671875,
+              42.0546875,
+              38.1533203125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              47.29736328125,
+              42.4619140625,
+              38.34375
+            ]
+          }
+        },
+        {
+          "pair": 3,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16455369325,
+            "upper": 16457584749
+          },
+          "instruction_interval": {
+            "lower": 9918937656,
+            "upper": 9939403430
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15649,
+          "root_start_ticks": 1317989344893,
+          "started_unix": 1793783693.297787,
+          "finished_unix": 1793783704.630816,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              45.751953125,
+              42.2216796875,
+              38.28271484375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              44.572265625,
+              42.08251953125,
+              38.27880859375
+            ]
+          }
+        },
+        {
+          "pair": 4,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 33263864848,
+            "upper": 33263864848
+          },
+          "instruction_interval": {
+            "lower": 33065169669,
+            "upper": 33065169669
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15653,
+          "root_start_ticks": 1318696607179,
+          "started_unix": 1793783722.767305,
+          "finished_unix": 1793783732.42429,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              46.134765625,
+              42.595703125,
+              38.55029296875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              47.3046875,
+              42.96875,
+              38.72998046875
+            ]
+          }
+        },
+        {
+          "pair": 4,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16375554889,
+            "upper": 16384271305
+          },
+          "instruction_interval": {
+            "lower": 9845913617,
+            "upper": 9874963958
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15651,
+          "root_start_ticks": 1318336807257,
+          "started_unix": 1793783707.767324,
+          "finished_unix": 1793783719.529713,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              44.9267578125,
+              42.197265625,
+              38.34130859375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              45.8857421875,
+              42.48779296875,
+              38.48876953125
+            ]
+          }
+        },
+        {
+          "pair": 5,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 32435550071,
+            "upper": 32435550071
+          },
+          "instruction_interval": {
+            "lower": 32257965063,
+            "upper": 32257965063
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15655,
+          "root_start_ticks": 1318999460101,
+          "started_unix": 1793783735.387278,
+          "finished_unix": 1793783745.0089018,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              47.3046875,
+              42.96875,
+              38.72998046875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              45.99560546875,
+              42.83642578125,
+              38.732421875
+            ]
+          }
+        },
+        {
+          "pair": 5,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16443023558,
+            "upper": 16454473651
+          },
+          "instruction_interval": {
+            "lower": 9833560445,
+            "upper": 9862779063
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15657,
+          "root_start_ticks": 1319306462059,
+          "started_unix": 1793783748.168119,
+          "finished_unix": 1793783760.4930172,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              45.83544921875,
+              42.85546875,
+              38.76318359375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              46.6318359375,
+              43.10986328125,
+              38.89990234375
+            ]
+          }
+        },
+        {
+          "pair": 6,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 32128613527,
+            "upper": 32128613527
+          },
+          "instruction_interval": {
+            "lower": 31951067993,
+            "upper": 31951067993
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15661,
+          "root_start_ticks": 1319981069093,
+          "started_unix": 1793783776.274157,
+          "finished_unix": 1793783785.72079,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              48.625,
+              43.71142578125,
+              39.18701171875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              53.48974609375,
+              44.92041015625,
+              39.6689453125
+            ]
+          }
+        },
+        {
+          "pair": 6,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16352978948,
+            "upper": 16358460222
+          },
+          "instruction_interval": {
+            "lower": 9798331940,
+            "upper": 9814058817
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15659,
+          "root_start_ticks": 1319668440442,
+          "started_unix": 1793783763.239923,
+          "finished_unix": 1793783773.790092,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              46.6611328125,
+              43.17431640625,
+              38.947265625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              48.625,
+              43.71142578125,
+              39.18701171875
+            ]
+          }
+        },
+        {
+          "pair": 7,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 32217521441,
+            "upper": 32217521441
+          },
+          "instruction_interval": {
+            "lower": 32039472463,
+            "upper": 32039472463
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15663,
+          "root_start_ticks": 1320270030241,
+          "started_unix": 1793783788.3225238,
+          "finished_unix": 1793783797.452427,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              53.6904296875,
+              45.10400390625,
+              39.76416015625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              50.8037109375,
+              44.7705078125,
+              39.7080078125
+            ]
+          }
+        },
+        {
+          "pair": 7,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16370613987,
+            "upper": 16379636818
+          },
+          "instruction_interval": {
+            "lower": 9851928169,
+            "upper": 9864605107
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15665,
+          "root_start_ticks": 1320541446169,
+          "started_unix": 1793783799.617335,
+          "finished_unix": 1793783809.6755788,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              50.8037109375,
+              44.7705078125,
+              39.7080078125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              46.65673828125,
+              44.0849609375,
+              39.52392578125
+            ]
+          }
+        }
+      ],
+      "summary": {
+        "author_scripts": "original, enabled",
+        "brave_median_lower_bound_instructions": 16375554889,
+        "diagnostic_only": false,
+        "instruction_scope": "launch",
+        "minimum_pairs": 7,
+        "optimization_credit": false,
+        "pairs": 7,
+        "passed": false,
+        "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+        "target_vox_fraction": 0.95,
+        "vox_median_instructions": 32363448715,
+        "worst_vox_over_best_brave": 2.053539171000745
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-url-string-cohort-20261104-1203/measure.py",
+          "candidate",
+          "--archive",
+          "Build/chatgpt-instructions-input-20261104-0830",
+          "--output",
+          "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3",
+          "--expected",
+          "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+          "--reference-audit",
+          "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+          "--title",
+          "ChatGPT: Chat, Work, Create & Code with AI",
+          "--memory-guard-registry",
+          "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3-pids.json",
+          "--diff-tool",
+          "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+          "--repeat",
+          "7",
+          "--timeout",
+          "100",
+          "--settle-seconds",
+          "5",
+          "--unfocused"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "8415": "Wed Nov  4 12:13:44 2026    ",
+          "8417": "Wed Nov  4 12:13:44 2026    ",
+          "9632": "Wed Nov  4 12:13:56 2026    ",
+          "9642": "Wed Nov  4 12:13:56 2026    ",
+          "9671": "Wed Nov  4 12:13:56 2026    ",
+          "9672": "Wed Nov  4 12:13:56 2026    ",
+          "9682": "Wed Nov  4 12:13:56 2026    ",
+          "9754": "Wed Nov  4 12:13:57 2026    ",
+          "9769": "Wed Nov  4 12:13:57 2026    ",
+          "11206": "Wed Nov  4 12:14:14 2026    ",
+          "11209": "Wed Nov  4 12:14:14 2026    ",
+          "11230": "Wed Nov  4 12:14:14 2026    ",
+          "11231": "Wed Nov  4 12:14:14 2026    ",
+          "11232": "Wed Nov  4 12:14:14 2026    ",
+          "12201": "Wed Nov  4 12:14:28 2026    ",
+          "12203": "Wed Nov  4 12:14:28 2026    ",
+          "13137": "Wed Nov  4 12:14:40 2026    ",
+          "13141": "Wed Nov  4 12:14:40 2026    ",
+          "14069": "Wed Nov  4 12:14:53 2026    ",
+          "14076": "Wed Nov  4 12:14:53 2026    ",
+          "14106": "Wed Nov  4 12:14:53 2026    ",
+          "14107": "Wed Nov  4 12:14:53 2026    ",
+          "14108": "Wed Nov  4 12:14:53 2026    ",
+          "15082": "Wed Nov  4 12:15:07 2026    ",
+          "15088": "Wed Nov  4 12:15:07 2026    ",
+          "15103": "Wed Nov  4 12:15:08 2026    ",
+          "15104": "Wed Nov  4 12:15:08 2026    ",
+          "15114": "Wed Nov  4 12:15:08 2026    ",
+          "15179": "Wed Nov  4 12:15:08 2026    ",
+          "15190": "Wed Nov  4 12:15:09 2026    ",
+          "16116": "Wed Nov  4 12:15:22 2026    ",
+          "16121": "Wed Nov  4 12:15:22 2026    ",
+          "17035": "Wed Nov  4 12:15:35 2026    ",
+          "17044": "Wed Nov  4 12:15:35 2026    ",
+          "17972": "Wed Nov  4 12:15:48 2026    ",
+          "17982": "Wed Nov  4 12:15:48 2026    ",
+          "18002": "Wed Nov  4 12:15:48 2026    ",
+          "18003": "Wed Nov  4 12:15:48 2026    ",
+          "18004": "Wed Nov  4 12:15:48 2026    ",
+          "19021": "Wed Nov  4 12:16:03 2026    ",
+          "19026": "Wed Nov  4 12:16:03 2026    ",
+          "19038": "Wed Nov  4 12:16:03 2026    ",
+          "19039": "Wed Nov  4 12:16:03 2026    ",
+          "19044": "Wed Nov  4 12:16:03 2026    ",
+          "19092": "Wed Nov  4 12:16:04 2026    ",
+          "19103": "Wed Nov  4 12:16:04 2026    ",
+          "19890": "Wed Nov  4 12:16:16 2026    ",
+          "19893": "Wed Nov  4 12:16:16 2026    ",
+          "20856": "Wed Nov  4 12:16:28 2026    ",
+          "20864": "Wed Nov  4 12:16:28 2026    ",
+          "21607": "Wed Nov  4 12:16:39 2026    ",
+          "21615": "Wed Nov  4 12:16:39 2026    ",
+          "21628": "Wed Nov  4 12:16:40 2026    ",
+          "21629": "Wed Nov  4 12:16:40 2026    ",
+          "21634": "Wed Nov  4 12:16:40 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1725480960,
+        "elapsed_seconds": 194.11258733399998,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "receipts": {
+        "pairs.json": {
+          "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3/pairs.json",
+          "sha256": "78c0e4b5ce487f1cd542c564062faa7ee92aa999fc809185777a112a5e399161",
+          "bytes": 2323008
+        },
+        "summary.json": {
+          "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3/summary.json",
+          "sha256": "72762bdee0ffd0503ab30c4676a36d668dee48b593654542ed86908a1c7ab9ee",
+          "bytes": 752
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3/inputs.json",
+          "sha256": "1f9f1f90e532f0880f7e7b74e8157ab3560e8bf20216a6ec2bea1e08221b0f17",
+          "bytes": 379062
+        },
+        "browser-apps.json": {
+          "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3/browser-apps.json",
+          "sha256": "7d43b751b8a4c279e5ecf94fae797e4152e72fe01fdddfb3f5ae5c7e0fc20926",
+          "bytes": 208
+        }
+      },
+      "guard_receipt": {
+        "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven3-guard.json",
+        "sha256": "51d9dfaf9d90782931ef866ea7da2d44810ab0fc43e197518a5b00596560702b",
+        "bytes": 3602
+      },
+      "integer_gate": {
+        "left": 3345175148700,
+        "right": 1547531420945,
+        "passed": false
+      },
+      "browser_observations_valid": true
+    },
+    "retained_invalid_cohort": {
+      "directory": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven2",
+      "observations": [
+        {
+          "pair": 1,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 31547315287,
+            "upper": 31547315287
+          },
+          "instruction_interval": {
+            "lower": 31356118714,
+            "upper": 31356118714
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15611,
+          "root_start_ticks": 1306623792001,
+          "started_unix": 1793783219.695217,
+          "finished_unix": 1793783229.1892638,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              31.3212890625,
+              28.701171875,
+              32.99658203125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              32.8828125,
+              29.1220703125,
+              33.095703125
+            ]
+          }
+        },
+        {
+          "pair": 1,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16527434808,
+            "upper": 16538822112
+          },
+          "instruction_interval": {
+            "lower": 9908181608,
+            "upper": 9931057470
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15613,
+          "root_start_ticks": 1306902597347,
+          "started_unix": 1793783231.314085,
+          "finished_unix": 1793783241.875363,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              32.8828125,
+              29.1220703125,
+              33.095703125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              36.09814453125,
+              30.013671875,
+              33.34375
+            ]
+          }
+        },
+        {
+          "pair": 2,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 31877946956,
+            "upper": 31877946956
+          },
+          "instruction_interval": {
+            "lower": 31702395453,
+            "upper": 31702395453
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15617,
+          "root_start_ticks": 1307509752565,
+          "started_unix": 1793783256.588233,
+          "finished_unix": 1793783265.766785,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              36.1240234375,
+              30.22509765625,
+              33.3798828125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              35.255859375,
+              30.2333984375,
+              33.345703125
+            ]
+          }
+        },
+        {
+          "pair": 2,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16355782009,
+            "upper": 16355885907
+          },
+          "instruction_interval": {
+            "lower": 9809372282,
+            "upper": 9827113700
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15615,
+          "root_start_ticks": 1307214441553,
+          "started_unix": 1793783244.2763991,
+          "finished_unix": 1793783254.6013062,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              36.09814453125,
+              30.013671875,
+              33.34375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              36.1240234375,
+              30.22509765625,
+              33.3798828125
+            ]
+          }
+        },
+        {
+          "pair": 3,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 31683187042,
+            "upper": 31683187042
+          },
+          "instruction_interval": {
+            "lower": 31504569870,
+            "upper": 31504569870
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15619,
+          "root_start_ticks": 1307771354799,
+          "started_unix": 1793783267.517867,
+          "finished_unix": 1793783276.3506508,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              34.5146484375,
+              30.1630859375,
+              33.30224609375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              33.19189453125,
+              29.9609375,
+              33.21240234375
+            ]
+          }
+        },
+        {
+          "pair": 3,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16377735451,
+            "upper": 16392163575
+          },
+          "instruction_interval": {
+            "lower": 9841275588,
+            "upper": 9867758877
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15621,
+          "root_start_ticks": 1308031002240,
+          "started_unix": 1793783278.2159739,
+          "finished_unix": 1793783288.9098449,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              32.05517578125,
+              29.77880859375,
+              33.12890625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              33.20849609375,
+              30.0986328125,
+              33.203125
+            ]
+          }
+        },
+        {
+          "pair": 4,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 33081086777,
+            "upper": 33081086777
+          },
+          "instruction_interval": {
+            "lower": 32901561611,
+            "upper": 32901561611
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15625,
+          "root_start_ticks": 1308637348564,
+          "started_unix": 1793783303.6270862,
+          "finished_unix": 1793783311.995583,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              35.71630859375,
+              30.83642578125,
+              33.41357421875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              35.68896484375,
+              31.0029296875,
+              33.443359375
+            ]
+          }
+        },
+        {
+          "pair": 4,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16434431864,
+            "upper": 16441626811
+          },
+          "instruction_interval": {
+            "lower": 9890860050,
+            "upper": 9911396992
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15623,
+          "root_start_ticks": 1308334434960,
+          "started_unix": 1793783290.993626,
+          "finished_unix": 1793783301.5216131,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              33.20849609375,
+              30.0986328125,
+              33.203125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              36.91064453125,
+              30.98583984375,
+              33.48095703125
+            ]
+          }
+        },
+        {
+          "pair": 5,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 32650806142,
+            "upper": 32650806142
+          },
+          "instruction_interval": {
+            "lower": 32473074724,
+            "upper": 32473074724
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15627,
+          "root_start_ticks": 1308881503104,
+          "started_unix": 1793783313.772341,
+          "finished_unix": 1793783323.379782,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              35.68896484375,
+              31.0029296875,
+              33.443359375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              38.80810546875,
+              31.81201171875,
+              33.70068359375
+            ]
+          }
+        },
+        {
+          "pair": 5,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16376941294,
+            "upper": 16391604862
+          },
+          "instruction_interval": {
+            "lower": 9781828799,
+            "upper": 9819052117
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15629,
+          "root_start_ticks": 1309166982426,
+          "started_unix": 1793783325.656497,
+          "finished_unix": 1793783338.1988401,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              38.80810546875,
+              31.81201171875,
+              33.70068359375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              43.2197265625,
+              33.16650390625,
+              34.15234375
+            ]
+          }
+        },
+        {
+          "pair": 6,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 31676952851,
+            "upper": 31676952851
+          },
+          "instruction_interval": {
+            "lower": 31500264553,
+            "upper": 31500264553
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15633,
+          "root_start_ticks": 1309902315360,
+          "started_unix": 1793783356.297504,
+          "finished_unix": 1793783365.805233,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              48.2158203125,
+              34.81103515625,
+              34.724609375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              53.12744140625,
+              36.2998046875,
+              35.25341796875
+            ]
+          }
+        },
+        {
+          "pair": 6,
+          "engine": "brave",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": null,
+          "launch_instruction_interval": {
+            "lower": 16456685688,
+            "upper": 16471716890
+          },
+          "instruction_interval": {
+            "lower": 9755254603,
+            "upper": 9789373649
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "resource_coalition": 15631,
+          "root_start_ticks": 1309531696639,
+          "started_unix": 1793783340.882807,
+          "finished_unix": 1793783353.8072598,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              43.2197265625,
+              33.16650390625,
+              34.15234375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              48.2158203125,
+              34.81103515625,
+              34.724609375
+            ]
+          }
+        },
+        {
+          "pair": 7,
+          "engine": "vox",
+          "exit": 0,
+          "kernel_exit_status": 0,
+          "url_string_variant": "candidate",
+          "launch_instruction_interval": {
+            "lower": 33192656546,
+            "upper": 33192656546
+          },
+          "instruction_interval": {
+            "lower": 33013044267,
+            "upper": 33013044267
+          },
+          "pixels_exact": true,
+          "content_exact": true,
+          "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+          "resource_coalition": 15635,
+          "root_start_ticks": 1310184396113,
+          "started_unix": 1793783368.082936,
+          "finished_unix": 1793783376.7204359,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              55.279296875,
+              37.02490234375,
+              35.51513671875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              54.9365234375,
+              37.2568359375,
+              35.60546875
+            ]
+          }
+        },
+        {
+          "pair": 7,
+          "engine": "brave",
+          "exit": 1,
+          "error": "A private browser helper is outside its resource coalition",
+          "url_string_variant": null,
+          "resource_coalition": 15637,
+          "root_start_ticks": 1310440490780,
+          "started_unix": 1793783378.7633972,
+          "finished_unix": 1793783379.768822,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              54.220703125,
+              37.40185546875,
+              35.666015625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              54.220703125,
+              37.40185546875,
+              35.666015625
+            ]
+          }
+        }
+      ],
+      "summary": {
+        "author_scripts": "original, enabled",
+        "error": "Every observation must exit successfully and match pixels and full row identity",
+        "observation_errors": [
+          {
+            "engine": "brave",
+            "error": "A private browser helper is outside its resource coalition",
+            "kernel_exit_status": null
+          }
+        ],
+        "optimization_credit": false,
+        "pairs": 7,
+        "passed": false,
+        "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work."
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-url-string-cohort-20261104-1203/measure.py",
+          "candidate",
+          "--archive",
+          "Build/chatgpt-instructions-input-20261104-0830",
+          "--output",
+          "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven2",
+          "--expected",
+          "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+          "--reference-audit",
+          "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+          "--title",
+          "ChatGPT: Chat, Work, Create & Code with AI",
+          "--memory-guard-registry",
+          "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven2-pids.json",
+          "--diff-tool",
+          "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+          "--repeat",
+          "7",
+          "--timeout",
+          "100",
+          "--settle-seconds",
+          "5",
+          "--unfocused"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "76823": "Wed Nov  4 12:06:59 2026    ",
+          "76827": "Wed Nov  4 12:06:59 2026    ",
+          "78237": "Wed Nov  4 12:07:11 2026    ",
+          "78244": "Wed Nov  4 12:07:11 2026    ",
+          "78281": "Wed Nov  4 12:07:11 2026    ",
+          "78282": "Wed Nov  4 12:07:11 2026    ",
+          "78288": "Wed Nov  4 12:07:11 2026    ",
+          "79749": "Wed Nov  4 12:07:24 2026    ",
+          "79756": "Wed Nov  4 12:07:24 2026    ",
+          "79783": "Wed Nov  4 12:07:24 2026    ",
+          "79784": "Wed Nov  4 12:07:24 2026    ",
+          "79787": "Wed Nov  4 12:07:24 2026    ",
+          "80637": "Wed Nov  4 12:07:36 2026    ",
+          "80641": "Wed Nov  4 12:07:36 2026    ",
+          "81219": "Wed Nov  4 12:07:47 2026    ",
+          "81221": "Wed Nov  4 12:07:47 2026    ",
+          "81847": "Wed Nov  4 12:07:58 2026    ",
+          "81855": "Wed Nov  4 12:07:58 2026    ",
+          "81874": "Wed Nov  4 12:07:58 2026    ",
+          "81875": "Wed Nov  4 12:07:58 2026    ",
+          "81876": "Wed Nov  4 12:07:58 2026    ",
+          "81932": "Wed Nov  4 12:07:59 2026    ",
+          "81940": "Wed Nov  4 12:07:59 2026    ",
+          "82511": "Wed Nov  4 12:08:11 2026    ",
+          "82516": "Wed Nov  4 12:08:11 2026    ",
+          "82526": "Wed Nov  4 12:08:11 2026    ",
+          "82527": "Wed Nov  4 12:08:11 2026    ",
+          "82532": "Wed Nov  4 12:08:11 2026    ",
+          "82574": "Wed Nov  4 12:08:12 2026    ",
+          "82582": "Wed Nov  4 12:08:12 2026    ",
+          "83150": "Wed Nov  4 12:08:23 2026    ",
+          "83156": "Wed Nov  4 12:08:23 2026    ",
+          "83749": "Wed Nov  4 12:08:33 2026    ",
+          "83754": "Wed Nov  4 12:08:33 2026    ",
+          "85177": "Wed Nov  4 12:08:45 2026    ",
+          "85191": "Wed Nov  4 12:08:45 2026    ",
+          "85233": "Wed Nov  4 12:08:46 2026    ",
+          "85234": "Wed Nov  4 12:08:46 2026    ",
+          "85239": "Wed Nov  4 12:08:46 2026    ",
+          "86886": "Wed Nov  4 12:09:00 2026    ",
+          "86897": "Wed Nov  4 12:09:01 2026    ",
+          "86930": "Wed Nov  4 12:09:01 2026    ",
+          "86931": "Wed Nov  4 12:09:01 2026    ",
+          "86934": "Wed Nov  4 12:09:01 2026    ",
+          "90387": "Wed Nov  4 12:09:16 2026    ",
+          "90401": "Wed Nov  4 12:09:16 2026    ",
+          "91543": "Wed Nov  4 12:09:28 2026    ",
+          "91546": "Wed Nov  4 12:09:28 2026    ",
+          "92100": "Wed Nov  4 12:09:38 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1758003200,
+        "elapsed_seconds": 169.31379495800002,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "receipts": {
+        "pairs.json": {
+          "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven2/pairs.json",
+          "sha256": "95e242cab981fab16e016aed5d3a19163b5e8b2dda37f73e1d3060a1c72a0329",
+          "bytes": 2117846
+        },
+        "summary.json": {
+          "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven2/summary.json",
+          "sha256": "2212268a1d997d12ab5b1be08316240ddcd78679c25b95fe72f61551b7b7a8c6",
+          "bytes": 762
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven2/inputs.json",
+          "sha256": "61ead75a9d47ab24c4ce8fb04d897fd4374ac001520a67da6d2195ed1efe43be",
+          "bytes": 379062
+        },
+        "browser-apps.json": {
+          "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven2/browser-apps.json",
+          "sha256": "7d43b751b8a4c279e5ecf94fae797e4152e72fe01fdddfb3f5ae5c7e0fc20926",
+          "bytes": 208
+        }
+      },
+      "guard_receipt": {
+        "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven2-guard.json",
+        "sha256": "77997b503a711a0008db367558a3b3e1242cbb7f647c8a93f112796a368099ae",
+        "bytes": 3341
+      }
+    },
+    "ownership_protocol_correction": {
+      "commit": "9dfcb790e",
+      "failure": "Pair 7 Brave in candidate-seven2 failed ownership before navigation: renderer PID 92114 had parent 66371, an authenticated preexisting interactive Brave root in another coalition. Its new helper was absent from the pre-launch PID list and was conservatively treated as private to the trial.",
+      "change": "Authenticate newly spawned descendants of pinned preexisting roots using an observed ancestry chain, unchanged command/parent, executable path, monotonic creation times and a common separate coalition. Re-read all identities and process records. Measured-root descendants, ambiguous/reparented tasks, changed identities and CDP-owned tasks remain subject to ordinary rejection.",
+      "tests": 90,
+      "guard": {
+        "path": "Build/chatgpt-coalition-helper-checks-20261104-1217/guard.json",
+        "sha256": "c8bc8a8d731444d24ae935039ad54eb2b8aae4eb774138ca985c7f2815dfba23",
+        "bytes": 590
+      },
+      "inputs": {
+        "path": "Build/chatgpt-coalition-helper-checks-20261104-1217/inputs.json",
+        "sha256": "1ce7aeb754c8b9c7311a0502216b0811be38d0559f72d5a3c72962dd24541b8b",
+        "bytes": 699
+      },
+      "log": {
+        "path": "Build/chatgpt-coalition-helper-checks-20261104-1217/run.log",
+        "sha256": "54366193c6e94420aa0e8f3c9176ae7b32859af313d7d23d1abb06779798ee0e",
+        "bytes": 715
+      },
+      "interpretation": "Original failed cohort retained and not accepted or pooled. A complete new cohort uses the corrected classifier. Counter backend, browser scope and .95 target unchanged; no engine instruction credit for this audit correction."
+    },
+    "retained_prelaunch_failure": {
+      "reason": "First seven-pair command supplied unsupported --target-vox-fraction; argument parser exited 2 before launching a browser. The canonical ChatGPT driver already hardcodes the user-requested .95 gate. Corrected command uses a new receipt/registry and preserves the failed command.",
+      "guard": {
+        "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven-guard.json",
+        "sha256": "5b7d1470d0ccc222352ed34c0a5efd209a1ee0a433a65a1cf7e48aa09d5907f7",
+        "bytes": 1163
+      },
+      "log": {
+        "path": "Build/chatgpt-url-string-cohort-20261104-1203/candidate-seven.log",
+        "sha256": "83738141c6f29de1514dad1ad4de4f340b31153540a05cab5c31912a3d181ebc",
+        "bytes": 1505
+      }
+    },
+    "fresh_profile": {
+      "observation": {
+        "directory": "Build/chatgpt-preparation-profile-20261104-1158/run",
+        "observations": [
+          {
+            "pair": 1,
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "launch_instruction_interval": {
+              "lower": 29939856419,
+              "upper": 29939856419
+            },
+            "instruction_interval": {
+              "lower": 29755924933,
+              "upper": 29755924933
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+            "resource_coalition": 15587,
+            "root_start_ticks": 1296371852306,
+            "started_unix": 1793782792.5606148,
+            "finished_unix": 1793782801.565475,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                20.83056640625,
+                32.0458984375,
+                37.4541015625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                20.203125,
+                31.7294921875,
+                37.310546875
+              ]
+            }
+          }
+        ],
+        "summary": {
+          "author_scripts": "original, enabled",
+          "error": "Native-only sampling diagnostic; Brave comparison intentionally absent",
+          "observation_errors": [],
+          "optimization_credit": false,
+          "pairs": 0,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work."
+        },
+        "guard": {
+          "command": [
+            "python3",
+            "Build/chatgpt-preparation-profile-20261104-1158/profile.py",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-preparation-profile-20261104-1158/run",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-preparation-profile-20261104-1158/pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "49356": "Wed Nov  4 11:59:52 2026    ",
+            "49360": "Wed Nov  4 11:59:52 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1800536064,
+          "elapsed_seconds": 17.054183709,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "receipts": {
+          "pairs.json": {
+            "path": "Build/chatgpt-preparation-profile-20261104-1158/run/pairs.json",
+            "sha256": "106222cab0f1255446688a360e3a8be37aa2bab1b2debb716df16941911ac3f7",
+            "bytes": 194907
+          },
+          "summary.json": {
+            "path": "Build/chatgpt-preparation-profile-20261104-1158/run/summary.json",
+            "sha256": "fb90cf4467b9a4b1a4fd728ebf351a756ad5958c34e257f5795f3e1c6d035afa",
+            "bytes": 603
+          },
+          "inputs.json": {
+            "path": "Build/chatgpt-preparation-profile-20261104-1158/run/inputs.json",
+            "sha256": "fa17d7c84da1256045b676e5243bf741539d62700e39076bb05e5651582b9f15",
+            "bytes": 379042
+          },
+          "browser-apps.json": {
+            "path": "Build/chatgpt-preparation-profile-20261104-1158/run/browser-apps.json",
+            "sha256": "7d43b751b8a4c279e5ecf94fae797e4152e72fe01fdddfb3f5ae5c7e0fc20926",
+            "bytes": 208
+          }
+        },
+        "guard_receipt": {
+          "path": "Build/chatgpt-preparation-profile-20261104-1158/guard.json",
+          "sha256": "a30a48cf11c3d3c47a77239b523ec3b37678e7a8a6636ebb6fea05a9878b75fd",
+          "bytes": 1179
+        }
+      },
+      "sample": {
+        "path": "Build/chatgpt-preparation-profile-20261104-1158/run/pair-1-vox/sample.txt",
+        "sha256": "def849acd72c5a66133ff557c8b6fd25ee9079d6ae67a17c8c1381e97bb5f780",
+        "bytes": 2318121
+      },
+      "sample_result": {
+        "exit": 0,
+        "instruction_credit": 0,
+        "profile_present": true
+      },
+      "interpretation": "Twelve-second external sampling diagnostic with exact page content/pixels on the earlier completed cbcd8202 executable. Style/layout triggered by script geometry reads remains substantial; samples do not establish exclusive instruction totals or credit for unbuilt code."
+    },
+    "cadence": "No additional conservative whole-page saving established by the URL trials, so component-only savings do not advance the 5,000,000-instruction cadence. Prior native-rendering broad checkpoint remains recorded in continuation_20261104_1150. No reference/tolerance changes.",
+    "network": "No further live downloads; same single SOCKS capture and disk-only original-origin replay.",
+    "live_limit": "Anonymous frozen homepage with original enabled author scripts and completed bootstrap. Does not establish live-site behavior, authentication, conversations, isolated render time or scrolling FPS.",
+    "remaining": [
+      "Meet the requested 100*max(Vox upper) <= 95*min(Brave lower) gate on seven complete alternating pairs.",
+      "Optimize measured script/style/layout preparation further and prove each change with matched unprofiled controls."
     ]
   }
 }
