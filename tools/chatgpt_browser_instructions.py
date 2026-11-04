@@ -173,11 +173,39 @@ def clean_observer_environment():
         os.environ.clear()
         os.environ.update(previous)
 
+
+class MissingBenchmarkInput(ValueError):
+    """A retained fixture/reference is unavailable; never recapture implicitly."""
+
+
+def preflight_inputs(args):
+    archive = args.archive.resolve()
+    required = [('sealed page manifest', archive / 'manifest.json'),
+                ('Brave pixel reference', args.expected), ('pixel comparison executable', args.diff_tool)]
+    if getattr(args, 'expected_vox', None):
+        required.append(('Vox pixel reference', args.expected_vox))
+    if getattr(args, 'reference_audit', None):
+        required += [('retained content audit', args.reference_audit),
+                     ('audit pixel reference', args.reference_audit.parent / 'document.png')]
+    missing = [f'{label}: {path}' for label, path in required if not path.is_file()]
+    if missing:
+        raise MissingBenchmarkInput('Retained benchmark inputs are missing:\n  ' +
+            '\n  '.join(missing) + '\nRestore the captured fixture and its references before measuring.')
+    if not os.access(args.diff_tool, os.X_OK):
+        raise MissingBenchmarkInput('Pixel comparison tool is not executable: ' + str(args.diff_tool))
+    try:
+        # Verify every body before creating a run directory, copying profiles,
+        # starting a replay server or launching either measured application.
+        return load_archive(archive)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise MissingBenchmarkInput('Retained page archive cannot be verified: ' + str(error)) from error
+
+
 def run(args):
+    manifest = preflight_inputs(args)
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
     archive = args.archive.resolve()
-    manifest = load_archive(archive)
     policy = None
     if getattr(args, 'script_policy', None):
         policy = performance_policy.prepare_archive(archive, out / 'policy-archive',
@@ -341,7 +369,11 @@ def main():
         parser.error('Need at least two pairs and settlement below the timeout')
     if args.policy_diagnostics and not args.script_policy:
         parser.error('--policy-diagnostics requires --script-policy')
-    return run(args)
+    try:
+        return run(args)
+    except MissingBenchmarkInput as error:
+        print('ChatGPT benchmark input error: ' + str(error), file=sys.stderr)
+        return 2
 
 
 if __name__ == '__main__':

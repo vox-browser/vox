@@ -1,6 +1,9 @@
 import base64
+import hashlib
+import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -9,6 +12,77 @@ import chatgpt_browser_instructions as comparison
 
 
 class ChatGPTInstructionsTests(unittest.TestCase):
+    def input_fixture(self, root):
+        archive = root / 'archive'
+        (archive / 'bodies').mkdir(parents=True)
+        body = b'<title>ChatGPT</title>'
+        sha = hashlib.sha256(body).hexdigest()
+        (archive / 'bodies' / sha).write_bytes(body)
+        manifest = dict(version=1, url=capture.URL, sealed_unix=1,
+                        responses={capture.URL: dict(status=200, sha256=sha, bytes=len(body), headers=[])})
+        (archive / 'manifest.json').write_text(json.dumps(manifest))
+        reference, diff = root / 'reference.png', root / 'pixel_diff'
+        reference.write_bytes(b'retained reference')
+        diff.write_text('test fixture, never executed')
+        diff.chmod(0o755)
+        return SimpleNamespace(archive=archive, expected=reference, diff_tool=diff,
+                               expected_vox=None, reference_audit=None, output=root / 'run'), manifest, sha
+
+    def test_missing_inputs_fail_before_output_or_browser_setup(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            args = SimpleNamespace(archive=root / 'missing', expected=root / 'reference.png',
+                diff_tool=root / 'diff', output=root / 'run')
+            with mock.patch.object(comparison.measurement, 'reference_browser_apps') as apps, \
+                    mock.patch.object(comparison, 'Replay') as replay:
+                with self.assertRaises(comparison.MissingBenchmarkInput) as error:
+                    comparison.run(args)
+                for label in ['sealed page manifest', 'Brave pixel reference', 'pixel comparison executable']:
+                    self.assertIn(label, str(error.exception))
+                apps.assert_not_called()
+                replay.assert_not_called()
+                self.assertFalse(args.output.exists())
+
+    def test_preflight_checks_the_audits_own_png_and_optional_vox_reference(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            args, _, _ = self.input_fixture(Path(temporary))
+            args.reference_audit = Path(temporary) / 'audit' / 'audit.json'
+            args.reference_audit.parent.mkdir()
+            args.reference_audit.write_text('{}')
+            args.expected_vox = Path(temporary) / 'vox.png'
+            with self.assertRaises(comparison.MissingBenchmarkInput) as error:
+                comparison.preflight_inputs(args)
+            self.assertIn('Vox pixel reference', str(error.exception))
+            self.assertIn('audit pixel reference', str(error.exception))
+
+    def test_preflight_rejects_deleted_or_changed_response_bodies(self):
+        for changed in [False, True]:
+            with tempfile.TemporaryDirectory() as temporary:
+                args, _, sha = self.input_fixture(Path(temporary))
+                body = args.archive / 'bodies' / sha
+                if changed:
+                    body.write_bytes(b'changed')
+                else:
+                    body.unlink()
+                with self.assertRaisesRegex(comparison.MissingBenchmarkInput, 'cannot be verified'):
+                    comparison.run(args)
+                self.assertFalse(args.output.exists())
+
+    def test_preflight_requires_an_executable_diff_tool(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            args, _, _ = self.input_fixture(Path(temporary))
+            args.diff_tool.chmod(0o644)
+            with self.assertRaisesRegex(comparison.MissingBenchmarkInput, 'not executable'):
+                comparison.preflight_inputs(args)
+
+    def test_successful_preflight_preserves_the_sealed_inputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            args, manifest, _ = self.input_fixture(Path(temporary))
+            before = {p: p.read_bytes() for p in Path(temporary).rglob('*') if p.is_file()}
+            self.assertEqual(comparison.preflight_inputs(args), manifest)
+            self.assertEqual({p: p.read_bytes() for p in before}, before)
+            self.assertFalse(args.output.exists())
+
     def test_policy_diagnostic_requires_execution_marker_independently_of_bootstrap(self):
         audit = self.audit()
         audit['selections'].append(dict(name='bootstrap', count=1, elements=[]))
