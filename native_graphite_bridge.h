@@ -238,6 +238,8 @@ int vox_graphite_canvas_draw_shadow(const VoxGraphiteShadow *shadow, const float
     const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_draw_shape(const VoxGraphiteShape *shape, const float *device_bounds,
     const VoxGraphiteCanvasClip *clips, int clip_count);
+int vox_graphite_canvas_draw_pixels(const uint8_t *bgra, int width, int height, int pitch,
+    int device_x, int device_y, const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_read(const VoxGraphitePixelRegion *views, int count);
 void vox_graphite_canvas_end(void);
 #ifdef __cplusplus

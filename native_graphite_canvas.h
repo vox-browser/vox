@@ -150,6 +150,25 @@ int vox_graphite_canvas_draw_shape(VoxGraphiteShape const* shape, float const* b
     });
 }
 
+// Premultiplied BGRA pixels rasterized on a transparent CPU target, composited
+// source-over at an integral device position: text and other CPU-only leaves.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_pixels(uint8_t const* bgra, int width, int height, int pitch,
+    int device_x, int device_y, VoxGraphiteCanvasClip const* clips, int clip_count)
+{
+    if (!bgra || width <= 0 || height <= 0 || pitch < width * 4) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if (!canvas_recorder) return 0;
+    auto raster = SkImages::RasterFromPixmapCopy(SkPixmap(canvas_info(width, height), bgra, size_t(pitch)));
+    auto image = raster ? vox_shared_image(canvas_recorder.get(), raster, {}) : nullptr;
+    if (!image) return 0;
+    float bounds[] {float(device_x), float(device_y), float(device_x + width), float(device_y + height)};
+    return canvas_draw(bounds, clips, clip_count, [&](SkCanvas* canvas, CanvasTile const& tile) {
+        canvas->setMatrix(SkMatrix::Translate(device_x - tile.x, device_y - tile.y));
+        canvas->drawImage(image, 0, 0, SkSamplingOptions(SkFilterMode::kNearest), nullptr);
+    });
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_read(VoxGraphitePixelRegion const* views, int count)
 {

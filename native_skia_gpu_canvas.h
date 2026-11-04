@@ -38,6 +38,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_draw_shadow) draw_shadow = nullptr;
     decltype(&vox_graphite_canvas_draw_shape) draw_shape = nullptr;
     decltype(&vox_graphite_canvas_read) read = nullptr;
+    decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
     decltype(&vox_graphite_canvas_end) end = nullptr;
 };
 
@@ -52,10 +53,12 @@ GpuCanvasApi const* gpu_canvas_api()
         value.draw_shadow = reinterpret_cast<decltype(value.draw_shadow)>(dlsym(library, "vox_graphite_canvas_draw_shadow"));
         value.draw_shape = reinterpret_cast<decltype(value.draw_shape)>(dlsym(library, "vox_graphite_canvas_draw_shape"));
         value.read = reinterpret_cast<decltype(value.read)>(dlsym(library, "vox_graphite_canvas_read"));
+        value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
         value.end = reinterpret_cast<decltype(value.end)>(dlsym(library, "vox_graphite_canvas_end"));
         return value;
     }();
     return api.begin && api.upload && api.draw_shadow && api.draw_shape && api.read && api.end
+        && api.draw_pixels
         ? &api : nullptr;
 }
 
@@ -84,6 +87,12 @@ bool gpu_canvas_verify_leaves()
         return value && !std::strcmp(value, "2");
     }();
     return enabled;
+}
+
+bool gpu_canvas_text_disabled()
+{
+    static bool const disabled = std::getenv("VOX_GPU_CANVAS_DISABLE_TEXT") != nullptr;
+    return disabled;
 }
 
 bool gpu_canvas_diagnostics()
@@ -229,6 +238,7 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
         || kind == "paint_rounded_border_bottom" || kind == "paint_rounded_border_left")
         return true;
     if (kind == "fill_rect") return !(flags & (1 | 2 | 4 | 64));
+    if (kind == "draw_text") return !gpu_canvas_text_disabled();
     return false;
 }
 
@@ -259,6 +269,37 @@ int gpu_canvas_defer_rect(CGContextRef destination, float x, float y, float widt
     canvas->cpu_stale = true;
     ++canvas->draws;
     return gpu_canvas_verify() ? 0 : 1;
+}
+}
+
+namespace {
+int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
+    int region_left, int region_top, char const* name, std::function<bool(uint32_t*)> const& raster)
+{
+    if (!s_gpu_canvas || s_gpu_canvas->destination != destination) return 0;
+    std::vector<VoxGraphiteCanvasClip> clips;
+    auto* frame = gpu_canvas_for_leaf(destination, clips);
+    if (!frame) return 0;
+    std::vector<uint32_t> pixels(size_t(width) * height);
+    int device_x = int(std::lround(region_left * frame->scale));
+    int device_y = int(std::lround(region_top * frame->scale));
+    if (!raster(pixels.data()) || !gpu_canvas_api()->draw_pixels(reinterpret_cast<uint8_t const*>(pixels.data()),
+            width, height, width * 4, device_x, device_y, clips.data(), int(clips.size()))) {
+        gpu_canvas_flush();
+        return 0;
+    }
+    gpu_canvas_name_leaf(*frame, name, SkRect::MakeXYWH(device_x, device_y, width, height), 0, clips.size());
+    frame->cpu_stale = true;
+    ++frame->draws;
+    return gpu_canvas_verify() ? 1 : 2;
+}
+
+// A leaf of an approved command that must draw on the CPU canvas.
+void gpu_canvas_decline(CGContextRef destination)
+{
+    if (!s_gpu_canvas || s_gpu_canvas->destination != destination) return;
+    ++s_gpu_canvas->declined;
+    gpu_canvas_flush();
 }
 }
 

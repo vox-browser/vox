@@ -1438,6 +1438,15 @@ static bool apply_unrounded_glyph_color(SkPaint&);
 
 #include "native_glyph_bitmap_surface.h"
 
+namespace {
+// Experimental GPU canvas (native_skia_gpu_canvas.h): composite a CPU raster of
+// a transparent leaf. Returns 2 when the leaf is complete, 1 when verification
+// still needs the ordinary path, and 0 when the ordinary path must draw.
+int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
+    int region_left, int region_top, char const* name, std::function<bool(uint32_t*)> const& raster);
+void gpu_canvas_decline(CGContextRef destination);
+}
+
 static int draw_retained_glyph_run(CGContextRef destination,
     char const* font_path, int face_index, uint16_t const* glyphs, double const* packed_positions, int glyph_count,
     float font_size, int font_weight, int emoji_face, float baseline_x,
@@ -1546,6 +1555,24 @@ static int draw_retained_glyph_run(CGContextRef destination,
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
     size_t pixel_count = static_cast<size_t>(raster_width) * raster_height;
+    if (!emoji_face && blur == 0 && !has_float_color) {
+        int canvas_result = gpu_canvas_draw_cpu_raster(destination, raster_width, raster_height,
+            region.left, region.top, "text", [&](uint32_t* text_pixels) {
+                auto info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
+                    kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+                SkSurfaceProps coverage(0, kUnknown_SkPixelGeometry, 0.0f,
+                    (font_smoothing & 15) == 2 ? 1.0f : 0.0f);
+                auto surface = SkSurfaces::WrapPixels(info, text_pixels,
+                    size_t(raster_width) * 4, chromium ? &coverage : nullptr);
+                if (!surface) return false;
+                auto* text_canvas = surface->getCanvas();
+                text_canvas->clear(SK_ColorTRANSPARENT);
+                text_canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
+                text_canvas->drawTextBlob(blob, blob_x, blob_y, paint);
+                return true;
+            });
+        if (canvas_result == 2) return 1;
+    } else gpu_canvas_decline(destination);
     // Avoid quantizing a partially covered foreground to premultiplied 8-bit
     // color before blending it over the page. The owning native bitmap frame
     // or opacity group supplies its pixels; transparency layers use the old path.
