@@ -527,3 +527,36 @@ The [row-union receipt](performance/chatgpt-row-union-20261104.json) links both
 focused revisions, all diagnostic and matched observations, PNGs, counters,
 commands, host loads, frozen function excerpts and memory-guard exits. The
 original 5% Brave goal remains unmet.
+
+## Follow-up diagnostic boundaries
+
+The [frame-phase receipt](performance/chatgpt-frame-phases-20261104.json) preserves
+two new instrumented pairs with the same five-second frozen workload and
+production executable `4d55ec4468623f9d2449dd9fef4c3a34515da8ce9a0a99faf33035cab142bc34`.
+`VOX_DIAGNOSTIC_FRAME_PARTS=1` records explicit frame boundaries, while
+`VOX_DIAGNOSTIC_STYLE_REASONS=1` records cumulative style-update visit counts.
+All four captures pass unchanged pixels, content, bootstrap and exits, with
+stable executable, library, fixture and tool identities.
+
+| Process instructions within frame intervals | First Vox run | Second Vox run |
+| --- | ---: | ---: |
+| Completed frames | 169 | 177 |
+| Document replay intervals | 5,960,598,681 | 5,833,710,358 |
+| Chrome update intervals | 35,274,221 | 41,735,361 |
+
+These are differences of current-process cumulative counters at ordered frame
+boundaries. Concurrent threads in that process can contribute. They are not
+exclusive function costs or the separately measured coalition totals. Other
+consecutive log intervals ending at `build_boxes` accumulate 12.16–12.32 billion
+instructions, but include preceding style, event-loop and concurrent work; those
+numbers cannot be attributed to the box builder alone. Full-document style
+updates visit 2,681 elements in each run, and node-specific updates visit 1,925.
+The measurements identify replay and style/layout preparation as further areas
+to investigate. They provide no optimization credit.
+
+Three additional native sample files contain process/image metadata but no
+thread stacks or call graph. The first twelve-second sampler also exceeded its
+twenty-second finish wait. Two later three-second samplers exit zero and their
+four browser captures pass, but their empty graphs remain unusable for hotspot
+attribution. The receipt retains the failed attempt and both subsequent files;
+a successful sampler exit or present output file is not profiling evidence.
