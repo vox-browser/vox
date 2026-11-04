@@ -1,0 +1,14 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-base-cache-verify-20261104-r2/run.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 75,
+  "adopted_processes": {},
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 3244032,
+  "elapsed_seconds": 0.191787416,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

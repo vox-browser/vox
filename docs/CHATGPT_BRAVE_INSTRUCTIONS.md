@@ -1228,3 +1228,36 @@ partial browser evidence and the busy-lock report. Original author scripts,
 fixture bytes and references remain unchanged, with no new live download.
 Page credit and the broad cadence remain zero. The requested 5% Brave advantage
 remains unmet.
+
+### Completed base-cache production comparison
+
+A second nonblocking lease attempt also exits 75 without launching a browser.
+The next attempt acquires the publication lock and holds it across a separate
+diagnostic and unprofiled four-pair comparison, then releases it. No app is
+copied and no new build request is enqueued. Completed executable
+`6c57297b8944be97201dec4dc929ac71a75f5be8272f8419830a81070942621b`
+remains unchanged throughout both phases.
+
+All four diagnostic and eight unprofiled captures pass exact pixels, content,
+JavaScriptCore bootstrap and browser/kernel exits. The cache-hit marker occurs
+only with caching enabled. The enclosing guard exits zero, successfully adopts
+43 process identities and observes a peak aggregate RSS of 1,977,843,712 bytes.
+
+The original-parser Vox median is **33,613,803,772.5** instructions, versus
+**33,591,232,705** with the cache, a **0.067%** observed reduction. Ranges overlap;
+the conservative reduction is **−302,609,715**. Frame-completion checkpoints are
+472, 477, 465 and 474; all four Vox captures have eleven box-building passes.
+Starting load averages range from 4.45 to 5.39 on 18 CPUs. No conservative page
+saving is credited, and the broad cadence remains zero.
+
+Disk exhaustion initially prevented a shell here-document. Cleanup removed
+only this work's completed generated test outputs, retaining durable source
+proofs, commands, logs, raw counters and PNGs. Two handwritten ICU source probes
+are restored byte-exact from their verified archives. The production bundle,
+frozen receipts, repository source and single SOCKS fixture remain intact.
+
+The [completed production receipt](performance/chatgpt-base-cache-production-20261104.json)
+links the successful phases, lease and guard records, second busy-lock attempt
+and exact cleanup receipt. Earlier partial and busy attempts remain unpooled in
+their prior receipts. This four-pair diagnostic does not establish seven-pair
+acceptance or the requested 5% Brave advantage.

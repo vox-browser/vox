@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "implementation_commit": "cb055fe71",
+  "production_executable_sha256": "6c57297b8944be97201dec4dc929ac71a75f5be8272f8419830a81070942621b",
+  "source_and_runtime_path_verified": true,
+  "diagnostic_captures": 4,
+  "unprofiled_captures": 8,
+  "all_pixels_and_content_exact": true,
+  "all_browser_and_kernel_exits_zero": true,
+  "scope": "Fresh canonical production browser, original author scripts, frozen single SOCKS capture, launch through encoded document PNG; per-binding URL base cache control/candidate/candidate/control comparison. Four pairs are below seven-pair acceptance.",
+  "control": [
+    {
+      "lower": 33796883645,
+      "upper": 33796883645
+    },
+    {
+      "lower": 33430723900,
+      "upper": 33430723900
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 33733333615,
+      "upper": 33733333615
+    },
+    {
+      "lower": 33449131795,
+      "upper": 33449131795
+    }
+  ],
+  "control_median": 33613803772.5,
+  "candidate_median": 33591232705.0,
+  "median_reduction_fraction": 0.0006714820986272185,
+  "conservative_page_instruction_reduction": -302609715,
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "broad_checkpoint_required": false,
+  "work": [
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 472,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          4.447265625,
+          10.3203125,
+          17.666015625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          4.4912109375,
+          10.23193359375,
+          17.591796875
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 477,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          4.6787109375,
+          9.9072265625,
+          17.3037109375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          4.7041015625,
+          9.82568359375,
+          17.2314453125
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 465,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          4.7275390625,
+          9.7451171875,
+          17.15966796875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          4.6689453125,
+          9.6494140625,
+          17.08251953125
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 474,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.388671875,
+          9.50537109375,
+          16.8583984375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.27734375,
+          9.41357421875,
+          16.78271484375
+        ]
+      }
+    }
+  ],
+  "publication_lease": {
+    "acquired": true,
+    "released": true,
+    "identity_stable": true,
+    "woke_existing_request": false,
+    "new_builds_enqueued": 0,
+    "guard_exit": 0,
+    "adopted_processes": 43,
+    "observed_peak_rss_bytes": 1977843712
+  },
+  "previous_attempts": "Earlier partial diagnostic rejected canonical executable replacement; initial and r2 publication-lease attempts found the build lock busy and collected no samples. All remain retained, unpooled and uncredited.",
+  "disk_cleanup": "Disk exhaustion blocked a shell here-document. Removed own completed generated test C/binaries; handwritten ICU source probes restored byte-exact from verified durable archives. Source, fixtures, complete production bundle/frozen receipts and raw evidence retained. Exact net removals in linked cleanup receipt.",
+  "acceptance": false,
+  "target_fraction": "0.95",
+  "qualification": "Four-pair diagnostic with overlapping observed ranges. No conservative whole-page saving or seven-pair Brave acceptance. Original author scripts, frozen fixture and references unchanged; no new live download.",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-base-cache-production-20261104-evidence.zip",
+      "sha256": "7b7540464db2fe70c8850738ff04d73036a58d427962382d34a0845557e29ab0",
+      "bytes": 19737
+    },
+    {
+      "path": "docs/performance/chatgpt-base-cache-r3-diagnostic-20261104.json",
+      "sha256": "8ba4d43fbdba058c85152f7961d385b8b4daf1013ac72c8da5ee4ef194c07cdd",
+      "bytes": 1648958
+    },
+    {
+      "path": "docs/performance/chatgpt-base-cache-r3-diagnostic-20261104-evidence.zip",
+      "sha256": "52daaec8b24172dc58d6b68bb49f479861198080e1cfadec8277a8195b33150a",
+      "bytes": 1315714
+    },
+    {
+      "path": "docs/performance/chatgpt-base-cache-r3-matched-20261104.json",
+      "sha256": "0e7c538532203b6d6df5a62d467b309296dabc897b7635770b711a11e884602c",
+      "bytes": 2953943
+    },
+    {
+      "path": "docs/performance/chatgpt-base-cache-r3-matched-20261104-evidence.zip",
+      "sha256": "d60befce3f3f2f27e8294067460c9e77b61813d601ca71ab9e6028100eeb65e3",
+      "bytes": 2812598
+    },
+    {
+      "path": "docs/performance/chatgpt-base-cache-r2-lease-20261104.json",
+      "sha256": "fd0cacc1ef523ae25f65498ac45d79a9e2faaa5082252efe337caf64b0045e6c",
+      "bytes": 359
+    },
+    {
+      "path": "docs/performance/chatgpt-base-cache-r2-lease-20261104-guard.json",
+      "sha256": "c0bab16bdee8a985d07ea21409c5180d31bb70fcf0a8ef4e9a4e048db95ba7bf",
+      "bytes": 382
+    },
+    {
+      "path": "docs/performance/chatgpt-base-cache-r3-lease-20261104.json",
+      "sha256": "c2b843e9384b0385a1d1c31950cc3584f6f4c3ea10cc66ae9dfcf43d57df8565",
+      "bytes": 3937
+    },
+    {
+      "path": "docs/performance/chatgpt-base-cache-r3-lease-20261104-guard.json",
+      "sha256": "593ab2226a98071ef948a231dc0c8f65e61460dd9883b245386f7d1e42666041",
+      "bytes": 2323
+    }
+  ]
+}
