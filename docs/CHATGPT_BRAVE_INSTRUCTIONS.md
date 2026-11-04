@@ -519,14 +519,26 @@ Commit `4debf9168` therefore keeps the original default and requires
 `VOX_ENABLE_SCROLL_RASTER_ROW_UNION=1` to opt into the experiment.
 `VOX_DISABLE_SCROLL_RASTER_ROW_UNION=1` still forces the original path. The final
 focused suites repeat every case and compare default, forced scalar and explicit
-union results in both sanitizer modes. They all pass. Production validation of
-this final opt-in gate awaits the shared build; the measured executable cannot
-validate code added afterward.
+union results in both sanitizer modes. They all pass. At that point, production
+validation of the final opt-in gate was pending; the earlier measured executable
+could not validate code added afterward.
 
 The [row-union receipt](performance/chatgpt-row-union-20261104.json) links both
 focused revisions, all diagnostic and matched observations, PNGs, counters,
 commands, host loads, frozen function excerpts and memory-guard exits. The
 original 5% Brave goal remains unmet.
+
+The subsequent [production gate receipt](performance/chatgpt-row-gate-20261104.json)
+closes that validation gap using completed production executable
+`6e17496ff30b300a11d6d015d162d4e8a9ed40e5b6717f6ecd0c96d12724d332`.
+Its frozen planner, ring-copy helper and complete store function match the final
+opt-in source. Four fresh Vox processes run default/opt-in/opt-in/default,
+interleaved with four Brave references. All eight captures pass exact pixels,
+content, bootstrap and zero browser/kernel exits, and every input identity stays
+stable. Default runs report no union execution; both explicit opt-in runs report
+72 duplicate rows avoided across 16 input ranges merged into 13 at 2048×1536.
+The diagnostic confirms the final gate and content, with no performance credit.
+The original page regression remains retained, and the broad cadence stays zero.
 
 ## Follow-up diagnostic boundaries
 
