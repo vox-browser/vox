@@ -604,5 +604,10 @@
       "sha256": "aa4c1133f4b3080f6449e00d5db8f093653d4f24d494c3d3bddd1842d2984093",
       "bytes": 153559
     }
-  ]
+  ],
+  "production_followup": {
+    "path": "docs/performance/chatgpt-animation-pages-production-20261105.json",
+    "sha256": "b42306bec739216501e6f21c7f752cd4d01b2131770d18af49a3652498e41cea",
+    "qualification": "Final production source and runtime path verified, all twelve captures exact, 2.310% observed reduction versus scalar control, all 47 broad checks pass. Four-pair diagnostic only; 5% Brave advantage remains unmet."
+  }
 }

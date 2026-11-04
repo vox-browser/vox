@@ -1,0 +1,100 @@
+{
+  "started_unix": 1793826893.98445,
+  "lock": "/Users/alex/code/vox2/Build/production-build/build.lock",
+  "acquired": true,
+  "scope": "Nonblocking publication lease across one diagnostic and one matched cohort; no build enqueued. Existing queued requests are woken on release.",
+  "rows": [
+    {
+      "name": "diagnostic",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-page-production-20261105-r1/diagnostic/page.py"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "matched",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-page-production-20261105-r1/matched/page.py"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "broad",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-animation-page-production-20261105-r1/broad.py"
+      ],
+      "exit": 0
+    }
+  ],
+  "request_before": {
+    "head": "0fe282abc62a62947aa9d345312ced395c63ea44",
+    "id": "6a40d9c986a741cfa20598482d8fe2a8"
+  },
+  "status": "complete",
+  "production_before": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "809de706df254e9eae5e050935001349e3f398daf97ab433a7225f55ffffe30d",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-001004-4a2f08a3/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+      "dirty": true,
+      "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+      "repository_sha256": "dd5f4db9d82bba8c81cc39e9c0c9699d6fa7b1e394d583702901ead60ac3a762"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+      "dirty": true,
+      "head": "0fe282abc62a62947aa9d345312ced395c63ea44",
+      "repository_sha256": "63619b76376fa778c2b5fca69f8c598e5cc3465652af10885136777bc808a1c8"
+    },
+    "request": {
+      "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+      "id": "54a20d7d9589476092b18086796a2029"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+      "dirty": true,
+      "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+      "repository_sha256": "4eb7eb43179738eedefb81c4b517142299582e1cf014df46783d264bb5e200ee"
+    }
+  },
+  "observed_conservative_page_reduction": 529809430,
+  "production_after": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "809de706df254e9eae5e050935001349e3f398daf97ab433a7225f55ffffe30d",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-001004-4a2f08a3/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+      "dirty": true,
+      "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+      "repository_sha256": "dd5f4db9d82bba8c81cc39e9c0c9699d6fa7b1e394d583702901ead60ac3a762"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+      "dirty": true,
+      "head": "0fe282abc62a62947aa9d345312ced395c63ea44",
+      "repository_sha256": "63619b76376fa778c2b5fca69f8c598e5cc3465652af10885136777bc808a1c8"
+    },
+    "request": {
+      "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+      "id": "54a20d7d9589476092b18086796a2029"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "34349ed32b99988dc512eac1746a7f2378b891d585e99474e522327ef568e65e",
+      "dirty": true,
+      "head": "b382d245d4af244f89ef75af1f0cfbccf9e4db10",
+      "repository_sha256": "4eb7eb43179738eedefb81c4b517142299582e1cf014df46783d264bb5e200ee"
+    }
+  },
+  "request_after": {
+    "head": "0fe282abc62a62947aa9d345312ced395c63ea44",
+    "id": "6a40d9c986a741cfa20598482d8fe2a8"
+  },
+  "woke_existing_request": false,
+  "finished_unix": 1793827238.357685
+}

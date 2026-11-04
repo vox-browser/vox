@@ -1352,3 +1352,49 @@ shared bundle containing the temporary-scope fix. The previous completed
 bundle contains the unscoped prototype, so it supplies no final validation.
 The frozen fixture, original author scripts and references remain unchanged,
 with no new downloads. The requested 5% Brave advantage remains unmet.
+
+#### Completed production comparison
+
+Completed executable
+`809de706df254e9eae5e050935001349e3f398daf97ab433a7225f55ffffe30d`
+contains the final temporary-scope fix. A nonblocking publication lease pins
+that bundle across a separate execution diagnostic, unprofiled comparison and
+broad verification, then releases it without enqueuing a build. Sealed source
+excerpts identify the final scanner. All four diagnostic and eight unprofiled
+captures pass full content, JavaScriptCore bootstrap, exact reference pixels
+and browser/kernel exits. A shared-page hit is reported only with the memo
+enabled.
+
+In control/candidate/candidate/control order, scalar Vox counts are
+**33,788,710,254** and **33,514,183,574**, versus candidate counts
+**32,984,374,144** and **32,763,543,127**. Medians fall from
+**33,651,446,914** to **32,873,958,635.5**: **2.310%** fewer observed instructions.
+The conservative separation is **529,809,430** instructions. The scalar control
+shares the new temporary scope and memo allocation while retaining the original
+per-property loop; it isolates scan reuse rather than reproducing every
+instruction of an older release.
+
+Frame checkpoints are 457, 477, 475 and 474, with eleven box-building passes
+in every capture. Starting load averages range from 5.13 to 5.43 on 18 CPUs;
+shared source/build activity and source-archive/Git work also occur on the host.
+Candidate captures complete slightly more frame checkpoints while using fewer
+instructions, but this remains a small frozen-page cohort. It does not establish
+isolated rendering time, a fixed-frame CPU cost or scrolling FPS.
+
+The observed separation crosses the 5,000,000-instruction verification
+threshold. **All 47 broad checks pass**, including twenty screenshot/reftest
+cases, live image and SVG paint-server mutations, eleven compiled/executed
+native Skia checks, diff controls and exact 100-case AST comparisons with both
+GC modes. The broad cadence resets to zero. The enclosing memory guard exits
+zero, adopts 42 process identities and observes peak aggregate RSS of
+1,928,331,264 bytes.
+
+Both canonical comparison drivers retain exit 1 because the Brave target and
+seven-pair minimum are unmet; their validation controllers exit zero. The worst
+candidate count divided by the lowest Brave lower bound is **1.822**, well above
+0.95. These four pairs provide no seven-pair acceptance or live ChatGPT
+interaction claim. The
+[completed production receipt](performance/chatgpt-animation-pages-production-20261105.json)
+links every raw count, PNG, audit, source proof, guard, lease and broad result.
+The original author scripts, five-second settle, fixture and references remain
+unchanged, with no new download. The requested 5% Brave advantage remains unmet.

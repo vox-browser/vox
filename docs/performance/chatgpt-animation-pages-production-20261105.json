@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "implementation_commit": "f1f9a4867",
+  "production_executable_sha256": "809de706df254e9eae5e050935001349e3f398daf97ab433a7225f55ffffe30d",
+  "scope": "Fresh canonical production browser, original author scripts, frozen single SOCKS capture, launch through encoded document PNG; animation property-page scan control/candidate/candidate/control comparison. Four pairs are below seven-pair acceptance.",
+  "source_and_runtime_path_verified": true,
+  "diagnostic_captures": 4,
+  "unprofiled_captures": 8,
+  "all_pixels_content_bootstrap_and_browser_kernel_exits_pass": true,
+  "benchmark_driver_exits": {
+    "diagnostic": 1,
+    "matched": 1
+  },
+  "benchmark_driver_exit_qualification": "Both canonical drivers exit 1 because the Brave target and minimum seven-pair cohort are unmet; validation controllers and the enclosing memory guard exit 0. No browser, kernel, content or pixel failure is hidden.",
+  "control": [
+    {
+      "lower": 33788710254,
+      "upper": 33788710254
+    },
+    {
+      "lower": 33514183574,
+      "upper": 33514183574
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 32984374144,
+      "upper": 32984374144
+    },
+    {
+      "lower": 32763543127,
+      "upper": 32763543127
+    }
+  ],
+  "control_median": 33651446914.0,
+  "candidate_median": 32873958635.5,
+  "median_reduction_fraction": 0.023104155981374497,
+  "conservative_observed_page_instruction_reduction": 529809430,
+  "control_qualification": "Scalar control retains the original per-property loop within the final scanner; both variants share the new temporary scope and bounded memo allocation. This isolates page-scan reuse, not every instruction of the previous release.",
+  "work": [
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 457,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.42724609375,
+          6.1474609375,
+          6.6142578125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.4345703125,
+          6.12548828125,
+          6.6005859375
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 477,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.1337890625,
+          6.021484375,
+          6.5546875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.1865234375,
+          6.00390625,
+          6.5419921875
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 475,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.1865234375,
+          6.00390625,
+          6.5419921875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.17138671875,
+          5.98681640625,
+          6.53271484375
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 474,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          5.20263671875,
+          5.9384765625,
+          6.501953125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          5.32470703125,
+          5.9404296875,
+          6.49560546875
+        ]
+      }
+    }
+  ],
+  "contention": "18 CPUs; starting load averages 5.13\u20135.43. Shared production/source work and source-archive/Git activity occurred on the host. Frame checkpoint counts vary; candidates complete 477/475 versus controls 457/474. Do not infer isolated rendering time, fixed-frame CPU cost or scrolling FPS.",
+  "broad": {
+    "required_by_observed_reduction": true,
+    "threshold": 5000000,
+    "jobs": 47,
+    "passed": true,
+    "selection": "Diff controls, 20 screenshot/reftest cases including live image and SVG paint-server mutations, eleven native Skia checks compiled and executed, exact 100-case AST comparisons with both GC modes.",
+    "cadence_before": 0,
+    "observed_advance": 529809430,
+    "cadence_after": 0
+  },
+  "guard": {
+    "exit": 0,
+    "adopted_processes": 42,
+    "peak_rss_bytes": 1928331264,
+    "limit_bytes": 12884901888
+  },
+  "publication_lease": {
+    "released": true,
+    "identity_stable": true,
+    "woke_existing_request": false,
+    "new_build_requests_enqueued": 0
+  },
+  "brave_intervals": [
+    {
+      "lower": 18755619674,
+      "upper": 18764811839
+    },
+    {
+      "lower": 18898931608,
+      "upper": 18946085431
+    },
+    {
+      "lower": 19474228706,
+      "upper": 19514679373
+    },
+    {
+      "lower": 18103497581,
+      "upper": 18119911243
+    }
+  ],
+  "candidate_worst_over_best_brave": 1.8219890381081825,
+  "acceptance": false,
+  "target_fraction": "0.95",
+  "qualification": "Four alternating Vox/Brave pairs, with two Vox observations per variant, are below the seven-pair acceptance cohort. Original author bytes, JSC bootstrap, viewport/scale, five-second settle, frozen fixture and references are unchanged; no new live download. This passing candidate-versus-scalar diagnostic does not meet the requested 5% Brave advantage or establish live ChatGPT interaction support.",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-animation-pages-production-20261105-evidence.zip",
+      "sha256": "94bab7203d866bc0e4fe9f88418077b30af7e7e1b906735a8aed56f78859b710",
+      "bytes": 22096
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-pages-r1-lease-20261105.json",
+      "sha256": "6534135233ecb4586b7bcf67bfc5b6098d686d3fae873fd944575986104b0644",
+      "bytes": 4187
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-pages-r1-diagnostic-20261105.json",
+      "sha256": "533ff40d86d78484eebaa65550f0a4ef9f7080b0bf5f73b7a75133e0c89c29af",
+      "bytes": 1658765
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-pages-r1-diagnostic-20261105-evidence.zip",
+      "sha256": "37bbeaa5a104cd0dd4ae7edceaec0bc7b4c60ee8cddbc8452a993b200eb4bdf4",
+      "bytes": 1318557
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-pages-r1-matched-20261105.json",
+      "sha256": "f495714bb3e5870ad25514ce278c6bd257e563abb745e6ae5c9409190d902cd3",
+      "bytes": 2535016
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-pages-r1-matched-20261105-evidence.zip",
+      "sha256": "15e1bbbe7d2f18c16a224a34785683c4151cedea5ae8239f0134a0268937a287",
+      "bytes": 2692528
+    },
+    {
+      "path": "docs/performance/chatgpt-animation-pages-r1-broad-20261105-evidence.zip",
+      "sha256": "a6b71fe2e7aed679a27fcce0998e13e4555e317b035cebe09df4db4e93c80388",
+      "bytes": 372268
+    }
+  ]
+}
