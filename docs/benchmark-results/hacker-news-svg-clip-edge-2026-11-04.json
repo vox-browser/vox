@@ -1,0 +1,202 @@
+{
+  "date": "2026-11-04",
+  "request": "Restrict the opaque clipped SVG leaf batch path to clip boundaries that can affect the leaf",
+  "implementation": {
+    "file": "native_skia_text_darwin.cpp",
+    "behavior": "Test path coverage against every retained rounded clip in local coordinates. Fully contained and completely excluded leaves keep the ordinary path. Crossing, touching and near-edge coverage keeps the audited batch path.",
+    "antialias": "A one-device-pixel fringe is necessary: skipping a coincident fractional edge changed 7 pixels in the retained failing native check.",
+    "transforms": "Inverse clip transforms account for translations, scaling and reflection; rounded-corner containment is checked geometrically."
+  },
+  "verification": {
+    "native_cases": 64,
+    "native_suites": 13,
+    "sanitizers": [
+      "AddressSanitizer",
+      "UndefinedBehaviorSanitizer"
+    ],
+    "native_guard_exits": {
+      "uniform-border-clip-layer-compile.guard.json": 0,
+      "superellipse-geometry-run.guard.json": 0,
+      "rounded-underlay-color-run-no-patches.guard.json": 0,
+      "svg-clip-compile.guard.json": 0,
+      "uniform-border-clip-layer-run.guard.json": 0,
+      "svg-color-compile.guard.json": 0,
+      "rounded-underlay-color-compile.guard.json": 0,
+      "svg-leaf-clip-run.guard.json": 0,
+      "superellipse-geometry-compile.guard.json": 0,
+      "svg-mask-backdrop-run.guard.json": 0,
+      "svg-color-run.guard.json": 0,
+      "svg-image-viewport-compile.guard.json": 0,
+      "svg-mask-backdrop-compile.guard.json": 0,
+      "svg-parent-msaa-run.guard.json": 0,
+      "svg-image-viewport-run.guard.json": 0,
+      "rounded-underlay-color-run.guard.json": 0,
+      "rounded-underlay-color-run-no-batch.guard.json": 0,
+      "contoured-box-run.guard.json": 0,
+      "masked-image-run.guard.json": 0,
+      "masked-image-compile.guard.json": 0,
+      "equal-image-clip-run.guard.json": 0,
+      "svg-leaf-clip-compile.guard.json": 0,
+      "equal-image-clip-compile.guard.json": 0,
+      "contoured-box-compile.guard.json": 0,
+      "svg-parent-msaa-compile.guard.json": 0,
+      "svg-clip-run.guard.json": 0,
+      "dashed-border-run.guard.json": 0,
+      "dashed-border-compile.guard.json": 0
+    },
+    "pixels": [
+      {
+        "name": "forum-svg-viewport-fringe",
+        "exit": 0,
+        "identity_unchanged": true,
+        "library_selected": true,
+        "pixels": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "Tests/Browser/Brave/expected/forum-svg-viewport-fringe.png",
+          "actual": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/forum-svg-viewport-fringe/actual.png",
+          "diff": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/forum-svg-viewport-fringe/diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/forum-svg-viewport-fringe/diff.png\n"
+        }
+      },
+      {
+        "name": "fractional-svg-symbol-clip",
+        "exit": 0,
+        "identity_unchanged": true,
+        "library_selected": true,
+        "pixels": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "Tests/Browser/Brave/expected/fractional-svg-symbol-clip.png",
+          "actual": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/fractional-svg-symbol-clip/actual.png",
+          "diff": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/fractional-svg-symbol-clip/diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/fractional-svg-symbol-clip/diff.png\n"
+        }
+      },
+      {
+        "name": "fractional-svg-viewport-fringe",
+        "exit": 0,
+        "identity_unchanged": true,
+        "library_selected": true,
+        "pixels": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "Tests/Browser/Brave/expected/fractional-svg-viewport-fringe.png",
+          "actual": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/fractional-svg-viewport-fringe/actual.png",
+          "diff": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/fractional-svg-viewport-fringe/diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/fractional-svg-viewport-fringe/diff.png\n"
+        }
+      },
+      {
+        "name": "svg-currentcolor-opacity-alpha",
+        "exit": 0,
+        "identity_unchanged": true,
+        "library_selected": true,
+        "pixels": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "Tests/Browser/Brave/expected/svg-currentcolor-opacity-alpha.png",
+          "actual": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/svg-currentcolor-opacity-alpha/actual.png",
+          "diff": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/svg-currentcolor-opacity-alpha/diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/svg-currentcolor-opacity-alpha/diff.png\n"
+        }
+      },
+      {
+        "name": "translated-svg-background-viewport",
+        "exit": 0,
+        "identity_unchanged": true,
+        "library_selected": true,
+        "pixels": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "Tests/Browser/Brave/expected/translated-svg-background-viewport.png",
+          "actual": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/translated-svg-background-viewport/actual.png",
+          "diff": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/translated-svg-background-viewport/diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/translated-svg-background-viewport/diff.png\n"
+        }
+      },
+      {
+        "name": "translated-svg-viewport-clip",
+        "exit": 0,
+        "identity_unchanged": true,
+        "library_selected": true,
+        "pixels": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "Tests/Browser/Brave/expected/translated-svg-viewport-clip.png",
+          "actual": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/translated-svg-viewport-clip/actual.png",
+          "diff": "/Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/translated-svg-viewport-clip/diff.png",
+          "metrics": "pixels: 786432\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/hn-svg-clip-edge-20261104/pixels2/translated-svg-viewport-clip/diff.png\n"
+        }
+      }
+    ],
+    "native_inputs_unchanged": true,
+    "baseline_browser_sha256": "e25f3ed7d128f3b855bf279ee9100e9f6dff332cb6ff0c2a6905b8a2ebc6458c",
+    "candidate_library_sha256": "0596a40f0896da4a5450c89a41130f653ff9b3f257ce4fbedb30f703418f9266",
+    "loading": "Fresh browser processes from the completed production app, with the candidate native library selected through DYLD_LIBRARY_PATH. Each browser log proves the loaded candidate path. The shared app was not overwritten."
+  },
+  "hacker_news": {
+    "status": "Correctness validation, not performance acceptance",
+    "summary": {
+      "candidate": {
+        "all_gates": true,
+        "completed": 3,
+        "counts": [
+          2281326325,
+          2264071023,
+          2260205773
+        ],
+        "expected": 3,
+        "max": 2281326325,
+        "median": 2264071023,
+        "paired_saving_vs_control": {
+          "median": 2303093,
+          "values": [
+            -4681182,
+            26007634,
+            2303093
+          ]
+        }
+      },
+      "control": {
+        "all_gates": true,
+        "completed": 3,
+        "counts": [
+          2276645143,
+          2290078657,
+          2262508866
+        ],
+        "expected": 3,
+        "max": 2290078657,
+        "median": 2276645143
+      }
+    },
+    "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+    "content": "All 30 stories and unchanged reference pixels in all six launches.",
+    "diagnostic_only": true,
+    "loader_logging": true,
+    "final_frame_control": [
+      394495887,
+      393991289,
+      394432133
+    ],
+    "final_frame_candidate": [
+      400096655,
+      395916043,
+      393067882
+    ],
+    "conclusion": "The gate alone does not remove the HN instruction regression. No production performance improvement or target attainment claimed."
+  },
+  "retained_failures": {
+    "geometric_containment": "The initial geometric-only edge predicate failed at a coincident clip edge; replaced with device coverage containment.",
+    "pixels": "The first six pixel captures passed but their backend override was stripped by the guard interpreter. No candidate-code validation credited. Corrected launches set the loader environment after the guard and verify it.",
+    "hn_preflight": "The first wrapper tried to resolve the candidate dylib in isolation; the dependency helper could not resolve its own @rpath install name. Corrected preflight resolves it with executable rpaths. No browser trials in that preflight."
+  },
+  "broad_cadence": "Full 13-suite native raster batch completed. No measured optimization savings credited; no package/translation suite reruns required for this native-only gate.",
+  "evidence": {
+    "raw": "hacker-news-svg-clip-edge-2026-11-04-raw.json.gz",
+    "sha256": "c810d9433a161c3e5f26804ca8a61b980a1e05c8e4c00f91a244a2e7dfc527dd",
+    "directory": "Build/hn-svg-clip-edge-20261104"
+  },
+  "feature_commit": "6157bf8a8"
+}
