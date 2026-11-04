@@ -9,9 +9,12 @@ const disable_flex_measurement_reuse = os.getenv('VOX_DISABLE_FLEX_MEASUREMENT_R
 const disable_flex_image_measurement_reuse = os.getenv('VOX_DISABLE_FLEX_IMAGE_MEASUREMENT_REUSE') != ''
 const flex_measurement_diagnostics = os.getenv('VOX_FLEX_MEASUREMENT_DIAGNOSTICS') != ''
 const flex_image_measurement_diagnostics = os.getenv('VOX_FLEX_IMAGE_MEASUREMENT_DIAGNOSTICS') != ''
+const disable_committed_flex_measurement_reuse = os.getenv('VOX_DISABLE_COMMITTED_FLEX_MEASUREMENT_REUSE') != ''
+const committed_flex_measurement_diagnostics = os.getenv('VOX_COMMITTED_FLEX_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global flex_measurement_reuse_reported bool
 __global flex_image_measurement_reuse_reported bool
+__global committed_flex_measurement_reported bool
 
 struct FlexMeasurementQuestion {
 	// The complete grid measurement key also describes the scalar sizes,
@@ -48,7 +51,9 @@ fn flex_measurement_question(state &LayoutState, root &Node, used &UsedValues,
 fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	mut used UsedValues, mode LayoutMode, space AvailableSpace) FormattingContextResult {
 	mut pool := state.measurement_chunk_pool_
-	if disable_flex_measurement_reuse || mode != .normal || state.subtree_root == none
+	committed := state.subtree_root == none
+	if disable_flex_measurement_reuse || mode != .normal
+		|| (committed && disable_committed_flex_measurement_reuse)
 		|| !space.width.is_definite() || used.containing_block_used_values_ == none
 		|| used.line_boxes.len != 0 || pool == unsafe { nil } || pool.closed
 		|| !retained_context_allows_flex(container) || container.display().is_inline_outside()
@@ -68,6 +73,10 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			|| cached.font_policy != container.document().font_rendering_policy()
 			|| cached.style_environment != style_environment
 			|| !grid_measurement_inputs_are_current(cached.inputs) { continue }
+		// Normal flex clears the root's derived intrinsic baselines before it
+		// publishes descendant geometry. Root offsets and percentage bases still
+		// belong to this caller; only the measured descendants are restored.
+		used.set_derived_baselines(none, none)
 		for index in 0 .. cached.values.len {
 			entry := unsafe { &cached.values[index] }
 			containing := if parent := entry.containing { state.get(parent) } else { none }
@@ -84,7 +93,15 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		}
 		report_relative_measurement_reuse(cached.inputs)
 		report_svg_measurement_reuse(cached.inputs)
+		if committed && committed_flex_measurement_diagnostics && !committed_flex_measurement_reported {
+			committed_flex_measurement_reported = true
+			eprintln('Vox flex measurement: promoted measured flex into committed geometry')
+		}
 		return cached.result
+	}
+	// A final-layout miss must neither populate nor evict disposable entries.
+	if committed {
+		return run_uncached_flex_formatting_context_with_mode(mut state, container, mut used, mode, space)
 	}
 	mut retained_inputs := platform.enter_retained_allocations()
 	mut inputs := []RetainedInlineInput{}

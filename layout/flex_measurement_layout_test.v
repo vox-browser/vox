@@ -199,7 +199,7 @@ fn test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry() {
 	}
 }
 
-fn test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached() {
+fn test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached() {
 	for contents in ['<div style="position:absolute">Positioned.</div>',
 		'<div style="position:relative;left:2px">Shifted relative.</div>', '<div><div style="float:left">Float in ordinary flow.</div></div>',
 		'<svg width="20" height="20"><text>Unsupported text</text></svg>',
@@ -219,8 +219,9 @@ fn test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncache
 		}
 		mut used := flex_measurement_test_prepare(mut source, root, 180, 0, '')
 		space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(180)), AvailableSize.make_indefinite())
+		before := source.measurement_chunk_pool_.flex_measurements_.len
 		_ = run_flex_formatting_context_with_mode(mut source, root, mut used, .normal, space)
-		assert source.measurement_chunk_pool_.flex_measurements_.len == 0
+		assert source.measurement_chunk_pool_.flex_measurements_.len == before
 		source.release_measurement_chunk_pool()
 	}
 }
@@ -380,6 +381,136 @@ fn test_flex_measurement_revalidates_svg_attributes_before_replay() {
 		document.update_style()
 		assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
 		assert flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') == (!disable_flex_measurement_reuse && !disable_svg_measurement_reuse && !disable_retained_simple_svg && !disable_relative_measurement_reuse && !disable_relative_flow_layout_reuse)
+		source.release_measurement_chunk_pool()
+	}
+}
+
+fn committed_flex_measurement_test_reused(state &LayoutState, cached &FlexMeasurementLayout) bool {
+	for entry in cached.values {
+		if entry.values.line_boxes.len == 0 { continue }
+		if current := state.try_get(entry.node) {
+			if current.line_boxes.data == entry.values.line_boxes.data { return true }
+		}
+	}
+	return false
+}
+
+fn test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry() {
+	for rules in ['gap:7px', 'flex-wrap:wrap;direction:rtl;gap:3px',
+		'flex-direction:column;gap:2px', 'flex-direction:column;flex-wrap:wrap;gap:3px'] {
+		for height in [0, 80] {
+			mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex;${rules}"><p>Wrapping words alpha beta gamma 😀.</p><p>Other words.</p></section></main>')
+			document.enable_native_storage()
+			mut owner := document.enter_native_storage()
+			defer { owner.finish(); document.finalize(); document.release_native_storage() }
+			_ = layout_document_typed_in_viewport(document, 500, 400)
+			root := flex_measurement_test_node(document, 'flex')
+			styled := root.as_node_with_style() or { panic('style') }
+			mut source := LayoutState.new()
+			source.enable_measurement_chunk_pool()
+			source.measurement_chunk_pool_.scratch_enabled_ = true
+			space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(180)),
+				if height > 0 { AvailableSize.make_definite(CSSPixels.new(height)) } else { AvailableSize.make_indefinite() })
+			mut producer := source.new_measurement_for_subtree(styled)
+			mut measured := flex_measurement_test_prepare(mut producer, root, 180, height, '')
+			result := run_flex_formatting_context_with_mode(mut producer, root, mut measured, .normal, space)
+			entries := source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} }
+			producer.release_measurement()
+			gc_collect()
+			mut used := flex_measurement_test_prepare(mut source, root, 180, height, '')
+			used.set_derived_baselines(CSSPixels.new(71), CSSPixels.new(93))
+			actual := run_flex_formatting_context_with_mode(mut source, root, mut used, .normal, space)
+			assert actual == result
+			assert used.offset == css.CSSPixelPoint.from_values(11, 13)
+			assert used.relative_inset_basis_width() or { panic('basis') } == CSSPixels.new(731)
+			assert used.relative_inset_basis_height() or { panic('basis') } == CSSPixels.new(919)
+			assert used.derived_first_baseline() == none && used.derived_last_baseline() == none
+			if !disable_flex_measurement_reuse {
+				assert entries.len == 1
+				assert committed_flex_measurement_test_reused(source, entries[0]) == !disable_committed_flex_measurement_reuse
+			}
+			mut retained := platform.enter_retained_allocations()
+			geometry := flex_measurement_test_geometry(source, root)
+			retained.finish()
+			source.release_measurement_chunk_pool()
+			gc_collect()
+			assert geometry == flex_measurement_test_geometry(source, root)
+			mut oracle := LayoutState.new_for_subtree(styled)
+			mut expected := flex_measurement_test_prepare(mut oracle, root, 180, height, '')
+			expected.set_derived_baselines(CSSPixels.new(71), CSSPixels.new(93))
+			assert actual == run_uncached_flex_formatting_context_with_mode(mut oracle, root, mut expected, .normal, space)
+			assert geometry == flex_measurement_test_geometry(oracle, root)
+			assert expected.derived_first_baseline() == none && expected.derived_last_baseline() == none
+			oracle.release_measurement()
+			if !disable_flex_measurement_reuse && !disable_committed_flex_measurement_reuse {
+				for entry in entries[0].values {
+					if entry.values.line_boxes.len == 0 { continue }
+					before := entry.values.line_boxes[0].fragments_[0].inline_length_
+					mut writable := source.get_mutable(entry.node)
+					writable.line_boxes[0].fragments_[0].inline_length_ = CSSPixels.new(999)
+					assert entry.values.line_boxes[0].fragments_[0].inline_length_ == before
+					break
+				}
+			}
+		}
+	}
+}
+
+fn test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool() {
+	for change in ['width', 'height', 'parent-width', 'parent-height', 'ancestor', 'constraint',
+		'edge', 'text', 'font', 'environment', 'tree', 'mode'] {
+		mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex;gap:7px"><p id="item">Original wrapping words alpha beta gamma.</p><p>Other content.</p></section></main>')
+		defer { document.finalize() }
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := flex_measurement_test_node(document, 'flex')
+		styled := root.as_node_with_style() or { panic('style') }
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		mut producer := source.new_measurement_for_subtree(styled)
+		mut measured := flex_measurement_test_prepare(mut producer, root, 180, 0, '')
+		space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(180)), AvailableSize.make_indefinite())
+		_ = run_flex_formatting_context_with_mode(mut producer, root, mut measured, .normal, space)
+		producer.release_measurement()
+		pool := source.measurement_chunk_pool_
+		entries := pool.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} }
+		count := pool.flex_measurements_.len
+		rejections := pool.flex_measurement_rejections_.len
+		if change == 'text' {
+			mut text := flex_measurement_test_node(document, 'item').children()[0].as_text_node() or { panic('text') }
+			mut data := (text.dom_node() or { panic('owner') }).as_character_data() or { panic('data') }
+			data.set_data('Changed wrapping text with extraordinary words.')
+			text.invalidate_text_for_rendering()
+		}
+		if change == 'font' {
+			mut computer := css.css_style_computer_for(document).font_computer()
+			computer.did_load_font('CommittedFlexMeasurementFace')
+		}
+		if change == 'environment' { document.bump_style_environment_version() }
+		if change == 'tree' {
+			mut mutable_root := unsafe { &Node(root) }
+			mutable_root.append_child(unsafe { &Node(TextNode.new(document, document.create_text_node('extra').as_node(), 'extra')) })
+			mut top := unsafe { &Node(root) }
+			for { parent := top.parent() or { break }; top = unsafe { &Node(parent) } }
+			assign_layout_indexes(top)
+			recompute_containing_blocks(top)
+		}
+		width := if change == 'width' { 181 } else { 180 }
+		height := if change == 'height' { 160 } else { 0 }
+		mut used := flex_measurement_test_prepare(mut source, root, width, height, change)
+		mode := if change == 'mode' { LayoutMode.intrinsic_sizing } else { LayoutMode.normal }
+		actual := run_flex_formatting_context_with_mode(mut source, root, mut used, mode, space)
+		assert pool.flex_measurements_.len == count && pool.flex_measurement_rejections_.len == rejections
+		after := pool.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} }
+		assert after.len == entries.len
+		for index, entry in entries {
+			assert voidptr(entry) == voidptr(after[index])
+			assert !committed_flex_measurement_test_reused(source, entry)
+		}
+		mut oracle := LayoutState.new_for_subtree(styled)
+		mut expected := flex_measurement_test_prepare(mut oracle, root, width, height, change)
+		assert actual == run_uncached_flex_formatting_context_with_mode(mut oracle, root, mut expected, mode, space)
+		assert flex_measurement_test_geometry(source, root) == flex_measurement_test_geometry(oracle, root)
+		oracle.release_measurement()
 		source.release_measurement_chunk_pool()
 	}
 }
