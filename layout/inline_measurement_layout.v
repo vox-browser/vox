@@ -102,10 +102,6 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	mut used UsedValues, mode LayoutMode, space AvailableSpace,
 	context ?&BlockFormattingContext, width_only bool) InlineFormattingResult {
 	root := unsafe { &Node(containing_block) }
-	if root.children().any(!it.is_text_node()) {
-		return run_nested_inline_measurement(mut state, containing_block, mut used, mode,
-			space, context, width_only)
-	}
 	mut pool := state.measurement_chunk_pool_
 	if disable_inline_measurement_reuse || state.subtree_root == none
 		|| pool == unsafe { nil } || pool.closed
