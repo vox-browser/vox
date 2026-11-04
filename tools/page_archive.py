@@ -302,7 +302,31 @@ class Replay:
             data += part
             if len(data) > 65536:
                 raise ValueError('Oversized request')
-        return data.decode('iso-8859-1').split('\r\n')[0].split(' ', 2)
+        lines = data.decode('iso-8859-1').split('\r\n')
+        headers = [line.split(':', 1) for line in lines[1:] if ':' in line]
+        lengths = [value.strip() for name, value in headers if name.lower() == 'content-length']
+        if any(name.lower() == 'transfer-encoding' for name, _ in headers):
+            raise ValueError('Chunked replay requests are unsupported')
+        if len(lengths) > 1:
+            raise ValueError('Ambiguous replay request length')
+        length = int(lengths[0]) if lengths else 0
+        if not 0 <= length <= 16 * 1024 * 1024:
+            raise ValueError('Oversized replay request body')
+        if length:
+            Replay.receive(sock, length)
+        return lines[0].split(' ', 2)
+
+    def response_entry(self, method, target):
+        """Replay only the captured method; legacy archives contain GETs.
+
+        This is a frozen response fixture keyed by method/URL, not an API
+        emulator. Request-dependent backend behavior is outside its scope.
+        """
+        entry = self.manifest['responses'].get(target)
+        if entry and (method == entry.get('method', 'GET')
+                      or method == 'HEAD' and entry.get('method', 'GET') == 'GET'):
+            return entry
+        return None
 
     def handle(self, sock, hosts):
         sock.settimeout(15)
@@ -331,7 +355,7 @@ class Replay:
                 method, target, _ = request
             if host:
                 target = 'https://' + host + target
-            entry = self.manifest['responses'].get(target) if method in {'GET', 'HEAD'} else None
+            entry = self.response_entry(method, target)
             body = (self.archive / 'bodies' / entry['sha256']).read_bytes() if entry else b''
             if entry and (digest(body) != entry['sha256'] or len(body) != entry['bytes']):
                 raise ValueError('Archived response changed: ' + target)

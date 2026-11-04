@@ -16,6 +16,28 @@ from measure_disk_scroll import offline_environment
 
 
 class PageArchiveTests(unittest.TestCase):
+    def test_replay_consumes_post_body_before_returning_response(self):
+        server, client = socket.socketpair()
+        try:
+            client.sendall(b'POST /prepare HTTP/1.1\r\nContent-Length: 4\r\n\r\nbodyNEXT')
+            self.assertEqual(page_archive.Replay.request(server), ['POST', '/prepare', 'HTTP/1.1'])
+            self.assertEqual(server.recv(4), b'NEXT')
+        finally:
+            server.close()
+            client.close()
+
+    def test_replay_requires_the_original_request_method(self):
+        replay = page_archive.Replay.__new__(page_archive.Replay)
+        get, post = dict(status=200), dict(method='POST', status=200)
+        replay.manifest = dict(responses={'https://archive.invalid/': get,
+                                         'https://archive.invalid/prepare': post})
+        self.assertIs(replay.response_entry('GET', 'https://archive.invalid/'), get)
+        self.assertIs(replay.response_entry('HEAD', 'https://archive.invalid/'), get)
+        self.assertIsNone(replay.response_entry('POST', 'https://archive.invalid/'))
+        self.assertIs(replay.response_entry('POST', 'https://archive.invalid/prepare'), post)
+        self.assertIsNone(replay.response_entry('GET', 'https://archive.invalid/prepare'))
+        self.assertIsNone(replay.response_entry('POST', 'https://archive.invalid/missing'))
+
     def test_valueless_inline_style_preserves_resource_discovery(self):
         parser = page_archive.ResourceLinks('https://www.wikipedia.org/')
         parser.feed('<img style src="/globe.png"><div style></div>'
