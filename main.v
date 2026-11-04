@@ -7534,7 +7534,8 @@ fn (mut app BrowserApp) draw() {
 						next_layer := app.chromium_raster_plan.command_layers[command_index]
 						if next_layer != raster_layer {
 							app.flush_rounded_rect_underlay(0, page_y, window.height)
-							if gpu_canvas { C.native_gpu_canvas_cpu_access() }
+							// Only a text scroll layer composites on the CPU canvas here.
+							if gpu_canvas && text_scroll_layer { C.native_gpu_canvas_cpu_access() }
 							if text_scroll_layer { end_chromium_text_scroll_layer() }
 							app.select_chromium_raster_layer(next_layer)
 							text_scroll_layer = app.begin_chromium_text_scroll_layer(next_layer, command_index)

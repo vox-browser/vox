@@ -28,6 +28,11 @@ static void native_capture_instruction_checkpoint(const char *label) {
 #include "native_presented_capture_darwin.h"
 #include "native_image_capture_policy_darwin.h"
 #include "native_scroll_raster_darwin.h"
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+extern int ladybird_v_skia_gpu_canvas_begin(CGContextRef, const int *, int);
+extern void ladybird_v_skia_gpu_canvas_cpu_access(void);
+extern void ladybird_v_skia_gpu_canvas_end(void);
+#endif
 #include "native_stationary_raster_darwin.h"
 #include "native_deferred_font_darwin.h"
 #include "native_svg_mask_layer_darwin.h"
@@ -1153,6 +1158,9 @@ static void native_end_offscreen_opacity_group(NativeOpacityGroup *group) {
 }
 
 void native_begin_css_effect_layer(float opacity, int blend_mode) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_gpu_canvas_cpu_access();
+#endif
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL) {
 		return;
@@ -1205,6 +1213,9 @@ void native_set_chromium_opaque_layer_continuation(int enabled) {
 }
 
 void native_end_css_effect_layer(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_gpu_canvas_cpu_access();
+#endif
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	// Replay while the isolated canvas is still alive, before group opacity.
 	ladybird_v_skia_finish_shared_recording();
@@ -2729,6 +2740,9 @@ static void native_initialize_css_filter_renderer(void) {
 }
 
 void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_gpu_canvas_cpu_access();
+#endif
 	if (native_css_filter_stack_depth >= NATIVE_CSS_FILTER_MAX_DEPTH) {
 		native_css_filter_overflow_depth++;
 		return;
@@ -2832,11 +2846,6 @@ void native_set_video_frame_image(int active) {
     native_video_frame_image = active != 0;
 }
 
-#ifdef LADYBIRD_V_HAS_SKIA_TEXT
-extern int ladybird_v_skia_gpu_canvas_begin(CGContextRef, const int *, int);
-extern void ladybird_v_skia_gpu_canvas_cpu_access(void);
-extern void ladybird_v_skia_gpu_canvas_end(void);
-#endif
 
 // Experimental GPU canvas over the rectangles this reused scroll frame repaints.
 // Repainted rectangles are viewport device rows; the canvas also holds chrome.
@@ -4191,6 +4200,9 @@ static CIImage *native_apply_css_filter_layer(NativeCSSFilterLayer const *layer,
 }
 
 void native_end_css_filter_layer(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_gpu_canvas_cpu_access();
+#endif
 	if (native_css_filter_overflow_depth > 0) {
 		native_css_filter_overflow_depth--;
 		return;
