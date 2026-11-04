@@ -417,6 +417,8 @@ def parse_args(argv=None):
                         help='Reproduce the historical WebP paint policy in both Vox arms; no decoder optimization credit')
     parser.add_argument('--retain-logical-paint-snapping', action='store_true',
                         help='Retain the fixed references\' historical logical-pixel snapping in both Vox arms; no policy-change credit')
+    parser.add_argument('--retain-css-layout-for-svg', action='store_true',
+                        help='Retain the fixed references\' CSS-coordinate inline-SVG layout in both Vox arms; no policy-change credit')
     parser.add_argument('--control-disable-shared-node-properties', action='store_true',
                         help='Create separate text/comment/fragment property accessors in the pinned Vox control')
     parser.add_argument('--control-disable-shared-element-geometry', action='store_true',
@@ -519,6 +521,8 @@ def replay_vox_environment(args, ready):
         environment['VOX_RETAIN_INCREMENTAL_WEBP_PAINT_POLICY'] = '1'
     if args.retain_logical_paint_snapping:
         environment['VOX_RETAIN_LOGICAL_PAINT_SNAPPING'] = '1'
+    if getattr(args, 'retain_css_layout_for_svg', False):
+        environment['VOX_RETAIN_CSS_LAYOUT_FOR_SVG'] = '1'
     return environment
 
 
@@ -589,6 +593,9 @@ def main():
         retain_logical_paint_snapping=args.retain_logical_paint_snapping,
         paint_snapping_policy='historical logical pixels' if args.retain_logical_paint_snapping else 'default presenting device grid',
         paint_snapping_policy_credit='None: both Vox arms retain the declared policy; references unchanged',
+        retain_css_layout_for_svg=args.retain_css_layout_for_svg,
+        svg_layout_policy='historical CSS coordinates' if args.retain_css_layout_for_svg else 'default device-density coordinates',
+        svg_layout_policy_credit='None: both Vox arms retain the declared policy; references unchanged',
         control_disable_retained_simple_svg=args.control_disable_retained_simple_svg,
         control_disable_retained_formatting_trees=args.control_disable_retained_formatting_trees,
         control_retain_flow_style_identities=args.control_retain_flow_style_identities,

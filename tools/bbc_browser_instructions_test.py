@@ -25,6 +25,29 @@ def document():
 
 
 class BBCInstructionTests(unittest.TestCase):
+    def test_svg_layout_policy_is_explicit_and_common_to_both_vox_arms(self):
+        ready = dict(proxy='socks5h://fixture', ca='/fixture/ca.pem')
+        for retain in (False, True):
+            argv = ['--archive', 'archive', '--output', 'Build/result',
+                    '--memory-guard-registry', 'pids.json', '--capture-reference',
+                    '--control-vox-app', 'Build/v/Vox.app',
+                    '--control-retain-broad-conditional-rule-deletion']
+            args = parse_args(argv + (['--retain-css-layout-for-svg'] if retain else []))
+            environment = replay_vox_environment(args, ready)
+            self.assertEqual(environment.get('VOX_RETAIN_CSS_LAYOUT_FOR_SVG'),
+                             '1' if retain else None)
+            args.vox_environment = environment
+            seen = []
+            def observe(engine, app, folder, options):
+                seen.append(dict(options.vox_environment))
+                return {'exit': 0}
+            with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+                for engine in ('control', 'vox'):
+                    run_trial(engine, 'same-app', engine, args)
+            self.assertEqual(seen, [dict(environment, VOX_RETAIN_BROAD_CONDITIONAL_RULE_DELETION='1'),
+                                    environment])
+            self.assertIs(args.vox_environment, environment)
+
     def test_historical_rendering_policies_are_explicit_and_common_to_both_vox_arms(self):
         ready = dict(proxy='socks5h://fixture', ca='/fixture/ca.pem')
         for logical in (False, True):
