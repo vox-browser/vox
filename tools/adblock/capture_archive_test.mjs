@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
-import {archiveHeaders, captureArchive, freezeDocument, imageAccept} from './capture_archive.mjs';
+import {archiveHeaders, archiveResponseWithExtraHeaders, captureArchive, freezeDocument, imageAccept} from './capture_archive.mjs';
 
 const ready = snapshot => ({ready:'complete',fonts:'loaded',images:[],styles:[],rects:[],...snapshot});
 
@@ -49,6 +49,21 @@ test('decoded body keeps response policy and repeated values, replacing only wir
 test('empty header values survive archive serialization', () => {
     assert.deepEqual(archiveHeaders({headers:{'X-Empty':''}},0),[
         {name:'X-Empty',value:''},{name:'content-length',value:'0'}]);
+});
+
+test('network response headers retain CORS fields and update cached responses without duplicate names',()=>{
+    const response={status:200,headers:{'Content-Type':'font/woff2','Vary':'Accept','X-Cached':'kept'}};
+    for(const statusCode of [200,304]) {
+        const full=archiveResponseWithExtraHeaders(response,{statusCode,headers:{
+            'access-control-allow-origin':'*','vary':'Origin','Content-Length':'0'}});
+        const headers=archiveHeaders(full,123);
+        assert(headers.some(h=>h.name==='access-control-allow-origin' && h.value==='*'));
+        assert.deepEqual(headers.filter(h=>h.name.toLowerCase()==='vary'),[{name:'vary',value:'Origin'}]);
+        assert(headers.some(h=>h.name==='X-Cached' && h.value==='kept'));
+        assert.deepEqual(headers.filter(h=>h.name.toLowerCase()==='content-length'),[{name:'content-length',value:'123'}]);
+    }
+    assert.equal(archiveResponseWithExtraHeaders(response,{statusCode:302,headers:{Location:'elsewhere'}}),response);
+    assert.equal(archiveResponseWithExtraHeaders(response,undefined),response);
 });
 
 async function captureMediaRange(t, range, bytes) {

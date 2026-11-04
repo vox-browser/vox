@@ -59,6 +59,19 @@ export function archiveHeaders(response, length, {completeMediaRange=false}={}) 
         .concat([{name: 'content-length', value: String(length)}]);
 }
 
+export function archiveResponseWithExtraHeaders(response, extra) {
+    // ExtraInfo carries the actual network headers, including CORS fields
+    // omitted from responseReceived's renderer-facing representation. A 304
+    // updates the cached 200 headers; redirect headers belong to another hop.
+    if(!extra || (extra.statusCode!==response.status
+        && !(response.status===200 && extra.statusCode===304))) return response;
+    const headers=new Map(Object.entries(response.headers)
+        .map(([name,value])=>[name.toLowerCase(),[name,value]]));
+    for(const [name,value] of Object.entries(extra.headers||{}))
+        headers.set(name.toLowerCase(),[name,value]);
+    return {...response,headers:Object.fromEntries(headers.values())};
+}
+
 function isCompleteMediaRange(response, length) {
     const value=Object.entries(response.headers)
         .find(([name])=>name.toLowerCase()==='content-range')?.[1];
@@ -116,9 +129,13 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
         .map(e => [e.params.requestId, e.params]));
     const completed = new Set(page.events.filter(e => e.method === 'Network.loadingFinished')
         .map(e => e.params.requestId));
+    const extraHeaders=new Map(page.events.filter(e=>e.method==='Network.responseReceivedExtraInfo')
+        .map(e=>[e.params.requestId,e.params]));
     const resources = [];
     for (const [id, entry] of responses) {
-        const {response, type} = entry;
+        const {type} = entry;
+        const extra=extraHeaders.get(id);
+        const response=archiveResponseWithExtraHeaders(entry.response,extra);
         const method=requests.get(id)?.method;
         const isMain=type==='Document' && response.url===snapshot.url
             && mainFrameID && entry.frameId===mainFrameID;
@@ -127,6 +144,10 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
             || (method!=='GET' && !(method==='POST' && isMain)) || !completed.has(id)) continue;
         if(type==='Document' && response.url===snapshot.url && mainFrameID && !isMain) continue;
         const row = {url: response.url, type, status: response.status, method};
+        if(response!==entry.response) {
+            row.headers_source='cdp-response-extra-info';
+            row.response_extra_info_status=extra.statusCode;
+        }
         try {
             const result = await page.send('Network.getResponseBody', {requestId: id});
             const body = Buffer.from(result.body, result.base64Encoded ? 'base64' : 'utf8');
