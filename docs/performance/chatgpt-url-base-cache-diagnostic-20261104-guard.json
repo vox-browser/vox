@@ -1,0 +1,22 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-url-base-cache-20261104-2310/diagnostic/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 1,
+  "adopted_processes": {
+    "40591": "Wed Nov  4 23:09:45 2026    ",
+    "40593": "Wed Nov  4 23:09:45 2026    ",
+    "41126": "Wed Nov  4 23:09:55 2026    ",
+    "41129": "Wed Nov  4 23:09:55 2026    ",
+    "41141": "Wed Nov  4 23:09:55 2026    ",
+    "41142": "Wed Nov  4 23:09:55 2026    ",
+    "41144": "Wed Nov  4 23:09:55 2026    "
+  },
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 1886420992,
+  "elapsed_seconds": 27.809896208,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

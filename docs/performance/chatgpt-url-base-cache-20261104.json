@@ -1,0 +1,358 @@
+{
+  "version": 1,
+  "implementation_commit": "cb055fe71b20cfbaba8a15cbb9f6a85d16b414b6",
+  "tooling_commit": "dd030a74891a12b471fd0f9e688d560247484353",
+  "source_hashes": {
+    "domurl/url_base_parser.v": "9ac6fffc62a053bd40141a51c3089dde1cc898e264e9499046f7b925a7476fec",
+    "domurl/url_base_parser_test.v": "7d16d4f54b53e0a00ce2534cd978a5b84d672dcef39444909188146cc633c66e",
+    "browserjs/url_host.v": "9d54c820db0fd77b201b8785dc6b30c249d9a03fc3a275a63debbbd033f2ab76",
+    "browserjs/url_host_jsc.c.v": "fbf9d5fdba5d1f7a4a60df9160da9a07c9ef51d7c1947737628d8220f7ea325b",
+    "browserjs/url_host_test.v": "fda0cd851334cb715e02a228f80fba9a6d46c5d55e2ac33098793d2036141e91"
+  },
+  "cache_policy": "One raw converted-base key, up to 4096 input bytes, per URL binding. Dedicated owned arena recycled on key change and released on close; invalid outcomes cached. Coercion occurs before lookup. No-base and oversized requests retain the old parser path.",
+  "focused_test_function_executions": 106,
+  "pure_parser_focused_executions": 40,
+  "javascriptcore_binding_executions": 66,
+  "domurl_module_files_per_gc": 6,
+  "gc_modes": [
+    "Boehm",
+    "none"
+  ],
+  "all_focused_and_full_domurl_checks_pass": true,
+  "prealloc_poison_and_sanitizers_pass": true,
+  "guards": [
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/compile-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 947748864,
+      "elapsed_seconds": 8.073140208
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-default-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.31579562499999997
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-default-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 557056,
+      "elapsed_seconds": 0.066215708
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/url-package-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 3816833024,
+      "elapsed_seconds": 18.066366167
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/compile-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 946962432,
+      "elapsed_seconds": 8.146500333
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-none-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.47418808400000007
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-none-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 14073856,
+      "elapsed_seconds": 0.1049245
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/url-package-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 3728179200,
+      "elapsed_seconds": 17.313582667
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/compile-url_base_parser-prealloc-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 870776832,
+      "elapsed_seconds": 7.623009083
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url_base_parser-prealloc-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.3440485
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url_base_parser-prealloc-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 6029312,
+      "elapsed_seconds": 0.208920125
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/compile-sanitized-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 1581907968,
+      "elapsed_seconds": 23.836309625
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-sanitized-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.36070625
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-sanitized-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 606208,
+      "elapsed_seconds": 0.21912825
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/compile-url_host-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4560257024,
+      "elapsed_seconds": 53.563865959
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url_host-default-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.504888417
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url_host-default-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 589824,
+      "elapsed_seconds": 0.197077125
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/compile-url_object_blob_host-default-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4593057792,
+      "elapsed_seconds": 42.423956583000006
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url_object_blob_host-default-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.435731667
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url_object_blob_host-default-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 737280,
+      "elapsed_seconds": 0.20673108399999998
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/compile-url_host-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4583702528,
+      "elapsed_seconds": 46.434023415999995
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url_host-none-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.476513625
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url_host-none-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 9371648,
+      "elapsed_seconds": 0.217743167
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/compile-url_object_blob_host-none-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4585734144,
+      "elapsed_seconds": 45.354289040999994
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url_object_blob_host-none-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.454558833
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url_object_blob_host-none-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 770048,
+      "elapsed_seconds": 0.18895725000000002
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/compile-url-host-prealloc-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 4584652800,
+      "elapsed_seconds": 52.359261667000006
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url-host-prealloc-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.48122204199999996
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/run-url-host-prealloc-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 737280,
+      "elapsed_seconds": 0.207341542
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/component-compile-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 1259601920,
+      "elapsed_seconds": 11.006209708
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/component-0-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 27181056,
+      "elapsed_seconds": 0.699747667
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/component-1-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 27164672,
+      "elapsed_seconds": 0.326380958
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/component-2-candidate-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 27181056,
+      "elapsed_seconds": 0.33890000000000003
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/component-3-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 27197440,
+      "elapsed_seconds": 0.45023758300000005
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/component-4-diagnostic-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 27181056,
+      "elapsed_seconds": 0.320654375
+    },
+    {
+      "path": "Build/chatgpt-url-base-cache-20261104-2310/component-5-diagnostic-control-guard.json",
+      "exit": 0,
+      "peak_rss_bytes": 27197440,
+      "elapsed_seconds": 0.43748000000000004
+    }
+  ],
+  "component_scenes": {
+    "archived-absolute": {
+      "control": [
+        628825931,
+        625883138
+      ],
+      "candidate": [
+        527664798,
+        530150334
+      ],
+      "control_median": 627354534.5,
+      "candidate_median": 528907566.0,
+      "median_reduction_fraction": 0.15692397693189863,
+      "conservative_component_reduction": 95732804
+    },
+    "relative-inputs": {
+      "control": [
+        617517669,
+        609785309
+      ],
+      "candidate": [
+        174041023,
+        179100508
+      ],
+      "control_median": 613651489.0,
+      "candidate_median": 176570765.5,
+      "median_reduction_fraction": 0.712262141190698,
+      "conservative_component_reduction": 430684801
+    },
+    "rotating-bases": {
+      "control": [
+        592722970,
+        589341650
+      ],
+      "candidate": [
+        606854842,
+        605603939
+      ],
+      "control_median": 591032310.0,
+      "candidate_median": 606229390.5,
+      "median_reduction_fraction": -0.02571277448435949,
+      "conservative_component_reduction": -17513192
+    },
+    "oversized-base": {
+      "control": [
+        2401935948,
+        2354904053
+      ],
+      "candidate": [
+        2352313727,
+        2440177284
+      ],
+      "control_median": 2378420000.5,
+      "candidate_median": 2396245505.5,
+      "median_reduction_fraction": -0.007494683443736827,
+      "conservative_component_reduction": -85273231
+    }
+  },
+  "component_scope": "Current-process C -O2 Boehm parse/serialize/full-canonical-reference/length-checksum intervals after input construction and warm validation; includes allocation and GC. Original 311 retained response URLs. All results match, including rotating and oversized regressions; not isolated base-parser or whole-page costs.",
+  "component_path_diagnostics": "Separate candidate hit marker and absent scalar-control marker; complete reference strings, parse counts and checksums match in all observations.",
+  "production_status": "Partial diagnostic rejected after canonical executable replacement. Candidate and Brave capture both exact; cache hit confirmed in candidate only. Control capture and complete production comparison remain pending.",
+  "partial_diagnostic": {
+    "executable_sha256": "efbd9bb05ad26dc97a1954934d4be54f0b7f2ffd9ef7eae1c273fa47fd396a2f",
+    "collected_captures": 2,
+    "all_collected_pixels_and_content_exact": true,
+    "all_collected_browser_and_kernel_exits_zero": true,
+    "cache_hit_marker": true,
+    "cohort_complete": false,
+    "identity_stable": false,
+    "guard_exit": 1
+  },
+  "publication_lease": {
+    "status": "busy",
+    "acquired": false,
+    "guard_exit": 75,
+    "browsers_launched": 0,
+    "new_builds_enqueued": 0,
+    "qualification": "Nonblocking attempt; no waiting for the shared build guard and no copied app. New complete diagnostic and matched comparison require a stable completed bundle/available publication lease."
+  },
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "acceptance": false,
+  "target_fraction": "0.95",
+  "new_live_downloads": 0,
+  "manifest_sha256": "7b13757f970e2f615267938bd52f902b852da239962fa265660db813622923f7",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-url-base-cache-20261104-evidence.zip",
+      "sha256": "e5676873a28af9fcbc47a5e6097ca52238e15313fa9516744a5e6cf16ba78e1d",
+      "bytes": 633167
+    },
+    {
+      "path": "docs/performance/chatgpt-url-base-cache-diagnostic-20261104.json",
+      "sha256": "f3d13dcf9a04a8bbdca21f6e0d1874fc4eef8df2ba2960b1d8ab1665fe497703",
+      "bytes": 1143509
+    },
+    {
+      "path": "docs/performance/chatgpt-url-base-cache-diagnostic-20261104-guard.json",
+      "sha256": "5d40e45d37b031a6552b747cbd059607294fe4673b5224f1f85efebd125ad03e",
+      "bytes": 713
+    },
+    {
+      "path": "docs/performance/chatgpt-url-base-cache-diagnostic-20261104-evidence.zip",
+      "sha256": "25306066ea16fe730c5e24912b228dedb619d63bade7f8de8c8570c4826e9a48",
+      "bytes": 859117
+    },
+    {
+      "path": "docs/performance/chatgpt-url-base-cache-lease-20261104.json",
+      "sha256": "5ca605f48d3d951b18ed31ecea22e2d801c0246f3bafed611c224c3904904cec",
+      "bytes": 357
+    },
+    {
+      "path": "docs/performance/chatgpt-url-base-cache-lease-20261104-guard.json",
+      "sha256": "09f3d26f6e49ac640ae8eba2da4791e74283441d6207f8a9099db20e88a9c022",
+      "bytes": 388
+    }
+  ]
+}

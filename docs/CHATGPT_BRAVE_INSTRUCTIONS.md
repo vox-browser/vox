@@ -1171,3 +1171,60 @@ or broad-cadence advance. This audit establishes execution of the shared path,
 not that layout reuse closes the ChatGPT/Brave gap. The initial preflight used
 an incorrect generated C symbol spelling and stopped before any browser launch;
 its failed script, log and actual guard exit remain in the diagnostic archive.
+
+## Per-binding parsed-base cache
+
+Commit `cb055fe71` retains one parsed base URL per URL binding, keyed by the
+converted raw base string. Inputs above 4096 bytes and calls without a base keep
+the original parser path. Invalid bases retain their negative result, including
+when the requested URL is absolute. JavaScript coercion and exceptions still
+occur before lookup. Each binding owns a separate arena, recycled on replacement
+and released on close; returned URL records survive producer retirement,
+eviction and cache release.
+
+All **106 focused test-function executions** pass: 40 parser executions across
+both GC modes and paths, poisoned preallocation arenas and sanitizers; plus 66
+actual JavaScriptCore executions, including poisoned-arena binding close checks.
+All six DOMURL files pass in each GC mode. Tests cover raw-key changes, invalid
+bases, oversized bypass, independent paths, warm arena usage, coercion reentry,
+fresh wrappers, live Blob ownership and native URLs surviving runtime close.
+All 36 selected compile/runtime guards exit zero with stable source identities.
+
+Tooling commit `dd030a748` validates complete canonical output, parse counts and
+checksums. Inputs and warm validation precede the measured current-process
+parse/serialize/reference/checksum interval; allocation and GC are included.
+Each variant has two observations in control/candidate/candidate/control order,
+followed by separate positive and negative cache diagnostics.
+
+| Component scene | Original median | Cache median | Median reduction |
+| --- | ---: | ---: | ---: |
+| 9,952 archived absolute URLs, common base | 627,354,534.5 | 528,907,566 | 15.692% |
+| 16,384 relative inputs, common base | 613,651,489 | 176,570,765.5 | 71.226% |
+| 9,952 rotating bases | 591,032,310 | 606,229,390.5 | −2.571% |
+| 128 oversized-base parses | 2,378,420,000.5 | 2,396,245,505.5 | −0.749% |
+
+The rotating-base regression is retained; oversized observations overlap.
+These component results supply no whole-page credit. The browser hit pattern
+and a complete matched comparison are required before attributing page savings.
+
+A production diagnostic on executable
+`efbd9bb05ad26dc97a1954934d4be54f0b7f2ffd9ef7eae1c273fa47fd396a2f`
+confirms an actual candidate cache hit. Its Vox and Brave captures both pass
+exact pixels, content, bootstrap and browser/kernel exits. The canonical app is
+then replaced before the control trial, so the identity guard rejects the
+partial cohort. Its actual nonzero guard exit and both observations remain
+retained, with zero performance credit.
+
+A subsequent nonblocking publication-lease attempt finds the shared build lock
+busy and exits 75 before launching a browser. It neither waits for that build,
+copies an app nor enqueues a separate production request. The prepared lease
+would protect one complete diagnostic and matched cohort while preserving
+wake-ups for any existing queued requests. Complete control-path rendering and
+matched page validation remain pending an available stable publication interval.
+
+The [base-cache receipt](performance/chatgpt-url-base-cache-20261104.json)
+links all checks, regressions, raw component observations, source proofs,
+partial browser evidence and the busy-lock report. Original author scripts,
+fixture bytes and references remain unchanged, with no new live download.
+Page credit and the broad cadence remain zero. The requested 5% Brave advantage
+remains unmet.

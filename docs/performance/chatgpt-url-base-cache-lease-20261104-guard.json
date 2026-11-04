@@ -1,0 +1,14 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-url-base-cache-20261104-2310/leased/run.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 75,
+  "adopted_processes": {},
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 3424256,
+  "elapsed_seconds": 0.189830916,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}
