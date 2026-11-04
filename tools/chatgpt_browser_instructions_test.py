@@ -141,13 +141,14 @@ class ChatGPTInstructionsTests(unittest.TestCase):
     def state(self):
         return dict(url=capture.URL, title='ChatGPT: Chat, Work, Create & Code with AI',
                     ready='complete', editor=True, heading='Where should we begin?',
-                    fonts='loaded', viewport=[1024, 768], scale=2, serviceBlocked=False)
+                    fonts='loaded', viewport=[1024, 768], scale=2, serviceBlocked=False,
+                    bootstrap=True)
 
     def test_capture_requires_real_homepage_editor_and_readiness(self):
         self.assertTrue(capture.ready(self.state()))
         for key, value in [('url', 'https://example.com/'), ('title', 'Just a moment...'),
                            ('editor', False), ('ready', 'interactive'), ('serviceBlocked', True),
-                           ('fonts', 'loading'), ('viewport', [800, 600])]:
+                           ('fonts', 'loading'), ('viewport', [800, 600]), ('bootstrap', False)]:
             state = self.state()
             state[key] = value
             self.assertFalse(capture.ready(state), key)
@@ -169,6 +170,59 @@ class ChatGPTInstructionsTests(unittest.TestCase):
             client.body(dict(result=dict(body='different')), dict(method='GET'), response)
             self.assertEqual(client.responses[capture.URL], entry)
             self.assertEqual(len(client.errors), 1)
+
+    def paused_client(self, root):
+        client = capture.Capture.__new__(capture.Capture)
+        (root / 'bodies').mkdir()
+        client.output, client.responses, client.errors, client.events = root, {}, [], []
+        calls = []
+        client.request = lambda method, params, callback=None: calls.append((method, params, callback))
+        return client, calls
+
+    def test_paused_response_is_saved_before_original_response_continues(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            client, calls = self.paused_client(root)
+            params = dict(requestId='paused', request=dict(url=capture.URL, method='GET'),
+                responseStatusCode=200, responseHeaders=[dict(name='Content-Type', value='text/html'),
+                    dict(name='Set-Cookie', value='private'), dict(name='X-Repeat', value='one'),
+                    dict(name='X-Repeat', value='two')])
+            client.paused_response(params)
+            self.assertEqual([c[0] for c in calls], ['Fetch.getResponseBody'])
+            self.assertFalse(client.responses)
+            calls[0][2](dict(result=dict(body='<title>Original</title>', base64Encoded=False)))
+            entry = client.responses[capture.URL]
+            self.assertEqual((root / 'bodies' / entry['sha256']).read_text(), '<title>Original</title>')
+            self.assertEqual([h['name'] for h in entry['headers']], ['Content-Type', 'X-Repeat', 'X-Repeat'])
+            self.assertEqual(calls[-1][:2], ('Fetch.continueResponse', dict(requestId='paused')))
+
+    def test_redirect_keeps_location_without_attempting_to_read_a_body(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            client, calls = self.paused_client(root)
+            client.paused_response(dict(requestId='redirect', request=dict(url=capture.URL, method='GET'),
+                responseStatusCode=302, responseHeaders=[dict(name='Location', value='/next')]))
+            self.assertEqual(client.responses[capture.URL]['bytes'], 0)
+            self.assertEqual(client.responses[capture.URL]['headers'], [dict(name='Location', value='/next')])
+            self.assertEqual([c[0] for c in calls], ['Fetch.continueResponse'])
+
+    def test_paused_body_error_is_retained_and_resumed_without_retry(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            client, calls = self.paused_client(Path(temporary))
+            client.paused_response(dict(requestId='error', request=dict(url=capture.URL, method='GET'),
+                responseStatusCode=200, responseHeaders=[]))
+            calls[0][2](dict(error=dict(message='body unavailable')))
+            self.assertEqual(len(client.errors), 1)
+            self.assertFalse(client.responses)
+            self.assertEqual([c[0] for c in calls], ['Fetch.getResponseBody', 'Fetch.continueResponse'])
+
+    def test_failed_response_resumes_the_same_request_without_body_read(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            client, calls = self.paused_client(Path(temporary))
+            client.paused_response(dict(requestId='failed', request=dict(url=capture.URL, method='GET'),
+                responseErrorReason='ConnectionClosed'))
+            self.assertEqual([c[0] for c in calls], ['Fetch.continueRequest'])
+            self.assertEqual(client.events[0]['response_error'], 'ConnectionClosed')
 
     def audit(self):
         groups = [dict(name=name, count=1, elements=[dict(rect=dict(width=50, height=20))])

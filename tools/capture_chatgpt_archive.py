@@ -24,6 +24,7 @@ BRAVE = Path('/Applications/Brave Browser.app/Contents/MacOS/Brave Browser')
 STATE = """({url:location.href,title:document.title,ready:document.readyState,
     viewport:[innerWidth,innerHeight],scale:devicePixelRatio,
     fonts:document.fonts.status,heading:document.querySelector('h1')?.textContent,
+    bootstrap:document.documentElement.dataset.octaneHomeBehaviorReady==='1',
     editor:[...document.querySelectorAll('textarea,[contenteditable=true]')].some(e=>{
         const r=e.getBoundingClientRect();return r.width>0&&r.height>0&&!e.disabled}),
     serviceBlocked:/unusual activity|verify you are human|just a moment/i.test(document.body?.innerText||''),
@@ -40,6 +41,7 @@ def ready(state):
     return (state.get('url') == URL and state.get('title', '').startswith('ChatGPT')
             and state.get('ready') == 'complete' and state.get('editor') is True
             and bool(state.get('heading')) and state.get('fonts') == 'loaded'
+            and state.get('bootstrap') is True
             and state.get('viewport') == [1024, 768] and state.get('scale') == 2
             and state.get('serviceBlocked') is False)
 
@@ -50,6 +52,7 @@ class Capture(CDP):
         self.output = output
         self.callbacks, self.requests, self.responses = {}, {}, {}
         self.events, self.errors = [], []
+        self.capture_paused_responses = False
 
     def request(self, method, params, callback=None):
         self.sequence += 1
@@ -67,11 +70,16 @@ class Capture(CDP):
         sha = hashlib.sha256(body).hexdigest()
         (self.output / 'bodies' / sha).write_bytes(body)
         # Do not silently replace a response when the same URL varies.
+        headers = response.get('headers', {})
+        if isinstance(headers, dict):
+            headers = [dict(name=k, value=v) for k, values in headers.items()
+                       for v in str(values).split('\n')]
         entry = dict(status=int(response['status']), sha256=sha, bytes=len(body),
             method=request.get('method', 'GET'),
-            headers=[dict(name=k, value=v) for k, values in response.get('headers', {}).items()
-                     for v in str(values).split('\n')
-                     if k.lower() not in {'content-length', 'content-encoding', 'transfer-encoding'}])
+            # Replay discards cookies and serves decoded bodies. Retaining
+            # anonymous session cookies or old transfer lengths is unnecessary.
+            headers=[h for h in headers if h['name'].lower() not in
+                     {'content-length', 'content-encoding', 'transfer-encoding', 'set-cookie'}])
         url = response['url']
         previous = self.responses.get(url)
         if previous and previous['sha256'] != sha:
@@ -79,13 +87,40 @@ class Capture(CDP):
             return
         self.responses[url] = entry
 
+    def paused_response(self, params):
+        request = params['request']
+        ident = params['requestId']
+        if 'responseStatusCode' not in params:
+            self.events.append(dict(url=request['url'], response_error=params.get('responseErrorReason')))
+            self.request('Fetch.continueRequest', dict(requestId=ident))
+            return
+        response = dict(url=request['url'], status=params['responseStatusCode'],
+                        headers=params.get('responseHeaders', []))
+
+        def received(result):
+            # Continuing this response resumes the existing request; it does
+            # not issue another navigation or fetch. Save its original bytes
+            # before page code can replace the owning document and its buffer.
+            try:
+                self.body(result, request, response)
+            finally:
+                self.request('Fetch.continueResponse', dict(requestId=ident))
+
+        status = int(response['status'])
+        if status in (204, 205, 304) or 300 <= status < 400:
+            received(dict(result=dict(body='', base64Encoded=False)))
+        else:
+            self.request('Fetch.getResponseBody', dict(requestId=ident), received)
+
     def receive(self):
         result = super().receive()
         callback = self.callbacks.pop(result.get('id'), None)
         if callback:
             callback(result)
         params, method = result.get('params', {}), result.get('method')
-        if method == 'Network.requestWillBeSent':
+        if method == 'Fetch.requestPaused' and self.capture_paused_responses:
+            self.paused_response(params)
+        elif method == 'Network.requestWillBeSent':
             self.requests[params['requestId']] = params['request']
         elif method == 'Network.responseReceived':
             response = params['response']
@@ -96,7 +131,7 @@ class Capture(CDP):
                 self.requests[params['requestId']] = dict(request, response=response)
         elif method == 'Network.loadingFinished':
             request = self.requests.pop(params['requestId'], {})
-            if 'response' in request:
+            if 'response' in request and not self.capture_paused_responses:
                 response = request.pop('response')
                 self.request('Network.getResponseBody', dict(requestId=params['requestId']),
                              lambda value: self.body(value, request, response))
@@ -152,6 +187,11 @@ def capture(args):
                           maxResourceBufferSize=64 * 1024 * 1024,
                           enableDurableMessages=True) if method == 'Network.enable' else {}
             client.call(method, params)
+        client.capture_paused_responses = True
+        client.call('Fetch.enable', dict(patterns=[
+            dict(urlPattern='http://*', requestStage='Response'),
+            dict(urlPattern='https://*', requestStage='Response')]))
+        client.call('Network.setCacheDisabled', dict(cacheDisabled=True))
         client.call('Emulation.setDeviceMetricsOverride', dict(width=1024, height=768,
                                                               deviceScaleFactor=2, mobile=False))
         client.call('Emulation.setFocusEmulationEnabled', dict(enabled=True))
