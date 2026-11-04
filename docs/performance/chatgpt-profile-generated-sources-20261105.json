@@ -1,0 +1,59 @@
+{
+  "complete": true,
+  "unix": 1793826865.500635,
+  "removed_after_lossless_archive_verification": [
+    {
+      "path": "Build/chatgpt-v-profile-20261104-1755/Vox.c",
+      "sha256": "80f9746320f1147dd30ca821928a288b7349a350e99984466b9b22e9413cdeba",
+      "bytes": 108569300
+    },
+    {
+      "path": "Build/chatgpt-v-profile-20261104-1755/sealed-diagnostic/frozen-compiler-inputs/0-Vox.c.i",
+      "sha256": "a4e0743fe72ed6f90b1a930cd6901984e9fe35a973a1cf05b43c8710dd8712b7",
+      "bytes": 126059678
+    },
+    {
+      "path": "Build/chatgpt-v-profile-production-20261104-r2/Vox.c",
+      "sha256": "9ca712b8d63feb8f08c2181151aa47cf9742e9cc980ba0def1078c627c8429bf",
+      "bytes": 255883072
+    },
+    {
+      "path": "Build/chatgpt-v-profile-production-20261104-r2/frozen-compiler-inputs/0-Vox.c.i",
+      "sha256": "bce4c375c77d1658288724cc82d6c32435d90001d2ec1cc0602c9a5bdbae6cb4",
+      "bytes": 273362163
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-profile-generated-old-c-20261105-evidence.zip",
+      "sha256": "d141d61f3e94d4f297f4eac0d4f6ff4e6d427f6cff69033944196472fd6dba5c",
+      "bytes": 9896182
+    },
+    {
+      "path": "docs/performance/chatgpt-profile-generated-old-preprocessed-20261105-evidence.zip",
+      "sha256": "604c352215a60d55ae0d15da6aefb056144e8fe5b5277219dd5ef7db3740597c",
+      "bytes": 11460489
+    },
+    {
+      "path": "docs/performance/chatgpt-profile-generated-production-c-20261105-evidence.zip",
+      "sha256": "551093d57281178ee817e0948bedc83ee7697f1b77af336e7249bfe211bf9c53",
+      "bytes": 27501228
+    },
+    {
+      "path": "docs/performance/chatgpt-profile-generated-production-preprocessed-20261105-evidence.zip",
+      "sha256": "e8c94e0682fad538026ba16e842b0b2b68539189ae81af4e1523fe5ae81b31f4",
+      "bytes": 29067987
+    }
+  ],
+  "retained": "Both instrumented executables, frozen native inputs/receipts, source proofs, compiler flags, profiles, browser audits, PNGs, commands and guards remain available. No shared production file, repository source, tool or fixture changed.",
+  "reason": "Archive each completed profile source independently, verify it, then remove that redundant Build file before writing the next archive. This avoids requiring spare space for every compressed source at once.",
+  "reclaimed_bytes": 763874213,
+  "recovery_evidence": {
+    "path": "docs/performance/chatgpt-disk-recovery-20261105-evidence.zip",
+    "sha256": "d03deac19b52980f1b8ca3baf4d146f28447d65bffc5b29040f3a66d8e307e79",
+    "bytes": 6279
+  },
+  "successful_guard_exit": 0,
+  "successful_guard_peak_rss_bytes": 24576000,
+  "failed_initial_attempt": "Initial archive write hit disk exhaustion; the guard report/log could not be fully written, CLI returned 120, and no source was removed. Its incomplete temporary ZIP was hashed and deleted before the separately identified per-file recovery. A shell redirection failure also prevented a production-lease launch; no browser or counters were collected by that failed shell command."
+}

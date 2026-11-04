@@ -1295,6 +1295,18 @@ memory guards and the receipt for removing completed private benchmark caches
 during disk-pressure cleanup. Profile credit and the broad cadence remain zero;
 the requested 5% Brave advantage remains unmet.
 
+Later disk exhaustion also blocks shared publication and a shell log
+redirection before a benchmark can start. The first attempt to archive all
+generated profile sources at once runs out of space without removing a source.
+A separate recovery archives and verifies each file before removing its
+redundant `Build/` copy. All 763,874,213 raw bytes of generated and preprocessed
+C remain recoverable from four lossless archives totaling 77,925,886 bytes.
+Both instrumented executables, native inputs, receipts, raw profiles, audits,
+PNGs and the captured fixture remain intact. The
+[source-storage receipt](performance/chatgpt-profile-generated-sources-20261105.json)
+links the four archives, successful memory guard, initial failure and separate
+cleanup of this work's completed generated test outputs.
+
 ### Shared property pages during animation retirement
 
 Commit `f1f9a4867` avoids rechecking a fully inspected clean property page during
