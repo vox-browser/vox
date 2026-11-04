@@ -1294,3 +1294,49 @@ links both attempts, raw profiles, audits, PNGs, commands, frozen compile proof,
 memory guards and the receipt for removing completed private benchmark caches
 during disk-pressure cleanup. Profile credit and the broad cadence remain zero;
 the requested 5% Brave advantage remains unmet.
+
+### Shared property pages during animation retirement
+
+Commit `f1f9a4867` avoids rechecking a fully inspected clean property page during
+one synchronous inspection of one retiring animation arena. A bounded table
+compares exact page identities; collisions cause rescans and partial pages do
+not establish full-page cleanliness. No memo survives the call. Typed payloads,
+page ownership, animated/custom properties, layout snapshots and retained
+density projections keep their existing checks. V heap-promotes the memo, so
+the caller supplies a temporary scope and releases it before returning.
+
+All **44 final check jobs, with 110 test-function executions**, pass. These
+cover poisoned preallocation, every longhand slot, shared pages, collisions,
+partial pages, mutations between inspections, retained projections, typed
+payloads and unchanged caller-arena usage. Ordinary-GC/no-GC property-store and
+alignment checks pass, as do both page-scan variants under address and
+undefined-behavior sanitizers.
+
+The initial sanitizer run in both variants exposed a separate tokenizer
+alignment bug before the test bodies: an odd number of 32-bit code-point slots
+misaligned the following 64-bit offset table. Commit `fb0373636` adds alignment
+padding and a focused ASCII/Unicode regression test. Commit `64ccbb9bf` corrects
+the existing property-page footprint assertion from 144 to 152 bytes to account
+for its previously added semantic hash. Initial failed exits and source proofs
+remain retained; the full final selection is rerun after these fixes.
+
+A synthetic C-`-O2` preallocation component measures complete ownership
+inspections, including the temporary scope, with identical checked results.
+Control/candidate/candidate/control medians are:
+
+| Scene | Scalar instructions | Candidate instructions | Observed reduction |
+| --- | ---: | ---: | ---: |
+| Shared clean pages | 1,075,378,490 | 67,428,587 | 93.730% |
+| Distinct pages | 109,458,103.5 | 106,865,990.5 | 2.368% |
+| Sample held in first target | 452,166.5 | 463,802 | −2.573% |
+| Sample held in last target | 1,074,191,753 | 67,339,677 | 93.731% |
+
+These are component results, including the early-return regression; they do not
+establish browser savings or advance the whole-page broad-check cadence. The
+[page-scan receipt](performance/chatgpt-animation-page-scan-20261105.json)
+links raw observations, all final checks and retained initial failures. A final
+production-path diagnostic and matched browser comparison require a completed
+shared bundle containing the temporary-scope fix. The previous completed
+bundle contains the unscoped prototype, so it supplies no final validation.
+The frozen fixture, original author scripts and references remain unchanged,
+with no new downloads. The requested 5% Brave advantage remains unmet.
