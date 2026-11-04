@@ -1,0 +1,1526 @@
+{
+  "version": 1,
+  "diagnostic": true,
+  "acceptance": false,
+  "instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "executable_sha256": "0cef98e602e068bdc9b041a5368f660ee59b5e820c1ff9b847b9eaff60bc4e83",
+  "compiler_sha256": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+  "build": {
+    "complete": true,
+    "source_before": {
+      "head": "a95562038acacfec81f5a74af3b9447dd84a469a",
+      "repository_sha256": "b3766ecf9a7d135a9c66d6365c1d5af1dc7d42be291f4c856f94ab260323c6b4",
+      "build_inputs_sha256": "2a6429ea38a7adcdc643f5be1ee69b81606b76565a47d71ca16d6ee1078d606a",
+      "dirty": true
+    },
+    "compiler_sha256": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+    "codegen_command": [
+      "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+      "-prod",
+      "-b",
+      "c",
+      "-cc",
+      "clang",
+      "-memory-limit",
+      "10G",
+      "-exclude",
+      "@vlib/time/zoneinfo.native.v",
+      "-enable-globals",
+      "-d",
+      "vox_sparse_ttf",
+      "-d",
+      "vox_production",
+      "-d",
+      "vox_ui2",
+      "-path",
+      "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+      "-w",
+      "-n",
+      "-nocache",
+      "-prealloc",
+      "-gc",
+      "none",
+      "-profile",
+      "-",
+      "-profile-no-inline",
+      "-profile-fns",
+      "main__main",
+      "-cflags",
+      "-DLADYBIRD_V_HAS_RUST_YUV -DLADYBIRD_V_HAS_SKIA_TEXT -DLADYBIRD_V_HAS_FFMPEG -I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include -O1 -D_FORTIFY_SOURCE=0 -include stdio.h",
+      "-ldflags",
+      "-L/Users/alex/code/vox2/Build/v/rust-yuv/release -lladybird_v_yuv -L/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -lLadybirdVSkiaText -Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib -lc++ /Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.dylib",
+      "-dump-c-flags",
+      "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/Vox.flags",
+      "-o",
+      "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/Vox.c",
+      "/Users/alex/code/vox2"
+    ],
+    "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler",
+    "started_unix": 1793824299.6769412,
+    "host": {
+      "cpu_count": 18,
+      "load": [
+        4.45263671875,
+        5.2998046875,
+        11.43017578125
+      ]
+    },
+    "codegen_exit": 0,
+    "original_generated_sha256": "c1d698a7073e794312bfffa291cd6b9259a4dd94a7a9def26f661512caa60d6b",
+    "generated_sha256": "9ca712b8d63feb8f08c2181151aa47cf9742e9cc980ba0def1078c627c8429bf",
+    "generated_edit": {
+      "before": "bool profile__v__profile_enabled = true;",
+      "after": "_Thread_local bool profile__v__profile_enabled = false;"
+    },
+    "original_flags_sha256": "0a9954f506cab1cbc00f29aa56e693ef220b3222ff091ac49547ccc447650c37",
+    "flags_optimization_edit": [
+      "-O2",
+      "-O1"
+    ],
+    "flags_sha256": "f01ab728e460859d4b5ca9968ae3587da996e23623d0514878f0aa442693cf93",
+    "profile_mode": "-prod source conditions; C -O1; main-thread TLS gate; instrumentation is diagnostic only",
+    "compile_command": [
+      "python3",
+      "/Users/alex/code/vox2/tools/freeze_browser_compile.py",
+      "--root",
+      "/Users/alex/code/vox2",
+      "--stage",
+      "/Users/alex/code/vox2/Build/v",
+      "--receipt",
+      "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2",
+      "--source",
+      "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/Vox.c",
+      "--flags",
+      "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/Vox.flags",
+      "--output",
+      "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/Vox-profile"
+    ],
+    "compile_exit": 0,
+    "sign_command": [
+      "codesign",
+      "--force",
+      "--sign",
+      "-",
+      "--entitlements",
+      "/Users/alex/code/vox2/packaging/Vox.entitlements.plist",
+      "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/Vox-profile"
+    ],
+    "sign_exit": 0,
+    "executable_sha256": "0cef98e602e068bdc9b041a5368f660ee59b5e820c1ff9b847b9eaff60bc4e83",
+    "source_after": {
+      "head": "21cc6cbae139bf9037da444d642b12ed14f72d73",
+      "repository_sha256": "5144d9c7ef7a4ef7ed08cd9c4125653892f9c1b6fd44b3b1b86039bc9980b7a2",
+      "build_inputs_sha256": "2a6429ea38a7adcdc643f5be1ee69b81606b76565a47d71ca16d6ee1078d606a",
+      "dirty": true
+    },
+    "finished_unix": 1793824528.904242
+  },
+  "build_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-v-profile-production-20261104-r2/build.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 9257222144,
+    "elapsed_seconds": 231.510836917,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "runs": [
+    {
+      "settle_seconds": 5,
+      "complete": false,
+      "browser_exit": 0,
+      "guard_exit": 1,
+      "identity_stable": true,
+      "functions": 11021,
+      "negative_self_rows": 0,
+      "error": "Rendered homepage button identity differs from its retained Brave reference",
+      "content": null,
+      "pixels": null,
+      "rankings": {
+        "functions": 11021,
+        "inclusive": [
+          {
+            "function": "css__update_style_recursively",
+            "calls": 16737,
+            "inclusive_ms": 60187.544,
+            "self_ms": 4.725,
+            "average_inclusive_ns": 3596077.0
+          },
+          {
+            "function": "layout__layout_inside_independent_formatting_context_with_mode",
+            "calls": 59625,
+            "inclusive_ms": 43293.822,
+            "self_ms": 1.678,
+            "average_inclusive_ns": 726102.0
+          },
+          {
+            "function": "layout__layout_inside_independent_formatting_context_without_containment_override",
+            "calls": 59625,
+            "inclusive_ms": 43276.099,
+            "self_ms": 0.952,
+            "average_inclusive_ns": 725805.0
+          },
+          {
+            "function": "layout__run_retaining_independent_formatting_context",
+            "calls": 59625,
+            "inclusive_ms": 43275.147,
+            "self_ms": 5.382,
+            "average_inclusive_ns": 725789.0
+          },
+          {
+            "function": "layout__layout_uncached_independent_formatting_context",
+            "calls": 59625,
+            "inclusive_ms": 43249.379,
+            "self_ms": 10.045,
+            "average_inclusive_ns": 725356.0
+          },
+          {
+            "function": "layout__layout_independent_child_with_height_mode",
+            "calls": 47635,
+            "inclusive_ms": 35860.356,
+            "self_ms": 13.26,
+            "average_inclusive_ns": 752815.0
+          },
+          {
+            "function": "layout__layout_inside_independent_formatting_context",
+            "calls": 52283,
+            "inclusive_ms": 35535.591,
+            "self_ms": 0.909,
+            "average_inclusive_ns": 679678.0
+          },
+          {
+            "function": "layout__layout_independent_child",
+            "calls": 47428,
+            "inclusive_ms": 32647.513,
+            "self_ms": 0.811,
+            "average_inclusive_ns": 688359.0
+          },
+          {
+            "function": "main__preload_element_has_no_display_box",
+            "calls": 259,
+            "inclusive_ms": 31070.684,
+            "self_ms": 0.026,
+            "average_inclusive_ns": 119964032.0
+          },
+          {
+            "function": "layout__run_grid_formatting_context_internal",
+            "calls": 6716,
+            "inclusive_ms": 27283.781,
+            "self_ms": 0.841,
+            "average_inclusive_ns": 4062505.0
+          },
+          {
+            "function": "layout__run_uncached_grid_formatting_context_internal",
+            "calls": 6620,
+            "inclusive_ms": 27272.252,
+            "self_ms": 23.565,
+            "average_inclusive_ns": 4119676.0
+          },
+          {
+            "function": "layout__run_grid_formatting_context",
+            "calls": 6438,
+            "inclusive_ms": 27162.445,
+            "self_ms": 0.114,
+            "average_inclusive_ns": 4219081.0
+          },
+          {
+            "function": "layout__layout_absolutely_positioned_descendants",
+            "calls": 2238,
+            "inclusive_ms": 23059.263,
+            "self_ms": 0.149,
+            "average_inclusive_ns": 10303513.0
+          },
+          {
+            "function": "layout__run_flex_formatting_context_with_mode",
+            "calls": 26686,
+            "inclusive_ms": 10965.898,
+            "self_ms": 3.772,
+            "average_inclusive_ns": 410923.0
+          },
+          {
+            "function": "layout__run_uncached_flex_formatting_context_with_mode",
+            "calls": 26452,
+            "inclusive_ms": 10932.283,
+            "self_ms": 59.883,
+            "average_inclusive_ns": 413288.0
+          },
+          {
+            "function": "gg__gg_frame_fn",
+            "calls": 99,
+            "inclusive_ms": 7991.114,
+            "self_ms": 0.024,
+            "average_inclusive_ns": 80718323.0
+          },
+          {
+            "function": "main____anon_fn_16",
+            "calls": 99,
+            "inclusive_ms": 7991.057,
+            "self_ms": 0.007,
+            "average_inclusive_ns": 80717751.0
+          },
+          {
+            "function": "main__BrowserApp__draw_browser_tabs",
+            "calls": 99,
+            "inclusive_ms": 7991.05,
+            "self_ms": 0.067,
+            "average_inclusive_ns": 80717679.0
+          },
+          {
+            "function": "main__BrowserApp__draw",
+            "calls": 99,
+            "inclusive_ms": 7990.906,
+            "self_ms": 2.601,
+            "average_inclusive_ns": 80716225.0
+          },
+          {
+            "function": "layout__run_column_flex_formatting_context",
+            "calls": 1658,
+            "inclusive_ms": 6281.602,
+            "self_ms": 4.891,
+            "average_inclusive_ns": 3788662.0
+          },
+          {
+            "function": "layout__BlockFormattingContext__layout_block_level_children",
+            "calls": 7849,
+            "inclusive_ms": 5596.422,
+            "self_ms": 0.813,
+            "average_inclusive_ns": 713011.0
+          },
+          {
+            "function": "layout__BlockFormattingContext__layout_block_level_box",
+            "calls": 6142,
+            "inclusive_ms": 5591.007,
+            "self_ms": 7.9,
+            "average_inclusive_ns": 910291.0
+          },
+          {
+            "function": "dom__Document__update_layout",
+            "calls": 273,
+            "inclusive_ms": 5106.714,
+            "self_ms": 0.059,
+            "average_inclusive_ns": 18705911.0
+          },
+          {
+            "function": "platform__native_timer_timeout",
+            "calls": 29214,
+            "inclusive_ms": 4673.55,
+            "self_ms": 0.548,
+            "average_inclusive_ns": 159976.0
+          },
+          {
+            "function": "platform__Timer__fire",
+            "calls": 29231,
+            "inclusive_ms": 4673.362,
+            "self_ms": 0.814,
+            "average_inclusive_ns": 159877.0
+          },
+          {
+            "function": "html____anon_fn_656",
+            "calls": 704,
+            "inclusive_ms": 4486.408,
+            "self_ms": 0.03,
+            "average_inclusive_ns": 6372739.0
+          },
+          {
+            "function": "html__EventLoop__process",
+            "calls": 704,
+            "inclusive_ms": 4486.379,
+            "self_ms": 0.14,
+            "average_inclusive_ns": 6372697.0
+          },
+          {
+            "function": "html__Task__execute",
+            "calls": 704,
+            "inclusive_ms": 4483.831,
+            "self_ms": 0.087,
+            "average_inclusive_ns": 6369079.0
+          },
+          {
+            "function": "fetch____anon_fn_630",
+            "calls": 522,
+            "inclusive_ms": 3882.928,
+            "self_ms": 0.033,
+            "average_inclusive_ns": 7438559.0
+          },
+          {
+            "function": "fetch____anon_fn_612",
+            "calls": 257,
+            "inclusive_ms": 3863.595,
+            "self_ms": 0.063,
+            "average_inclusive_ns": 15033442.0
+          }
+        ],
+        "self": [
+          {
+            "function": "main__BrowserApp__draw_chromium_corner_shape",
+            "calls": 288,
+            "inclusive_ms": 529.218,
+            "self_ms": 529.084,
+            "average_inclusive_ns": 1837562.0
+          },
+          {
+            "function": "main__BrowserApp__draw_command",
+            "calls": 345,
+            "inclusive_ms": 1072.95,
+            "self_ms": 506.744,
+            "average_inclusive_ns": 3109999.0
+          },
+          {
+            "function": "main__end_chromium_text_scroll_layer",
+            "calls": 17,
+            "inclusive_ms": 395.748,
+            "self_ms": 395.748,
+            "average_inclusive_ns": 23279294.0
+          },
+          {
+            "function": "builtin__array__get",
+            "calls": 82807886,
+            "inclusive_ms": 375.667,
+            "self_ms": 375.667,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "browserjs__ModuleHost__supply",
+            "calls": 258,
+            "inclusive_ms": 3674.436,
+            "self_ms": 225.342,
+            "average_inclusive_ns": 14242001.0
+          },
+          {
+            "function": "builtin__string__at",
+            "calls": 40414936,
+            "inclusive_ms": 181.505,
+            "self_ms": 181.505,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin____new_array",
+            "calls": 5167628,
+            "inclusive_ms": 209.001,
+            "self_ms": 162.01,
+            "average_inclusive_ns": 40.0
+          },
+          {
+            "function": "strconv__converter",
+            "calls": 138662,
+            "inclusive_ms": 203.934,
+            "self_ms": 147.97,
+            "average_inclusive_ns": 1471.0
+          },
+          {
+            "function": "main__service_navigation_ui",
+            "calls": 375,
+            "inclusive_ms": 158.431,
+            "self_ms": 123.411,
+            "average_inclusive_ns": 422482.0
+          },
+          {
+            "function": "__v3_internal_symbol_static_6373732e435353506978656c7340737461746963406e6561726573745f76616c75655f666f72",
+            "calls": 2992329,
+            "inclusive_ms": 160.801,
+            "self_ms": 120.682,
+            "average_inclusive_ns": 54.0
+          },
+          {
+            "function": "encoding__source_convert_utf8_to_utf16_up_to_invalid_at",
+            "calls": 286,
+            "inclusive_ms": 161.78,
+            "self_ms": 118.847,
+            "average_inclusive_ns": 565665.0
+          },
+          {
+            "function": "builtin__string__runes",
+            "calls": 1454431,
+            "inclusive_ms": 270.606,
+            "self_ms": 117.541,
+            "average_inclusive_ns": 186.0
+          },
+          {
+            "function": "css__StyleComputer__compute_properties",
+            "calls": 4738,
+            "inclusive_ms": 653.949,
+            "self_ms": 115.875,
+            "average_inclusive_ns": 138022.0
+          },
+          {
+            "function": "builtin__utf32_to_str_no_malloc",
+            "calls": 3974255,
+            "inclusive_ms": 147.039,
+            "self_ms": 111.478,
+            "average_inclusive_ns": 37.0
+          },
+          {
+            "function": "css__NumericType__entry_with_value_1_while_all_others_are_0",
+            "calls": 558457,
+            "inclusive_ms": 141.711,
+            "self_ms": 104.815,
+            "average_inclusive_ns": 254.0
+          },
+          {
+            "function": "css__CSSPixels__plus",
+            "calls": 3354359,
+            "inclusive_ms": 125.435,
+            "self_ms": 95.458,
+            "average_inclusive_ns": 37.0
+          },
+          {
+            "function": "dom__Node__as_element",
+            "calls": 4544484,
+            "inclusive_ms": 115.593,
+            "self_ms": 93.778,
+            "average_inclusive_ns": 25.0
+          },
+          {
+            "function": "requestserver__CurlConnection__socket_action",
+            "calls": 1381,
+            "inclusive_ms": 204.736,
+            "self_ms": 93.116,
+            "average_inclusive_ns": 148252.0
+          },
+          {
+            "function": "url__basic_parse_in_workspace",
+            "calls": 56878,
+            "inclusive_ms": 870.483,
+            "self_ms": 91.665,
+            "average_inclusive_ns": 15304.0
+          },
+          {
+            "function": "browserjs__Runtime__call_engine_function",
+            "calls": 2618,
+            "inclusive_ms": 1079.211,
+            "self_ms": 87.062,
+            "average_inclusive_ns": 412227.0
+          },
+          {
+            "function": "css__collect_matching_rules_with_storage",
+            "calls": 276713,
+            "inclusive_ms": 949.892,
+            "self_ms": 81.954,
+            "average_inclusive_ns": 3433.0
+          },
+          {
+            "function": "http__ascii_lowercase",
+            "calls": 436851,
+            "inclusive_ms": 148.143,
+            "self_ms": 78.024,
+            "average_inclusive_ns": 339.0
+          },
+          {
+            "function": "builtin__utf8_decode_rune",
+            "calls": 8247151,
+            "inclusive_ms": 76.203,
+            "self_ms": 76.203,
+            "average_inclusive_ns": 9.0
+          },
+          {
+            "function": "libjs__Utf16String__has_ascii_storage",
+            "calls": 97078,
+            "inclusive_ms": 103.536,
+            "self_ms": 75.916,
+            "average_inclusive_ns": 1067.0
+          },
+          {
+            "function": "builtin____new_array_noscan",
+            "calls": 4310386,
+            "inclusive_ms": 247.453,
+            "self_ms": 74.54,
+            "average_inclusive_ns": 57.0
+          },
+          {
+            "function": "css__style_scope_add_cached_rules_to_run",
+            "calls": 210273,
+            "inclusive_ms": 223.592,
+            "self_ms": 73.789,
+            "average_inclusive_ns": 1063.0
+          },
+          {
+            "function": "url__percent_encode",
+            "calls": 1345249,
+            "inclusive_ms": 327.742,
+            "self_ms": 72.506,
+            "average_inclusive_ns": 244.0
+          },
+          {
+            "function": "dom__Node__as_shadow_root",
+            "calls": 3355370,
+            "inclusive_ms": 84.088,
+            "self_ms": 69.152,
+            "average_inclusive_ns": 25.0
+          },
+          {
+            "function": "layout__Node__computed_values",
+            "calls": 3622423,
+            "inclusive_ms": 82.17,
+            "self_ms": 64.054,
+            "average_inclusive_ns": 23.0
+          },
+          {
+            "function": "layout__css_pixels_from_wide_raw_sum",
+            "calls": 951782,
+            "inclusive_ms": 114.356,
+            "self_ms": 61.44,
+            "average_inclusive_ns": 120.0
+          }
+        ],
+        "calls": [
+          {
+            "function": "builtin__array__get",
+            "calls": 82807886,
+            "inclusive_ms": 375.667,
+            "self_ms": 375.667,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "builtin__string__at",
+            "calls": 40414936,
+            "inclusive_ms": 181.505,
+            "self_ms": 181.505,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "strconv__lsl96",
+            "calls": 12449189,
+            "inclusive_ms": 55.807,
+            "self_ms": 55.807,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "__v3_internal_symbol_static_6373732e435353506978656c73407374617469634066726f6d5f726177",
+            "calls": 12216131,
+            "inclusive_ms": 54.567,
+            "self_ms": 54.567,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__CSSPixels__raw_value",
+            "calls": 8954919,
+            "inclusive_ms": 39.814,
+            "self_ms": 39.814,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin__utf8_decode_rune",
+            "calls": 8247151,
+            "inclusive_ms": 76.203,
+            "self_ms": 76.203,
+            "average_inclusive_ns": 9.0
+          },
+          {
+            "function": "css__ComputedProperties__computed_layout_cache",
+            "calls": 7472757,
+            "inclusive_ms": 33.73,
+            "self_ms": 33.663,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "dom__Node__is_element",
+            "calls": 5770019,
+            "inclusive_ms": 27.364,
+            "self_ms": 27.364,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "layout__NodeWithStyle__computed_values",
+            "calls": 5746326,
+            "inclusive_ms": 25.706,
+            "self_ms": 25.706,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__first_longhand_property_id",
+            "calls": 5689502,
+            "inclusive_ms": 25.446,
+            "self_ms": 25.446,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin__tos",
+            "calls": 5496026,
+            "inclusive_ms": 24.671,
+            "self_ms": 24.671,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin__panic_on_negative_cap",
+            "calls": 5250279,
+            "inclusive_ms": 23.846,
+            "self_ms": 23.846,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "builtin__panic_on_negative_len",
+            "calls": 5250279,
+            "inclusive_ms": 23.527,
+            "self_ms": 23.527,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin____new_array",
+            "calls": 5167628,
+            "inclusive_ms": 209.001,
+            "self_ms": 162.01,
+            "average_inclusive_ns": 40.0
+          },
+          {
+            "function": "css__NumericType__exponent",
+            "calls": 4573437,
+            "inclusive_ms": 20.633,
+            "self_ms": 20.633,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "dom__Node__as_element",
+            "calls": 4544484,
+            "inclusive_ms": 115.593,
+            "self_ms": 93.778,
+            "average_inclusive_ns": 25.0
+          },
+          {
+            "function": "math__is_nan",
+            "calls": 4490395,
+            "inclusive_ms": 20.046,
+            "self_ms": 20.046,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin____new_array_noscan",
+            "calls": 4310386,
+            "inclusive_ms": 247.453,
+            "self_ms": 74.54,
+            "average_inclusive_ns": 57.0
+          },
+          {
+            "function": "css__css_pixels_clamp_i64_to_raw",
+            "calls": 4188459,
+            "inclusive_ms": 18.687,
+            "self_ms": 18.687,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__computed_interpolation_verify_longhand_property",
+            "calls": 4013025,
+            "inclusive_ms": 17.916,
+            "self_ms": 17.916,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin__utf32_decode_to_buffer",
+            "calls": 3974255,
+            "inclusive_ms": 17.706,
+            "self_ms": 17.706,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin__utf32_to_str_no_malloc",
+            "calls": 3974255,
+            "inclusive_ms": 147.039,
+            "self_ms": 111.478,
+            "average_inclusive_ns": 37.0
+          },
+          {
+            "function": "css__optional_equals",
+            "calls": 3909199,
+            "inclusive_ms": 16.829,
+            "self_ms": 16.829,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin__map_hash_bytes",
+            "calls": 3763365,
+            "inclusive_ms": 18.65,
+            "self_ms": 18.65,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "platform__Arena__contains",
+            "calls": 3661632,
+            "inclusive_ms": 17.202,
+            "self_ms": 17.202,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "layout__Node__computed_values",
+            "calls": 3622423,
+            "inclusive_ms": 82.17,
+            "self_ms": 64.054,
+            "average_inclusive_ns": 23.0
+          },
+          {
+            "function": "dom__Node__is_document_fragment",
+            "calls": 3386390,
+            "inclusive_ms": 15.076,
+            "self_ms": 15.076,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "platform__current_block",
+            "calls": 3378130,
+            "inclusive_ms": 15.458,
+            "self_ms": 15.458,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "dom__Node__as_shadow_root",
+            "calls": 3355370,
+            "inclusive_ms": 84.088,
+            "self_ms": 69.152,
+            "average_inclusive_ns": 25.0
+          },
+          {
+            "function": "css__CSSPixels__plus",
+            "calls": 3354359,
+            "inclusive_ms": 125.435,
+            "self_ms": 95.458,
+            "average_inclusive_ns": 37.0
+          }
+        ],
+        "negative_self_rows": [],
+        "interpretation": "Instrumented elapsed time. Self includes native/JSC callees, waits and uninstrumented/inlined functions. Inclusive rows overlap; do not sum them. Counter overhead changes the workload. No CPU instruction, unprofiled speedup or Brave acceptance claim."
+      },
+      "host_before": {
+        "unix": 1793824717.038612,
+        "cpu_count": 18,
+        "load": [
+          4.3056640625,
+          4.57421875,
+          8.69287109375
+        ]
+      },
+      "host_after": {
+        "unix": 1793824731.313372,
+        "load": [
+          4.310546875,
+          4.5615234375,
+          8.6162109375
+        ]
+      },
+      "observed_peak_rss_bytes": 1711308800,
+      "replay": {
+        "url": "https://chatgpt.com/",
+        "archive": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive",
+        "forwarding": false,
+        "manifest_sha256": "7b13757f970e2f615267938bd52f902b852da239962fa265660db813622923f7",
+        "proxy": "socks5h://127.0.0.1:63939",
+        "ca": "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/run/replay/cert.pem",
+        "certificate_sha256": "3ff819c824693469d3ded5a409e3cd2122536928899009e2406e3854ff676a8e"
+      }
+    },
+    {
+      "settle_seconds": 30,
+      "complete": true,
+      "browser_exit": 0,
+      "guard_exit": 0,
+      "identity_stable": true,
+      "functions": 11309,
+      "negative_self_rows": 0,
+      "error": null,
+      "content": {
+        "title": "ChatGPT: Chat, Work, Create & Code with AI",
+        "counts": {
+          "headings": 1,
+          "editors": 1,
+          "buttons": 52,
+          "links": 27,
+          "images": 2,
+          "bootstrap": 1,
+          "performance_policy": 0
+        }
+      },
+      "pixels": {
+        "exact": true,
+        "different_pixels": 0,
+        "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+        "actual": "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/run-long/document.png",
+        "diff": "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/run-long/document.diff.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/run-long/document.diff.png\n"
+      },
+      "rankings": {
+        "functions": 11309,
+        "inclusive": [
+          {
+            "function": "css__update_style_recursively",
+            "calls": 41182,
+            "inclusive_ms": 87401.006,
+            "self_ms": 10.848,
+            "average_inclusive_ns": 2122311.0
+          },
+          {
+            "function": "layout__layout_inside_independent_formatting_context_with_mode",
+            "calls": 88784,
+            "inclusive_ms": 62346.792,
+            "self_ms": 2.42,
+            "average_inclusive_ns": 702230.0
+          },
+          {
+            "function": "layout__layout_inside_independent_formatting_context_without_containment_override",
+            "calls": 88784,
+            "inclusive_ms": 62321.198,
+            "self_ms": 1.395,
+            "average_inclusive_ns": 701942.0
+          },
+          {
+            "function": "layout__run_retaining_independent_formatting_context",
+            "calls": 88784,
+            "inclusive_ms": 62319.803,
+            "self_ms": 7.964,
+            "average_inclusive_ns": 701926.0
+          },
+          {
+            "function": "layout__layout_uncached_independent_formatting_context",
+            "calls": 88638,
+            "inclusive_ms": 62280.442,
+            "self_ms": 14.683,
+            "average_inclusive_ns": 702638.0
+          },
+          {
+            "function": "layout__layout_independent_child_with_height_mode",
+            "calls": 70555,
+            "inclusive_ms": 51715.526,
+            "self_ms": 19.097,
+            "average_inclusive_ns": 732982.0
+          },
+          {
+            "function": "layout__layout_inside_independent_formatting_context",
+            "calls": 77684,
+            "inclusive_ms": 51242.076,
+            "self_ms": 1.321,
+            "average_inclusive_ns": 659622.0
+          },
+          {
+            "function": "layout__layout_independent_child",
+            "calls": 70178,
+            "inclusive_ms": 47059.198,
+            "self_ms": 1.179,
+            "average_inclusive_ns": 670569.0
+          },
+          {
+            "function": "layout__run_grid_formatting_context_internal",
+            "calls": 10229,
+            "inclusive_ms": 39396.894,
+            "self_ms": 1.227,
+            "average_inclusive_ns": 3851490.0
+          },
+          {
+            "function": "layout__run_uncached_grid_formatting_context_internal",
+            "calls": 10097,
+            "inclusive_ms": 39380.204,
+            "self_ms": 34.715,
+            "average_inclusive_ns": 3900189.0
+          },
+          {
+            "function": "layout__run_grid_formatting_context",
+            "calls": 9830,
+            "inclusive_ms": 39226.061,
+            "self_ms": 0.161,
+            "average_inclusive_ns": 3990444.0
+          },
+          {
+            "function": "main__preload_element_has_no_display_box",
+            "calls": 518,
+            "inclusive_ms": 32005.031,
+            "self_ms": 0.05,
+            "average_inclusive_ns": 61785774.0
+          },
+          {
+            "function": "layout__layout_absolutely_positioned_descendants",
+            "calls": 3693,
+            "inclusive_ms": 31897.405,
+            "self_ms": 0.244,
+            "average_inclusive_ns": 8637261.0
+          },
+          {
+            "function": "dom__Document__update_layout",
+            "calls": 5238,
+            "inclusive_ms": 19091.135,
+            "self_ms": 0.683,
+            "average_inclusive_ns": 3644737.0
+          },
+          {
+            "function": "layout__run_flex_formatting_context_with_mode",
+            "calls": 38733,
+            "inclusive_ms": 15702.961,
+            "self_ms": 5.217,
+            "average_inclusive_ns": 405416.0
+          },
+          {
+            "function": "layout__run_uncached_flex_formatting_context_with_mode",
+            "calls": 38398,
+            "inclusive_ms": 15656.199,
+            "self_ms": 84.329,
+            "average_inclusive_ns": 407735.0
+          },
+          {
+            "function": "dom__Document__update_style",
+            "calls": 5249,
+            "inclusive_ms": 15619.86,
+            "self_ms": 0.57,
+            "average_inclusive_ns": 2975778.0
+          },
+          {
+            "function": "gg__gg_frame_fn",
+            "calls": 1759,
+            "inclusive_ms": 14943.687,
+            "self_ms": 0.29,
+            "average_inclusive_ns": 8495558.0
+          },
+          {
+            "function": "main____anon_fn_16",
+            "calls": 1759,
+            "inclusive_ms": 14943.068,
+            "self_ms": 0.067,
+            "average_inclusive_ns": 8495206.0
+          },
+          {
+            "function": "main__BrowserApp__draw_browser_tabs",
+            "calls": 1759,
+            "inclusive_ms": 14943.001,
+            "self_ms": 0.606,
+            "average_inclusive_ns": 8495168.0
+          },
+          {
+            "function": "main__BrowserApp__draw",
+            "calls": 1759,
+            "inclusive_ms": 14941.534,
+            "self_ms": 31.358,
+            "average_inclusive_ns": 8494334.0
+          },
+          {
+            "function": "platform__native_timer_timeout",
+            "calls": 17262,
+            "inclusive_ms": 13074.303,
+            "self_ms": 0.482,
+            "average_inclusive_ns": 757404.0
+          },
+          {
+            "function": "platform__Timer__fire",
+            "calls": 17396,
+            "inclusive_ms": 13074.278,
+            "self_ms": 0.874,
+            "average_inclusive_ns": 751568.0
+          },
+          {
+            "function": "html____anon_fn_656",
+            "calls": 2471,
+            "inclusive_ms": 12862.976,
+            "self_ms": 0.168,
+            "average_inclusive_ns": 5205575.0
+          },
+          {
+            "function": "html__EventLoop__process",
+            "calls": 2471,
+            "inclusive_ms": 12862.808,
+            "self_ms": 0.52,
+            "average_inclusive_ns": 5205507.0
+          },
+          {
+            "function": "html__Task__execute",
+            "calls": 2472,
+            "inclusive_ms": 12857.708,
+            "self_ms": 0.279,
+            "average_inclusive_ns": 5201338.0
+          },
+          {
+            "function": "dom__Document__update_animated_style_if_needed",
+            "calls": 5249,
+            "inclusive_ms": 12410.648,
+            "self_ms": 0.148,
+            "average_inclusive_ns": 2364383.0
+          },
+          {
+            "function": "css__style_computer_update_animated_style_callback",
+            "calls": 3485,
+            "inclusive_ms": 12392.149,
+            "self_ms": 31.731,
+            "average_inclusive_ns": 3555853.0
+          },
+          {
+            "function": "layout__run_column_flex_formatting_context",
+            "calls": 2651,
+            "inclusive_ms": 9117.091,
+            "self_ms": 7.646,
+            "average_inclusive_ns": 3439114.0
+          },
+          {
+            "function": "html____anon_fn_658",
+            "calls": 1729,
+            "inclusive_ms": 9003.93,
+            "self_ms": 0.054,
+            "average_inclusive_ns": 5207594.0
+          }
+        ],
+        "self": [
+          {
+            "function": "builtin__array__get",
+            "calls": 164036740,
+            "inclusive_ms": 729.186,
+            "self_ms": 729.186,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "main__end_chromium_text_scroll_layer",
+            "calls": 285,
+            "inclusive_ms": 658.861,
+            "self_ms": 658.861,
+            "average_inclusive_ns": 2311791.0
+          },
+          {
+            "function": "builtin__string__at",
+            "calls": 104552592,
+            "inclusive_ms": 457.607,
+            "self_ms": 457.607,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__RetiringAnimationSamples__value_references_arena",
+            "calls": 8539316,
+            "inclusive_ms": 741.759,
+            "self_ms": 427.856,
+            "average_inclusive_ns": 87.0
+          },
+          {
+            "function": "css__RetiringAnimationSamples__element_style_references_arena",
+            "calls": 16419,
+            "inclusive_ms": 1594.19,
+            "self_ms": 426.862,
+            "average_inclusive_ns": 97094.0
+          },
+          {
+            "function": "main__BrowserApp__draw_command",
+            "calls": 1409,
+            "inclusive_ms": 492.205,
+            "self_ms": 387.179,
+            "average_inclusive_ns": 349330.0
+          },
+          {
+            "function": "strconv__converter",
+            "calls": 363397,
+            "inclusive_ms": 520.173,
+            "self_ms": 377.188,
+            "average_inclusive_ns": 1431.0
+          },
+          {
+            "function": "css__StyleComputer__compute_properties",
+            "calls": 11748,
+            "inclusive_ms": 1596.188,
+            "self_ms": 321.688,
+            "average_inclusive_ns": 135869.0
+          },
+          {
+            "function": "__v3_internal_symbol_static_6373732e435353506978656c7340737461746963406e6561726573745f76616c75655f666f72",
+            "calls": 8112209,
+            "inclusive_ms": 424.001,
+            "self_ms": 317.946,
+            "average_inclusive_ns": 52.0
+          },
+          {
+            "function": "css__CountingBloomFilter__update_element_hashes",
+            "calls": 79912,
+            "inclusive_ms": 755.136,
+            "self_ms": 311.715,
+            "average_inclusive_ns": 9450.0
+          },
+          {
+            "function": "css__ComponentValue__is",
+            "calls": 8522762,
+            "inclusive_ms": 408.099,
+            "self_ms": 308.186,
+            "average_inclusive_ns": 48.0
+          },
+          {
+            "function": "platform__Arena__contains",
+            "calls": 63853284,
+            "inclusive_ms": 296.72,
+            "self_ms": 296.72,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "builtin____new_array",
+            "calls": 8196299,
+            "inclusive_ms": 323.47,
+            "self_ms": 250.298,
+            "average_inclusive_ns": 39.0
+          },
+          {
+            "function": "css__NumericType__entry_with_value_1_while_all_others_are_0",
+            "calls": 1367119,
+            "inclusive_ms": 337.277,
+            "self_ms": 249.414,
+            "average_inclusive_ns": 247.0
+          },
+          {
+            "function": "dom__Node__as_shadow_root",
+            "calls": 11760946,
+            "inclusive_ms": 283.631,
+            "self_ms": 233.066,
+            "average_inclusive_ns": 24.0
+          },
+          {
+            "function": "css__collect_matching_rules_with_storage",
+            "calls": 804153,
+            "inclusive_ms": 2552.057,
+            "self_ms": 222.91,
+            "average_inclusive_ns": 3174.0
+          },
+          {
+            "function": "browserjs__ModuleHost__supply",
+            "calls": 288,
+            "inclusive_ms": 3591.365,
+            "self_ms": 210.864,
+            "average_inclusive_ns": 12470018.0
+          },
+          {
+            "function": "css__RetiringAnimationSamples__computed_references_arena_at_depth",
+            "calls": 23404,
+            "inclusive_ms": 1333.444,
+            "self_ms": 200.036,
+            "average_inclusive_ns": 56975.0
+          },
+          {
+            "function": "dom__Node__as_element",
+            "calls": 9900119,
+            "inclusive_ms": 243.857,
+            "self_ms": 198.549,
+            "average_inclusive_ns": 25.0
+          },
+          {
+            "function": "main__BrowserApp__begin_scroll_raster",
+            "calls": 233,
+            "inclusive_ms": 448.021,
+            "self_ms": 183.666,
+            "average_inclusive_ns": 1922836.0
+          },
+          {
+            "function": "css__style_scope_add_cached_rules_to_run",
+            "calls": 626769,
+            "inclusive_ms": 533.736,
+            "self_ms": 171.337,
+            "average_inclusive_ns": 852.0
+          },
+          {
+            "function": "css__computed_page_semantic_hash",
+            "calls": 180873,
+            "inclusive_ms": 293.839,
+            "self_ms": 159.63,
+            "average_inclusive_ns": 1625.0
+          },
+          {
+            "function": "dom__Node__parent_or_shadow_host",
+            "calls": 4997651,
+            "inclusive_ms": 317.928,
+            "self_ms": 155.016,
+            "average_inclusive_ns": 64.0
+          },
+          {
+            "function": "builtin__utf32_to_str_no_malloc",
+            "calls": 5580491,
+            "inclusive_ms": 200.605,
+            "self_ms": 152.178,
+            "average_inclusive_ns": 36.0
+          },
+          {
+            "function": "dom__Node__flat_tree_parent",
+            "calls": 4033675,
+            "inclusive_ms": 512.872,
+            "self_ms": 149.732,
+            "average_inclusive_ns": 127.0
+          },
+          {
+            "function": "strconv__lsl96",
+            "calls": 32363207,
+            "inclusive_ms": 142.409,
+            "self_ms": 142.409,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__computed_style_in_layout_coordinates",
+            "calls": 6849,
+            "inclusive_ms": 478.052,
+            "self_ms": 140.446,
+            "average_inclusive_ns": 69799.0
+          },
+          {
+            "function": "css__CSSPixels__plus",
+            "calls": 5057384,
+            "inclusive_ms": 183.979,
+            "self_ms": 140.0,
+            "average_inclusive_ns": 36.0
+          },
+          {
+            "function": "css__RetiringAnimationSamples__struct_references_arena",
+            "calls": 8589131,
+            "inclusive_ms": 206.68,
+            "self_ms": 133.078,
+            "average_inclusive_ns": 24.0
+          },
+          {
+            "function": "builtin__string__runes",
+            "calls": 1479059,
+            "inclusive_ms": 296.677,
+            "self_ms": 132.438,
+            "average_inclusive_ns": 201.0
+          }
+        ],
+        "calls": [
+          {
+            "function": "builtin__array__get",
+            "calls": 164036740,
+            "inclusive_ms": 729.186,
+            "self_ms": 729.186,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin__string__at",
+            "calls": 104552592,
+            "inclusive_ms": 457.607,
+            "self_ms": 457.607,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "platform__Arena__contains",
+            "calls": 63853284,
+            "inclusive_ms": 296.72,
+            "self_ms": 296.72,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "strconv__lsl96",
+            "calls": 32363207,
+            "inclusive_ms": 142.409,
+            "self_ms": 142.409,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__first_longhand_property_id",
+            "calls": 22052744,
+            "inclusive_ms": 95.935,
+            "self_ms": 95.935,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "__v3_internal_symbol_static_6373732e435353506978656c73407374617469634066726f6d5f726177",
+            "calls": 21990187,
+            "inclusive_ms": 95.47,
+            "self_ms": 95.47,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__ComputedProperties__raw_property_at_index",
+            "calls": 20696871,
+            "inclusive_ms": 93.294,
+            "self_ms": 93.294,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "css__computed_interpolation_verify_longhand_property",
+            "calls": 18370004,
+            "inclusive_ms": 79.838,
+            "self_ms": 79.838,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "math__is_nan",
+            "calls": 15894929,
+            "inclusive_ms": 68.863,
+            "self_ms": 68.863,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__NumericType__exponent",
+            "calls": 14773442,
+            "inclusive_ms": 65.687,
+            "self_ms": 65.687,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "dom__Node__is_element",
+            "calls": 14023319,
+            "inclusive_ms": 63.1,
+            "self_ms": 63.1,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__CSSPixels__raw_value",
+            "calls": 13604442,
+            "inclusive_ms": 58.869,
+            "self_ms": 58.869,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__ComputedProperties__computed_layout_cache",
+            "calls": 12397363,
+            "inclusive_ms": 60.86,
+            "self_ms": 59.717,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "dom__Node__is_document_fragment",
+            "calls": 11793674,
+            "inclusive_ms": 50.708,
+            "self_ms": 50.708,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "dom__Node__as_shadow_root",
+            "calls": 11760946,
+            "inclusive_ms": 283.631,
+            "self_ms": 233.066,
+            "average_inclusive_ns": 24.0
+          },
+          {
+            "function": "dom__Node__as_element",
+            "calls": 9900119,
+            "inclusive_ms": 243.857,
+            "self_ms": 198.549,
+            "average_inclusive_ns": 25.0
+          },
+          {
+            "function": "builtin__utf8_decode_rune",
+            "calls": 9858547,
+            "inclusive_ms": 88.421,
+            "self_ms": 88.421,
+            "average_inclusive_ns": 9.0
+          },
+          {
+            "function": "css__optional_equals",
+            "calls": 9569833,
+            "inclusive_ms": 39.968,
+            "self_ms": 39.968,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "layout__NodeWithStyle__computed_values",
+            "calls": 9398507,
+            "inclusive_ms": 41.093,
+            "self_ms": 41.093,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin__panic_on_negative_cap",
+            "calls": 8955076,
+            "inclusive_ms": 40.46,
+            "self_ms": 40.46,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "builtin__panic_on_negative_len",
+            "calls": 8955076,
+            "inclusive_ms": 39.204,
+            "self_ms": 39.204,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "builtin__map__exists",
+            "calls": 8773916,
+            "inclusive_ms": 120.973,
+            "self_ms": 105.359,
+            "average_inclusive_ns": 14.0
+          },
+          {
+            "function": "css__ComponentValue__is_token",
+            "calls": 8669957,
+            "inclusive_ms": 37.856,
+            "self_ms": 37.856,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__RetiringAnimationSamples__struct_references_arena",
+            "calls": 8589131,
+            "inclusive_ms": 206.68,
+            "self_ms": 133.078,
+            "average_inclusive_ns": 24.0
+          },
+          {
+            "function": "platform__Arena__contains_any_word",
+            "calls": 8589131,
+            "inclusive_ms": 73.602,
+            "self_ms": 69.777,
+            "average_inclusive_ns": 9.0
+          },
+          {
+            "function": "css__RetiringAnimationSamples__value_references_arena",
+            "calls": 8539316,
+            "inclusive_ms": 741.759,
+            "self_ms": 427.856,
+            "average_inclusive_ns": 87.0
+          },
+          {
+            "function": "css__ComponentValue__is",
+            "calls": 8522762,
+            "inclusive_ms": 408.099,
+            "self_ms": 308.186,
+            "average_inclusive_ns": 48.0
+          },
+          {
+            "function": "css__css_pixels_clamp_f64_to_raw",
+            "calls": 8498449,
+            "inclusive_ms": 37.271,
+            "self_ms": 37.271,
+            "average_inclusive_ns": 4.0
+          },
+          {
+            "function": "css__ComputedProperties__has_animated_properties",
+            "calls": 8321305,
+            "inclusive_ms": 38.119,
+            "self_ms": 38.119,
+            "average_inclusive_ns": 5.0
+          },
+          {
+            "function": "platform__current_block",
+            "calls": 8276601,
+            "inclusive_ms": 36.99,
+            "self_ms": 36.99,
+            "average_inclusive_ns": 4.0
+          }
+        ],
+        "negative_self_rows": [],
+        "interpretation": "Instrumented elapsed time. Self includes native/JSC callees, waits and uninstrumented/inlined functions. Inclusive rows overlap; do not sum them. Counter overhead changes the workload. No CPU instruction, unprofiled speedup or Brave acceptance claim."
+      },
+      "host_before": {
+        "unix": 1793824997.829707,
+        "cpu_count": 18,
+        "load": [
+          4.28759765625,
+          4.12548828125,
+          7.29638671875
+        ]
+      },
+      "host_after": {
+        "unix": 1793825033.784137,
+        "load": [
+          4.40283203125,
+          4.19775390625,
+          7.1953125
+        ]
+      },
+      "observed_peak_rss_bytes": 1905246208,
+      "replay": {
+        "url": "https://chatgpt.com/",
+        "archive": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive",
+        "forwarding": false,
+        "manifest_sha256": "7b13757f970e2f615267938bd52f902b852da239962fa265660db813622923f7",
+        "proxy": "socks5h://127.0.0.1:64928",
+        "ca": "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261104-r2/run-long/replay/cert.pem",
+        "certificate_sha256": "3897da6fa05d63079123b7fa7b3b258c9b8e5aee032098b2da20b96e486fb6aa"
+      }
+    }
+  ],
+  "source_conditions": "V -prod and vox_production; C -O1; -profile-no-inline skips V-inline functions; main-thread TLS gate starts at main entry, workers disabled.",
+  "limitations": "Instrumented elapsed times include waits, native/JSC and uninstrumented callees. Recursive inclusive rows overlap. Empty production guard helpers can remain solely because profiling prevents elimination. No retired-instruction, unprofiled speedup or production acceptance credit.",
+  "next_leads": [
+    "Early display-eligibility queries trigger style work before layout.",
+    "Animation retirement repeatedly scans computed properties and checks arena membership."
+  ],
+  "unchanged": "Original author scripts, frozen SOCKS fixture, viewport, scale and pixel reference; disk-only replay, zero new downloads. The 30-second diagnostic is separate from the rejected 5-second run and does not change the 5-second acceptance workload.",
+  "evidence": {
+    "path": "docs/performance/chatgpt-v-profile-production-20261104-evidence.zip",
+    "sha256": "ea0243a4f85e85cc2b339305bff421ae235c518a0f9a4f3f038e965d21860d67",
+    "bytes": 1286020,
+    "entries": 43
+  }
+}

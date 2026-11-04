@@ -1261,3 +1261,36 @@ links the successful phases, lease and guard records, second busy-lock attempt
 and exact cleanup receipt. Earlier partial and busy attempts remain unpooled in
 their prior receipts. This four-pair diagnostic does not establish seven-pair
 acceptance or the requested 5% Brave advantage.
+
+### Production-condition V profile
+
+A fresh `v -profile` executable uses `-prod`, `vox_production` and the current
+prealloc compiler. C compilation remains `-O1` for this instrumented diagnostic.
+The generated profiler gate is thread-local, enabled at main entry and disabled
+on worker threads. `-profile-no-inline` skips instrumentation of V-inline
+functions; it does not disable inlining. The frozen compile and build guard
+complete successfully with unchanged source-input identity. Executable SHA-256:
+`0cef98e602e068bdc9b041a5368f660ee59b5e820c1ff9b847b9eaff60bc4e83`.
+
+The five-second run exits normally but fails full content identity: deferred
+cookie-consent buttons have not appeared. Its controller and guard exit 1;
+its raw profile, audit and PNG remain retained as an incomplete-page diagnostic.
+A separately identified thirty-second diagnostic passes bootstrap, full content
+identity and all 3,145,728 reference pixels. Its browser and guard exit zero,
+with 11,309 unique profile rows and no negative self times. The guard adopts
+the browser and observes peak aggregate RSS of 1,905,246,208 bytes.
+
+The valid profile records 518 calls to the preload/display-eligibility helper,
+16,419 animation-retirement element scans and 63,853,284 arena-membership checks.
+These are investigation leads. Instrumented elapsed times include native calls
+and waits; recursive inclusive rows overlap, and profiling can retain otherwise
+empty production guard helpers. They establish neither instruction savings nor
+unprofiled performance. Both runs use the existing disk-only SOCKS replay and
+original author scripts; no new downloads occur. The thirty-second diagnostic
+does not change the five-second acceptance protocol.
+
+The [production-condition profile receipt](performance/chatgpt-v-profile-production-20261104.json)
+links both attempts, raw profiles, audits, PNGs, commands, frozen compile proof,
+memory guards and the receipt for removing completed private benchmark caches
+during disk-pressure cleanup. Profile credit and the broad cadence remain zero;
+the requested 5% Brave advantage remains unmet.
