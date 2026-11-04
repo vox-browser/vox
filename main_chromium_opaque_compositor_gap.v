@@ -16,6 +16,20 @@ fn chromium_compositor_opaque_mask_resume(commands []layout.PaintCommand,
 	return false
 }
 
+// Masks and clips only remove a leaf's ink. Bound filled paths independently
+// of their captured mask, and retain the finite native envelope of oval strokes.
+// Other curved strokes keep the preceding conservative replay path.
+fn chromium_opaque_mask_leaf_ink(command &layout.PaintCommand) ?layout.LayoutRect {
+	if command.kind != 'draw_svg_path' { return chromium_compositor_gap_ink(command) }
+	if command.stroke_color != '' && command.stroke_width > 0 {
+		if !chromium_svg_compositor_path_supported(command) { return none }
+	} else {
+		geometry := layout.PaintCommand{...*command, has_clip:false, clip_list:unsafe { nil }}
+		if !chromium_svg_solid_path_supported(&geometry) { return none }
+	}
+	return layout.paint_svg_path_native_ink_bounds(command)
+}
+
 // An opaque parent prefix can be published before a captured mask. All later
 // parent ink must stay over that opaque prefix and away from the mask, so the
 // resumed picture neither reorders the child nor quantizes transparent overlap.
@@ -42,10 +56,10 @@ fn chromium_opaque_compositor_mask_gap(commands []layout.PaintCommand,
 		|| finish.scope_id != mask.scope_id || mask.opacity != 1 || mask.blend_mode != .normal
 		|| mask.filter != none { return false }
 	leaf := unsafe { &commands[start + 1] }
-	if leaf.kind != 'fill_rect' || leaf.visual_layer_data != none || leaf.fixed_to_viewport != fixed
+	if leaf.kind !in ['fill_rect', 'draw_svg_path'] || leaf.visual_layer_data != none || leaf.fixed_to_viewport != fixed
 		|| leaf.opacity != 1 || leaf.group_opacity != 1 || leaf.outer_shadow || leaf.blur != 0
 		|| leaf.clip_outs.len != 0 { return false }
-	child_ink := chromium_compositor_gap_ink(leaf) or { return false }
+	child_ink := chromium_opaque_mask_leaf_ink(leaf) or { return false }
 	if child_ink.width <= 0 || child_ink.height <= 0 { return false }
 	mut resumed := layout.LayoutRect{}
 	mut has_resumed := false
@@ -62,7 +76,7 @@ fn chromium_opaque_compositor_mask_gap(commands []layout.PaintCommand,
 		supported, _ := chromium_shared_recording_leaf_supported(command)
 		if !supported { return false }
 		if index < end { continue }
-		ink := chromium_compositor_gap_ink(command) or { return false }
+		ink := chromium_opaque_mask_leaf_ink(command) or { return false }
 		if ink.width <= 0 || ink.height <= 0 { continue }
 		if chromium_compositor_ink_overlaps(child_ink, ink) { return false }
 		resumed = if has_resumed { chromium_compositor_ink_union(resumed, ink) } else { ink }

@@ -115,3 +115,38 @@ fn test_opaque_mask_gap_rejects_incomplete_scopes_and_foreign_ownership() {
 	assert !chromium_compositor_gap_can_flush_parent(commands,changed,1,3,6,
 		layout.LayoutRect{0,0,1024,768})
 }
+
+fn opaque_svg_mask_gap_commands() []layout.PaintCommand {
+    mut commands:=opaque_mask_gap_test_commands()
+    commands[4]=layout.PaintCommand{kind:'draw_svg_path',color:'black',svg_data:&layout.PaintSVGPathData{
+        path_data:[f32(0),779,12,0,0,0,0,0,0,0,0,0,1,795,12,0,0,0,0,0,0,0,0,0,
+        1,795,28,0,0,0,0,0,0,0,0,0,1,779,28,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,0]}}
+    commands[6]=layout.PaintCommand{kind:'draw_svg_path',stroke_color:'black',stroke_width:1,
+        svg_data:&layout.PaintSVGPathData{path_data:[f32(6),920,10,990,30,0,0,0,0,0,0,0]}}
+    return commands
+}
+
+fn test_opaque_prefix_retains_stroked_ellipses_after_a_disjoint_svg_mask() {
+    commands:=opaque_svg_mask_gap_commands()
+    plan:=opaque_mask_gap_test_plan()
+    assert chromium_opaque_compositor_mask_gap(commands,plan,1,3,6)
+    assert chromium_svg_compositor_layer_supported_for_viewport(commands,plan,1,
+        layout.LayoutRect{0,0,1024,768})
+    assert chromium_compositor_opaque_mask_resume(commands,plan,1,6)
+}
+
+fn test_opaque_svg_mask_gap_keeps_stroke_bounds_and_scope_guards() {
+    commands:=opaque_svg_mask_gap_commands()
+    plan:=opaque_mask_gap_test_plan()
+    for data in [
+        &layout.PaintSVGPathData{path_data:[f32(6),790,10,805,30,0,0,0,0,0,0,0]},
+        &layout.PaintSVGPathData{path_data:[f32(6),920,1,990,39,0,0,0,0,0,0,0]},
+        &layout.PaintSVGPathData{path_data:[f32(0),920,10,0,0,0,0,0,0,0,0,0,3,990,30,940,50,980,0,0,0,0,0,0]},
+        &layout.PaintSVGPathData{path_data:commands[6].svg_data.path_data,non_scaling_stroke:true},
+        &layout.PaintSVGPathData{path_data:commands[6].svg_data.path_data,stroke_dasharray:[f32(2),2]},
+    ] {
+        mut changed:=commands.clone()
+        changed[6]=layout.PaintCommand{...commands[6],svg_data:data}
+        assert !chromium_opaque_compositor_mask_gap(changed,plan,1,3,6)
+    }
+}

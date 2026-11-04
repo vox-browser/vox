@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_opaque_headers_resume_ellipse_strokes_after_a_disjoint_svg_clip(self):
+        self.compare_fixture('opaque-svg-mask-ellipse-resume', width=1024, height=768)
+
     def test_unpainted_scroll_roots_keep_sparse_images_in_the_document_raster(self):
         self.compare_fixture('root-hit-test-sparse-image', width=1024, height=768)
 
