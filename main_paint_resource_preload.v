@@ -25,8 +25,16 @@ fn pending_paint_background_url(command &layout.PaintCommand) ?string {
 	return address
 }
 
+// Native replay requests unresolved backgrounds and repaints when they arrive.
+// The first page of a windowed launch is laid out before main creates the
+// native context, so also prefetch for that page rather than painting it twice.
+fn (app &BrowserApp) document_paints_natively() bool {
+	if app.ctx != unsafe { nil } { return app.ctx.native_rendering }
+	return app.native_paint_expected
+}
+
 fn (mut app BrowserApp) prime_document_paint_resources() {
-	if disable_paint_resource_prefetch || app.ctx == unsafe { nil } || !app.ctx.native_rendering { return }
+	if disable_paint_resource_prefetch || !app.document_paints_natively() { return }
 	before := app.background_resource_pending.len
 	for index in 0 .. app.paint_commands.len {
 		if address := pending_paint_background_url(&app.paint_commands[index]) {
@@ -66,7 +74,7 @@ fn collect_initial_background_preloads(node &dom.Node, mut found InitialBackgrou
 }
 
 fn (mut app BrowserApp) prime_initial_computed_background_resources(width f64, height f64) {
-	if disable_initial_background_preload || app.ctx == unsafe { nil } || !app.ctx.native_rendering
+	if disable_initial_background_preload || !app.document_paints_natively()
 		|| app.document == unsafe { nil } || app.document.layout_root != unsafe { nil } { return }
 	layout.prepare_initial_resource_styles(app.document, width, height)
 	mut found := InitialBackgroundPreloads{}

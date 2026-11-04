@@ -515,6 +515,9 @@ mut:
 	screenshot_scroll_applied           bool
 	screenshot_initial_viewport_ready   bool
 	layout_tree_only                    bool
+	// A windowed macOS launch installs its first page before the native
+	// context exists; that page will still be replayed natively.
+	native_paint_expected               bool
 	document_presented                  bool
 	paint_timing                        BrowserPaintTiming
 	paint_display_list                  &dom.DisplayList = unsafe { nil }
@@ -8143,6 +8146,10 @@ fn main() {
 	mut page_client := page_model.client()
 	page_client.set_event_recording(false)
 	main_checkpoint = debug_timing_checkpoint('startup_page_model', main_checkpoint)
+	mut native_paint_expected := false
+	$if macos {
+		native_paint_expected = needs_native_font_replay
+	}
 	mut app := &BrowserApp{
 		markup: markup
 		restrict_to_optimized_sites: options.screenshot == '' && !options.headless_smoke && !options.headless_layout_tree
@@ -8164,6 +8171,7 @@ fn main() {
 		screenshot_viewport_height: options.screenshot_viewport_height
 		screenshot_scroll_y: options.screenshot_scroll_y
 		layout_tree_only: options.headless_layout_tree
+		native_paint_expected: native_paint_expected
 		js_engine: options.js_engine
 		script_policy: options.script_policy
 		use_document_font: use_document_font

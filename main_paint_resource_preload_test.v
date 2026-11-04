@@ -68,3 +68,16 @@ fn test_priming_keeps_cached_and_inflight_background_responses() {
 	app.prime_document_paint_resources()
 	assert app.background_resource_pending.len == 0
 }
+
+fn test_first_page_of_a_windowed_launch_prefetches_before_the_native_context_exists() {
+	mut app := BrowserApp{}
+	assert !app.document_paints_natively()
+	app.native_paint_expected = true
+	assert app.document_paints_natively()
+	// Once created, the context decides; headless/layout-only owners stay off.
+	app.ctx = &gg.Context{native_rendering: false}
+	assert !app.document_paints_natively()
+	app.ctx = &gg.Context{native_rendering: true}
+	app.native_paint_expected = false
+	assert app.document_paints_natively()
+}
