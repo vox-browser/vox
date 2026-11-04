@@ -72,6 +72,11 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 			return pending
 		}
 	}
+	connection.ensure_multi() or {
+		mut output := unsafe { pending }
+		output.resolve(fetch.Response.network_error('RequestServer is currently unavailable: ${err.msg()}'))
+		return pending
+	}
 	body := fetch.Body.streaming()
 	mut native := &CurlRequest{
 		connection_: &connection

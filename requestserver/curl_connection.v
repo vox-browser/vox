@@ -33,19 +33,7 @@ mut:
 pub fn CurlConnection.create() !&CurlConnection {
 	entry := platform.enter_persistent()
 	defer { platform.leave_persistent(entry) }
-	if C.vox_curl_global_init(C.CURL_GLOBAL_ALL) != C.CURLE_OK {
-		return error('Failed to initialize libcurl')
-	}
-	mut connection := &CurlConnection{ multi_: C.vox_curl_multi_init() }
-	if connection.multi_ == unsafe { nil } {
-		return error('Failed to initialize curl multi handle')
-	}
-	check_curl_result(C.vox_curl_multi_setopt_long(connection.multi_, C.CURLMOPT_MAX_TOTAL_CONNECTIONS,
-		curl_max_total_connections), C.CURLM_OK)
-	check_curl_result(C.vox_curl_multi_setopt_socket(connection.multi_, curl_socket_callback), C.CURLM_OK)
-	check_curl_result(C.vox_curl_multi_setopt_pointer(connection.multi_, C.CURLMOPT_SOCKETDATA, connection), C.CURLM_OK)
-	check_curl_result(C.vox_curl_multi_setopt_timer(connection.multi_, curl_timeout_callback), C.CURLM_OK)
-	check_curl_result(C.vox_curl_multi_setopt_pointer(connection.multi_, C.CURLMOPT_TIMERDATA, connection), C.CURLM_OK)
+	mut connection := &CurlConnection{}
 	connection.timer_ = platform.Timer.create_single_shot(0, fn [mut connection] () {
 		if due := connection.timer_due_at_ {
 			now := time.sys_mono_now()
@@ -58,6 +46,27 @@ pub fn CurlConnection.create() !&CurlConnection {
 		connection.socket_action(C.CURL_SOCKET_TIMEOUT, 0)
 	})
 	return connection
+}
+
+// Initializing libcurl maps it with its TLS, HTTP/2, HTTP/3 and compression
+// libraries. Script hosts create connections for every scripted document, but
+// most make no curl transfer, so the multi handle is created with the first.
+fn (mut connection CurlConnection) ensure_multi() ! {
+	if connection.multi_ != unsafe { nil } { return }
+	if C.vox_curl_global_init(C.CURL_GLOBAL_ALL) != C.CURLE_OK {
+		return error('Failed to initialize libcurl')
+	}
+	multi := C.vox_curl_multi_init()
+	if multi == unsafe { nil } {
+		return error('Failed to initialize curl multi handle')
+	}
+	connection.multi_ = multi
+	check_curl_result(C.vox_curl_multi_setopt_long(multi, C.CURLMOPT_MAX_TOTAL_CONNECTIONS,
+		curl_max_total_connections), C.CURLM_OK)
+	check_curl_result(C.vox_curl_multi_setopt_socket(multi, curl_socket_callback), C.CURLM_OK)
+	check_curl_result(C.vox_curl_multi_setopt_pointer(multi, C.CURLMOPT_SOCKETDATA, &connection), C.CURLM_OK)
+	check_curl_result(C.vox_curl_multi_setopt_timer(multi, curl_timeout_callback), C.CURLM_OK)
+	check_curl_result(C.vox_curl_multi_setopt_pointer(multi, C.CURLMOPT_TIMERDATA, &connection), C.CURLM_OK)
 }
 
 fn clamp_curl_interval(value i64) int {
@@ -145,6 +154,8 @@ pub fn (mut connection CurlConnection) close() {
 		for _, descriptor in connection.sockets_ { C.vox_curl_socket_destroy(descriptor) }
 	}
 	connection.sockets_.clear()
-	check_curl_result(C.vox_curl_multi_cleanup(connection.multi_), C.CURLM_OK)
-	connection.multi_ = unsafe { nil }
+	if connection.multi_ != unsafe { nil } {
+		check_curl_result(C.vox_curl_multi_cleanup(connection.multi_), C.CURLM_OK)
+		connection.multi_ = unsafe { nil }
+	}
 }
