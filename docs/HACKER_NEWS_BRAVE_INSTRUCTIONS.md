@@ -1,5 +1,68 @@
 # Hacker News instructions against Brave, 2026-11-01
 
+## 2026-11-04: window-indexing opt-out
+
+A fresh seven-pair cohort on the latest shared bundle (`9ebd66e2`, receipt
+`20261104-054422-ce11c3fb`) measures a **Vox median of 2,720,274,906**
+(maximum 2,737,779,104) against a **Brave median lower bound of 8,109,046,423**:
+66.45% fewer instructions. The requested goal was a further 5% reduction, i.e. a
+Vox median at or below 2,584,261,160.
+
+Per-process sampling inside Vox's coalition shows macOS's CascadeSets
+`SetStoreUpdateService` retiring **238.5–238.9M instructions per launch**, more
+than the whole target. Debugger probes trace it to AppKit's
+`UIIntelligenceIntents.WindowTabIndexer`. That indexer donates each window to
+Spotlight as one `com.apple.window-tab` item, and CoreSpotlight's donation
+starts that XPC service in the caller's coalition. AppKit re-donates on window
+title changes; a five-title-change probe re-indexes four times. Brave pays the
+same service. AppKit reads the `NSEnableWindowTabIndexing` default first. Vox
+now registers `NO` in the registration domain before creating its first
+window (`dd8ce6d7a`). Vox's tabs are UI2-owned, so only the window-title
+Spotlight record is lost. An explicit
+`defaults write org.ladybirdbrowser.vox NSEnableWindowTabIndexing -bool YES`
+still re-enables it. The focused native window-state test checks the
+registration domain and that precedence.
+
+The candidate shared build (`698536dc`, receipt `20261104-071720-d70691ae`,
+HEAD `dd8ce6d7a`) measures a **Vox median of 2,477,573,492** (maximum
+2,492,665,267) against a **Brave median lower bound of 8,124,779,792**: **69.51%
+fewer**. The conservative maximum-Vox/minimum-Brave ratio is 0.3084. The Vox
+median falls by **242,701,414 (8.92%)**, and every candidate launch is below the
+5% ceiling. All 28 captures in the two complete cohorts match the reference at
+every pixel and retain all 30 story IDs. The candidate is a dirty shared-tree
+build that also contains concurrent sessions' work. The isolated attribution is
+therefore the matched comparison below.
+
+On that same executable, seven alternating pairs inject either an
+argument-domain `NSEnableWindowTabIndexing=YES` (AppKit's default restored) or
+an injection-cost-only control. Medians are **2,744,315,387 indexing-on versus
+2,486,520,559 default**. The paired saving is 233,942,141–263,303,719; its
+median is **257,060,367**, and all seven pairs improve. All fourteen launches
+pass pixels, stories, ownership and input pins. In correctly attached samples,
+SetStoreUpdateService (238.9–240.7M) appears only in the indexing-on arm.
+A diagnostic sampler in other trials attached to unrelated processes; those
+per-process samples are inconclusive, while coalition counts are unaffected.
+
+An earlier candidate cohort is retained and invalid: Brave pair 2 failed its
+ownership audit because a Brave helper left its coalition. Its seven Vox launches
+pass all gates, with a median of 2,477,230,135. Host one-minute load was
+3.4–5.3 for the baseline but 10.9–15.8 for later runs, because other sessions
+were compiling. The baseline/candidate loads are therefore unmatched. The matched
+pairs share one load period and supply the attribution. OS filesystem/shader
+caches were retained.
+Three intervening shared builds were rejected before C preprocessing because
+other sessions changed inputs; none is counted.
+
+The baseline phase markers also show style/box construction at about 248M,
+versus about 209M in the 2026-11-03 `codec-default` cohort. This regression comes
+from concurrent work and is unchanged here. Raw evidence is under
+`Build/hn-5pct-20261104/`; the durable
+[ledger](benchmark-results/hacker-news-window-indexing-2026-11-04.json) retains
+every count, identity, PNG hash and guard exit. These are frozen-page
+startup/capture counts; GPU and services outside the coalition remain excluded.
+
+## 2026-11-01 scope correction
+
 The previous headline of roughly three times Brave's instructions used
 **asymmetric startup boundaries**. Wikipedia and Old Reddit count browser
 startup; Hacker News subtracted it after Brave's window initialization but

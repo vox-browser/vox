@@ -1,0 +1,1154 @@
+{
+ "baseline_vox": {
+  "executable_sha256": "9ebd66e2a01dd5e815f2e9057c3f31ce494bea0c4d72a49e3453701fad4d281a",
+  "receipt": "20261104-054422-ce11c3fb"
+ },
+ "brave_version": "156.1.98.60",
+ "candidate_vox": {
+  "executable_sha256": "698536dc321bdf238ce591b5b34ce6898257599cf7bd52f537b95b9facc340a1",
+  "head": "dd8ce6d7abad5884424846072581c0636d8e1f4f",
+  "note": "Shared dirty-tree build; contains concurrent sessions' work in addition to dd8ce6d7a",
+  "receipt": "20261104-071720-d70691ae"
+ },
+ "change": "dd8ce6d7a: register NSEnableWindowTabIndexing=NO (registration domain) before the first window",
+ "cohorts": {
+  "baseline": {
+   "brave_median_lower": 8109046423,
+   "brave_min_lower": 8057381991,
+   "guard": {
+    "adoption_error": null,
+    "child_exit_code": 0,
+    "peak_rss_bytes": 941899776,
+    "reason": "completed"
+   },
+   "rows": [
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2714797011,
+     "launch_upper": 2714797011,
+     "load_before": [
+      3.4052734375,
+      5.85498046875,
+      17.95361328125
+     ],
+     "navigation": {},
+     "pair": 1,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793764987.8683531
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8057381991,
+     "launch_upper": 8085616374,
+     "load_before": [
+      3.4052734375,
+      5.85498046875,
+      17.95361328125
+     ],
+     "navigation": {},
+     "pair": 1,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793764991.318387
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2737779104,
+     "launch_upper": 2737779104,
+     "load_before": [
+      3.5634765625,
+      5.80908203125,
+      17.7958984375
+     ],
+     "navigation": {},
+     "pair": 2,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793764999.191023
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8069337703,
+     "launch_upper": 8092340560,
+     "load_before": [
+      3.61279296875,
+      5.85693359375,
+      17.88330078125
+     ],
+     "navigation": {},
+     "pair": 2,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793764995.282969
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2726945022,
+     "launch_upper": 2726945022,
+     "load_before": [
+      3.5634765625,
+      5.80908203125,
+      17.7958984375
+     ],
+     "navigation": {},
+     "pair": 3,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793765002.757018
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8135199677,
+     "launch_upper": 8159892236,
+     "load_before": [
+      4.23876953125,
+      5.91162109375,
+      17.76171875
+     ],
+     "navigation": {},
+     "pair": 3,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793765006.2374122
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2718533677,
+     "launch_upper": 2718533677,
+     "load_before": [
+      4.1279296875,
+      5.83203125,
+      17.59423828125
+     ],
+     "navigation": {},
+     "pair": 4,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793765014.20976
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8164102883,
+     "launch_upper": 8164102883,
+     "load_before": [
+      4.13916015625,
+      5.86328125,
+      17.6748046875
+     ],
+     "navigation": {},
+     "pair": 4,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793765010.15772
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2728359443,
+     "launch_upper": 2728359443,
+     "load_before": [
+      4.1279296875,
+      5.83203125,
+      17.59423828125
+     ],
+     "navigation": {},
+     "pair": 5,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793765017.7496161
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8109046423,
+     "launch_upper": 8125344814,
+     "load_before": [
+      4.75830078125,
+      5.93408203125,
+      17.56103515625
+     ],
+     "navigation": {},
+     "pair": 5,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793765021.259197
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2720274906,
+     "launch_upper": 2720274906,
+     "load_before": [
+      4.64111328125,
+      5.8701171875,
+      17.40234375
+     ],
+     "navigation": {},
+     "pair": 6,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793765029.246191
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8256467129,
+     "launch_upper": 8258735253,
+     "load_before": [
+      4.697265625,
+      5.90185546875,
+      17.4814453125
+     ],
+     "navigation": {},
+     "pair": 6,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793765025.245462
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2716051541,
+     "launch_upper": 2716051541,
+     "load_before": [
+      4.64111328125,
+      5.8701171875,
+      17.40234375
+     ],
+     "navigation": {},
+     "pair": 7,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793765032.775603
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8090260388,
+     "launch_upper": 8110677133,
+     "load_before": [
+      5.31005859375,
+      5.98828125,
+      17.37646484375
+     ],
+     "navigation": {},
+     "pair": 7,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793765036.3468559
+    }
+   ],
+   "tool_summary": {
+    "brave_median_lower_bound_instructions": 8109046423,
+    "instruction_scope": "launch",
+    "pairs": 7,
+    "passed": true,
+    "target_vox_fraction": 0.9,
+    "vox_median_instructions": 2720274906,
+    "worst_vox_over_best_brave": 0.33978519413105485
+   },
+   "vox_max": 2737779104,
+   "vox_median": 2720274906
+  },
+  "candidate": {
+   "brave_median_lower": 8124779792,
+   "brave_min_lower": 8081458231,
+   "guard": {
+    "adoption_error": null,
+    "child_exit_code": 0,
+    "peak_rss_bytes": 939376640,
+    "reason": "completed"
+   },
+   "rows": [
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2461149007,
+     "launch_upper": 2461149007,
+     "load_before": [
+      12.2529296875,
+      12.90869140625,
+      13.29248046875
+     ],
+     "navigation": {},
+     "pair": 1,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766423.7268522
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8120955905,
+     "launch_upper": 8132218779,
+     "load_before": [
+      12.2529296875,
+      12.90869140625,
+      13.29248046875
+     ],
+     "navigation": {},
+     "pair": 1,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766427.419035
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2483473214,
+     "launch_upper": 2483473214,
+     "load_before": [
+      12.06640625,
+      12.845703125,
+      13.26513671875
+     ],
+     "navigation": {},
+     "pair": 2,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766437.436451
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8395005051,
+     "launch_upper": 8411215960,
+     "load_before": [
+      12.072265625,
+      12.8603515625,
+      13.27294921875
+     ],
+     "navigation": {},
+     "pair": 2,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766432.359052
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2473763472,
+     "launch_upper": 2473763472,
+     "load_before": [
+      11.82080078125,
+      12.78173828125,
+      13.23974609375
+     ],
+     "navigation": {},
+     "pair": 3,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766441.3679628
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8081458231,
+     "launch_upper": 8102583627,
+     "load_before": [
+      11.2744140625,
+      12.65234375,
+      13.19140625
+     ],
+     "navigation": {},
+     "pair": 3,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766445.299103
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2473745755,
+     "launch_upper": 2473745755,
+     "load_before": [
+      10.85693359375,
+      12.515625,
+      13.13623046875
+     ],
+     "navigation": {},
+     "pair": 4,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766454.432888
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8243402349,
+     "launch_upper": 8246450865,
+     "load_before": [
+      10.931640625,
+      12.55810546875,
+      13.15478515625
+     ],
+     "navigation": {},
+     "pair": 4,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766449.9500108
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2492665267,
+     "launch_upper": 2492665267,
+     "load_before": [
+      11.2685546875,
+      12.5732421875,
+      13.15283203125
+     ],
+     "navigation": {},
+     "pair": 5,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766458.9637399
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8191325366,
+     "launch_upper": 8191450584,
+     "load_before": [
+      11.2685546875,
+      12.5732421875,
+      13.15283203125
+     ],
+     "navigation": {},
+     "pair": 5,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766463.205635
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2477573492,
+     "launch_upper": 2477573492,
+     "load_before": [
+      13.07958984375,
+      12.9306640625,
+      13.27099609375
+     ],
+     "navigation": {},
+     "pair": 6,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766474.335356
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8124779792,
+     "launch_upper": 8147492387,
+     "load_before": [
+      13.173828125,
+      12.94677734375,
+      13.27880859375
+     ],
+     "navigation": {},
+     "pair": 6,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766468.919818
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2490192607,
+     "launch_upper": 2490192607,
+     "load_before": [
+      12.99267578125,
+      12.9150390625,
+      13.26318359375
+     ],
+     "navigation": {},
+     "pair": 7,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766479.104338
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8081605155,
+     "launch_upper": 8105372335,
+     "load_before": [
+      13.7138671875,
+      13.0654296875,
+      13.31396484375
+     ],
+     "navigation": {},
+     "pair": 7,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766483.86814
+    }
+   ],
+   "tool_summary": {
+    "brave_median_lower_bound_instructions": 8124779792,
+    "instruction_scope": "launch",
+    "pairs": 7,
+    "passed": true,
+    "target_vox_fraction": 0.9,
+    "vox_median_instructions": 2477573492,
+    "worst_vox_over_best_brave": 0.3084425107140048
+   },
+   "vox_max": 2492665267,
+   "vox_median": 2477573492
+  },
+  "candidate_failed_brave_ownership": {
+   "brave_median_lower": 8355542646.5,
+   "brave_min_lower": 8110976833,
+   "guard": {
+    "adoption_error": null,
+    "child_exit_code": 1,
+    "peak_rss_bytes": 945405952,
+    "reason": "completed"
+   },
+   "rows": [
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2471888839,
+     "launch_upper": 2471888839,
+     "load_before": [
+      11.08984375,
+      12.1787109375,
+      13.12548828125
+     ],
+     "navigation": {},
+     "pair": 1,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766262.026133
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8110976833,
+     "launch_upper": 8133914436,
+     "load_before": [
+      11.24267578125,
+      12.19189453125,
+      13.12451171875
+     ],
+     "navigation": {},
+     "pair": 1,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766266.338687
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2487072898,
+     "launch_upper": 2487072898,
+     "load_before": [
+      11.06298828125,
+      12.138671875,
+      13.10009765625
+     ],
+     "navigation": {},
+     "pair": 2,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766272.683944
+    },
+    {
+     "content_exact": null,
+     "engine": "brave",
+     "error": "A private browser helper is outside its resource coalition",
+     "exit": 1,
+     "launch_lower": null,
+     "launch_upper": null,
+     "load_before": [
+      11.06298828125,
+      12.138671875,
+      13.10009765625
+     ],
+     "navigation": {},
+     "pair": 2,
+     "pixels_exact": null,
+     "png_sha256": null,
+     "started_unix": 1793766271.294004
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2468964968,
+     "launch_upper": 2468964968,
+     "load_before": [
+      12.0185546875,
+      12.31884765625,
+      13.15771484375
+     ],
+     "navigation": {},
+     "pair": 3,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766276.622206
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8116162540,
+     "launch_upper": 8127117994,
+     "load_before": [
+      11.3759765625,
+      12.1806640625,
+      13.10400390625
+     ],
+     "navigation": {},
+     "pair": 3,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766280.3951008
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2485046186,
+     "launch_upper": 2485046186,
+     "load_before": [
+      11.10302734375,
+      12.09228515625,
+      13.0615234375
+     ],
+     "navigation": {},
+     "pair": 4,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766290.2418618
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8448292836,
+     "launch_upper": 8470169982,
+     "load_before": [
+      11.025390625,
+      12.09423828125,
+      13.06787109375
+     ],
+     "navigation": {},
+     "pair": 4,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766285.016473
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2469053159,
+     "launch_upper": 2469053159,
+     "load_before": [
+      11.4150390625,
+      12.14013671875,
+      13.07275390625
+     ],
+     "navigation": {},
+     "pair": 5,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766294.875541
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8262792457,
+     "launch_upper": 8282976355,
+     "load_before": [
+      11.62158203125,
+      12.1708984375,
+      13.078125
+     ],
+     "navigation": {},
+     "pair": 5,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766299.2097962
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2477230135,
+     "launch_upper": 2477230135,
+     "load_before": [
+      11.7724609375,
+      12.18212890625,
+      13.0712890625
+     ],
+     "navigation": {},
+     "pair": 6,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766310.629499
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 9201591878,
+     "launch_upper": 9215541964,
+     "load_before": [
+      11.49169921875,
+      12.134765625,
+      13.06005859375
+     ],
+     "navigation": {},
+     "pair": 6,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766304.788456
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2486202217,
+     "launch_upper": 2486202217,
+     "load_before": [
+      12.03076171875,
+      12.228515625,
+      13.08251953125
+     ],
+     "navigation": {},
+     "pair": 7,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "started_unix": 1793766314.956307
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 12151361299,
+     "launch_upper": 12174976162,
+     "load_before": [
+      14.43017578125,
+      12.72265625,
+      13.251953125
+     ],
+     "navigation": {},
+     "pair": 7,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "started_unix": 1793766320.0313
+    }
+   ],
+   "tool_summary": {
+    "error": "Every observation must exit successfully and match pixels and full row identity",
+    "passed": false
+   },
+   "vox_max": 2487072898,
+   "vox_median": 2477230135
+  }
+ },
+ "counter": "Exclusive resource-coalition retired instructions, creation through encoded document PNG",
+ "date": "2026-11-04",
+ "host": {
+  "cpu_count": 18,
+  "system": "ProductName:\t\tmacOS\nProductVersion:\t\t27.2\nBuildVersion:\t\t26B123\n"
+ },
+ "injected_pilot": {
+  "description": "Baseline executable; empty versus noindex injection, two alternating trials",
+  "rows": [
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2743515229,
+    "load": 5.62060546875,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 1,
+    "variant": "empty"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2502164897,
+    "load": 5.62060546875,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 1,
+    "variant": "noindex"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2486335638,
+    "load": 6.13134765625,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 2,
+    "variant": "noindex"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2777884043,
+    "load": 6.76123046875,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 2,
+    "variant": "empty"
+   }
+  ],
+  "summary": {
+   "empty": {
+    "all_gates": true,
+    "counts": [
+     2743515229,
+     2777884043
+    ],
+    "max": 2777884043,
+    "median": 2760699636.0
+   },
+   "noindex": {
+    "all_gates": true,
+    "counts": [
+     2502164897,
+     2486335638
+    ],
+    "max": 2502164897,
+    "median": 2494250267.5
+   },
+   "paired_saving_first_minus_second": {
+    "median": 266449368.5,
+    "values": [
+     241350332,
+     291548405
+    ]
+   }
+  }
+ },
+ "matched_attribution": {
+  "description": "Same candidate executable; DYLD-injected argument-domain NSEnableWindowTabIndexing=YES (indexing_on) versus an injection-cost-only control (default). Diagnostic injection; alternating order.",
+  "dylibs": {
+   "empty": "c3d6bab985cd9caedbcb2aecf07a71c2a7cddafdaa44fa6f738f683df08128d8",
+   "indexing-on": "fad235be1d7df720f1b5de8ae464728212db9cad40597775cc9e74237e75993c",
+   "noindex": "835f4f872f1ecbf0aaf6f02e60f57f73dd3873446fba72edec64ee010de745a6"
+  },
+  "rows": [
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2738257821,
+    "load": 15.8125,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 1,
+    "variant": "indexing_on"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2478412972,
+    "load": 15.5068359375,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 1,
+    "variant": "default"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2486520559,
+    "load": 15.5068359375,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 2,
+    "variant": "default"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2744315387,
+    "load": 15.2255859375,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 2,
+    "variant": "indexing_on"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2750879459,
+    "load": 15.76806640625,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 3,
+    "variant": "indexing_on"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2505196445,
+    "load": 15.78662109375,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 3,
+    "variant": "default"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2514005522,
+    "load": 15.64306640625,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 4,
+    "variant": "default"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2747947663,
+    "load": 15.64306640625,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 4,
+    "variant": "indexing_on"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2743215182,
+    "load": 15.19091796875,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 5,
+    "variant": "indexing_on"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2486154815,
+    "load": 14.77490234375,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 5,
+    "variant": "default"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2484586980,
+    "load": 14.23193359375,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 6,
+    "variant": "default"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2747890699,
+    "load": 14.1328125,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 6,
+    "variant": "indexing_on"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2739815420,
+    "load": 14.1328125,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 7,
+    "variant": "indexing_on"
+   },
+   {
+    "content_exact": true,
+    "error": null,
+    "exit": 0,
+    "instructions": 2493562101,
+    "load": 14.3623046875,
+    "ownership": true,
+    "pinned": true,
+    "pixels_exact": true,
+    "trial": 7,
+    "variant": "default"
+   }
+  ],
+  "summary": {
+   "default": {
+    "all_gates": true,
+    "counts": [
+     2478412972,
+     2486520559,
+     2505196445,
+     2514005522,
+     2486154815,
+     2484586980,
+     2493562101
+    ],
+    "max": 2514005522,
+    "median": 2486520559
+   },
+   "indexing_on": {
+    "all_gates": true,
+    "counts": [
+     2738257821,
+     2744315387,
+     2750879459,
+     2747947663,
+     2743215182,
+     2747890699,
+     2739815420
+    ],
+    "max": 2750879459,
+    "median": 2744315387
+   },
+   "paired_saving_first_minus_second": {
+    "median": 257060367,
+    "values": [
+     259844849,
+     257794828,
+     245683014,
+     233942141,
+     257060367,
+     263303719,
+     246253319
+    ]
+   }
+  }
+ },
+ "per_process_note": "Diagnostic sampler polled coalition members; trials 3-6 attached correctly and show SetStoreUpdateService (238.9-240.7M) only in indexing_on arms. Other trials latched onto unrelated processes and are inconclusive. Baseline per-process: SetStoreUpdateService 238.5M/238.9M, VoxAdblockWorker 208.9M/210.3M.",
+ "pixel_diff": {
+  "path": "Build/pixel-tools/pixel_diff",
+  "sha256": "f340c01cfa7a91f03313608183160f2ecf7070edaee34ddacd47d7a5d83d9a91"
+ },
+ "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+ "target": {
+  "baseline_median": 2720274906,
+  "ceiling": 2584261160,
+  "rule": "5% below baseline Vox median"
+ },
+ "workload": "Archived https://news.ycombinator.com/ (Tests/Browser/Brave/hn-home-instructions), original scripts, loopback replay, fresh private profiles/caches, 1024x768 CSS px, 2x capture, 2 s settle"
+}
