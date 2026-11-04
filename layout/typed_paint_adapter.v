@@ -4138,6 +4138,16 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			}
 		}
 	}
+	if clip := overflow_clip {
+		adjustment := chromium_contained_fragment_adjustment(node, state)
+		if adjustment.x != 0 || adjustment.y != 0 {
+			overflow_clip = CompatibilityOverflowClip{
+				...clip
+				rect: LayoutRect{clip.rect.x + adjustment.x, clip.rect.y + adjustment.y,
+					clip.rect.width, clip.rect.height}
+			}
+		}
+	}
 	css_clip := paintable_box_get_clip_rect(node, computed, used, position)
 	mut scrollable_overflow := ?LayoutRect(none)
 	if overflow := used.scrollable_overflow_rect() {
