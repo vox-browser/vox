@@ -1052,3 +1052,32 @@ inputs without this change. No separate production build was queued. Production
 path verification, exact browser rendering and matched page measurements remain
 pending a completed bundle containing the bulk helper. Page credit and the
 broad cadence remain zero; the 5% Brave target remains unmet.
+
+### Authority production follow-up
+
+Subsequent production diagnostics verify the bulk helper in completed builds
+`fb66bde798d3ee02b96daca3c25cd11d97e33ca270e086a21a9ce6b02f07c2f2`
+and `c71667cf92e9fb20f67cf74e5f172c00fc80f41251f786cdb3a2a104ee8f6c37`.
+All eight diagnostic captures pass exact pixels, content and JavaScriptCore
+bootstrap checks, with the execution marker present only for the candidate.
+
+The first unprofiled attempt stops after Brave's ownership audit cannot verify
+an exiting renderer from another session's headless WIRED replay, rooted at PID
+86450. Its successful Vox control and failed Brave attempt remain retained;
+neither supplies a complete pair or performance credit. No ownership gate was
+relaxed. After that foreign root exits, a separately identified four-pair cohort
+requires no other Brave root at preflight and uses the same strict counters.
+
+On executable `c71667cf…`, all eight subsequent captures pass exact pixels,
+content, bootstrap and browser/kernel exits. Both authority variants also enable
+the later direct USV encoder. Vox's control median is **32,977,936,176.5** and
+the candidate median **32,960,169,798.5**, a **0.054%** observed reduction.
+The ranges overlap: the conservative reduction is **−85,584,681**. Frame
+checkpoints are 376, 408, 388 and 384; every capture has eleven box-building
+passes. Starting load averages range from 17.1 to 19.4 on 18 CPUs.
+
+The [authority production receipt](performance/chatgpt-url-authority-production-20261104.json)
+links both execution diagnostics, the rejected attempt, the later cohort,
+source proofs, raw counts, PNGs and actual guards. It earns zero conservative
+page credit and leaves the broad cadence at zero. Four pairs do not establish
+seven-pair acceptance, and the 5% Brave target remains unmet.

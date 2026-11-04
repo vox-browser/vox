@@ -1,0 +1,43 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-url-authority-20261104-2208/matched-quiet/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {
+    "99874": "Wed Nov  4 22:34:42 2026    ",
+    "99879": "Wed Nov  4 22:34:42 2026    ",
+    "721": "Wed Nov  4 22:34:52 2026    ",
+    "724": "Wed Nov  4 22:34:52 2026    ",
+    "739": "Wed Nov  4 22:34:52 2026    ",
+    "740": "Wed Nov  4 22:34:52 2026    ",
+    "741": "Wed Nov  4 22:34:52 2026    ",
+    "1128": "Wed Nov  4 22:35:02 2026    ",
+    "1133": "Wed Nov  4 22:35:02 2026    ",
+    "1138": "Wed Nov  4 22:35:02 2026    ",
+    "1139": "Wed Nov  4 22:35:02 2026    ",
+    "1140": "Wed Nov  4 22:35:02 2026    ",
+    "1568": "Wed Nov  4 22:35:12 2026    ",
+    "1572": "Wed Nov  4 22:35:12 2026    ",
+    "2275": "Wed Nov  4 22:35:21 2026    ",
+    "2279": "Wed Nov  4 22:35:21 2026    ",
+    "3477": "Wed Nov  4 22:35:31 2026    ",
+    "3482": "Wed Nov  4 22:35:31 2026    ",
+    "3497": "Wed Nov  4 22:35:31 2026    ",
+    "3498": "Wed Nov  4 22:35:31 2026    ",
+    "3500": "Wed Nov  4 22:35:31 2026    ",
+    "4366": "Wed Nov  4 22:35:42 2026    ",
+    "4369": "Wed Nov  4 22:35:42 2026    ",
+    "4381": "Wed Nov  4 22:35:42 2026    ",
+    "4382": "Wed Nov  4 22:35:42 2026    ",
+    "4385": "Wed Nov  4 22:35:42 2026    ",
+    "5152": "Wed Nov  4 22:35:53 2026    ",
+    "5158": "Wed Nov  4 22:35:53 2026    "
+  },
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 1938931712,
+  "elapsed_seconds": 86.899315917,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

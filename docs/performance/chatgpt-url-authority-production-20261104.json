@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "implementation_commit": "26d7b1f24",
+  "production_executable_sha256": "c71667cf92e9fb20f67cf74e5f172c00fc80f41251f786cdb3a2a104ee8f6c37",
+  "scope": "Fresh canonical production browser, original author scripts, frozen single SOCKS capture, launch through encoded document PNG; bulk URL authority encoding control/candidate/candidate/control comparison. Four pairs are below seven-pair acceptance.",
+  "source_and_runtime_path_verified": true,
+  "diagnostic_captures": 8,
+  "unprofiled_complete_captures": 8,
+  "rejected_cohort_captures": 2,
+  "all_complete_captures_pixels_and_content_exact": true,
+  "control": [
+    {
+      "lower": 32974970522,
+      "upper": 32974970522
+    },
+    {
+      "lower": 32980901831,
+      "upper": 32980901831
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 32859784394,
+      "upper": 32859784394
+    },
+    {
+      "lower": 33060555203,
+      "upper": 33060555203
+    }
+  ],
+  "control_median": 32977936176.5,
+  "candidate_median": 32960169798.5,
+  "median_reduction_fraction": 0.0005387352897073816,
+  "conservative_page_instruction_reduction": -85584681,
+  "page_instruction_credit": 0,
+  "broad_cadence_after": 0,
+  "work": [
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 376,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          19.3759765625,
+          20.240234375,
+          34.84814453125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          19.80126953125,
+          20.3115234375,
+          34.703125
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 408,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          18.6337890625,
+          20.0146484375,
+          34.26171875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          17.14599609375,
+          19.6513671875,
+          33.9658203125
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 388,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          17.14599609375,
+          19.6513671875,
+          33.9658203125
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          18.0009765625,
+          19.75927734375,
+          33.8369140625
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 384,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          18.14013671875,
+          19.6494140625,
+          33.38916015625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          17.48828125,
+          19.48876953125,
+          33.251953125
+        ]
+      }
+    }
+  ],
+  "qualification": "Later USV helper enabled in both authority variants. Four-pair diagnostic, below seven-pair Brave acceptance. Whole-page work and host conditions must be considered before attribution.",
+  "rejected_attempt": "First unprofiled cohort rejected a renderer belonging to foreign WIRED replay rooted at PID 86450, which exited before identity verification. Raw PID/argv/parent and failing identities retained. No gate changed; later cohort explicitly requires no other Brave root at preflight. Rejected counts not pooled into later statistics.",
+  "acceptance": false,
+  "target_fraction": "0.95",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-url-authority-diagnostic-20261104.json",
+      "sha256": "4b3f3cc51414e70bf50bec375f2bfa9b90e51e351b9c706c8088268d6e7d1c5d",
+      "bytes": 1605999
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-diagnostic-20261104-guard.json",
+      "sha256": "88e532ddb8712fc94e46e632623dbc2996f8816ee947f2f8f3702f6db7abaf2e",
+      "bytes": 1027
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-diagnostic-20261104-evidence.zip",
+      "sha256": "d4e492151ec1a7cc0867a21edfeef0fef4a029b830239f637c10e8df7a9621b1",
+      "bytes": 1309716
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-diagnostic-refresh-20261104.json",
+      "sha256": "5f0ef98c699146261e34fb311dab178ccd1ce591d5a712ee906d695a39a0c51e",
+      "bytes": 1482187
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-diagnostic-refresh-20261104-guard.json",
+      "sha256": "139556a2d2d8319b2a498dfb67b80666422695d34cc5b365e89f0f3201e4593d",
+      "bytes": 1077
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-diagnostic-refresh-20261104-evidence.zip",
+      "sha256": "2a1b4b3fd4b2478e36f89a167f8b3ec286a968d12feadb4b9943da7988309800",
+      "bytes": 1283874
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-matched-current-20261104.json",
+      "sha256": "af40c4e40dd9133ea19856996eeff0479541139e533dafaaf347d955b83e92e0",
+      "bytes": 1115184
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-matched-current-20261104-guard.json",
+      "sha256": "c9f6a86a4ead3598f4cfd1d23c20e632b3e0baa6b054732eba11ba61dc835799",
+      "bytes": 536
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-matched-current-20261104-evidence.zip",
+      "sha256": "a5c1b1b218b09ec3a1f1eebc28c3c34509c407607cc393cdf93d379bd33f2980",
+      "bytes": 645350
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-matched-quiet-20261104.json",
+      "sha256": "243ef6292d87e1a2f6f23e7df59e121cf35affb3162f51a3c8a5cb14a3e20055",
+      "bytes": 2216327
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-matched-quiet-20261104-guard.json",
+      "sha256": "c8f2656e6e1a483c78818dc505e9b989c24f52fc952e795aede3006f47293ac1",
+      "bytes": 1629
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-matched-quiet-20261104-evidence.zip",
+      "sha256": "7c541ba2243e38aa7981ef46d826d310aef95de84850a689c4fb940d733f328b",
+      "bytes": 2605062
+    },
+    {
+      "path": "docs/performance/chatgpt-url-authority-production-20261104-evidence.zip",
+      "sha256": "71e78dd6b33aef7aa9449237f3355f13b7be1eef7b3f302f67cdb273c8c441c0",
+      "bytes": 9273
+    }
+  ]
+}

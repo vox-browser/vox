@@ -1,0 +1,18 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-url-authority-20261104-2208/matched-current/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 1,
+  "adopted_processes": {
+    "86070": "Wed Nov  4 22:31:06 2026    ",
+    "86074": "Wed Nov  4 22:31:06 2026    ",
+    "87028": "Wed Nov  4 22:31:16 2026    "
+  },
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 1926381568,
+  "elapsed_seconds": 19.23048625,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}
