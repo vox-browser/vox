@@ -208,17 +208,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	for input in owned_inputs[1..] {
 		styled := input.node.as_node_with_style() or { continue }
 		values := state.try_get(styled) or { continue }
-		append_retained_block_snapshot(mut snapshots, styled, values)
-		mut snapshot := unsafe { &snapshots[snapshots.len - 1].values }
-		snapshot.line_boxes = own_inline_layout_lines(values.line_boxes)
-		// The small inline-end rectangle can otherwise retain a retired arena.
-		snapshot.inline_end_static_position_snapshot_ = unsafe { nil }
-		snapshot.inline_end_snapshot_arena_ = unsafe { nil }
-		if position := values.inline_end_static_position_rect() { snapshot.set_inline_end_static_position_rect(position) }
-		if mut rare := snapshot.rare_ {
-			rare.used_grid_column_line_names = own_grid_line_names(rare.used_grid_column_line_names)
-			rare.used_grid_row_line_names = own_grid_line_names(rare.used_grid_row_line_names)
-		}
+		append_owned_measurement_values(mut snapshots, styled, values)
 	}
 	cached := &GridMeasurementLayout{
 		key: GridMeasurementKey{ ...key, external_bases: key.external_bases.clone() }

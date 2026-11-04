@@ -1,0 +1,128 @@
+module layout
+
+import css
+import dom
+import os
+import platform
+
+const disable_flex_measurement_reuse = os.getenv('VOX_DISABLE_FLEX_MEASUREMENT_REUSE') != ''
+const flex_measurement_diagnostics = os.getenv('VOX_FLEX_MEASUREMENT_DIAGNOSTICS') != ''
+
+__global flex_measurement_reuse_reported bool
+
+struct FlexMeasurementQuestion {
+	// The complete grid measurement key also describes the scalar sizes,
+	// box-model edges and external percentage bases consumed by closed flex.
+	geometry GridMeasurementKey
+	parent u64
+	sibling int
+	flex_item bool
+	grid_item bool
+}
+
+@[heap]
+struct FlexMeasurementLayout {
+	key FlexMeasurementQuestion
+	inputs []RetainedInlineInput
+	values []RetainedBlockValues
+	font_generation u64
+	font_policy dom.FontRenderingPolicy
+	style_environment u64
+	result FormattingContextResult
+}
+
+fn flex_measurement_question(state &LayoutState, root &Node, used &UsedValues,
+	space AvailableSpace) FlexMeasurementQuestion {
+	return FlexMeasurementQuestion{
+		geometry: grid_measurement_key(state, root, used, space)
+		parent: if parent := root.parent() { u64(voidptr(parent)) } else { 0 }
+		sibling: root.index_in_parent_
+		flex_item: root.is_flex_item()
+		grid_item: root.is_grid_item()
+	}
+}
+
+fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
+	mut used UsedValues, mode LayoutMode, space AvailableSpace) FormattingContextResult {
+	mut pool := state.measurement_chunk_pool_
+	if disable_flex_measurement_reuse || mode != .normal || state.subtree_root == none
+		|| !space.width.is_definite() || used.containing_block_used_values_ == none
+		|| used.line_boxes.len != 0 || pool == unsafe { nil } || pool.closed
+		|| !retained_context_allows_flex(container) || container.display().is_inline_outside()
+		|| container.document().in_quirks_mode() || container.is_viewport()
+		|| container.is_root_element() || container.is_body() {
+		return run_uncached_flex_formatting_context_with_mode(mut state, container, mut used, mode, space)
+	}
+	node_key := u64(voidptr(container))
+	if pool.flex_measurement_rejections_[node_key] {
+		return run_uncached_flex_formatting_context_with_mode(mut state, container, mut used, mode, space)
+	}
+	key := flex_measurement_question(state, container, used, space)
+	font_generation := css.css_style_computer_for(container.document()).font_computer().environment_generation()
+	style_environment := container.document().style_environment_version()
+	for cached in pool.flex_measurements_[node_key] or { []&FlexMeasurementLayout{} } {
+		if cached.key != key || cached.font_generation != font_generation
+			|| cached.font_policy != container.document().font_rendering_policy()
+			|| cached.style_environment != style_environment
+			|| !grid_measurement_inputs_are_current(cached.inputs) { continue }
+		for index in 0 .. cached.values.len {
+			entry := unsafe { &cached.values[index] }
+			containing := if parent := entry.containing { state.get(parent) } else { none }
+			_ = state.restore_retained_values(entry.node, &entry.values, containing)
+		}
+		if flex_measurement_diagnostics && !flex_measurement_reuse_reported {
+			flex_measurement_reuse_reported = true
+			eprintln('Vox flex measurement: reused resolved within-pass geometry')
+		}
+		return cached.result
+	}
+	mut retained_inputs := platform.enter_retained_allocations()
+	mut inputs := []RetainedInlineInput{}
+	mut eligible := collect_grid_measurement_inputs(container, mut inputs,
+		mut pool.flex_measurement_rejections_)
+	// Start with ordinary text/flow descendants; image and SVG integrations keep
+	// their full algorithms even where the committed block cache supports them.
+	if inputs.any(it.node.is_replaced_box()) { eligible = false }
+	if !eligible { pool.flex_measurement_rejections_[node_key] = true }
+	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
+	if eligible {
+		for input in inputs { owned_inputs << RetainedInlineInput{ ...input, text: input.text.clone() } }
+	}
+	retained_inputs.finish()
+	result := run_uncached_flex_formatting_context_with_mode(mut state, container, mut used, mode, space)
+	// Normal flex publishes descendant geometry and the result. Never retain a
+	// case which also changes keyed root/ancestor geometry or root line storage.
+	if !eligible || used.line_boxes.len != 0
+		|| key != flex_measurement_question(state, container, used, space)
+		|| font_generation != css.css_style_computer_for(container.document()).font_computer().environment_generation()
+		|| style_environment != container.document().style_environment_version()
+		|| !grid_measurement_inputs_are_current(owned_inputs) { return result }
+	mut retained := platform.enter_retained_allocations()
+	defer { retained.finish() }
+	mut snapshots := []RetainedBlockValues{cap: owned_inputs.len - 1}
+	for input in owned_inputs[1..] {
+		styled := input.node.as_node_with_style() or { continue }
+		values := state.try_get(styled) or { continue }
+		append_owned_measurement_values(mut snapshots, styled, values)
+	}
+	cached := &FlexMeasurementLayout{
+		key: FlexMeasurementQuestion{
+			...key
+			geometry: GridMeasurementKey{
+				...key.geometry
+				external_bases: key.geometry.external_bases.clone()
+			}
+		}
+		inputs: owned_inputs
+		values: snapshots
+		font_generation: font_generation
+		font_policy: container.document().font_rendering_policy()
+		style_environment: style_environment
+		result: result
+	}
+	mut entries := pool.flex_measurements_[node_key] or { []&FlexMeasurementLayout{} }
+	if entries.len == 4 { entries.delete(0) }
+	entries << cached
+	pool.flex_measurements_[node_key] = entries
+	return result
+}

@@ -1,0 +1,200 @@
+module layout
+
+import css
+import dom
+import html
+import platform
+
+fn flex_measurement_test_node(document &dom.Document, id string) &Node {
+	element := document.get_element_by_id(id) or { panic('missing '+id) }
+	return unsafe { &Node(element.as_node().unsafe_layout_node() or { panic('missing layout') }.real_layout_handle()) }
+}
+
+fn flex_measurement_test_prepare(mut state LayoutState, root &Node, width int, height int,
+	change string) &UsedValues {
+	styled := root.as_node_with_style() or { panic('style') }
+	parent := root.containing_block() or { panic('parent') }
+	mut ancestors := LayoutState.new()
+	mut parent_values := ancestors.get_mutable(unsafe { &NodeWithStyle(parent) })
+	parent_values.set_content_width(CSSPixels.new(if change == 'parent-width' { 501 } else { 500 }))
+	parent_values.set_content_height(CSSPixels.new(if change == 'parent-height' { 301 } else { 300 }))
+	parent_values.set_has_definite_height(true)
+	populate_intrinsic_containing_block_chain(mut state, mut ancestors, root)
+	parent_values = state.get_mutable(unsafe { &NodeWithStyle(parent) })
+	mut used := state.get_mutable(styled)
+	used.set_containing_block_used_values(parent_values)
+	used.set_content_width(CSSPixels.new(width))
+	used.set_content_height(CSSPixels.new(height))
+	used.set_has_definite_height(height > 0)
+	used.offset = css.CSSPixelPoint.from_values(11, 13)
+	used.set_relative_inset_basis(CSSPixels.new(731), CSSPixels.new(919))
+	resolve_box_model_edges(root.computed_values(), mut used, parent_values.content_width().to_double())
+	if change == 'constraint' { used.width_constraint = .min_content }
+	if change == 'edge' { used.padding_left = used.padding_left.plus(CSSPixels.new(1)) }
+	if change == 'ancestor' {
+		outer := unsafe { &Node(parent) }.containing_block() or { panic('outer') }
+		mut values := state.get_mutable(unsafe { &NodeWithStyle(outer) })
+		values.set_content_width(CSSPixels.new(800))
+	}
+	return used
+}
+
+fn flex_measurement_test_geometry(state &LayoutState, root &Node) []string {
+	mut result := []string{}
+	if styled := root.as_node_with_style() {
+		if used := state.try_get(styled) {
+			result << '${used.content_width()} ${used.content_height()} ${used.has_definite_width()} ${used.has_definite_height()} ${used.offset} ${used.relative_inset_basis_width()} ${used.relative_inset_basis_height()}'
+			for line in used.line_boxes {
+				result << '${line.width()} ${line.height()} ${line.baseline()}'
+				for fragment in line.fragments_ {
+					result << '${fragment.start()} ${fragment.length_in_code_units()} ${fragment.offset()} ${fragment.inline_length()}'
+					if run := fragment.glyph_run() {
+						result << '${u64(voidptr(run.font()))} ${run.glyphs()} ${run.glyph_positions()} ${run.bounding_box()}'
+					}
+				}
+			}
+		}
+	}
+	for child in root.children() { result << flex_measurement_test_geometry(state, child) }
+	return result
+}
+
+fn flex_measurement_test_compare(mut source LayoutState, root &Node, width int, height int,
+	mode LayoutMode, change string) bool {
+	styled := root.as_node_with_style() or { panic('style') }
+	space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(width)),
+		if height > 0 { AvailableSize.make_definite(CSSPixels.new(height)) } else { AvailableSize.make_indefinite() })
+	mut probe := source.new_measurement_for_subtree(styled)
+	mut used := flex_measurement_test_prepare(mut probe, root, width, height, change)
+	actual := run_flex_formatting_context_with_mode(mut probe, root, mut used, mode, space)
+	assert used.offset == css.CSSPixelPoint.from_values(11, 13)
+	assert (used.relative_inset_basis_width() or { panic('basis') }) == CSSPixels.new(731)
+	assert (used.relative_inset_basis_height() or { panic('basis') }) == CSSPixels.new(919)
+	mut snapshots := platform.enter_retained_allocations()
+	geometry := flex_measurement_test_geometry(probe, root)
+	snapshots.finish()
+	mut reused := false
+	if source.measurement_chunk_pool_ != unsafe { nil } {
+		for entry in source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} } {
+			for snapshot in entry.values {
+				if snapshot.values.line_boxes.len == 0 { continue }
+				if current := probe.try_get(snapshot.node) {
+					if current.line_boxes.data == snapshot.values.line_boxes.data {
+						reused = true
+						mut writable := probe.get_mutable(snapshot.node)
+						writable.line_boxes[0].fragments_[0].inline_length_ = CSSPixels.new(999)
+						assert snapshot.values.line_boxes[0].fragments_[0].inline_length_ != CSSPixels.new(999)
+					}
+				}
+			}
+		}
+	}
+	probe.release_measurement()
+	gc_collect()
+	mut oracle := LayoutState.new_for_subtree(styled)
+	mut expected := flex_measurement_test_prepare(mut oracle, root, width, height, change)
+	result := run_uncached_flex_formatting_context_with_mode(mut oracle, root, mut expected, mode, space)
+	assert actual == result
+	assert geometry == flex_measurement_test_geometry(oracle, root)
+	oracle.release_measurement()
+	return reused
+}
+
+fn test_flex_measurement_owns_replayed_geometry_after_scratch_release() {
+	for rules in ['gap:7px', 'flex-wrap:wrap;direction:rtl;gap:3px',
+		'flex-direction:column;gap:2px', 'flex-direction:column;flex-wrap:wrap;gap:3px'] {
+		// CSS ignores float on a flex item; it remains eligible normal flow.
+		mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex;${rules}"><p style="float:left">Wrapping words alpha beta gamma 😀 á אבג.</p><p>More text to wrap.</p></section></main>')
+		document.set_font_rendering_policy(.chromium)
+		document.enable_native_storage()
+		mut owner := document.enter_native_storage()
+		defer { owner.finish(); document.finalize(); document.release_native_storage() }
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := flex_measurement_test_node(document, 'flex')
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		source.measurement_chunk_pool_.scratch_enabled_ = true
+		for height in [0, 160] {
+			assert !flex_measurement_test_compare(mut source, root, 180, height, .normal, '')
+			for _ in 0 .. 3 {
+				assert flex_measurement_test_compare(mut source, root, 180, height, .normal, '') == !disable_flex_measurement_reuse
+			}
+		}
+		pool := source.measurement_chunk_pool_
+		source.release_measurement_chunk_pool()
+		assert pool.closed && pool.flex_measurements_.len == 0 && pool.flex_measurement_rejections_.len == 0
+	}
+}
+
+fn test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry() {
+	for change in ['width', 'height', 'parent-width', 'parent-height', 'ancestor', 'constraint',
+		'edge', 'text', 'style', 'font', 'environment', 'tree', 'mode'] {
+		mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex;gap:7px"><p id="item">Original wrapping words alpha beta gamma.</p><p>Other content.</p></section></main>')
+		defer { document.finalize() }
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := flex_measurement_test_node(document, 'flex')
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
+		assert flex_measurement_test_compare(mut source, root, 180, 0, .normal, '') == !disable_flex_measurement_reuse
+		if change == 'text' {
+			mut text := flex_measurement_test_node(document, 'item').children()[0].as_text_node()?
+			mut data := text.dom_node()?.as_character_data()?
+			data.set_data('Changed text with different wrapping and extraordinary words.')
+			text.invalidate_text_for_rendering()
+		}
+		if change == 'style' {
+			mut element := document.create_element('p')!
+			element.set_attribute_value('style', 'display:block;font-size:23px')
+			mut item := flex_measurement_test_node(document, 'item').as_node_with_style()?
+			item.apply_style(css.css_style_computer_for(document).compute_style(dom.AbstractElement.new(element, none)))
+		}
+		if change == 'font' {
+			mut computer := css.css_style_computer_for(document).font_computer()
+			computer.did_load_font('FlexMeasurementFace')
+		}
+		if change == 'environment' { document.bump_style_environment_version() }
+		if change == 'tree' {
+			mut mutable_root := unsafe { &Node(root) }
+			mutable_root.append_child(unsafe { &Node(TextNode.new(document, document.create_text_node('extra').as_node(), 'extra')) })
+			mut top := unsafe { &Node(root) }
+			for { parent := top.parent() or { break }; top = unsafe { &Node(parent) } }
+			assign_layout_indexes(top)
+			recompute_containing_blocks(top)
+		}
+		assert !flex_measurement_test_compare(mut source, root,
+			if change == 'width' { 181 } else { 180 }, if change == 'height' { 160 } else { 0 },
+			if change == 'mode' { LayoutMode.intrinsic_sizing } else { LayoutMode.normal }, change)
+		for width in [80, 100, 120, 140, 160, 180] {
+			_ = flex_measurement_test_compare(mut source, root, width, 0, .normal, '')
+		}
+		assert (source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} }).len <= 4
+		source.release_measurement_chunk_pool()
+	}
+}
+
+fn test_flex_measurement_keeps_committed_unpooled_and_specialized_layout_uncached() {
+	for contents in ['<div style="position:absolute">Positioned.</div>',
+		'<div style="position:relative">Relative.</div>', '<div><div style="float:left">Float in ordinary flow.</div></div>',
+		'<svg width="20" height="20"><rect width="10" height="10"/></svg>',
+		'<p style="max-lines:1;continue:collapse">Clamped content.</p>', '<input value="Control">',
+		'<img width="20" height="20">', '<p>Plain content.</p>'] {
+		mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex">${contents}<p>Other content.</p></section></main>')
+		defer { document.finalize() }
+		_ = layout_document_typed_in_viewport(document, 500, 400)
+		root := flex_measurement_test_node(document, 'flex')
+		mut source := LayoutState.new()
+		assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, '')
+		source.enable_measurement_chunk_pool()
+		if contents != '<p>Plain content.</p>' {
+			for _ in 0 .. 2 {
+				assert !flex_measurement_test_compare(mut source, root, 180, 0, .normal, ''), contents
+			}
+		}
+		mut used := flex_measurement_test_prepare(mut source, root, 180, 0, '')
+		space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(180)), AvailableSize.make_indefinite())
+		_ = run_flex_formatting_context_with_mode(mut source, root, mut used, .normal, space)
+		assert source.measurement_chunk_pool_.flex_measurements_.len == 0
+		source.release_measurement_chunk_pool()
+	}
+}
