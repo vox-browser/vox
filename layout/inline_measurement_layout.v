@@ -7,11 +7,8 @@ import platform
 
 const disable_inline_measurement_reuse = os.getenv('VOX_DISABLE_INLINE_MEASUREMENT_REUSE') != ''
 const inline_measurement_diagnostics = os.getenv('VOX_INLINE_MEASUREMENT_DIAGNOSTICS') != ''
-const disable_inline_tree_measurement_reuse = os.getenv('VOX_DISABLE_INLINE_TREE_MEASUREMENT_REUSE') != ''
-const inline_tree_measurement_diagnostics = os.getenv('VOX_INLINE_TREE_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global inline_measurement_reuse_reported bool
-__global inline_tree_measurement_reuse_reported bool
 
 struct InlineMeasurementKey {
 	mode LayoutMode
@@ -30,8 +27,6 @@ struct InlineMeasurementKey {
 @[heap]
 struct InlineMeasurementLayout {
 	key InlineMeasurementKey
-	tree_geometry ?GridMeasurementKey
-	values []RetainedBlockValues
 	inputs []RetainedInlineInput
 	font_generation u64
 	font_policy dom.FontRenderingPolicy
@@ -65,7 +60,7 @@ fn inline_measurement_root_is_closed(root &Node, context ?&BlockFormattingContex
 		return false
 	}
 	for child in root.children() {
-		if disable_inline_tree_measurement_reuse && !child.is_text_node() { return false }
+		if !child.is_text_node() { return false }
 	}
 	if bfc := context {
 		if bfc.floating_boxes.len != 0 || bfc.has_line_clamp()
@@ -76,14 +71,6 @@ fn inline_measurement_root_is_closed(root &Node, context ?&BlockFormattingContex
 		}
 	}
 	return true
-}
-
-fn inline_measurement_tree_geometry_matches(a ?GridMeasurementKey, b ?GridMeasurementKey) bool {
-	if first := a {
-		second := b or { return false }
-		return first == second
-	}
-	return b == none
 }
 
 fn inline_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
@@ -126,33 +113,16 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 			mut used, mode, space, context, width_only)
 	}
 	key := inline_measurement_key(used, mode, space, width_only)
-	has_inline_tree := root.children().any(!it.is_text_node())
-	if has_inline_tree && used.containing_block_used_values_ == none {
-		return run_uncached_inline_formatting_context_for_width(mut state, containing_block,
-			mut used, mode, space, context, width_only)
-	}
-	// Ordinary inline descendants publish their own used edges and fragment
-	// coordinates. Their replay also needs the root's resolved edges and the
-	// external containing-block bases, beyond the original text-only key.
-	tree_geometry := if has_inline_tree {
-		?GridMeasurementKey(grid_measurement_key(state, root, used, space))
-	} else { none }
 	node_key := u64(voidptr(root))
 	font_generation := css.css_style_computer_for(root.document()).font_computer().environment_generation()
 	previous := pool.inline_measurements_[node_key] or { []&InlineMeasurementLayout{} }
 	for cached in previous {
 		if cached.key == key && cached.font_generation == font_generation
-			&& inline_measurement_tree_geometry_matches(cached.tree_geometry, tree_geometry)
 			&& cached.font_policy == root.document().font_rendering_policy()
 			&& cached.style_environment == root.document().style_environment_version()
 			&& inline_measurement_inputs_are_current(cached.inputs) {
 			if !key.definite_height && cached.initial_height != used.content_height() {
 				report_indefinite_inline_measurement_height(root)
-			}
-			for index in 0 .. cached.values.len {
-				entry := unsafe { &cached.values[index] }
-				containing := if parent := entry.containing { state.get(parent) } else { none }
-				_ = state.restore_retained_values(entry.node, &entry.values, containing)
 			}
 			used.borrow_retained_line_boxes(cached.lines)
 			if !width_only {
@@ -166,10 +136,6 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 				eprintln('Vox inline measurement: reused closed text layout within pass')
 			}
 			if committed { report_committed_inline_measurement_reuse() }
-			if has_inline_tree && inline_tree_measurement_diagnostics && !inline_tree_measurement_reuse_reported {
-				inline_tree_measurement_reuse_reported = true
-				eprintln('Vox inline tree measurement: reused owned styled inline geometry')
-			}
 			return cached.result
 		}
 	}
@@ -186,9 +152,6 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	if used.line_boxes.len == 0 || !used.line_boxes.any(it.fragments_.len > 0) {
 		return result
 	}
-	if geometry := tree_geometry {
-		if geometry != grid_measurement_key(state, root, used, space) { return result }
-	}
 	// The ordinary text shaping caches retain their own payloads. Copy line
 	// fragments and glyph runs explicitly; none may point into this probe's arena.
 	mut retained := platform.enter_retained_allocations()
@@ -199,20 +162,8 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	for input in inputs {
 		owned_inputs << RetainedInlineInput{ ...input, text: input.text.clone() }
 	}
-	mut snapshots := []RetainedBlockValues{}
-	if has_inline_tree {
-		for input in owned_inputs[1..] {
-			styled := input.node.as_node_with_style() or { continue }
-			values := state.try_get(styled) or { continue }
-			append_owned_measurement_values(mut snapshots, styled, values)
-		}
-	}
 	cached := &InlineMeasurementLayout{
 		key: key
-		tree_geometry: if geometry := tree_geometry {
-			?GridMeasurementKey(GridMeasurementKey{ ...geometry, external_bases: geometry.external_bases.clone() })
-		} else { none }
-		values: snapshots
 		inputs: owned_inputs
 		font_generation: css.css_style_computer_for(root.document()).font_computer().environment_generation()
 		font_policy: root.document().font_rendering_policy()
