@@ -1,5 +1,60 @@
 # Hacker News instructions against Brave, 2026-11-01
 
+## 2026-11-04: toward 1.8B
+
+The 1,800,000,000 target is **not met**. A complete seven-pair cohort on shared
+build `ad0e4e39` (receipt `20261104-123650-0a409f4e`, HEAD `b35fac88d`) measures a
+**Vox median of 1,918,074,453** (maximum 1,927,596,995) against a **Brave median
+lower bound of 8,056,201,640** (minimum 7,939,314,934): 76.19% fewer. All 14
+launches pass pixels, stories, ownership and exits (`passed: true`, guard exit 0);
+the conservative maximum-Vox/minimum-Brave ratio is 0.2428. One-minute host load
+was 36–48 while other sessions compiled. The previous section's cohorts measured
+2,011,557,697–2,048,165,192; the shared builds include concurrent work.
+
+Five commits:
+
+- `1bc242c98` creates a curl connection's multi handle with its first transfer.
+  The XMLHttpRequest and fetch hosts built a connection for every scripted
+  document, which loaded the bundled libcurl with OpenSSL, nghttp2/3 and
+  compression libraries; Hacker News never makes a curl transfer. Five Vox-only
+  launches: 2,021,948,270 → 1,923,118,586 median (with concurrent commits).
+- `301f49be4` collects descendants directly for `query_selector_all(root, '*')`,
+  which native script hosts run twelve times per load (about 10M → 1M).
+- `486ea20d4` unrolls the filter worker's trie checksum (5.06 → 3.05 instructions
+  per word, identical results).
+- `a1f7527e0` writes cache header/status companions in place and drops the
+  page-markup cache, unread since `e9c63bd9f`. Probed writes: 21 calls 36.0M → 19
+  calls 24.6M. Bodies and redirect URLs keep atomic replacement.
+- `b512ff759` builds the WebGL interfaces with their first context or global read,
+  using intrinsics captured during the bootstrap. In JavaScriptCore sampling the
+  eager build was 16.3% of all JavaScript execution on this page.
+
+**Private API caching is unavailable.** `JSScript` with a bytecode cache fails
+with "Cache directory … is not a data vault"; data vaults need a restricted Apple
+entitlement. The exported C++ bytecode functions would need a `SourceProvider`
+subclass matching an unpublished, per-release ABI. Removing the factory's outer
+function does not help either: its pre-parse costs 19.3M, but parsing the same
+body as a top-level block costs 21.6M.
+
+**Other findings.** A `v -profile` build (main thread, C -O1) supplied call counts;
+instruction-accurate attribution came from per-thread lldb probes and 1 ms samples.
+With JIT enabled, `JSGlobalContextCreate` costs 37.5M versus 8M without, mostly
+eager time-zone canonicalization in `VM::VM`; `forceMiniVMMode` skips it but an
+A/B shows no net gain (1,913,376,092 vs 1,914,102,974 medians). Remaining measured
+costs: AppKit startup through the first frame ~496M (Writing Tools ~54M still moves
+to `NSTextInputContext`); JavaScript setup 185M (factory 88M, JSC context 36.7M);
+style 130.6M; table shrink-to-fit 68.5M, mostly min-content inline layout of every
+cell; final paint 156M; the filter worker ~205M (engine parse/compile ~58M). UI2
+reads accessibility labels before overriding them (13.1M on first call), but
+`nil` does not restore AppKit defaults, so that read stays.
+
+Raw evidence is under `Build/hn-1800-20261104/`; the
+[ledger](benchmark-results/hacker-news-1800-attempt-2026-11-04.json) retains the
+cohort, Vox-only trials, probes, private-API results and rejected experiments.
+Focused tests pass in default and prealloc modes (curl transports, XHR/fetch
+hosts, selector queries, native snapshot checks, nine WebGL files, three
+main-module cache/navigation files); broad suites have not run.
+
 ## 2026-11-04: 2.1B reached
 
 The 2,100,000,000 target is met by two complete seven-pair cohorts:

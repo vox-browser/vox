@@ -1,0 +1,755 @@
+{
+ "date": "2026-11-04",
+ "request": "Drop the archived Hacker News launch-to-PNG Vox median to 1.8B; try private-API bytecode caching or a bootstrap rework; use v -profile",
+ "target": 1800000000,
+ "target_met": false,
+ "scope": "Same as hacker-news-window-indexing-2026-11-04.json: exclusive coalition counts through encoded document PNG",
+ "previous": {
+  "ledger": "hacker-news-2100-reached-2026-11-04.json",
+  "vox_medians": [
+   2021169989,
+   2048165192,
+   2011557697
+  ]
+ },
+ "commits": {
+  "1bc242c98": "Initialize libcurl with a connection's first transfer",
+  "301f49be4": "Collect descendants directly for the universal query selector",
+  "486ea20d4": "adblock: unroll the native trie checksum loop",
+  "a1f7527e0": "Write cache metadata in place and stop caching unread pages",
+  "b512ff759": "Build the WebGL interfaces with their first use"
+ },
+ "cohort": {
+  "build": {
+   "executable_sha256_prefix": "ad0e4e39",
+   "receipt": "20261104-123650-0a409f4e",
+   "head": "b35fac88d",
+   "note": "Shared dirty-tree build containing all five commits and concurrent sessions' work"
+  },
+  "vox_executable_sha256": "ad0e4e39219c93832cbc82541028c4dd17e27abfb929b1092a974dc397c7c4d4",
+  "rows": [
+   {
+    "pair": 1,
+    "engine": "vox",
+    "exit": 0,
+    "launch_lower": 1918120445,
+    "launch_upper": 1918120445,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+    "load_before": [
+     47.7841796875,
+     48.19970703125,
+     43.17919921875
+    ],
+    "started_unix": 1793785991.6111062
+   },
+   {
+    "pair": 1,
+    "engine": "brave",
+    "exit": 0,
+    "launch_lower": 8069286126,
+    "launch_upper": 8089856607,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+    "load_before": [
+     49.08251953125,
+     48.4619140625,
+     43.30078125
+    ],
+    "started_unix": 1793785996.448232
+   },
+   {
+    "pair": 2,
+    "engine": "vox",
+    "exit": 0,
+    "launch_lower": 1927596995,
+    "launch_upper": 1927596995,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+    "load_before": [
+     46.94287109375,
+     48.0283203125,
+     43.236328125
+    ],
+    "started_unix": 1793786010.118049
+   },
+   {
+    "pair": 2,
+    "engine": "brave",
+    "exit": 0,
+    "launch_lower": 8198279984,
+    "launch_upper": 8218441218,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+    "load_before": [
+     48.59228515625,
+     48.36669921875,
+     43.326171875
+    ],
+    "started_unix": 1793786003.117456
+   },
+   {
+    "pair": 3,
+    "engine": "vox",
+    "exit": 0,
+    "launch_lower": 1918074453,
+    "launch_upper": 1918074453,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+    "load_before": [
+     45.345703125,
+     47.67919921875,
+     43.14111328125
+    ],
+    "started_unix": 1793786015.2146208
+   },
+   {
+    "pair": 3,
+    "engine": "brave",
+    "exit": 0,
+    "launch_lower": 8185692921,
+    "launch_upper": 8198911173,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+    "load_before": [
+     45.71826171875,
+     47.71728515625,
+     43.18115234375
+    ],
+    "started_unix": 1793786020.365736
+   },
+   {
+    "pair": 4,
+    "engine": "vox",
+    "exit": 0,
+    "launch_lower": 1904844140,
+    "launch_upper": 1904844140,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+    "load_before": [
+     41.9853515625,
+     46.7724609375,
+     42.92138671875
+    ],
+    "started_unix": 1793786033.320354
+   },
+   {
+    "pair": 4,
+    "engine": "brave",
+    "exit": 0,
+    "launch_lower": 7939314934,
+    "launch_upper": 7959872405,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+    "load_before": [
+     43.81884765625,
+     47.2900390625,
+     43.056640625
+    ],
+    "started_unix": 1793786026.431423
+   },
+   {
+    "pair": 5,
+    "engine": "vox",
+    "exit": 0,
+    "launch_lower": 1905136785,
+    "launch_upper": 1905136785,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+    "load_before": [
+     40.46484375,
+     46.37744140625,
+     42.80419921875
+    ],
+    "started_unix": 1793786037.8716302
+   },
+   {
+    "pair": 5,
+    "engine": "brave",
+    "exit": 0,
+    "launch_lower": 7957698163,
+    "launch_upper": 7976929354,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+    "load_before": [
+     40.46484375,
+     46.37744140625,
+     42.80419921875
+    ],
+    "started_unix": 1793786042.490342
+   },
+   {
+    "pair": 6,
+    "engine": "vox",
+    "exit": 0,
+    "launch_lower": 1909494433,
+    "launch_upper": 1909494433,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+    "load_before": [
+     37.74951171875,
+     45.53076171875,
+     42.56689453125
+    ],
+    "started_unix": 1793786053.92909
+   },
+   {
+    "pair": 6,
+    "engine": "brave",
+    "exit": 0,
+    "launch_lower": 7962706706,
+    "launch_upper": 7964692059,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+    "load_before": [
+     39.64306640625,
+     46.02978515625,
+     42.7236328125
+    ],
+    "started_unix": 1793786048.350893
+   },
+   {
+    "pair": 7,
+    "engine": "vox",
+    "exit": 0,
+    "launch_lower": 1918320261,
+    "launch_upper": 1918320261,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+    "load_before": [
+     36.087890625,
+     45.056640625,
+     42.4169921875
+    ],
+    "started_unix": 1793786058.143002
+   },
+   {
+    "pair": 7,
+    "engine": "brave",
+    "exit": 0,
+    "launch_lower": 8056201640,
+    "launch_upper": 8072006487,
+    "pixels_exact": true,
+    "content_exact": true,
+    "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+    "load_before": [
+     36.087890625,
+     45.056640625,
+     42.4169921875
+    ],
+    "started_unix": 1793786062.232705
+   }
+  ],
+  "vox_median": 1918074453,
+  "vox_max": 1927596995,
+  "brave_median_lower": 8056201640,
+  "brave_min_lower": 7939314934,
+  "gate_10x_vox_max_le_9x_brave_min": true,
+  "tool_summary": {
+   "passed": true,
+   "worst_vox_over_best_brave": 0.24279135051628875
+  },
+  "guard": {
+   "child_exit_code": 0,
+   "reason": "completed"
+  }
+ },
+ "vox_only_trials": {
+  "note": "Vox-only driver with the HN tool's gates; per-process lines are a polled lower bound; three ad0e4e39 trials sampled an unrelated process",
+  "f492d6c7_before": [
+   {
+    "variant": "base",
+    "total": 2031254511,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 14.60546875,
+    "Vox": 1752744072,
+    "VoxAdblockWorker": 213327091
+   },
+   {
+    "variant": "base",
+    "total": 2011903521,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 14.716796875,
+    "Vox": 1735248743,
+    "VoxAdblockWorker": 209038355
+   },
+   {
+    "variant": "base",
+    "total": 2021948270,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 14.7392578125,
+    "Vox": 1743458706,
+    "VoxAdblockWorker": 211167969
+   }
+  ],
+  "cbcd8202_lazy_curl": [
+   {
+    "variant": "base",
+    "total": 1954786927,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 11.1103515625,
+    "Vox": 1730601061,
+    "VoxAdblockWorker": 214862542
+   },
+   {
+    "variant": "base",
+    "total": 1920398915,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 11.10107421875,
+    "Vox": 1644634930,
+    "VoxAdblockWorker": 210496149
+   },
+   {
+    "variant": "base",
+    "total": 1954122591,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 11.8935546875,
+    "Vox": 1679437091,
+    "VoxAdblockWorker": 209659538
+   },
+   {
+    "variant": "base",
+    "total": 1923118586,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 11.42138671875,
+    "Vox": 1647377534,
+    "VoxAdblockWorker": 210400584
+   },
+   {
+    "variant": "base",
+    "total": 1916837790,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 10.98681640625,
+    "Vox": 1642698837,
+    "VoxAdblockWorker": 208773918
+   }
+  ],
+  "f64d4b89_selector_checksum": [
+   {
+    "variant": "base",
+    "total": 1951948948,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 50.8173828125,
+    "Vox": 1676990242,
+    "VoxAdblockWorker": 209745511
+   },
+   {
+    "variant": "base",
+    "total": 1941628136,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 52.11279296875,
+    "Vox": 1668242893,
+    "VoxAdblockWorker": 205899918
+   },
+   {
+    "variant": "base",
+    "total": 1951711612,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 53.625,
+    "Vox": 1677818198,
+    "VoxAdblockWorker": 206257132
+   },
+   {
+    "variant": "base",
+    "total": 1950599558,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 53.81494140625,
+    "Vox": 1674899961,
+    "VoxAdblockWorker": 207807541
+   },
+   {
+    "variant": "base",
+    "total": 1950731092,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 54.47021484375,
+    "Vox": 1675083414,
+    "VoxAdblockWorker": 208266869
+   }
+  ],
+  "ad0e4e39_all": [
+   {
+    "variant": "base",
+    "total": 1913697585,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 35.3828125
+   },
+   {
+    "variant": "base",
+    "total": 1895979251,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 36.23291015625
+   },
+   {
+    "variant": "base",
+    "total": 1899745313,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 36.9345703125
+   },
+   {
+    "variant": "base",
+    "total": 1908932268,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 37.8203125,
+    "Vox": 1638463557,
+    "VoxAdblockWorker": 205259502
+   },
+   {
+    "variant": "base",
+    "total": 1905170115,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 37.8203125,
+    "Vox": 1633910797,
+    "VoxAdblockWorker": 205954046
+   }
+  ],
+  "mini_vm_mode_ab": [
+   {
+    "variant": "base",
+    "total": 1917751084,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 48.99755859375
+   },
+   {
+    "variant": "mini",
+    "total": 1914102974,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 48.99755859375
+   },
+   {
+    "variant": "mini",
+    "total": 1914833519,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 49.63818359375
+   },
+   {
+    "variant": "base",
+    "total": 1913376092,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 50.5478515625
+   },
+   {
+    "variant": "base",
+    "total": 1912498541,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 51.625
+   },
+   {
+    "variant": "mini",
+    "total": 1909066067,
+    "pixels_exact": true,
+    "content_exact": true,
+    "ownership": true,
+    "load": 50.77392578125
+   }
+  ]
+ },
+ "attribution": {
+  "lazy_libcurl": "The XHR and fetch hosts created a curl connection per scripted document, loading bundled libcurl with OpenSSL, nghttp2/3 and compression libraries (main-thread samples ~45M; median 2,021,948,270 -> 1,923,118,586 including concurrent commits). The browser process now loads only the system libcurl that Apple frameworks link.",
+  "universal_selector": {
+   "note": "Inclusive lldb counts per selector on ad0e4e39-era builds; ~0.1M debugger overhead per call",
+   "before_top12_calls_M": 10.7,
+   "after_star_calls": {
+    "css__query_selector_all": [
+     798374,
+     266226,
+     949528,
+     533011,
+     1259207,
+     552262,
+     298678,
+     301683,
+     779871,
+     350202,
+     391640,
+     120126,
+     306353,
+     270036,
+     478221,
+     267463,
+     103998,
+     687706,
+     293473,
+     270194,
+     190397,
+     192779,
+     204922,
+     193678,
+     217811,
+     188623,
+     216717,
+     291099,
+     280886,
+     392709,
+     292977,
+     265369,
+     280674,
+     113739,
+     2049021,
+     194300,
+     112115,
+     109706,
+     173164,
+     152459,
+     112780,
+     197615,
+     267220,
+     113529,
+     706721,
+     107326,
+     345945,
+     348611,
+     97582
+    ]
+   }
+  },
+  "trie_checksum": "Worker loop compiled to 5.06 -> 3.05 instructions per word (micro-benchmark, equal results); worker median ~210M -> ~207M.",
+  "cache_writes": {
+   "before": [
+    2609089,
+    1616240,
+    2477584,
+    746781,
+    1589527,
+    1634710,
+    1668470,
+    1607218,
+    1834030,
+    1644103,
+    1648393,
+    1712956,
+    1707813,
+    1804652,
+    1780279,
+    1702748,
+    1719718,
+    1569978,
+    1603674,
+    1658063,
+    1671489
+   ],
+   "after": {
+    "try_write_browser_cache_entry": [
+     776834,
+     2589293,
+     1774051,
+     1633983,
+     1627053,
+     1669521,
+     1615656,
+     1806703,
+     1674940,
+     1666522
+    ],
+    "try_write_browser_cache_metadata": [
+     860864,
+     966778,
+     856441,
+     881922,
+     863783,
+     826892,
+     836851,
+     863611,
+     812770
+    ]
+   },
+   "note": "21 writes, 36.0M; temporary-file write plus rename measured 1.3M instructions, direct write 0.7M (fsbench); the page cache was write-only since e9c63bd9f"
+  },
+  "webgl": "JavaScriptCore sampling (50 us, six runs) put the WebGL interface builder at 16.3% of all JavaScript execution samples on HN"
+ },
+ "profiles": {
+  "v_profile": "Build/hn-1800-20261104/vprofile: -profile -profile-no-inline, main thread only, C -O1; used for call counts (e.g. 40,462 query traversal calls, 502 table cell measures, 371,832 longhand checks)",
+  "coarse_inclusive": {
+   "BrowserApp__mount_ui2_chrome": [
+    65149596
+   ],
+   "BrowserApp__poll_javascript_tasks": [
+    107636,
+    98983,
+    113957,
+    316516350
+   ],
+   "BrowserApp__draw": [
+    9661096,
+    20612897,
+    635370278,
+    8023056,
+    156369178
+   ],
+   "try_write_browser_cache_entry": [
+    2609089,
+    1616240,
+    2477584,
+    746781,
+    1589527,
+    1634710,
+    1668470,
+    1607218,
+    1834030,
+    1644103,
+    1648393,
+    1712956,
+    1707813,
+    1804652,
+    1780279,
+    1702748,
+    1719718,
+    1569978,
+    1603674,
+    1658063,
+    1671489
+   ],
+   "parse_browser_navigation_document_input_with_source": [
+    32100104
+   ],
+   "BrowserApp__preload_initial_document_resources": [
+    16127169
+   ],
+   "__v3_internal_symbol_static_62726f777365726a732e52756e74696d6540737461746963406372656174655f776974685f676c6f62616c": [
+    36712479
+   ],
+   "browserjs__Runtime__initialize_host_from_json": [
+    88011243
+   ],
+   "run_document_script_sources_with_media_loader": [
+    185438246
+   ],
+   "css__update_style_for_document_from_upstream": [
+    136530539,
+    6679376,
+    801973
+   ],
+   "layout__run_document_layout_with_renderer_mode": [
+    177471916,
+    375196,
+    9095087,
+    3159255
+   ],
+   "native_encode_snapshot_png": [
+    48186048
+   ]
+  },
+  "layout_inclusive": {
+   "layout__prepare_initial_resource_styles": [
+    130565045
+   ],
+   "layout__append_missing_table_cells": [
+    237087,
+    119784,
+    9232858,
+    114104
+   ],
+   "layout__build_layout_tree_from_computed_styles": [
+    59338481,
+    1502033,
+    1245645
+   ],
+   "layout__compute_table_wrapper_content_width": [
+    68450468,
+    136608,
+    1835979,
+    126898
+   ],
+   "layout__run_table_formatting_context": [
+    664190,
+    13784944,
+    356666,
+    20009559
+   ],
+   "layout__layout_viewport": [
+    90904834,
+    191432,
+    150785
+   ],
+   "layout__commit_dom_layout_attachment": [
+    6681735,
+    110687,
+    106086
+   ],
+   "layout__finish_document_layout": [
+    101498931,
+    771443,
+    760238
+   ]
+  }
+ },
+ "private_api_findings": {
+  "jsscript_bytecode_cache": "+[JSScript scriptOfType:withSource:andSourceURL:andBytecodeCache:inVirtualMachine:error:] fails with \"Cache directory ... is not a data vault\"; creating a data vault needs a restricted Apple entitlement",
+  "cpp_exports": "JSC::generateProgramBytecode, encodeCodeBlock and CachedBytecode are exported, but consuming a cache needs a SourceProvider subclass matching the unpublished per-OS-release C++ ABI",
+  "bootstrap_parse": "The 241,996-byte factory: evaluate (pre-parse) 19.3M, call until first native dependency 16.4M; a top-level block parse costs 21.6M, so removing the outer function would not save the pre-parse",
+  "vm_creation": "With JIT enabled JSGlobalContextCreate costs 37.5M versus 8M without; most is eager time-zone canonicalization in VM::VM. Only forceMiniVMMode skips it, and an A/B on HN showed no net gain (medians 1,913,376,092 base vs 1,914,102,974 mini)."
+ },
+ "rejected": {
+  "writing_tools": "Still moves to +[NSTextInputContext initialize] via -[NSApplication updateWindows]",
+  "accessibility_getter": "UI2 reads accessibilityLabel/Role before overriding (13.1M first call); nil does not restore AppKit defaults, so skipping the read changes restore semantics",
+  "worker_in_process": "Would share JSC process initialization, but the worker exists to release its memory when idle",
+  "cache_format": "Combining body and metadata files would save ~15M but changes security-sensitive provenance readers in shared files",
+  "snapshot_pread_crc": "pread-based CRC saves only ~4M over the mapped CRC (24.0M vs 28.4M)"
+ },
+ "remaining": {
+  "appkit_window_first_frame": "~496M before page work (NSApplication ~100M, finishLaunching ~110M incl. Writing Tools ~54M, NSWindow ~88M incl. Metal device registration, UI2 mount 65M)",
+  "javascript": "JS setup 185M (factory 88M, JSC context 36.7M); compact element wrappers __element 19% of JS samples",
+  "style": "130.6M for 823 elements",
+  "layout": "table wrapper shrink-to-fit 68.5M, mostly min-content inline layout of every cell",
+  "paint": "final frame 156M, mostly first-time glyph rasterization",
+  "worker": "~205M: engine.js parse/compile ~58M, VM creation ~36M, snapshot CRC and faults ~18M, trie checksum ~14M"
+ }
+}
