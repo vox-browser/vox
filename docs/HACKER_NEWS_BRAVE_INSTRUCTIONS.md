@@ -61,6 +61,12 @@ from concurrent work and is unchanged here. Raw evidence is under
 every count, identity, PNG hash and guard exit. These are frozen-page
 startup/capture counts; GPU and services outside the coalition remain excluded.
 
+Broad verification is partial. The default 11-case screenshot smoke set passes
+on the later shared bundle `67a6b379` (HEAD `1ba30d7f`, containing the change):
+8 cases are exact and 3 are within their existing tolerances. Full translation
+batches, the LibJS AST corpus and broad SVG batches have not been run. This
+change touches neither translated packages nor LibJS.
+
 ## 2026-11-01 scope correction
 
 The previous headline of roughly three times Brave's instructions used
