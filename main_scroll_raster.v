@@ -238,7 +238,7 @@ fn (mut app BrowserApp) step_video_backdrop(index int, command &layout.PaintComm
 		if !app.scroll_raster_keys.valid || index >= app.scroll_raster_keys.keys.len {
 			return
 		}
-		ink := layout.scroll_raster_leaf_ink_bounds(command) or {
+		ink := scroll_raster_key_ink(command) or {
 			C.native_discard_video_backdrops()
 			return
 		}

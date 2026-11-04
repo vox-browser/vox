@@ -732,7 +732,7 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 			}
 			continue
 		}
-		ink := layout.scroll_raster_leaf_ink_bounds(command)
+		ink := scroll_raster_key_ink(command)
 		if rect := ink {
 			key.has_ink = true
 			key.ink = rect
@@ -743,6 +743,23 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 		}
 	}
 	return keys
+}
+
+// A leaf's viewport-space ink within its conservative clip rectangle. Large
+// decorations inside an `overflow: hidden` box (vlang.io's rotated orbit and
+// its 60px shadow) otherwise touch every exposed strip. The rectangle bounds
+// the transformed clip list in the same space, as for group keys.
+fn scroll_raster_key_ink(command &layout.PaintCommand) ?layout.LayoutRect {
+	ink := layout.scroll_raster_leaf_ink_bounds(command)?
+	if !command.has_clip || !(command.clip_width > 0) || !(command.clip_height > 0)
+		|| !scroll_raster_rect_valid(ink) {
+		return ink
+	}
+	clip := layout.LayoutRect{command.clip_x, command.clip_y, command.clip_width, command.clip_height}
+	if !scroll_raster_rect_valid(clip) { return ink }
+	clipped := layout.scroll_raster_rect_intersect(ink, clip)
+	// Nothing is visible; any bounded rectangle inside the clip is conservative.
+	return if clipped.width > 0 && clipped.height > 0 { clipped } else { clip }
 }
 
 // The root canvas background is recorded anchored to the viewport origin with

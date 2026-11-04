@@ -715,3 +715,19 @@ fn test_scroll_raster_video_backdrop_requires_nothing_above() {
 	unbounded := scroll_raster_frame_keys([video, layout.PaintCommand{ kind: 'draw_text', text: 'late' }], 0, 1, 1024, 768)
 	assert !scroll_raster_nothing_above(unbounded, 0)
 }
+
+// A large decoration inside an `overflow: hidden` box touches only the strips
+// and damage that reach its clip rectangle.
+fn test_scroll_raster_key_ink_stays_inside_the_clip_rectangle() {
+	orbit := layout.PaintCommand{ kind: 'fill_rect', x: -120, y: 20, width: 1500, height: 1300,
+		has_clip: true, clip_x: 33, clip_y: 100, clip_width: 958, clip_height: 438 }
+	keys := scroll_raster_frame_keys([orbit], 0, 1, 1024, 768)
+	assert keys[0].ink == layout.LayoutRect{33, 100, 958, 438}
+	assert plan_scroll_raster_skips([orbit], keys, scroll_raster_strip_region(4, 1024, 768), false) == [true]
+	assert plan_scroll_raster_skips([orbit], keys, [layout.LayoutRect{0, 530, 1024, 4}], false) == [false]
+	// Content clipped away entirely stays bounded by its clip.
+	hidden := layout.PaintCommand{ ...orbit, y: 900, height: 10 }
+	assert scroll_raster_frame_keys([hidden], 0, 1, 1024, 768)[0].ink == layout.LayoutRect{33, 100, 958, 438}
+	unclipped := layout.PaintCommand{ ...orbit, has_clip: false }
+	assert scroll_raster_frame_keys([unclipped], 0, 1, 1024, 768)[0].ink.width >= 1500
+}
