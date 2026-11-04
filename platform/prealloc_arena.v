@@ -79,7 +79,7 @@ $if prealloc {
 	fn C.v_prealloc_atomic_store_i32(pointer &i32, value int) int
 
 	fn prealloc_recycle_cache_slots() int {
-		bytes := usize(&C.g_prealloc_block_pool.sizes) - usize(&C.g_prealloc_block_pool.starts)
+		bytes := u64(&C.g_prealloc_block_pool.sizes) - u64(&C.g_prealloc_block_pool.starts)
 		assert bytes > 0 && bytes % sizeof(voidptr) == 0
 		return int(bytes / sizeof(voidptr))
 	}
