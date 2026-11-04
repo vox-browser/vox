@@ -22,7 +22,7 @@ fn test_html_compatibility_rounds_inline_metrics_without_changing_svg_metrics() 
 	precise := &Font{ ...coarse, font_rendering_policy: .chromium }
 	raw := precise.pixel_metrics()
 	inline := precise.inline_metrics()
-	assert coarse.inline_metrics() == raw
+	assert coarse.inline_metrics() == coarse.pixel_metrics()
 	assert precise.pixel_metrics() == raw
 	assert inline.ascent == f32(int(inline.ascent))
 	assert inline.descent == f32(int(inline.descent))

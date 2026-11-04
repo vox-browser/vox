@@ -286,7 +286,15 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 // Only scalar metrics escape this calculation. Callers that need no retained
 // font can supply a temporary decoded face and its unrounded zero advance.
 fn (font &Font) decoded_face_pixel_metrics(face &ttf.TTF_File, zero_advance f32) FontPixelMetrics {
-	return font.scaled_face_pixel_metrics(decoded_face_metric_units(face), zero_advance)
+	mut prefer_typographic := true
+	$if macos {
+		// Chromium's Skia CoreText scaler reads CTFontGetAscent/Descent.
+		// CoreText uses hhea for downloaded faces even when OS/2 requests
+		// typographic metrics. Keep LibWeb's table selection independent.
+		prefer_typographic = font.font_rendering_policy != .chromium
+	}
+	return font.scaled_face_pixel_metrics(decoded_face_metric_units_with_preference(face,
+		prefer_typographic), zero_advance)
 }
 
 // The size-independent design-unit metrics of a decoded face, as selected by
@@ -301,6 +309,10 @@ struct FaceMetricUnits {
 }
 
 fn decoded_face_metric_units(face &ttf.TTF_File) FaceMetricUnits {
+	return decoded_face_metric_units_with_preference(face, true)
+}
+
+fn decoded_face_metric_units_with_preference(face &ttf.TTF_File, prefer_typographic bool) FaceMetricUnits {
 	mut ascent_units := face.ascent
 	mut descent_units := i16(-face.descent)
 	mut line_gap_units := face.line_gap
@@ -320,7 +332,7 @@ fn decoded_face_metric_units(face &ttf.TTF_File) FaceMetricUnits {
 	if os2 := font_table_offset(face.buf, 'OS/2') {
 		version := font_u16_at(face.buf, os2) or { 0 }
 		selection := font_u16_at(face.buf, os2 + 62) or { 0 }
-		if selection & u16(0x80) != 0 {
+		if prefer_typographic && selection & u16(0x80) != 0 {
 			ascent_units = font_i16_at(face.buf, os2 + 68) or { ascent_units }
 			typo_descent := font_i16_at(face.buf, os2 + 70) or { i16(-descent_units) }
 			descent_units = i16(-typo_descent)
