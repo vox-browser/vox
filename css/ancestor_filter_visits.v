@@ -24,6 +24,9 @@ fn (mut computer StyleComputer) push_ancestor_with_saved_hashes(element &dom.Ele
 		computer.ancestor_filter_.update_element_hashes(element, true)
 		return
 	}
+	// Cache address tokens only for this live owner. A foreign document can
+	// retire and later reuse addresses without changing this owner's epoch.
+	computer.ancestor_filter_.ancestor_hash_cache_document_ = computer.document_.as_node().unique_id()
 	// These reused arrays belong to the style computer's document, including
 	// when a synchronous query enters from a temporary paint/layout scope.
 	persistent := platform.enter_persistent_if(computer.document_.native_storage() == unsafe { nil }

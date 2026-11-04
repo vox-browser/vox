@@ -62,7 +62,9 @@ fn test_ancestor_hash_cache_preserves_names_whitespace_duplicates_and_quirks_cha
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }
 	mut computer := StyleComputer.new(document)
-	for classes in ['', 'A a a\tB\nC\rD\fE\vF\u00a0G A', 'Étage ÉTAGE 中😀'] {
+	for classes in ['', 'A a a\tB\nC\rD\fE\vF\u00a0G A ' + 'extra '.repeat(16),
+		'Étage ÉTAGE 中😀 '.repeat(8), 'x'.repeat(63), 'x'.repeat(64), 'x'.repeat(65),
+		' '.repeat(64), 'x'.repeat(8192), 'x'.repeat(8193)] {
 		element := ancestor_cache_element(mut document, 'linearGradient', classes)
 		for quirks in [dom.QuirksMode.no, .yes, .limited, .no] {
 			document.set_quirks_mode(quirks)
@@ -75,16 +77,16 @@ fn test_ancestor_hash_cache_observes_named_map_token_list_and_unrelated_attribut
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }
 	mut computer := StyleComputer.new(document)
-	mut element := ancestor_cache_element(mut document, 'g', 'old old')
+	mut element := ancestor_cache_element(mut document, 'g', 'old '.repeat(20))
 	mut other := document.create_element('div') or { panic(err) }
 	for _ in 0 .. 2 { ancestor_cache_check_visit(mut computer, element) }
 	element.set_attribute_value('id', 'changed')
 	ancestor_cache_check_visit(mut computer, element)
 	mut tokens := element.class_list()
-	tokens.set_value('new new OTHER')
+	tokens.set_value('new new OTHER '.repeat(8))
 	ancestor_cache_check_visit(mut computer, element)
 	mut attributes := element.attributes()
-	attributes.set_attribute(&dom.Attr_{ name_: 'class', local_name_: 'class', value_: 'replaced' }) or { panic(err) }
+	attributes.set_attribute(&dom.Attr_{ name_: 'class', local_name_: 'class', value_: 'replaced '.repeat(12) }) or { panic(err) }
 	ancestor_cache_check_visit(mut computer, element)
 	element.remove_attribute('DATA-Mixed')
 	element.set_attribute_value_ns('fresh', 'value', 'p', 'urn:attributes')
@@ -104,7 +106,7 @@ fn test_ancestor_hash_cache_distinguishes_adopted_documents_with_equal_attribute
 		first.finalize()
 		second.finalize()
 	}
-	mut element := ancestor_cache_element(mut first, 'path', 'MiXeD mixed')
+	mut element := ancestor_cache_element(mut first, 'path', 'MiXeD mixed '.repeat(10))
 	second.set_quirks_mode(.yes)
 	for second.attribute_version() < first.attribute_version() { second.bump_attribute_version() }
 	assert first.attribute_version() == second.attribute_version()
@@ -112,6 +114,15 @@ fn test_ancestor_hash_cache_distinguishes_adopted_documents_with_equal_attribute
 	for _ in 0 .. 2 { ancestor_cache_check_visit(mut computer, element) }
 	second.adopt_node(element.as_node())
 	for _ in 0 .. 2 { ancestor_cache_check_visit(mut computer, element) }
+	if !retain_ancestor_hash_recompute {
+		cache := computer.ancestor_filter_.ancestor_hash_cache_
+		assert cache != unsafe { nil }
+		for entry in cache.entries {
+			if entry.valid {
+				assert entry.document_identity != second.as_node().unique_id()
+			}
+		}
+	}
 	second.set_quirks_mode(.no)
 	ancestor_cache_check_visit(mut computer, element)
 	first.adopt_node(element.as_node())
@@ -125,7 +136,7 @@ fn test_ancestor_hash_cache_collisions_and_oversized_saturated_inputs_preserve_t
 	mut first := unsafe { &dom.Element(nil) }
 	mut second := unsafe { &dom.Element(nil) }
 	for index in 0 .. ancestor_hash_cache_slots + 1 {
-		element := ancestor_cache_element(mut document, 'path', 'class-${index}')
+		element := ancestor_cache_element(mut document, 'path', 'class-${index} '.repeat(16))
 		slot := ancestor_hash_cache_slot(element.as_node().unique_id())
 		if previous := by_slot[slot] {
 			first = previous
@@ -139,8 +150,10 @@ fn test_ancestor_hash_cache_collisions_and_oversized_saturated_inputs_preserve_t
 	for element in [first, second, first, second] {
 		for _ in 0 .. 2 { ancestor_cache_check_visit(mut computer, element) }
 	}
-	oversized := ancestor_cache_element(mut document, 'g', 'same '.repeat(300))
-	for _ in 0 .. 3 { ancestor_cache_check_visit(mut computer, oversized) }
+	for count in [127, 128, 129, 300] {
+		oversized := ancestor_cache_element(mut document, 'g', 'same '.repeat(count))
+		for _ in 0 .. 3 { ancestor_cache_check_visit(mut computer, oversized) }
+	}
 	cache := computer.ancestor_filter_.ancestor_hash_cache_
 	if cache != unsafe { nil } {
 		for entry in cache.entries {
@@ -168,7 +181,7 @@ fn ancestor_cache_reenter_id_change(opaque voidptr) {
 fn test_ancestor_hash_cache_rechecks_derived_id_after_reentrant_attribute_callbacks() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }
-	mut element := ancestor_cache_element(mut document, 'g', 'kept')
+	mut element := ancestor_cache_element(mut document, 'g', 'kept '.repeat(20))
 	mut computer := StyleComputer.new(document)
 	ancestor_cache_check_visit(mut computer, element)
 	mut context := &AncestorCacheReentry{ computer: computer, element: element }
@@ -180,8 +193,8 @@ fn test_ancestor_hash_cache_rechecks_derived_id_after_reentrant_attribute_callba
 	assert context.calls == 1
 	assert context.observed_id == 'PaReNtÉ'
 	assert (element.id() or { '' }) == 'new-id'
-	// The callback saw the new epoch and the old derived ID. The post-callback
-	// query must not reuse that result when the epoch itself has not changed.
+	// The callback sees the new epoch before the derived ID is published.
+	// Class-only reuse must still hash the newly published ID on the next visit.
 	ancestor_cache_check_visit(mut computer, element)
 }
 
@@ -194,7 +207,7 @@ fn test_ancestor_hash_cache_owns_scalar_payloads_and_reuses_bounded_storage() {
 	document.enable_native_storage()
 	mut scope := document.enter_native_storage()
 	mut computer := StyleComputer.new(document)
-	mut element := ancestor_cache_element(mut document, 'g', 'kept kept')
+	mut element := ancestor_cache_element(mut document, 'g', 'kept '.repeat(20))
 	scope.finish()
 	scratch := platform.begin_thread_scratch('ancestor cache publication')
 	computer.push_ancestor(element)
@@ -222,7 +235,7 @@ fn test_ancestor_hash_cache_owns_scalar_payloads_and_reuses_bounded_storage() {
 		assert cache.entries[slot].hashes.data == backing
 		// A same-sized replacement invalidates the epoch but reuses the slot's
 		// private buffer; no old strings or DOM references need to stay alive.
-		element.set_attribute_value('class', 'next next')
+		element.set_attribute_value('class', 'next '.repeat(20))
 		computer.push_ancestor(element)
 		computer.pop_ancestor(element)
 		assert cache.entries[slot].hashes.data == backing
