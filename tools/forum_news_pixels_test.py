@@ -206,7 +206,9 @@ class ForumNewsPixelTests(unittest.TestCase):
             prepared = ['oracle', '--profile-template', '/closed-warmup', '--extension', '/full-ubo']
             route = ['--proxy-server', 'http://127.0.0.1:1234']
             events = []
-            def warm(command, capture_route, directory, timeout):
+            def warm(command, capture_route, directory, timeout, *, capture_archive=False):
+
+                self.assertTrue(capture_archive)
                 self.assertEqual(command, common)
                 self.assertEqual(capture_route, route)
                 self.assertTrue(directory.is_dir())
@@ -274,6 +276,19 @@ class ForumNewsPixelTests(unittest.TestCase):
             with patch('forum_news_pixels.guarded', side_effect=capture):
                 with self.assertRaisesRegex(RuntimeError, 'closed profile'):
                     warm_oracle_cache(['oracle'], [], output, 60)
+
+    def test_live_cache_preparation_retains_response_provenance_for_cached_headers(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            common = ['oracle', '--url', 'https://news.example/']
+            def capture(command, prefix, timeout):
+                self.assertEqual(Path(command[command.index('--capture-dir') + 1]), output / 'capture')
+                Path(command[command.index('--profile-output') + 1]).mkdir()
+                write_json(output / 'brave-warm.json', self.report())
+            with patch('forum_news_pixels.guarded', side_effect=capture):
+                prepared = warm_oracle_cache(common, [], output, 60, capture_archive=True)
+            self.assertEqual(prepared[prepared.index('--cached-response-headers') + 1], str(output / 'capture'))
+            self.assertEqual(common, ['oracle', '--url', 'https://news.example/'])
             report = self.report()
             report['cosmetic']['css_matches'] = False
             with patch('forum_news_pixels.guarded'), patch('forum_news_pixels.read_json', return_value=report):

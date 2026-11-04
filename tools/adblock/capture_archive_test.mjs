@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
-import {archiveHeaders, archiveResponseWithExtraHeaders, captureArchive, freezeDocument, imageAccept} from './capture_archive.mjs';
+import {archiveHeaders, archiveResponseWithExtraHeaders, captureArchive, freezeDocument, imageAccept, reuseArchivedResponseHeaders} from './capture_archive.mjs';
 
 const ready = snapshot => ({ready:'complete',fonts:'loaded',images:[],styles:[],rects:[],...snapshot});
 
@@ -64,6 +64,29 @@ test('network response headers retain CORS fields and update cached responses wi
     }
     assert.equal(archiveResponseWithExtraHeaders(response,{statusCode:302,headers:{Location:'elsewhere'}}),response);
     assert.equal(archiveResponseWithExtraHeaders(response,undefined),response);
+});
+
+test('cached headers require the prepared encoded body, matching request origin and unchanged metadata',async t=>{
+    const directory=await fs.mkdtemp(path.join(os.tmpdir(),'vox-prepared-headers-'));
+    t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+    const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+    const url='https://cdn.example/font.woff2',body=Buffer.from('original encoded font');
+    const request={method:'GET',headers:{Origin:'https://news.example'}};
+    const response={url,status:200,fromDiskCache:true,headers:{'Content-Type':'font/woff2','Age':'100'}};
+    const headers=[{name:'Content-Type',value:'font/woff2'},{name:'Access-Control-Allow-Origin',value:'https://news.example'},
+        {name:'Vary',value:'Origin'},{name:'Age',value:'50'}];
+    const bytes=JSON.stringify(headers),base=path.join(directory,'cache/resources',hash(url));
+    await fs.mkdir(path.dirname(base),{recursive:true});await fs.writeFile(base,body);await fs.writeFile(base+'.headers.json',bytes);
+    await fs.writeFile(path.join(directory,'archive.json'),JSON.stringify({resources:[{
+        url,method:'GET',request_origin:'https://news.example',sha256:hash(body),response_headers_sha256:hash(bytes)}]}));
+    const restored=await reuseArchivedResponseHeaders(directory,request,response,body);
+    assert.equal(restored.url,url);assert.equal(restored.headers['Access-Control-Allow-Origin'],'https://news.example');
+    assert.equal(restored.headers.Age,'100');
+    for(const [req,res,data] of [[{...request,headers:{Origin:'https://other.example'}},response,body],
+        [request,{...response,fromDiskCache:false},body],[request,response,Buffer.from('different encoded font')]])
+        assert.equal(await reuseArchivedResponseHeaders(directory,req,res,data),res);
+    await fs.writeFile(base+'.headers.json','[]');
+    await assert.rejects(reuseArchivedResponseHeaders(directory,request,response,body),/Prepared response cache changed/);
 });
 
 async function captureMediaRange(t, range, bytes) {

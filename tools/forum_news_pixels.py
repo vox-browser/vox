@@ -224,11 +224,12 @@ def oracle_command(site, args):
     return command
 
 
-def warm_oracle_cache(common, route, output, timeout):
+def warm_oracle_cache(common, route, output, timeout, *, capture_archive=False):
     """Close the warmup browser before copying its encoded cache to a fresh one."""
     profile = output / 'brave-warm-profile'
     report = output / 'brave-warm.json'
-    guarded([*common, *route, '--pixel-reference', output / 'brave-warm.png',
+    archive_options = ['--capture-dir', output / 'capture'] if capture_archive else []
+    guarded([*common, *route, *archive_options, '--pixel-reference', output / 'brave-warm.png',
              '--output', report, '--profile-output', profile], output / 'brave-warm', timeout)
     check_filters(read_json(report))
     if not profile.is_dir():
@@ -238,6 +239,8 @@ def warm_oracle_cache(common, route, output, timeout):
         prepared[prepared.index('--profile-template') + 1] = str(profile)
     else:
         prepared.extend(['--profile-template', str(profile)])
+    if capture_archive:
+        prepared.extend(['--cached-response-headers', str(output / 'capture')])
     return prepared
 
 
@@ -249,7 +252,7 @@ def capture_site_archive(common, route, output, archive, timeout, cache_policy):
     if cache_policy == 'complete':
         warmup = output / 'capture-warmup'
         warmup.mkdir()
-        prepared = warm_oracle_cache(common, route, warmup, timeout)
+        prepared = warm_oracle_cache(common, route, warmup, timeout, capture_archive=True)
         write_json(policy, dict(policy=cache_policy, warmup_qualified=True,
                                warmup_report=str(warmup / 'brave-warm.json'),
                                decoded_images='Fresh capture process; encoded cache retained'))

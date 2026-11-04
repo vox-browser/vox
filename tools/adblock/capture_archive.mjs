@@ -72,6 +72,25 @@ export function archiveResponseWithExtraHeaders(response, extra) {
     return {...response,headers:Object.fromEntries(headers.values())};
 }
 
+export async function reuseArchivedResponseHeaders(directory, request, response, body) {
+    if(!directory || !response.fromDiskCache) return response;
+    const origin=Object.entries(request.headers||{}).find(([name])=>name.toLowerCase()==='origin')?.[1]||'';
+    const metadata=JSON.parse(await fs.readFile(path.join(directory,'archive.json'),'utf8'));
+    const candidates=metadata.resources.filter(row=>!row.error && row.url===response.url
+        && row.method===request.method && row.request_origin===origin && row.sha256===digest(body));
+    if(candidates.length!==1) return response;
+    const row=candidates[0],base=path.join(directory,'cache/resources',digest(response.url));
+    const [cachedBody,headerBytes]=await Promise.all([fs.readFile(base),fs.readFile(base+'.headers.json')]);
+    if(digest(cachedBody)!==row.sha256 || digest(headerBytes)!==row.response_headers_sha256)
+        throw new Error('Prepared response cache changed: '+response.url);
+    const headers=Object.fromEntries(JSON.parse(headerBytes).map(({name,value})=>[name,value]));
+    // The new browser retained this exact encoded response. CDP omits some
+    // cached headers; preserve the captured cache entry and overlay its current
+    // renderer headers (including any revalidation changes).
+    return archiveResponseWithExtraHeaders({...response,headers},
+        {statusCode:response.status,headers:response.headers});
+}
+
 function isCompleteMediaRange(response, length) {
     const value=Object.entries(response.headers)
         .find(([name])=>name.toLowerCase()==='content-range')?.[1];
@@ -83,7 +102,7 @@ function isCompleteMediaRange(response, length) {
         && total>0 && end===total-1 && length===total;
 }
 
-export async function captureArchive(page, directory, expectedURL, {mainFrameID}={}) {
+export async function captureArchive(page, directory, expectedURL, {mainFrameID,headerCache}={}) {
     await fs.mkdir(directory, {mode: 0o700}); // Never overwrite a prior workload.
     const cache = path.join(directory, 'cache');
     await fs.mkdir(path.join(cache, 'resources'), {recursive: true});
@@ -135,15 +154,18 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
     for (const [id, entry] of responses) {
         const {type} = entry;
         const extra=extraHeaders.get(id);
-        const response=archiveResponseWithExtraHeaders(entry.response,extra);
-        const method=requests.get(id)?.method;
+        let response=archiveResponseWithExtraHeaders(entry.response,extra);
+        const request=requests.get(id)||{};
+        const method=request.method;
         const isMain=type==='Document' && response.url===snapshot.url
             && mainFrameID && entry.frameId===mainFrameID;
         const supportedStatus=response.status===200 || (type==='Media' && response.status===206);
         if (!/^https?:/.test(response.url) || !supportedStatus
             || (method!=='GET' && !(method==='POST' && isMain)) || !completed.has(id)) continue;
         if(type==='Document' && response.url===snapshot.url && mainFrameID && !isMain) continue;
-        const row = {url: response.url, type, status: response.status, method};
+        const requestOrigin=Object.entries(request.headers||{}).find(([name])=>name.toLowerCase()==='origin')?.[1]||'';
+        const row = {url: response.url, type, status: response.status, method,
+            request_origin:requestOrigin,from_disk_cache:Boolean(entry.response.fromDiskCache)};
         if(response!==entry.response) {
             row.headers_source='cdp-response-extra-info';
             row.response_extra_info_status=extra.statusCode;
@@ -152,6 +174,10 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
             const result = await page.send('Network.getResponseBody', {requestId: id});
             const body = Buffer.from(result.body, result.base64Encoded ? 'base64' : 'utf8');
             if (!body.length || body.length > 16 * 1024 * 1024) throw new Error('Unsupported body size');
+            const cached=type==='Document' ? response
+                : await reuseArchivedResponseHeaders(headerCache,request,response,body);
+            if(cached!==response) row.headers_source='verified-prepared-response-cache';
+            response=cached;
             const completeMediaRange=response.status===206;
             if(completeMediaRange && !isCompleteMediaRange(response,body.length))
                 throw new Error('Cannot archive an incomplete media range');
@@ -162,6 +188,7 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID}
             // A range covering the entire representation can replay as a full
             // 200 response. Keep its original 206 status in capture provenance.
             const headers = archiveHeaders(response, body.length,{completeMediaRange});
+            row.response_headers_sha256=digest(JSON.stringify(headers));
             if(completeMediaRange) row.replayed_status=200;
             for (const key of keys) {
                 const filename = path.join(cache, 'resources', digest(key));
