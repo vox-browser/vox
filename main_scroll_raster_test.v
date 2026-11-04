@@ -334,7 +334,7 @@ fn test_scroll_raster_admits_translating_effects_and_media() {
 	}
 	// Unchanged filters retain their pixels at the same device position.
 	blur_keys := scroll_raster_frame_keys([blur_filter_begin(10), ordinary, filter_end], 0, 1, 1024, 768)
-	assert scroll_raster_frame_keys([blur_filter_begin(10), ordinary, filter_end], 0, 1, 1024, 768)[0].hash == blur_keys[0].hash
+	assert (scroll_raster_frame_keys([blur_filter_begin(10), ordinary, filter_end], 0, 1, 1024, 768)[0].hash == blur_keys[0].hash) == !disable_stationary_filter_reuse
 	gray_keys := scroll_raster_frame_keys([grayscale_begin, ordinary, filter_end], 0, 1, 1024, 768)
 	assert scroll_raster_frame_keys([grayscale_begin, ordinary, filter_end], 0, 1, 1024, 768)[0].hash == gray_keys[0].hash
 	svg_filter := layout.PaintCommand{
@@ -589,12 +589,12 @@ fn test_scroll_raster_gradient_blur_keys_translate_with_content() {
 	mut nested := [layout.PaintCommand{ kind: 'begin_css_effect_layer' }]
 	nested << commands[begin..]
 	nested << layout.PaintCommand{ kind: 'end_css_effect_layer' }
-	assert scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash == scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash
+	assert (scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash == scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash) == !disable_stationary_filter_reuse
 	assert scroll_raster_frame_keys(scroll_raster_scrolled_commands(nested, 5), 5, 1, 1024, 768)[1].hash
 		!= scroll_raster_frame_keys(nested, 0, 1, 1024, 768)[1].hash
 	plain := [blur_filter_begin(10), layout.PaintCommand{ kind: 'fill_rect', x: 10, y: 10, width: 20, height: 20, color: 'red' },
 		layout.PaintCommand{ kind: 'end_css_filter_layer' }]
-	assert scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash == scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash
+	assert (scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash == scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash) == !disable_stationary_filter_reuse
 }
 
 fn test_root_scroll_snaps_to_device_pixels_in_both_directions() {

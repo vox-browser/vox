@@ -38,7 +38,9 @@ const scroll_raster_max_damage_fraction = 0.5
 // Match the bounded native damage list, after merging overlapping ink.
 const scroll_raster_max_damage_rects = 48
 const disable_coalesced_scroll_damage = os.getenv('VOX_DISABLE_COALESCED_SCROLL_DAMAGE') != ''
-const disable_stationary_filter_reuse = os.getenv('VOX_DISABLE_STATIONARY_FILTER_REUSE') != ''
+// Stationary identity is pixel-correct, but the live paired cohort regressed.
+const disable_stationary_filter_reuse = os.getenv('VOX_ENABLE_STATIONARY_FILTER_REUSE') != '1'
+	|| os.getenv('VOX_DISABLE_STATIONARY_FILTER_REUSE') != ''
 
 // One command's retained identity. The hash covers every pixel-affecting field
 // after removing the viewport scroll translation, so the same content at a
@@ -671,8 +673,10 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 			group_bounded << true
 			group_has_ink << false
 			group_ink << layout.LayoutRect{}
-			group_content << u64(0xcbf29ce484222325)
-			group_position_dependent << position_dependent
+			if !disable_stationary_filter_reuse {
+				group_content << u64(0xcbf29ce484222325)
+				group_position_dependent << position_dependent
+			}
 			keys[index] = key
 			continue
 		}
@@ -681,8 +685,12 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 			bounded := group_bounded.pop()
 			has_ink := group_has_ink.pop()
 			ink := group_ink.pop()
-			content := group_content.pop()
-			position_dependent := group_position_dependent.pop()
+			mut content := u64(0)
+			mut position_dependent := false
+			if !disable_stationary_filter_reuse {
+				content = group_content.pop()
+				position_dependent = group_position_dependent.pop()
+			}
 			begin_command := unsafe { &commands[begin] }
 			if !disable_stationary_filter_reuse && begin_command.kind == 'begin_css_filter_layer'
 				&& !layout.scroll_raster_filter_is_pointwise(begin_command) {
@@ -741,8 +749,10 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 			key.ink = layout.LayoutRect{0, 0, 0, 0}
 			keys[index] = key
 			if begins.len > 0 {
-				last := group_content.len - 1
-				group_content[last] = srk_mix(group_content[last], srk_mix(keys[begin].hash, content))
+				if !disable_stationary_filter_reuse {
+					last := group_content.len - 1
+					group_content[last] = srk_mix(group_content[last], srk_mix(keys[begin].hash, content))
+				}
 				scroll_raster_accumulate_group_ink(mut group_bounded, mut group_has_ink, mut group_ink, group)
 			}
 			continue
@@ -754,8 +764,10 @@ fn scroll_raster_frame_keys(commands []layout.PaintCommand, scroll f64, scrollba
 		}
 		keys[index] = key
 		if begins.len > 0 {
-			last := group_content.len - 1
-			group_content[last] = srk_mix(group_content[last], key.hash)
+			if !disable_stationary_filter_reuse {
+				last := group_content.len - 1
+				group_content[last] = srk_mix(group_content[last], key.hash)
+			}
 			scroll_raster_accumulate_group_ink(mut group_bounded, mut group_has_ink, mut group_ink, ink)
 		}
 	}

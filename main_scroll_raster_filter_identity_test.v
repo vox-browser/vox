@@ -16,7 +16,8 @@ fn test_spatial_filter_identity_keeps_stationary_pixels_but_tracks_raster_positi
 		width: 40, height: 20, color: 'red'}, layout.PaintCommand{kind: 'end_css_filter_layer'}]
 	first := scroll_raster_frame_keys(commands, 0, 1, 200, 200)
 	second := scroll_raster_frame_keys(commands, 0, 1, 200, 200)
-	assert first[0].hash == second[0].hash
+	assert (first[0].hash == second[0].hash) == !disable_stationary_filter_reuse
+	if disable_stationary_filter_reuse { return }
 	previous := ScrollRasterKeyFrame{valid: true, document: 7, width: 200, height: 200, keys: first}
 	mut stats := ScrollRasterDiffStats{}
 	rects := scroll_raster_content_damage(&previous, second, 7, 0, 200, 200, mut stats) or {
@@ -56,7 +57,7 @@ fn test_filter_identity_includes_nested_group_contents_and_order() {
 		leaf, layout.PaintCommand{...leaf, color: 'blue'},
 		layout.PaintCommand{kind: 'end_css_effect_layer'}, layout.PaintCommand{kind: 'end_css_filter_layer'}]
 	key := scroll_raster_frame_keys(commands, 0, 1, 200, 200)[0].hash
-	assert scroll_raster_frame_keys(commands, 0, 1, 200, 200)[0].hash == key
+	assert (scroll_raster_frame_keys(commands, 0, 1, 200, 200)[0].hash == key) == !disable_stationary_filter_reuse
 	mut changed := commands.clone()
 	changed[2] = layout.PaintCommand{...leaf, color: 'green'}
 	assert scroll_raster_frame_keys(changed, 0, 1, 200, 200)[0].hash != key
@@ -81,7 +82,7 @@ fn test_filter_identity_tracks_live_canvas_and_video_inputs() {
 	video := [identity_blur(), layout.PaintCommand{kind: 'draw_video', x: 60, y: 70,
 		width: 40, height: 20, video_frame_source: source}, layout.PaintCommand{kind: 'end_css_filter_layer'}]
 	before := scroll_raster_frame_keys(video, 0, 1, 200, 200)[0].hash
-	assert scroll_raster_frame_keys(video, 0, 1, 200, 200)[0].hash == before
+	assert (scroll_raster_frame_keys(video, 0, 1, 200, 200)[0].hash == before) == !disable_stationary_filter_reuse
 	frame.generation++
 	assert scroll_raster_frame_keys(video, 0, 1, 200, 200)[0].hash != before
 }
