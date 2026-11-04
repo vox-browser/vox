@@ -1,0 +1,1681 @@
+{
+  "status": "Cohort89 retains seven alternating pairs with corrected runtime pins. Brave pairs2and7 pixel mismatches invalidate acceptance; strict target also fails. No optimization or pin-correction performance credit.",
+  "target_met": false,
+  "catalog_entry_added": false,
+  "recorded_unix": 1793799283.2039511,
+  "history": {
+    "attempted_acceptance_cohorts": 89,
+    "attempted_acceptance_browser_trials": 1975,
+    "extra_runtime_discovery_and_validation_browser_trials": 2,
+    "excluded_historical_contention_attempts": 7,
+    "historical_last_complete_under_then_declared_pins": 88,
+    "latest_runtime_audit_and_all_pixels_qualified_cohort": null
+  },
+  "statistics": {
+    "vox_upper": [
+      28545330528,
+      27732743803,
+      28627201915,
+      28474867003,
+      28993878139,
+      28582902996,
+      28456284824
+    ],
+    "brave_lower": [
+      17584576257,
+      17414708151,
+      17477217838,
+      17484012241,
+      17565292363,
+      17457413385,
+      17501153323
+    ],
+    "median_vox": 28545330528,
+    "median_brave_lower": 17484012241,
+    "left_10_max_vox_upper": 289938781390,
+    "right_9_min_brave_lower": 156732373359,
+    "strict_gate_passed": false,
+    "ratio": 1.6649074958706724,
+    "observations_qualify_for_acceptance": false,
+    "optimization_credit": 0
+  },
+  "failed_observations": [
+    {
+      "pair": 2,
+      "engine": "brave",
+      "exit": 1,
+      "native_exit": 0,
+      "pixels_exact": false,
+      "content_exact": true,
+      "pixel_comparison": {
+        "actual": "/Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/acceptance/cohort-89/pair-2-brave/document.png",
+        "diff": "/Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/acceptance/cohort-89/pair-2-brave/document.diff.png",
+        "different_pixels": 171581,
+        "exact": false,
+        "expected": "/Users/alex/code/vox2/Build/bbc-fresh-home-20261103-1224/reference-complete/pair-1-brave/document.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 171581 (5.4544%)\ndifference_bounds: 536,882 976x504\nmaximum_error_pixel: 1110,995 expected=215,40,70,255 actual=192,51,75,255\npixels_over_3: 1443 (0.0459%)\npixels_over_10: 170 (0.0054%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 23\nmean_absolute_error: 0.0197\nrmse: 0.1663\ndiff: /Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/acceptance/cohort-89/pair-2-brave/document.diff.png\n"
+      }
+    },
+    {
+      "pair": 7,
+      "engine": "brave",
+      "exit": 1,
+      "native_exit": 0,
+      "pixels_exact": false,
+      "content_exact": true,
+      "pixel_comparison": {
+        "actual": "/Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/acceptance/cohort-89/pair-7-brave/document.png",
+        "diff": "/Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/acceptance/cohort-89/pair-7-brave/document.diff.png",
+        "different_pixels": 224973,
+        "exact": false,
+        "expected": "/Users/alex/code/vox2/Build/bbc-fresh-home-20261103-1224/reference-complete/pair-1-brave/document.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 224973 (7.1517%)\ndifference_bounds: 32,882 1480x504\nmaximum_error_pixel: 1110,995 expected=215,40,70,255 actual=192,51,75,255\npixels_over_3: 1483 (0.0471%)\npixels_over_10: 170 (0.0054%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 23\nmean_absolute_error: 0.0257\nrmse: 0.1847\ndiff: /Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/acceptance/cohort-89/pair-7-brave/document.diff.png\n"
+      }
+    }
+  ],
+  "all_native_exits_zero": true,
+  "all_complete_content": true,
+  "build": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "1c1d291714759657ede614650af13669a0ad1eae782ef830f6d0064121cc39d4",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-161309-a42e52a7/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "803016fd2a10ae1e9e740ea49761b98c9e5df9344e52b2b35023d3bc0be54cdf",
+      "dirty": true,
+      "head": "5ca0e83e67454c396f48b91fc02399ca10702592",
+      "repository_sha256": "934d7cd7fe971515d3075e587fa4d34f995cb1146744ecd0ffb09670e6e94f4c"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "ebcab510ff2cf8c37e55595a6ba7253c903e8b994a40ffd08eeef5b1f21f87bf",
+      "dirty": true,
+      "head": "cd836ed37f0358a5bad6cbe53755eaa7c1179a8e",
+      "repository_sha256": "ecd163065164d1f27194bad7410622bdccf400d89d0962209aaa193672902b1e"
+    },
+    "request": {
+      "head": "5ca0e83e67454c396f48b91fc02399ca10702592",
+      "id": "f02cb5d089e84b728123a1ecc5076ce0"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "803016fd2a10ae1e9e740ea49761b98c9e5df9344e52b2b35023d3bc0be54cdf",
+      "dirty": true,
+      "head": "5ca0e83e67454c396f48b91fc02399ca10702592",
+      "repository_sha256": "e483738d7318524810fa032ab85318c27141255404bfbee20327a9ac13b26138"
+    }
+  },
+  "native_precheck": [
+    {
+      "arm": "vox",
+      "exit": 0,
+      "native_exit": 0,
+      "content_exact": true,
+      "pixels_exact": true,
+      "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/production/native-diagnostic/pair-1-vox/independent.diff.png\n",
+      "path_before_png": false,
+      "path_check": true,
+      "original_external_sources_exact": true,
+      "policy_witnesses_before_png": true
+    }
+  ],
+  "native_image_precheck": {
+    "files_before": {
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+        "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+        "bytes": 150024
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+        "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+        "bytes": 69928
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+        "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+        "bytes": 102592
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+        "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e",
+        "bytes": 5150944
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+        "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91",
+        "bytes": 882592
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+        "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+        "bytes": 181544
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+        "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+        "bytes": 335064
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+        "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+        "bytes": 768872
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+        "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+        "bytes": 33371048
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+        "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+        "bytes": 2158624
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+        "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912",
+        "bytes": 218040
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+        "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2",
+        "bytes": 202328
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+        "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366",
+        "bytes": 369272
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+        "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d",
+        "bytes": 64496
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+        "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+        "bytes": 245016
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+        "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+        "bytes": 5744128
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+        "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd",
+        "bytes": 981792
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libwebpdecoder.3.2.0.dylib": {
+        "sha256": "4a1f640ce89eb958e86a9f5ddc8bd1f87a9f59e3c9ef831e4405313b7f889145",
+        "bytes": 267704
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+        "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+        "bytes": 106528
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+        "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91",
+        "bytes": 798160
+      },
+      "/Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/native-diagnostic.py": {
+        "sha256": "ec75dac3de771d2d58ec6c157569bb2d5f5a6b3eef26e8cc89608ebf9198112c",
+        "bytes": 1767
+      },
+      "/Users/alex/code/vox2/Build/bbc-main-profile-20261104-1538/recheck-1544/page-mapped-4/result.json": {
+        "sha256": "8e6c87493e2c9f1a54d28b0837091754817ddd61d2b7c0d4ea6555aa12b4d33d",
+        "bytes": 28859
+      },
+      "/Users/alex/code/vox2/Build/bbc-whole-profile-20261103-1340/jsc-author-probe-v2.dylib": {
+        "sha256": "fc46fd077f8d936f4c8301ef339f37ac6c95b66b8483a2164f911f8456153743",
+        "bytes": 34360
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+        "sha256": "1c1d291714759657ede614650af13669a0ad1eae782ef830f6d0064121cc39d4",
+        "bytes": 32632768
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+        "sha256": "16efe3bfc7a4a37e7dea9f73e4ae529ed084fab3015d032d380bddd8cf2119d1",
+        "bytes": 945904
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+        "sha256": "100356905520dca5a7f9e2d8aa6db52232b1f8ea13c58cddb43c988bfc751d5e",
+        "bytes": 4419632
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+        "sha256": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+        "bytes": 13041776
+      },
+      "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+        "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+        "bytes": 125264
+      }
+    },
+    "files_after": {
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+        "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+        "bytes": 150024
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+        "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+        "bytes": 69928
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+        "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+        "bytes": 102592
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+        "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e",
+        "bytes": 5150944
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+        "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91",
+        "bytes": 882592
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+        "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+        "bytes": 181544
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+        "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+        "bytes": 335064
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+        "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+        "bytes": 768872
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+        "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+        "bytes": 33371048
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+        "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+        "bytes": 2158624
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+        "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912",
+        "bytes": 218040
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+        "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2",
+        "bytes": 202328
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+        "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366",
+        "bytes": 369272
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+        "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d",
+        "bytes": 64496
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+        "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+        "bytes": 245016
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+        "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+        "bytes": 5744128
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+        "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd",
+        "bytes": 981792
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libwebpdecoder.3.2.0.dylib": {
+        "sha256": "4a1f640ce89eb958e86a9f5ddc8bd1f87a9f59e3c9ef831e4405313b7f889145",
+        "bytes": 267704
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+        "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+        "bytes": 106528
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+        "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91",
+        "bytes": 798160
+      },
+      "/Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/native-diagnostic.py": {
+        "sha256": "ec75dac3de771d2d58ec6c157569bb2d5f5a6b3eef26e8cc89608ebf9198112c",
+        "bytes": 1767
+      },
+      "/Users/alex/code/vox2/Build/bbc-main-profile-20261104-1538/recheck-1544/page-mapped-4/result.json": {
+        "sha256": "8e6c87493e2c9f1a54d28b0837091754817ddd61d2b7c0d4ea6555aa12b4d33d",
+        "bytes": 28859
+      },
+      "/Users/alex/code/vox2/Build/bbc-whole-profile-20261103-1340/jsc-author-probe-v2.dylib": {
+        "sha256": "fc46fd077f8d936f4c8301ef339f37ac6c95b66b8483a2164f911f8456153743",
+        "bytes": 34360
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+        "sha256": "1c1d291714759657ede614650af13669a0ad1eae782ef830f6d0064121cc39d4",
+        "bytes": 32632768
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+        "sha256": "16efe3bfc7a4a37e7dea9f73e4ae529ed084fab3015d032d380bddd8cf2119d1",
+        "bytes": 945904
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+        "sha256": "100356905520dca5a7f9e2d8aa6db52232b1f8ea13c58cddb43c988bfc751d5e",
+        "bytes": 4419632
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+        "sha256": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+        "bytes": 13041776
+      },
+      "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+        "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+        "bytes": 125264
+      }
+    },
+    "unchanged": true,
+    "actual_images": [
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libwebpdecoder.3.2.0.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib",
+      "/Users/alex/code/vox2/Build/bbc-whole-profile-20261103-1340/jsc-author-probe-v2.dylib",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+      "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib"
+    ],
+    "actual_images_all_pinned": true,
+    "passed": true
+  },
+  "host_gate": {
+    "cpu_count": 18,
+    "load_average": [
+      11.08984375,
+      10.6064453125,
+      11.076171875
+    ],
+    "unix": 1793798531.514483,
+    "disk_free_bytes": 23092428800
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "tools/bbc_browser_instructions.py",
+      "--output",
+      "/Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/acceptance/cohort-89",
+      "--repeat",
+      "7",
+      "--archive",
+      "/Users/alex/code/vox2/Build/bbc-fresh-home-20261103-1224/clock-archive-v3",
+      "--memory-guard-registry",
+      "/Users/alex/code/vox2/Build/bbc-baseline89-20261104-1617/recheck-1621/acceptance/cohort89-pids.json",
+      "--diff-tool",
+      "Build/pixel-tools/pixel_diff",
+      "--expected-vox",
+      "/Users/alex/code/vox2/Build/bbc-fresh-home-20261103-1224/reference-complete/pair-1-vox/document.png",
+      "--expected-brave",
+      "/Users/alex/code/vox2/Build/bbc-fresh-home-20261103-1224/reference-complete/pair-1-brave/document.png",
+      "--preserve-inputs",
+      "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+      "--retain-logical-paint-snapping",
+      "--retain-css-layout-for-svg"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {
+      "10594": "Wed Nov  4 16:22:13 2026    ",
+      "10596": "Wed Nov  4 16:22:13 2026    ",
+      "11257": "Wed Nov  4 16:22:21 2026    ",
+      "11266": "Wed Nov  4 16:22:21 2026    ",
+      "11751": "Wed Nov  4 16:22:29 2026    ",
+      "11753": "Wed Nov  4 16:22:29 2026    ",
+      "12304": "Wed Nov  4 16:22:36 2026    ",
+      "12312": "Wed Nov  4 16:22:36 2026    ",
+      "12329": "Wed Nov  4 16:22:36 2026    ",
+      "12330": "Wed Nov  4 16:22:36 2026    ",
+      "12333": "Wed Nov  4 16:22:36 2026    ",
+      "12965": "Wed Nov  4 16:22:42 2026    ",
+      "12973": "Wed Nov  4 16:22:42 2026    ",
+      "12988": "Wed Nov  4 16:22:43 2026    ",
+      "12989": "Wed Nov  4 16:22:43 2026    ",
+      "12993": "Wed Nov  4 16:22:43 2026    ",
+      "13060": "Wed Nov  4 16:22:43 2026    ",
+      "13061": "Wed Nov  4 16:22:43 2026    ",
+      "13105": "Wed Nov  4 16:22:44 2026    ",
+      "13502": "Wed Nov  4 16:22:48 2026    ",
+      "13506": "Wed Nov  4 16:22:48 2026    ",
+      "13978": "Wed Nov  4 16:22:55 2026    ",
+      "13980": "Wed Nov  4 16:22:55 2026    ",
+      "14323": "Wed Nov  4 16:23:01 2026    ",
+      "14330": "Wed Nov  4 16:23:01 2026    ",
+      "14363": "Wed Nov  4 16:23:01 2026    ",
+      "14364": "Wed Nov  4 16:23:01 2026    ",
+      "14374": "Wed Nov  4 16:23:01 2026    ",
+      "14548": "Wed Nov  4 16:23:06 2026    ",
+      "14553": "Wed Nov  4 16:23:06 2026    ",
+      "14560": "Wed Nov  4 16:23:06 2026    ",
+      "14561": "Wed Nov  4 16:23:06 2026    ",
+      "14562": "Wed Nov  4 16:23:06 2026    ",
+      "14583": "Wed Nov  4 16:23:07 2026    ",
+      "14584": "Wed Nov  4 16:23:07 2026    ",
+      "14602": "Wed Nov  4 16:23:07 2026    ",
+      "14888": "Wed Nov  4 16:23:11 2026    ",
+      "14891": "Wed Nov  4 16:23:11 2026    ",
+      "15171": "Wed Nov  4 16:23:17 2026    ",
+      "15174": "Wed Nov  4 16:23:17 2026    ",
+      "15674": "Wed Nov  4 16:23:22 2026    ",
+      "15677": "Wed Nov  4 16:23:22 2026    ",
+      "15682": "Wed Nov  4 16:23:23 2026    ",
+      "15683": "Wed Nov  4 16:23:23 2026    ",
+      "15685": "Wed Nov  4 16:23:23 2026    ",
+      "15839": "Wed Nov  4 16:23:28 2026    ",
+      "15843": "Wed Nov  4 16:23:28 2026    ",
+      "15848": "Wed Nov  4 16:23:28 2026    ",
+      "15849": "Wed Nov  4 16:23:28 2026    ",
+      "15851": "Wed Nov  4 16:23:28 2026    ",
+      "15871": "Wed Nov  4 16:23:28 2026    ",
+      "16017": "Wed Nov  4 16:23:33 2026    ",
+      "16020": "Wed Nov  4 16:23:33 2026    ",
+      "16381": "Wed Nov  4 16:23:39 2026    ",
+      "16386": "Wed Nov  4 16:23:39 2026    ",
+      "16760": "Wed Nov  4 16:23:46 2026    ",
+      "16765": "Wed Nov  4 16:23:46 2026    ",
+      "16775": "Wed Nov  4 16:23:46 2026    ",
+      "16776": "Wed Nov  4 16:23:46 2026    ",
+      "16777": "Wed Nov  4 16:23:46 2026    "
+    },
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 1425833984,
+    "elapsed_seconds": 102.523399416,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "driver_exit": {
+    "driver_guard_exit": 1
+  },
+  "runtime_library_manifest": {
+    "acceptance": false,
+    "discoveries": [
+      {
+        "engine": "vox",
+        "images": [
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libwebpdecoder.3.2.0.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+          "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib"
+        ],
+        "root_pid": 10594
+      },
+      {
+        "engine": "vox",
+        "images": [
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libwebpdecoder.3.2.0.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+          "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+          "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib"
+        ],
+        "phase": "validation",
+        "root_pid": 11257
+      }
+    ],
+    "libraries": {
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+        "bytes": 150024,
+        "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+        "bytes": 69928,
+        "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+        "bytes": 102592,
+        "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib": {
+        "bytes": 5150944,
+        "sha256": "7cafa44b794162cf4cf3c6c7aba539268b45cf5dfece7b38e3cc302996d7a15e"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib": {
+        "bytes": 882592,
+        "sha256": "9d50c2ad8284b7919fb0c20e3525ae1f9b6b748bb07ff06f9a17c2e054f3df91"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+        "bytes": 181544,
+        "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+        "bytes": 335064,
+        "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+        "bytes": 768872,
+        "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+        "bytes": 33371048,
+        "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+        "bytes": 2158624,
+        "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib": {
+        "bytes": 218040,
+        "sha256": "73fc9f6db2dd44d1b82f973d473fbe5fc758c91da5abd039122b490cd180d912"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib": {
+        "bytes": 202328,
+        "sha256": "6c619d05ae86ea44f9d6a6abce1909cd8307e996b9df4fed60af1ca5487aefb2"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib": {
+        "bytes": 369272,
+        "sha256": "cb6b4293f2eaf95994270b9c410f2df62ccff07f1f0084755e9f64a58fbc6366"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib": {
+        "bytes": 64496,
+        "sha256": "66790d199425135a8c1399f2529d34add83a6a1127f81ec54874393bae7a0a5d"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+        "bytes": 245016,
+        "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+        "bytes": 5744128,
+        "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib": {
+        "bytes": 981792,
+        "sha256": "d27d1949469107fd5de5d3da306ddd817a09cd7a91fe27a02aeae0044af882cd"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libwebpdecoder.3.2.0.dylib": {
+        "bytes": 267704,
+        "sha256": "4a1f640ce89eb958e86a9f5ddc8bd1f87a9f59e3c9ef831e4405313b7f889145"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+        "bytes": 106528,
+        "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4"
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib": {
+        "bytes": 798160,
+        "sha256": "12fbf3cf9f0f40a51e6bca6a48b9c881a9197474e52a767b7ad5feae4f890f91"
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+        "bytes": 32632768,
+        "sha256": "1c1d291714759657ede614650af13669a0ad1eae782ef830f6d0064121cc39d4"
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+        "bytes": 945904,
+        "sha256": "16efe3bfc7a4a37e7dea9f73e4ae529ed084fab3015d032d380bddd8cf2119d1"
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": {
+        "bytes": 4419632,
+        "sha256": "100356905520dca5a7f9e2d8aa6db52232b1f8ea13c58cddb43c988bfc751d5e"
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": {
+        "bytes": 13041776,
+        "sha256": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb"
+      },
+      "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+        "bytes": 125264,
+        "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153"
+      }
+    },
+    "passed": true,
+    "policy": "Root images observed through PNG in separate traced launches, plus their transitive load commands. Application files and owned service binaries remain pinned. Fresh private caches/profiles; OS caches retained after diagnostics. No instruction credit from discovery or this protocol correction."
+  },
+  "acceptance_dyld_tracing": false,
+  "scope": "Exclusive coalition creation through encoded document PNG, including startup/nativewindow/targetsetup; Vox beforefilewrite and Brave CDPdelivery included, audits/teardown follow. Frozen609responses and originalscripts,1024x768CSS,DPR/capture2,2secondssettle,freshprivateprofiles/caches,retainedOScaches after separate diagnostic launches. Original references unchanged.",
+  "limitations": [
+    "Baseline only under a newer pinned build and corrected runtime pin protocol; no isolated engine savings or credit from changed boundaries/pins.",
+    "Root late-loaded images discovered and validated in separate traced processes; acceptance keeps tracing disabled and pins that expected runtime set plus transitive dependencies.",
+    "Earlier cohorts87/88 omit nine subsequently observed dynamic libraries, so their complete runtime identity remains unverified; raw counts/gates retained.",
+    "Cross-browser reference difference82.7154%; existing unsupported performance.measure, localArial/Boldfallbackavailability,paint_decodedfalse and incompleteDOMscripting remain. No new liveperformanceclaim."
+  ],
+  "broad": "No new paired optimization saving in this baseline; no new broad batch or cadence reset. Historical495entered/492passed with three known failures remains retained.",
+  "raw_evidence": {
+    "path": "docs/performance/raw/bbc-cohort89-runtime-pins-20261104.tar.gz",
+    "bytes": 24906141,
+    "sha256": "6c9f6b3196e1e6f5146373d976c4cdc9eee11d79fd00a5f6e1135cdff31c737f",
+    "members": 251,
+    "roundtrip_verified": true
+  },
+  "files": {
+    "baseline89/archive.guard.json": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "baseline89/archive-evidence.py": {
+      "bytes": 5453,
+      "sha256": "f6355ca13ba7958b73781e15ff7f0bbf29e63d4aa2f399675596658d051847e6"
+    },
+    "baseline89/validate-production.py": {
+      "bytes": 7067,
+      "sha256": "7bbba40304745f2b9d462cd1c9312b60e2e585569603ab00a26aec24d415ff19"
+    },
+    "baseline89/archive.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "baseline89/native-diagnostic.py": {
+      "bytes": 1813,
+      "sha256": "3ff2df778ed6be06ee22e245a4c12e2ed7492cd2edaef2a9e0a417f79af11f71"
+    },
+    "baseline89/production/selected-production.json": {
+      "bytes": 1298,
+      "sha256": "da5b2025c899615a470aab757ff13e0d065c2b05cc6f37de4f0a9dd0809baa46"
+    },
+    "baseline89/production/native-diagnostic.guard.json": {
+      "bytes": 1258,
+      "sha256": "601c4575198011cabc3db09324ff3e02009c954eb8c174182a333c681ea82646"
+    },
+    "baseline89/production/native-diagnostic-exit.json": {
+      "bytes": 16,
+      "sha256": "331dd85020eaf7c911e3417ee78f7ff17a0d1257e2a5c310696fc702d1c3f16f"
+    },
+    "baseline89/production/protocol-before.json": {
+      "bytes": 1032,
+      "sha256": "454ca4b98d666b434a70a6f41a2a411fef72c8f695f49322f3fc32b9f98cf9ba"
+    },
+    "baseline89/production/headless.log": {
+      "bytes": 633,
+      "sha256": "d676d71b0aa9daedb62673a031d0edd78b61ec60a5db00bbe4009e8477244a11"
+    },
+    "baseline89/production/production-observations.json": {
+      "bytes": 1555,
+      "sha256": "48a6f8bb94afe8eef3bfb10b2fb40e48d9a723ff3ce9d3aebb71bc32b1146011"
+    },
+    "baseline89/production/headless.guard.json": {
+      "bytes": 394,
+      "sha256": "9628d567734925ee2f97fa469b678fd33a0507dc02d53d17f9f0c6910bcac1d8"
+    },
+    "baseline89/production/headless-command.json": {
+      "bytes": 395,
+      "sha256": "a6cb23f458851392ee804daec974926d362f398c167daa2a1deec67f9ca4812e"
+    },
+    "baseline89/production/native-diagnostic.log": {
+      "bytes": 1459,
+      "sha256": "cd66df45eab3e2a245a3343402c7a3e3ed00cda816483ab08b8047590f828f42"
+    },
+    "baseline89/production/headless-exit.json": {
+      "bytes": 16,
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2"
+    },
+    "baseline89/production/source-proof-92906125bbb30986004ac60f57a2db7c4df3ff9ba7e1a25d4f7d5ada3fb5696a.json": {
+      "bytes": 7723,
+      "sha256": "9bca7c0fdb56d653e3cc1a0ded9daea72de23e2b720fadcb9e468e156a2736ba"
+    },
+    "baseline89/production/native-diagnostic-command.json": {
+      "bytes": 1367,
+      "sha256": "2cda5b7d0f4ae7c3d18bc71211c8706acc510a3dc3b00945fa67c5309de4486e"
+    },
+    "baseline89/recheck-1618/validate-production.py": {
+      "bytes": 7067,
+      "sha256": "7bbba40304745f2b9d462cd1c9312b60e2e585569603ab00a26aec24d415ff19"
+    },
+    "baseline89/recheck-1618/native-diagnostic.py": {
+      "bytes": 1813,
+      "sha256": "e303fd80aa36e793bfb2f3452636cb49beaf7211128250f154bfa15571e903e0"
+    },
+    "baseline89/recheck-1618/production/selected-production.json": {
+      "bytes": 1298,
+      "sha256": "da5b2025c899615a470aab757ff13e0d065c2b05cc6f37de4f0a9dd0809baa46"
+    },
+    "baseline89/recheck-1618/production/native-diagnostic.guard.json": {
+      "bytes": 1299,
+      "sha256": "969f9ccee4251f4e8c4096c073dd965aade2c060c4544bb6831a235757334889"
+    },
+    "baseline89/recheck-1618/production/native-diagnostic-exit.json": {
+      "bytes": 16,
+      "sha256": "331dd85020eaf7c911e3417ee78f7ff17a0d1257e2a5c310696fc702d1c3f16f"
+    },
+    "baseline89/recheck-1618/production/protocol-before.json": {
+      "bytes": 1032,
+      "sha256": "454ca4b98d666b434a70a6f41a2a411fef72c8f695f49322f3fc32b9f98cf9ba"
+    },
+    "baseline89/recheck-1618/production/headless.log": {
+      "bytes": 633,
+      "sha256": "16cb104d8827f0cad550bf8d3ef96e56bef16a47a544626c2a5ba31a945b34b2"
+    },
+    "baseline89/recheck-1618/production/production-observations.json": {
+      "bytes": 1555,
+      "sha256": "13993ec010dc94dcb92af484b8ca241aee0f8a58435caeda5f85d0a15c26509a"
+    },
+    "baseline89/recheck-1618/production/headless.guard.json": {
+      "bytes": 394,
+      "sha256": "4dbcb9b4581f447a1b24c739ca36225653e77c4dfb29491877cce92d4466cac5"
+    },
+    "baseline89/recheck-1618/production/headless-command.json": {
+      "bytes": 421,
+      "sha256": "573fbc44d13f10a356c2c83a0cefa76007b73757ce38477d0c16d4d4f01976e1"
+    },
+    "baseline89/recheck-1618/production/native-diagnostic.log": {
+      "bytes": 2332,
+      "sha256": "5938843db45ce5c311a01d67632f618486b60cafe98581827063dc75c610ea0d"
+    },
+    "baseline89/recheck-1618/production/headless-exit.json": {
+      "bytes": 16,
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2"
+    },
+    "baseline89/recheck-1618/production/source-proof-92906125bbb30986004ac60f57a2db7c4df3ff9ba7e1a25d4f7d5ada3fb5696a.json": {
+      "bytes": 7723,
+      "sha256": "9bca7c0fdb56d653e3cc1a0ded9daea72de23e2b720fadcb9e468e156a2736ba"
+    },
+    "baseline89/recheck-1618/production/native-diagnostic-command.json": {
+      "bytes": 1445,
+      "sha256": "c8cf8fea42c1c1219dcf2d55bf323dc173f906c110377b7ff7886435196a17a9"
+    },
+    "baseline89/recheck-1618/production/native-diagnostic/browser-apps.json": {
+      "bytes": 208,
+      "sha256": "7d43b751b8a4c279e5ecf94fae797e4152e72fe01fdddfb3f5ae5c7e0fc20926"
+    },
+    "baseline89/recheck-1618/production/native-diagnostic/inputs.json": {
+      "bytes": 647131,
+      "sha256": "a0482be75441532c85ae0ce06dcb2af2693f0631375d343e6f4dd04372168c3b"
+    },
+    "baseline89/recheck-1618/production/native-diagnostic/audit-config.json": {
+      "bytes": 550,
+      "sha256": "fad90a2afd34a887fe045ff63767cbc3d47a2fcbf4286af5e31a0ca905b83b36"
+    },
+    "baseline89/recheck-1618/production/native-diagnostic/replay/openssl.log": {
+      "bytes": 1024,
+      "sha256": "5fc6adf225345e52fa64ef29d62f92b28785e3d566a37182dd945445dadc9616"
+    },
+    "baseline89/recheck-1618/production/native-diagnostic/replay/ready.json": {
+      "bytes": 496,
+      "sha256": "8437cead041c6e8d0ac6cfe5d38d96b7bede3a7a82ef3a536b10be91a7c23cec"
+    },
+    "baseline89/recheck-1621/run-acceptance.py": {
+      "bytes": 3463,
+      "sha256": "553bbd535e05f0aab69d0ee9c0e87092ecf71ba8683aadbfaea35ff189f625b8"
+    },
+    "baseline89/recheck-1621/validate-production.py": {
+      "bytes": 7067,
+      "sha256": "7bbba40304745f2b9d462cd1c9312b60e2e585569603ab00a26aec24d415ff19"
+    },
+    "baseline89/recheck-1621/native-diagnostic.py": {
+      "bytes": 1767,
+      "sha256": "ec75dac3de771d2d58ec6c157569bb2d5f5a6b3eef26e8cc89608ebf9198112c"
+    },
+    "baseline89/recheck-1621/acceptance/exit.json": {
+      "bytes": 29,
+      "sha256": "a9271477e85bff9f2c3fd09f24722e4619d9d59bd8f5f0b5400f905473ce6b96"
+    },
+    "baseline89/recheck-1621/acceptance/cohort89-pids.json": {
+      "bytes": 4366,
+      "sha256": "44b40abb9aeef3c278e2af2e98baca55a7162c6f7d70f89036c5c2c6787ec402"
+    },
+    "baseline89/recheck-1621/acceptance/host-before-acceptance.json": {
+      "bytes": 163,
+      "sha256": "b07f86280670b1703fb88474978b4aeb57378d0d08d8ac922303aca2a333268d"
+    },
+    "baseline89/recheck-1621/acceptance/protocol-before.json": {
+      "bytes": 2588,
+      "sha256": "c7c0f5fb3c9757ffa078a80c16d96eb1e0a7f008a1137b286ba4b4fd6180b128"
+    },
+    "baseline89/recheck-1621/acceptance/command.json": {
+      "bytes": 1316,
+      "sha256": "f41e1d52f1ee46e7c0086a457e264178cbfea90b020ccc7e21166155b7791032"
+    },
+    "baseline89/recheck-1621/acceptance/cohort89.log": {
+      "bytes": 9607,
+      "sha256": "2b1c7d8f3e554101ecb50eab6ff07d9d5e77dac63df0a4075138793fe50cd948"
+    },
+    "baseline89/recheck-1621/acceptance/cohort89.guard.json": {
+      "bytes": 3929,
+      "sha256": "f1d8ed574101db1d0bddba0c4b77a8645b9e84cd53c5941c288af350e2f45534"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/summary.json": {
+      "bytes": 1612,
+      "sha256": "74f0fd20d92160598c62ada4440306be209ca6adf63ff69bf281a6ac4a83cff9"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pairs.json": {
+      "bytes": 2919528,
+      "sha256": "811ec7d836ce16f411a58c71a40ba245d1566e03ac072a20509c0918e001435a"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-libraries.json": {
+      "bytes": 11520,
+      "sha256": "0d527e442cbf7285534e61e127dc0545dea357079a2f566ba02db90c96569263"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/browser-apps.json": {
+      "bytes": 208,
+      "sha256": "7d43b751b8a4c279e5ecf94fae797e4152e72fe01fdddfb3f5ae5c7e0fc20926"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/inputs.json": {
+      "bytes": 1109178,
+      "sha256": "fea8a40440a372dcc8adc224999cd077030ab7e810ae4f2e882b1ca9fd0902c8"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/audit-config.json": {
+      "bytes": 550,
+      "sha256": "fad90a2afd34a887fe045ff63767cbc3d47a2fcbf4286af5e31a0ca905b83b36"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/cross-browser.diff.png": {
+      "bytes": 1145154,
+      "sha256": "eaed5c40c69f7d54340ae5b3c36776880fbdb04f756f7a25b4faa08dba880c42"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-brave/document.png": {
+      "bytes": 620992,
+      "sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-brave/browser.log": {
+      "bytes": 98,
+      "sha256": "4871d30d10c7817eefd4f2cce04c14e067bb13a5d5ed023fba5ed8ac2f904df8"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-brave/audit.json": {
+      "bytes": 379096,
+      "sha256": "74bddd99412095dd0226d74c6b785ef1fd0df8fbdf605dbabc1276e56bc4646b"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-brave/result.json": {
+      "bytes": 151606,
+      "sha256": "d1665fd8c01a297e2b04408434e17d157cff28fbd16f1b781a78ae7a365375db"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-brave/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-brave/stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-brave/launch.json": {
+      "bytes": 19988,
+      "sha256": "e26f3a85c127d0bca3c356e9abbab7a7d80b93b3d4409607e1a8ac42c658e2fe"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-brave/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "148565afaa319bccadb118cdb1d998d2fa30efb41b2c1a923ed5619e017d8f5a"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-brave/document.png": {
+      "bytes": 620992,
+      "sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-brave/browser.log": {
+      "bytes": 98,
+      "sha256": "a514de60201ee01d1e50e96e99ff6d3dee2dd290067b9cd216e67064e4278caa"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-brave/audit.json": {
+      "bytes": 379096,
+      "sha256": "74bddd99412095dd0226d74c6b785ef1fd0df8fbdf605dbabc1276e56bc4646b"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-brave/result.json": {
+      "bytes": 176849,
+      "sha256": "72a5df4195d523ab4cdb382836fc9345179c2b5ee50ef5d05277532216a46faa"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-brave/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-brave/stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-brave/launch.json": {
+      "bytes": 19988,
+      "sha256": "45a84401a645bf32a7b19c1b823cc13c688548246e36df9c8c63b8384a3e146a"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-brave/input-identity-after.json": {
+      "bytes": 461796,
+      "sha256": "d0b71350da7124e9b5e15f4e6c242e3d7850b55f5f2b5ec49b65b34292539b6c"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-validation-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-validation-vox/browser.log": {
+      "bytes": 191895,
+      "sha256": "f496ff8ca88ea36170512a0a02c7852f6fb0ef82ec12362101daa01a354fe26b"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-validation-vox/audit.json": {
+      "bytes": 363721,
+      "sha256": "d5af911b4159c9f7c81cbec39f88862409b26bf11c211aa644f0a6c712043b05"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-validation-vox/result.json": {
+      "bytes": 178192,
+      "sha256": "56ab296fdee965869e9442f57110ba5c19537430f14dac2ec1ebcec8bc6a4530"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-validation-vox/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-validation-vox/stdout.log": {
+      "bytes": 163,
+      "sha256": "d617f68bf1771f4d578a75bc789c28d6097ea2a106eea50e0ab3543aab28223a"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-validation-vox/launch.json": {
+      "bytes": 2396,
+      "sha256": "2fb86f722db892ae932a0d1d34ddd882eea295da43a4ff409ad82048f445205c"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-validation-vox/input-identity-after.json": {
+      "bytes": 461560,
+      "sha256": "59718450bc6a8dbdeed2a724b91ae71595fcc2988a9a6eb643355d9e0496832e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-brave/document.png": {
+      "bytes": 603025,
+      "sha256": "715bbb59dc3c6ede7765605cef8a18c1f42c06aee21af3a0de8efcdb6cf7768d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-brave/browser.log": {
+      "bytes": 98,
+      "sha256": "86c0c6e11251dea89c8d6b5cfdc122bb213ff7b4fe56b71781729fc2b47f188c"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-brave/audit.json": {
+      "bytes": 379096,
+      "sha256": "74bddd99412095dd0226d74c6b785ef1fd0df8fbdf605dbabc1276e56bc4646b"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-brave/result.json": {
+      "bytes": 276645,
+      "sha256": "7b232e88db00130b4160abb7dd67f485de610dc30d6ec750d4f5b6e36592ee27"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-brave/document.diff.png": {
+      "bytes": 284506,
+      "sha256": "21765b8318dc3e38f6d709277570f11b91fad3c5d55de1db39ce6bd1c412972e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-brave/stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-brave/launch.json": {
+      "bytes": 27310,
+      "sha256": "2f2d6a5fc7165d297add674268494aaf60a14153d544ee6dadf5fe4f06dec7a1"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-brave/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "625fd873bc05785177d326676d1cf23c3e1f181c82b67881c2f123fb0d0cb2b0"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-discovery-input-check/input-identity-after.json": {
+      "bytes": 459519,
+      "sha256": "6618d9c33c36b7b7c5cede07bcf8ca1298259c11cd7a00c704577cf53e863edf"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-brave/document.png": {
+      "bytes": 603347,
+      "sha256": "c6163fd5ae2bd700bc5937f89d454104734f2eb5ab3e8507f124dbfdf50d52c2"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-brave/browser.log": {
+      "bytes": 98,
+      "sha256": "f8b151a8c55e253762fa2315760e9e12b30fa3987f7f734be0becc899a64875b"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-brave/audit.json": {
+      "bytes": 379096,
+      "sha256": "74bddd99412095dd0226d74c6b785ef1fd0df8fbdf605dbabc1276e56bc4646b"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-brave/result.json": {
+      "bytes": 152388,
+      "sha256": "1cc1fed8931f1f82c577ba7368e8531ea62a8cac6e5f64fa78db92f64f08b5c9"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-brave/document.diff.png": {
+      "bytes": 339310,
+      "sha256": "1ed7618fc11178d159775440112f4b757c1b59b321da140bf7863b52075fb0f8"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-brave/stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-brave/launch.json": {
+      "bytes": 19988,
+      "sha256": "83921a1b82d91211b2c5d5f17b117ee246bc18ad140d0b486005aa991c941388"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-brave/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "0bed66021df1b55e764fea84ac07ef7e50fce9b8e9206c6c5a8bc5d4d872cdce"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-brave/document.png": {
+      "bytes": 620992,
+      "sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-brave/browser.log": {
+      "bytes": 98,
+      "sha256": "583fbd4abb9ec2ad46ebc5801f3182ad5caa4c1b8df89db9b6ac76011bab7e9d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-brave/audit.json": {
+      "bytes": 379096,
+      "sha256": "74bddd99412095dd0226d74c6b785ef1fd0df8fbdf605dbabc1276e56bc4646b"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-brave/result.json": {
+      "bytes": 176884,
+      "sha256": "13ef2a8975e84993075cd8d4d485a9b012f7bdad29b1cd78f090547afdb362cd"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-brave/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-brave/stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-brave/launch.json": {
+      "bytes": 19988,
+      "sha256": "2a8cc4ee42db4382f18b238d3a4aa733068ad98698113101ac795d5d6ad1d8df"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-brave/input-identity-after.json": {
+      "bytes": 461794,
+      "sha256": "288ea196530f5c6e27bf20689d3024a48e2b03fc59ccad0477024ceb9d2dbdf6"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-brave/document.png": {
+      "bytes": 620992,
+      "sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-brave/browser.log": {
+      "bytes": 98,
+      "sha256": "a6fcbad0a788dec2684e2a86a57a038c061516125860d529af9c0226700032a1"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-brave/audit.json": {
+      "bytes": 379096,
+      "sha256": "74bddd99412095dd0226d74c6b785ef1fd0df8fbdf605dbabc1276e56bc4646b"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-brave/result.json": {
+      "bytes": 221132,
+      "sha256": "9457db9f7fae049819171b3e6e62b0e4c9acebd7f95efd57fa41bfbc742057c7"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-brave/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-brave/stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-brave/launch.json": {
+      "bytes": 27310,
+      "sha256": "4b15ce00202e2240bab48e5667b0326c14e55a136e7ab339fc1c7e4c187cdfbf"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-brave/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "0c2716500777bad8c8688cfbce0edf1645c366eca336149357fed754b1703867"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-brave/document.png": {
+      "bytes": 620992,
+      "sha256": "2c964fbc9517dd55656e8333f97340e0b12d729baa1596b93ca7c5abaeb443aa"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-brave/browser.log": {
+      "bytes": 98,
+      "sha256": "567410445ecf6854610119f85ec6b576fce593a42e4b90dc55d295ed44a26ce0"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-brave/audit.json": {
+      "bytes": 379096,
+      "sha256": "74bddd99412095dd0226d74c6b785ef1fd0df8fbdf605dbabc1276e56bc4646b"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-brave/result.json": {
+      "bytes": 176892,
+      "sha256": "a51a366885cf13aa5c9af596365dc907d217d21c2fbf73fbf13dfb4e3b9abb14"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-brave/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-brave/stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-brave/launch.json": {
+      "bytes": 27323,
+      "sha256": "c34c870b06253a81c40c3d1ee944d141e26ed65665fd96195b7aa51947fd7de9"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-brave/input-identity-after.json": {
+      "bytes": 461796,
+      "sha256": "805590f81addd6f856dcdecf703cb6620d8b7006bf6ef9a319f443fea82a669f"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-vox/browser.log": {
+      "bytes": 25455,
+      "sha256": "1515a3e3ad992133dc7ce84f758b025210cbfe99e9f1cf6ebb732aa90477da66"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-vox/audit.json": {
+      "bytes": 363721,
+      "sha256": "45c471f5fa198869a28e8b10dc32e991493a6d26295f9388c0a0f527a44aa4dd"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-vox/result.json": {
+      "bytes": 186832,
+      "sha256": "bf4754e4aea8752c21ecc1b074474edd3b2f05c9f0f3f6027fb1bb5acbd3e74e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-vox/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-vox/stdout.log": {
+      "bytes": 151,
+      "sha256": "41113f30b7c5ba0c2c4f93ed7ecd075e568438882101ff73ca9c91cf175338c4"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-vox/launch.json": {
+      "bytes": 2281,
+      "sha256": "a8eb1e9ae4a1668eae91d418ea76df9c7e9a237da85f9b0ec9b018d54b90bbee"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-1-vox/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "86fb01360b28686a37f5a2baa81ceddc57d968849b2e634daa8fece55126ea90"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-vox/browser.log": {
+      "bytes": 26138,
+      "sha256": "3b917df669be5919767dacd9f5a2b431bf2780a3947e8eec0548d8d57430895b"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-vox/audit.json": {
+      "bytes": 363721,
+      "sha256": "4142cb014a5d9d109970d204aba45a7fcc3a7002a4d9570338e35e164dea79ea"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-vox/result.json": {
+      "bytes": 193202,
+      "sha256": "ca86ed5071a3472bde595420f64f0d6c06264ec312192f5c02042aefea411a88"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-vox/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-vox/stdout.log": {
+      "bytes": 151,
+      "sha256": "9fb87fb43d0d9134f8e9353f06a539b99f57c17af30db8896e3ee874d6140d07"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-vox/launch.json": {
+      "bytes": 2281,
+      "sha256": "5af376dc974080f6a68f1700742496f7d357502073c12540773bf45660368af4"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-2-vox/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "f8485ccf6bbded109c6bbe288ca3dbcabf66ee4284e49badeab5a7b6977bfcbf"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-discovery-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-discovery-vox/browser.log": {
+      "bytes": 191616,
+      "sha256": "05281c90235736497863eba395e29e5e9f63d656c7cd5a1f8ed98f6f0d3ae202"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-discovery-vox/audit.json": {
+      "bytes": 363721,
+      "sha256": "9349f72cfe12b345e8b934a95796d78a1a07bc63f7681fa48a687386b9565d9e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-discovery-vox/result.json": {
+      "bytes": 193914,
+      "sha256": "ffecb3c3e1bfa9a5f5ed8aa5efd146737f34b6a8d206b67b4968925f918cb7b9"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-discovery-vox/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-discovery-vox/stdout.log": {
+      "bytes": 162,
+      "sha256": "407ebdfb859c54044c437bd2f50e373df8f5e3190c8b17fb2f5d236c5f148b9d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-discovery-vox/launch.json": {
+      "bytes": 2390,
+      "sha256": "e57dec9ef9af85c2994987e6d2e582692fff1ad3c73d5dd31ca7a11a0b73bc5d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/runtime-discovery-vox/input-identity-after.json": {
+      "bytes": 459519,
+      "sha256": "de3d7c7791a01b397c12745323f39c1aa0129588a1b46aa981c3390eb52ed2b1"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-vox/browser.log": {
+      "bytes": 28138,
+      "sha256": "96bf2becbea1ae4ef3f3c20fc5fb3cf8a76975738d5ab03596381a296c640acd"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-vox/audit.json": {
+      "bytes": 363721,
+      "sha256": "2b4916c7edab20d26c5525b2cc3fe3a2a5236fbc65f3f4d01d198b262bbec847"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-vox/result.json": {
+      "bytes": 197229,
+      "sha256": "b7859aa2ade2edbe7ab4006bce04f30bb82d5b4df3be885e88fd9adc1ef23ff5"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-vox/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-vox/stdout.log": {
+      "bytes": 151,
+      "sha256": "71d3124a88e6210be34cbc494af947c89d993ede1190b11205827c5165239989"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-vox/launch.json": {
+      "bytes": 2281,
+      "sha256": "42441f2e299d4350d5dfe41051621140efd26cbb55453c608316150ad938155f"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-3-vox/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "abfa9a4b3aadd539112c1fa94bd3786c663310cdb47d82ad920081c1f0f535ee"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-vox/browser.log": {
+      "bytes": 27303,
+      "sha256": "f2e670436e6a30b01e676c0d2073963e23dd830b00b21318f23e394a0b99efe6"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-vox/audit.json": {
+      "bytes": 363721,
+      "sha256": "940661076d72d14aff43ba6a14a367dad6c82ad43c26845ba87977348313f4e4"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-vox/result.json": {
+      "bytes": 196946,
+      "sha256": "3633efe5f62bfdb57d50946bab2ac639360b263ff0134f58794e1a59a364c0d9"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-vox/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-vox/stdout.log": {
+      "bytes": 151,
+      "sha256": "3e84c4ed9463dea7a8888b43323f0a4acaa2abebf1052ed002bf7685283c7886"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-vox/launch.json": {
+      "bytes": 2281,
+      "sha256": "902f43616c5d478f0491baf134d47f6a916e14a22ea5f44fad66e2c5291caee9"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-7-vox/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "6b994bf59b9c9ba297e44a7aa2d6f10d5be91e99a5b20846c8f46548343e2daf"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-vox/browser.log": {
+      "bytes": 26718,
+      "sha256": "b01b372da86002182ffba15424c38c3b0ba8312c67e414a39e30466e3b17bebe"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-vox/audit.json": {
+      "bytes": 363721,
+      "sha256": "98f70ec24d8512bc5ee07705285b75485d97cd065daebffbbd7f3d7db7e1cca5"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-vox/result.json": {
+      "bytes": 191610,
+      "sha256": "3a29e14120feac597004c2430ae2e7aad9ab6ee9eb161d5c642a3c6db66c7fee"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-vox/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-vox/stdout.log": {
+      "bytes": 151,
+      "sha256": "9a10ea4411c7ba41adc20b03e3560fa45d2fb72c93f2bbf0ccfe7e49ca8dd6c0"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-vox/launch.json": {
+      "bytes": 2281,
+      "sha256": "784a19bc3320999c965a356ca28b9d2cc2374704a061287a4779ef3e7c8e7929"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-6-vox/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "0858842dbb092efe1820fffc669ce5f1579a67faba9f5be181b33627817305aa"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-vox/browser.log": {
+      "bytes": 25856,
+      "sha256": "74b608fbddb014a84df3a3e1ba89c6ef08f5b7aaa68b2f43277f36b06fb9395d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-vox/audit.json": {
+      "bytes": 363721,
+      "sha256": "c7e909e920277b8d2365d7610958e79a4e9bef0b9a67c953242cb666beff5dd5"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-vox/result.json": {
+      "bytes": 208404,
+      "sha256": "777bde5745aee697c0732c8df5479cf26f040363cf526e89d6739f016ead728d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-vox/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-vox/stdout.log": {
+      "bytes": 151,
+      "sha256": "987aea023e65373bc5dbdf98c410f41875cc6d11a272064c50f1158686dfaec4"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-vox/launch.json": {
+      "bytes": 2281,
+      "sha256": "93e807450efaa36bc231a22f3f84cbdc8dbe5f674d888c39f072793465469810"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-4-vox/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "fc49926297a095b50e54d397cc7adaae8a2591c19b1bd1307b83927cf686873a"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-vox/browser.log": {
+      "bytes": 25680,
+      "sha256": "53c6551dc0b548f45241fcc8a103072833d86a28f7788353bcc4bf0517d43dcd"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-vox/audit.json": {
+      "bytes": 363721,
+      "sha256": "ca08e023d79b2d060384ada2a0be9210ae33e17e25f8479ec2ffddbabaaf598e"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-vox/result.json": {
+      "bytes": 204060,
+      "sha256": "72e6ea4f873b9a320023d822887f80053abb204c70c6caad2d7b06fef1fba02d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-vox/document.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-vox/stdout.log": {
+      "bytes": 151,
+      "sha256": "8f28643af35191f706797b18b959888a2722d5b01bd765632d870b3e9f8b1e68"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-vox/launch.json": {
+      "bytes": 2281,
+      "sha256": "ffb3be43f825aa64d505d6bc61f292569e41ce8879c99d3b95df503042b715ad"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/pair-5-vox/input-identity-after.json": {
+      "bytes": 461795,
+      "sha256": "4fe774f5a6637ad2fbd3b07843a996c9e82f38a9eb6f0c6298f524f3bc69d9d7"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/replay/openssl.log": {
+      "bytes": 560,
+      "sha256": "ca39f436d00ef006f1e6d2f44faf403843a3814bde6a491588861f766203e310"
+    },
+    "baseline89/recheck-1621/acceptance/cohort-89/replay/ready.json": {
+      "bytes": 488,
+      "sha256": "17ae28353eadb812fe27be2da844936e04a1d2eaa2de75e64b97755f107e9962"
+    },
+    "baseline89/recheck-1621/production/selected-production.json": {
+      "bytes": 1298,
+      "sha256": "1399479d223615249e8b58fe44d83d051bb529a90b6e8a1fd8bea768c19e0179"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic.guard.json": {
+      "bytes": 1391,
+      "sha256": "a701f0dc0e5f5848f67ea947d206c7735cff2c3eadbf6546ec42fff9df257aa5"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic-pids.json": {
+      "bytes": 116,
+      "sha256": "380371b64630a1999c6532f3485a32c232a3349297cb85ef0a88a61524238605"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic-exit.json": {
+      "bytes": 16,
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2"
+    },
+    "baseline89/recheck-1621/production/protocol-before.json": {
+      "bytes": 1032,
+      "sha256": "454ca4b98d666b434a70a6f41a2a411fef72c8f695f49322f3fc32b9f98cf9ba"
+    },
+    "baseline89/recheck-1621/production/headless.log": {
+      "bytes": 641,
+      "sha256": "d7851e0752a260c207ed4fbf70c022777d6c7842dfa425f8b4c712fd950b758d"
+    },
+    "baseline89/recheck-1621/production/production-observations.json": {
+      "bytes": 1555,
+      "sha256": "03c75a0c804f8ac25b7899f88a8ef203e8b2a6042948c7bae4064531e87a6084"
+    },
+    "baseline89/recheck-1621/production/headless.guard.json": {
+      "bytes": 402,
+      "sha256": "f59d939a20f66c792f5f4faab435bd9d20acc89d2ea586a7ada1ad1cc31fe29e"
+    },
+    "baseline89/recheck-1621/production/headless-command.json": {
+      "bytes": 421,
+      "sha256": "aa29666dd392cf30bc31114097380df0132269d6683b496621bc740aba3f4a39"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic.log": {
+      "bytes": 1658,
+      "sha256": "ad84016d39cb5043d73ba77c1a209b89712d3d6f760c4882bdc287c27f3266ca"
+    },
+    "baseline89/recheck-1621/production/source-proof-1c1d291714759657ede614650af13669a0ad1eae782ef830f6d0064121cc39d4.json": {
+      "bytes": 7723,
+      "sha256": "b7e46f074ae416e9989f285e7214f2572085638a1286daa330e5b081bc6b31e2"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic-checks.json": {
+      "bytes": 648,
+      "sha256": "5c445cbbca32e248a9fbee8db26ea17dde6a8f9ce83da0f23da9c749105aa41b"
+    },
+    "baseline89/recheck-1621/production/headless-exit.json": {
+      "bytes": 16,
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2"
+    },
+    "baseline89/recheck-1621/production/validation.json": {
+      "bytes": 95,
+      "sha256": "88530b4ad232ea253d0f679c9fb03e250029a0896160466b6be73746b1da83fa"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic-command.json": {
+      "bytes": 1445,
+      "sha256": "03c344ff859e1868c657671efb20b8e2c100eee4a3dc8a0a27b61a4bcf31dca4"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/summary.json": {
+      "bytes": 73,
+      "sha256": "8818fa71595aefab2290e09180ae046aa16e9e217d4bb510e4344a75c5bbd1e0"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/pairs.json": {
+      "bytes": 204543,
+      "sha256": "d0826bf69df8ac5b92518cdc7e1d68fb2ef96d5e58ae1e286692b7ea9a775e61"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/browser-apps.json": {
+      "bytes": 208,
+      "sha256": "7d43b751b8a4c279e5ecf94fae797e4152e72fe01fdddfb3f5ae5c7e0fc20926"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/inputs.json": {
+      "bytes": 647131,
+      "sha256": "798988a54431fd17ebc55f550d0f1fe56c6a7bf06985bf1acd2ffdb9d2209d45"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/audit-config.json": {
+      "bytes": 550,
+      "sha256": "fad90a2afd34a887fe045ff63767cbc3d47a2fcbf4286af5e31a0ca905b83b36"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/pair-1-vox/injected-probe.json": {
+      "bytes": 15122,
+      "sha256": "72691996cf8c55c23d8d3ffbea0e95c6379459431c207a2999f949c6d24dd967"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/pair-1-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/pair-1-vox/browser.log": {
+      "bytes": 206193,
+      "sha256": "a07a3f28149f111b919224dbb2e555fe9e1569f95265edd2ff3fb7134f6e5e79"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/pair-1-vox/audit.json": {
+      "bytes": 363715,
+      "sha256": "72060291f31fea226cb6c7e77f48ce332c8869b2f712f1f0c6963b6511a4229d"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/pair-1-vox/result.json": {
+      "bytes": 183484,
+      "sha256": "24096e1893abdb034c1d24731bd5719b042b8f174d377507e0471cef5e0f7de9"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/pair-1-vox/independent.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/pair-1-vox/stdout.log": {
+      "bytes": 159,
+      "sha256": "59b8b2d5b51e433aeecf571c4f923d5c518137546d2209e0ff2625acd5eab4ae"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/pair-1-vox/launch.json": {
+      "bytes": 2633,
+      "sha256": "d77495f1e9a378cd77472cedf96fff83b120e11194886a7893f3c3b0d1d1ce1f"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/pair-1-vox/input-identity-after.json": {
+      "bytes": 459535,
+      "sha256": "ec7c91fcdeaf871f6fba960dcc77736bcd078092897153a164995d2195840905"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/replay/openssl.log": {
+      "bytes": 980,
+      "sha256": "fafad2bad903169487f77d88910a51351eb7e0128b2cb66d95d4d8ebd2a81c71"
+    },
+    "baseline89/recheck-1621/production/native-diagnostic/replay/ready.json": {
+      "bytes": 496,
+      "sha256": "7e62203998da3a28df687c84635e1e0397300346572787e2b7a64d65d2c50868"
+    },
+    "earlier-post-removal-native/coordinator-first-attempt.json": {
+      "bytes": 196,
+      "sha256": "ff6c0264fcdb4dcab270ab35b936ec8b83056f0ee6ef44e458e06a7cbccb5963"
+    },
+    "earlier-post-removal-native/validate-production.py": {
+      "bytes": 7067,
+      "sha256": "7bbba40304745f2b9d462cd1c9312b60e2e585569603ab00a26aec24d415ff19"
+    },
+    "earlier-post-removal-native/native-diagnostic.py": {
+      "bytes": 1058,
+      "sha256": "2c3487b13798c8595a3c5657e687aad391bdfac38814daa97761522c6107bea1"
+    },
+    "earlier-post-removal-native/production/selected-production.json": {
+      "bytes": 1298,
+      "sha256": "40fcb43811b50fa2c2aaccb6361258abdd2b3b4337d6f0f875a99ba65d2d7888"
+    },
+    "earlier-post-removal-native/production/native-diagnostic.guard.json": {
+      "bytes": 1361,
+      "sha256": "864c4b25c38cb5aea561c49fd8575ea50a4adb959765d26c75c3726e6e4b8638"
+    },
+    "earlier-post-removal-native/production/native-diagnostic-pids.json": {
+      "bytes": 118,
+      "sha256": "24e489405123ce2fa425d8f16a2a454f99c6f0827de31e635ae12f0d5543fdae"
+    },
+    "earlier-post-removal-native/production/source-proof-8eeafcba18c3a7fa5b216063dc3b3785eb1c179d9cd9ff6e5015088f0e064269.json": {
+      "bytes": 7723,
+      "sha256": "e5acd31ef9f1282838b8bc8b6332cdae2e6d09e8f13f72a3c83a9a511468bd6d"
+    },
+    "earlier-post-removal-native/production/native-diagnostic-exit.json": {
+      "bytes": 16,
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2"
+    },
+    "earlier-post-removal-native/production/protocol-before.json": {
+      "bytes": 1032,
+      "sha256": "454ca4b98d666b434a70a6f41a2a411fef72c8f695f49322f3fc32b9f98cf9ba"
+    },
+    "earlier-post-removal-native/production/headless.log": {
+      "bytes": 635,
+      "sha256": "319ca789c31d63be51895704f0fdd5e01a6ae6de6aea23f7acff30257a2de49f"
+    },
+    "earlier-post-removal-native/production/production-observations.json": {
+      "bytes": 1554,
+      "sha256": "be5ab29b36b77ca6e57af14352e4c73ec4fe768adff6a29e51eea3e3735f2bae"
+    },
+    "earlier-post-removal-native/production/headless.guard.json": {
+      "bytes": 396,
+      "sha256": "974e3673a584af9bcb096815bb573681a5318b51399891609bd8052e6fbf604f"
+    },
+    "earlier-post-removal-native/production/headless-command.json": {
+      "bytes": 395,
+      "sha256": "58257bfc1d91bfc3d31f85c90a4a7ed85d4b37f054714a02fb1b0ee188c3472e"
+    },
+    "earlier-post-removal-native/production/native-diagnostic.log": {
+      "bytes": 1628,
+      "sha256": "65cfa5669bcdcba47f2b2d1f04f4b9ff13f5573723fe50b8063f4852a811561e"
+    },
+    "earlier-post-removal-native/production/native-diagnostic-checks.json": {
+      "bytes": 635,
+      "sha256": "0017d070112c798679c6ca1fb96bfd23c30ba3eefd22992c91a7f33b3040d580"
+    },
+    "earlier-post-removal-native/production/headless-exit.json": {
+      "bytes": 16,
+      "sha256": "3e42a2ad3dbeab9d1167d20261ad6305bdea31103ffc09c30f25558345966de2"
+    },
+    "earlier-post-removal-native/production/validation.json": {
+      "bytes": 95,
+      "sha256": "88530b4ad232ea253d0f679c9fb03e250029a0896160466b6be73746b1da83fa"
+    },
+    "earlier-post-removal-native/production/native-diagnostic-command.json": {
+      "bytes": 1367,
+      "sha256": "57d99943b4d70f1a8941f9f313054ccf6ecfe947c150dca60b11baa16fff3bd9"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/summary.json": {
+      "bytes": 73,
+      "sha256": "8818fa71595aefab2290e09180ae046aa16e9e217d4bb510e4344a75c5bbd1e0"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/pairs.json": {
+      "bytes": 182878,
+      "sha256": "c4cb77cdf53335a2f316d1597f4930df0ea2a6a5e7a0b6f54f21e49d78e17edc"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/browser-apps.json": {
+      "bytes": 208,
+      "sha256": "7d43b751b8a4c279e5ecf94fae797e4152e72fe01fdddfb3f5ae5c7e0fc20926"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/inputs.json": {
+      "bytes": 647105,
+      "sha256": "731501d855ae8e80b33712049d690960ee7593f9c52e122ea8d220d2efc2bf8d"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/audit-config.json": {
+      "bytes": 550,
+      "sha256": "fad90a2afd34a887fe045ff63767cbc3d47a2fcbf4286af5e31a0ca905b83b36"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/pair-1-vox/injected-probe.json": {
+      "bytes": 293,
+      "sha256": "a2349904e4329f910dc9dd60a2dc1db68460f7100dce57a13c42c3635fffb33d"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/pair-1-vox/document.png": {
+      "bytes": 1441059,
+      "sha256": "2e837fa2692a2376bc9d5909474a717e7cd90445c86814b1ae66e79939593a1e"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/pair-1-vox/browser.log": {
+      "bytes": 50432,
+      "sha256": "bdf9a54dcdef5d3b58aa617e3f502544d9ac3f393c703fa990be3e6ef8a6d1e6"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/pair-1-vox/audit.json": {
+      "bytes": 363855,
+      "sha256": "11076c5c98972d4851e2466df352d7dd5a5d1c94eb31a6d072cbf1e4d8b4c084"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/pair-1-vox/result.json": {
+      "bytes": 164031,
+      "sha256": "77ffd27bf1038796e1298b2e9e851e6180578603ff90831ec47f111a693278ec"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/pair-1-vox/independent.diff.png": {
+      "bytes": 125061,
+      "sha256": "93e1afe87a604185991c33d486c616214a6e0abbbc31ec61e88375c4dae19f7d"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/pair-1-vox/stdout.log": {
+      "bytes": 146,
+      "sha256": "4230b73a216c41e5a9c64cc35f5c19a9778154818418139c4297d2661d55ceba"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/pair-1-vox/launch.json": {
+      "bytes": 2486,
+      "sha256": "cc821aeaf8c40c5b2ed2090e6201d55dac810b9aa968ea20117307de46cee40e"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/pair-1-vox/input-identity-after.json": {
+      "bytes": 459510,
+      "sha256": "1e0acc285a7e633ee52ef48c8b5a30cb41ab08416467bc5ecd976d9c7505f8a3"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/replay/openssl.log": {
+      "bytes": 1488,
+      "sha256": "551195ebae2e092516c363e2ae8f456e0479ffdb092462a1a32834fb6612d150"
+    },
+    "earlier-post-removal-native/production/native-diagnostic/replay/ready.json": {
+      "bytes": 483,
+      "sha256": "df8e06ea0d263ccac5e720666e1301250389f7cfc02420c3edbd826cb1d80542"
+    },
+    "prior-archive-final/archive.guard.json": {
+      "bytes": 410,
+      "sha256": "d21b81f3b89a410338bf294cf06baed16979cd2563cc448535946737bbd52aad"
+    },
+    "prior-archive-final/archive.log": {
+      "bytes": 611,
+      "sha256": "0cd7067239d4c0ee03bdaf11b7eaf30852e8318a5478860904bc8801a97b359c"
+    }
+  }
+}

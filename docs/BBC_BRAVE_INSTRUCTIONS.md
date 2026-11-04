@@ -1,7 +1,48 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Cohort 88 completes all seven alternating matched
+`OPTIMIZED_SITES.md`.** Corrected cohort 89 retains seven alternating Vox/Brave
+pairs. Median observations are **28,545,330,528 Vox** and **17,484,012,241 Brave
+lower bound** instructions. The strict gate fails
+`289938781390 > 156732373359`, conservative ratio **1.6649074958706724**.
+Brave pairs 2 and 7 differ from the unchanged reference by 171,581 and 224,973
+pixels, invalidating acceptance. All 14 native exits and complete-content checks
+pass; every Vox capture is exact. No trial is excluded.
+
+This cohort corrects a runtime identity gap: a later image audit finds **nine
+late-loaded libraries absent from the recorded pins in cohorts 87 and 88**.
+Their raw counts, medians and failing gates remain retained, but those cohorts
+do not establish complete runtime identity for acceptance. The driver now
+discovers root images in a separate traced launch, pins their transitive
+dependencies using the original executable's rpaths, then validates that set in
+a fresh traced launch before acceptance. Cohort 89 pins 25 runtime files this
+way; all acceptance launches keep dyld tracing disabled. Scope and pin
+corrections earn no engine optimization credit. All **304 instruction-tool
+tests** pass, including drift and environment-restoration checks.
+
+The selected production executable is
+`1c1d291714759657ede614650af13669a0ad1eae782ef830f6d0064121cc39d4`.
+A separate native diagnostic verifies exact original pixels/content, all 72
+original external author scripts before PNG and pinned actual native images.
+The predeclared host gate passes at load 11.09 on 18 CPUs. The total is now
+**89 cohorts / 1,975 attempted acceptance browser trials**, plus two separate
+runtime discovery/validation launches; older contention attempts remain
+separately retained. There is no new paired engine saving or broad cadence reset.
+See the [cohort 89 ledger](performance/bbc-cohort89-runtime-pins-20261104.json)
+and [verified raw evidence](performance/raw/bbc-cohort89-runtime-pins-20261104.tar.gz).
+
+A refreshed `v -profile` main-thread diagnostic passes normal exit, exact PNG,
+complete content, all 72 original external scripts before capture, unchanged
+inputs and coverage for all 26 actual non-system images. Its **10,979 unique
+rows** cover main-thread callbacks through exit, including waits and work after
+PNG. These C-O0/preallocation profile timings and counts are investigative data,
+not unprofiled instruction savings. Both rejected codegens and four earlier
+page attempts remain retained, including an incomplete launch, an abnormal
+exit-probe teardown, an unrelated executable replacement and missing late-library
+pins. See the [profile and runtime audit](performance/bbc-main-profile-runtime-audit-20261104.json)
+and [verified raw evidence](performance/raw/bbc-main-profile-runtime-audit-20261104.tar.gz).
+
+**Historical cohort 88 under the earlier pin policy:** all seven alternating matched
 control/Vox/Brave triples with exact original pixels, complete content, ownership,
 input identity and normal native exits in all 21 trials. Median counts are
 **28,170,148,069 Vox**, **28,315,073,501 control**, and **17,115,035,937 Brave
