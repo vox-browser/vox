@@ -15,6 +15,7 @@ import { hasHeaderFilter, requestIdentity, summarizeRequestParity } from './requ
 import { collectVisibility, validateVisibilityProbe } from './visibility_probe.mjs';
 import { collectOracleCosmetics } from './oracle_cosmetics.mjs';
 import { createOracleTarget } from './oracle_target.mjs';
+import { oracleTabEntries } from './oracle_network.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const options = {
@@ -283,8 +284,10 @@ try {
         ? await captureArchive(page, path.resolve(options['capture-dir']), options.url, {mainFrameID}) : null;
     const documentURL = navigation?.url && /^https?:/.test(navigation.url) ? navigation.url : options.url;
     const raw = await background.evaluate(`(async()=> (await import('./js/logger.js')).default.readAll('vox-parity'))()`);
-    const logs = raw.map(JSON.parse).filter(entry => entry.realm === 'network' && /^https?:/.test(entry.url));
-    const headerChecks = await background.evaluate('globalThis.voxParityHeaderChecks');
+    const browserLogs = raw.map(JSON.parse).filter(entry => entry.realm === 'network' && /^https?:/.test(entry.url));
+    const logs = oracleTabEntries(browserLogs, oracleTarget.tab_id);
+    const browserHeaderChecks = await background.evaluate('globalThis.voxParityHeaderChecks');
+    const headerChecks = oracleTabEntries(browserHeaderChecks, oracleTarget.tab_id);
     const networkRequests = page.events.filter(event => event.method === 'Network.requestWillBeSent').map(event => event.params);
     // Redirect logging can emit several records for one request; compare the
     // request once, preserving its document origin and exact browser type.
@@ -406,7 +409,10 @@ try {
         engine: manifest.engine,
         lists: manifest.lists.map(({ name, sha256 }) => ({ name, sha256 })),
         counts: { requests: requests.length, blocked: expected.filter(x => x.blocked).length, allowed: expected.filter(x => !x.blocked).length, mismatches: mismatches.length, oracle_disagreements: oracleDisagreements.length },
-        network_observation: { request_events: networkRequests.length, ublock_network_log_entries: logs.length, response_header_checks: headerChecks.length, failures: page.events.filter(event => event.method === 'Network.loadingFailed').map(({ params }) => ({ request_id: params.requestId, error: params.errorText, blocked_reason: params.blockedReason || '' })) },
+        network_observation: { request_events: networkRequests.length, ublock_network_log_entries: logs.length, response_header_checks: headerChecks.length,
+            other_tab_network_log_entries: browserLogs.length - logs.length,
+            other_tab_response_header_checks: browserHeaderChecks.length - headerChecks.length,
+            failures: page.events.filter(event => event.method === 'Network.loadingFailed').map(({ params }) => ({ request_id: params.requestId, error: params.errorText, blocked_reason: params.blockedReason || '' })) },
         requests: requests.map((request, i) => ({ ...request, observed_ublock_blocked: observed[i], observed_ublock_filters: observedFilters[i], expected: expected[i], actual: actual[i] })),
         cosmetic: cosmeticComparison, mismatches, oracle_disagreements: oracleDisagreements,
     };
