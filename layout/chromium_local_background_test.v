@@ -58,6 +58,27 @@ fn test_translation_only_plain_backgrounds_snap_before_the_css_translation() {
 	assert command.antialiased_rect
 }
 
+fn test_inherited_fractional_translation_keeps_plain_background_gpu_coverage() {
+	for chromium in [false, true] {
+		for offset in ['-137.5px', '-137px', '0px'] {
+			mut document := html.parse_document('<!doctype html><style>
+				body{margin:0}.parent{position:absolute;left:512px;top:15px;
+				transform:translateX(${offset})}.child{width:275px;height:40px;background:rgb(9 8 7)}
+			</style><div class="parent"><div class="child"></div></div>')
+			if chromium { document.set_font_rendering_policy(.chromium) }
+			_ = layout_document_typed_in_viewport(document, 1024, 768)
+			commands := display_list_commands(document.record_display_list() or { panic('paint') })
+			fills := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(9 8 7)')
+			assert fills.len == 1
+			command := fills[0]
+			assert command.x == 512 && command.y == 15
+			assert command.width == 275 && command.height == 40
+			assert command.antialiased_rect == (chromium && offset == '-137.5px')
+			document.finalize()
+		}
+	}
+}
+
 fn test_translation_only_background_dimensions_snap_both_absolute_edges() {
 	command := plain_background_command('left:737.921875px;top:102.25px;width:41.5px;height:17.75px;transform:translateY(-50%)', true)
 	assert command.x == 738 && command.y == 102
