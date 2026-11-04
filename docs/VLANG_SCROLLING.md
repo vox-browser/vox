@@ -1241,3 +1241,74 @@ intervals still exceed it and the 227–277 ms maxima are complete repaints
 (slide changes). The 60 FPS goal remains open. The earlier evidence
 directory `Build/vlang-fps-20261103` was removed while the disk was full;
 new evidence is under `Build/vlang-fps-20261104`.
+
+### Image-tile submission experiment (2026-11-04, later afternoon)
+
+**The 60 FPS goal remains open; image-tile batching stays opt-in.**
+`8eae1b2e3` adds `VOX_ENABLE_IMAGE_TILE_BATCH=1` (the disable override wins).
+An image spanning several root or compositor raster tiles can now queue those
+independent draws and readbacks before waiting once. Complete tile extents,
+border ownership, matrices, MSAA selection, image decoding and sampling stay
+unchanged. The batch shares its immutable source upload and publishes nothing
+until all readbacks succeed; unsupported geometry and failures use serial
+replay. GPU target allocation and CPU views are bounded.
+
+Focused checks pass under the memory guard:
+
+- 2,016 exact comparisons against complete GPU targets, including RGBA/YUV,
+  video sampling, mip resizes, rounded clips, borders, partial opacity, source
+  mutation, cache hits, row padding and failure after earlier queued readbacks.
+- 240 exact native frame comparisons against serial complete draws and disjoint
+  damage-strip replay at scales 1 and 2, in root and compositor coordinates.
+  The final policy check also verifies default-off and disable precedence.
+- 39 scroll-probe tests. Tool commit `b75a8b9ab` adds explicit image-renderer
+  selection, requiring its exact loaded path and unchanged hash/file identity.
+
+The shared production build guard was busy, so the native checks reused the
+newest completed bundle, executable `f77039aa…` (receipt
+`20261104-151223-21d94207`), supplied the host; both arms selected the same
+explicit unpublished native libraries. These are native-candidate observations,
+not validation of an installed production optimization. The measured bridge
+enabled batching by default; the committed bridge changes only that admission
+policy to require opt-in. The raw archive retains a hash-verified patch that
+reconstructs the measured policy from the implementation commit.
+
+The live protocol matches `rQ`: automatic author scripts, direct HTTPS, empty
+private profile/cache, retained OS caches, matching-title readiness plus 30s
+settling, 1024×768 document at scale 2 with 112px chrome, 600 precise delta-2
+wheel events at requested 60 Hz, reversing every 60 inputs. Throughput covers
+the entire first-to-last input interval and counts changed native layer
+publications with changed scroll position, not physical display scanout.
+
+| Run | Scroll FPS | Median / p95 / max interval | Over 16.7 ms | Input delivery |
+| --- | ---: | --- | ---: | ---: |
+| control-1 | 49.5 | 16.7 / 35.4 / 238.7 ms | 52% | 57.9 Hz |
+| candidate-1 | 51.6 | 16.5 / 29.6 / 190.9 ms | 47% | 58.9 Hz |
+| control-2 | 50.2 | 16.6 / 32.2 / 226.0 ms | 49% | 58.2 Hz |
+| candidate-2 | 39.7 | 19.3 / 50.3 / 311.1 ms | 63% | 55.9 Hz |
+| control-3 | 49.6 | 16.7 / 35.9 / 201.1 ms | 50% | 58.0 Hz |
+| candidate-3 | 50.6 | 16.6 / 32.4 / 209.9 ms | 50% | 58.7 Hz |
+
+Every browser and guard exited 0; all six trials retained unchanged executable,
+native-library and probe identities throughout the cohort. Each pair's cached
+resource URL/body-hash maps match. This is still a live animated carousel,
+not a frozen animation workload. One-minute host load ranged from 14.5 to
+32.2 on 18 logical CPUs; candidate-2 regressed despite a lower starting load.
+Neither the median's small improvement nor two winning pairs establishes a
+reliable gain, so the default renderer keeps serial image replay.
+
+Separate diagnostic `batch-diag3` confirms execution during input: 33 GPU
+readbacks used eight submissions, with further batches served entirely by the
+pixel cache. This is batching per image, not one submission for the whole
+frame. An earlier diagnostic was invalidated by shared-bundle replacement and
+is retained; preliminary compile/loader failures are also retained. A fresh
+`optin-live-check` using the final committed admission policy also completes
+all 600 inputs with the exact selected native libraries and zero browser/guard
+exits. No
+instruction saving, completed default-path scrolling fix, broad-check cadence
+reset or broad V-suite pass is claimed.
+
+The working evidence is in `Build/vlang-scroll-next-20261104-1520`.
+[Durable results](performance/vlang-image-tile-batch-20261104.json) and the
+[raw logs, commands and receipts](performance/raw/vlang-image-tile-batch-20261104.tar.gz)
+are committed so deleting `Build/` does not erase this cohort.
