@@ -1,0 +1,623 @@
+{
+ "date": "2026-11-04",
+ "request": "Continue until the archived Hacker News launch-to-PNG Vox median reaches 1.8B",
+ "target": 1800000000,
+ "target_met": true,
+ "scope": "Same as hacker-news-1800-attempt-2026-11-04.json: exclusive coalition counts from creation through the encoded document PNG; archived https://news.ycombinator.com/ with original scripts, loopback replay (Cache-Control: no-store), fresh private profiles/caches, 1024x768 CSS px, 2x capture, 2 s settle",
+ "previous": {
+  "ledger": "hacker-news-1800-attempt-2026-11-04.json",
+  "cohort_vox_median": 1918074453,
+  "pilot_vox_median_before_this_work": {
+   "bundle_executable_prefix": "5f425ea9",
+   "median": 1882033856,
+   "trials": 3,
+   "note": "Vox-only pilot with the canonical gates; includes 060ae56ce (worker mini VM) and other sessions' commits since the attempt cohort"
+  }
+ },
+ "commits": {
+  "006253c2e": "capture: encode presented frames without copying their pixels",
+  "a210a0f4e": "Present the retained white frame for repeated blank document frames",
+  "5ca0e83e6": "Do not store or replay no-store subresource responses",
+  "6e96d44a6": "Present the retained white frame before a document exists",
+  "555868d02": "render: check opaque snapshot alpha with NEON de-interleaving",
+  "1e031448a": "Correct the Hacker News 1.8B ledger's mini-VM finding (docs)"
+ },
+ "attribution": {
+  "capture": {
+   "phase_medians_before": {
+    "capture_started_to_cached": 17640000.0,
+    "cached_to_encoded": 48590000.0
+   },
+   "phase_medians_after": {
+    "capture_started_to_cached": 7430000.0,
+    "cached_to_encoded": 28690000.0
+   },
+   "png_sha256_unchanged": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+   "note": "Presented capture wraps the verified sRGB region instead of copying and retagging it (two image-sized copies and their faults); the encoder reads it directly, skips the second opacity scan and compresses filter-type-zero rows from the pitched image. Codec micro-benchmark on the capture: 30.9M -> 25.9M plus no 12.6 MB staging copy, byte-identical on 801 inputs. Capture-workflow cost, not page rendering."
+  },
+  "blank_frames": {
+   "note": "Four identical white document frames preceded the HN paint (hash-verified); frames 2-4 now present the retained white image. A blank fill of a fresh 2048x1704 bitmap measured 9.1M in isolation. Before navigation and in screenshot mode before resources load; frame 3 keeps its UI2 chrome update.",
+   "frame_prepared_to_complete_medians_before": {
+    "pilot": "cap1 (bundle 666161a7, six trials)",
+    "frames": [
+     8.0,
+     8.0,
+     12.2,
+     7.8,
+     159.1,
+     159.9
+    ]
+   },
+   "frame_prepared_to_complete_medians_after": {
+    "pilot": "p4 (bundle bd032495, six trials)",
+    "frames": [
+     8.5,
+     0.2,
+     4.8,
+     1.1,
+     159.9
+    ]
+   }
+  },
+  "no_store": {
+   "note": "The resource disk cache wrote every subresource and replayed stored bodies without revalidation, including Cache-Control: no-store responses (an RFC 9111 and privacy bug). The replay fixture marks every response no-store, so this removes all its subresource cache writes (~1.8 background-thread samples per run; earlier measured ~24.6M). Live Hacker News assets that permit storage are still written; this saving is fixture-dependent."
+  },
+  "opacity_scan": {
+   "micro_benchmark": {
+    "before": 2580000.0,
+    "after": 920000.0
+   }
+  },
+  "rejected_this_round": {
+   "browser_process_mini_vm": "JSC_forceMiniVMMode=1 with JSC_miniVMHeapGrowthFactor=2 for the browser process: six rotated pairs, paired median -14,139,203 (5/6 worse); the worker keeps mini mode"
+  }
+ },
+ "bundle": {
+  "executable_sha256": "7aa5ec34a86aaf97eb46225343d5b608d9d01b74901b9c82c192790ecce0b489",
+  "receipt": "20261104-162442-b73332f0",
+  "head": "f79723f029ee97ff6e9e4626c0ecaa3caa3d4438",
+  "note": "Shared dirty-tree production build containing all five commits and concurrent sessions' work; frozen inputs verified to contain each change"
+ },
+ "cohorts": {
+  "cohort1": {
+   "rows": [
+    {
+     "pair": 1,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1782402303,
+     "launch_upper": 1782402303,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      10.3916015625,
+      11.392578125,
+      11.33935546875
+     ],
+     "started_unix": 1793799130.157741
+    },
+    {
+     "pair": 1,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 8077928182,
+     "launch_upper": 8078412797,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      10.3916015625,
+      11.392578125,
+      11.33935546875
+     ],
+     "started_unix": 1793799133.522263
+    },
+    {
+     "pair": 2,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1777824881,
+     "launch_upper": 1777824881,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      9.48193359375,
+      11.1650390625,
+      11.2587890625
+     ],
+     "started_unix": 1793799142.488805
+    },
+    {
+     "pair": 2,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 7942589588,
+     "launch_upper": 7966059416,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      9.95947265625,
+      11.2861328125,
+      11.3017578125
+     ],
+     "started_unix": 1793799138.029224
+    },
+    {
+     "pair": 3,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1776447265,
+     "launch_upper": 1776447265,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      9.04248046875,
+      11.0458984375,
+      11.2158203125
+     ],
+     "started_unix": 1793799145.826514
+    },
+    {
+     "pair": 3,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 7939279400,
+     "launch_upper": 7973763709,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      9.0390625,
+      11.01171875,
+      11.20263671875
+     ],
+     "started_unix": 1793799149.1783922
+    },
+    {
+     "pair": 4,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1798017588,
+     "launch_upper": 1798017588,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      9.19580078125,
+      11.01123046875,
+      11.201171875
+     ],
+     "started_unix": 1793799158.359863
+    },
+    {
+     "pair": 4,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 7959136906,
+     "launch_upper": 7959626791,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      9.19580078125,
+      11.01123046875,
+      11.201171875
+     ],
+     "started_unix": 1793799153.622184
+    },
+    {
+     "pair": 5,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1803917998,
+     "launch_upper": 1803917998,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      10.140625,
+      11.1767578125,
+      11.25830078125
+     ],
+     "started_unix": 1793799162.179449
+    },
+    {
+     "pair": 5,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 8076747183,
+     "launch_upper": 8076747183,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      10.12890625,
+      11.15673828125,
+      11.25048828125
+     ],
+     "started_unix": 1793799165.944233
+    },
+    {
+     "pair": 6,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1786382021,
+     "launch_upper": 1786382021,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      12.0849609375,
+      11.5322265625,
+      11.38134765625
+     ],
+     "started_unix": 1793799175.782788
+    },
+    {
+     "pair": 6,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 7951839396,
+     "launch_upper": 7965181217,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      10.4384765625,
+      11.20361328125,
+      11.26611328125
+     ],
+     "started_unix": 1793799171.077902
+    },
+    {
+     "pair": 7,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1792950644,
+     "launch_upper": 1792950644,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      12.478515625,
+      11.62255859375,
+      11.4140625
+     ],
+     "started_unix": 1793799179.781288
+    },
+    {
+     "pair": 7,
+     "engine": "brave",
+     "exit": 1,
+     "launch_lower": null,
+     "launch_upper": null,
+     "pixels_exact": null,
+     "content_exact": null,
+     "png_sha256": null,
+     "error": "A private browser helper is outside its resource coalition",
+     "load_before": [
+      12.478515625,
+      11.62255859375,
+      11.4140625
+     ],
+     "started_unix": 1793799183.484994
+    }
+   ],
+   "vox_median": 1786382021,
+   "vox_max": 1803917998,
+   "vox_completed": 7,
+   "brave_median_lower": 7955488151,
+   "brave_min_lower": 7939279400,
+   "brave_completed": 6,
+   "tool_summary": {
+    "passed": false,
+    "error": "Every observation must exit successfully and match pixels and full row identity"
+   },
+   "guard": {
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adoption_error": null,
+    "observed_peak_rss_bytes": 947699712
+   },
+   "gate_10x_vox_max_le_9x_brave_min": true,
+   "status": "Invalid for acceptance: Brave pair 7 failed its ownership audit (a private helper outside its resource coalition). All seven Vox observations completed and are retained; no pair was rerun."
+  },
+  "cohort2": {
+   "rows": [
+    {
+     "pair": 1,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1778541428,
+     "launch_upper": 1778541428,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      11.2294921875,
+      11.41455078125,
+      11.3466796875
+     ],
+     "started_unix": 1793799209.3824892
+    },
+    {
+     "pair": 1,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 7772042159,
+     "launch_upper": 7777926446,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      11.2294921875,
+      11.41455078125,
+      11.3466796875
+     ],
+     "started_unix": 1793799212.943382
+    },
+    {
+     "pair": 2,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1786202362,
+     "launch_upper": 1786202362,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      11.59423828125,
+      11.4833984375,
+      11.37109375
+     ],
+     "started_unix": 1793799222.38931
+    },
+    {
+     "pair": 2,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 7967508830,
+     "launch_upper": 7990170373,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      11.2109375,
+      11.4072265625,
+      11.34423828125
+     ],
+     "started_unix": 1793799217.305838
+    },
+    {
+     "pair": 3,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1786253244,
+     "launch_upper": 1786253244,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      11.14599609375,
+      11.39208984375,
+      11.33935546875
+     ],
+     "started_unix": 1793799225.841915
+    },
+    {
+     "pair": 3,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 7995318923,
+     "launch_upper": 7995614349,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      11.29443359375,
+      11.41845703125,
+      11.3486328125
+     ],
+     "started_unix": 1793799229.733669
+    },
+    {
+     "pair": 4,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1795390857,
+     "launch_upper": 1795390857,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      12.23193359375,
+      11.6171875,
+      11.419921875
+     ],
+     "started_unix": 1793799240.32548
+    },
+    {
+     "pair": 4,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 7884408766,
+     "launch_upper": 7884786454,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      11.9912109375,
+      11.560546875,
+      11.39892578125
+     ],
+     "started_unix": 1793799234.8253381
+    },
+    {
+     "pair": 5,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1798140699,
+     "launch_upper": 1798140699,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      13.25390625,
+      11.83935546875,
+      11.4990234375
+     ],
+     "started_unix": 1793799244.27741
+    },
+    {
+     "pair": 5,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 7900573062,
+     "launch_upper": 7905240606,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      13.25390625,
+      11.83935546875,
+      11.4990234375
+     ],
+     "started_unix": 1793799248.126601
+    },
+    {
+     "pair": 6,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1782326608,
+     "launch_upper": 1782326608,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      16.17626953125,
+      12.53662109375,
+      11.75244140625
+     ],
+     "started_unix": 1793799258.789587
+    },
+    {
+     "pair": 6,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 7961666295,
+     "launch_upper": 7961712246,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      12.8330078125,
+      11.775390625,
+      11.478515625
+     ],
+     "started_unix": 1793799253.287194
+    },
+    {
+     "pair": 7,
+     "engine": "vox",
+     "exit": 0,
+     "launch_lower": 1781766554,
+     "launch_upper": 1781766554,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94",
+     "error": null,
+     "load_before": [
+      16.17626953125,
+      12.53662109375,
+      11.75244140625
+     ],
+     "started_unix": 1793799262.701602
+    },
+    {
+     "pair": 7,
+     "engine": "brave",
+     "exit": 0,
+     "launch_lower": 8040301891,
+     "launch_upper": 8055274278,
+     "pixels_exact": true,
+     "content_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb",
+     "error": null,
+     "load_before": [
+      15.44140625,
+      12.4443359375,
+      11.72412109375
+     ],
+     "started_unix": 1793799267.125073
+    }
+   ],
+   "vox_median": 1786202362,
+   "vox_max": 1798140699,
+   "vox_completed": 7,
+   "brave_median_lower": 7961666295,
+   "brave_min_lower": 7772042159,
+   "brave_completed": 7,
+   "tool_summary": {
+    "passed": true,
+    "vox_median_instructions": 1786202362,
+    "worst_vox_over_best_brave": 0.23136013189503338
+   },
+   "guard": {
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adoption_error": null,
+    "observed_peak_rss_bytes": 945963008
+   },
+   "gate_10x_vox_max_le_9x_brave_min": true,
+   "status": "Accepted: all 14 observations exit 0 with exact pixels and full row identity"
+  }
+ },
+ "verification": {
+  "focused": [
+   "tools/test_native_snapshot_png.py: ARC/non-ARC, with and without the compressor library, ASan/UBSan",
+   "tools/native_snapshot_pixel_runs_test.cpp (+44 pitched row streams): plain and ASan/UBSan",
+   "tools/native_presented_capture_test.m: 12 exact captures, PNGs equal to the previous copied captures, row codec engaged, ARC/non-ARC",
+   "tools/test_native_capture_idle.py",
+   "tools/test_stationary_raster_darwin.m: blank frames, snapshot and copy modes, ARC/non-ARC",
+   "main_stationary_raster_test.v",
+   "main_resource_storage_test.v (first run failed only because ambient HTTP proxy variables routed loopback requests; passes with them unset)",
+   "bundle libLadybirdVSkiaText.dylib codec equals the original on 301 images"
+  ],
+  "screenshot_smoke": "11/11 pass on the pinned bundle (8 exact, 3 within established tolerances); bundle hashes unchanged during the run",
+  "not_run": "Full translation/package batches, LibJS AST corpus and broad SVG batches were not run in this round"
+ },
+ "evidence": {
+  "raw": "hacker-news-1800-reached-2026-11-04-raw.json.gz",
+  "build_directory": "Build/hn-1800c-20261104",
+  "note": "The evidence directories cited by the attempt ledger and its mini-VM addendum (Build/hn-1800*, hn-2100*, hn-5pct*) were deleted while the disk was full; only their ledger figures remain"
+ }
+}
