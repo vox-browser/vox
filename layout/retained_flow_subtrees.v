@@ -151,7 +151,9 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 	}
 	if !element.is_html_element() || element.shadow_root() != none
 		|| element.rendered_in_top_layer() || computed.content_visibility() != .visible
-		|| computed.position() !in [.static_, .relative]
+		|| (computed.position() !in [.static_, .relative]
+			&& !(computed.position() == .absolute && element.as_node().is_html_image_element()
+				&& !disable_extended_image_trees))
 		|| element.local_name() !in ['div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'p', 'span', 'a', 'strong', 'b', 'em', 'i', 's', 'del', 'small', 'code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'time', 'br', 'form', 'img'] {
 		return false
 	}
@@ -205,7 +207,7 @@ fn retained_flow_layout_node_is_ordinary(node &Node) bool {
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
 		|| (node.is_replaced_element() && !retained_flow_raster_image_is_ordinary(node))
 		|| node.is_svg_box() || node.is_list_item_box()
-		|| node.is_absolutely_positioned() {
+		|| (node.is_absolutely_positioned() && !node.is_image_box()) {
 		return false
 	}
 	if node.is_flex_item() || node.is_grid_item_ {
