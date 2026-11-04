@@ -3736,3 +3736,51 @@ no live reply or pixel-parity acceptance. An earlier production native Send
 attempt succeeds without reproducing the archived layout re-entry assertion;
 that intermittent failure remains unresolved. Earlier successful live results
 belong to their pinned builds and sessions, not to the final committed patch.
+
+
+## November 4: fixed-owner production validation
+
+The completed shared production builds now contain `751dd2c04`'s ownership map.
+The 1024×768 Retina homepage and all three scale-one homepage sizes are exact on
+receipt `20261104-072356-d1504e17`, executable `67a6b379…d075b7`. The fresh frozen
+reply is exact on `20261104-073157-a06360b5`, executable `1afe2dcd…0d046e`, and the
+older frozen reply is exact on `20261104-073703-a3abc5b2`, executable
+`289eb15e…0cfc3d`. Each accepted capture has stable executable, libraries,
+resources and inputs, empty native/script errors, and browser/guard exit zero.
+These are three pinned builds, not one identity cohort. The headless startup
+check also passes DOM mutation, click, native wheel and element wheel checks.
+See the [production receipt](parity/chatgpt-fixed-owner-production-20261104.json).
+
+The first older-reply attempt had zero visible pixel differences but the shared
+bundle changed during capture, so it receives no stable-build acceptance. The
+fresh-process recheck above passes after that replacement. The previous C-backend
+captures and the public images have identical decoded pixels to the corresponding
+production captures; no reference or tolerance changed.
+
+A separate fresh SOCKS session captures only the initial homepage, with no Brave
+chat submission, no JavaScript exceptions and no body-read errors. Its subsequent
+native Send receives a service block; the bundle also changes during that run.
+That failed attempt remains retained and supplies no live-reply acceptance.
+The wider Retina one/two-pixel differences and the intermittent archived layout
+re-entry failure remain open. Two isolated rounded-border recording experiments
+preserve the wider-size pixel exactly and are discarded without source changes.
+
+
+The separate, fully live `production-direct-native-329/` check now completes
+native homepage-to-Send/reply on production executable `289eb15e…0cfc3d`.
+It starts with an empty profile, empty cookie store and empty resource cache,
+uses the configured SOCKS endpoint directly, and has no archive server,
+response seeding or transferred Brave session. The exact prompt/reply,
+conversation route and audited readiness pass; native/script diagnostics are
+empty and browser/guard exits are zero. Executable, libraries and inputs remain
+stable. This validates the ordinary live workflow independently of the earlier
+blocked session-transfer attempts.
+
+Its [live native capture](parity/raw/chatgpt-retina-live-native-direct.png) differs
+from the preselected normal Brave reply capture at 40 prompt-bubble corner
+pixels, maximum channel error two. These are independent live sessions with
+different session/page bytes, so this is an observational comparison. The
+matched frozen reply results remain zero pixels. The
+[production receipt](parity/chatgpt-fixed-owner-production-20261104.json) keeps
+these scopes separate. Wider Retina differences and the archived intermittent
+layout re-entry assertion remain open; full live pixel equality is not claimed.

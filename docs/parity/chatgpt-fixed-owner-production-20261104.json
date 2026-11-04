@@ -1,0 +1,511 @@
+{
+  "schema": "vox-chatgpt-fixed-owner-production-v1",
+  "created_utc": "2026-11-04T04:52:26.952013+00:00",
+  "feature_commit": "751dd2c04",
+  "scope": "Fresh production processes and empty private capture profiles, frozen author-script-free homepage/reply DOM with replayed static resources, rendered document viewport through PNG capture. Results are grouped by actual executable identity, not a single-build cohort.",
+  "builds": {
+    "67a6b379f69e243c3e0588a2a5dc41c261763d00ef0f12c1f675fca7b9d075b7": {
+      "receipt": "Build/production-build/receipts/20261104-072356-d1504e17",
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "67a6b379f69e243c3e0588a2a5dc41c261763d00ef0f12c1f675fca7b9d075b7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "0b771712352cfddc1014ff695161803cb033908aa0925732224dfcd91fe50e99",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a0516f35c35068d436d88e74efdc0c182e832382b27016f89df83eebff8dd686",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "02a75881a54cc58bcf621044feed88cd2960af8f0d4bcd335b560913e61fc2bb",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "5600fc178961f61b41467085a881cbbecb15d3df7a6c0d5eaab797c5b96c0d1e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "frozen_c_sha256": "e3d18a33e35276a36ce5cfbee4d49a106dad0d03c30fdc7ed544413b1b70cc76",
+      "ownership_map_present": true
+    },
+    "1afe2dcde727d9944db91dce441675f7be3791ab1f511563aa5d9fa5540d046e": {
+      "receipt": "Build/production-build/receipts/20261104-073157-a06360b5",
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "1afe2dcde727d9944db91dce441675f7be3791ab1f511563aa5d9fa5540d046e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "0b771712352cfddc1014ff695161803cb033908aa0925732224dfcd91fe50e99",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a0516f35c35068d436d88e74efdc0c182e832382b27016f89df83eebff8dd686",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "02a75881a54cc58bcf621044feed88cd2960af8f0d4bcd335b560913e61fc2bb",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "5600fc178961f61b41467085a881cbbecb15d3df7a6c0d5eaab797c5b96c0d1e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "frozen_c_sha256": "0296a4bdf532099c7bdfe9510f3d3f8b43c7404b817cc8d72859247ab9de60f0",
+      "ownership_map_present": true
+    },
+    "289eb15e2b7b0e8578a76cc1a71758b027b446d7fc2043525bb04d300c0cfc3d": {
+      "receipt": "Build/production-build/receipts/20261104-073703-a3abc5b2",
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "289eb15e2b7b0e8578a76cc1a71758b027b446d7fc2043525bb04d300c0cfc3d",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "0b771712352cfddc1014ff695161803cb033908aa0925732224dfcd91fe50e99",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a0516f35c35068d436d88e74efdc0c182e832382b27016f89df83eebff8dd686",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "02a75881a54cc58bcf621044feed88cd2960af8f0d4bcd335b560913e61fc2bb",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "5600fc178961f61b41467085a881cbbecb15d3df7a6c0d5eaab797c5b96c0d1e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+      },
+      "frozen_c_sha256": "1b166461454523b2548f683335f035197db669eaffcfdcbff02ac591839a74dd",
+      "ownership_map_present": true
+    }
+  },
+  "cases": {
+    "production-owner-home-retina-320": {
+      "assessment": {
+        "results": [
+          {
+            "viewport": [
+              1024,
+              768
+            ],
+            "exit": 0,
+            "stable": true,
+            "scale": 2,
+            "png_size": [
+              2048,
+              1536
+            ],
+            "differing_pixels": 0,
+            "max_channel_error": 0,
+            "bounds": null,
+            "dimensions_match": true,
+            "viewport_match": true,
+            "document_match": true,
+            "ready": "complete",
+            "native_reported_errors": [],
+            "javascript_diagnostics": []
+          }
+        ],
+        "inputs_stable": true,
+        "identity_stable": true,
+        "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+      },
+      "executable_sha256": "67a6b379f69e243c3e0588a2a5dc41c261763d00ef0f12c1f675fca7b9d075b7",
+      "raw_evidence": "Build/chatgpt-responsive-20261103/retina-borders-24/production-owner-home-retina-320",
+      "inputs_manifest_sha256": "ca670d10ce0aba39173eb60dc59fbf5e102b04667b51a43b33629fed8ac2696c"
+    },
+    "production-owner-home-scale1-320": {
+      "assessment": {
+        "results": [
+          {
+            "viewport": [
+              800,
+              600
+            ],
+            "exit": 0,
+            "stable": true,
+            "scale": 1,
+            "png_size": [
+              800,
+              600
+            ],
+            "differing_pixels": 0,
+            "max_channel_error": 0,
+            "bounds": null,
+            "dimensions_match": true,
+            "viewport_match": true,
+            "document_match": true,
+            "ready": "complete",
+            "native_reported_errors": [],
+            "javascript_diagnostics": []
+          },
+          {
+            "viewport": [
+              1024,
+              768
+            ],
+            "exit": 0,
+            "stable": true,
+            "scale": 1,
+            "png_size": [
+              1024,
+              768
+            ],
+            "differing_pixels": 0,
+            "max_channel_error": 0,
+            "bounds": null,
+            "dimensions_match": true,
+            "viewport_match": true,
+            "document_match": true,
+            "ready": "complete",
+            "native_reported_errors": [],
+            "javascript_diagnostics": []
+          },
+          {
+            "viewport": [
+              1280,
+              800
+            ],
+            "exit": 0,
+            "stable": true,
+            "scale": 1,
+            "png_size": [
+              1280,
+              800
+            ],
+            "differing_pixels": 0,
+            "max_channel_error": 0,
+            "bounds": null,
+            "dimensions_match": true,
+            "viewport_match": true,
+            "document_match": true,
+            "ready": "complete",
+            "native_reported_errors": [],
+            "javascript_diagnostics": []
+          }
+        ],
+        "inputs_stable": true,
+        "identity_stable": true,
+        "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+      },
+      "executable_sha256": "67a6b379f69e243c3e0588a2a5dc41c261763d00ef0f12c1f675fca7b9d075b7",
+      "raw_evidence": "Build/chatgpt-responsive-20261103/retina-borders-24/production-owner-home-scale1-320",
+      "inputs_manifest_sha256": "1f31f216cf14f79870dc19771eb82118076da22058758d52c5ab094eaf89ede5"
+    },
+    "production-owner-fresh-320": {
+      "assessment": {
+        "results": [
+          {
+            "viewport": [
+              1024,
+              768
+            ],
+            "exit": 0,
+            "stable": true,
+            "scale": 2,
+            "png_size": [
+              2048,
+              1536
+            ],
+            "differing_pixels": 0,
+            "max_channel_error": 0,
+            "bounds": null,
+            "dimensions_match": true,
+            "viewport_match": true,
+            "document_match": true,
+            "ready": "complete",
+            "native_reported_errors": [],
+            "javascript_diagnostics": []
+          }
+        ],
+        "inputs_stable": true,
+        "identity_stable": true,
+        "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+      },
+      "executable_sha256": "1afe2dcde727d9944db91dce441675f7be3791ab1f511563aa5d9fa5540d046e",
+      "raw_evidence": "Build/chatgpt-responsive-20261103/retina-borders-24/production-owner-fresh-320",
+      "inputs_manifest_sha256": "cf339e3fe72c679148f0caf91e67f2ff70f5932cb9b8ed2d1fb8ae8a29cfd4b2"
+    },
+    "production-old-reply-stable-326": {
+      "assessment": {
+        "results": [
+          {
+            "viewport": [
+              1024,
+              768
+            ],
+            "exit": 0,
+            "stable": true,
+            "scale": 2,
+            "png_size": [
+              2048,
+              1536
+            ],
+            "differing_pixels": 0,
+            "max_channel_error": 0,
+            "bounds": null,
+            "dimensions_match": true,
+            "viewport_match": true,
+            "document_match": true,
+            "ready": "complete",
+            "native_reported_errors": [],
+            "javascript_diagnostics": []
+          }
+        ],
+        "inputs_stable": true,
+        "identity_stable": true,
+        "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+      },
+      "executable_sha256": "289eb15e2b7b0e8578a76cc1a71758b027b446d7fc2043525bb04d300c0cfc3d",
+      "raw_evidence": "Build/chatgpt-responsive-20261103/retina-borders-24/production-old-reply-stable-326",
+      "inputs_manifest_sha256": "3195d6e01dd4471e21c8194d087c3c113c673cff0bea198209c83641de2d662a"
+    }
+  },
+  "headless_smoke": {
+    "guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--headless-smoke"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 393216,
+      "elapsed_seconds": 0.157825209,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "log_sha256": "97bac36f48016883b5248263ea82a427207115db81d2ff2829098624e4367771",
+    "reported_checks": [
+      "JavaScript DOM mutation",
+      "JavaScript click event",
+      "native wheel routing and scrolling",
+      "ordinary element wheel listeners"
+    ]
+  },
+  "invalidated_old_reply": {
+    "assessment": {
+      "results": [
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "exit": 0,
+          "stable": false,
+          "scale": 2,
+          "png_size": [
+            2048,
+            1536
+          ],
+          "differing_pixels": 0,
+          "max_channel_error": 0,
+          "bounds": null,
+          "dimensions_match": true,
+          "viewport_match": true,
+          "document_match": true,
+          "ready": "complete",
+          "native_reported_errors": [],
+          "javascript_diagnostics": []
+        }
+      ],
+      "inputs_stable": true,
+      "identity_stable": false,
+      "scope": "Fresh successful guest reply DOM frozen after real backend response. No live visual or functionality claim."
+    },
+    "reason": "The shared bundle was replaced during the attempt. Zero visible differing pixels do not supply stable-build acceptance.",
+    "raw_evidence": "Build/chatgpt-responsive-20261103/retina-borders-24/production-owner-reply-320",
+    "old_reply_recheck": "production-old-reply-stable-326"
+  },
+  "page_only_session": {
+    "assessment": {
+      "identity_stable": true,
+      "inputs_stable": true,
+      "fresh_document_requests": 1,
+      "response_entries": 968,
+      "captured_frozen": false,
+      "reported_errors": 0,
+      "reply_observed": false,
+      "service_blocked": false
+    },
+    "browser_exit": {
+      "browser": 0
+    },
+    "note": "Normal Brave through SOCKS fetched only the initial page and did not submit a chat prompt."
+  },
+  "native_first_send": {
+    "assessment": {
+      "exit": 0,
+      "identity_stable": false,
+      "inputs_stable": true,
+      "guard_budget": "standard 12 GiB full-application guard",
+      "backend_responses_seeded": false,
+      "initial_native_cookie_jar_empty": false,
+      "session_cookie_source": "Matching anonymous Brave session captured before input; values remain private",
+      "network_policy": "One archived original homepage; static responses seeded; subsequent chatgpt.com connections use native encrypted TLS through SOCKS",
+      "input_policy": "Native mouse/key input only, after read-only audited editor readiness; screenshot-mode document explicitly active; Brave fetched only the initial homepage and did not send a prompt",
+      "ready": "complete",
+      "fully_active": true,
+      "reply_observed": false,
+      "native_error_count": 0,
+      "javascript_diagnostic_count": 0,
+      "native_input_started": true,
+      "service_blocked": true,
+      "passed": false,
+      "expected_native_loaded": true
+    },
+    "raw_evidence": "Build/chatgpt-responsive-20261103/retina-borders-24/production-native-first-send-322",
+    "note": "The request receives a service block and its executable identity changes during the run. It receives no live-reply acceptance."
+  },
+  "remaining": {
+    "wide_retina_differing_pixels": {
+      "800x600": 1,
+      "1280x800": 2
+    },
+    "latest_matched_native_send_service_blocked": true,
+    "archived_layout_reentry_failure_unresolved": true,
+    "direct_live_native_send_passed": true,
+    "independent_live_prompt_bubble_pixels": 40
+  },
+  "rejected_pill_experiments": {
+    "translation_preservation": "Matched preprocessed-native control and candidate both retain the identical one-pixel error at 800x600 Retina; no canonical source change.",
+    "exact_float_palette": "A matched rounded-border alpha conversion also retains the identical error; no canonical source change."
+  },
+  "raw_evidence": {
+    "production-fixed-owner-320": "Build/chatgpt-responsive-20261103/retina-borders-24/production-fixed-owner-320",
+    "fresh-pageonly-321": "Build/chatgpt-responsive-20261103/retina-borders-24/fresh-pageonly-321",
+    "production-native-first-send-322": "Build/chatgpt-responsive-20261103/retina-borders-24/production-native-first-send-322",
+    "pill-records-323": "Build/chatgpt-responsive-20261103/retina-borders-24/pill-records-323",
+    "pill-matrix-variant-324": "Build/chatgpt-responsive-20261103/retina-borders-24/pill-matrix-variant-324",
+    "pill-matrix-capture-325": "Build/chatgpt-responsive-20261103/retina-borders-24/pill-matrix-capture-325",
+    "production-old-reply-recheck-326": "Build/chatgpt-responsive-20261103/retina-borders-24/production-old-reply-recheck-326",
+    "pill-alpha-variant-327": "Build/chatgpt-responsive-20261103/retina-borders-24/pill-alpha-variant-327",
+    "pill-save-layer-inspect-328": "Build/chatgpt-responsive-20261103/retina-borders-24/pill-save-layer-inspect-328",
+    "production-direct-native-329": "Build/chatgpt-responsive-20261103/retina-borders-24/production-direct-native-329",
+    "pill-brave-layers-330": "Build/chatgpt-responsive-20261103/retina-borders-24/pill-brave-layers-330",
+    "pill-native-grid-capture-331": "Build/chatgpt-responsive-20261103/retina-borders-24/pill-native-grid-capture-331",
+    "pill-msaa-trigger-trace-332": "Build/chatgpt-responsive-20261103/retina-borders-24/pill-msaa-trigger-trace-332"
+  },
+  "direct_live_native": {
+    "assessment": {
+      "exit": 0,
+      "identity_stable": true,
+      "inputs_stable": true,
+      "initial_profile_empty": true,
+      "initial_cookie_store_empty": true,
+      "initial_cache_empty": true,
+      "archive_server_used": false,
+      "seeded_responses": false,
+      "network_policy": "Direct native browser HTTPS through configured SOCKS; no Brave session transfer or response replay",
+      "guard_budget_gib": 12,
+      "ready": "complete",
+      "fully_active": true,
+      "reply_observed": true,
+      "conversation_url_present": true,
+      "native_error_count": 0,
+      "javascript_diagnostic_count": 0,
+      "native_input_started": true,
+      "service_blocked": false,
+      "viewport": [
+        1024,
+        768
+      ],
+      "passed": true
+    },
+    "executable_sha256": "289eb15e2b7b0e8578a76cc1a71758b027b446d7fc2043525bb04d300c0cfc3d",
+    "identity": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "289eb15e2b7b0e8578a76cc1a71758b027b446d7fc2043525bb04d300c0cfc3d",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "0b771712352cfddc1014ff695161803cb033908aa0925732224dfcd91fe50e99",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "a0516f35c35068d436d88e74efdc0c182e832382b27016f89df83eebff8dd686",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "02a75881a54cc58bcf621044feed88cd2960af8f0d4bcd335b560913e61fc2bb",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "5600fc178961f61b41467085a881cbbecb15d3df7a6c0d5eaab797c5b96c0d1e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+      "/Users/alex/code/vox2/browserhistory/history.css": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+      "/Users/alex/code/vox2/aria/aria_roles.json": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+      "/Users/alex/code/vox2/css/ua_default.css": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+      "/Users/alex/code/vox2/css/ua_svg_default.css": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+      "/Users/alex/code/vox2/html/media_controls.css": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570"
+    },
+    "production_receipt": "Build/production-build/receipts/20261104-073703-a3abc5b2",
+    "raw_evidence": "Build/chatgpt-responsive-20261103/retina-borders-24/production-direct-native-329",
+    "guard": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "-c",
+        "import os,json,sys;v=json.load(open(sys.argv[1]));os.execve(v['command'][0],v['command'],v['env'])",
+        "/Users/alex/code/vox2/Build/chatgpt-responsive-20261103/retina-borders-24/production-direct-native-329/launch.json"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5524963328,
+      "elapsed_seconds": 124.777042792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native_cached_url_records": 9,
+    "native_cached_homepage_body_sha256": [],
+    "independent_live_session_pixel_comparison": {
+      "reference": "Build/chatgpt-responsive-20261103/retina-borders-24/fresh-retina-308/after.png",
+      "actual": "Build/chatgpt-responsive-20261103/retina-borders-24/production-direct-native-329/vox.png",
+      "reference_sha256": "e270468fe8ff72bfb4d27e2db54c69401bdf869ee43a81cc6a71f717331d3473",
+      "actual_sha256": "ce1d57226bcb4878934931d9f8c0380950ddf3e512f2b714029f84f6d3ba841d",
+      "differing_pixels": 40,
+      "max_channel_error": 2,
+      "bounds": [
+        1532,
+        162,
+        2008,
+        234
+      ],
+      "scope": "Observed pixel comparison between the preselected latest normal Brave reply (fresh session 308) and a separate fully live native session (329). Dynamic session/page bytes differ; this is not a frozen-byte or instruction-comparison cohort. No tolerance or reference changed."
+    },
+    "opaque_png": true,
+    "public_image": "docs/parity/raw/chatgpt-retina-live-native-direct.png",
+    "public_image_sha256": "ce1d57226bcb4878934931d9f8c0380950ddf3e512f2b714029f84f6d3ba841d",
+    "scope": "Fully live native homepage-to-Send/reply from an initially empty profile, cookie store and cache, through configured SOCKS. All frontend and backend traffic is ordinary native browser traffic. No fixture server, response seeding or transferred Brave session is used. The visual reference comparison uses separate live sessions and is observational, with 40 differing pixels at maximum channel error two.",
+    "document_origin_verified": "https://chatgpt.com"
+  }
+}
