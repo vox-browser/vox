@@ -20,6 +20,17 @@ fn chromium_svg_compositor_path_supported(command &layout.PaintCommand) bool {
 
 fn chromium_svg_solid_path_supported_with_clips(command &layout.PaintCommand,
 	rounded_clips bool) bool {
+	return chromium_svg_simple_path_supported(command, rounded_clips, false)
+}
+
+// A complete picture uses Skia's stroked-path bounds. It can retain round
+// caps, curves and joins which the compact scalar batch cannot enclose.
+fn chromium_svg_picture_path_supported(command &layout.PaintCommand) bool {
+	return chromium_svg_simple_path_supported(command, false, true)
+}
+
+fn chromium_svg_simple_path_supported(command &layout.PaintCommand,
+	rounded_clips bool, allow_curved_strokes bool) bool {
 	has_fill := command.color != ''
 	has_stroke := command.stroke_color != '' && command.stroke_width > 0
 	if command.kind != 'draw_svg_path' || command.opacity != 1 || command.group_opacity != 1
@@ -33,11 +44,12 @@ fn chromium_svg_solid_path_supported_with_clips(command &layout.PaintCommand,
 		|| data.stroke_pattern != none || data.svg_gradient_data != none {
 		return false
 	}
-	if has_stroke {
+	if has_stroke && data.non_scaling_stroke { return false }
+	if has_stroke && !allow_curved_strokes {
 		// The scalar bounds below enclose transformed butt-ended line
 		// segments. Curves, joins and non-scaling strokes keep their existing
 		// replay path, which computes the complete stroked outline bounds.
-		if data.non_scaling_stroke || data.stroke_linecap != 0 { return false }
+		if data.stroke_linecap != 0 { return false }
 		mut at_start := false
 		stride := layout.compatibility_clip_path_segment_stride
 		for offset := 0; offset + stride <= data.path_data.len; offset += stride {

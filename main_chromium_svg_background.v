@@ -127,7 +127,7 @@ fn chromium_svg_background_can_share_recording(command &layout.PaintCommand) boo
 		commands := svg_background_paint_commands_for_replay(image, replay) or { return false }
 		if commands.len == 0 || commands.len > 32768 { return false }
 		for index in 0 .. commands.len {
-			if !chromium_svg_solid_path_supported(&commands[index]) { return false }
+			if !chromium_svg_picture_path_supported(&commands[index]) { return false }
 		}
 	}
 	return count > 0

@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_svg_background_round_caps_and_curves_share_the_parent_picture(self):
+        self.compare_fixture('register-svg-stroke-recording', width=1024, height=768)
+
     def test_paragraph_final_words_wrap_before_automatic_hyphenation(self):
         self.compare_fixture('paragraph-final-hyphenation', width=1024, height=768)
 

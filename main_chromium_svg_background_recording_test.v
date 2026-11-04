@@ -54,6 +54,39 @@ fn test_repeated_solid_svg_backgrounds_inspect_each_visible_tile() {
 	}
 }
 
+fn test_curved_svg_strokes_share_the_picture_without_entering_scalar_batches() {
+	for geometry in [
+		'<path d="M2 2H18" stroke-linecap="round"/>',
+		'<circle cx="10" cy="6" r="4"/>',
+		'<path d="M2 2L18 6L2 10Z" stroke-linejoin="round"/>',
+	] {
+		svg := '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="12"><g fill="none" stroke="white" stroke-width="2">${geometry}</g></svg>'
+		command, mut document := svg_background_recording_test_command(svg, 'no-repeat')
+		defer { document.finalize() }
+		assert chromium_svg_background_can_share_recording(&command)
+		supported, vectors := chromium_shared_recording_leaf_supported(&command)
+		assert supported && vectors
+		paths := svg_background_paint_commands(command.image_data, 20, 12) or { panic('missing SVG') }
+		mut found := false
+		for path in paths {
+			if path.kind != 'draw_svg_path' { continue }
+			found = true
+			assert chromium_svg_picture_path_supported(&path)
+			assert !chromium_svg_solid_path_supported(&path)
+		}
+		assert found
+	}
+}
+
+fn test_svg_picture_strokes_keep_dash_and_non_scaling_fallbacks() {
+	for attribute in ['stroke-dasharray="2 2"', 'vector-effect="non-scaling-stroke"'] {
+		svg := '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="12"><path d="M2 2H18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" ${attribute}/></svg>'
+		command, mut document := svg_background_recording_test_command(svg, 'no-repeat')
+		defer { document.finalize() }
+		assert !chromium_svg_background_can_share_recording(&command)
+	}
+}
+
 fn test_effectful_svg_backgrounds_keep_the_existing_recording_fallback() {
 	for input in [
 		['<svg xmlns="http://www.w3.org/2000/svg" width="20" height="12"><g opacity=".5"><circle cx="10" cy="6" r="4"/></g></svg>', 'no-repeat'],
