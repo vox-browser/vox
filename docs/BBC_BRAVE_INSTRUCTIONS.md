@@ -1,7 +1,29 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Latest attempted cohort 86 retains all seven alternating
+`OPTIMIZED_SITES.md`.** A guarded within-pass grid measurement cache is committed
+(`b35fac88d`), with an ancestor-key refinement (`109077f25`). The refined version
+passes **30 focused case executions** across candidate/control and default,
+no-GC and bounded-preallocation modes. All **287 instruction-tool tests** pass.
+
+The first production version preserves original pixels, complete content and all
+72 external script evaluations in both native arms, but its reuse path never
+executes before PNG. No instruction cohort is launched for that unused path.
+A corrected read-only debugger probe validates 400 complete keys and identifies
+122 comparisons that differ only in copied ancestors' min/max-content labels.
+The refinement omits those labels while retaining actual sizes, effective
+definiteness and the grid's own constraints. It still requires a miss when an
+intrinsic constraint changes effective definiteness, and compares reused results
+with a separate unpooled oracle. Initial tests, failed diagnostics and manual
+termination receipts remain retained.
+
+The latest inspected completed bundle lacks this refinement; its native path
+witness and unprofiled matched cohort remain pending the shared build. No cohort
+87, new instruction saving, broad-check reset or catalog entry is claimed. See
+the [grid measurement ledger](performance/bbc-grid-measurement-20261104.json) and
+[verified raw evidence](performance/raw/bbc-grid-measurement-20261104.tar.gz).
+
+Latest attempted cohort 86 retains all seven alternating
 Vox/Brave pairs. All native exits, complete-content, ownership and input-identity
 checks pass, but Brave pair 6 differs by 53,392 pixels (maximum channel error 6),
 invalidating acceptance. Every Vox capture preserves the original reference.
