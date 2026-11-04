@@ -32,12 +32,15 @@ class RejectedBrowserHelperTests(unittest.TestCase):
         json.dumps(result)
 
     def test_recycled_moved_or_exited_helper_is_not_a_stable_identity(self):
-        for changed in ['start', 'coalition', 'exited']:
+        for changed in ['start', 'coalition', 'exited', 'executable']:
             with self.subTest(changed=changed):
                 self.setUp()
                 self.process.read.side_effect = [Reading(123), Reading(124 if changed == 'start' else 123,
                                                                         changed == 'exited')]
                 self.coalition.resource_coalition.side_effect = [20, 21 if changed == 'coalition' else 20]
+                if changed == 'executable':
+                    self.process.path.side_effect = [self.process.path.return_value,
+                                                     '/fixture/Other.app/Contents/Helpers/cleanup']
                 result = rejected_process_identities(self.process, self.coalition, self.rows)
                 self.assertFalse(result[0]['identity_stable'])
 

@@ -659,6 +659,7 @@ def rejected_process_identities(process_api, coalition_api, rows):
             cid = coalition_api.resource_coalition(row['pid'])
             executable = str(Path(process_api.path(row['pid'])).resolve())
             after = process_api.read(row['pid'])
+            end_executable = str(Path(process_api.path(row['pid'])).resolve())
             end_cid = coalition_api.resource_coalition(row['pid'])
             if (type(before.start) is not int or type(after.start) is not int
                     or type(cid) is not int or type(end_cid) is not int
@@ -666,8 +667,9 @@ def rejected_process_identities(process_api, coalition_api, rows):
                 raise ValueError('Unavailable process creation time or coalition')
             detail.update(start_ticks=before.start, end_start_ticks=after.start,
                           resource_coalition=cid, end_resource_coalition=end_cid,
-                          executable=executable,
+                          executable=executable, end_executable=end_executable,
                           identity_stable=before.start == after.start and cid == end_cid
+                          and executable == end_executable
                           and not before.exited and not after.exited)
         except (OSError, ValueError, TypeError) as error:
             detail['identity_error'] = str(error)
