@@ -7,6 +7,42 @@ import platform
 // Background, text color and underline changes leave geometry, visual contexts and
 // paint order intact. Retain those plans and unrelated PaintableBox phase
 // caches instead of rebuilding every SVG/image transport in the document.
+// A style update whose only changes are `transform` and `opacity` (a script
+// sampling a progress bar's scaleX every frame) patches the
+// retained tree like a compositor animation sample. The refresh still falls
+// back to a full rebuild when stacking, surface or opacity categories change.
+fn paint_style_update_is_compositor_only(node &Node, previous &css.ComputedValues, current &css.ComputedProperties) bool {
+	if voidptr(previous) == voidptr(current) || previous.has_animated_properties()
+		|| !compositor_style_refresh_supports_node(node)
+		|| previous.raw_property_count() != current.raw_property_count() {
+		return false
+	}
+	mut changed := false
+	for index in 0 .. previous.raw_property_count() {
+		before := previous.raw_property_at_index(index)
+		after := current.raw_property_at_index(index)
+		if before == after { continue }
+		property := unsafe { css.PropertyID(int(css.first_longhand_property_id()) + index) }
+		if property == .transform || property == .opacity {
+			changed = true
+			continue
+		}
+		// These are refreshed by the box's local paint update, which the
+		// compositor refresh does not run.
+		match property {
+			.background_color, .text_decoration_line, .cursor, .color, .outline_color, .outline_width,
+			.outline_style, .outline_offset {
+				return false
+			}
+			else {}
+		}
+		old_value := if before == unsafe { nil } { ?&dom.StyleValue(none) } else { ?&dom.StyleValue(before) }
+		new_value := if after == unsafe { nil } { ?&dom.StyleValue(none) } else { ?&dom.StyleValue(after) }
+		if !css.compute_property_invalidation(property, old_value, new_value).is_none() { return false }
+	}
+	return changed
+}
+
 fn paint_style_update_can_be_local(node &Node, previous &css.ComputedValues, current &css.ComputedProperties) bool {
 	if voidptr(previous) == voidptr(current) || previous.has_animated_properties()
 		|| !local_paint_style_refresh_supports_node(node, current) {

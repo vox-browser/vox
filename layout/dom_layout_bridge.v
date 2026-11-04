@@ -2,6 +2,7 @@ module layout
 
 import dom
 import css
+import os
 
 __global dom_layout_callbacks = dom.LayoutNodeCallbacks{
 	find_matching_text_callback: find_matching_layout_text
@@ -676,6 +677,9 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 	placeholder.paintables_.trim(count)
 }
 
+// Same-binary control: script transform/opacity updates rebuild the snapshot.
+const disable_compositor_style_updates = os.getenv('VOX_DISABLE_COMPOSITOR_STYLE_UPDATES') != ''
+
 fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_handle voidptr) {
 	if layout_handle == unsafe { nil } || css_computed_properties_handle == unsafe { nil } {
 		return
@@ -684,10 +688,17 @@ fn apply_style_to_layout_node(layout_handle voidptr, css_computed_properties_han
 	styled := node.as_node_with_style() or { return }
 	computed := unsafe { &css.ComputedProperties(css_computed_properties_handle) }
 	can_refresh_locally := paint_style_update_can_be_local(node, styled.computed_values(), computed)
+	compositor_only := !can_refresh_locally && !disable_compositor_style_updates
+		&& paint_style_update_is_compositor_only(node, styled.computed_values(), computed)
 	mut mutable_styled := unsafe { &NodeWithStyle(styled) }
 	mutable_styled.apply_style(computed)
 	if mut result := document_layout_result(node.document()) {
 		result.paint_tree_needs_style_update = true
+		if compositor_only {
+			result.paint_style_update_handles.add(u64(layout_handle))
+			result.paint_style_update_compositor_handles.add(u64(layout_handle))
+			return
+		}
 		result.paint_style_update_requires_full_refresh = result.paint_style_update_requires_full_refresh || !can_refresh_locally
 		result.paint_style_update_handles.add(u64(layout_handle))
 		result.paint_style_update_text_handles.add(u64(layout_handle))

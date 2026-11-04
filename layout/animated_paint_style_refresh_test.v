@@ -233,3 +233,46 @@ fn test_published_before_after_handles_clear_on_layout_teardown_removal_and_rege
 	assert reinserted.layout_handle != regenerated.layout_handle
 	_ = target.get_pseudo_element_node(int(dom.PseudoElement.after)) or { panic('missing reinserted after') }
 }
+
+// vlang.io's demo tabs set `style.transform = "scaleX(…)"` on a progress bar
+// every animation frame. A script transform or opacity change keeps the
+// retained tree like a compositor sample and paints as a full refresh would.
+fn test_script_transform_and_opacity_updates_patch_the_retained_tree() {
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}#tab{position:relative;width:200px;height:40px;background:rgb(26 38 55)}#bar{position:absolute;left:0;bottom:0;width:100%;height:2px;background:rgb(169 210 255);transform-origin:left}</style><div id="tab">Tab<span id="bar" style="transform:scaleX(0.25)"></span></div><p id="other">unchanged</p>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	mut result := document_layout_result(document) or { panic('missing layout') }
+	mut bar := document.get_element_by_id('bar') or { panic('missing bar') }
+	placeholder := bar.as_node().layout_node() or { panic('missing bar layout') }
+	_ = record_retained_display_list(mut document) or { panic('missing initial paint') }
+	mut paint_children := result.paint_tree.children.data
+	// Opacity crossing 1 changes the box's category and rebuilds the tree.
+	for step in [['transform:scaleX(0.75)', 'retained', '0.75'],
+		['transform:scaleX(0.75);opacity:0.5', 'rebuilt', '0.75'],
+		['transform:scaleX(1);opacity:0.25', 'retained', '1']] {
+		bar.set_attribute_value('style', step[0])
+		document.update_layout(.html_event_loop_rendering_update)
+		local := record_retained_display_list(mut document) or { panic('missing updated paint') }
+		assert (result.paint_tree.children.data == paint_children) == (step[1] == 'retained')
+		box := animation_paint_box_for_handle(&result.paint_tree, placeholder.layout_handle) or { panic('missing retained bar') }
+		assert box.own_paint_transform[0] == step[2].f64()
+		local_dump := local.dump()
+		refresh_document_paint_tree(document, mut result, 320, 200)
+		assert (record_retained_display_list(mut document) or { panic('missing full paint') }).dump() == local_dump
+		paint_children = result.paint_tree.children.data
+	}
+	// A transform changing together with another paint property, and a
+	// transform disappearing, keep the full refresh.
+	bar.set_attribute_value('style', 'transform:scaleX(0.5);opacity:0.25;background:red')
+	document.update_layout(.html_event_loop_rendering_update)
+	recolored := record_retained_display_list(mut document) or { panic('missing recolored paint') }
+	assert result.paint_tree.children.data != paint_children
+	recolored_dump := recolored.dump()
+	refresh_document_paint_tree(document, mut result, 320, 200)
+	assert (record_retained_display_list(mut document) or { panic('missing full paint') }).dump() == recolored_dump
+	paint_children = result.paint_tree.children.data
+	bar.set_attribute_value('style', 'opacity:0.25;background:red')
+	document.update_layout(.html_event_loop_rendering_update)
+	_ = record_retained_display_list(mut document) or { panic('missing untransformed paint') }
+	assert result.paint_tree.children.data != paint_children
+}
