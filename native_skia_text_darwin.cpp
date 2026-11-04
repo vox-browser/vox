@@ -898,6 +898,29 @@ bool leaf_raster_region_intersects_destination_clip(CGContextRef destination,
         && region.top < canvas_height - CGRectGetMinY(clip) + fringe;
 }
 
+// The part of a leaf's raster region inside the destination clip's bounds,
+// with two logical pixels of guard. Callers keep their full GPU target or
+// document-anchored tiles, so cropping changes only how many pixels are
+// read back and composited. Unclipped and mostly visible leaves keep their
+// complete region.
+static bool visible_raster_region(CGContextRef destination, float canvas_height,
+    RasterRegion const& region, RasterRegion& visible)
+{
+    auto clip = CGContextGetClipBoundingBox(destination);
+    if (CGRectIsEmpty(clip) || CGRectIsInfinite(clip) || CGRectIsNull(clip)
+        || !std::isfinite(CGRectGetMinX(clip)) || !std::isfinite(CGRectGetMaxX(clip))
+        || !std::isfinite(CGRectGetMinY(clip)) || !std::isfinite(CGRectGetMaxY(clip))) return false;
+    // Clamp before integer conversion, including extreme finite clip bounds.
+    visible = RasterRegion {
+        int(std::floor(std::clamp(CGRectGetMinX(clip) - 2, double(region.left), double(region.right)))),
+        int(std::floor(std::clamp(double(canvas_height) - CGRectGetMaxY(clip) - 2, double(region.top), double(region.bottom)))),
+        int(std::ceil(std::clamp(CGRectGetMaxX(clip) + 2, double(region.left), double(region.right)))),
+        int(std::ceil(std::clamp(double(canvas_height) - CGRectGetMinY(clip) + 2, double(region.top), double(region.bottom))))
+    };
+    return visible.width() > 0 && visible.height() > 0
+        && size_t(visible.width()) * visible.height() * 2 <= size_t(region.width()) * region.height();
+}
+
 struct RasterCommandGroup {
     CGContextRef destination { nullptr };
     float canvas_height { 0.0f };
@@ -4731,6 +4754,9 @@ extern "C" int ladybird_v_skia_prefetch_plain_rects(CGContextRef destination,
 #include "native_skia_rect_prefetch_scratch.h"
 #include "native_skia_inner_shadow.h"
 
+#ifdef VOX_TEST_CLIPPED_ROOT_SHADOWS
+static unsigned s_test_clipped_root_shadows;
+#endif
 extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     float shadow_x, float shadow_y, float shadow_width, float shadow_height,
     float shadow_top_left_x, float shadow_top_left_y, float shadow_top_right_x,
@@ -4821,6 +4847,59 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
         }
     }
 
+    auto shadow_descriptor = [&] {
+        VoxGraphiteShadow descriptor {
+            .matrix = {},
+            .shadow = {shadow_x, shadow_y, shadow_width, shadow_height,
+                shadow_top_left_x, shadow_top_left_y, shadow_top_right_x,
+                shadow_top_right_y, shadow_bottom_right_x, shadow_bottom_right_y,
+                shadow_bottom_left_x, shadow_bottom_left_y},
+            .content = {content_x, content_y, content_width, content_height,
+                content_top_left_x, content_top_left_y, content_top_right_x,
+                content_top_right_y, content_bottom_right_x, content_bottom_right_y,
+                content_bottom_left_x, content_bottom_left_y},
+            .blur = blur, .red = red, .green = green, .blue = blue, .alpha = alpha,
+            .has_float_color = has_float_color, .float_color = {}
+        };
+        if (has_float_color) std::copy_n(s_unrounded_paint_color, 4, descriptor.float_color);
+        return descriptor;
+    };
+    // Root grid tiles are anchored to the document, so a pixel's value does
+    // not depend on the requested region. A strip or damage repaint reads back
+    // and composites only the clipped part of a large shadow, as Chromium
+    // rasterizes only invalidated tiles.
+    if (auto draw = graphite_shadow_draw(); draw && s_chromium_painting && s_raster_layer_is_root
+        && s_msaa_grid_columns > 0 && !screenshot_uses_logical_pixels()
+        && !std::getenv("VOX_DISABLE_CLIPPED_ROOT_SHADOWS")) {
+        auto scale = raster_scale_for_context(destination);
+        RasterRegion visible;
+        if (scale == std::round(scale) && scale >= 1
+            && visible_raster_region(destination, canvas_height, region, visible)) {
+            int width = raster_dimension(visible.width(), scale);
+            int height = raster_dimension(visible.height(), scale);
+            std::vector<uint32_t> pixels(size_t(width) * height);
+            bool has_background = opaque_backdrop && copy_backdrop(destination, visible, scale,
+                width, height, pixels);
+            auto descriptor = shadow_descriptor();
+            raster_matrix(matrix, visible, scale, scale).get9(descriptor.matrix);
+            if (draw_chromium_root_raster_grid(pixels, width, height, visible, page_x, page_y,
+                    scroll_y, scale, [&](auto& tile, long offset_x, long offset_y, bool) {
+                        auto tiled = descriptor;
+                        tiled.matrix[2] += offset_x;
+                        tiled.matrix[5] += offset_y;
+                        return draw(reinterpret_cast<uint8_t*>(tile.data()),
+                            s_msaa_grid_width, s_msaa_grid_height, s_msaa_grid_width * 4,
+                            has_background, &tiled) != 0;
+                    })) {
+#ifdef VOX_TEST_CLIPPED_ROOT_SHADOWS
+                ++s_test_clipped_root_shadows;
+#endif
+                return composite_pixels(destination, std::move(pixels), width, height,
+                    float(visible.left), canvas_height - float(visible.bottom),
+                    float(visible.width()), float(visible.height()), has_background);
+            }
+        }
+    }
     auto destination_scale = screenshot_uses_logical_pixels()
         ? 1.0f
         : raster_scale_for_context(destination);
@@ -4838,20 +4917,7 @@ extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
     auto image_info = SkImageInfo::Make(raster_width, raster_height,
         kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     if (s_chromium_painting) {
-        VoxGraphiteShadow descriptor {
-            .matrix = {},
-            .shadow = {shadow_x, shadow_y, shadow_width, shadow_height,
-                shadow_top_left_x, shadow_top_left_y, shadow_top_right_x,
-                shadow_top_right_y, shadow_bottom_right_x, shadow_bottom_right_y,
-                shadow_bottom_left_x, shadow_bottom_left_y},
-            .content = {content_x, content_y, content_width, content_height,
-                content_top_left_x, content_top_left_y, content_top_right_x,
-                content_top_right_y, content_bottom_right_x, content_bottom_right_y,
-                content_bottom_left_x, content_bottom_left_y},
-            .blur = blur, .red = red, .green = green, .blue = blue, .alpha = alpha,
-            .has_float_color = has_float_color, .float_color = {}
-        };
-        if (has_float_color) std::copy_n(s_unrounded_paint_color, 4, descriptor.float_color);
+        auto descriptor = shadow_descriptor();
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         if (auto draw = graphite_shadow_draw()) {
             // Analytic blur interpolates its lookup coordinates across the
@@ -5807,21 +5873,11 @@ static bool draw_clipped_root_gradient(CGContextRef destination, RasterRegion co
     if (scale != 2 || !s_raster_layer_is_root) return false;
     auto draw = graphite_path_region_draw();
     if (!draw) return false;
-    auto clip = CGContextGetClipBoundingBox(destination);
-    if (CGRectIsEmpty(clip) || CGRectIsInfinite(clip) || CGRectIsNull(clip)
-        || !std::isfinite(CGRectGetMinX(clip)) || !std::isfinite(CGRectGetMaxX(clip))
-        || !std::isfinite(CGRectGetMinY(clip)) || !std::isfinite(CGRectGetMaxY(clip))) return false;
-    // Clamp before integer conversion, including extreme finite clip bounds.
-    RasterRegion visible {
-        int(std::floor(std::clamp(CGRectGetMinX(clip) - 2, double(region.left), double(region.right)))),
-        int(std::floor(std::clamp(double(canvas_height) - CGRectGetMaxY(clip) - 2, double(region.top), double(region.bottom)))),
-        int(std::ceil(std::clamp(CGRectGetMaxX(clip) + 2, double(region.left), double(region.right)))),
-        int(std::ceil(std::clamp(double(canvas_height) - CGRectGetMinY(clip) + 2, double(region.top), double(region.bottom))))
-    };
+    RasterRegion visible;
+    if (!visible_raster_region(destination, canvas_height, region, visible)) return false;
     int view_width = raster_dimension(visible.width(), scale);
     int view_height = raster_dimension(visible.height(), scale);
-    if (visible.width() <= 0 || visible.height() <= 0
-        || size_t(view_width) * view_height * 2 > size_t(width) * height) return false;
+    if (size_t(view_width) * view_height * 2 > size_t(width) * height) return false;
     auto backdrop = read_backdrop(destination, visible, scale, view_width, view_height);
     if (!backdrop.pixels) return false;
     std::vector<uint32_t> pixels(size_t(view_width) * view_height);
