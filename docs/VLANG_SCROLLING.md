@@ -953,8 +953,10 @@ pixels by one level; no screenshot reference uses this path. Checks:
   `main_scroll_raster_test.v`.
 
 On bundle `b6e4b222…` (receipt `20261104-014100-e011d913`), the diagnostic run
-reused 70 of 93 input frames; 16 fell back with `too-many-changes`. The anchored
-blur hit its cache on all 87 draws during input. The matched cohort below keeps
+reused 70 of 93 input frames; 16 fell back with `too-many-changes`. It logged 87
+anchored-blur draws during input. Its `cached` field also counted fresh rasters
+newly inserted into the cache (corrected in `ecd5bc30d`), so that run does not
+establish the cache hit rate. The matched cohort below keeps
 the same protocol as before: live direct HTTPS, automatic scripts, empty
 private profile/cache, title readiness plus 30 s settle, 1024×768 viewport with
 112 px chrome at scale 2, and 600 precise delta-2 inputs at 60 Hz reversed every
@@ -991,8 +993,18 @@ commands whose transforms already include it, shifting the deferred decoration
 region up. `VOX_DISABLE_DEFERRED_DECORATIONS=1` avoided it. `7ec7e1ec6` computes
 the region from the transform alone, like ordinary replay, and adds a focused
 bounds test (`main_chromium_inset_decorations_test.v` passes). Its end-to-end
-fixture check waits for a production build; at this checkpoint the shared data
-volume had about 2.6 GiB free, and one build failed with `ENOSPC`.
+fixture check passes on bundle `9ebd66e2…` (built from `7ec7e1ec6`). Full
+repaints at offsets 0, 100 and 240 now keep the card background (22,36,59)
+inside every card. The stepped reuse-versus-full-repaint gate is exact for the
+gradient, shadow and blur fixtures; the shadow fixture previously differed in
+54% of pixels. A new fixture modeled on vlang.io's showcase glow
+(`mini/f4-showcase.html`) is also exact between reuse and full repaint, and
+takes the anchored path. Compared with the legacy blur composite, it differs by
+at most one level in 5.2% of pixels.
+
+The build containing `ecd5bc30d` failed with `ENOSPC` (receipt
+`20261104-055347-22ab044c`). The shared data volume fell from 2.7 GiB free to
+275 MiB during this checkpoint, so the cache hit rate is still unmeasured.
 
 Next steps toward 60 FPS, in order of expected effect:
 
