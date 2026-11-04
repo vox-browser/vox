@@ -49,3 +49,23 @@ fn test_byte_translucent_and_different_precision_borders_keep_their_paint_paths(
 		assert commands.all(it.srgb_color_data == unsafe { nil })
 	}
 }
+
+fn test_dashed_border_strokes_retain_computed_color_and_alpha_precision() {
+	for side in ['top', 'right', 'bottom', 'left'] {
+		mut document := html.parse_document('<!doctype html><style>
+			body{margin:0}div{width:120px;height:30px;border-${side}:1px dashed rgb(34.25 34 34 / .201)}
+		</style><div></div>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		root := layout_document_typed_in_viewport(document, 320, 240)
+		commands := root.paint_commands().filter(it.force_dark_role_set && it.force_dark_role == .border)
+		assert commands.len == 1
+		command := commands[0]
+		assert command.kind == 'draw_svg_path'
+		components := command.retained_svg_solid_components(true) or { panic('missing precise stroke') }
+		assert math.abs(components[0] * 255 - 34.25) < 1e-8
+		assert math.abs(components[1] * 255 - 34) < 1e-8
+		assert components[3] == 0.201
+		assert command.svg().stroke_dasharray.len == 2
+	}
+}

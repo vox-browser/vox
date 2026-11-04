@@ -43,6 +43,7 @@ fn chromium_border_srgb_color(handle voidptr, widths BoxEdges, colors BoxColors,
 fn retain_chromium_border_color(mut commands []PaintCommand, start int, handle voidptr,
 	widths BoxEdges, colors BoxColors, styles BoxBorderStyles, radii BoxRadii) {
 	if start >= commands.len { return }
+	retain_chromium_dashed_border_color(mut commands, start, handle, widths, colors, styles)
 	color := chromium_border_srgb_color(handle, widths, colors, styles)
 	if color == unsafe { nil } { return }
 	for index in start .. commands.len {
@@ -84,6 +85,42 @@ fn retain_chromium_border_color(mut commands []PaintCommand, start int, handle v
 			'fill_rounded_rect',
 		] {
 			commands[index].srgb_color_data = color
+		}
+	}
+}
+
+// A dashed side is a stroked path. Retain its computed channels before the
+// compatibility color string rounds alpha and RGB to bytes.
+fn retain_chromium_dashed_border_color(mut commands []PaintCommand, start int, handle voidptr,
+	widths BoxEdges, colors BoxColors, styles BoxBorderStyles) {
+	if handle == unsafe { nil } { return }
+	node := unsafe { &Node(handle) }
+	if node.document().font_rendering_policy() != .chromium { return }
+	sizes := [widths.top, widths.right, widths.bottom, widths.left]!
+	side_styles := [styles.top, styles.right, styles.bottom, styles.left]!
+	side_colors := [colors.top, colors.right, colors.bottom, colors.left]!
+	properties := [css.PropertyID.border_top_color, .border_right_color, .border_bottom_color,
+		.border_left_color]!
+	mut edge := -1
+	for index, size in sizes {
+		if size <= 0 { continue }
+		if edge >= 0 || side_styles[index] != .dashed { return }
+		edge = index
+	}
+	if edge < 0 { return }
+	computed := unsafe { &css.ComputedProperties(node.computed_values()) }
+	value := computed.typed_property_value(properties[edge]) or { return }
+	components := value.srgb_paint_components() or { return }
+	color := side_colors[edge]
+	serialized := color.serialize()
+	for index in start .. commands.len {
+		command := unsafe { &commands[index] }
+		if command.kind != 'draw_svg_path' || command.stroke_color != serialized
+			|| command.svg_data == unsafe { nil } { continue }
+		commands[index].svg_data = &PaintSVGPathData{
+			...command.svg_data
+			svg_solid_color_data: retained_svg_solid_color_data_with_srgb('', none,
+				serialized, color, none, components)
 		}
 	}
 }
