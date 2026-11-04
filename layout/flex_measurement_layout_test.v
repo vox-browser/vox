@@ -413,11 +413,19 @@ fn test_committed_flex_consumes_owned_measurement_without_replacing_caller_geome
 				if height > 0 { AvailableSize.make_definite(CSSPixels.new(height)) } else { AvailableSize.make_indefinite() })
 			mut producer := source.new_measurement_for_subtree(styled)
 			mut measured := flex_measurement_test_prepare(mut producer, root, 180, height, '')
+			parent := root.containing_block() or { panic('parent') }
+			ancestor := unsafe { &Node(parent) }.containing_block() or { panic('ancestor') }
+			mut measured_outer := producer.get_mutable(unsafe { &NodeWithStyle(ancestor) })
+			measured_outer.set_content_height(CSSPixels.new(0))
+			measured_outer.set_has_definite_height(false)
 			result := run_flex_formatting_context_with_mode(mut producer, root, mut measured, .normal, space)
 			entries := source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} }
 			producer.release_measurement()
 			gc_collect()
 			mut used := flex_measurement_test_prepare(mut source, root, 180, height, '')
+			mut committed_outer := source.get_mutable(unsafe { &NodeWithStyle(ancestor) })
+			committed_outer.set_content_height(CSSPixels.new(400))
+			committed_outer.set_has_definite_height(true)
 			used.set_derived_baselines(CSSPixels.new(71), CSSPixels.new(93))
 			actual := run_flex_formatting_context_with_mode(mut source, root, mut used, .normal, space)
 			assert actual == result
@@ -437,6 +445,9 @@ fn test_committed_flex_consumes_owned_measurement_without_replacing_caller_geome
 			assert geometry == flex_measurement_test_geometry(source, root)
 			mut oracle := LayoutState.new_for_subtree(styled)
 			mut expected := flex_measurement_test_prepare(mut oracle, root, 180, height, '')
+			mut expected_outer := oracle.get_mutable(unsafe { &NodeWithStyle(ancestor) })
+			expected_outer.set_content_height(CSSPixels.new(400))
+			expected_outer.set_has_definite_height(true)
 			expected.set_derived_baselines(CSSPixels.new(71), CSSPixels.new(93))
 			assert actual == run_uncached_flex_formatting_context_with_mode(mut oracle, root, mut expected, .normal, space)
 			assert geometry == flex_measurement_test_geometry(oracle, root)
@@ -510,6 +521,49 @@ fn test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_p
 		mut expected := flex_measurement_test_prepare(mut oracle, root, width, height, change)
 		assert actual == run_uncached_flex_formatting_context_with_mode(mut oracle, root, mut expected, mode, space)
 		assert flex_measurement_test_geometry(source, root) == flex_measurement_test_geometry(oracle, root)
+		oracle.release_measurement()
+		source.release_measurement_chunk_pool()
+	}
+}
+
+fn test_committed_flex_preserves_external_heights_for_dependent_descendants() {
+	for style in ['height:50%', 'min-height:20%', 'max-height:60%',
+		'flex-basis:30%', 'display:grid;grid-template-rows:1fr 1fr',
+		'display:flex;row-gap:5%'] {
+		mut document := html.parse_document('<!doctype html><main><section id="flex" style="display:flex;gap:7px"><div style="${style}"><p>Wrapping words alpha beta gamma.</p><p>More words.</p></div><p>Other content.</p></section></main>')
+		defer { document.finalize() }
+		_ = layout_document_typed_in_viewport(document,500,400)
+		root := flex_measurement_test_node(document,'flex')
+		styled := root.as_node_with_style() or { panic('style') }
+		parent := root.containing_block() or { panic('parent') }
+		ancestor := unsafe { &Node(parent) }.containing_block() or { panic('ancestor') }
+		mut source := LayoutState.new()
+		source.enable_measurement_chunk_pool()
+		mut producer := source.new_measurement_for_subtree(styled)
+		mut measured := flex_measurement_test_prepare(mut producer,root,180,0,'')
+		mut measured_outer := producer.get_mutable(unsafe { &NodeWithStyle(ancestor) })
+		measured_outer.set_content_height(CSSPixels.new(100))
+		measured_outer.set_has_definite_height(true)
+		space := AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(180)),AvailableSize.make_indefinite())
+		_ = run_flex_formatting_context_with_mode(mut producer,root,mut measured,.normal,space)
+		producer.release_measurement()
+		entries := source.measurement_chunk_pool_.flex_measurements_[u64(voidptr(root))] or { []&FlexMeasurementLayout{} }
+		mut used := flex_measurement_test_prepare(mut source,root,180,0,'')
+		mut outer := source.get_mutable(unsafe { &NodeWithStyle(ancestor) })
+		outer.set_content_height(CSSPixels.new(400))
+		outer.set_has_definite_height(true)
+		actual := run_flex_formatting_context_with_mode(mut source,root,mut used,.normal,space)
+		for entry in entries {
+			assert !entry.external_heights_independent
+			assert !committed_flex_measurement_test_reused(source,entry)
+		}
+		mut oracle := LayoutState.new_for_subtree(styled)
+		mut expected := flex_measurement_test_prepare(mut oracle,root,180,0,'')
+		mut expected_outer := oracle.get_mutable(unsafe { &NodeWithStyle(ancestor) })
+		expected_outer.set_content_height(CSSPixels.new(400))
+		expected_outer.set_has_definite_height(true)
+		assert actual == run_uncached_flex_formatting_context_with_mode(mut oracle,root,mut expected,.normal,space)
+		assert flex_measurement_test_geometry(source,root) == flex_measurement_test_geometry(oracle,root)
 		oracle.release_measurement()
 		source.release_measurement_chunk_pool()
 	}

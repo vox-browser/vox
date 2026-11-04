@@ -29,12 +29,19 @@ struct FlexMeasurementQuestion {
 @[heap]
 struct FlexMeasurementLayout {
 	key FlexMeasurementQuestion
+	external_heights_independent bool
 	inputs []RetainedInlineInput
 	values []RetainedBlockValues
 	font_generation u64
 	font_policy dom.FontRenderingPolicy
 	style_environment u64
 	result FormattingContextResult
+}
+
+fn committed_flex_measurement_keys_match(a &FlexMeasurementQuestion, b &FlexMeasurementQuestion) bool {
+	return a.parent == b.parent && a.sibling == b.sibling
+		&& a.flex_item == b.flex_item && a.grid_item == b.grid_item
+		&& committed_grid_measurement_keys_match(&a.geometry, &b.geometry)
 }
 
 fn flex_measurement_question(state &LayoutState, root &Node, used &UsedValues,
@@ -69,7 +76,9 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	font_generation := css.css_style_computer_for(container.document()).font_computer().environment_generation()
 	style_environment := container.document().style_environment_version()
 	for cached in pool.flex_measurements_[node_key] or { []&FlexMeasurementLayout{} } {
-		if cached.key != key || cached.font_generation != font_generation
+		if (cached.key != key && !(committed && cached.external_heights_independent
+			&& committed_flex_measurement_keys_match(&cached.key, &key)))
+			|| cached.font_generation != font_generation
 			|| cached.font_policy != container.document().font_rendering_policy()
 			|| cached.style_environment != style_environment
 			|| !grid_measurement_inputs_are_current(cached.inputs) { continue }
@@ -141,6 +150,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 				external_bases: key.geometry.external_bases.clone()
 			}
 		}
+		external_heights_independent: grid_measurement_external_heights_are_unused(owned_inputs)
 		inputs: owned_inputs
 		values: snapshots
 		font_generation: font_generation
