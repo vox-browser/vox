@@ -218,3 +218,9 @@ control drops to 112 FPS with a 14 ms p95.
 The canvas stays opt-in. It only applies to reused scroll-raster frames with
 1–8 repainted rectangles; without the variable every hook returns at once and
 the frame loop is unchanged.
+
+Evidence: `docs/performance/raw/vlang-gpu-canvas-20261105.tar.gz` holds the
+summaries, run records, guard reports and stdout of every cohort and
+verification run on the branch, browser logs of the cited final runs, the
+worktree build receipts (results and inputs) and the build/measurement
+scripts used.

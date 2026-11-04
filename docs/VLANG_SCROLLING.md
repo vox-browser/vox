@@ -1648,3 +1648,14 @@ Evidence is under `Build/vlang-fps-20261104` (`rI-*`, `rU-*`, `idlediag-*`,
 `imgdiag*`, `shadow-target-exp`). The
 [raw logs, experiment sources and guard reports](performance/raw/vlang-gpu-idle-upload-20261104.tar.gz)
 are committed.
+
+## GPU canvas for reused scroll frames (2026-11-05, opt-in)
+
+`VOX_EXPERIMENT_GPU_CANVAS=1` draws the approved leaves of a reused frame's
+repainted rectangles on GPU surfaces and reads them back once, like
+Chromium's tile raster, instead of a synchronous GPU wait per leaf. On a
+quiet host it delivers 59.9 versus 59.3–59.6 FPS at 60 Hz (598 versus
+593–596 of 600 inputs, scroll-start gap 40 versus 90 ms) and 119.1–119.2
+versus 112.1–112.4 FPS at 120 Hz (p95 10 versus 14 ms). Per-leaf verification
+differs by at most 5 levels. Design, guards, verification, cohorts and
+remaining readbacks: [VLANG_GPU_PASS.md](VLANG_GPU_PASS.md).
