@@ -1123,3 +1123,36 @@ Next steps, in order of expected effect:
    one synchronous round trip per leaf.
 3. Find the 265–320 ms hitches (complete repaints from slide changes and
    `too-many-changes` frames).
+
+`1a637a464` then sent live video frames through a GPU-only path: the complete
+frame is uploaded and sampled linearly without mips, as Chromium's compositor
+does, instead of the image decode-cache emulation (CPU resize to a mip level
+plus a mip chain for every frame). A native test matches 8 frame leaves
+exactly with independent complete-resolution GPU pictures.
+
+Bundle `1f6b4cd9…` (receipt `20261104-091559-8c7bb7bf`) contains all six
+changes. Diagnostic run `rM-diag`: reused replay median 13.3 ms (p90 23.5),
+scrolled frames 14.1 ms (p90 23.5), settled frames 2.7 ms (p90 3.3, from
+18.1 ms in `rJ-diag`). Its ten complete repaints (median 158.5 ms) are slide
+changes (`too-many-changes`, 508–856 changed commands) and frames where
+blur-filter groups, re-keyed every frame by design, exceed the damage-area
+cap (`damage-too-large`).
+
+Unprofiled cohort `rL` (09:37–09:42 MSK, same protocol and arms as `rK`) ran
+under even heavier host load (1-minute load 68–113 on 18 cores):
+
+| Run | Scroll FPS | Median / p95 / max interval | Over 16.7 ms | Input delivery |
+| --- | ---: | --- | ---: | ---: |
+| control-1 | 13.6 | 42.9 / 156.2 / 376.9 ms | 82% | 45.3 Hz |
+| candidate-1 | 33.9 | 27.5 / 52.4 / 220.1 ms | 70% | 50.7 Hz |
+| control-2 | 14.2 | 41.5 / 160.3 / 389.0 ms | 73% | 45.6 Hz |
+| candidate-2 | invalid | browser exit 139 after `SCROLL_DONE` | — | — |
+| control-3 | 12.1 | 46.3 / 165.6 / 415.4 ms | 80% | 44.5 Hz |
+| candidate-3 | 32.6 | 28.4 / 54.7 / 249.2 ms | 69% | 50.8 Hz |
+
+candidate-2 completed all 600 inputs (438 publications), then crashed with
+SIGSEGV in `net.http.Transport.reap_idle_connections` on its detached thread;
+the run is retained and excluded. The crash is outside rendering and is not
+investigated here. Both valid pairs keep the roughly 2.5–3× separation; with
+replay now at a 14 ms median, the 50 Hz input delivery and host contention
+bound the remaining rate. The 60 FPS goal remains open.
