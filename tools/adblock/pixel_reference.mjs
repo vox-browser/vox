@@ -38,6 +38,8 @@ export async function capturePixelReference(page, file, navigation) {
         await document.fonts.ready;
         await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
         return {url:location.href,title:document.title,ready:document.readyState,
+            active_element:document.activeElement ? {tag:document.activeElement.tagName,
+                id:document.activeElement.id||'',focus_visible:document.activeElement.matches(':focus-visible')} : null,
             width:innerWidth,height:innerHeight,scale:devicePixelRatio,fonts:document.fonts.status,
             text:document.body?.innerText||'',
             styles:[...document.querySelectorAll('link[rel~="stylesheet"]')].map(link=>({

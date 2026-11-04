@@ -22,6 +22,7 @@ test('freezing retains live CSSOM author rules, raw color syntax and document mo
             get outerHTML(){return '<html><head>'+cloned.map(s=>'<style'+
                 (s.media?' media="'+s.media+'"':'')+'>'+s.textContent+'</style>').join('')+'</head></html>';}};
         const document={documentElement:{cloneNode:()=>clone},doctype,
+            activeElement:{tagName:'DIV',id:'banner',matches:selector=>selector===':focus-visible'},
             compatMode:doctype?'CSS1Compat':'BackCompat',baseURI:'https://example.com/',
             title:'News',body:{innerText:'story '.repeat(300)},
             querySelectorAll:()=>styles,createElement:()=>({})};
@@ -29,6 +30,7 @@ test('freezing retains live CSSOM author rules, raw color syntax and document mo
             {document,location:{href:document.baseURI},innerWidth:1024,innerHeight:768,devicePixelRatio:1});
         assert.equal(result.cssom_styles,1);
         assert.equal(result.compat_mode,document.compatMode);
+        assert.equal(JSON.stringify(result.active_element),JSON.stringify({tag:'DIV',id:'banner',focus_visible:true}));
         assert(result.html.includes('p { color: red; }'));
         assert(result.html.includes(raw));
         assert(result.html.includes('media="not all"'));
@@ -293,15 +295,16 @@ test('archive replays encoded images and the frozen main body with original resp
 test('stable source pixels cannot seal a different DOM or visible text',async t=>{
     const root=await fs.mkdtemp(path.join(os.tmpdir(),'vox-archive-document-change-'));
     t.after(()=>fs.rm(root,{recursive:true,force:true}));
-    for(const changed of ['html','text']) {
+    for(const changed of ['html','text','active_element']) {
         const directory=path.join(root,changed),url='https://news.example/';
         let snapshots=0;
         const before={html:'<html>news</html>',url,base:url,compat_mode:'CSS1Compat',
-            text:'story '.repeat(300),width:1024,height:768,scale:1};
+            text:'story '.repeat(300),width:1024,height:768,scale:1,active_element:null};
         const page={events:[],evaluate:async expression=>{
             const isSnapshot=expression.includes('cloneNode(true)');
             if(isSnapshot) ++snapshots;
-            return ready({...before,...(isSnapshot && snapshots===2 ? {[changed]:before[changed]+' changed'} : {})});
+            return ready({...before,...(isSnapshot && snapshots===2 ? {[changed]:changed==='active_element'
+                ? {tag:'DIV',id:'banner',focus_visible:true} : before[changed]+' changed'} : {})});
         },send:async method=>{
             assert.equal(method,'Page.captureScreenshot');
             return {data:Buffer.from('stable frame').toString('base64')};

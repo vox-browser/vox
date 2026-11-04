@@ -38,6 +38,8 @@ export function freezeDocument() {
     base.href = document.baseURI;
     clone.querySelector('head').prepend(base);
     const type=document.doctype;
+    const active=document.activeElement;
+    const activeElement=active ? {tag:active.tagName,id:active.id||'',focus_visible:active.matches(':focus-visible')} : null;
     const doctype=!type ? '' : '<!DOCTYPE '+type.name+
         (type.publicId ? ' PUBLIC "'+type.publicId+'"' : '')+
         (type.systemId ? (type.publicId ? '' : ' SYSTEM')+' "'+type.systemId+'"' : '')+'>\n';
@@ -46,6 +48,7 @@ export function freezeDocument() {
         compat_mode:document.compatMode,cssom_styles:cssomStyles,
         elements: clone.querySelectorAll('*').length, title: document.title,
         text: document.body.innerText, width: innerWidth, height: innerHeight,
+        active_element:activeElement,
         scale: devicePixelRatio};
 }
 
@@ -205,7 +208,7 @@ export async function captureArchive(page, directory, expectedURL, {mainFrameID,
     const after = await page.evaluate(snapshotExpression);
     const identity = value => ({html_sha256:digest(value.html), text_sha256:digest(value.text),
         url:value.url,base:value.base,compat_mode:value.compat_mode,
-        width:value.width,height:value.height,scale:value.scale});
+        width:value.width,height:value.height,scale:value.scale,active_element:value.active_element});
     const documentSnapshot = {before:identity(snapshot),after:identity(after)};
     documentSnapshot.stable = JSON.stringify(documentSnapshot.before) === JSON.stringify(documentSnapshot.after);
     await fs.writeFile(path.join(directory, 'document-snapshot.json'),
