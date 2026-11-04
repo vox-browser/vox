@@ -50,6 +50,11 @@ fn retained_flow_validation_is_current(cache &RetainedFlowValidationCache) bool 
 		if !retained_flow_style_matches(typed, computed) { return false }
 	}
 	for input in cache.inputs {
+		// A provider can change kind or availability without changing CSS.
+		// Revalidate it even when this branch already has a validation cache.
+		if input.node.is_replaced_element() && !retained_flow_raster_image_is_ordinary(input.node) {
+			return false
+		}
 		if dom_node := input.node.dom_node() {
 			mirror := dom_node.unsafe_layout_node() or { return false }
 			if mirror.real_layout_handle() != voidptr(input.node) { return false }
@@ -107,6 +112,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 		report_retained_flow_item(root)
 		report_retained_formatting_tree(root)
 		report_retained_flow_style_reuse(root, root.flow_validation_cache_.elements)
+		report_retained_flow_image_tree(root.flow_validation_cache_.elements)
 		return RetainedFlowSubtree{root: root, elements: root.flow_validation_cache_.elements}
 	}
 	mut elements := []&dom.Element{}
@@ -122,6 +128,7 @@ fn reusable_clean_flow_subtree(element &dom.Element, mut rejected map[u64]bool) 
 	report_retained_flow_item(root)
 	report_retained_formatting_tree(root)
 	report_retained_flow_style_reuse(root, elements)
+	report_retained_flow_image_tree(elements)
 	return RetainedFlowSubtree{
 		root:     root
 		elements: elements
@@ -145,7 +152,7 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 	if !element.is_html_element() || element.shadow_root() != none
 		|| element.rendered_in_top_layer() || computed.content_visibility() != .visible
 		|| computed.position() !in [.static_, .relative]
-		|| element.local_name() !in ['div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'p', 'span', 'a', 'strong', 'b', 'em', 'i', 's', 'del', 'small', 'code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'time', 'br', 'form'] {
+		|| element.local_name() !in ['div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'p', 'span', 'a', 'strong', 'b', 'em', 'i', 's', 'del', 'small', 'code', 'pre', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'time', 'br', 'form', 'img'] {
 		return false
 	}
 	if value := computed.typed_property_value(.content) {
@@ -161,7 +168,8 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 	}
 	if !retained_flow_layout_node_is_ordinary(typed) { return false }
 	expects_inline_node := computed.display().is_inline_outside() && computed.display().is_flow_inside()
-	if !typed.is_break_node() && typed.is_inline_node() != expects_inline_node { return false }
+	if !typed.is_break_node() && !typed.is_image_box()
+		&& typed.is_inline_node() != expects_inline_node { return false }
 	for child in typed.children() {
 		if !retained_flow_anonymous_layout_is_ordinary(child) { return false }
 	}
@@ -195,7 +203,8 @@ fn collect_retained_flow_elements(element &dom.Element, mut elements []&dom.Elem
 
 fn retained_flow_layout_node_is_ordinary(node &Node) bool {
 	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
-		|| node.is_replaced_element() || node.is_svg_box() || node.is_list_item_box()
+		|| (node.is_replaced_element() && !retained_flow_raster_image_is_ordinary(node))
+		|| node.is_svg_box() || node.is_list_item_box()
 		|| node.is_absolutely_positioned() {
 		return false
 	}
