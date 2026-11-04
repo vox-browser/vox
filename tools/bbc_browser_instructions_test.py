@@ -146,6 +146,30 @@ class BBCInstructionTests(unittest.TestCase):
                 self.assertFalse(json.loads((args.output / 'runtime-libraries.json').read_text())['passed'])
                 self.assertTrue(calls)
 
+    def test_committed_grid_measurement_control_is_isolated_and_restored_on_failure(self):
+        environment = {'VOX_PROXY': 'socks5h://fixture'}
+        argv = ['--archive', 'archive', '--output', 'Build/result',
+                '--memory-guard-registry', 'pids.json', '--capture-reference',
+                '--control-disable-committed-grid-measurement-reuse']
+        with self.assertRaises(SystemExit):
+            parse_args(argv)
+        args = parse_args(argv + ['--control-vox-app', 'Build/v/Vox.app'])
+        self.assertTrue(args.control_disable_committed_grid_measurement_reuse)
+        args.vox_environment = environment
+        seen = []
+        def observe(engine, app, folder, options):
+            seen.append((engine, dict(options.vox_environment)))
+            return {'exit': 0}
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+            for engine in ['control', 'vox', 'brave']:
+                run_trial(engine, 'same-app', engine, args)
+        self.assertEqual(seen, [('vox', dict(environment, VOX_DISABLE_COMMITTED_GRID_MEASUREMENT_REUSE='1')),
+                                ('vox', environment), ('brave', environment)])
+        with patch('bbc_browser_instructions.browser.run_browser', side_effect=RuntimeError('failed')):
+            with self.assertRaises(RuntimeError):
+                run_trial('control', 'same-app', 'control', args)
+        self.assertIs(args.vox_environment, environment)
+
     def test_committed_inline_measurement_control_is_isolated_and_restored_on_failure(self):
         environment = {'VOX_PROXY': 'socks5h://fixture'}
         argv = ['--archive', 'archive', '--output', 'Build/result',
