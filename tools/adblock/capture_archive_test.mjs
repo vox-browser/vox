@@ -226,7 +226,36 @@ test('archive replays encoded images and the frozen main body with original resp
     const manifest = JSON.parse(await fs.readFile(path.join(directory, 'archive.json')));
     assert.equal(manifest.resources[0].sha256, key('original scripted document'));
     assert.equal(manifest.frozen_html_sha256, key(html));
+    assert.equal(manifest.document_snapshot.stable,true);
+    assert.equal(manifest.document_snapshot.before.html_sha256,key(html));
     await assert.rejects(captureArchive(page, directory, url), /EEXIST/);
+});
+
+test('stable source pixels cannot seal a different DOM or visible text',async t=>{
+    const root=await fs.mkdtemp(path.join(os.tmpdir(),'vox-archive-document-change-'));
+    t.after(()=>fs.rm(root,{recursive:true,force:true}));
+    for(const changed of ['html','text']) {
+        const directory=path.join(root,changed),url='https://news.example/';
+        let snapshots=0;
+        const before={html:'<html>news</html>',url,base:url,compat_mode:'CSS1Compat',
+            text:'story '.repeat(300),width:1024,height:768,scale:1};
+        const page={events:[],evaluate:async expression=>{
+            const isSnapshot=expression.includes('cloneNode(true)');
+            if(isSnapshot) ++snapshots;
+            return ready({...before,...(isSnapshot && snapshots===2 ? {[changed]:before[changed]+' changed'} : {})});
+        },send:async method=>{
+            assert.equal(method,'Page.captureScreenshot');
+            return {data:Buffer.from('stable frame').toString('base64')};
+        }};
+        await assert.rejects(captureArchive(page,directory,url),/Live document changed during source capture/);
+        assert.equal(snapshots,2);
+        assert.equal(await fs.readFile(path.join(directory,'frozen.html'),'utf8'),before.html);
+        const after=await fs.readFile(path.join(directory,'frozen-after.html'),'utf8');
+        assert.equal(after,changed==='html' ? before.html+' changed' : before.html);
+        const identity=JSON.parse(await fs.readFile(path.join(directory,'document-snapshot.json'),'utf8'));
+        assert.equal(identity.stable,false);
+        await assert.rejects(fs.stat(path.join(directory,'archive.json')),{code:'ENOENT'});
+    }
 });
 
 test('an unstable live source retains both frames without sealing an archive',async t=>{
