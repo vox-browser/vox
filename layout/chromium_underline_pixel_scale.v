@@ -28,7 +28,13 @@ fn chromium_underline_geometry(fragment TextFragment, font_ascent f64, scale f64
 	} else {
 		math.round(fragment.text_underline_offset * scale)
 	}
-	line_offset := (math.round(font_ascent * scale) + gap + offset) / scale
+	// The transported fragment starts at the line box's top. Its baseline
+	// includes half-leading (and the selected font's inline metrics), whereas
+	// the raw font ascent alone starts the underline inside that leading.
+	baseline := if fragment.baseline_set { fragment.baseline } else {
+		math.round(font_ascent * scale) / scale
+	}
+	line_offset := baseline + (gap + offset) / scale
 	return ChromiumUnderlineGeometry{
 		thickness:   thickness / scale
 		line_offset: line_offset

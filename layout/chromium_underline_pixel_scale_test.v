@@ -87,3 +87,21 @@ fn test_device_skip_ink_uses_the_actual_aligned_glyph_baseline() {
 	assert chromium_device_skip_ink_clips(TextFragment{ decoration_skip_ink: false },
 		13.53515625, 14.5, 1.4, 2).len == 0
 }
+
+fn test_underlines_follow_the_fragment_baseline_with_positive_and_negative_leading() {
+	for density in [f64(1), 2] {
+		for baseline in [f64(9), 10, 11, 14] {
+			fragment := TextFragment{
+				y: 617.171875
+				font_size: 13.008
+				baseline: baseline
+				baseline_set: true
+				text_underline_offset_auto: true
+			}
+			geometry := chromium_underline_geometry(fragment, 10.4064, density)
+			gap := math.max(1.0, math.ceil(fragment.font_size * density / 20)) / density
+			assert geometry.line_offset == baseline + gap
+			assert geometry.top == math.floor((fragment.y + baseline + gap) * density + 0.5) / density
+		}
+	}
+}

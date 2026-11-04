@@ -4642,7 +4642,7 @@ fn chromium_skip_ink_stripe_upper(line_offset f64, font_ascent f64, fragment_y f
 
 fn chromium_skip_ink_clips(fragment TextFragment, font_ascent f64, line_offset f64, thickness f64, top f64, height f64) []f64 {
 	scale := chromium_paint_pixel_scale(fragment.layout_handle)
-	if scale != 1 {
+	if scale != 1 || fragment.baseline_set {
 		return chromium_device_skip_ink_clips(fragment, font_ascent, line_offset, thickness, scale)
 	}
 	if !fragment.decoration_skip_ink {
