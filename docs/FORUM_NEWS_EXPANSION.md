@@ -879,6 +879,61 @@ external SVG sprites remain open.
 [original baseline](../Build/slate-parity-20261104/baseline/summary.json),
 [AVIF-capable browser](../Build/slate-parity-20261104/avif-installed/summary.json).
 
+## Slate: planar decoding, sprites and containment (2026-11-04)
+
+The registered archive remains `e28a9ed9…`. Executable `10bec67f…` reduces its
+native difference to **2,821 pixels**, with **19,064 source/frozen pixels** and
+**0 independent Brave replay pixels**. This is still an open parity result.
+The remaining native regions are header 125, left column 35, main photo 422,
+right column 1,911 and consent banner 328 pixels.
+
+The follow-up fixes preserve the original AVIF 4:2:2 planes through native
+sampling and retain the same decode choices across cache requests. The static
+AVIF browser regression now matches at zero pixels. External SVG `<use>`
+sprites load through both initial preload barriers, and large embedded-image
+URLs receive bounded decode-history identities. The focused native decode and
+sampling controls, sanitizer checks and both V GC modes pass. Earlier ctypes
+probes with an incorrect color-profile ABI are explicitly excluded from the
+evidence.
+
+Paint-contained images, overflow clips and backgrounds now snap from the outer
+fragment inward. The expanded containment regression preserves every earlier
+reference region and reduces its mismatch from 62,534 to **9 one-byte pixels**;
+the nested clip and new background controls are exact. Seven layout controls
+pass with default GC and GC disabled, including fractional movement of retained
+backgrounds. Separately, `text-wrap: pretty` and `balance` score merged shaped
+advances rather than independently rounded word widths. This removes the
+spurious second line in the “Shirin Ali” author and the resulting headline
+displacement. The wrapping controls pass in both GC modes.
+
+Commit `de1afaa5e` adds Chromium's adjusted dash spacing and half-pixel border
+stroke centers for single square dashed sides. Three layout controls pass in
+both GC modes, and the parent-raster multisampling controls pass. Its authored
+reference has zero source/frozen and independent replay differences; the old
+production bundle differs by **4,544 pixels**. Production validation of this
+fix is pending a shared bundle that contains it.
+
+Acquisition now brackets source pixels with frozen-DOM, text and viewport
+identities. Cache preparation retains original encoded response bytes and
+headers separately; a cached response can reuse those headers only with a
+matching request origin, body hash and unchanged header receipt. This repairs
+missing CORS headers on cached fonts without changing their bytes. Full uBO's
+updater is stopped and its list bytes are checked before and after each visit.
+The focused archive, preparation, policy and identity tests pass.
+
+Fresh candidates remain separate from the registered fixture. The pinned-list
+candidate has stable live DOM, restored font headers and identical list hashes
+at both boundaries. Its second Brave replay failed the guard's surviving-child
+check after a successful browser exit; peak RSS remained below 3 GiB. It is
+unqualified. Its first replay still differs from source at 16,448 photo/story
+pixels and 2,412 consent-banner pixels. Earlier CSS, access, source-fidelity and
+unstable-capture failures remain retained. No site reference or tolerance was
+changed to obtain a pass.
+
+[Durable follow-up evidence](evidence/slate-containment-parity-20261104.json),
+[latest registered comparison](../Build/slate-contained-clip-20261104/production-wrap/summary.json),
+[cache/header candidate](../Build/slate-source-20261104-pinned-lists/comparison/summary.json).
+
 ## Run
 
 ```sh

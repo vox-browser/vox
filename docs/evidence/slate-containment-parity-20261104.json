@@ -1,0 +1,868 @@
+{
+  "date": "2026-11-04",
+  "site": "Slate",
+  "status": "open",
+  "threshold": "zero differing RGBA pixels; unchanged references",
+  "registered_manifest_sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227",
+  "commits": [
+    {
+      "hash": "b1abdbf17df0d999712320cb631fa8cd06f40008",
+      "subject": "Retain AVIF YUV planes through native image sampling"
+    },
+    {
+      "hash": "58e792544ab2121e6f6cc376cd6cd5ca5ff6af29",
+      "subject": "Preserve planar image decode choices and nearest sampling"
+    },
+    {
+      "hash": "a95e5fb51d3a55541757b2061ac16f1a1fc82288",
+      "subject": "Restrict uBlock network observations to the captured tab"
+    },
+    {
+      "hash": "c3f178363abe0e03b5b735021cf7e9e0e1f05025",
+      "subject": "Resolve preloaded external SVG use sprites before layout"
+    },
+    {
+      "hash": "00e98333ca6c7307810fc185a5d13fcd3fcb5833",
+      "subject": "Keep large embedded images in Chromium decode history"
+    },
+    {
+      "hash": "1d84473825bd5ac6ed23488d6e88887f68a5e5ac",
+      "subject": "Keep external SVG sprites in the scripted page preload barrier"
+    },
+    {
+      "hash": "526924319458d92cf4a0e25e0ff1f418c6063100",
+      "subject": "Snap contained images in their paint fragment coordinates"
+    },
+    {
+      "hash": "4cb91c39dc2999f9121346f4d7860c88b8f9df14",
+      "subject": "Snap overflow clips with their containing paint fragments"
+    },
+    {
+      "hash": "796d1771d6f3f695c2a63ed7b444c198841bf495",
+      "subject": "Apply fragment snapping to retained overflow clips"
+    },
+    {
+      "hash": "f50a8399072caa669a6ae649427dd109c0a22e54",
+      "subject": "Measure scored wrap candidates with merged shaped advances"
+    },
+    {
+      "hash": "88fbaf78aab5d7580040b1dc7b83a9657e2587ad",
+      "subject": "Snap contained backgrounds before rounding their edges"
+    },
+    {
+      "hash": "de1afaa5e53d87c053442ab36c84e7ab1de05165",
+      "subject": "Paint single dashed borders with Chromium stroke spacing"
+    },
+    {
+      "hash": "f74433bcd10de056870a9aaaf5f464cafc14e860",
+      "subject": "Check dashed border paths against parent raster tile policy"
+    },
+    {
+      "hash": "5f420990ba91fabcd1dd3effdb37a8aff4c74b00",
+      "subject": "Reject archived source captures when the serialized document changes"
+    },
+    {
+      "hash": "f17afa76ff0cc6fe295f35e7bd2a193b141b325a",
+      "subject": "Preserve network CORS headers in captured response archives"
+    },
+    {
+      "hash": "777b98d3fa2f19dec2512376f573f45671bcf2cb",
+      "subject": "Retain verified response headers across archive cache preparation"
+    },
+    {
+      "hash": "67cf012730139812c8c2f5ee5be55599b0d42808",
+      "subject": "Capture cache preparation responses independently of frozen DOM snapshots"
+    },
+    {
+      "hash": "087877ed6276b81c51e7f1dc83a0c1ec90fa09bb",
+      "subject": "Pin full uBlock list bytes across long capture visits"
+    }
+  ],
+  "comparisons": [
+    {
+      "path": "Build/slate-yuv-20261104/production-slate/summary.json",
+      "sha256": "de81d0915259892376e4c14f9179dd24215c35996fec70cec4645d4c81fb5ab7",
+      "data": {
+        "started_at": "2026-11-04T09:38:33+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "live-to-frozen-mismatch",
+            "cache_policy": "complete",
+            "different_pixels": 126012,
+            "artifacts": "/Users/alex/code/vox2/Build/slate-yuv-20261104/production-slate/slate",
+            "live_to_frozen_different_pixels": 19064,
+            "reference_replay_different_pixels": 0,
+            "manifest_sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-yuv-20261104/production-current/summary.json",
+      "sha256": "b649072746c1e6688f99f16afababb7afafaf15ceb319741ac5ee092dd842231",
+      "data": {
+        "started_at": "2026-11-04T09:55:42+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "live-to-frozen-mismatch",
+            "cache_policy": "complete",
+            "different_pixels": 115436,
+            "artifacts": "/Users/alex/code/vox2/Build/slate-yuv-20261104/production-current/slate",
+            "live_to_frozen_different_pixels": 19064,
+            "reference_replay_different_pixels": 0,
+            "manifest_sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-contained-image-20261104/production-slate/summary.json",
+      "sha256": "f37643ffb0b93c0efe94cbe3479161f7968884db4a1a18afb9a729a44a0b71e2",
+      "data": {
+        "started_at": "2026-11-04T10:35:27+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "live-to-frozen-mismatch",
+            "cache_policy": "complete",
+            "different_pixels": 8087,
+            "artifacts": "/Users/alex/code/vox2/Build/slate-contained-image-20261104/production-slate/slate",
+            "live_to_frozen_different_pixels": 19064,
+            "reference_replay_different_pixels": 0,
+            "manifest_sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/production-wrap/summary.json",
+      "sha256": "49c29196ad0c0c0c6bea9907dc43cc321629cec51d7dbb8fdc14704afb26d512",
+      "data": {
+        "started_at": "2026-11-04T11:16:48+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "live-to-frozen-mismatch",
+            "cache_policy": "complete",
+            "different_pixels": 2821,
+            "artifacts": "/Users/alex/code/vox2/Build/slate-contained-clip-20261104/production-wrap/slate",
+            "live_to_frozen_different_pixels": 19064,
+            "reference_replay_different_pixels": 0,
+            "manifest_sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/background-reference/summary.json",
+      "sha256": "e2a980c6e1813622d5c607f19efbf114306dea0d30711688330782fdaf36faf8",
+      "data": {
+        "status": "pixel-mismatch",
+        "cache_policy": "cold",
+        "different_pixels": 59,
+        "artifacts": "/Users/alex/code/vox2/Build/slate-contained-clip-20261104/background-reference/comparison/contained-image-paint-origin",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "92b2c0c897c1081ad84f0eb0bacc3a6defbea59d79ad4eea4a16ed519133ced2"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/dashes-reference/summary.json",
+      "sha256": "777de5da85e3e1e4227adf6dff581bd31b1047d6468067fc503008d2b410edeb",
+      "data": {
+        "status": "pixel-mismatch",
+        "cache_policy": "cold",
+        "different_pixels": 4544,
+        "artifacts": "/Users/alex/code/vox2/Build/slate-contained-clip-20261104/dashes-reference/comparison/chromium-single-dashed-border",
+        "live_to_frozen_different_pixels": 0,
+        "reference_replay_different_pixels": 0,
+        "manifest_sha256": "b338267dfe406e92f96d38819025570982e6f4f0da9fbf79ca17f0235e0128a3"
+      }
+    }
+  ],
+  "focused_checks": [
+    {
+      "path": "Build/slate-contained-clip-20261104/compile4.guard.json",
+      "sha256": "53da2c4b91b005ed4833e451f123956f8377316d9bb763e971c24a1a54cec51a",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "Build/slate-contained-clip-20261104/test4",
+          "layout/chromium_contained_image_paint_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3574595584,
+        "elapsed_seconds": 56.951470625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/run4.guard.json",
+      "sha256": "9a40c2ce76d1c30f0fb853dbec66caaa7cce2be2cf510065bad2e5e9f7ea3902",
+      "data": {
+        "command": [
+          "Build/slate-contained-clip-20261104/test4"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.613271042,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/compile4-none.guard.json",
+      "sha256": "ab3ac8b45eb98051d06c33ca5c5d986ee666136b69476b0403843ba702196fac",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-gc",
+          "none",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "Build/slate-contained-clip-20261104/test4-none",
+          "layout/chromium_contained_image_paint_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3579920384,
+        "elapsed_seconds": 52.596397792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/run4-none.guard.json",
+      "sha256": "453272f88cd08205ed394f334e860fbafc0635a9e1f69efb4c7dbd9192c9324e",
+      "data": {
+        "command": [
+          "Build/slate-contained-clip-20261104/test4-none"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 49594368,
+        "elapsed_seconds": 0.472572167,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/text-wrap.guard.json",
+      "sha256": "c72ca2d77b69b81233c54bbe6243da7769e70b1b4250fdea1d183d36a73901a4",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "Build/slate-contained-clip-20261104/text-wrap",
+          "layout/text_wrap_optimizer_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3583508480,
+        "elapsed_seconds": 52.249929875,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/text-wrap-run.guard.json",
+      "sha256": "ad433ff945bb82475522a7365f48990cc7e5b3ad74bfd47efed064a8c9447e6a",
+      "data": {
+        "command": [
+          "Build/slate-contained-clip-20261104/text-wrap"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 60735488,
+        "elapsed_seconds": 0.579424584,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/text-wrap-none.guard.json",
+      "sha256": "54238292fc48b28bd18681480e11f14215d7838468d9474ad0302557ec1b2ba5",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-gc",
+          "none",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "Build/slate-contained-clip-20261104/text-wrap-none",
+          "layout/text_wrap_optimizer_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3577790464,
+        "elapsed_seconds": 53.085014083,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/text-wrap-none-run.guard.json",
+      "sha256": "0db2166dccf1274c29b6decd9a39a28796203bd6e981e2980c55b37ae608a327",
+      "data": {
+        "command": [
+          "Build/slate-contained-clip-20261104/text-wrap-none"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 46972928,
+        "elapsed_seconds": 0.588145834,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/background2.guard.json",
+      "sha256": "2a3c9eb2db0088f15327f71a1f191b0d38618e3187a52e2ff7f6b4d28b98d66f",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "Build/slate-contained-clip-20261104/background2",
+          "layout/chromium_contained_image_paint_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3584376832,
+        "elapsed_seconds": 60.055563166,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/background2-run.guard.json",
+      "sha256": "0bcef0148f5fa9fc5c1935498f477569d96c1a00035f3e38b962d2a02a01945f",
+      "data": {
+        "command": [
+          "Build/slate-contained-clip-20261104/background2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 50282496,
+        "elapsed_seconds": 0.575499834,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/background2-none.guard.json",
+      "sha256": "d4776041496329ce876d6460cd77cd016bb8100491b39c2d66752eb66efb33dd",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-gc",
+          "none",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "Build/slate-contained-clip-20261104/background2-none",
+          "layout/chromium_contained_image_paint_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3584163840,
+        "elapsed_seconds": 45.59183325,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/background2-none-run.guard.json",
+      "sha256": "664529c6f7b863eee1ee1ce48a8fc9dde506c182edd4dfb689073c771232ea6f",
+      "data": {
+        "command": [
+          "Build/slate-contained-clip-20261104/background2-none"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 25051136,
+        "elapsed_seconds": 0.571598666,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/dashes2.guard.json",
+      "sha256": "ee9e70b3315116c11c3e7edeab12c8f9d367f3c7d5de7d46a0ff4873b3b59d9d",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "Build/slate-contained-clip-20261104/dashes2",
+          "layout/chromium_dashed_border_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3561422848,
+        "elapsed_seconds": 90.46282775,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/dashes2-run.guard.json",
+      "sha256": "39355c0d51d1d218515681c368c64f42f9cecf6cb8f148383c64604a522fc370",
+      "data": {
+        "command": [
+          "Build/slate-contained-clip-20261104/dashes2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.699202583,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/dashes-none.guard.json",
+      "sha256": "cb48ebd6f6ccd16711ec49552cbe132f15238753fefb034bdfca651c656cb60e",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-enable-globals",
+          "-gc",
+          "none",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "Build/slate-contained-clip-20261104/dashes-none",
+          "layout/chromium_dashed_border_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3552428032,
+        "elapsed_seconds": 95.015049791,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/dashes-none-run.guard.json",
+      "sha256": "2609e94966190a741fc423a28f2fcf94a8249334eae77b46d25c037a71bcf06e",
+      "data": {
+        "command": [
+          "Build/slate-contained-clip-20261104/dashes-none"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.6996851669999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/border-msaa.guard.json",
+      "sha256": "25cc602042228335d793eed81cdde7495a30dd3539cdf8156eeefdaa6de888b5",
+      "data": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-d",
+          "vox_ui2",
+          "-d",
+          "vox_sparse_ttf",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/14dc265808dc775d/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-nocache",
+          "-skip-running",
+          "-o",
+          "Build/slate-contained-clip-20261104/border-msaa",
+          "main_chromium_border_msaa_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5399216128,
+        "elapsed_seconds": 348.71173175,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/border-msaa-run.guard.json",
+      "sha256": "a890798085865ba910ec19f93ab47bea233c2157a072a9e49cb67ef7c66aaf77",
+      "data": {
+        "command": [
+          "Build/slate-contained-clip-20261104/border-msaa"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.628290625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "latest_qualified_native_comparison": {
+    "path": "Build/slate-contained-clip-20261104/production-wrap/slate",
+    "executable_sha256": "10bec67fdf5e0b7f83e128f7a4f5842fd388848c6923ae8ba6aa19ae7dbafce6",
+    "native_different_pixels": 2821,
+    "source_different_pixels": 19064,
+    "independent_replay_different_pixels": 0,
+    "regions": {
+      "header": 125,
+      "left": 35,
+      "hero": 422,
+      "right": 1911,
+      "banner": 328
+    }
+  },
+  "inline_latest": {
+    "path": "Build/forum-news-inline-tyuvkucm",
+    "different_pixels": 9,
+    "max_channel_error": 1,
+    "nested_clip_pixels": 0,
+    "background_pixels": 0
+  },
+  "source_candidates": [
+    {
+      "path": "Build/slate-source-20261104-extra-headers/comparison/summary.json",
+      "summary": {
+        "started_at": "2026-11-04T11:08:40+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "live-to-frozen-mismatch",
+            "cache_policy": "complete",
+            "different_pixels": 195317,
+            "artifacts": "/Users/alex/code/vox2/Build/slate-source-20261104-extra-headers/comparison/slate",
+            "live_to_frozen_different_pixels": 78495,
+            "reference_replay_different_pixels": 0,
+            "manifest_sha256": "1c071e084dc09525384786100c13b605f0583bf907cc4d7d2e29adcb1bd12d18"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-source-20261104-candidate/comparison/summary.json",
+      "summary": {
+        "started_at": "2026-11-04T09:15:15+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "failure",
+            "error": "Command exited 1; see /Users/alex/code/vox2/Build/slate-source-20261104-candidate/comparison/slate/capture.log"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-source-20261104-prepared-responses/comparison/summary.json",
+      "summary": {
+        "started_at": "2026-11-04T11:36:55+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "failure",
+            "error": "Command exited 1; see /Users/alex/code/vox2/Build/slate-source-20261104-prepared-responses/comparison/slate/capture-warmup/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-source-20261104-space-restored/comparison/summary.json",
+      "summary": {
+        "started_at": "2026-11-04T10:21:08+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "live-to-frozen-mismatch",
+            "cache_policy": "complete",
+            "different_pixels": 194090,
+            "artifacts": "/Users/alex/code/vox2/Build/slate-source-20261104-space-restored/comparison/slate",
+            "live_to_frozen_different_pixels": 78874,
+            "reference_replay_different_pixels": 0,
+            "manifest_sha256": "8559113c7017b261f5f9596a1f6f807dd123241854dd50fd9e63e081d4f6c1e8"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-source-20261104-prepared-headers/comparison/summary.json",
+      "summary": {
+        "started_at": "2026-11-04T11:32:12+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "failure",
+            "error": "Command exited 1; see /Users/alex/code/vox2/Build/slate-source-20261104-prepared-headers/comparison/slate/capture-warmup/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-source-20261104-fresh-complete/comparison/summary.json",
+      "summary": {
+        "started_at": "2026-11-04T09:21:39+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "failure",
+            "error": "Command exited 1; see /Users/alex/code/vox2/Build/slate-source-20261104-fresh-complete/comparison/slate/capture-warmup/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-source-20261104-pinned-lists/comparison/summary.json",
+      "summary": {
+        "started_at": "2026-11-04T11:49:00+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "failure",
+            "error": "Command exited 125; see /Users/alex/code/vox2/Build/slate-source-20261104-pinned-lists/comparison/slate/brave-repeat.log"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-source-20261104-fresh-profile/comparison/summary.json",
+      "summary": {
+        "started_at": "2026-11-04T09:16:47+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "cold",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "live-to-frozen-mismatch",
+            "cache_policy": "cold",
+            "different_pixels": 205856,
+            "artifacts": "/Users/alex/code/vox2/Build/slate-source-20261104-fresh-profile/comparison/slate",
+            "live_to_frozen_different_pixels": 62613,
+            "reference_replay_different_pixels": 0,
+            "manifest_sha256": "2597ef9b92adb28c727da24f172150d245bc3320b423c254f2a3c39107046672"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-source-20261104-stability/comparison/summary.json",
+      "summary": {
+        "started_at": "2026-11-04T10:58:28+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "live-to-frozen-mismatch",
+            "cache_policy": "complete",
+            "different_pixels": 195317,
+            "artifacts": "/Users/alex/code/vox2/Build/slate-source-20261104-stability/comparison/slate",
+            "live_to_frozen_different_pixels": 78495,
+            "reference_replay_different_pixels": 0,
+            "manifest_sha256": "4eae706360b5eff56871b24dd98983d56b153448a50bd92c82cc7b63243101de"
+          }
+        ],
+        "passed": 0
+      }
+    },
+    {
+      "path": "Build/slate-source-20261104-direct-complete/comparison/summary.json",
+      "summary": {
+        "started_at": "2026-11-04T09:40:43+0300",
+        "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+        "threshold": "zero differing RGBA pixels",
+        "cache_policy": "complete",
+        "sites": [
+          {
+            "id": "slate",
+            "name": "Slate",
+            "url": "https://slate.com/",
+            "status": "failure",
+            "error": "Command exited 1; see /Users/alex/code/vox2/Build/slate-source-20261104-direct-complete/comparison/slate/capture-warmup/brave-warm.log"
+          }
+        ],
+        "passed": 0
+      }
+    }
+  ],
+  "limits": [
+    "Registered archive unchanged. No tolerance relaxed.",
+    "Frozen script-free viewport results do not establish live scripting, scrolling, media or whole-site parity.",
+    "Dashed-border fix awaits a production bundle containing it. Its old-bundle baseline is 4544 pixels.",
+    "Fresh cache-preparation headers fix CORS loss. The candidate at Build/slate-source-20261104-pinned-lists has stable live DOM and pinned uBO lists, but the second replay guard reported remaining_children, child exit 0, peak RSS 2162081792 below 3 GiB. It is not a qualified archive.",
+    "Its first replay still differs from source by 16448 story/photo pixels and 2412 consent-banner pixels.",
+    "Earlier Python ctypes probes using 10 color-profile entries were invalid; canonical ABI uses 17. See Build/slate-yuv-20261104/probe-validity.json."
+  ],
+  "source_first_replay_diagnostic": {
+    "qualified": false,
+    "reason": "Independent replay guard remaining_children; first-pair values are diagnostic only",
+    "images": [
+      {
+        "path": "Build/slate-source-20261104-pinned-lists/comparison/slate/capture/live.png",
+        "sha256": "d473751e557e3cf232c749dce0a0548513a1256ddca2e11439e892c920ee9647"
+      },
+      {
+        "path": "Build/slate-source-20261104-pinned-lists/comparison/slate/brave.png",
+        "sha256": "35f371e787f66874932b9fceae87c7d69ab619b21d7cfb9f76e26990fdbf1cb8"
+      }
+    ],
+    "source_frozen_different_pixels": 18860,
+    "regions": {
+      "header": 0,
+      "stories": 16448,
+      "banner": 2412
+    }
+  }
+}
