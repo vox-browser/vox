@@ -934,45 +934,68 @@ changed to obtain a pass.
 [latest registered comparison](../Build/slate-contained-clip-20261104/production-wrap/summary.json),
 [cache/header candidate](../Build/slate-source-20261104-pinned-lists/comparison/summary.json).
 
-## Slate: SVG publication and scrolling-axis eligibility (2026-11-04)
+## Slate: exact frozen viewport (2026-11-04)
 
-The same registered archive now reaches **4 native differing pixels** on
-executable `2530bb64…`. This is a native-only diagnostic against the qualified,
-independently stable frozen Brave reference. Both author labels, the photos,
-logo, crown, sun and search icon match. The remaining pixels are three in the
-consent close icon and one at a button corner. The independent original-source
-fidelity gate still differs by **19,064 pixels**; this is not a strict pass.
+The unchanged registered archive `e28a9ed9…` now matches **Brave + full uBlock
+Origin at 0 differing pixels**, with both cold and complete encoded caches.
+Both runs also have **0 independent fresh-process Brave replay pixels**.
+Production executable `6e17496f…`, receipt `20261104-171308-b650b0ea`, contains
+all four final fixes. Fresh processes, sealed original response bytes, 1024×768
+document viewports, pinned filtering lists and zero tolerance remain required.
+The Hacker News control passes every strict gate at zero pixels.
+
+The original saved-source fidelity check remains **19,064 pixels** in both
+cache modes. Slate therefore retains `live-to-frozen-mismatch` status; this is
+exact frozen-viewport rendering, not an ordinary live-site or full-script claim.
+No registered source PNG or tolerance changed.
 
 Commit `f79723f02` preserves non-stacking SVG ancestor opacity and distinguishes
 inner SVG graphics from the outer CSS SVG bitmap scope. Its six-icon authored
 matrix is exact in production; layout controls pass with both GC modes.
 Commit `8c5d9c80e` retains the actual fractional clips when publishing opaque SVG
-leaves through the existing audited GPU batch bridge. Its unmodified native
-control fails, while all 16 candidate cases match complete GPU pictures,
-optimized and sanitized. The complete-page logo improves from ten pixels to zero.
-The attempted V clip-geometry workaround was removed.
+leaves through the audited GPU batch bridge. Its unmodified native control
+fails, while all 16 candidate cases match complete GPU pictures, optimized and
+sanitized. The complete-page logo improves from ten pixels to zero. The
+attempted V clip-geometry workaround was removed.
 
-Commit `ab4c39108` carries hard image-domain clipping alongside antialiased
-SVG-image destination coverage. Three independent full-uBO Brave references
-agree on its authored scene. The hard-only intermediate browser fixes the
-leading edge but fails at three trailing-edge pixels; that failure is retained.
-All 16 native hard/overflow-clip cases pass, and all 13 native clip, mask, color,
-MSAA, image and border programs pass under AddressSanitizer/UndefinedBehaviorSanitizer.
-Production validation of the final paired clipping remains pending.
+Commit `ab4c39108` carries hard SVG-image bounds alongside antialiased destination
+coverage. The hard-only intermediate browser fixed the leading edge but failed
+at three trailing-edge pixels; that failure remains retained. The final authored
+browser scene is exact. All 16 native hard/overflow-clip cases pass, and all 13
+native clip, mask, color, MSAA, image and border programs pass under
+AddressSanitizer/UndefinedBehaviorSanitizer.
 
 Commit `94c603d80` prevents horizontal hidden overflow from promoting an inert
 vertical `auto` axis to a scrolling raster. Slate's banner has 1,036 pixels of
 horizontal overflow in a 1,024-pixel container, with no vertical overflow. The
-old policy creates extra layers absent from Brave's layer tree and changes the
+old policy created extra layers absent from Brave's layer tree and changed the
 button's raster origin. Sixteen DOM combinations pass in both GC modes, and
-the existing raster-layer controls pass. Its production screenshot check is
-also pending a shared bundle containing the change.
+the existing raster-layer controls pass. The final complete-page banner is exact.
 
-No registered source PNG or tolerance changed. Build replacements invalidate
-interrupted comparisons rather than earning a result. The older full strict
-run, failed intermediate clips, exact authored controls, pinned identities and
-focused checks are retained in the
-[durable evidence](evidence/slate-svg-publication-parity-20261104.json).
+All four final focused browser controls pass. The broader suite executes
+**123 tests / 129 captures: 119 tests pass and 125 captures are exact**. Every
+capture uses the same executable identity, and all recorded HTML, PNG, resource
+and test-module inputs remain unchanged. Four standalone fixtures still fail:
+`avif-yuv-sampling` (34,796 pixels), `pikabu-direct-composited-image` and
+`pikabu-hoisted-image-clip` (1,097 each), and
+`chromium-positioned-header-image-gap` (56). These failures are retained; the
+suite is not reported as passing. The earlier nine-pixel contained-image
+control is exact on this build, without assigning optimization credit to an
+unverified cause.
+
+Separate source diagnostics find identical thumbnail draw arguments and identical
+CPU-replayed RGBA bytes in a fresh live page and its frozen replay. However,
+inspecting/replaying layer snapshots changes 98,275 pixels in the final screenshot
+relative to ordinary frozen capture. These instrumented captures are excluded
+from acceptance and cannot replace the original source. Two ordinary fresh
+frozen references still agree exactly; that new source retains a 17,953-pixel
+fidelity gap. GPU image-cache/raster history remains an investigation, not a
+renderer-fix claim.
+
+[Durable evidence](evidence/slate-svg-publication-parity-20261104.json),
+[complete-cache comparison](../Build/slate-final-strict-20261104-171308-b650b0ea/summary.json),
+[cold-cache comparison](../Build/slate-final-cold-20261104/summary.json),
+[rendering suite](../Build/slate-contained-clip-20261104/final-inline-suite-results.json).
 
 ## Run
 

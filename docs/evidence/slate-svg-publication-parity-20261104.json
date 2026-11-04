@@ -1,5 +1,5 @@
 {
-  "status": "in_progress",
+  "status": "frozen_native_pixel_parity; original_source_fidelity_open",
   "site": "slate",
   "archive_unchanged": true,
   "archive_manifest_sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227",
@@ -42,12 +42,34 @@
     }
   ],
   "remaining_gates": {
-    "production_pixels": "Pending a bundle containing paired image bounds and scrolling-axis eligibility",
+    "production_pixels": "Both cold and complete-cache native/frozen pairs pass at 0 pixels; both fresh-process Brave repeats are exact",
     "source_fidelity_different_pixels": 19064,
-    "source_gate_latest_full_run": "Build/slate-after-svg-layout-clip-20261104/slate",
+    "source_gate_latest_full_run": "Build/slate-final-strict-20261104-171308-b650b0ea/slate",
     "original_source_reference_changed": false,
     "reference_tolerance": 0,
-    "full_original_source_capture_is_not_qualified": true
+    "full_original_source_capture_is_not_qualified": true,
+    "other_standalone_regressions": [
+      {
+        "directory": "Build/forum-news-inline-dqsww_n3",
+        "fixture": "avif-yuv-sampling",
+        "different_pixels": 34796
+      },
+      {
+        "directory": "Build/forum-news-inline-o16et_09",
+        "fixture": "chromium-positioned-header-image-gap",
+        "different_pixels": 56
+      },
+      {
+        "directory": "Build/forum-news-inline-qhc_2zd4",
+        "fixture": "pikabu-hoisted-image-clip",
+        "different_pixels": 1097
+      },
+      {
+        "directory": "Build/forum-news-inline-w470aeog",
+        "fixture": "pikabu-direct-composited-image",
+        "different_pixels": 1097
+      }
+    ]
   },
   "checks": {
     "svg_group_opacity_layout": "Pass default GC and GC none",
@@ -503,6 +525,334 @@
       "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/uniform-border-clip-layer-run.guard.json",
       "sha256": "da0eaf205f692ef48a28e9f790d8c2eee36345e0c33f527788957efa1b82ced1",
       "bytes": 431
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/final-published-validation.json",
+      "sha256": "ed0d5a7a37ede1f9f78da7c25e380ab51fb675e7cc960e384a01299acb2a95e9",
+      "bytes": 1752
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/final-inline-controls.log",
+      "sha256": "3eba261efc6d13d214b973e046f10851260bcaee0625bfe066c18ec0f9de7b83",
+      "bytes": 103
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/final-inline-suite.log",
+      "sha256": "d59670bb84481b1a88180c228af70bc9ae47f6e8f627ac88605f78793e56a6f7",
+      "bytes": 6791
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/final-inline-suite-results.json",
+      "sha256": "4069bb2878502685cc4a18a3afd8e1d7070f0d2ec072e25a39638e334682d1b2",
+      "bytes": 512783
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/final-suite-inputs-before.json",
+      "sha256": "26d3dd90bd2e915c209b8df772c2fcae31f9b5ed93bb7307dd9bfe16e487ed47",
+      "bytes": 76373
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/summary.json",
+      "sha256": "34e6053b6dfa8b5577c098d1d69f67c4aa84d38888451bc5dcb7e8e10b920b10",
+      "bytes": 1202
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/summary.json",
+      "sha256": "d93d449c3406e0fdbad08b93c184abdf846a23f7591511b636eacbdb6a48cbb3",
+      "bytes": 686
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/slate/pixels.json",
+      "sha256": "2377f38463381acc843a5f219f7b60e1eaf4022e897401bacc771d9214dbdc2c",
+      "bytes": 693
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/slate/live-to-frozen.json",
+      "sha256": "189cbb2ce0246a7c07de3cb51fe9ea4e6f0b47904d058535930683aeb30f2921",
+      "bytes": 1319
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/slate/reference-replay.json",
+      "sha256": "a16ba255c0a6a3c9db906d4bccdcdb2e49ace00db41b37f8db3c63b81f3ee30f",
+      "bytes": 736
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/slate/browser-identities.json",
+      "sha256": "abd6c5bde77bb6943c1046baa12575659bc3139f2d266cb5523da5e00f776053",
+      "bytes": 10824
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/slate/browser-identities-after.json",
+      "sha256": "abd6c5bde77bb6943c1046baa12575659bc3139f2d266cb5523da5e00f776053",
+      "bytes": 10824
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/slate/vox.guard.json",
+      "sha256": "8024d5ec604111adb3e30aed0635b5b7b9996b98df2bd057cce97a632f02c40a",
+      "bytes": 580
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/slate/brave.guard.json",
+      "sha256": "3c9151b0be41b524abf03c455adf3b59ee21ce59cd4fabd4ec4d9596572eaf35",
+      "bytes": 1242
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/slate/brave-repeat.guard.json",
+      "sha256": "9da64646641b5f9490c03801f52864ce6ab783e4cdbc204f7269ccad06dafb90",
+      "bytes": 1256
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/slate/vox.png",
+      "sha256": "5cf3c2174f0c79969598f6150d739d40076619e6905c2f2b278ac8892a4a6c17",
+      "bytes": 481823
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/slate/brave.png",
+      "sha256": "29f56c596d62999bfe16b2791b5aa3382a2c362f8706bed84a378a5292b754a5",
+      "bytes": 308894
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news/pixels.json",
+      "sha256": "b50ad5ae798d6197b7ff223643748c752c02f540e7133fad86047b88b45c9e95",
+      "bytes": 717
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news/live-to-frozen.json",
+      "sha256": "c450be4c0154c7682c198579693eb53cd2e99562b6e610c3cba2605297af6f7d",
+      "bytes": 724
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news/reference-replay.json",
+      "sha256": "0587a13da02037d2a90557f51f1275ddf755c3569ffd4bd9077fec9a83b328dc",
+      "bytes": 760
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news/browser-identities.json",
+      "sha256": "abd6c5bde77bb6943c1046baa12575659bc3139f2d266cb5523da5e00f776053",
+      "bytes": 10824
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news/browser-identities-after.json",
+      "sha256": "abd6c5bde77bb6943c1046baa12575659bc3139f2d266cb5523da5e00f776053",
+      "bytes": 10824
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news/vox.guard.json",
+      "sha256": "cea9d3d1ad26d826430d771725a159622943edb627c4943c1e47948e13be539c",
+      "bytes": 603
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news/brave.guard.json",
+      "sha256": "edd11e8917c3437acca397490ebe7562d242e3a0dd5fd989b27ec4673a429666",
+      "bytes": 1271
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news/brave-repeat.guard.json",
+      "sha256": "d390497706b2274c5ae7177a401d4e38e1f966520f9f4372dfd9b5a2cfcc8778",
+      "bytes": 1291
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news/vox.png",
+      "sha256": "75423e1774abde26ee131961d08a7a73fd2833564cfd884964898be1230ef889",
+      "bytes": 490277
+    },
+    {
+      "path": "Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news/brave.png",
+      "sha256": "dbd34f4d057df8ebb491d8123f47fa19692c0ffc561552394e1b2c747b30cc9c",
+      "bytes": 200558
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/slate/pixels.json",
+      "sha256": "2a6770154848181868f0c8ad53f203c2c03471a249a24c7d792a5a93749a562c",
+      "bytes": 621
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/slate/live-to-frozen.json",
+      "sha256": "f84efd0a99583e801109e2505033eb4967c0af00269117ffb3bb88608ffe0058",
+      "bytes": 1265
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/slate/reference-replay.json",
+      "sha256": "e26f2c1413224729451955d481a7fc26837e510d35fc68dd9ff4e93c8e81594c",
+      "bytes": 664
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/slate/browser-identities.json",
+      "sha256": "abd6c5bde77bb6943c1046baa12575659bc3139f2d266cb5523da5e00f776053",
+      "bytes": 10824
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/slate/browser-identities-after.json",
+      "sha256": "abd6c5bde77bb6943c1046baa12575659bc3139f2d266cb5523da5e00f776053",
+      "bytes": 10824
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/slate/vox.guard.json",
+      "sha256": "626fb07e015f0de626c7497e180df511d0cf15563e440f3540ce1ae8926f2042",
+      "bytes": 568
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/slate/brave.guard.json",
+      "sha256": "65e7cf3f9003dcce68c2d203bb3ec68a35f89bb5ba58ebbe1d01ce4736dd8a6e",
+      "bytes": 1076
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/slate/brave-repeat.guard.json",
+      "sha256": "6f68db71f88ff64f52c6b5b4bbbe107945ef8c2af01de37ba295a0b07b5c66b7",
+      "bytes": 1096
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/slate/vox.png",
+      "sha256": "5cf3c2174f0c79969598f6150d739d40076619e6905c2f2b278ac8892a4a6c17",
+      "bytes": 481823
+    },
+    {
+      "path": "Build/slate-final-cold-20261104/slate/brave.png",
+      "sha256": "29f56c596d62999bfe16b2791b5aa3382a2c362f8706bed84a378a5292b754a5",
+      "bytes": 308894
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/photo-command-source-standard-controls/comparisons.json",
+      "sha256": "e7c897d8029873844c44cd22e94e2e47e91d592dc827f6bba1b8719c00abfa3d",
+      "bytes": 3120
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/brave-live-photo-paint-commands/photo-10-commands.json",
+      "sha256": "f8ad3fdb636aa5adc29a9f08070361e997833e675ad444861cecf1f49b43fc75",
+      "bytes": 2309
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/brave-live-photo-paint-commands/photo-10-replay.png",
+      "sha256": "fe4bb1f745ce6e6392b650db0eeb6db48a191130a8f70cb686d7271b9b490966",
+      "bytes": 67914
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/brave-candidate-photo-paint-commands/photo-10-commands.json",
+      "sha256": "01b6238f6e299be6fe95a8e85d40317a43802cfbc4266ad390fedc1079c72aea",
+      "bytes": 2309
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/brave-candidate-photo-paint-commands/photo-10-replay.png",
+      "sha256": "fe4bb1f745ce6e6392b650db0eeb6db48a191130a8f70cb686d7271b9b490966",
+      "bytes": 67914
     }
-  ]
+  ],
+  "final_executable_sha256": "6e17496ff30b300a11d6d015d162d4e8a9ed40e5b6717f6ecd0c96d12724d332",
+  "final_build_receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-171308-b650b0ea",
+  "final_comparisons": {
+    "complete": {
+      "started_at": "2026-11-04T17:43:00+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "complete",
+      "sites": [
+        {
+          "id": "slate",
+          "name": "Slate",
+          "url": "https://slate.com/",
+          "status": "live-to-frozen-mismatch",
+          "cache_policy": "complete",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/slate-final-strict-20261104-171308-b650b0ea/slate",
+          "live_to_frozen_different_pixels": 19064,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227"
+        },
+        {
+          "id": "hacker-news",
+          "name": "Hacker News",
+          "url": "https://news.ycombinator.com/",
+          "status": "pass",
+          "cache_policy": "complete",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/slate-final-strict-20261104-171308-b650b0ea/hacker-news",
+          "live_to_frozen_different_pixels": 0,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "a3d8490adcfe30332282bb606968d74fc807a1db6a6ec3cc00b9d6a639e4da9b"
+        }
+      ],
+      "passed": 1
+    },
+    "cold": {
+      "started_at": "2026-11-04T18:03:02+0300",
+      "catalog": "/Users/alex/code/vox2/Tests/Browser/Brave/forum-news.json",
+      "threshold": "zero differing RGBA pixels",
+      "cache_policy": "cold",
+      "sites": [
+        {
+          "id": "slate",
+          "name": "Slate",
+          "url": "https://slate.com/",
+          "status": "live-to-frozen-mismatch",
+          "cache_policy": "cold",
+          "different_pixels": 0,
+          "artifacts": "/Users/alex/code/vox2/Build/slate-final-cold-20261104/slate",
+          "live_to_frozen_different_pixels": 19064,
+          "reference_replay_different_pixels": 0,
+          "manifest_sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227"
+        }
+      ],
+      "passed": 0
+    }
+  },
+  "final_browser_controls": {
+    "tests": 4,
+    "failures": 0,
+    "log": "Build/slate-contained-clip-20261104/final-inline-controls.log"
+  },
+  "rendering_suite": {
+    "tests": 123,
+    "captures_observed": 129,
+    "failures": 4,
+    "inputs_unchanged": true,
+    "changed_inputs": [],
+    "executable_sha256_values": [
+      "6e17496ff30b300a11d6d015d162d4e8a9ed40e5b6717f6ecd0c96d12724d332"
+    ],
+    "passing_tests": 119,
+    "exact_captures": 125,
+    "failing_captures": [
+      {
+        "directory": "Build/forum-news-inline-dqsww_n3",
+        "fixture": "avif-yuv-sampling",
+        "different_pixels": 34796
+      },
+      {
+        "directory": "Build/forum-news-inline-o16et_09",
+        "fixture": "chromium-positioned-header-image-gap",
+        "different_pixels": 56
+      },
+      {
+        "directory": "Build/forum-news-inline-qhc_2zd4",
+        "fixture": "pikabu-hoisted-image-clip",
+        "different_pixels": 1097
+      },
+      {
+        "directory": "Build/forum-news-inline-w470aeog",
+        "fixture": "pikabu-direct-composited-image",
+        "different_pixels": 1097
+      }
+    ]
+  },
+  "source_raster_diagnostics": {
+    "status": "diagnostic_only; excluded from acceptance",
+    "animations_in_observed_live_page": [],
+    "thumbnail_command_arguments_equal_except_runtime_image_id": true,
+    "thumbnail_cpu_replay_rgba_sha256": "9fceca3eaf1c801466767379a1744fb5fc72ba2af650917ca73a75103a8e6f62",
+    "thumbnail_cpu_replay_different_pixels": 0,
+    "ordinary_frozen_repeat_different_pixels": 0,
+    "new_source_to_ordinary_frozen_different_pixels": 17953,
+    "instrumented_to_ordinary_frozen_different_pixels": 98275,
+    "conclusion": "Snapshot/replay inspection changes the final screen capture. These diagnostics do not replace the registered source or qualify ordinary live-site parity. GPU image-cache/raster history remains under investigation.",
+    "failed_attempts": [
+      {
+        "directory": "Build/slate-contained-clip-20261104/brave-live-layers-diagnostic2",
+        "reason": "Diagnostic archive parent directory was absent; shutdown also retained owned children"
+      },
+      {
+        "directory": "Build/slate-contained-clip-20261104/brave-live-layers-diagnostic3",
+        "reason": "Brave Runtime.evaluate timed out during setup"
+      }
+    ]
+  }
 }
