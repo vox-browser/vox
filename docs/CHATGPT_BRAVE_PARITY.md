@@ -3677,3 +3677,62 @@ validated against an intentional exit-1 control before tracing this failure;
 all attempts, including a traced normal exit with a service block, are retained.
 No layout invariant or pixel tolerance is relaxed. General live functionality
 and literal pixel parity remain open.
+
+
+## November 4: clipped ink and fixed metadata ownership
+
+`3b333006c` bounds shared compositor ink by finite, axis-aligned rectangular
+clips whose edges align to device pixels. Rounded, skewed and fractional clips
+keep conservative bounds. The complete cookie picture is about 23.6 MB; the
+earlier 16 MB probe missed it, so its leaf-shadow experiments did not identify
+the final drawing path. The complete recording confirms that invisible shadow
+ink had expanded the GPU target beyond its tile grid. Native bounds checks,
+the deliberately disabled control, and all 144 shared-layer cases pass with
+their expected exits.
+
+That native change made the old frozen reply exact, but left eight homepage
+pixels. An earlier commentary overstated the homepage result after a shell
+validation failure; the failing capture is retained. An unconditional V bounds
+experiment removed those eight pixels, but a matched C control proved that it
+introduced one sidebar pixel at each scale-one size. That experiment and the
+broader empty-surface ordering/test changes were discarded.
+
+`751dd2c04` tracks which fixed raster owner accepted an empty container's
+hit-test geometry. Only drawing from a container whose metadata merged into
+another owner loses the duplicated empty extent. Owners which kept their own
+metadata preserve their raster grid. The new real-layout regression runs at
+both densities with culled and unculled plans. Seven focused binaries pass
+across default GC, no-GC and preallocated modes with unchanged source hashes;
+the existing fixed-layer expectations remain unchanged.
+
+The final canonical C-backend capture has **zero differing pixels** at
+1024×768 Retina for the [homepage](parity/raw/chatgpt-retina-home-fixed-owner.png),
+[older reply](parity/raw/chatgpt-retina-reply-fixed-owner.png), and a freshly
+captured reply. All three scale-one homepage sizes are exact. All nine SVG
+mutation pairs are exact across 13 captures. A new Brave capture independently
+matches the decoded pixels of the existing 1024×768 reference. The
+[receipt](parity/chatgpt-fixed-owner-and-clipped-ink-20261104.json) pins generated
+C, native component, references, guards, controls and retained failures.
+
+The expanded Retina matrix still has one pill-border pixel at 800×600 and two
+pixels at 1280×800, at the pill border and cookie shadow. Matched controls with
+only the ownership adjustment disabled have one and nine differing pixels,
+respectively. These wider sizes remain open; references and zero tolerances
+are unchanged.
+
+The first final-source link lacked a new scroll-damage export in its older
+native component. Its V-to-C generation had stable inputs; relinking sealed C
+with the current, checked native component succeeds. These captures exercise
+that C-backend executable. Completed production receipt
+`20261104-071720-d70691ae` contains the earlier broad helper and lacks the final
+ownership map, so it cannot validate `751dd2c04`. Shared production integration
+remains pending; no duplicate production build was scheduled.
+
+A fresh anonymous Brave session through SOCKS receives the expected reply with
+no JavaScript exceptions. Its capture reports 156 response-body read errors,
+which remain recorded separately. The matching native attempt exits normally
+with zero native/script diagnostics but receives a service block, so it earns
+no live reply or pixel-parity acceptance. An earlier production native Send
+attempt succeeds without reproducing the archived layout re-entry assertion;
+that intermittent failure remains unresolved. Earlier successful live results
+belong to their pinned builds and sessions, not to the final committed patch.
