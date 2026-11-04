@@ -2035,7 +2035,11 @@ pub fn (mut sheet CSSStyleSheet) delete_rule(index u32) ! {
 	deleted_rule := sheet.rules.item(uint(index))
 	sheet.rules.remove_a_css_rule(index)!
 	if invalidation := deleted_style_invalidation {
-		invalidate_owners_for_deleted_style_rule(mut sheet, invalidation, previous_sheet_effects)
+		if invalidate_owners_for_deleted_style_rule(mut sheet, invalidation, previous_sheet_effects) {
+			if rule := deleted_rule {
+				if rule.type_ in [.media, .supports] { report_deleted_conditional_style_rule(sheet) }
+			}
+		}
 	} else {
 		sheet.invalidate_owners_with_previous_effects(.style_sheet_delete_rule, previous_sheet_effects)
 	}

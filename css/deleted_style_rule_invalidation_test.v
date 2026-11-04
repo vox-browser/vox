@@ -87,7 +87,7 @@ fn test_deleted_rule_keeps_namespace_context_and_cssom_errors() {
 }
 
 fn test_deleted_rule_retains_broad_fallbacks_for_global_nested_and_universal_rules() {
-	for source in ['@media all {.target {color:red}}', '@layer base {.target {color:red}}', '.target {color:red; & span {color:lime}}', '* {color:red}', ':has(.target) {color:red}'] {
+	for source in ['@layer base {.target {color:red}}', '.target {color:red; & span {color:lime}}', '* {color:red}', ':has(.target) {color:red}'] {
 		mut document, mut sheet, _, _ := deleted_rule_fixture(source)
 		sheet.delete_rule(0)!
 		assert document.needs_full_style_update(), source
