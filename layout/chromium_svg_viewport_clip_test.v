@@ -32,3 +32,14 @@ fn test_nested_svg_viewports_keep_their_fractional_user_space_clip() {
 		15.390625,
 	]
 }
+
+fn test_instantiated_symbols_clip_their_nested_viewport() {
+ mut document:=html.parse_document('<!doctype html><style>body{margin:0}</style><svg width="15.390625" height="15.390625" style="position:absolute;left:24.625px;top:12.296875px"><defs><symbol id="shape" viewBox="0 0 16 16"><path d="M0 0H16V16H0Z"/></symbol></defs><use href="#shape"/></svg>')
+ defer {document.finalize()}
+ document.set_font_rendering_policy(.chromium)
+ _=layout_document_typed_in_viewport(document,300,150)
+ commands:=display_list_commands(document.record_display_list() or {panic('paint')}).filter(it.kind=='draw_svg_path')
+ assert commands.len==1
+ assert commands[0].has_clip
+ assert commands[0].clip_height==15.390625
+}

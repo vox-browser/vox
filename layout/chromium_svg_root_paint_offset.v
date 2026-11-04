@@ -3,6 +3,14 @@ module layout
 import css
 import math
 
+fn is_svg_viewport_node(node &Node) bool {
+	if node.is_svg_svg_box() { return true }
+	if element := svg_element_for_layout_node(node) {
+		return element.local_name() == 'symbol'
+	}
+	return false
+}
+
 // SVGRootPainter::TransformToPixelSnappedBorderBox rounds the outer CSS
 // border-box origin before entering SVG user space. Keep padding/borders and
 // nested SVG transforms fractional, and leave committed layout unchanged.

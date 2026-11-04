@@ -9,7 +9,7 @@ fn compatibility_clip_visual_data(box &BlockBox, rect LayoutRect, radii BoxRadii
 	mut precise_rect := ?painting.Rect(none)
 	if box.layout_handle != unsafe { nil } {
 		node := unsafe { &Node(box.layout_handle) }
-		if node.is_svg_svg_box() && node.document().font_rendering_policy() == .chromium {
+		if is_svg_viewport_node(node) && node.document().font_rendering_policy() == .chromium {
 			if parent := node.parent() {
 				if parent.is_svg_box() || parent.is_svg_svg_box() {
 					precise_rect = painting.Rect{rect.x, rect.y, rect.width, rect.height}

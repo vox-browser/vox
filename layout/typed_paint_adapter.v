@@ -302,7 +302,7 @@ fn compatibility_overflow_allows_scrolling(overflow css.Overflow, is_viewport bo
 
 // Direct translation of PaintableBox::overflow_property_applies().
 fn paintable_box_overflow_property_applies(node &Node, computed &css.ComputedProperties) bool {
-	if node.is_svg_box() || node.is_inline_node() {
+	if (node.is_svg_box() && !is_svg_viewport_node(node)) || node.is_inline_node() {
 		return false
 	}
 	display := computed.display()
@@ -3611,7 +3611,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	mut paint_position := position
 	mut paint_width := used.content_width().to_double()
 	mut paint_height := used.content_height().to_double()
-	if node.is_svg_svg_box() || node.is_svg_foreign_object_box() {
+	if is_svg_viewport_node(node) || node.is_svg_foreign_object_box() {
 		mapped_bounds := svg_box_visual_bounds_to_page(node, state, used)
 		paint_position = CSSPixelPoint.from_values(mapped_bounds.x, mapped_bounds.y)
 		paint_width = mapped_bounds.width
@@ -4130,7 +4130,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	}
 	overlay := compatibility_overlay_data(node, computed, used)
 	mut overflow_clip := compatibility_overflow_clip(node, computed, used, paint_position, border_radii)
-	if node.is_svg_svg_box() {
+	if is_svg_viewport_node(node) {
 		if clip := overflow_clip {
 			mut clip_position := paint_position
 			if node.document().font_rendering_policy() == .chromium {
