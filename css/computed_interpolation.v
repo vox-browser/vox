@@ -6059,12 +6059,13 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 			}
 		}
 		if number := computed_interpolation_number_from_dom_style_value(value) {
-			if subject := c.subject_element_ {
-				if subject.document().font_rendering_policy() == .chromium {
-					// Blink truncates its computed float line height to LayoutUnit.
-					pixels := f32(c.resolved_font_size_px()) * f32(number)
-					return CSSPixels.from_raw(int(pixels * 64))
-				}
+			if c.chromium_line_height_policy() {
+				// Blink's ComputedLineHeightAsFixed first converts the font size
+				// to LayoutUnit, then applies the unitless percentage. Anonymous
+				// styles retain this policy through their font owner too.
+				font_size := CSSPixels.nearest_value_for(f64(f32(c.resolved_font_size_px())))
+				pixels := f32(font_size.to_double()) * f32(number)
+				return CSSPixels.from_raw(int(pixels * 64))
 			}
 			return c.font_size().times_float(number)
 		}

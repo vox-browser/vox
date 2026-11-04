@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8">
+<title>Numeric line height quantizes the computed font first</title>
+<style>
+html,body{margin:0;background:white;color:#222}
+.sample{position:absolute;left:24.28125px;top:24.3125px;font-family:Arial;
+  font-size:13.1156930333px;line-height:1.2;border-bottom:1px dashed #222}
+.up{left:300.28125px;top:24.25px;font-size:13.119px}
+.fixed{top:180.4375px;line-height:15.7388px}
+footer{position:absolute;top:1800px}
+</style>
+<div class="sample">First fractional line<br>Second fractional line<br>Third fractional line</div>
+<div class="sample up">First fractional line<br>Second fractional line<br>Third fractional line</div>
+<div class="sample fixed">Fixed fractional line<br>Fixed fractional line<br>Fixed fractional line</div>
+<footer>Numeric line heights quantize the computed font before multiplying, while fixed lengths retain their own rounding. Numeric line heights quantize the computed font before multiplying, while fixed lengths retain their own rounding. Numeric line heights quantize the computed font before multiplying, while fixed lengths retain their own rounding. Numeric line heights quantize the computed font before multiplying, while fixed lengths retain their own rounding. Numeric line heights quantize the computed font before multiplying, while fixed lengths retain their own rounding. Numeric line heights quantize the computed font before multiplying, while fixed lengths retain their own rounding. Numeric line heights quantize the computed font before multiplying, while fixed lengths retain their own rounding. Numeric line heights quantize the computed font before multiplying, while fixed lengths retain their own rounding. Numeric line heights quantize the computed font before multiplying, while fixed lengths retain their own rounding. Numeric line heights quantize the computed font before multiplying, while fixed lengths retain their own rounding.</footer>
