@@ -122,3 +122,41 @@ pixels and canvas strips can differ by the rounding above), images, inset
 shadows, filters and gradient text still read back, Chromium per-tile MSAA is
 not emulated, and no screenshot or broad regression suite has run on this
 branch.
+
+## Images, MSAA sub-pass and a quiet-host cohort (2026-11-05)
+
+Images now draw on the canvas through the existing upload cache and image
+draw. A new upload's recording is queued immediately: otherwise another
+recorder that found the cached texture could sample it before its writes and
+mipmaps ran (verification first showed this as 255-level errors on each
+image's first draw). Root rounded shapes in a Chromium MSAA tile no longer read
+back: the canvas copies the affected area to a scratch surface, draws the
+shape there in a multisampled pass and copies it back through the clips, all
+in the canvas recorder. Whole-pixel rectangles skip that step. Per-leaf
+verification differs by at most 3 levels except those sub-pass shapes: 20
+pixels across 15 leaves reach 15, because the per-leaf path multisamples
+only the rows inside MSAA tiles while the sub-pass covers the whole leaf.
+
+Remaining reads come from offscreen layers (text-scroll raster layers and CSS
+effect groups), gradient text, CSS filters and inset shadows. Only 15 GPU
+shapes per run still miss the canvas, all inside offscreen layers.
+
+Cohorts on executable `e8c021b3…` with the same injected libraries in both
+arms, on a nearly idle host:
+
+| Run | Scroll FPS | Input delivery | Median / p95 / max interval | Inputs / scroll intervals | Leading gap | Load |
+| --- | ---: | ---: | --- | --- | ---: | ---: |
+| 120 Hz control-1 | 107.6 | 110.1 Hz | 8.4 / 15.8 / 30.3 ms | 1200 / 1172 | 95 ms | 4.1 |
+| 120 Hz candidate-1 | 116.5 | 116.9 Hz | 8.4 / 11.0 / 23.9 ms | 1200 / 1195 | 53 ms | 6.9 |
+| 120 Hz control-2 | 103.9 | 106.7 Hz | 8.5 / 16.5 / 30.8 ms | 1200 / 1168 | 85 ms | 8.3 |
+| 120 Hz candidate-2 | 115.5 | 115.9 Hz | 8.3 / 11.8 / 30.3 ms | 1200 / 1195 | 63 ms | 7.3 |
+| 60 Hz control-1 | 58.4 | 59.7 Hz | 16.8 / 24.7 / 40.5 ms | 600 / 586 | 108 ms | 7.5 |
+| 60 Hz candidate-1 | 59.9 | 60.0 Hz | 16.6 / 19.6 / 41.5 ms | 600 / 598 | 44 ms | 7.1 |
+| 60 Hz control-2 | 58.4 | 59.6 Hz | 16.8 / 24.5 / 43.2 ms | 600 / 587 | 104 ms | 8.7 |
+| 60 Hz candidate-2 | 59.8 | 60.0 Hz | 16.7 / 19.3 / 37.8 ms | 600 / 597 | 53 ms | 8.0 |
+At 60 Hz the canvas produces a frame for 597–598 of 600 inputs (59.8–59.9
+FPS) versus 586–587, and halves the scroll-start gap, which pays the GPU's
+idle ramp at fewer waits. At 120 Hz it keeps up with 1195 of 1200 inputs
+(115.5–116.5 FPS) versus 1168–1172 (103.9–107.6). Host load dominates the
+absolute numbers: the same control measured 77–80 FPS at 120 Hz under load
+40–80.
