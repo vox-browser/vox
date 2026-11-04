@@ -9,6 +9,14 @@ import chatgpt_browser_instructions as comparison
 
 
 class ChatGPTInstructionsTests(unittest.TestCase):
+    def test_replay_disables_presence_based_snapshot_cache_and_matches_focus(self):
+        for unfocused, active in [(True, '0'), (False, '1')]:
+            settings = comparison.vox_replay_environment('socks5h://replay:1', '/private/ca', unfocused)
+            self.assertFalse(settings['LADYBIRD_ENABLE_SNAPSHOT_CACHE'])
+            self.assertEqual(settings['VOX_CAPTURE_DOCUMENT_ACTIVE'], active)
+            self.assertEqual(settings['VOX_PROXY'], 'socks5h://replay:1')
+            self.assertEqual(settings['SSL_CERT_FILE'], '/private/ca')
+
     def pairs(self, count=7, vox=95, brave=100):
         def row(value):
             return dict(exit=0, pixels_exact=True, content_exact=True,

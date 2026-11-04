@@ -41,6 +41,14 @@ def normalized(text):
     return ' '.join(text.split())
 
 
+def vox_replay_environment(proxy, ca, unfocused):
+    return dict(VOX_PROXY=proxy, SSL_CERT_FILE=ca,
+                VOX_BLOCK_COOKIE_BANNERS='0', VOX_CAPTURE_DOCUMENT_ACTIVE='0' if unfocused else '1',
+                # The browser's opt-in checks presence, not boolean spelling.
+                # Even "0" enables synchronous native snapshot PNG caching.
+                LADYBIRD_ENABLE_SNAPSHOT_CACHE='')
+
+
 def source_expectations(archive, manifest):
     parser = FixtureHTML()
     entry = manifest['responses'][URL]
@@ -225,6 +233,7 @@ def run(args):
             author_scripts='Original bytes, enabled in both browsers; no frozen DOM substitution',
             network='Original-origin sealed replay, no forwarding or downloads during trials',
             caches='Empty private profiles/caches each trial; OS filesystem/shader caches retained',
+            native_snapshot_cache='Disabled with an empty LADYBIRD_ENABLE_SNAPSHOT_CACHE value',
             reference=str(reference), title=args.title, settle_seconds=args.settle_seconds,
             native_reference=str(native_reference),
             button_audit='Exact viewport identities from retained Brave audit' if reference_buttons else 'Exact SSR button count',
@@ -242,9 +251,8 @@ def run(args):
         public = subprocess.check_output(['openssl', 'x509', '-in', replay.ready['ca'], '-pubkey', '-noout'])
         der = subprocess.check_output(['openssl', 'pkey', '-pubin', '-outform', 'der'], input=public)
         spki = base64.b64encode(hashlib.sha256(der).digest()).decode()
-        settings.vox_environment = dict(VOX_PROXY=replay.ready['proxy'], SSL_CERT_FILE=replay.ready['ca'],
-            VOX_BLOCK_COOKIE_BANNERS='0', VOX_CAPTURE_DOCUMENT_ACTIVE='0' if args.unfocused else '1',
-            LADYBIRD_ENABLE_SNAPSHOT_CACHE='0')
+        settings.vox_environment = vox_replay_environment(
+            replay.ready['proxy'], replay.ready['ca'], args.unfocused)
         settings.brave_proxy_argument = '--proxy-server=' + replay.ready['proxy'].replace('socks5h:', 'socks5:')
         settings.brave_arguments = ['--ignore-certificate-errors-spki-list=' + spki,
                                    '--force-device-scale-factor=2', '--disable-backgrounding-occluded-windows']
