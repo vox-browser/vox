@@ -1,0 +1,31 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-utf16-final-20261104-2100/diagnostic/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {
+    "73910": "Wed Nov  4 21:00:16 2026    ",
+    "73914": "Wed Nov  4 21:00:16 2026    ",
+    "77082": "Wed Nov  4 21:00:42 2026    ",
+    "77090": "Wed Nov  4 21:00:42 2026    ",
+    "77125": "Wed Nov  4 21:00:42 2026    ",
+    "77126": "Wed Nov  4 21:00:42 2026    ",
+    "77129": "Wed Nov  4 21:00:42 2026    ",
+    "77197": "Wed Nov  4 21:00:43 2026    ",
+    "77222": "Wed Nov  4 21:00:43 2026    ",
+    "80660": "Wed Nov  4 21:01:10 2026    ",
+    "80664": "Wed Nov  4 21:01:10 2026    ",
+    "80679": "Wed Nov  4 21:01:11 2026    ",
+    "80680": "Wed Nov  4 21:01:11 2026    ",
+    "80684": "Wed Nov  4 21:01:11 2026    ",
+    "84006": "Wed Nov  4 21:01:43 2026    ",
+    "84010": "Wed Nov  4 21:01:43 2026    "
+  },
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 1912832000,
+  "elapsed_seconds": 146.785956792,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}

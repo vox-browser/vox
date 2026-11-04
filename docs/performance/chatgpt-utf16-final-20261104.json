@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "implementation_commit": "b92a8c9f1",
+  "production_executable_sha256": "487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e",
+  "final_empty_return_present": true,
+  "scope": "Fresh canonical production browser, original author scripts, frozen single SOCKS capture, launch through encoded document PNG; final UTF16 ASCII prefix and empty-return source validation; uninstrumented matched prefix/empty-return switch; common buffer setup in both variants. Below seven-pair Brave acceptance.",
+  "acceptance": false,
+  "brave_target_fraction": "0.95",
+  "diagnostic_captures": 4,
+  "unprofiled_captures": 8,
+  "all_pixels_and_content_exact": true,
+  "all_browser_and_kernel_exits_zero": true,
+  "identities_stable": true,
+  "control": [
+    33334138646,
+    32946657341
+  ],
+  "candidate": [
+    32806171634,
+    32172887879
+  ],
+  "control_median": 33140397993.5,
+  "candidate_median": 32489529756.5,
+  "median_reduction_fraction": 0.019639723008989196,
+  "observed_conservative_page_instruction_reduction": 140485707,
+  "attributed_page_instruction_credit": 0,
+  "qualification": "Same-entrypoint scalar control shares length-sized allocation and trim. Candidate layout/frame work differs, under very high shared host load. Observed whole-page difference cannot be wholly assigned to the encoder; not a seven-pair Brave acceptance cohort.",
+  "work": [
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 350,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          113.12890625,
+          89.10498046875,
+          81.12841796875
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          115.50732421875,
+          90.4287109375,
+          81.6923828125
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 369,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          115.103515625,
+          96.18017578125,
+          84.6337890625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          113.0546875,
+          96.61962890625,
+          84.990234375
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 386,
+      "build_boxes_checkpoints": 10,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          114.259765625,
+          97.7099609375,
+          85.58349609375
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          109.99462890625,
+          97.34033203125,
+          85.59326171875
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 359,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          114.748046875,
+          101.88525390625,
+          88.32666015625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          113.7861328125,
+          102.27294921875,
+          88.69970703125
+        ]
+      }
+    }
+  ],
+  "broad": {
+    "jobs": 47,
+    "all_pass": true,
+    "visual_cases": 20,
+    "exact_visual_cases": 17,
+    "existing_fuzzy_visual_cases": 3,
+    "svg_mutation_cases_all_exact": 9,
+    "native_compile_and_run_jobs": 22,
+    "diff_control_job": 1,
+    "ast_compile_and_run_jobs": 4,
+    "ast_fixtures_per_gc": 100,
+    "guards_all_zero": true,
+    "cadence_after": 0
+  },
+  "libjs_full_module_qualification": "Prior complete selections remain 235/237 in both GC modes; independent literal ICU probes reproduce the two Greek casing mismatches. No full-suite green claim.",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-utf16-final-diagnostic-20261104.json",
+      "sha256": "80b79ace17c9d5ab5fba289328b81e32c56404f1d9c4bf5b44f1b93ea815d523",
+      "bytes": 1261671
+    },
+    {
+      "path": "docs/performance/chatgpt-utf16-final-diagnostic-20261104-evidence.zip",
+      "sha256": "a7a69cb9a4adcfb562572875067b1927e79c58f72177a9859746b5126ec044c4",
+      "bytes": 1233570
+    },
+    {
+      "path": "docs/performance/chatgpt-utf16-final-diagnostic-20261104-guard.json",
+      "sha256": "eb4d4e875dbfd4bb3fbd7f9585e9fb2b2f6aaabe0c02ed428c808d19217407f0",
+      "bytes": 1116
+    },
+    {
+      "path": "docs/performance/chatgpt-utf16-final-matched-20261104.json",
+      "sha256": "98ee474f0ca9b489df7fbea98c6b43f8b6e27e540eb6ebeb7ff0e4404e83c087",
+      "bytes": 1794014
+    },
+    {
+      "path": "docs/performance/chatgpt-utf16-final-matched-20261104-evidence.zip",
+      "sha256": "e1cfdf375ae10e61450fe7a56a54c85afc2098d53476728789e2ea519e3eaf11",
+      "bytes": 2434437
+    },
+    {
+      "path": "docs/performance/chatgpt-utf16-final-matched-20261104-guard.json",
+      "sha256": "3ff07e302459dbf1fd4f3657d67d65ce14a333c38f701fc2b215824ba4a851b6",
+      "bytes": 1644
+    },
+    {
+      "path": "docs/performance/chatgpt-utf16-final-broad-20261104-evidence.zip",
+      "sha256": "a0f0165d600c85b4b0ff91c0930aa7e4ec4f4b99c5de97d6ed7dc628ae816f32",
+      "bytes": 374364
+    },
+    {
+      "path": "docs/performance/chatgpt-utf16-final-20261104-evidence.zip",
+      "sha256": "e16209394c2b6f9392a0c5ddbbd3437107e151f42806f36c9ebaf4c810549995",
+      "bytes": 16485
+    }
+  ]
+}

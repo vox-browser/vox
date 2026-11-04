@@ -915,3 +915,42 @@ component revisions and the qualified production journal. Original author
 scripts, fixture bytes and references remain unchanged, with no additional
 live download. Whole-page credit and the broad-check cadence remain zero.
 The 5% Brave target remains unmet.
+
+### Final encoder production validation
+
+The later completed production bundle
+`487c784603bfc8b057dce64c7107540f174b08c8e4b07cfc7c51dadcfdfefb4e`
+contains the final empty-return branch in its sealed C source. Four separate
+diagnostic captures verify execution of the prefix path only in the candidate.
+All four pass exact pixels, content and JavaScriptCore bootstrap checks.
+
+An unprofiled control/candidate/candidate/control sequence, interleaved with
+four fresh Brave captures, also passes all eight pixel/content checks. The
+launch-through-encoded-PNG Vox median falls from **33,140,397,993.5** to
+**32,489,529,756.5** observed instructions, a **1.964%** reduction. The highest
+candidate is 140,485,707 instructions below the lowest control. Both paths
+share the new buffer setup; this is not a comparison against the complete
+previous-release allocation path.
+
+Work varies across those four Vox captures: frame-completion checkpoints are
+350, 369, 386 and 359; box-building checkpoints are 11, 11, 10 and 11. The
+second candidate performs one fewer box-building pass. Starting load averages
+range from 113.1 to 115.1 on 18 CPUs. These differences limit attribution of
+the whole-page saving to encoding, so isolated engine credit remains zero.
+All browser/kernel exits and the enclosing guards are zero, input identities
+remain stable, and both guards successfully account for adopted browser PIDs.
+The comparison driver returns one because the Brave target remains unmet.
+
+The observed conservative saving crosses the broad-check threshold. All
+47 follow-up jobs pass: twenty visual cases (seventeen exact and three at their
+existing tolerances), all nine SVG mutation cases exact, eleven native tests
+compiled and executed, six diff controls, and one hundred upstream AST fixtures
+in each GC mode. Every job guard exits zero. The cadence resets to zero; the
+earlier 235/237 LibJS module results and independent ICU failures remain
+qualified above.
+
+The [final encoder receipt](performance/chatgpt-utf16-final-20261104.json)
+links source proofs, original commands, raw counters, PNGs, host conditions,
+guards and completed broad checks. This four-pair diagnostic does not establish
+seven-pair acceptance or the requested 5% advantage over Brave. Original author
+scripts and the single SOCKS capture remain unchanged.
