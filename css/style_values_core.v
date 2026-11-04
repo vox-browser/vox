@@ -717,8 +717,10 @@ pub fn (mut t NumericType) set_exponent(type_ NumericBaseType, exponent int) {
 	}
 }
 
-fn numeric_base_types() []NumericBaseType {
-	return [.length, .angle, .time, .frequency, .resolution, .flex, .percent]
+// Every numeric-type operation visits the same seven dimensions. Keep their
+// spec order in a value array instead of allocating a vector for each visit.
+fn numeric_base_types() [7]NumericBaseType {
+	return [NumericBaseType.length, .angle, .time, .frequency, .resolution, .flex, .percent]!
 }
 
 fn (t NumericType) first_present_base_type() ?NumericBaseType {
