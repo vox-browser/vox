@@ -4496,7 +4496,20 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         return 1;
     if (!leaf_raster_region_intersects_destination_clip(destination, canvas_height, region))
         return 1;
-    if (s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
+    // Chromium rasterizes a root tile containing paths with MSAA; this leaf's
+    // own path reproduces that per tile, while the GPU canvas has no tiles yet.
+    bool root_msaa_tile = false;
+    if (s_gpu_canvas && s_gpu_canvas->destination == destination && s_raster_layer_is_root
+        && s_msaa_grid_columns > 0 && !s_msaa_grid_tiles.empty()) {
+        auto scale = raster_scale_for_context(destination);
+        int width = raster_dimension(region.width(), scale), height = raster_dimension(region.height(), scale);
+        long first_x = std::lround((region.left - page_x - s_raster_origin_x) * scale);
+        long first_y = std::lround((region.top - page_y + scroll_y - s_raster_origin_y + s_root_raster_scroll_y) * scale);
+        vox_chromium_msaa_rects(width, height, first_x, first_y, s_msaa_grid_width, s_msaa_grid_height,
+            s_msaa_grid_columns, s_msaa_grid_tiles, [&](int, int, int, int) { root_msaa_tile = true; });
+    }
+    if (root_msaa_tile) gpu_canvas_decline(destination);
+    if (!root_msaa_tile && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
         std::vector<VoxGraphiteCanvasClip> clips;
         if (auto* frame = gpu_canvas_for_leaf(destination, clips)) {
             VoxGraphiteShape descriptor {

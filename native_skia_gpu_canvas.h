@@ -233,6 +233,7 @@ GpuCanvasFrame* gpu_canvas_for_leaf(CGContextRef destination,
 }
 
 namespace {
+void gpu_canvas_decline(CGContextRef destination);
 bool gpu_canvas_kind_supported(std::string_view kind, int flags)
 {
     // Flags from V: 1 outer_shadow, 2 caret, 4 scrollbar, 8 radius, 16 antialiased,
@@ -259,6 +260,15 @@ int gpu_canvas_defer_rect(CGContextRef destination, float x, float y, float widt
     if (!canvas) return 0;
     float canvas_height = CGBitmapContextGetHeight(destination) / canvas->scale;
     float top = canvas_height - y - height;
+    // Quartz's antialiasing state for this fill is not observable; only whole
+    // device pixels are covered identically with or without it.
+    for (float edge : {x, top, x + width, top + height}) {
+        float device = edge * canvas->scale;
+        if (std::abs(device - std::round(device)) > 0.001f) {
+            gpu_canvas_decline(destination);
+            return 0;
+        }
+    }
     VoxGraphiteShape shape {
         .matrix = {}, .rect = {x, top, width, height, 0, 0, 0, 0, 0, 0, 0, 0},
         .thickness = 0, .red = rgba[0], .green = rgba[1], .blue = rgba[2], .alpha = rgba[3],
