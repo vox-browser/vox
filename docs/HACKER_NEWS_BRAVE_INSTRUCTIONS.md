@@ -1,5 +1,63 @@
 # Hacker News instructions against Brave, 2026-11-01
 
+## 2026-11-04: progress toward 2.1B
+
+The follow-up target is a Vox median of **2,100,000,000**. It remains open.
+Two seven-pair cohorts on shared build `5283f5ee` (receipt
+`20261104-082044-8804e823`, HEAD `fbaa09e7a`) measure Vox medians of
+**2,429,806,150** and **2,415,799,258** (maximums 2,473,793,577 and
+2,423,249,629), down from the 2,477,573,492 window-indexing cohort below.
+All 14 Vox launches pass pixels, stories and exits. Brave medians are
+8,234,549,289 and 8,183,702,872. Each cohort has one Brave launch whose
+helper left its resource coalition, so neither is a complete Vox/Brave
+acceptance cohort. One-minute host load was 29–54 while other sessions compiled.
+
+Three commits address costs found with debugger-free CPU samples and
+per-thread instruction probes:
+
+- `ce8ee0c1d` stops remapping an arena with at least 1 MiB of capacity after a
+  reset cycle that used no more than one 256 KiB scope block. Font scratch
+  arenas reset once or twice per element, so a load made 1,734 `mmap` calls;
+  it now makes 108. Three matched injected pairs on one executable estimate
+  **33.8M** (median paired saving).
+- `badeb3692` keeps the fallback sans-serif face's design-unit metrics instead
+  of rereading and decoding the font file for every point size. Probed
+  `fallback_font_pixel_metrics` falls **21.8M → 4.8M** (nine calls).
+- `fbaa09e7a` caches CoreText family selection and the collection index
+  per face. Probed `resolve_system_font_face` falls **21.1M → 14.3M** for
+  the same 46 calls.
+
+Concurrent sessions changed the same shared build, including lazy libcurl
+loading (`b7ab66b8f`) and earlier background prefetching (`891c11fb8`).
+The cohort-to-cohort difference therefore cannot be attributed only to
+these commits. Focused prealloc and default-GC tests pass for all three
+(arena, fallback metrics and CoreText suites); broad suites have not run.
+
+Remaining measured costs, none changed here:
+
+- Startup before page work: `Vox --no-such-option` retires about 236M,
+  mostly dyld loading and initializers; `_vinit` is 33M, including a 15.9M
+  user-agent stylesheet parse. ICU 78.2 and 79.1 are both loaded, as are
+  duplicate freetype, libpng and brotli copies.
+- The UI2 toolbar mount costs about 112M. CoreText's fallback cascade for
+  the `ⓘ`, `◎` and `◷` glyphs is about 35M; UI2 buttons and labels ignore
+  `TextStyle.font_family`.
+- Every page parses a 241,996-byte bootstrap factory and a 68,721-byte state
+  JSON (about 90M). The filter worker evaluates the 168 KB uBO engine (about
+  130M) and checksums its 28.6 MB trie. The public JavaScriptCore SDK offers
+  no bytecode cache.
+- First glyph rasterization through CoreGraphics dominates painting.
+- LaunchServices lists 475 `org.ladybirdbrowser.vox` registrations, 465 of them
+  missing on disk, and launch-time bundle lookups compare them. This is a
+  machine artifact and was not changed.
+
+Rejected diagnostics: presetting `MallocSpaceEfficient` saves nothing,
+because LaunchServices already supplies it through `LSEnvironment`. A
+private no-op for AppKit's AppIntents registration saves only about 17M.
+Raw evidence is under `Build/hn-2100-20261104/`; the
+[ledger](benchmark-results/hacker-news-2100-progress-2026-11-04.json)
+retains every count, probe and guard result.
+
 ## 2026-11-04: window-indexing opt-out
 
 A fresh seven-pair cohort on the latest shared bundle (`9ebd66e2`, receipt

@@ -1,0 +1,883 @@
+{
+ "attribution": {
+  "arena_retire_matched_injection_pilot": {
+   "description": "Same executable; interposer skipping >=1MiB MAP_FIXED remaps vs pass-through control; 3 alternating pairs",
+   "rows": [
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2555700424,
+     "load": 40.2099609375,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 1,
+     "variant": "passthru"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2525615142,
+     "load": 42.99560546875,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 1,
+     "variant": "noretire"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2495324726,
+     "load": 44.75732421875,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 2,
+     "variant": "noretire"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2529171635,
+     "load": 46.1376953125,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 2,
+     "variant": "passthru"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2544945983,
+     "load": 45.36962890625,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 3,
+     "variant": "passthru"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2501713699,
+     "load": 45.01953125,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 3,
+     "variant": "noretire"
+    }
+   ],
+   "summary": {
+    "noretire": {
+     "all_gates": true,
+     "counts": [
+      2525615142,
+      2495324726,
+      2501713699
+     ],
+     "max": 2525615142,
+     "median": 2501713699
+    },
+    "paired_saving_first_minus_second": {
+     "median": 33846909,
+     "values": [
+      30085282,
+      33846909,
+      43232284
+     ]
+    },
+    "passthru": {
+     "all_gates": true,
+     "counts": [
+      2555700424,
+      2529171635,
+      2544945983
+     ],
+     "max": 2555700424,
+     "median": 2544945983
+    }
+   }
+  },
+  "font_probe_after": {
+   "platform__Font__pixel_metrics_uncached": {
+    "calls": 16,
+    "instructions": 24873393
+   },
+   "platform__decode_outline_face": {
+    "calls": 1,
+    "instructions": 1324790
+   },
+   "platform__fallback_font_pixel_metrics": {
+    "calls": 9,
+    "instructions": 4806722
+   },
+   "platform__resolve_system_font_face": {
+    "calls": 46,
+    "instructions": 14296556
+   },
+   "platform__temporary_file_font_pixel_metrics": {
+    "calls": 9,
+    "instructions": 3556381
+   }
+  },
+  "font_probe_before": {
+   "platform__Font__pixel_metrics_uncached": {
+    "calls": 16,
+    "instructions": 26786759
+   },
+   "platform__decode_outline_face": {
+    "calls": 9,
+    "instructions": 11607381
+   },
+   "platform__fallback_font_pixel_metrics": {
+    "calls": 9,
+    "instructions": 21779086
+   },
+   "platform__resolve_system_font_face": {
+    "calls": 46,
+    "instructions": 21068279
+   },
+   "platform__temporary_file_font_pixel_metrics": {
+    "calls": 9,
+    "instructions": 20516473
+   }
+  },
+  "font_probe_note": "Per-thread inclusive instructions at first-level breakpoints under lldb on the same archived page; debugger overhead ~0.1M per nested stop",
+  "mmap_calls_after": 108,
+  "mmap_calls_before": 1734
+ },
+ "build": {
+  "executable_sha256_prefix": "5283f5ee09518e8e",
+  "head": "fbaa09e7a",
+  "note": "Shared dirty-tree build; includes concurrent sessions, e.g. lazy libcurl loading b7ab66b8f and background prefetch 891c11fb8",
+  "receipt": "20261104-082044-8804e823"
+ },
+ "cohorts": {
+  "post_fix_1": {
+   "brave_median_lower": 8234549289.0,
+   "brave_min_lower": 8090423690,
+   "guard": {
+    "child_exit_code": 1,
+    "peak_rss_bytes": 947470336,
+    "reason": "completed"
+   },
+   "rows": [
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2473793577,
+     "launch_upper": 2473793577,
+     "load_before": [
+      29.14794921875,
+      19.40087890625,
+      14.69384765625
+     ],
+     "pair": 1,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8380865022,
+     "launch_upper": 8385170694,
+     "load_before": [
+      30.4970703125,
+      19.84228515625,
+      14.876953125
+     ],
+     "pair": 1,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2442026770,
+     "launch_upper": 2442026770,
+     "load_before": [
+      32.125,
+      20.716796875,
+      15.27490234375
+     ],
+     "pair": 2,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8243736513,
+     "launch_upper": 8263306919,
+     "load_before": [
+      32.74560546875,
+      20.64453125,
+      15.2177734375
+     ],
+     "pair": 2,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2429806150,
+     "launch_upper": 2429806150,
+     "load_before": [
+      30.67333984375,
+      20.60498046875,
+      15.26708984375
+     ],
+     "pair": 3,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8225362065,
+     "launch_upper": 8225362065,
+     "load_before": [
+      31.01953125,
+      20.84375,
+      15.38232421875
+     ],
+     "pair": 3,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2417791569,
+     "launch_upper": 2417791569,
+     "load_before": [
+      29.9716796875,
+      21.0986328125,
+      15.5673828125
+     ],
+     "pair": 4,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8318259776,
+     "launch_upper": 8318650003,
+     "load_before": [
+      29.736328125,
+      20.74658203125,
+      15.3798828125
+     ],
+     "pair": 4,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2427964498,
+     "launch_upper": 2427964498,
+     "load_before": [
+      29.7333984375,
+      21.1962890625,
+      15.63427734375
+     ],
+     "pair": 5,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8099822750,
+     "launch_upper": 8107668387,
+     "load_before": [
+      29.43408203125,
+      21.27587890625,
+      15.69482421875
+     ],
+     "pair": 5,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2429979443,
+     "launch_upper": 2429979443,
+     "load_before": [
+      30.68701171875,
+      21.9482421875,
+      16.03173828125
+     ],
+     "pair": 6,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8090423690,
+     "launch_upper": 8090423690,
+     "load_before": [
+      30.11962890625,
+      21.55322265625,
+      15.8251953125
+     ],
+     "pair": 6,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2418518693,
+     "launch_upper": 2418518693,
+     "load_before": [
+      33.4345703125,
+      22.66259765625,
+      16.318359375
+     ],
+     "pair": 7,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": null,
+     "engine": "brave",
+     "error": "A private browser helper is outside its resource coalition",
+     "exit": 1,
+     "launch_lower": null,
+     "launch_upper": null,
+     "load_before": [
+      32.5986328125,
+      22.66796875,
+      16.357421875
+     ],
+     "pair": 7,
+     "pixels_exact": null,
+     "png_sha256": null
+    }
+   ],
+   "tool_summary": {
+    "error": "Every observation must exit successfully and match pixels and full row identity",
+    "passed": false
+   },
+   "vox_gates_all_pass": true,
+   "vox_max": 2473793577,
+   "vox_median": 2429806150
+  },
+  "post_fix_2": {
+   "brave_median_lower": 8183702872.0,
+   "brave_min_lower": 8143860111,
+   "guard": {
+    "child_exit_code": 1,
+    "peak_rss_bytes": 945045504,
+    "reason": "completed"
+   },
+   "rows": [
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2417051592,
+     "launch_upper": 2417051592,
+     "load_before": [
+      36.77734375,
+      27.07861328125,
+      18.873046875
+     ],
+     "pair": 1,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8153198768,
+     "launch_upper": 8172051911,
+     "load_before": [
+      36.39453125,
+      27.16015625,
+      18.94970703125
+     ],
+     "pair": 1,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2422105064,
+     "launch_upper": 2422105064,
+     "load_before": [
+      42.46240234375,
+      28.98828125,
+      19.74658203125
+     ],
+     "pair": 2,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": null,
+     "engine": "brave",
+     "error": "A private browser helper is outside its resource coalition",
+     "exit": 1,
+     "launch_lower": null,
+     "launch_upper": null,
+     "load_before": [
+      42.416015625,
+      28.751953125,
+      19.60986328125
+     ],
+     "pair": 2,
+     "pixels_exact": null,
+     "png_sha256": null
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2411287368,
+     "launch_upper": 2411287368,
+     "load_before": [
+      43.06591796875,
+      29.3369140625,
+      19.923828125
+     ],
+     "pair": 3,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8181688629,
+     "launch_upper": 8183990136,
+     "load_before": [
+      43.82080078125,
+      29.9638671875,
+      20.2568359375
+     ],
+     "pair": 3,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2412904494,
+     "launch_upper": 2412904494,
+     "load_before": [
+      43.1044921875,
+      30.48681640625,
+      20.61279296875
+     ],
+     "pair": 4,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8185717115,
+     "launch_upper": 8197239082,
+     "load_before": [
+      43.9150390625,
+      30.21337890625,
+      20.4013671875
+     ],
+     "pair": 4,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2415799258,
+     "launch_upper": 2415799258,
+     "load_before": [
+      43.3359375,
+      30.744140625,
+      20.76123046875
+     ],
+     "pair": 5,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8143860111,
+     "launch_upper": 8144347447,
+     "load_before": [
+      42.908203125,
+      30.8642578125,
+      20.86181640625
+     ],
+     "pair": 5,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2410259879,
+     "launch_upper": 2410259879,
+     "load_before": [
+      49.74462890625,
+      33.12646484375,
+      21.900390625
+     ],
+     "pair": 6,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8289587118,
+     "launch_upper": 8289587118,
+     "load_before": [
+      44.328125,
+      31.54736328125,
+      21.2197265625
+     ],
+     "pair": 6,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    },
+    {
+     "content_exact": true,
+     "engine": "vox",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 2423249629,
+     "launch_upper": 2423249629,
+     "load_before": [
+      53.57861328125,
+      34.4892578125,
+      22.5146484375
+     ],
+     "pair": 7,
+     "pixels_exact": true,
+     "png_sha256": "2d11943df165339aa9508d7f14501fc0c5e842d7351b20db0ac4add7085f9e94"
+    },
+    {
+     "content_exact": true,
+     "engine": "brave",
+     "error": null,
+     "exit": 0,
+     "launch_lower": 8202965898,
+     "launch_upper": 8220105558,
+     "load_before": [
+      60.86865234375,
+      37.00390625,
+      23.6181640625
+     ],
+     "pair": 7,
+     "pixels_exact": true,
+     "png_sha256": "e19c2f094456366ca3ddcaac9032f4696c98b17c8705bdf6f875fb6bc95b15fb"
+    }
+   ],
+   "tool_summary": {
+    "error": "Every observation must exit successfully and match pixels and full row identity",
+    "passed": false
+   },
+   "vox_gates_all_pass": true,
+   "vox_max": 2423249629,
+   "vox_median": 2415799258
+  }
+ },
+ "commits": {
+  "badeb3692": "Reuse fallback face design units across point sizes",
+  "ce8ee0c1d": "Keep warm arena pages after small reset cycles",
+  "fbaa09e7a": "Cache size-independent CoreText family matching"
+ },
+ "date": "2026-11-04",
+ "findings": {
+  "duplicate_libraries": "ICU 78.2 (vcpkg) and 79.1 (Homebrew), two freetype, libpng and brotli copies are loaded",
+  "javascript": "Bootstrap factory 241,996 bytes plus 68,721-byte state JSON parsed per page (~90M); worker evaluates 168KB uBO engine (~130M)",
+  "launch_floor": "Vox --no-such-option retires ~236M (MallocSpaceEfficient preset): ~200M dyld/initializers plus 33M _vinit (15.9M UA stylesheet parse)",
+  "launchservices": "475 org.ladybirdbrowser.vox registrations, 465 missing on disk; LS bundle lookups during launch compare them. Environment-only; not changed.",
+  "ui2_chrome_mount": "~112M: CoreText fallback for chrome glyphs (ⓘ, ◎, ◷) ~35M, native control creation ~60M"
+ },
+ "previous_accepted_vox_median": 2477573492,
+ "rejected_pilots": {
+  "allocator_reexec_preset": {
+   "description": "MallocSpaceEfficient preset vs default; LaunchServices launches already use LSEnvironment",
+   "rows": [
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2472967633,
+     "load": 9.2978515625,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 1,
+     "variant": "reexec"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2452458276,
+     "load": 9.2978515625,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 1,
+     "variant": "preset"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2474328276,
+     "load": 8.95361328125,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 2,
+     "variant": "preset"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2462948924,
+     "load": 8.796875,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 2,
+     "variant": "reexec"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2471719219,
+     "load": 8.796875,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 3,
+     "variant": "reexec"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2478448972,
+     "load": 8.97314453125,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 3,
+     "variant": "preset"
+    }
+   ],
+   "summary": {
+    "paired_saving_first_minus_second": {
+     "median": -6729753,
+     "values": [
+      20509357,
+      -11379352,
+      -6729753
+     ]
+    },
+    "preset": {
+     "all_gates": true,
+     "counts": [
+      2452458276,
+      2474328276,
+      2478448972
+     ],
+     "max": 2478448972,
+     "median": 2474328276
+    },
+    "reexec": {
+     "all_gates": true,
+     "counts": [
+      2472967633,
+      2462948924,
+      2471719219
+     ],
+     "max": 2472967633,
+     "median": 2471719219
+    }
+   }
+  },
+  "skip_ui_intelligence_registration": {
+   "description": "Diagnostic private-method no-op; saving too small for a private override",
+   "rows": [
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2536113601,
+     "load": 10.14990234375,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 1,
+     "variant": "empty"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2481939116,
+     "load": 10.3779296875,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 1,
+     "variant": "nointel"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2502494703,
+     "load": 11.46875,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 2,
+     "variant": "nointel"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2517260550,
+     "load": 11.59130859375,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 2,
+     "variant": "empty"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2505966388,
+     "load": 11.4638671875,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 3,
+     "variant": "empty"
+    },
+    {
+     "content_exact": true,
+     "error": null,
+     "exit": 0,
+     "instructions": 2488714067,
+     "load": 11.4638671875,
+     "ownership": true,
+     "pinned": true,
+     "pixels_exact": true,
+     "trial": 3,
+     "variant": "nointel"
+    }
+   ],
+   "summary": {
+    "empty": {
+     "all_gates": true,
+     "counts": [
+      2536113601,
+      2517260550,
+      2505966388
+     ],
+     "max": 2536113601,
+     "median": 2517260550
+    },
+    "nointel": {
+     "all_gates": true,
+     "counts": [
+      2481939116,
+      2502494703,
+      2488714067
+     ],
+     "max": 2502494703,
+     "median": 2488714067
+    },
+    "paired_saving_first_minus_second": {
+     "median": 17252321,
+     "values": [
+      54174485,
+      14765847,
+      17252321
+     ]
+    }
+   }
+  }
+ },
+ "request": "Reduce the archived Hacker News launch-to-PNG Vox count toward 2.1B instructions",
+ "scope": "Same as hacker-news-window-indexing-2026-11-04.json: exclusive coalition counts through encoded document PNG",
+ "target": 2100000000
+}

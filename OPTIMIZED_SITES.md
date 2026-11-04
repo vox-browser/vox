@@ -49,6 +49,7 @@ separately from the historical paired Vox/Brave row above.
 | Latest verified shared build `2e53ce13`, same workload | 7 | **2,675,233,606** | **2,701,876,818** | Median below 2.7B; maximum gate narrowly fails | [Retained cohort](docs/HACKER_NEWS_2_7B.md) |
 | Same workload, shared build `9ebd66e2` (2026-11-04 baseline) | 7 | **2,720,274,906** | **2,737,779,104** | Brave median lower bound 8,109,046,423 | [Report](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md) |
 | Same workload, shared build `698536dc` with window-indexing opt-out `dd8ce6d7a` | 7 | **2,477,573,492** | **2,492,665,267** | 8.92% below the 2026-11-04 baseline; every launch passes the requested 5% ceiling | [Report](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [ledger](docs/benchmark-results/hacker-news-window-indexing-2026-11-04.json) |
+| Same workload, shared build `5283f5ee` with arena/font fixes `ce8ee0c1d`, `badeb3692`, `fbaa09e7a` | 7 | **2,415,799,258** | **2,423,249,629** | Second of two cohorts (first: 2,429,806,150 median); one Brave helper-ownership failure in each, so no Vox/Brave acceptance; 2.1B target open | [Report](docs/HACKER_NEWS_BRAVE_INSTRUCTIONS.md), [ledger](docs/benchmark-results/hacker-news-2100-progress-2026-11-04.json) |
 
 The packaged `db4eab23` cohort passes with exact original pixels, all 30 stories
 and ownership/identity/exit audits. The corrective private-codec change also
