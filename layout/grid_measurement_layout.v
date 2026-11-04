@@ -39,6 +39,7 @@ struct GridMeasurementBasis {
 @[heap]
 struct GridMeasurementLayout {
 	key GridMeasurementKey
+	external_heights_independent bool
 	inputs []RetainedInlineInput
 	values []RetainedBlockValues
 	columns []CSSPixels
@@ -134,12 +135,14 @@ fn collect_grid_measurement_inputs(root &Node, mut inputs []RetainedInlineInput,
 
 // Ordinary grid layout is repeated inside disposable intrinsic probes. Keep
 // completed local geometry in the shared pass owner, never in a producer's
-// scratch arena. Committed layout and scalar/width-only probes stay unchanged.
+// scratch arena. Final layout can consume an existing owned result; scalar and
+// width-only probes retain their complete algorithms.
 fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	mut used UsedValues, mode LayoutMode, space AvailableSpace, width_only bool) FormattingContextResult {
 	mut pool := state.measurement_chunk_pool_
+	committed := state.subtree_root == none
 	if disable_grid_measurement_reuse || mode != .normal || width_only
-		|| !space.width.is_definite() || state.subtree_root == none
+		|| !space.width.is_definite() || (committed && disable_committed_grid_measurement_reuse)
 		|| used.containing_block_used_values_ == none || pool == unsafe { nil } || pool.closed
 		|| !retained_context_allows_grid(container) || container.document().in_quirks_mode()
 		|| container.is_viewport() || container.is_root_element() || container.is_body() {
@@ -156,7 +159,9 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	style_environment := container.document().style_environment_version()
 	previous := pool.grid_measurements_[node_key] or { []&GridMeasurementLayout{} }
 	for cached in previous {
-		if cached.key != key || cached.font_generation != font_generation
+		if (cached.key != key && !(committed && cached.external_heights_independent
+			&& committed_grid_measurement_keys_match(&cached.key, &key)))
+			|| cached.font_generation != font_generation
 			|| cached.font_policy != container.document().font_rendering_policy()
 			|| cached.style_environment != style_environment
 			|| !grid_measurement_inputs_are_current(cached.inputs) { continue }
@@ -175,7 +180,13 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 			grid_measurement_reuse_reported = true
 			eprintln('Vox grid measurement: reused resolved within-pass geometry')
 		}
+		if committed { report_committed_grid_measurement_reuse() }
 		return cached.result
+	}
+	// A committed miss must not populate, reject or evict disposable entries.
+	if committed {
+		return run_uncached_grid_formatting_context_internal(mut state, container, mut used,
+			mode, space, width_only)
 	}
 	mut retained_inputs := platform.enter_retained_allocations()
 	mut inputs := []RetainedInlineInput{}
@@ -211,6 +222,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 	}
 	cached := &GridMeasurementLayout{
 		key: GridMeasurementKey{ ...key, external_bases: key.external_bases.clone() }
+		external_heights_independent: grid_measurement_external_heights_are_unused(owned_inputs)
 		inputs: owned_inputs
 		values: snapshots
 		columns: used.grid_template_columns().clone()
