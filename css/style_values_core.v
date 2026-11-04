@@ -986,6 +986,51 @@ fn (mut t NumericType) copy_all_entries_from(other NumericType, skip_if_already_
 }
 
 pub fn (t NumericType) entry_with_value_1_while_all_others_are_0() ?NumericBaseType {
+	if !retain_numeric_dimension_iteration {
+		report_numeric_dimension_direct()
+		// Reject invalid powers and duplicate unit entries as soon as they appear.
+		// Preserve absent and explicit-zero entries without constructing options
+		// or dispatching through the dimension iterator for each field.
+		mut unit := -1
+		length := t.length_ or { 0 }
+		if length != 0 {
+			if length != 1 { return none }
+			unit = int(NumericBaseType.length)
+		}
+		angle := t.angle_ or { 0 }
+		if angle != 0 {
+			if angle != 1 || unit != -1 { return none }
+			unit = int(NumericBaseType.angle)
+		}
+		time := t.time_ or { 0 }
+		if time != 0 {
+			if time != 1 || unit != -1 { return none }
+			unit = int(NumericBaseType.time)
+		}
+		frequency := t.frequency_ or { 0 }
+		if frequency != 0 {
+			if frequency != 1 || unit != -1 { return none }
+			unit = int(NumericBaseType.frequency)
+		}
+		resolution := t.resolution_ or { 0 }
+		if resolution != 0 {
+			if resolution != 1 || unit != -1 { return none }
+			unit = int(NumericBaseType.resolution)
+		}
+		flex := t.flex_ or { 0 }
+		if flex != 0 {
+			if flex != 1 || unit != -1 { return none }
+			unit = int(NumericBaseType.flex)
+		}
+		percent := t.percent_ or { 0 }
+		if percent != 0 {
+			if percent != 1 || unit != -1 { return none }
+			unit = int(NumericBaseType.percent)
+		}
+		if unit == -1 { return none }
+		// The sentinel has been rejected; every remaining assignment is a valid enum.
+		return unsafe { NumericBaseType(unit) }
+	}
 	mut result := ?NumericBaseType(none)
 	for base_type in numeric_base_types() {
 		type_exponent := t.exponent(base_type)
