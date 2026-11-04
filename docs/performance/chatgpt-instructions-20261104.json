@@ -12,7 +12,14 @@
     "connection_limit": "88f1120f0",
     "capture_and_comparison": "028ba7127",
     "source_content_audit": "7c6fbfd06",
-    "font_lookup": "7251651bc"
+    "font_lookup": "7251651bc",
+    "hydrated_content_audit": "8eed01969",
+    "document_focus_protocol": "256e9bede",
+    "shared_picture_batch": "6db573f75",
+    "literal_viewport_media_cache": "c237d9d5e",
+    "snapshot_cache_protocol": "7dd22845d",
+    "owned_media_feature_value": "7bd4782bd",
+    "serialized_typeface_packets": "0683393af"
   },
   "download": {
     "proxy": "socks5h://127.0.0.1:1337",
@@ -638,5 +645,3549 @@
     "native_reference_pixels": "Zero differing pixels versus the preceding elevated-fd native capture. Both still differ at 60 pixels from the unchanged Brave reference.",
     "semantic_limitation": "This run has 48 buttons versus 52 in the archived SSR source; hydration/readiness equivalence requires investigation despite unchanged viewport pixels. The new strict content gate rejects it.",
     "acceptance": false
+  },
+  "continuation_20261104": {
+    "status": "Incomplete: requested 5% lower instruction count is not established. No qualifying optimized-site entry.",
+    "acceptance_pairs": 0,
+    "page_optimization_credit": 0,
+    "prior_report": "All earlier failures and pending-at-the-time statements above are retained. This continuation supersedes those pending validation statements only where fresh evidence below applies.",
+    "script_policy": "Original archived response bodies and author scripts enabled. The home-behavior bootstrap marker is mandatory; this does not establish complete ChatGPT functionality or authenticated conversation support. No additional live download was made.",
+    "workload": "Frozen anonymous homepage at the original https://chatgpt.com/ origin. 1024x768 CSS pixels, backing scale 2, empty private profiles/caches, OS filesystem and shader caches retained. Launch-coalition counters through document PNG availability; external GPU and outside-coalition work excluded.",
+    "protocol_corrections": [
+      {
+        "commit": "256e9bede",
+        "reason": "Focused Brave reference contained a blinking caret. Both browsers now use unfocused documents and readiness checks require document.hasFocus() false. The first unfocused control supplied a declared fixed reference, subsequently independently validated four times.",
+        "reference": {
+          "path": "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+          "sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "bytes": 165383
+        },
+        "reference_audit": {
+          "path": "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+          "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+          "bytes": 22692
+        },
+        "validation": {
+          "passed": true,
+          "reference": "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+          "reference_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+          "results": [
+            {
+              "folder": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-brave",
+              "content": {
+                "title": "ChatGPT: Chat, Work, Create & Code with AI",
+                "counts": {
+                  "headings": 1,
+                  "editors": 1,
+                  "buttons": 52,
+                  "links": 27,
+                  "images": 2,
+                  "bootstrap": 1
+                }
+              },
+              "pixels": {
+                "exact": true,
+                "different_pixels": 0,
+                "expected": "/Users/alex/code/vox2/Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+                "actual": "/Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-brave/document.png",
+                "diff": "/Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-brave/independent-reference.diff.png",
+                "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-brave/independent-reference.diff.png\n"
+              },
+              "encoded_png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+              "launch_instructions": {
+                "lower": 16304277025,
+                "upper": 16313961883
+              }
+            },
+            {
+              "folder": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-vox",
+              "content": {
+                "title": "ChatGPT: Chat, Work, Create & Code with AI",
+                "counts": {
+                  "headings": 1,
+                  "editors": 1,
+                  "buttons": 52,
+                  "links": 27,
+                  "images": 2,
+                  "bootstrap": 1
+                }
+              },
+              "pixels": {
+                "exact": true,
+                "different_pixels": 0,
+                "expected": "/Users/alex/code/vox2/Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+                "actual": "/Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-vox/document.png",
+                "diff": "/Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-vox/independent-reference.diff.png",
+                "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-vox/independent-reference.diff.png\n"
+              },
+              "encoded_png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+              "launch_instructions": {
+                "lower": 36935007518,
+                "upper": 36935007518
+              }
+            },
+            {
+              "folder": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-brave",
+              "content": {
+                "title": "ChatGPT: Chat, Work, Create & Code with AI",
+                "counts": {
+                  "headings": 1,
+                  "editors": 1,
+                  "buttons": 52,
+                  "links": 27,
+                  "images": 2,
+                  "bootstrap": 1
+                }
+              },
+              "pixels": {
+                "exact": true,
+                "different_pixels": 0,
+                "expected": "/Users/alex/code/vox2/Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+                "actual": "/Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-brave/document.png",
+                "diff": "/Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-brave/independent-reference.diff.png",
+                "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-brave/independent-reference.diff.png\n"
+              },
+              "encoded_png_sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+              "launch_instructions": {
+                "lower": 16273557017,
+                "upper": 16282470032
+              }
+            },
+            {
+              "folder": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-vox",
+              "content": {
+                "title": "ChatGPT: Chat, Work, Create & Code with AI",
+                "counts": {
+                  "headings": 1,
+                  "editors": 1,
+                  "buttons": 52,
+                  "links": 27,
+                  "images": 2,
+                  "bootstrap": 1
+                }
+              },
+              "pixels": {
+                "exact": true,
+                "different_pixels": 0,
+                "expected": "/Users/alex/code/vox2/Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+                "actual": "/Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-vox/document.png",
+                "diff": "/Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-vox/independent-reference.diff.png",
+                "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-vox/independent-reference.diff.png\n"
+              },
+              "encoded_png_sha256": "d9bebc575a98515231ad2e7f6a7ddc0675c93b7e9528e9c936fbcd6d6fde71f1",
+              "launch_instructions": {
+                "lower": 36514859128,
+                "upper": 36514859128
+              }
+            }
+          ],
+          "acceptance": false,
+          "optimization_credit": 0,
+          "scope": "Four independent control pictures all match the predeclared unfocused baseline exactly. This corrects focus policy; it is not browser instruction acceptance or an engine saving."
+        },
+        "credit": 0,
+        "original_reference_preserved": true,
+        "original_reference_difference": "20 pill-focus pixels; earlier focused runs also retained blinking/native caret differences."
+      },
+      {
+        "commit": "8eed01969",
+        "reason": "Hydration may change zero-size login-dialog button counts. Retain the complete untruncated button audit and require all eleven viewport button identities from the fixed Brave audit; also require the complete original heading/link identities, editor presence and original author readiness marker.",
+        "credit": 0
+      },
+      {
+        "commit": "7dd22845d",
+        "reason": "Vox treats LADYBIRD_ENABLE_SNAPSHOT_CACHE as enabled for every nonempty value. The old driver set \"0\", inadvertently enabling synchronous opt-in snapshot PNG caching. Corrected runs pass an empty value. Retain all earlier cohorts as snapshot-enabled, with no optimization credit for this protocol correction.",
+        "tests": {
+          "path": "Build/chatgpt-snapshot-protocol-tests-20261104-1010-guard.json",
+          "sha256": "e60f7726c7b1d544593c7dbe64b7b2dff247be7f5733cad6efe7610d85fd554b",
+          "bytes": 442
+        },
+        "credit": 0
+      }
+    ],
+    "checks": {
+      "hydration": {
+        "path": "Build/chatgpt-hydration-audit-tests-20261104-0900-guard.json",
+        "sha256": "272b948fbabf4c6dfb548bb884c039cd026517e07062d0b00aa80c20f235e4e0",
+        "bytes": 468
+      },
+      "focus": {
+        "path": "Build/chatgpt-focus-protocol-tests-20261104-0905-guard.json",
+        "sha256": "6d615d0bbc3f51d7545c4d1940b81ea0d55ef71bec6026e351eb1bf738f30f7a",
+        "bytes": 488
+      },
+      "shared_compositor": {
+        "path": "Build/chatgpt-shared-picture-batch-tests-20261104-0915-guard.json",
+        "sha256": "1deefafd7265c10ef848ff15ce1c8be043c34602cc4a0b083ec6129f65b8abf6",
+        "bytes": 536
+      },
+      "viewport_cache": [
+        {
+          "name": "media_query_viewport_cache_test-default",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-default-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-default-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-default",
+            "css/media_query_viewport_cache_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "416556b088116b17fff25feec14e5868398195419077b496ae121eb70678475c",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_parse_retention_test.v": "f72196e0f99a52a64c8496794c3d5746f46779c71504fb00314b2bd8074d1716"
+          }
+        },
+        {
+          "name": "media_query_viewport_cache_test-default",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-default-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-default-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-default"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "416556b088116b17fff25feec14e5868398195419077b496ae121eb70678475c",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_parse_retention_test.v": "f72196e0f99a52a64c8496794c3d5746f46779c71504fb00314b2bd8074d1716"
+          }
+        },
+        {
+          "name": "media_query_parse_retention_test-default",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-default-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-default-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-default",
+            "css/media_query_parse_retention_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "416556b088116b17fff25feec14e5868398195419077b496ae121eb70678475c",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_parse_retention_test.v": "f72196e0f99a52a64c8496794c3d5746f46779c71504fb00314b2bd8074d1716"
+          }
+        },
+        {
+          "name": "media_query_parse_retention_test-default",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-default-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-default-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-default"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "416556b088116b17fff25feec14e5868398195419077b496ae121eb70678475c",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_parse_retention_test.v": "f72196e0f99a52a64c8496794c3d5746f46779c71504fb00314b2bd8074d1716"
+          }
+        },
+        {
+          "name": "media_query_viewport_cache_test-none",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-none-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-none-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-none",
+            "css/media_query_viewport_cache_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "416556b088116b17fff25feec14e5868398195419077b496ae121eb70678475c",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_parse_retention_test.v": "f72196e0f99a52a64c8496794c3d5746f46779c71504fb00314b2bd8074d1716"
+          }
+        },
+        {
+          "name": "media_query_viewport_cache_test-none",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-none-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-none-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_viewport_cache_test-none"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "416556b088116b17fff25feec14e5868398195419077b496ae121eb70678475c",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_parse_retention_test.v": "f72196e0f99a52a64c8496794c3d5746f46779c71504fb00314b2bd8074d1716"
+          }
+        },
+        {
+          "name": "media_query_parse_retention_test-none",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-none-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-none-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-none",
+            "css/media_query_parse_retention_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "416556b088116b17fff25feec14e5868398195419077b496ae121eb70678475c",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_parse_retention_test.v": "f72196e0f99a52a64c8496794c3d5746f46779c71504fb00314b2bd8074d1716"
+          }
+        },
+        {
+          "name": "media_query_parse_retention_test-none",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-none-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-none-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-viewport-validation-20261104-1008/media_query_parse_retention_test-none"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "416556b088116b17fff25feec14e5868398195419077b496ae121eb70678475c",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_parse_retention_test.v": "f72196e0f99a52a64c8496794c3d5746f46779c71504fb00314b2bd8074d1716"
+          }
+        }
+      ],
+      "owned_media": [
+        {
+          "name": "media_feature_owned_value_test-default",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-default-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-default-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-default",
+            "css/media_feature_owned_value_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_feature_owned_value_test-default",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-default-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-default-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-default"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_query_viewport_cache_test-default",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-default-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-default-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-default",
+            "css/media_query_viewport_cache_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_query_viewport_cache_test-default",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-default-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-default-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-default"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_query_precision_test-default",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-default-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-default-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-default",
+            "css/media_query_precision_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_query_precision_test-default",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-default-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-default-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-default"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "container_rule_test-default",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-default-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-default-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-default",
+            "css/container_rule_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "container_rule_test-default",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-default-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-default-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-default"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "ratio_style_value_test-default",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-default-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-default-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-default",
+            "css/ratio_style_value_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "ratio_style_value_test-default",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-default-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-default-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-default"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_feature_owned_value_test-none",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-none-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-none-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-none",
+            "css/media_feature_owned_value_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_feature_owned_value_test-none",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-none-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-none-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_feature_owned_value_test-none"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_query_viewport_cache_test-none",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-none-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-none-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-none",
+            "css/media_query_viewport_cache_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_query_viewport_cache_test-none",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-none-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-none-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_viewport_cache_test-none"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_query_precision_test-none",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-none-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-none-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-none",
+            "css/media_query_precision_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "media_query_precision_test-none",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-none-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-none-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/media_query_precision_test-none"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "container_rule_test-none",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-none-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-none-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-none",
+            "css/container_rule_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "container_rule_test-none",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-none-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-none-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/container_rule_test-none"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "ratio_style_value_test-none",
+          "step": "compile",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-none-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-none-compile-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/v/v",
+            "-memory-limit",
+            "10G",
+            "-nocache",
+            "-enable-globals",
+            "-gc",
+            "none",
+            "-o",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-none",
+            "css/ratio_style_value_test.v"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        },
+        {
+          "name": "ratio_style_value_test-none",
+          "step": "run",
+          "command": [
+            "python3",
+            "tools/run_memory_bounded.py",
+            "--limit-gib",
+            "3",
+            "--lock",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-none-run.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-none-run-guard.json",
+            "--timeout",
+            "600",
+            "--",
+            "/Users/alex/code/vox2/Build/chatgpt-media-owned-validation-20261104-1018/ratio_style_value_test-none"
+          ],
+          "exit": 0,
+          "source_sha256": {
+            "css/media_queries.v": "a0666582c14cd16cd4fa268acf2e72bcbbbd4a3da4f1f552c5f12a0a4512b674",
+            "css/media_feature_owned_value_test.v": "aedf498f7738856fc8723729bc001f8a5a3397a4ccd644aa2610747f6bf58136",
+            "css/media_query_viewport_cache_test.v": "06391464694e8fd23e422d15405e58d89b6f33339c7305ddb7c1206a15c9e74b",
+            "css/media_query_precision_test.v": "a4d1e23c215fae63ac1a54255f4f1b977318576a1d96d0f1e393fb09015cd424",
+            "css/container_rule_test.v": "8bcb9cbcc808126b99ea06aaf28b4b599e4c00a6798bd977b5123238d7ec1c51",
+            "css/ratio_style_value_test.v": "d2344af485e1447133a9186332630561b5887e497236b1bf83555f9eaca0af74"
+          }
+        }
+      ],
+      "owned_media_evaluation_default": {
+        "command": [
+          "Build/chatgpt-media-owned-value-evaluation-20261104-1015"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.29683883299999997,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "owned_media_evaluation_none": {
+        "command": [
+          "Build/chatgpt-media-owned-evaluation-none-20261104-1022"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.321149542,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "font_packet_cache": {
+        "command": [
+          "env",
+          "NATIVE_SKIA_TEST_OUTPUT_DIR=/Users/alex/code/vox2/Build/chatgpt-font-serialization-check-20261104-1025",
+          "sh",
+          "tools/test_native_picture_typeface_cache.sh"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 215908352,
+        "elapsed_seconds": 1.568147792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "font_packet_gpu": {
+        "command": [
+          "Build/chatgpt-font-serialization-check-20261104-1025/native_picture_typeface_cache_test",
+          "Build/chatgpt-native-comparison-20261104-0920/control-public/libVoxGraphiteDawn.dylib",
+          "Build/chatgpt-native-comparison-20261104-0920/candidate-public/libVoxGraphiteDawn.dylib"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 340164608,
+        "elapsed_seconds": 0.9433161250000001,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "test_scope": "Literal viewport cache: seven cases in both GC modes. Owned feature values: 41 cases in six selected files in both modes, including retained old default evaluation plus fresh no-GC evaluation. Native shared picture batches: 160 selected compositor cases. Font packets: exact bytes, LRU entry/byte bounds, retained packet lifetimes, oversized/disabled/null fallbacks, mixed-font pictures and four exact GPU comparisons. V module cache disabled after its retained linker failure; compile budget 12 GiB and focused runtime budget 3 GiB.",
+    "retained_test_failures": [
+      {
+        "path": "Build/chatgpt-media-viewport-cache-tests-20261104-0950-guard.json",
+        "sha256": "ab56e6bf4495e73adcb4165b0457aeaa29f847c433f4827b3de3120e71176bc2",
+        "bytes": 455
+      },
+      {
+        "path": "Build/chatgpt-media-viewport-runtime-20261104-1000-guard.json",
+        "sha256": "d5f11dbc2e6773fcbffe28988574134e40708ee576aebe87bb331adc67a1c29e",
+        "bytes": 370
+      },
+      {
+        "path": "Build/chatgpt-media-viewport-runtime-20261104-1004-guard.json",
+        "sha256": "27b0130ad5503b490759d586c7ce5b154d2d53797e64ed65fa43ec4cb8a01fb0",
+        "bytes": 378
+      }
+    ],
+    "cohorts": [
+      {
+        "folder": "Build/chatgpt-instructions-cap-production-20261104-0902",
+        "notes": "32-connection cap validated on a fresh production process under normal 256 descriptor limit. Native capture exact; Brave failed on caret pixels. Snapshot cache was unintentionally enabled.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "error": "At least two complete alternating pairs are required",
+          "observation_errors": [
+            {
+              "engine": "brave",
+              "error": "Captured document differs from its unchanged pixel reference",
+              "kernel_exit_status": 0
+            }
+          ],
+          "optimization_credit": false,
+          "pairs": 1,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work."
+        },
+        "observations": [
+          {
+            "engine": "brave",
+            "exit": 1,
+            "error": "Captured document differs from its unchanged pixel reference",
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 22250817357,
+              "upper": 22271083617
+            },
+            "pixels_exact": false,
+            "content_exact": true,
+            "resource_coalition": 15159,
+            "started_unix": 1793772110.18221,
+            "finished_unix": 1793772119.632254,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                17.84716796875,
+                23.9208984375,
+                30.57666015625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                18.42431640625,
+                23.84130859375,
+                30.47021484375
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-instructions-cap-production-20261104-0902/pair-1-brave/result.json",
+              "sha256": "2936b7a0846717a5aeef5c90035e9f112bba3dee4fe947ba72ec1ed702263cac",
+              "bytes": 184329
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-instructions-cap-production-20261104-0902/pair-1-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 38170638602,
+              "upper": 38170638602
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15157,
+            "started_unix": 1793772100.316283,
+            "finished_unix": 1793772108.605081,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                15.96875,
+                23.767578125,
+                30.60205078125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                17.84716796875,
+                23.9208984375,
+                30.57666015625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-instructions-cap-production-20261104-0902/pair-1-vox/result.json",
+              "sha256": "6086cbf2008a9b1a9f8a9c8914cdaaa6c132e0da71fa319bde478562ba875c96",
+              "bytes": 208428
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-instructions-cap-production-20261104-0902/pair-1-vox/audit.json",
+                "sha256": "7505af2b14e326150612fe6fd418736f3233447438f245661594e0f6cdcb26e0",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "tools/chatgpt_browser_instructions.py",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-instructions-cap-production-20261104-0902",
+            "--expected",
+            "Build/chatgpt-instructions-capture-20261104-0830/live-observed.png",
+            "--expected-vox",
+            "Build/chatgpt-instructions-profile-20261104-0830/vox.png",
+            "--reference-audit",
+            "Build/chatgpt-instructions-baseline-20261104-0830/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-instructions-cap-production-20261104-0902-pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "44903": "Wed Nov  4 09:01:40 2026    ",
+            "44907": "Wed Nov  4 09:01:40 2026    ",
+            "45366": "Wed Nov  4 09:01:50 2026    ",
+            "45370": "Wed Nov  4 09:01:50 2026    ",
+            "45390": "Wed Nov  4 09:01:50 2026    ",
+            "45391": "Wed Nov  4 09:01:50 2026    ",
+            "45398": "Wed Nov  4 09:01:50 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1738833920,
+          "elapsed_seconds": 26.419617708,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-instructions-cap-production-20261104-0902/inputs.json",
+          "sha256": "1103fcd23718798b3f07034db5c9203ac436e154f4eb1708e34a00199d323949",
+          "bytes": 379457
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-instructions-cap-production-20261104-0902/pairs.json",
+          "sha256": "ff5dfe8abfb69d1e355ae3aea57b83bcd866d8e11b228f2f63cb9b619a903d12",
+          "bytes": 422974
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-instructions-cap-production-20261104-0902/replay.json",
+          "sha256": "a0670c1c59c53fa7b0759012de899c501872bf6a75bd6d8f358c800a6ecc4ea3",
+          "bytes": 470
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-instructions-cap-production-20261104-0902/cross-engine-reference.json",
+          "sha256": "6144af3bb926eb86100fbbc23143dd394dc61bbffc8f0a667f4dd7689e5f2ece",
+          "bytes": 1379
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-instructions-cap-production-20261104-0902/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
+      },
+      {
+        "folder": "Build/chatgpt-unfocused-control-20261104-0905/run",
+        "notes": "First unfocused control; pixels compared against old focused reference fail. Its independently matching unfocused PNGs supply the declared future reference. Not acceptance. Snapshot cache enabled.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "error": "At least two complete alternating pairs are required",
+          "observation_errors": [
+            {
+              "engine": "brave",
+              "error": "Captured document differs from its unchanged pixel reference",
+              "kernel_exit_status": 0
+            }
+          ],
+          "optimization_credit": false,
+          "pairs": 1,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work."
+        },
+        "observations": [
+          {
+            "engine": "brave",
+            "exit": 1,
+            "error": "Captured document differs from its unchanged pixel reference",
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 16699040051,
+              "upper": 16709564661
+            },
+            "pixels_exact": false,
+            "content_exact": true,
+            "resource_coalition": 15163,
+            "started_unix": 1793772304.394148,
+            "finished_unix": 1793772314.947902,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                45.17529296875,
+                31.98486328125,
+                32.462890625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                47.78125,
+                32.947265625,
+                32.796875
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/result.json",
+              "sha256": "d2855f8c9ceffb698e274067db5588a713601e1714f0822a3aa686902a3601bb",
+              "bytes": 155551
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 34905635000,
+              "upper": 34905635000
+            },
+            "content_exact": true,
+            "resource_coalition": 15161,
+            "started_unix": 1793772295.47789,
+            "finished_unix": 1793772302.7645319,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                42.92919921875,
+                31.1025390625,
+                32.16162109375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                45.17529296875,
+                31.98486328125,
+                32.462890625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-vox/result.json",
+              "sha256": "5c24f1287ab928ce9205aa6a8ff2498ed21782a0b382bfeb1a075a5c5c761c77",
+              "bytes": 232314
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-vox/audit.json",
+                "sha256": "e0e7286ec5f51545a2ad2e5004b8484ab6e51f6bdf465c9536a2a90e085a9ebd",
+                "bytes": 20371
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 48,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "Build/chatgpt-unfocused-control-20261104-0905/reference.py",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-unfocused-control-20261104-0905/run",
+            "--expected",
+            "Build/chatgpt-instructions-capture-20261104-0830/live-observed.png",
+            "--reference-audit",
+            "Build/chatgpt-instructions-baseline-20261104-0830/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-unfocused-control-20261104-0905/pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "52427": "Wed Nov  4 09:04:55 2026    ",
+            "52432": "Wed Nov  4 09:04:55 2026    ",
+            "52919": "Wed Nov  4 09:05:04 2026    ",
+            "52923": "Wed Nov  4 09:05:04 2026    ",
+            "52936": "Wed Nov  4 09:05:04 2026    ",
+            "52937": "Wed Nov  4 09:05:04 2026    ",
+            "52939": "Wed Nov  4 09:05:04 2026    ",
+            "52973": "Wed Nov  4 09:05:05 2026    ",
+            "52978": "Wed Nov  4 09:05:05 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1713684480,
+          "elapsed_seconds": 28.023056291,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-unfocused-control-20261104-0905/run/inputs.json",
+          "sha256": "652974362627a06f7d2a80be9f851590f82207be9b6a7032c5eaaaa64b51951c",
+          "bytes": 379305
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-unfocused-control-20261104-0905/run/pairs.json",
+          "sha256": "13d63c50118931d6af63662be548a93de766d4cf61917dbb6247426fb07e5fd5",
+          "bytes": 417742
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-unfocused-control-20261104-0905/run/replay.json",
+          "sha256": "2f14fdb27cbd8885b3c04d3c47cc84fa7d6e241c6a2e03398992a0b4daec142f",
+          "bytes": 464
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-unfocused-control-20261104-0905/run/cross-engine-reference.json",
+          "sha256": "ee3f22d85987ca65ef58219de81adbcfceec1cad77b7ca9bdcf64bdbb9f1b845",
+          "bytes": 732
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-unfocused-control-20261104-0905/run/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
+      },
+      {
+        "folder": "Build/chatgpt-unfocused-references-20261104-0910/run",
+        "notes": "Reference-stability captures: summary intentionally cannot pass acceptance; all four independently match the declared unfocused reference with complete content/readiness. Snapshot cache enabled.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "error": "Every observation must exit successfully and match pixels and full row identity",
+          "observation_errors": [],
+          "optimization_credit": false,
+          "pairs": 2,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work."
+        },
+        "observations": [
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 16304277025,
+              "upper": 16313961883
+            },
+            "content_exact": true,
+            "resource_coalition": 15173,
+            "started_unix": 1793772595.603352,
+            "finished_unix": 1793772604.64624,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                35.2119140625,
+                33.51123046875,
+                33.11767578125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                37.93994140625,
+                34.15234375,
+                33.349609375
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-brave/result.json",
+              "sha256": "0f974d7e0d89f680f7a6fb8592817b3043fc189f69cd838853b2c01f93d98f45",
+              "bytes": 153660
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 36935007518,
+              "upper": 36935007518
+            },
+            "content_exact": true,
+            "resource_coalition": 15171,
+            "started_unix": 1793772586.558374,
+            "finished_unix": 1793772593.685466,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                35.49169921875,
+                33.537109375,
+                33.12451171875
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                35.2119140625,
+                33.51123046875,
+                33.11767578125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-vox/result.json",
+              "sha256": "f5c53735a1f43eb6c929682d87872e1a3c6b66adf016555b72e61ac03fd5818d",
+              "bytes": 243014
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-1-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 16273557017,
+              "upper": 16282470032
+            },
+            "content_exact": true,
+            "resource_coalition": 15175,
+            "started_unix": 1793772607.151677,
+            "finished_unix": 1793772615.548745,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                37.7841796875,
+                34.1826171875,
+                33.36474609375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                37.16064453125,
+                34.11279296875,
+                33.3447265625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-brave/result.json",
+              "sha256": "84bc1d1cf1c139ab572275cb18d537dfa4c58337d88999567c19c8dc236e2acb",
+              "bytes": 181056
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 36514859128,
+              "upper": 36514859128
+            },
+            "content_exact": true,
+            "resource_coalition": 15177,
+            "started_unix": 1793772617.729075,
+            "finished_unix": 1793772624.918093,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                36.4267578125,
+                34.01123046875,
+                33.31298828125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                35.671875,
+                33.89453125,
+                33.27587890625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-vox/result.json",
+              "sha256": "f888d5a7e5345416b104f9df3a92c942f1108fda30787a8d364bace63e9ec473",
+              "bytes": 226437
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-unfocused-references-20261104-0910/run/pair-2-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "Build/chatgpt-unfocused-references-20261104-0910/reference.py",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-unfocused-references-20261104-0910/run",
+            "--expected",
+            "Build/chatgpt-instructions-capture-20261104-0830/live-observed.png",
+            "--reference-audit",
+            "Build/chatgpt-instructions-baseline-20261104-0830/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-unfocused-references-20261104-0910/pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "66812": "Wed Nov  4 09:09:46 2026    ",
+            "66814": "Wed Nov  4 09:09:46 2026    ",
+            "67321": "Wed Nov  4 09:09:55 2026    ",
+            "67326": "Wed Nov  4 09:09:55 2026    ",
+            "67342": "Wed Nov  4 09:09:56 2026    ",
+            "67343": "Wed Nov  4 09:09:56 2026    ",
+            "67346": "Wed Nov  4 09:09:56 2026    ",
+            "67398": "Wed Nov  4 09:09:56 2026    ",
+            "67408": "Wed Nov  4 09:09:56 2026    ",
+            "67904": "Wed Nov  4 09:10:07 2026    ",
+            "67907": "Wed Nov  4 09:10:07 2026    ",
+            "67914": "Wed Nov  4 09:10:07 2026    ",
+            "67915": "Wed Nov  4 09:10:07 2026    ",
+            "67920": "Wed Nov  4 09:10:07 2026    ",
+            "68451": "Wed Nov  4 09:10:17 2026    ",
+            "68456": "Wed Nov  4 09:10:17 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1727086592,
+          "elapsed_seconds": 46.863961875,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-unfocused-references-20261104-0910/run/inputs.json",
+          "sha256": "48f9d43bb3a0dedc8da0bfa5d322d29d704b36f66fb8a3f8048f120127325341",
+          "bytes": 379311
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-unfocused-references-20261104-0910/run/pairs.json",
+          "sha256": "9403b9268f74c100509cfe2977a25914e83642a53c3f0b819741c509ebef1feb",
+          "bytes": 864966
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-unfocused-references-20261104-0910/run/replay.json",
+          "sha256": "66023404d4276168f4a8f9124fd12f856d6ee7caa5582d33bf091d88b0c7eb81",
+          "bytes": 467
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-unfocused-references-20261104-0910/run/cross-engine-reference.json",
+          "sha256": "c868d0478cea24e5914112214c64031ef6601343c72bc2702ba4e84778bd8360",
+          "bytes": 738
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-unfocused-references-20261104-0910/run/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
+      },
+      {
+        "folder": "Build/chatgpt-native-comparison-20261104-0920/diagnostic",
+        "notes": "Standalone native component libraries, normal production executable unchanged. Diagnostic loader/batch logging verifies candidate paths and 42 shared tile batches per run. Pixel/content exact; target fails. Instrumented, snapshot enabled, no credit.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "brave_median_lower_bound_instructions": 16897940709.0,
+          "diagnostic_only": true,
+          "instruction_scope": "launch",
+          "minimum_pairs": 7,
+          "optimization_credit": false,
+          "pairs": 2,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+          "target_vox_fraction": 0.95,
+          "vox_median_instructions": 36591162407.0,
+          "worst_vox_over_best_brave": 2.269684423704936
+        },
+        "observations": [
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 16193148503,
+              "upper": 16196431284
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15185,
+            "started_unix": 1793773120.53246,
+            "finished_unix": 1793773132.103925,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                65.8017578125,
+                38.736328125,
+                34.71533203125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                68.24365234375,
+                40.67333984375,
+                35.48046875
+              ]
+            },
+            "native_variant": "installed Brave",
+            "diagnostic_instrumentation": false,
+            "published_production_configuration": true,
+            "receipt": {
+              "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/pair-1-brave/result.json",
+              "sha256": "8e8ccfe4cfd09f88564fc5ec6db6fef0fc9e1ad74f417ba501cd76eda5d244de",
+              "bytes": 174258
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/pair-1-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 36753336928,
+              "upper": 36753336928
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15183,
+            "started_unix": 1793773084.460893,
+            "finished_unix": 1793773115.412683,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                39.23291015625,
+                30.921875,
+                31.8935546875
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                67.4384765625,
+                38.59716796875,
+                34.64306640625
+              ]
+            },
+            "native_variant": "candidate",
+            "diagnostic_instrumentation": true,
+            "published_production_configuration": false,
+            "receipt": {
+              "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/pair-1-vox/result.json",
+              "sha256": "f66c9053ac55d5b8f366d48562634437d9765e579792acd66cae02e29980b0f2",
+              "bytes": 105535
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/pair-1-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 17602732915,
+              "upper": 17613660437
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15187,
+            "started_unix": 1793773133.730794,
+            "finished_unix": 1793773142.354047,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                68.24365234375,
+                40.67333984375,
+                35.48046875
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                60.7783203125,
+                39.97705078125,
+                35.29345703125
+              ]
+            },
+            "native_variant": "installed Brave",
+            "diagnostic_instrumentation": false,
+            "published_production_configuration": true,
+            "receipt": {
+              "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/pair-2-brave/result.json",
+              "sha256": "670338bd2b1577c7c2348a13d3f2b01ce9191eb88616902b1ed6d21f29822325",
+              "bytes": 169992
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/pair-2-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 36428987886,
+              "upper": 36428987886
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15189,
+            "started_unix": 1793773143.923101,
+            "finished_unix": 1793773151.4151008,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                60.7783203125,
+                39.97705078125,
+                35.29345703125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                54.14306640625,
+                39.25048828125,
+                35.0908203125
+              ]
+            },
+            "native_variant": "candidate",
+            "diagnostic_instrumentation": true,
+            "published_production_configuration": false,
+            "receipt": {
+              "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/pair-2-vox/result.json",
+              "sha256": "6a893a3d7dc2169b45cd30fc5ce9f3b39dd303062688661523e0b9eeb531c929",
+              "bytes": 278943
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/pair-2-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "Build/chatgpt-native-comparison-20261104-0920/measure.py",
+            "candidate-diagnostic",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-native-comparison-20261104-0920/diagnostic",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-native-comparison-20261104-0920/diagnostic-pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "901": "Wed Nov  4 09:18:24 2026    ",
+            "903": "Wed Nov  4 09:18:24 2026    ",
+            "2731": "Wed Nov  4 09:18:40 2026    ",
+            "2737": "Wed Nov  4 09:18:40 2026    ",
+            "2757": "Wed Nov  4 09:18:40 2026    ",
+            "2759": "Wed Nov  4 09:18:40 2026    ",
+            "2767": "Wed Nov  4 09:18:40 2026    ",
+            "3768": "Wed Nov  4 09:18:53 2026    ",
+            "3777": "Wed Nov  4 09:18:53 2026    ",
+            "3789": "Wed Nov  4 09:18:54 2026    ",
+            "3790": "Wed Nov  4 09:18:54 2026    ",
+            "3793": "Wed Nov  4 09:18:54 2026    ",
+            "4314": "Wed Nov  4 09:19:03 2026    ",
+            "4319": "Wed Nov  4 09:19:04 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1718009856,
+          "elapsed_seconds": 80.467114,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/inputs.json",
+          "sha256": "3f8ec5b77cfd8ac82c7a5aae7c2812070c9442863ed3298a40ef6fa8e09e5e74",
+          "bytes": 381499
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/pairs.json",
+          "sha256": "824bb2126901d05a0fa56ddc33f49d25a8f6d0b56db3083e055d79e01620d161",
+          "bytes": 780671
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/replay.json",
+          "sha256": "48a23c22ec0859ba22b7083603d914f4de2c5bf6672f55e3905515720d467242",
+          "bytes": 471
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/cross-engine-reference.json",
+          "sha256": "aeb22315be90995d4cf246d63c230d1c89810a6247656f17809f28ac31f68a26",
+          "bytes": 764
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/diagnostic/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
+      },
+      {
+        "folder": "Build/chatgpt-native-comparison-20261104-0920/alternating",
+        "notes": "Unprofiled matching native control/candidate attempt invalidated by Brave helper outside its resource coalition. No ownership relaxation or exclusions. All attempts retained; snapshot enabled.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "error": "At least two complete alternating pairs are required",
+          "observation_errors": [
+            {
+              "engine": "brave",
+              "error": "A private browser helper is outside its resource coalition",
+              "kernel_exit_status": null
+            }
+          ],
+          "optimization_credit": false,
+          "pairs": 1,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work."
+        },
+        "observations": [
+          {
+            "engine": "brave",
+            "exit": 1,
+            "error": "A private browser helper is outside its resource coalition",
+            "instruction_scope": "launch",
+            "resource_coalition": 15193,
+            "started_unix": 1793774050.5620291,
+            "finished_unix": 1793774058.5415711,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                80.146484375,
+                95.46484375,
+                80.98828125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                78.42236328125,
+                94.60595703125,
+                80.853515625
+              ]
+            },
+            "native_variant": "installed Brave",
+            "diagnostic_instrumentation": false,
+            "published_production_configuration": true,
+            "receipt": {
+              "path": "Build/chatgpt-native-comparison-20261104-0920/alternating/pair-1-brave/result.json",
+              "sha256": "6e3080263391f6a0939e76ab78c94696ebaab323087a55ffa1cf643c7471ada3",
+              "bytes": 125868
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-native-comparison-20261104-0920/alternating/pair-1-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 38236850406,
+              "upper": 38236850406
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15191,
+            "started_unix": 1793774035.11667,
+            "finished_unix": 1793774046.007263,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                83.17333984375,
+                96.82373046875,
+                81.20166015625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                79.8984375,
+                95.67529296875,
+                80.9765625
+              ]
+            },
+            "native_variant": "control",
+            "diagnostic_instrumentation": false,
+            "published_production_configuration": false,
+            "receipt": {
+              "path": "Build/chatgpt-native-comparison-20261104-0920/alternating/pair-1-vox/result.json",
+              "sha256": "e6c042da54e102070cb5b0f67f933154bac06a1d3178bb064a2805cd0fe8e266",
+              "bytes": 205003
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-native-comparison-20261104-0920/alternating/pair-1-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "Build/chatgpt-native-comparison-20261104-0920/measure_alternating.py",
+            "alternating",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-native-comparison-20261104-0920/alternating",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-native-comparison-20261104-0920/alternating-pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "4",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "46583": "Wed Nov  4 09:33:55 2026    ",
+            "46595": "Wed Nov  4 09:33:55 2026    ",
+            "47611": "Wed Nov  4 09:34:10 2026    ",
+            "47615": "Wed Nov  4 09:34:10 2026    ",
+            "47626": "Wed Nov  4 09:34:10 2026    ",
+            "47628": "Wed Nov  4 09:34:10 2026    ",
+            "47631": "Wed Nov  4 09:34:10 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1742569472,
+          "elapsed_seconds": 35.61838975,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/alternating/inputs.json",
+          "sha256": "0d8819bc304899667d2c369ddf9a12945fbeba42222650207d0a32fd293c2e64",
+          "bytes": 381513
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/alternating/pairs.json",
+          "sha256": "be0d370c3456ac8f6c7fa63359e4f830cad7cd45d217bbc1304f3948a8e7dc1f",
+          "bytes": 358852
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/alternating/replay.json",
+          "sha256": "fc836c7173ebdfaa1d2f504548931f3e59b1b7256dfdcd351ebdc23637432365",
+          "bytes": 472
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/alternating/cross-engine-reference.json",
+          "sha256": "dec589ad0bdfbd7df7fb6f4d7ff649258610219869e5e005b987a13b78472563",
+          "bytes": 766
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/alternating/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
+      },
+      {
+        "folder": "Build/chatgpt-native-comparison-20261104-0920/profile",
+        "notes": "Declared native-only sample. No Brave trial; wrapper intentionally returns failure after retaining valid native content/pixels. Instrumented, snapshot enabled, no acceptance.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "error": "Declared native-only sampling diagnostic: no Brave observation requested",
+          "observation_errors": [],
+          "optimization_credit": false,
+          "pairs": 0,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work."
+        },
+        "observations": [
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 33167687516,
+              "upper": 33167687516
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15195,
+            "started_unix": 1793774436.032746,
+            "finished_unix": 1793774446.291872,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                82.67578125,
+                91.56298828125,
+                83.8818359375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                86.0947265625,
+                92.00439453125,
+                84.1279296875
+              ]
+            },
+            "native_variant": "candidate",
+            "diagnostic_instrumentation": false,
+            "published_production_configuration": false,
+            "receipt": {
+              "path": "Build/chatgpt-native-comparison-20261104-0920/profile/pair-1-vox/result.json",
+              "sha256": "88a28953db0103858ba035f4f4e4aef37287cbc4959cbbfaab385bdb4cf3bae3",
+              "bytes": 183547
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-native-comparison-20261104-0920/profile/pair-1-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "Build/chatgpt-native-comparison-20261104-0920/profile.py",
+            "candidate",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-native-comparison-20261104-0920/profile",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-native-comparison-20261104-0920/profile-pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "77510": "Wed Nov  4 09:40:36 2026    ",
+            "77515": "Wed Nov  4 09:40:36 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1859485696,
+          "elapsed_seconds": 26.2606105,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/profile/inputs.json",
+          "sha256": "0a57440352083661789661cd5c310a9edf69c9e55d9ebe98a65a7f2687af25e2",
+          "bytes": 381126
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/profile/pairs.json",
+          "sha256": "b9fe39445f66883a4b334ebfab563e0f1a680c7a27bc7a1817c56c32ed599678",
+          "bytes": 204494
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/profile/replay.json",
+          "sha256": "c79def82c026087bade41c15214bb0846f81b5aab5c4b7149298d71adf0d0ab7",
+          "bytes": 468
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/profile/cross-engine-reference.json",
+          "sha256": "6c8163a76213c2366f96cad47e1932f27e8da8e8338c04d0c9c1e1fcf0af0355",
+          "bytes": 758
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/profile/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
+      },
+      {
+        "folder": "Build/chatgpt-production-progress-20261104-1005",
+        "notes": "Two exact production pairs; snapshot-enabled historical protocol. Executable 5ec5d123, fresh starts, target fails. Do not compare gains across the subsequent cache-policy correction.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "brave_median_lower_bound_instructions": 21764341420.0,
+          "diagnostic_only": true,
+          "instruction_scope": "launch",
+          "minimum_pairs": 7,
+          "optimization_credit": false,
+          "pairs": 2,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+          "target_vox_fraction": 0.95,
+          "vox_median_instructions": 37996137657.0,
+          "worst_vox_over_best_brave": 1.7524633436856338
+        },
+        "observations": [
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 21727466639,
+              "upper": 21745592779
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15293,
+            "started_unix": 1793775454.8492851,
+            "finished_unix": 1793775462.106949,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                7.97119140625,
+                20.69384765625,
+                45.56103515625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                7.73291015625,
+                20.43310546875,
+                45.3232421875
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-production-progress-20261104-1005/pair-1-brave/result.json",
+              "sha256": "9632bbdf02a9d43993660906bc2f64614af5ab80e97a1679f31818ab3bfff10c",
+              "bytes": 118996
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-production-progress-20261104-1005/pair-1-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 38076588836,
+              "upper": 38076588836
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15291,
+            "started_unix": 1793775447.231203,
+            "finished_unix": 1793775453.9036329,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                7.96630859375,
+                21.12646484375,
+                46.005859375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                7.97119140625,
+                20.69384765625,
+                45.56103515625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-production-progress-20261104-1005/pair-1-vox/result.json",
+              "sha256": "620b130a4f2f9f069a18efac21eac849cfc1e47b599cf98967e919bd2224ca5e",
+              "bytes": 276148
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-production-progress-20261104-1005/pair-1-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 21801216201,
+              "upper": 21818670336
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15297,
+            "started_unix": 1793775462.9708958,
+            "finished_unix": 1793775470.206068,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                7.43359375,
+                20.16015625,
+                45.0810546875
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                7.23828125,
+                19.908203125,
+                44.84619140625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-production-progress-20261104-1005/pair-2-brave/result.json",
+              "sha256": "659408102aaa8d168b45bd2d49136d035b9cfe8ea068b77375628b977f2435b1",
+              "bytes": 114573
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-production-progress-20261104-1005/pair-2-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 37915686478,
+              "upper": 37915686478
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15299,
+            "started_unix": 1793775471.088278,
+            "finished_unix": 1793775477.7338188,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                7.23828125,
+                19.908203125,
+                44.84619140625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                7.298828125,
+                19.71044921875,
+                44.6298828125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-production-progress-20261104-1005/pair-2-vox/result.json",
+              "sha256": "de70738984c867968b20049a0dc3daceeea17c761e11c2fb7410e80fb6d6a58a",
+              "bytes": 272840
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-production-progress-20261104-1005/pair-2-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "tools/chatgpt_browser_instructions.py",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-production-progress-20261104-1005",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-production-progress-20261104-1005-pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "31525": "Wed Nov  4 09:57:27 2026    ",
+            "31527": "Wed Nov  4 09:57:27 2026    ",
+            "31843": "Wed Nov  4 09:57:34 2026    ",
+            "31847": "Wed Nov  4 09:57:34 2026    ",
+            "31853": "Wed Nov  4 09:57:35 2026    ",
+            "31854": "Wed Nov  4 09:57:35 2026    ",
+            "31855": "Wed Nov  4 09:57:35 2026    ",
+            "32049": "Wed Nov  4 09:57:43 2026    ",
+            "32053": "Wed Nov  4 09:57:43 2026    ",
+            "32055": "Wed Nov  4 09:57:43 2026    ",
+            "32056": "Wed Nov  4 09:57:43 2026    ",
+            "32059": "Wed Nov  4 09:57:43 2026    ",
+            "32228": "Wed Nov  4 09:57:51 2026    ",
+            "32230": "Wed Nov  4 09:57:51 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1776549888,
+          "elapsed_seconds": 34.090109708,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-production-progress-20261104-1005/inputs.json",
+          "sha256": "b088c893d2e5dc01e01edb106b927d1a661fe4ac32050614ed8461e31635ace0",
+          "bytes": 378741
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-production-progress-20261104-1005/pairs.json",
+          "sha256": "94914c4be2fa1e12dcf1269c0f5c15539c1622385974b047d28f37d341fa2f7d",
+          "bytes": 854088
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-production-progress-20261104-1005/replay.json",
+          "sha256": "00750573febb5987eb0758daf11f597ebf58e067d7ac0d1595a4ac6ef03cebad",
+          "bytes": 462
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-production-progress-20261104-1005/cross-engine-reference.json",
+          "sha256": "9d1587eb15d219771bf057e3cfae43105b13f07d2290b792fbb19f77db00f748",
+          "bytes": 746
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-production-progress-20261104-1005/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
+      },
+      {
+        "folder": "Build/chatgpt-snapshot-disabled-20261104-1012",
+        "notes": "Two exact production pairs, corrected snapshot-disabled protocol. Executable d99801e9 includes the first viewport cache (orientation keyword eligibility predates its correction). Target fails; no attribution versus a different build/protocol.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "brave_median_lower_bound_instructions": 22526980601.0,
+          "diagnostic_only": true,
+          "instruction_scope": "launch",
+          "minimum_pairs": 7,
+          "optimization_credit": false,
+          "pairs": 2,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+          "target_vox_fraction": 0.95,
+          "vox_median_instructions": 36541769073.0,
+          "worst_vox_over_best_brave": 1.6286646418579427
+        },
+        "observations": [
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 22579171627,
+              "upper": 22595464195
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15305,
+            "started_unix": 1793775656.419926,
+            "finished_unix": 1793775664.279079,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                12.74609375,
+                16.46484375,
+                38.47314453125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                13.15283203125,
+                16.43212890625,
+                38.2041015625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-snapshot-disabled-20261104-1012/pair-1-brave/result.json",
+              "sha256": "d11670dbfa17b196e26f4c326ff4bbeda17188ecfe0639c39edca01198433414",
+              "bytes": 114641
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-snapshot-disabled-20261104-1012/pair-1-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 36603895114,
+              "upper": 36603895114
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15303,
+            "started_unix": 1793775648.030816,
+            "finished_unix": 1793775655.334971,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                12.55029296875,
+                16.48974609375,
+                38.61181640625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                12.74609375,
+                16.46484375,
+                38.47314453125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-snapshot-disabled-20261104-1012/pair-1-vox/result.json",
+              "sha256": "d7d7c42548ccdd56fd91ce545aebd72d1b8b2fd2fc84cf9355fb11d5f9798110",
+              "bytes": 241297
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-snapshot-disabled-20261104-1012/pair-1-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 22474789575,
+              "upper": 22489118570
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15307,
+            "started_unix": 1793775665.414658,
+            "finished_unix": 1793775673.4534342,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                13.15283203125,
+                16.43212890625,
+                38.2041015625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                13.3017578125,
+                16.3525390625,
+                37.9208984375
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-snapshot-disabled-20261104-1012/pair-2-brave/result.json",
+              "sha256": "9a0af12f6737a9fb6b248b8a6680cf847ceeda15f6601b657b477c60d484dafa",
+              "bytes": 131889
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-snapshot-disabled-20261104-1012/pair-2-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 36479643032,
+              "upper": 36479643032
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15309,
+            "started_unix": 1793775674.6646981,
+            "finished_unix": 1793775681.9300249,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                13.3017578125,
+                16.3525390625,
+                37.9208984375
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                13.4375,
+                16.330078125,
+                37.7861328125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-snapshot-disabled-20261104-1012/pair-2-vox/result.json",
+              "sha256": "e6f0c1c4113080ab931b24b66f8a5fcbc40e82c03d2562c7bb25983ecc835a9a",
+              "bytes": 247450
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-snapshot-disabled-20261104-1012/pair-2-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "tools/chatgpt_browser_instructions.py",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-snapshot-disabled-20261104-1012",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-snapshot-disabled-20261104-1012-pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "36446": "Wed Nov  4 10:00:48 2026    ",
+            "36448": "Wed Nov  4 10:00:48 2026    ",
+            "36737": "Wed Nov  4 10:00:56 2026    ",
+            "36739": "Wed Nov  4 10:00:56 2026    ",
+            "36743": "Wed Nov  4 10:00:56 2026    ",
+            "36744": "Wed Nov  4 10:00:56 2026    ",
+            "36745": "Wed Nov  4 10:00:56 2026    ",
+            "36766": "Wed Nov  4 10:00:57 2026    ",
+            "36769": "Wed Nov  4 10:00:57 2026    ",
+            "36921": "Wed Nov  4 10:01:05 2026    ",
+            "36923": "Wed Nov  4 10:01:05 2026    ",
+            "36927": "Wed Nov  4 10:01:05 2026    ",
+            "36928": "Wed Nov  4 10:01:05 2026    ",
+            "36931": "Wed Nov  4 10:01:05 2026    ",
+            "37117": "Wed Nov  4 10:01:14 2026    ",
+            "37119": "Wed Nov  4 10:01:14 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1689829376,
+          "elapsed_seconds": 38.508843458,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-snapshot-disabled-20261104-1012/inputs.json",
+          "sha256": "47fbe139943430a39c5fcbe34f7da0d38e72f5225a8a2d3c53517f398907ed0f",
+          "bytes": 378829
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-snapshot-disabled-20261104-1012/pairs.json",
+          "sha256": "591d255faf351a666e18ddde50e8bf357e96b98eda6427572104942d3c1b8531",
+          "bytes": 800876
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-snapshot-disabled-20261104-1012/replay.json",
+          "sha256": "c0ae8455cd64f0618c772a8401c09e9df7603ddf53d9b9fddf3cb7cab945d603",
+          "bytes": 460
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-snapshot-disabled-20261104-1012/cross-engine-reference.json",
+          "sha256": "8af6908d876d9ee4bc482c925b1941334f7d2e33e92d29a25af875d34f0fad2c",
+          "bytes": 742
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-snapshot-disabled-20261104-1012/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
+      },
+      {
+        "folder": "Build/chatgpt-production-profile-20261104-1020/run",
+        "notes": "Declared native-only 5-second sample on production d99801e9; exact native content/pixels. No Brave comparison and no instruction credit.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "error": "Native-only sampling diagnostic; Brave comparison intentionally absent",
+          "observation_errors": [],
+          "optimization_credit": false,
+          "pairs": 0,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work."
+        },
+        "observations": [
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 31256384297,
+              "upper": 31256384297
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15311,
+            "started_unix": 1793775902.2023559,
+            "finished_unix": 1793775910.517202,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                12.68310546875,
+                13.6337890625,
+                31.6640625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                12.724609375,
+                13.6123046875,
+                31.44580078125
+              ]
+            },
+            "diagnostic_instrumentation": "External sample",
+            "receipt": {
+              "path": "Build/chatgpt-production-profile-20261104-1020/run/pair-1-vox/result.json",
+              "sha256": "76bc0bb0bd2a47c3c7bf0a6a4ee7a06227eadb5c7d27782ba202a211d64a1441",
+              "bytes": 265847
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-production-profile-20261104-1020/run/pair-1-vox/audit.json",
+                "sha256": "e0e7286ec5f51545a2ad2e5004b8484ab6e51f6bdf465c9536a2a90e085a9ebd",
+                "bytes": 20371
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 48,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "Build/chatgpt-production-profile-20261104-1020/profile.py",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-production-profile-20261104-1020/run",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-production-profile-20261104-1020/pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "41226": "Wed Nov  4 10:05:02 2026    ",
+            "41229": "Wed Nov  4 10:05:02 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1656324096,
+          "elapsed_seconds": 14.038180375,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-production-profile-20261104-1020/run/inputs.json",
+          "sha256": "5625ad3427081d2356b9535da137bb0b7053aea24106c01b2952bda2fe6360ca",
+          "bytes": 379039
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-production-profile-20261104-1020/run/pairs.json",
+          "sha256": "b78c532e332f02abcea1ff9465947b84f4c71528371a91727319d43628ccbf59",
+          "bytes": 295482
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-production-profile-20261104-1020/run/replay.json",
+          "sha256": "c88f6c8583013f7debf7bf0664ad61013a69c3a806cdef05cf12cce2f29867b7",
+          "bytes": 465
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-production-profile-20261104-1020/run/cross-engine-reference.json",
+          "sha256": "693c509a4af86d180a46b5ddb95d6969ca8a4aa3766230803740141a7b1c61a6",
+          "bytes": 752
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-production-profile-20261104-1020/run/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
+      },
+      {
+        "folder": "Build/chatgpt-owned-media-production-20261104-1030",
+        "notes": "Two exact production pairs, corrected snapshot-disabled protocol. Executable 74270cfc contains the owned pointer payload and viewport-cache code, confirmed in frozen generated C. Target fails; concurrent build changes prevent isolated attribution.",
+        "acceptance": false,
+        "optimization_credit": 0,
+        "summary": {
+          "author_scripts": "original, enabled",
+          "brave_median_lower_bound_instructions": 22155711641.0,
+          "diagnostic_only": true,
+          "instruction_scope": "launch",
+          "minimum_pairs": 7,
+          "optimization_credit": false,
+          "pairs": 2,
+          "passed": false,
+          "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+          "target_vox_fraction": 0.95,
+          "vox_median_instructions": 35666958354.5,
+          "worst_vox_over_best_brave": 1.6200889456597833
+        },
+        "observations": [
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 22271841758,
+              "upper": 22293139919
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15327,
+            "started_unix": 1793776256.1346931,
+            "finished_unix": 1793776264.6658702,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                12.84912109375,
+                12.9599609375,
+                25.1884765625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                13.1181640625,
+                13.0107421875,
+                25.06298828125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-owned-media-production-20261104-1030/pair-1-brave/result.json",
+              "sha256": "6c8dba32ad13dfcddbed3c685079658af414b03411a187a337e61ada6435622d",
+              "bytes": 140114
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-owned-media-production-20261104-1030/pair-1-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 35706082394,
+              "upper": 35706082394
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15321,
+            "started_unix": 1793776247.255456,
+            "finished_unix": 1793776254.835988,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                12.6484375,
+                12.92529296875,
+                25.3212890625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                12.84912109375,
+                12.9599609375,
+                25.1884765625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-owned-media-production-20261104-1030/pair-1-vox/result.json",
+              "sha256": "5d41c35eb10a4fa706ac6634b414c8e31d395b694cd2a5f33c61afe2f561aa7e",
+              "bytes": 260229
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-owned-media-production-20261104-1030/pair-1-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "brave",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 22039581524,
+              "upper": 22049641437
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15333,
+            "started_unix": 1793776265.940696,
+            "finished_unix": 1793776274.4027772,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                13.1181640625,
+                13.0107421875,
+                25.06298828125
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                12.939453125,
+                12.9765625,
+                24.91015625
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-owned-media-production-20261104-1030/pair-2-brave/result.json",
+              "sha256": "4c0bb167bade4dc87e3cb8fcc921bb036355f6b2a4db311c88eb3b6e76e90a4e",
+              "bytes": 135412
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-owned-media-production-20261104-1030/pair-2-brave/audit.json",
+                "sha256": "0f072b67607022ca21702013bad2be972e0ffd34591f043e94ebabfc9e3f8640",
+                "bytes": 22692
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": null,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          },
+          {
+            "engine": "vox",
+            "exit": 0,
+            "kernel_exit_status": 0,
+            "instruction_scope": "launch",
+            "launch_instruction_interval": {
+              "lower": 35627834315,
+              "upper": 35627834315
+            },
+            "pixels_exact": true,
+            "content_exact": true,
+            "resource_coalition": 15339,
+            "started_unix": 1793776275.703017,
+            "finished_unix": 1793776283.327592,
+            "host_before": {
+              "cpu_count": 18,
+              "load_average": [
+                12.939453125,
+                12.9765625,
+                24.91015625
+              ]
+            },
+            "host_after": {
+              "cpu_count": 18,
+              "load_average": [
+                13.26416015625,
+                13.04296875,
+                24.86376953125
+              ]
+            },
+            "receipt": {
+              "path": "Build/chatgpt-owned-media-production-20261104-1030/pair-2-vox/result.json",
+              "sha256": "3ab5eaa70d4fc543ebce49e58faa3731cbecfbda5c3070a023178a943bf71350",
+              "bytes": 217845
+            },
+            "audit": {
+              "receipt": {
+                "path": "Build/chatgpt-owned-media-production-20261104-1030/pair-2-vox/audit.json",
+                "sha256": "804251900491279676edd43573c4b12a0b0e164db403008fe9cea3b4fc7a154a",
+                "bytes": 21209
+              },
+              "counts": {
+                "headings": 1,
+                "editors": 1,
+                "buttons": 52,
+                "links": 27,
+                "images": 2,
+                "bootstrap": 1
+              },
+              "native_error_count": 0,
+              "javascript_diagnostics": [],
+              "author_exceptions": null
+            }
+          }
+        ],
+        "guard": {
+          "command": [
+            "python3",
+            "tools/chatgpt_browser_instructions.py",
+            "--archive",
+            "Build/chatgpt-instructions-input-20261104-0830",
+            "--output",
+            "Build/chatgpt-owned-media-production-20261104-1030",
+            "--expected",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+            "--reference-audit",
+            "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+            "--title",
+            "ChatGPT: Chat, Work, Create & Code with AI",
+            "--memory-guard-registry",
+            "Build/chatgpt-owned-media-production-20261104-1030-pids.json",
+            "--diff-tool",
+            "Build/chatgpt-shadow-modules-20261031/pixel_diff",
+            "--repeat",
+            "2",
+            "--timeout",
+            "100",
+            "--settle-seconds",
+            "5",
+            "--unfocused"
+          ],
+          "reason": "completed",
+          "child_exit_code": 1,
+          "adopted_processes": {
+            "46904": "Wed Nov  4 10:10:47 2026    ",
+            "46907": "Wed Nov  4 10:10:47 2026    ",
+            "47263": "Wed Nov  4 10:10:56 2026    ",
+            "47268": "Wed Nov  4 10:10:56 2026    ",
+            "47273": "Wed Nov  4 10:10:56 2026    ",
+            "47274": "Wed Nov  4 10:10:56 2026    ",
+            "47275": "Wed Nov  4 10:10:56 2026    ",
+            "47303": "Wed Nov  4 10:10:56 2026    ",
+            "47308": "Wed Nov  4 10:10:57 2026    ",
+            "47551": "Wed Nov  4 10:11:05 2026    ",
+            "47556": "Wed Nov  4 10:11:06 2026    ",
+            "47561": "Wed Nov  4 10:11:06 2026    ",
+            "47562": "Wed Nov  4 10:11:06 2026    ",
+            "47563": "Wed Nov  4 10:11:06 2026    ",
+            "47846": "Wed Nov  4 10:11:15 2026    ",
+            "47850": "Wed Nov  4 10:11:15 2026    "
+          },
+          "adoption_error": null,
+          "limit_bytes": 12884901888,
+          "observed_peak_rss_bytes": 1695531008,
+          "elapsed_seconds": 41.183023917,
+          "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+        },
+        "inputs.json": {
+          "path": "Build/chatgpt-owned-media-production-20261104-1030/inputs.json",
+          "sha256": "6e146c101398ee58efe8d3ed27761593ecc0829d1c651768e3acfad3113ae59b",
+          "bytes": 378839
+        },
+        "pairs.json": {
+          "path": "Build/chatgpt-owned-media-production-20261104-1030/pairs.json",
+          "sha256": "bd2ffc53cae78c46dd4b6d9a90a2fa8ad46f6bbe8a90cda4f68414c1c985e33a",
+          "bytes": 818115
+        },
+        "replay.json": {
+          "path": "Build/chatgpt-owned-media-production-20261104-1030/replay.json",
+          "sha256": "207f41d9eeae6528d4b52a3175a714d9f029eff5246d3d584555abddc48abfeb",
+          "bytes": 465
+        },
+        "cross-engine-reference.json": {
+          "path": "Build/chatgpt-owned-media-production-20261104-1030/cross-engine-reference.json",
+          "sha256": "9ae3f9634d481738e5f78bde9fe818d39984cb4e6f2d47c2808525e6e6c944e5",
+          "bytes": 752
+        },
+        "reference-buttons.json": {
+          "path": "Build/chatgpt-owned-media-production-20261104-1030/reference-buttons.json",
+          "sha256": "de03833ef0da9edfa270bef2e49ef5f0ab88be466d560d6f276e07ec0e7ab290",
+          "bytes": 441
+        }
+      }
+    ],
+    "profiles": [
+      {
+        "receipt": {
+          "path": "Build/chatgpt-native-comparison-20261104-0920/profile/pair-1-vox/sample.txt",
+          "sha256": "5875844527291b144aa9b44dc89aa1dde64163bc93308508195c63979d90770c",
+          "bytes": 1696700
+        },
+        "purpose": "Separate external sampling diagnostic; no whole-page instruction credit"
+      },
+      {
+        "receipt": {
+          "path": "Build/chatgpt-production-profile-20261104-1020/run/pair-1-vox/sample.txt",
+          "sha256": "5db1b7140b5e99934e73b32884a34e3a743a289fbcbfebfaaafdd19c5ccf8b7f",
+          "bytes": 4639209
+        },
+        "purpose": "Separate external sampling diagnostic; no whole-page instruction credit"
+      }
+    ],
+    "build_policy": "Reused completed canonical production bundles; no copied app or separate browser build queued. Post-commit shared worker coalesces requests. Standalone native component libraries are labeled diagnostics, not production publication. Each trial pins all app/helper/native/fixture/tool hashes and rejects changes.",
+    "broad_verification": "No isolated, unprofiled matched whole-page saving credited yet. The cumulative 5,000,000-instruction page-saving cadence has not been advanced by component-only results or protocol corrections."
   }
 }
