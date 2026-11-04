@@ -4120,14 +4120,18 @@ fn (mut app BrowserApp) scroll_by(delta f64, window_height int) {
 }
 
 fn (mut app BrowserApp) set_scroll_y(requested f64, window_height int) {
-	mut used := clamp(requested, 0.0, app.maximum_scroll(window_height))
+	maximum := app.maximum_scroll(window_height)
+	mut used := clamp(requested, 0.0, maximum)
 	// Chromium snaps the root scroller's offset to physical pixels. Precise
 	// wheel input otherwise accumulates fractional device offsets, which no
-	// retained viewport raster can shift by whole rows.
+	// retained viewport raster can shift by whole rows. Round in both
+	// directions; only a snapped offset past the end falls back a pixel.
 	if app.document != unsafe { nil } {
 		ratio := app.document.display_device_pixel_ratio()
 		if ratio > 0 && !math.is_nan(ratio) && !math.is_inf(ratio, 0) {
-			used = clamp(math.round(used * ratio) / ratio, 0.0, used)
+			snapped := math.round(used * ratio) / ratio
+			used = if snapped > maximum { math.floor(maximum * ratio) / ratio } else { snapped }
+			used = math.max(used, 0.0)
 		}
 	}
 	if used != app.scroll_y { app.overlay_scrollbar_activity() }

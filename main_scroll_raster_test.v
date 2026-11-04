@@ -588,3 +588,27 @@ fn test_scroll_raster_gradient_blur_keys_translate_with_content() {
 		layout.PaintCommand{ kind: 'end_css_filter_layer' }]
 	assert scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash != scroll_raster_frame_keys(plain, 0, 1, 1024, 768)[0].hash
 }
+
+fn test_root_scroll_snaps_to_device_pixels_in_both_directions() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}</style><div style="height:2000px"></div>')
+	defer { document.finalize() }
+	mut app := BrowserApp{ document: document }
+	app.relayout(200, 232)
+	document.set_display_device_pixel_ratio(2)
+	maximum := app.maximum_scroll(232)
+	// Offsets that round up and down both land on whole device pixels, so
+	// every frame-to-frame delta shifts retained rows exactly.
+	for requested in [70.3, 70.2, 41.74, 41.76, 0.2] {
+		app.set_scroll_y(requested, 232)
+		assert app.scroll_y * 2 == math.round(app.scroll_y * 2)
+		assert math.abs(app.scroll_y - requested) <= 0.25
+	}
+	app.set_scroll_y(70.3, 232)
+	assert app.scroll_y == 70.5
+	app.set_scroll_y(-3, 232)
+	assert app.scroll_y == 0
+	// Past the end the offset stays inside the scroll range.
+	app.set_scroll_y(maximum + 10, 232)
+	assert app.scroll_y <= maximum
+	assert app.scroll_y * 2 == math.round(app.scroll_y * 2)
+}
