@@ -219,6 +219,7 @@ extern int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
 	float opacity, int nearest_neighbor, int image_flags, float const *clip_radii);
 extern int ladybird_v_skia_begin_isolated_input(CGContextRef context, float width, float height);
 extern void ladybird_v_skia_set_isolated_input_key(CGContextRef context, uint64_t key);
+extern int ladybird_v_skia_defer_cached_gradient_blur_input(CGContextRef context);
 extern void ladybird_v_skia_set_scroll_damage_rects(CGContextRef canvas, float const *rects, int count);
 extern void *ladybird_v_skia_take_isolated_input(CGContextRef context);
 extern void ladybird_v_skia_discard_isolated_input(void *input);
@@ -2629,6 +2630,8 @@ typedef struct {
 	int copies_to_fresh_frame;
 	int borrows_fresh_frame;
 	int gradient_blur_recording;
+	// The blur's cached output stands in for its input leaves' raster.
+	int gradient_blur_deferred;
 	int svg_filter_recording;
 	float svg_filter_transform[6];
 	float svg_filter_bounds[4];
@@ -2769,6 +2772,12 @@ void native_record_css_gradient_blur_input(uint64_t content_key) {
 		layer->canvas_width, layer->canvas_height);
 	if (layer->gradient_blur_recording)
 		ladybird_v_skia_set_isolated_input_key(layer->context, content_key);
+	// Only a private offscreen layer can finish its blur before its pixels
+	// are taken, which a deferred input requires.
+	if (layer->gradient_blur_recording && !layer->borrows_fresh_frame
+		&& !layer->copies_to_fresh_frame && layer->graph_node_count == 0)
+		layer->gradient_blur_deferred =
+			ladybird_v_skia_defer_cached_gradient_blur_input(layer->context);
 #else
 	(void)content_key;
 #endif
@@ -4162,6 +4171,20 @@ void native_end_css_filter_layer(void) {
 		native_free_svg_filter_graph(&layer);
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	// Its leaves skipped their raster: finish the cached blur before the
+	// layer's pixels are taken. A failure replays the recorded input into
+	// them first, so the ordinary composite below keeps its source.
+	if (layer.gradient_blur_deferred
+		&& ladybird_v_skia_end_css_gradient_blur(layer.context, layer.destination,
+			layer.canvas_width, layer.canvas_height, layer.scale, layer.operations[0].first)) {
+		[NSGraphicsContext restoreGraphicsState];
+		CGContextRelease(layer.context);
+		free(layer.operations);
+		native_free_svg_filter_graph(&layer);
+		return;
+	}
+#endif
 	CGImageRef source_image;
 	if (layer.borrows_fresh_frame) {
 		// A filter attached to the enclosing layer still needs an isolated source.

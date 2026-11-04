@@ -187,6 +187,14 @@ bool isolated_input_defers_leaf_raster(CGContextRef context)
         && found->second->defer_leaf_raster && !found->second->unsupported;
 }
 
+// Only cached gradient-blur inputs carry a content identity.
+static bool isolated_input_defers_cached_blur_leaf(CGContextRef context)
+{
+    auto found = s_isolated_input_recordings.find(context);
+    return found != s_isolated_input_recordings.end() && found->second->content_key
+        && found->second->defer_leaf_raster && !found->second->unsupported;
+}
+
 bool shared_recording_defers_leaf_raster(CGContextRef, SkRect const&);
 SkCanvas* shared_recording_canvas(CGContextRef);
 void shared_recording_clip(CGContextRef, SkCanvas*);
@@ -2851,6 +2859,22 @@ static std::list<AnchoredGradientBlur> s_anchored_gradient_blurs;
 static size_t s_anchored_gradient_blur_bytes = 0;
 static constexpr size_t anchored_gradient_blur_byte_limit = 64 * 1024 * 1024;
 
+// A blur whose content identity is already cached draws from that cache, not
+// from its leaves' raster. Its leaves still record the input picture, which
+// is replayed into the layer only if the blur cannot finish natively.
+extern "C" int ladybird_v_skia_defer_cached_gradient_blur_input(CGContextRef context)
+{
+    auto found = s_isolated_input_recordings.find(context);
+    if (found == s_isolated_input_recordings.end() || !found->second->content_key
+        || found->second->unsupported || std::getenv("VOX_DISABLE_CACHED_BLUR_INPUT_DEFERRAL")) return 0;
+    for (auto const& entry : s_anchored_gradient_blurs) {
+        if (entry.key != found->second->content_key) continue;
+        found->second->defer_leaf_raster = true;
+        return 1;
+    }
+    return 0;
+}
+
 // Returns -1, leaving the destination untouched, when the existing paths must
 // draw instead; otherwise whether the blur was composited.
 static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop original,
@@ -2986,8 +3010,48 @@ static int draw_anchored_gradient_blur(CGContextRef destination, Backdrop origin
         float(x0) / scale, canvas_height - float(y0 + region_height) / scale,
         float(region_width) / scale, float(region_height) / scale, true);
 }
+#ifdef VOX_TEST_CACHED_BLUR_INPUT
+static bool s_test_fail_gradient_blur_end = false;
+#endif
+static int end_css_gradient_blur(CGContextRef context, CGContextRef destination,
+    float canvas_width, float canvas_height, float scale, float sigma, sk_sp<SkPicture>& replay);
+
+// Paint a deferred input into its layer, as its leaves would have, so the
+// ordinary layer composite has its source after a failed native blur.
+static void replay_deferred_blur_input(CGContextRef context, sk_sp<SkPicture> const& input, float scale)
+{
+    auto* pixels = static_cast<uint8_t*>(CGBitmapContextGetData(context));
+    if (!pixels || !input || CGBitmapContextGetBitsPerPixel(context) != 32
+        || CGBitmapContextGetBitmapInfo(context)
+            != (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)) return;
+    CGContextFlush(context);
+    auto info = SkImageInfo::Make(int(CGBitmapContextGetWidth(context)),
+        int(CGBitmapContextGetHeight(context)), kRGBA_8888_SkColorType, kPremul_SkAlphaType,
+        SkColorSpace::MakeSRGB());
+    auto canvas = SkCanvas::MakeRasterDirect(info, pixels, CGBitmapContextGetBytesPerRow(context));
+    if (!canvas) return;
+    canvas->scale(scale, scale);
+    canvas->drawPicture(input);
+}
+
 extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
     CGContextRef destination, float canvas_width, float canvas_height, float scale, float sigma)
+{
+    auto found = s_isolated_input_recordings.find(context);
+    bool deferred = found != s_isolated_input_recordings.end()
+        && found->second->defer_leaf_raster && !found->second->unsupported;
+    sk_sp<SkPicture> input;
+    int result = end_css_gradient_blur(context, destination, canvas_width, canvas_height,
+        scale, sigma, input);
+#ifdef VOX_TEST_CACHED_BLUR_INPUT
+    if (s_test_fail_gradient_blur_end) result = 0;
+#endif
+    if (!result && deferred) replay_deferred_blur_input(context, input, scale);
+    return result;
+}
+
+static int end_css_gradient_blur(CGContextRef context, CGContextRef destination,
+    float canvas_width, float canvas_height, float scale, float sigma, sk_sp<SkPicture>& replay)
 {
     SharedPicturePixelsScope shared_pixels;
     auto found = s_isolated_input_recordings.find(context);
@@ -2998,6 +3062,7 @@ extern "C" int ladybird_v_skia_end_css_gradient_blur(CGContextRef context,
         || !(scale > 0 && sigma > 0)) return 0;
     auto input = recording->recorder.finishRecordingAsPicture();
     if (!input) return 0;
+    replay = input;
     int width = raster_dimension(canvas_width, scale);
     int height = raster_dimension(canvas_height, scale);
     if (width > 16384 || height > 16384 || size_t(width) * height > 8 * 1024 * 1024) return 0;
@@ -6114,7 +6179,8 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         // even when no earlier rectangle expanded this picture's bounds.
         if (!ink.isEmpty())
             shared_recording_speculative_content(destination, ink.makeOutset(2, 2), page_y, scroll_y);
-        if (shared_recording_defers_leaf_raster(destination, ink.makeOutset(2, 2))) return 1;
+        if (isolated_input_defers_cached_blur_leaf(destination)
+            || shared_recording_defers_leaf_raster(destination, ink.makeOutset(2, 2))) return 1;
     }
     RasterRegion region;
     if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
