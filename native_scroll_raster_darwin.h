@@ -23,14 +23,67 @@ typedef struct {
 
 static VoxScrollRaster native_scroll_raster;
 
+#define VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS 48
+
+// Chromium composites a video as its own layer over the unchanged raster
+// beneath it. The single-surface equivalent retains, in document device rows,
+// the pixels painted beneath a top-level video immediately before it draws.
+// A frame whose only change is the next video frame restores them and draws
+// just the video. A row is valid only while it has stayed in the viewport
+// since it was captured from freshly painted pixels.
+#define VOX_VIDEO_BACKDROPS 4
+typedef struct {
+    uint8_t *pixels, *valid;
+    long x, y, width, height;
+    double scale;
+    uint64_t owner, stamp;
+} VoxVideoBackdrop;
+
+static VoxVideoBackdrop native_video_backdrops[VOX_VIDEO_BACKDROPS];
+static uint64_t native_video_backdrop_clock;
+// Viewport device rectangles (left, top, right, bottom) repainted by the
+// active reused frame; a negative count means the whole viewport.
+static long native_scroll_repainted[VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS + 1][4];
+static int native_scroll_repainted_count = -1;
+
+static void native_discard_video_backdrops(void) {
+    for (int index = 0; index < VOX_VIDEO_BACKDROPS; ++index) {
+        free(native_video_backdrops[index].pixels);
+        free(native_video_backdrops[index].valid);
+        native_video_backdrops[index] = (VoxVideoBackdrop){0};
+    }
+}
+
 static void native_discard_scroll_raster(void) {
     free(native_scroll_raster.pixels);
     native_scroll_raster = (VoxScrollRaster){0};
+    native_scroll_repainted_count = -1;
+    native_discard_video_backdrops();
 }
 
 static void native_scroll_raster_independent_content(void) {
     if (native_scroll_raster.active)
         native_scroll_raster.independent_content = 1;
+}
+
+// Rows leave validity when they leave the viewport: content beneath them can
+// change offscreen without producing viewport damage.
+static void native_video_backdrops_keep_visible(VoxScrollRaster *cache, int keep) {
+    double origin = cache->scroll * cache->scale;
+    int aligned = keep && isfinite(origin) && fabs(origin - round(origin)) < 0.0000001;
+    long first = aligned ? lround(origin) : 0, end = first + (long)cache->height;
+    for (int index = 0; index < VOX_VIDEO_BACKDROPS; ++index) {
+        VoxVideoBackdrop *backdrop = &native_video_backdrops[index];
+        if (!backdrop->valid) continue;
+        if (!aligned || backdrop->owner != cache->owner || backdrop->scale != cache->scale) {
+            memset(backdrop->valid, 0, (size_t)backdrop->height);
+            continue;
+        }
+        for (long row = 0; row < backdrop->height; ++row) {
+            long document_row = backdrop->y + row;
+            if (document_row < first || document_row >= end) backdrop->valid[row] = 0;
+        }
+    }
 }
 
 static int native_scroll_raster_integer(double value) {
@@ -63,8 +116,6 @@ static void native_scroll_raster_copy_rows(VoxScrollRaster *cache,
         count -= run;
     }
 }
-
-#define VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS 48
 
 // Called on the fresh, unpainted RGBA document canvas. Bitmap row zero is the
 // top of the window; Quartz user coordinates have their origin at the bottom.
@@ -163,12 +214,23 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     cache->damage_optimized = damage_optimized;
     cache->dirty_first = 0;
     cache->dirty_rows = h;
+    native_video_backdrops_keep_visible(cache, reuse);
+    native_scroll_repainted_count = -1;
     if (!reuse) {
         cache->row_origin = 0;
         return 0;
     }
     CGContextFlush(context);
     long rows = lround(delta);
+    native_scroll_repainted_count = 0;
+    if (rows) {
+        long strip_rows = labs(rows) < (long)h ? labs(rows) : (long)h;
+        long *strip_rect = native_scroll_repainted[native_scroll_repainted_count++];
+        strip_rect[0] = 0;
+        strip_rect[1] = rows < 0 ? 0 : (long)h - strip_rows;
+        strip_rect[2] = (long)w;
+        strip_rect[3] = rows < 0 ? strip_rows : (long)h;
+    }
     if (damage_optimized) {
         cache->row_origin = (cache->row_origin + h + rows) % h;
         cache->dirty_rows = (size_t)labs(rows);
@@ -218,6 +280,14 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
         cache->dirty_rows = h;
         clips[clip_count++] = CGRectMake(left, bottom + height - bottom_edge,
             right - left, bottom_edge - top_edge);
+        // Only whole device pixels inside the clip are freshly painted.
+        long *repainted = native_scroll_repainted[native_scroll_repainted_count];
+        repainted[0] = (long)ceil(left * scale - 0.0000001);
+        repainted[1] = (long)ceil(top_edge * scale - 0.0000001);
+        repainted[2] = (long)floor(right * scale + 0.0000001);
+        repainted[3] = (long)floor(bottom_edge * scale + 0.0000001);
+        if (repainted[2] > repainted[0] && repainted[3] > repainted[1])
+            ++native_scroll_repainted_count;
     }
     CGContextClipToRects(context, clips, clip_count);
     return 1;
@@ -247,5 +317,154 @@ static void native_end_scroll_raster(void) {
     }
     cache->active = 0;
     cache->context = NULL;
+}
+// A video's retained rectangle, in CSS pixels of the document, as device
+// pixels at the ring's density and scroll. Fractional device geometry cannot
+// be anchored to the document and is rejected.
+static int native_video_backdrop_geometry(const VoxScrollRaster *cache, double scroll,
+    double x, double y, double width, double height, long *out, long *origin) {
+    double scale = cache->scale;
+    double values[5] = {x * scale, y * scale, width * scale, height * scale, scroll * scale};
+    for (int index = 0; index < 5; ++index)
+        if (!isfinite(values[index]) || fabs(values[index]) > 16777216
+            || fabs(values[index] - round(values[index])) > 0.0000001) return 0;
+    for (int index = 0; index < 4; ++index) out[index] = lround(values[index]);
+    *origin = lround(values[4]);
+    return scale > 0 && out[2] > 0 && out[3] > 0 && out[0] >= 0
+        && out[0] + out[2] <= (long)cache->width
+        && (size_t)out[2] * (size_t)out[3] * 4 <= 32 * 1024 * 1024;
+}
+
+static VoxVideoBackdrop *native_video_backdrop_find(const VoxScrollRaster *cache,
+    const long *rect, int create) {
+    VoxVideoBackdrop *oldest = NULL;
+    for (int index = 0; index < VOX_VIDEO_BACKDROPS; ++index) {
+        VoxVideoBackdrop *backdrop = &native_video_backdrops[index];
+        if (backdrop->pixels && backdrop->owner == cache->owner && backdrop->scale == cache->scale
+            && backdrop->x == rect[0] && backdrop->y == rect[1]
+            && backdrop->width == rect[2] && backdrop->height == rect[3]) {
+            backdrop->stamp = ++native_video_backdrop_clock;
+            return backdrop;
+        }
+        if (!oldest || backdrop->stamp < oldest->stamp) oldest = backdrop;
+    }
+    if (!create || !oldest) return NULL;
+    free(oldest->pixels);
+    free(oldest->valid);
+    *oldest = (VoxVideoBackdrop){0};
+    oldest->pixels = malloc((size_t)rect[2] * (size_t)rect[3] * 4);
+    oldest->valid = calloc((size_t)rect[3], 1);
+    if (!oldest->pixels || !oldest->valid) {
+        free(oldest->pixels);
+        free(oldest->valid);
+        *oldest = (VoxVideoBackdrop){0};
+        return NULL;
+    }
+    oldest->x = rect[0]; oldest->y = rect[1];
+    oldest->width = rect[2]; oldest->height = rect[3];
+    oldest->owner = cache->owner;
+    oldest->scale = cache->scale;
+    oldest->stamp = ++native_video_backdrop_clock;
+    return oldest;
+}
+
+// The document rows of the backdrop visible at `origin`, as [first, end).
+static int native_video_backdrop_visible(const VoxScrollRaster *cache, const long *rect,
+    long origin, long *first, long *end) {
+    *first = rect[1] > origin ? rect[1] : origin;
+    long viewport_end = origin + (long)cache->height;
+    *end = rect[1] + rect[3] < viewport_end ? rect[1] + rect[3] : viewport_end;
+    return *end > *first;
+}
+
+// Whether the next frame, at `scroll`, can restore every visible row.
+static int native_video_backdrop_ready(uint64_t owner, double scroll,
+    double x, double y, double width, double height) {
+    VoxScrollRaster *cache = &native_scroll_raster;
+    long rect[4], origin, first, end;
+    if (!cache->valid || cache->active || cache->owner != owner
+        || !native_video_backdrop_geometry(cache, scroll, x, y, width, height, rect, &origin)) return 0;
+    VoxVideoBackdrop *backdrop = native_video_backdrop_find(cache, rect, 0);
+    if (!backdrop || !native_video_backdrop_visible(cache, rect, origin, &first, &end)) return 0;
+    for (long row = first; row < end; ++row)
+        if (!backdrop->valid[row - rect[1]]) return 0;
+    return 1;
+}
+
+// Store the freshly painted pixels beneath a video, just before it draws.
+static void native_video_backdrop_capture(CGContextRef current,
+    double x, double y, double width, double height) {
+    VoxScrollRaster *cache = &native_scroll_raster;
+    long rect[4], origin, first, end;
+    if (!cache->active || !current || current != cache->context
+        || !native_video_backdrop_geometry(cache, cache->scroll, x, y, width, height, rect, &origin)
+        || !native_video_backdrop_visible(cache, rect, origin, &first, &end)) return;
+    VoxVideoBackdrop *backdrop = native_video_backdrop_find(cache, rect, 1);
+    uint8_t *canvas = CGBitmapContextGetData(current);
+    if (!backdrop || !canvas) return;
+    CGContextFlush(current);
+    size_t pitch = CGBitmapContextGetBytesPerRow(current);
+    long whole[4] = {0, 0, (long)cache->width, (long)cache->height};
+    int count = native_scroll_repainted_count < 0 ? 1 : native_scroll_repainted_count;
+    for (int index = 0; index < count; ++index) {
+        const long *painted = native_scroll_repainted_count < 0 ? whole : native_scroll_repainted[index];
+        long left = painted[0] > rect[0] ? painted[0] : rect[0];
+        long right = painted[2] < rect[0] + rect[2] ? painted[2] : rect[0] + rect[2];
+        long top = painted[1] + origin > first ? painted[1] + origin : first;
+        long bottom = painted[3] + origin < end ? painted[3] + origin : end;
+        if (right <= left || bottom <= top) continue;
+        int complete = left == rect[0] && right == rect[0] + rect[2];
+        for (long row = top; row < bottom; ++row) {
+            long local = row - rect[1];
+            memcpy(backdrop->pixels + ((size_t)local * rect[2] + (left - rect[0])) * 4,
+                canvas + (cache->top + (size_t)(row - origin)) * pitch + (size_t)left * 4,
+                (size_t)(right - left) * 4);
+            if (complete) backdrop->valid[local] = 1;
+        }
+    }
+}
+
+// A video replayed without capturing (another video restores in this frame, or
+// this one is not eligible) leaves the rows it repainted beneath it stale.
+static void native_video_backdrop_invalidate(double x, double y, double width, double height) {
+    VoxScrollRaster *cache = &native_scroll_raster;
+    long rect[4], origin;
+    if (!cache->active
+        || !native_video_backdrop_geometry(cache, cache->scroll, x, y, width, height, rect, &origin)) {
+        native_discard_video_backdrops();
+        return;
+    }
+    VoxVideoBackdrop *backdrop = native_video_backdrop_find(cache, rect, 0);
+    if (!backdrop) return;
+    long whole[4] = {0, 0, (long)cache->width, (long)cache->height};
+    int count = native_scroll_repainted_count < 0 ? 1 : native_scroll_repainted_count;
+    for (int index = 0; index < count; ++index) {
+        const long *painted = native_scroll_repainted_count < 0 ? whole : native_scroll_repainted[index];
+        if (painted[2] <= rect[0] || painted[0] >= rect[0] + rect[2]) continue;
+        for (long row = painted[1] + origin; row < painted[3] + origin; ++row)
+            if (row >= rect[1] && row < rect[1] + rect[3]) backdrop->valid[row - rect[1]] = 0;
+    }
+}
+
+// Replace the visible rectangle with its retained backdrop before the video
+// draws. Returns zero, leaving the canvas untouched, unless every row is valid.
+static int native_video_backdrop_restore(CGContextRef current,
+    double x, double y, double width, double height) {
+    VoxScrollRaster *cache = &native_scroll_raster;
+    long rect[4], origin, first, end;
+    if (!cache->active || !cache->reused || !current || current != cache->context
+        || !native_video_backdrop_geometry(cache, cache->scroll, x, y, width, height, rect, &origin)
+        || !native_video_backdrop_visible(cache, rect, origin, &first, &end)) return 0;
+    VoxVideoBackdrop *backdrop = native_video_backdrop_find(cache, rect, 0);
+    uint8_t *canvas = CGBitmapContextGetData(current);
+    if (!backdrop || !canvas) return 0;
+    for (long row = first; row < end; ++row)
+        if (!backdrop->valid[row - rect[1]]) return 0;
+    CGContextFlush(current);
+    size_t pitch = CGBitmapContextGetBytesPerRow(current);
+    for (long row = first; row < end; ++row)
+        memcpy(canvas + (cache->top + (size_t)(row - origin)) * pitch + (size_t)rect[0] * 4,
+            backdrop->pixels + (size_t)(row - rect[1]) * rect[2] * 4, (size_t)rect[2] * 4);
+    return 1;
 }
 #endif

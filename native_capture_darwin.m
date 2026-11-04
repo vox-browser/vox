@@ -2804,6 +2804,26 @@ void native_set_scroll_damage_rects(float const *rects, int count) {
 #endif
 }
 
+// A top-level video's retained backdrop, in document CSS pixels.
+void native_capture_video_backdrop(double x, double y, double width, double height) {
+    native_video_backdrop_capture([[NSGraphicsContext currentContext] CGContext],
+        x, y, width, height);
+}
+
+void native_invalidate_video_backdrop(double x, double y, double width, double height) {
+    native_video_backdrop_invalidate(x, y, width, height);
+}
+
+void native_reject_scroll_raster_frame(void) {
+    native_scroll_raster_independent_content();
+}
+
+void native_restore_video_backdrop(double x, double y, double width, double height) {
+    if (!native_video_backdrop_restore([[NSGraphicsContext currentContext] CGContext],
+            x, y, width, height))
+        native_scroll_raster_independent_content();
+}
+
 // Keep root scrolling distinct from the per-command transform.
 void native_set_chromium_raster_scroll_y(double scroll_y) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT

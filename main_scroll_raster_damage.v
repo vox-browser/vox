@@ -49,6 +49,9 @@ mut:
 	group_end int = -1
 	// Trailing viewport scrollbars are replayed separately after caching.
 	skip_diff bool
+	// A top-level video with nothing painted above it, in a layer that draws
+	// immediately: a new frame can be composited over its retained backdrop.
+	video_backdrop bool
 	// Diagnostics only: document geometry and per-component hashes, so an
 	// unmatched key can report which component churned between frames.
 	doc_x     f64
@@ -74,6 +77,17 @@ mut:
 	changed  int
 	rects    int
 	fallback string
+	// Videos whose only change is their frame, kept out of the returned rects.
+	restores []ScrollRasterVideoRestore
+}
+
+// A changed video frame composited over the pixels retained beneath it: only
+// the video and later commands repaint `rect` (viewport space). `document` is
+// the same rectangle before clamping to the viewport, in document space.
+struct ScrollRasterVideoRestore {
+	index    int
+	rect     layout.LayoutRect
+	document layout.LayoutRect
 }
 
 @[inline]
@@ -787,11 +801,11 @@ fn scroll_raster_content_damage(previous &ScrollRasterKeyFrame, current []Scroll
 		positions[key.hash] << index
 	}
 	mut cursors := map[u64]int{}
-	mut rects := []layout.LayoutRect{}
+	mut added := []int{}
 	mut changed := 0
 	mut last_matched := -1
 	mut order_changed := false
-	for key in current {
+	for current_index, key in current {
 		if key.skip_diff { continue }
 		if indices := positions[key.hash] {
 			cursor := cursors[key.hash]
@@ -811,8 +825,9 @@ fn scroll_raster_content_damage(previous &ScrollRasterKeyFrame, current []Scroll
 			stats.fallback = 'unbounded-new-${key.kind}'
 			return none
 		}
-		rects << key.ink
+		added << current_index
 	}
+	mut removed := []int{}
 	for hash, indices in positions {
 		cursor := cursors[hash]
 		for index in cursor .. indices.len {
@@ -822,8 +837,32 @@ fn scroll_raster_content_damage(previous &ScrollRasterKeyFrame, current []Scroll
 				stats.fallback = 'unbounded-old-${key.kind}'
 				return none
 			}
-			rects << layout.LayoutRect{key.ink.x, key.ink.y - delta, key.ink.width, key.ink.height}
+			removed << indices[index]
 		}
+	}
+	// A video that only advanced its frame left and entered the same ink.
+	mut paired := []bool{len: previous.keys.len}
+	mut video_frames := []int{}
+	for current_index in added {
+		key := current[current_index]
+		if !key.video_backdrop { continue }
+		for old_index in removed {
+			old := previous.keys[old_index]
+			if paired[old_index] || old.kind != 'draw_video'
+				|| !scroll_raster_same_rect(old.ink, key.ink, delta) { continue }
+			paired[old_index] = true
+			video_frames << current_index
+			break
+		}
+	}
+	mut rects := []layout.LayoutRect{}
+	for current_index in added {
+		if current_index !in video_frames { rects << current[current_index].ink }
+	}
+	for old_index in removed {
+		if paired[old_index] { continue }
+		key := previous.keys[old_index]
+		rects << layout.LayoutRect{key.ink.x, key.ink.y - delta, key.ink.width, key.ink.height}
 	}
 	stats.changed = changed
 	if order_changed {
@@ -834,28 +873,76 @@ fn scroll_raster_content_damage(previous &ScrollRasterKeyFrame, current []Scroll
 		stats.fallback = 'too-many-changes'
 		return none
 	}
+	viewport := layout.LayoutRect{0, 0, width, height}
 	mut clamped := []layout.LayoutRect{}
 	mut area := 0.0
 	for rect in rects {
 		if !scroll_raster_rect_valid(rect) { continue }
 		fringed := scroll_raster_inflate(rect, scroll_raster_damage_fringe)
-		visible := layout.scroll_raster_rect_intersect(fringed, layout.LayoutRect{0, 0, width, height})
+		visible := layout.scroll_raster_rect_intersect(fringed, viewport)
 		if visible.width <= 0 || visible.height <= 0 { continue }
-		// Snap outward to whole CSS pixels so device clips stay conservative.
-		left := math.floor(visible.x)
-		top := math.floor(visible.y)
-		right := math.ceil(visible.x + visible.width)
-		bottom := math.ceil(visible.y + visible.height)
-		snapped := layout.LayoutRect{left, top, right - left, bottom - top}
+		snapped := scroll_raster_snap_rect(visible)
 		area += snapped.width * snapped.height
 		clamped << snapped
+	}
+	mut restores := []ScrollRasterVideoRestore{}
+	for current_index in video_frames {
+		ink := current[current_index].ink
+		if !scroll_raster_rect_valid(ink) { continue }
+		fringed := scroll_raster_inflate(ink, scroll_raster_damage_fringe)
+		visible := layout.scroll_raster_rect_intersect(fringed, viewport)
+		if visible.width <= 0 || visible.height <= 0 { continue }
+		snapped := scroll_raster_snap_rect(visible)
+		whole := scroll_raster_snap_rect(fringed)
+		area += snapped.width * snapped.height
+		restores << ScrollRasterVideoRestore{
+			index:    current_index
+			rect:     snapped
+			document: layout.LayoutRect{whole.x, whole.y + scroll, whole.width, whole.height}
+		}
 	}
 	if area > scroll_raster_max_damage_fraction * width * height {
 		stats.fallback = 'damage-too-large'
 		return none
 	}
+	// Other damage beneath a video would be overwritten by its old backdrop.
+	for restore in restores {
+		mut overlaps := clamped.any(scroll_raster_rects_overlap(it, restore.rect))
+		for other in restores {
+			if other.index != restore.index && scroll_raster_rects_overlap(other.rect, restore.rect) {
+				overlaps = true
+			}
+		}
+		if overlaps {
+			clamped << restore.rect
+		} else {
+			stats.restores << restore
+		}
+	}
 	stats.rects = clamped.len
 	return clamped
+}
+
+// Snap outward to whole CSS pixels so device clips stay conservative.
+fn scroll_raster_snap_rect(rect layout.LayoutRect) layout.LayoutRect {
+	left := math.floor(rect.x)
+	top := math.floor(rect.y)
+	right := math.ceil(rect.x + rect.width)
+	bottom := math.ceil(rect.y + rect.height)
+	return layout.LayoutRect{left, top, right - left, bottom - top}
+}
+
+fn scroll_raster_rects_overlap(a layout.LayoutRect, b layout.LayoutRect) bool {
+	return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height
+		&& b.y < a.y + a.height
+}
+
+// The retained ink, translated by the scroll since that frame, is this ink.
+fn scroll_raster_same_rect(old layout.LayoutRect, current layout.LayoutRect, delta f64) bool {
+	return math.abs(old.x - current.x) < 0.000001
+		&& math.abs(old.y - delta - current.y) < 0.000001
+		&& math.abs(old.width - current.width) < 0.000001
+		&& math.abs(old.height - current.height) < 0.000001
 }
 
 // Whether viewport-space ink, with the native raster fringe, touches any
@@ -879,6 +966,21 @@ fn scroll_raster_ink_touches(ink layout.LayoutRect, region []layout.LayoutRect) 
 // the damage; every other group replays only the leaves inside the damage.
 fn plan_scroll_raster_skips(commands []layout.PaintCommand, keys []ScrollRasterCommandKey,
 	region []layout.LayoutRect, unoptimized bool) []bool {
+	return plan_scroll_raster_skips_with_restores(commands, keys, region, []ScrollRasterVideoRestore{},
+		unoptimized)
+}
+
+// A restored video rectangle already holds every pixel painted beneath the
+// video, so only the video and later commands can touch it.
+fn scroll_raster_restore_touches(ink layout.LayoutRect, last int, restores []ScrollRasterVideoRestore) bool {
+	for restore in restores {
+		if last >= restore.index && scroll_raster_ink_touches(ink, [restore.rect]) { return true }
+	}
+	return false
+}
+
+fn plan_scroll_raster_skips_with_restores(commands []layout.PaintCommand, keys []ScrollRasterCommandKey,
+	region []layout.LayoutRect, restores []ScrollRasterVideoRestore, unoptimized bool) []bool {
 	mut skip := []bool{len: commands.len}
 	if keys.len != commands.len { return skip }
 	mut index := 0
@@ -886,7 +988,8 @@ fn plan_scroll_raster_skips(commands []layout.PaintCommand, keys []ScrollRasterC
 		command := unsafe { &commands[index] }
 		key := keys[index]
 		if layout.scroll_raster_group_begin(command.kind) && key.group_end > index {
-			if key.has_ink && !scroll_raster_ink_touches(key.ink, region) {
+			if key.has_ink && !scroll_raster_ink_touches(key.ink, region)
+				&& !scroll_raster_restore_touches(key.ink, key.group_end, restores) {
 				for inner in index .. key.group_end + 1 {
 					skip[inner] = true
 				}
@@ -915,7 +1018,8 @@ fn plan_scroll_raster_skips(commands []layout.PaintCommand, keys []ScrollRasterC
 			index++
 			continue
 		}
-		if key.has_ink && !scroll_raster_ink_touches(key.ink, region) {
+		if key.has_ink && !scroll_raster_ink_touches(key.ink, region)
+			&& !scroll_raster_restore_touches(key.ink, index, restores) {
 			skip[index] = true
 		}
 		index++

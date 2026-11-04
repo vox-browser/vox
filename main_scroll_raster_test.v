@@ -638,3 +638,80 @@ fn test_scroll_raster_publishes_clip_rectangles_in_canvas_points() {
 	assert scroll_raster_canvas_rects(region, 112) == [f32(0), 852, 1024, 28, 63, 351.5, 330, 251]
 	assert scroll_raster_canvas_rects([], 112).len == 0
 }
+
+// A video that only advanced its frame keeps the same ink; it is composited
+// over its retained backdrop instead of damaging everything beneath it.
+fn test_scroll_raster_video_frame_damage_restores_backdrop() {
+	mut source := painting.VideoFrameSource.create()
+	mut frame := painting.MediaVideoFrame.from_bitmap(&dom.Bitmap_{ width: 2, height: 2, pitch: 8, data: []u8{len: 16} })
+	source.update(frame)
+	below := layout.PaintCommand{ kind: 'fill_rect', x: 0, y: 0, width: 200, height: 200, color: 'red' }
+	under := layout.PaintCommand{ kind: 'fill_rect', x: 50, y: 60, width: 10, height: 10, color: 'yellow' }
+	video := layout.PaintCommand{ kind: 'draw_video', x: 40, y: 50, width: 80, height: 40, video_frame_source: source }
+	beside := layout.PaintCommand{ kind: 'fill_rect', x: 150, y: 120, width: 20, height: 10, color: 'blue' }
+	commands := [below, under, video, beside]
+	mut old_keys := scroll_raster_frame_keys(commands, 0, 1, 1024, 768)
+	old_keys[2].video_backdrop = true
+	previous := ScrollRasterKeyFrame{ valid: true, document: 7, width: 200, height: 200, keys: old_keys }
+	frame.generation++
+	scrolled := scroll_raster_scrolled_commands(commands, 10)
+	mut keys := scroll_raster_frame_keys(scrolled, 10, 1, 1024, 768)
+	keys[2].video_backdrop = true
+	mut stats := ScrollRasterDiffStats{}
+	rects := scroll_raster_content_damage(&previous, keys, 7, 10, 200, 200, mut stats) or {
+		panic('a new video frame must reconcile')
+	}
+	assert stats.changed == 2
+	assert rects.len == 0
+	assert stats.restores.len == 1
+	restore := stats.restores[0]
+	assert restore.index == 2
+	// The video ink (one pixel of media guard) plus the raster fringe.
+	assert restore.rect == layout.LayoutRect{36, 36, 88, 48}
+	assert restore.document == layout.LayoutRect{36, 46, 88, 48}
+	// Commands beneath skip the restored rectangle unless other damage needs
+	// them; the video and later content touching it replay.
+	strip := scroll_raster_strip_region(10, 200, 200)
+	assert plan_scroll_raster_skips_with_restores(scrolled, keys, strip, stats.restores, false) == [false, true, false, true]
+	assert plan_scroll_raster_skips_with_restores(scrolled, keys, []layout.LayoutRect{}, stats.restores, false) == [true, true, false, true]
+	// Without the mark, the video damages its whole ink as before.
+	keys[2].video_backdrop = false
+	mut plain := ScrollRasterDiffStats{}
+	plain_rects := scroll_raster_content_damage(&previous, keys, 7, 10, 200, 200, mut plain) or {
+		panic('an unmarked video frame must reconcile')
+	}
+	assert plain.restores.len == 0
+	assert plain_rects == [restore.rect, restore.rect]
+	// Other damage under the video would be overwritten by the old backdrop.
+	mut changed := scroll_raster_frame_keys([scrolled[0], layout.PaintCommand{ ...scrolled[1], color: 'green' },
+		scrolled[2], scrolled[3]], 10, 1, 1024, 768)
+	changed[2].video_backdrop = true
+	mut overlapped := ScrollRasterDiffStats{}
+	overlapped_rects := scroll_raster_content_damage(&previous, changed, 7, 10, 200, 200, mut overlapped) or {
+		panic('overlapping damage must reconcile')
+	}
+	assert overlapped.restores.len == 0
+	assert restore.rect in overlapped_rects
+	// A moved video damages both its old and new ink.
+	moved := scroll_raster_scrolled_commands([below, under, layout.PaintCommand{ ...video, x: 41 }, beside], 10)
+	mut moved_keys := scroll_raster_frame_keys(moved, 10, 1, 1024, 768)
+	moved_keys[2].video_backdrop = true
+	mut moved_stats := ScrollRasterDiffStats{}
+	moved_rects := scroll_raster_content_damage(&previous, moved_keys, 7, 10, 200, 200, mut moved_stats) or {
+		panic('a moved video must reconcile')
+	}
+	assert moved_stats.restores.len == 0
+	assert moved_rects.len == 2
+}
+
+fn test_scroll_raster_video_backdrop_requires_nothing_above() {
+	video := layout.PaintCommand{ kind: 'draw_video', x: 40, y: 50, width: 80, height: 40 }
+	apart := layout.PaintCommand{ kind: 'fill_rect', x: 150, y: 120, width: 20, height: 10 }
+	over := layout.PaintCommand{ kind: 'fill_rect', x: 118, y: 60, width: 20, height: 10 }
+	keys := scroll_raster_frame_keys([video, apart, over], 0, 1, 1024, 768)
+	assert scroll_raster_nothing_above(keys[..2], 0)
+	// Content within the raster fringe of the video's damage counts as above.
+	assert !scroll_raster_nothing_above(keys, 0)
+	unbounded := scroll_raster_frame_keys([video, layout.PaintCommand{ kind: 'draw_text', text: 'late' }], 0, 1, 1024, 768)
+	assert !scroll_raster_nothing_above(unbounded, 0)
+}

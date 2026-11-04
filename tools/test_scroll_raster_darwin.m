@@ -175,6 +175,112 @@ static void compare_and_release(CGContextRef actual, CGContextRef expected) {
     CGContextRelease(expected);
 }
 
+// Stands in for a translucent video frame with antialiased rounded corners,
+// whose pixels depend on what is painted beneath it.
+static void video_stand_in(CGContextRef context, int height, int top, double scroll,
+    int scale, int frame_number) {
+    double canvas_height = CGBitmapContextGetHeight(context) / (double)scale;
+    double bottom = canvas_height - top - height;
+    double y = 140.25 - scroll;
+    CGContextSaveGState(context);
+    CGContextSetShouldAntialias(context, true);
+    CGContextSetRGBFillColor(context, (frame_number * 37 % 101) / 101.0, 0.4,
+        (frame_number * 53 % 89) / 89.0, 0.6);
+    CGPathRef path = CGPathCreateWithRoundedRect(
+        CGRectMake(20.25, bottom + height - (y + 39.5), 59.5, 39.5), 6, 6, NULL);
+    CGContextAddPath(context, path);
+    CGContextFillPath(context);
+    CGPathRelease(path);
+    CGContextRestoreGState(context);
+    CGContextFlush(context);
+}
+
+static void compare_viewport_and_release(CGContextRef actual, CGContextRef expected,
+    int height, int top, int scale) {
+    size_t pitch = CGBitmapContextGetBytesPerRow(actual);
+    assert(pitch == CGBitmapContextGetBytesPerRow(expected));
+    const uint8_t *a = CGBitmapContextGetData(actual), *e = CGBitmapContextGetData(expected);
+    assert(memcmp(a + (size_t)top * scale * pitch, e + (size_t)top * scale * pitch,
+        (size_t)height * scale * pitch) == 0);
+    [NSGraphicsContext restoreGraphicsState];
+    CGContextRelease(actual);
+    CGContextRelease(expected);
+}
+
+// One frame of a page whose video advanced. A reused frame with a ready
+// backdrop paints only the strip beneath it (the rest of the video rectangle
+// holds stale pixels here), restores the backdrop and draws the new frame.
+// `draw_video` 2 replays the video without capturing, as when another video
+// restores in the same frame.
+static void video_frame(int scale, double scroll, int frame_number, int allow_reuse,
+    int expect_reuse, int expect_ready, int draw_video) {
+    int width = 120, height = 100, top = 9, canvas_height = height + top + 13;
+    const double document[4] = {16, 136, 68, 48};
+    double damage[4] = {document[0], document[1] - scroll, document[2], document[3]};
+    CGContextRef actual = canvas(width, canvas_height, scale);
+    CGContextRef expected = canvas(width, canvas_height, scale);
+    [NSGraphicsContext saveGraphicsState];
+    [NSGraphicsContext setCurrentContext:
+        [NSGraphicsContext graphicsContextWithCGContext:actual flipped:NO]];
+    int ready = native_video_backdrop_ready(5, scroll, document[0], document[1],
+        document[2], document[3]);
+    assert(ready == expect_ready);
+    double delta = 0;
+    int reused = native_begin_scroll_raster(5, 1, scroll, top, width, height, 1, &delta,
+        damage, 1, allow_reuse);
+    assert(reused == expect_reuse);
+    white(actual, width, canvas_height);
+    paint(actual, width, height, top, scroll, scale);
+    if (draw_video) {
+        if (draw_video == 2) {
+            native_video_backdrop_invalidate(document[0], document[1], document[2], document[3]);
+        } else if (reused && ready) {
+            // Commands skipped beneath the video leave arbitrary pixels.
+            patch(actual, height, top, 30, 140 - scroll, 30, 30, scale);
+            assert(native_video_backdrop_restore(actual, document[0], document[1],
+                document[2], document[3]));
+        } else {
+            native_video_backdrop_capture(actual, document[0], document[1],
+                document[2], document[3]);
+        }
+        video_stand_in(actual, height, top, scroll, scale, frame_number);
+    }
+    native_end_scroll_raster();
+    white(expected, width, canvas_height);
+    paint(expected, width, height, top, scroll, scale);
+    if (draw_video) video_stand_in(expected, height, top, scroll, scale, frame_number);
+    compare_viewport_and_release(actual, expected, height, top, scale);
+}
+
+static void test_video_backdrop_composites_new_frames_exactly(int scale) {
+    native_discard_scroll_raster();
+    video_frame(scale, 100, 0, 0, 0, 0, 1);
+    video_frame(scale, 100, 1, 1, 1, 1, 1);
+    // Scrolling keeps rows that stay visible; a partly visible video restores
+    // only its visible rows.
+    video_frame(scale, 104, 2, 1, 1, 1, 1);
+    video_frame(scale, 160, 3, 1, 1, 1, 1);
+    // Rows that left the viewport may have changed unseen; they return through
+    // the exposed strip and must be captured again first.
+    video_frame(scale, 100, 4, 1, 1, 0, 1);
+    video_frame(scale, 100, 5, 1, 1, 1, 1);
+    // A complete repaint invalidates every row, then captures the visible ones.
+    video_frame(scale, 100, 6, 0, 0, 1, 1);
+    video_frame(scale, 100, 7, 1, 1, 1, 1);
+    video_frame(scale, 100, 8, 0, 0, 1, 0);
+    video_frame(scale, 100, 9, 1, 1, 0, 1);
+    // Rows repainted beneath a video that did not capture are stale.
+    video_frame(scale, 100, 10, 1, 1, 1, 2);
+    video_frame(scale, 100, 11, 1, 1, 0, 1);
+    video_frame(scale, 100, 12, 1, 1, 1, 1);
+    // A fractional device-pixel scroll cannot anchor rows to the document.
+    if (scale == 1) assert(!native_video_backdrop_ready(5, 100.5, 16, 136, 68, 48));
+    // Another document, or a discarded ring, has no backdrop.
+    assert(!native_video_backdrop_ready(6, 100, 16, 136, 68, 48));
+    native_discard_scroll_raster();
+    assert(!native_video_backdrop_ready(5, 100, 16, 136, 68, 48));
+}
+
 // A changed content revision reconciled into damage rectangles repaints only
 // those rectangles, the retained patch then scrolls with the document, and a
 // revision change without reconciliation still forces complete replay.
@@ -303,6 +409,8 @@ int main(void) {
         test_independent_image_pixels_are_not_reused();
         for (int scale = 1; scale <= 2; ++scale)
             test_damage_rects_repaint_only_changed_content(scale);
+        for (int scale = 1; scale <= 2; ++scale)
+            test_video_backdrop_composites_new_frames_exactly(scale);
         test_redraw_survives_layer_display();
         puts("Scroll raster: exact pixels across scroll direction, overlay fades, revision, navigation, resize, density and fallback");
     }

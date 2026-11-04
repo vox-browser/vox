@@ -7568,6 +7568,11 @@ fn (mut app BrowserApp) draw() {
 						C.native_prepare_background_text_gradient_input()
 					}
 				}
+				$if macos {
+					if command.kind == 'draw_video' && app.ctx.native_rendering {
+						app.step_video_backdrop(command_index, command, mut scroll_damage, page_y, window.height)
+					}
+				}
 				if app.scroll_profile.active && app.scroll_profile.replay_kinds {
 					before := platform.thread_arena_usage().used
 					app.draw_command(*command, 0, page_y, window.height)
@@ -7587,6 +7592,11 @@ fn (mut app BrowserApp) draw() {
 			}
 			if text_scroll_layer { end_chromium_text_scroll_layer() }
 			app.flush_rounded_rect_underlay(0, page_y, window.height)
+			$if macos {
+				// A planned video restore that never ran left pixels beneath it
+				// unpainted; never retain such a frame.
+				if scroll_damage.restored != scroll_damage.restores.len { C.native_reject_scroll_raster_frame() }
+			}
 			leaf_timing.finish(app.paint_commands, &scroll_damage)
 			app.scroll_profile_mark('replay')
 			for index in app.portable_shadow_image_index .. app.portable_shadow_images.len {

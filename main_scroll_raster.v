@@ -8,6 +8,15 @@ fn C.native_begin_scroll_raster(u64, u64, f64, f64, f64, f64, int, &f64, &f64, i
 fn C.native_end_scroll_raster()
 fn C.native_discard_scroll_raster()
 fn C.native_set_scroll_damage_rects(rects &f32, count i32)
+fn C.native_video_backdrop_ready(owner u64, scroll f64, x f64, y f64, width f64, height f64) int
+fn C.native_capture_video_backdrop(x f64, y f64, width f64, height f64)
+fn C.native_restore_video_backdrop(x f64, y f64, width f64, height f64)
+fn C.native_reject_scroll_raster_frame()
+fn C.native_discard_video_backdrops()
+fn C.native_invalidate_video_backdrop(x f64, y f64, width f64, height f64)
+
+// Same-binary control: repaint everything beneath a video for each new frame.
+const disable_video_backdrops = os.getenv('VOX_DISABLE_VIDEO_BACKDROPS') != ''
 
 struct ScrollRasterDamage {
 mut:
@@ -22,6 +31,10 @@ mut:
 	rects []layout.LayoutRect
 	// Per-command replay decision for the current command list, when reused.
 	skip_plan []bool
+	// Videos drawn over their retained backdrop instead of repainting beneath,
+	// and how many of them replay restored before drawing.
+	restores []ScrollRasterVideoRestore
+	restored int
 	// First command of the trailing viewport scrollbar run, replayed after
 	// the ring stores the document pixels. Nested bars before it are content.
 	scrollbar_start int
@@ -66,6 +79,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		if ring_eligible {
 			keys = scroll_raster_frame_keys(app.paint_commands, app.scroll_y,
 				app.overlay_scrollbars.paint_opacity, damage.width, damage.height)
+			app.mark_video_backdrop_keys(mut keys)
 			if disable_scroll_raster_content_damage {
 				stats.fallback = 'content-damage-disabled'
 			} else if content := scroll_raster_content_damage(&app.scroll_raster_keys, keys,
@@ -73,24 +87,37 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			{
 				rects = content.clone()
 				allow_reuse = 1
+				for restore in stats.restores {
+					document := restore.document
+					if C.native_video_backdrop_ready(document_id, app.scroll_y, document.x,
+						document.y, document.width, document.height) != 0 {
+						damage.restores << restore
+					} else {
+						rects << restore.rect
+					}
+				}
 			}
 		}
-		flat := scroll_raster_flatten_rects(rects)
+		mut clipped := rects.clone()
+		for restore in damage.restores { clipped << restore.rect }
+		flat := scroll_raster_flatten_rects(clipped)
 		flat_data := if flat.len > 0 { unsafe { &f64(flat.data) } } else { unsafe { &f64(nil) } }
 		damage.reused = C.native_begin_scroll_raster(document_id, revision, app.scroll_y,
 			app.page_top(), damage.width, damage.height, int(ring_eligible), &damage.delta, flat_data,
-			rects.len, allow_reuse) != 0
+			clipped.len, allow_reuse) != 0
 		if damage.reused {
-			damage.rects = rects
+			damage.rects = clipped
 			mut region := scroll_raster_strip_region(damage.delta, damage.width, damage.height)
 			region << rects
-			damage.skip_plan = plan_scroll_raster_skips(app.paint_commands, keys, region,
-				damage.unoptimized)
+			damage.skip_plan = plan_scroll_raster_skips_with_restores(app.paint_commands, keys,
+				region, damage.restores, damage.unoptimized)
 			// Leaf rasters crop to the clip rectangles they intersect rather
 			// than to the bounding box Quartz reports for all of them.
+			for restore in damage.restores { region << restore.rect }
 			canvas_rects := scroll_raster_canvas_rects(region, app.page_top())
 			C.native_set_scroll_damage_rects(unsafe { &f32(canvas_rects.data) }, i32(region.len))
 		} else {
+			damage.restores = []ScrollRasterVideoRestore{}
 			C.native_set_scroll_damage_rects(unsafe { nil }, i32(0))
 		}
 		if scroll_raster_damage_diagnostics && revision != scroll_raster_dumped_revision {
@@ -104,7 +131,7 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 			for value in damage.skip_plan {
 				if value { skipped++ }
 			}
-			eprintln('VOX_SCROLL_RASTER_DAMAGE eligible=${eligible} deferred=${app.scroll_raster_frame_deferred} reused=${damage.reused} revision=${revision} previous_valid=${app.scroll_raster_keys.valid} delta=${damage.delta} changed=${stats.changed} rects=${rects.len} skipped=${skipped}/${app.paint_commands.len} fallback=${stats.fallback}')
+			eprintln('VOX_SCROLL_RASTER_DAMAGE eligible=${eligible} deferred=${app.scroll_raster_frame_deferred} reused=${damage.reused} revision=${revision} previous_valid=${app.scroll_raster_keys.valid} delta=${damage.delta} changed=${stats.changed} rects=${rects.len} restores=${damage.restores.len}/${stats.restores.len} skipped=${skipped}/${app.paint_commands.len} fallback=${stats.fallback}')
 		}
 		// Retain this frame's identities only when its pixels enter the ring:
 		// a frame that paints without eligibility leaves no reusable pixels.
@@ -157,6 +184,82 @@ fn (damage &ScrollRasterDamage) skips_index(commands []layout.PaintCommand, inde
 	if !damage.reused { return false }
 	if damage.skip_plan.len == commands.len { return damage.skip_plan[index] }
 	return damage.skips(&commands[index])
+}
+
+// A video can be composited over its retained backdrop when it is outside
+// every effect group, its raster layer draws immediately, and nothing later
+// in paint order touches its damage rectangle.
+fn (app &BrowserApp) mark_video_backdrop_keys(mut keys []ScrollRasterCommandKey) {
+	if disable_video_backdrops || keys.len != app.paint_commands.len { return }
+	mut depth := 0
+	for index in 0 .. app.paint_commands.len {
+		command := unsafe { &app.paint_commands[index] }
+		if command.kind.starts_with('begin_') {
+			depth++
+			continue
+		}
+		if command.kind.starts_with('end_') {
+			depth = math.max(depth - 1, 0)
+			continue
+		}
+		if command.kind != 'draw_video' || depth != 0 || command.video_frame_source == none
+			|| !keys[index].has_ink || !scroll_raster_rect_valid(keys[index].ink)
+			|| index >= app.chromium_raster_plan.command_layers.len {
+			continue
+		}
+		layer := app.chromium_raster_plan.command_layers[index]
+		if layer < 0 || chromium_shared_recording_layer_supported(app.paint_commands,
+			app.chromium_raster_plan, layer)
+			|| chromium_direct_image_layer_supported(app.paint_commands, app.chromium_raster_plan, layer) {
+			continue
+		}
+		keys[index].video_backdrop = scroll_raster_nothing_above(keys, index)
+	}
+}
+
+fn scroll_raster_nothing_above(keys []ScrollRasterCommandKey, index int) bool {
+	area := [scroll_raster_snap_rect(scroll_raster_inflate(keys[index].ink, scroll_raster_damage_fringe))]
+	for later in index + 1 .. keys.len {
+		key := keys[later]
+		if key.skip_diff || key.kind.starts_with('end_') { continue }
+		if !key.has_ink || scroll_raster_ink_touches(key.ink, area) { return false }
+	}
+	return true
+}
+
+// Just before a video draws: restore its backdrop when this frame planned
+// that, otherwise capture the freshly painted pixels beneath it. A frame with
+// restores does not capture: pixels under a restored rectangle are incomplete
+// until its backdrop is copied in. Without a capture, rows repainted beneath
+// the video may have changed, so they lose their validity.
+fn (mut app BrowserApp) step_video_backdrop(index int, command &layout.PaintCommand,
+	mut damage ScrollRasterDamage, page_y f32, window_height int) {
+	$if macos {
+		if !app.scroll_raster_keys.valid || index >= app.scroll_raster_keys.keys.len {
+			return
+		}
+		ink := layout.scroll_raster_leaf_ink_bounds(command) or {
+			C.native_discard_video_backdrops()
+			return
+		}
+		whole := scroll_raster_snap_rect(scroll_raster_inflate(ink, scroll_raster_damage_fringe))
+		x, y := whole.x, whole.y + app.scroll_y
+		if !app.scroll_raster_keys.keys[index].video_backdrop {
+			C.native_invalidate_video_backdrop(x, y, whole.width, whole.height)
+			return
+		}
+		app.flush_rounded_rect_underlay(0, page_y, window_height)
+		if damage.reused && damage.restores.any(it.index == index) {
+			// Planning verified every row. If the copy still fails, this frame
+			// is not stored, so the next one repaints the viewport completely.
+			C.native_restore_video_backdrop(x, y, whole.width, whole.height)
+			damage.restored++
+		} else if damage.restores.len == 0 {
+			C.native_capture_video_backdrop(x, y, whole.width, whole.height)
+		} else {
+			C.native_invalidate_video_backdrop(x, y, whole.width, whole.height)
+		}
+	}
 }
 
 // Raster eligibility defers only the trailing viewport scrollbars. Find that
