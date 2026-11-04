@@ -473,7 +473,8 @@ bool shared_recording_image(CGContextRef destination, SkMatrix const& matrix,
         SkRRect shape;
         shape.setRectRadii(clip, radii);
         canvas->clipRRect(shape, SkClipOp::kIntersect, true);
-    } else if (clip != target) canvas->clipRect(clip, true);
+    } else if (clip != target || (image.flags & VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP))
+        canvas->clipRect(clip, true);
     auto sampling = SkSamplingOptions(image.nearest ? SkFilterMode::kNearest : SkFilterMode::kLinear,
         mips ? SkMipmapMode::kLinear : SkMipmapMode::kNone);
     if (complete_source) {

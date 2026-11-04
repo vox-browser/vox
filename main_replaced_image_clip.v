@@ -33,7 +33,8 @@ fn replaced_image_gpu_ancestor_clip_index(command &layout.PaintCommand) int {
 			|| r.bottom_left.x > 0 || r.bottom_left.y > 0 { return index }
 		// The GPU's clipped image draw and a later Quartz crop can choose
 		// different bilinear samples. Preserve an actual rectangular crop in
-		// the image operation too, without adding redundant containing clips.
+		// the image operation too. An equal authored clip is still a distinct
+		// raster operation; a larger containing clip remains on the context.
 		// Fractional edges and videos retain their existing replay path.
 		if rectangle_index < 0 && command.kind == 'draw_replaced_image' {
 			paintable := command.image_paintable or { continue }
@@ -52,10 +53,7 @@ fn replaced_image_gpu_ancestor_clip_index(command &layout.PaintCommand) int {
 				|| rect.x < target.x || rect.y < target.y
 				|| rect.x + rect.width > target.right()
 				|| rect.y + rect.height > target.bottom() { continue }
-			if rect.x > target.x || rect.y > target.y || rect.x + rect.width < target.right()
-				|| rect.y + rect.height < target.bottom() {
-				rectangle_index = index
-			}
+			rectangle_index = index
 		}
 	}
 	return rectangle_index

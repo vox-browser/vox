@@ -14,7 +14,10 @@ enum {
     VOX_GRAPHITE_IMAGE_YUV422 = 512,
     // A media frame: Chromium's compositor samples the uploaded frame
     // directly instead of resizing it through the image decode cache.
-    VOX_GRAPHITE_IMAGE_VIDEO_FRAME = 1024
+    VOX_GRAPHITE_IMAGE_VIDEO_FRAME = 1024,
+    // An authored overflow clip remains an operation even when its rectangle
+    // equals the image destination: it affects GPU shader interpolation.
+    VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP = 2048
 };
 
 enum {

@@ -628,7 +628,8 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
     // An image already covers its destination rectangle. An identical square
     // clip is redundant, and changes Graphite's image shader interpolation.
     // Retain actual cropping and rounded corners.
-    bool clips_destination = std::memcmp(image->clip, image->destination,
+    bool clips_destination = (image->flags & VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP)
+        || std::memcmp(image->clip, image->destination,
         sizeof(image->destination)) != 0
         || std::any_of(image->clip + 4, image->clip + 12,
             [](float radius) { return radius != 0; });

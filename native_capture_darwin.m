@@ -5823,7 +5823,7 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 	float clip_height, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height, float opacity,
-	int nearest_neighbor, float const *clip_radii) {
+	int nearest_neighbor, float const *clip_radii, int image_flags) {
 	if (context == NULL || image == NULL || image->data == NULL
 		|| destination_width <= 0 || destination_height <= 0
 		|| source_width <= 0 || source_height <= 0
@@ -5839,7 +5839,7 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		    source_y, source_width, source_height, clip_x, clip_y, clip_width,
 		    clip_height, transform_a, transform_b, transform_c, transform_d,
 		    transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
-		    canvas_height, opacity, nearest_neighbor, source.flags, clip_radii);
+		    canvas_height, opacity, nearest_neighbor, source.flags | image_flags, clip_radii);
 		native_end_skia_image_source(&source);
 		if (drawn)
 			return;
@@ -5914,7 +5914,7 @@ void native_draw_image_part(gg__Image *image, float destination_x, float destina
 			source_height, destination_x, destination_y, destination_width,
 			destination_height, 1, 0, 0, 1, 0, 0, 0, 0, 0,
 			destination_x + destination_width, canvas_height,
-			opacity, 1, NULL);
+			opacity, 1, NULL, 0);
 		return;
 	}
 	NSImage *native_image = (__bridge NSImage *)image->data;
@@ -5970,7 +5970,22 @@ void native_draw_image_part_transformed(gg__Image *image, float destination_x,
 		destination_width, destination_height, source_x, source_y, source_width,
 		source_height, clip_x, clip_y, clip_width, clip_height, transform_a,
 		transform_b, transform_c, transform_d, transform_e, transform_f, page_x,
-		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor, clip_radii);
+		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor, clip_radii, 0);
+}
+
+void native_draw_image_part_transformed_clipped(gg__Image *image, float destination_x,
+	float destination_y, float destination_width, float destination_height,
+	float source_x, float source_y, float source_width, float source_height,
+	float clip_x, float clip_y, float clip_width, float clip_height,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height, float opacity, int nearest_neighbor, float const *clip_radii, int explicit_rectangle_clip) {
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	native_draw_image_part_in_context(context, image, destination_x, destination_y,
+		destination_width, destination_height, source_x, source_y, source_width,
+		source_height, clip_x, clip_y, clip_width, clip_height, transform_a,
+		transform_b, transform_c, transform_d, transform_e, transform_f, page_x,
+		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor, clip_radii, explicit_rectangle_clip ? VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP : 0);
 }
 
 // Replay a validated background/image/opaque rounded CSS-mask scope atomically.
@@ -6073,7 +6088,7 @@ void native_draw_image_tiles_transformed(gg__Image *image, float const *tiles,
 			tile[3], tile[4], tile[5], tile[6], tile[7], clip_x, clip_y, clip_width,
 			clip_height, transform_a, transform_b, transform_c, transform_d,
 			transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
-			canvas_height, opacity, nearest_neighbor, clip_radii);
+			canvas_height, opacity, nearest_neighbor, clip_radii, 0);
 	}
 }
 
@@ -6141,7 +6156,7 @@ void native_add_svg_content_mask_image(gg__Image *image, float destination_x,
 		clip_width, clip_height, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
 		(float)CGBitmapContextGetWidth(native_svg_clip_build_context),
-		canvas_height, 1.0f, nearest_neighbor ? 1 : 2, NULL);
+		canvas_height, 1.0f, nearest_neighbor ? 1 : 2, NULL, 0);
 }
 
 #define NATIVE_SVG_PATTERN_CACHE_SIZE 8
@@ -6437,7 +6452,7 @@ void native_add_svg_pattern_image(gg__Image *image, float destination_x,
 		clip_height, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, 0, 0, 0,
 		(float)CGBitmapContextGetWidth(native_svg_pattern_context()), canvas_height, opacity,
-		nearest_neighbor, NULL);
+		nearest_neighbor, NULL, 0);
 }
 
 static void native_cache_svg_pattern_image(uint64_t key, CGImageRef image) {

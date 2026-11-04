@@ -209,6 +209,7 @@ fn C.native_draw_image_part(image &gg.Image, destination_x f32, destination_y f3
 fn C.native_draw_image_tiles_transformed(image &gg.Image, tiles &f32, tile_count int, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32)
 fn C.native_draw_image_pattern_transformed(image &gg.Image, tile_x f32, tile_y f32, tile_width f32, tile_height f32, bounds_x f32, bounds_y f32, bounds_width f32, bounds_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32, pattern_flags int) int
 fn C.native_draw_image_part_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32)
+fn C.native_draw_image_part_transformed_clipped(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int, clip_radii &f32, explicit_rectangle_clip int)
 fn C.native_set_video_frame_image(active i32)
 
 fn C.native_draw_repeated_image_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, opacity f32, nearest_neighbor int, repeat_x int, repeat_y int)
@@ -6629,11 +6630,11 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					}
 					app.set_chromium_image_resource_identity(image_data.image_url)
-					C.native_draw_image_part_transformed(image, f32(draw_rect.x), f32(draw_rect.y), f32(draw_rect.width), f32(draw_rect.height), source_rect[0], source_rect[1], source_rect[2], source_rect[3], clip_data[0], clip_data[1], clip_data[2], clip_data[3], f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
+					C.native_draw_image_part_transformed_clipped(image, f32(draw_rect.x), f32(draw_rect.y), f32(draw_rect.width), f32(draw_rect.height), source_rect[0], source_rect[1], source_rect[2], source_rect[3], clip_data[0], clip_data[1], clip_data[2], clip_data[3], f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
 						1
 					} else {
 						0
-					}, image_clip_radii_ptr)
+					}, image_clip_radii_ptr, int(gpu_image_ancestor_clip >= 0))
 					clear_chromium_image_resource_identity()
 					C.native_end_clip()
 					return

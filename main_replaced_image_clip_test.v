@@ -94,7 +94,10 @@ fn test_replaced_image_transfers_an_integer_overflow_crop_to_the_gpu() {
 	assert replaced_image_gpu_ancestor_clip_index(&command) == 0
 	assert replaced_image_gpu_clip_data(&command, painting.IntRect{4, -13, 484, 484},
 		painting.CornerRadii{}, 0) == [f32(4), 229, 242, 242, 0, 0, 0, 0, 0, 0, 0, 0]!
-	for rect in [layout.LayoutRect{4, -13, 484, 484}, layout.LayoutRect{0, -100, 1000, 1000},
+	identical := layout.PaintCommand{...command,
+		clip_list: &layout.PaintClipList{items: [layout.PaintClip{rect: layout.LayoutRect{4, -13, 484, 484}}]}}
+	assert replaced_image_gpu_ancestor_clip_index(&identical) == 0
+	for rect in [layout.LayoutRect{0, -100, 1000, 1000},
 		layout.LayoutRect{4, 229.09375, 242, 242}, layout.LayoutRect{4, 229, 242.5, 242},
 		layout.LayoutRect{4, 229, 0, 242}, layout.LayoutRect{800, 229, 242, 242},
 		layout.LayoutRect{0, 229, 242, 242}, layout.LayoutRect{4, 229, math.inf(1), 242}] {

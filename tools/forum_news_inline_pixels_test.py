@@ -25,6 +25,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_single_dashed_borders_keep_chromium_spacing_and_path_coverage(self):
         self.compare_fixture('chromium-single-dashed-border', width=1024, height=768)
 
+    def test_an_equal_authored_overflow_clip_remains_in_the_image_gpu_draw(self):
+        self.compare_fixture('equal-image-overflow-clip', width=1024, height=768)
+
     def test_svg_background_round_caps_and_curves_share_the_parent_picture(self):
         self.compare_fixture('register-svg-stroke-recording', width=1024, height=768)
 
