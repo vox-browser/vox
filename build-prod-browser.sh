@@ -152,6 +152,11 @@ if [ -n "$rust_cargo" ]; then
     cp "$jpegxl_target_dir/release/libvox_jpegxl.dylib" "$jpegxl_library"
     install_name_tool -id @rpath/libVoxJPEGXL.dylib "$jpegxl_library"
 fi
+avif_library=""
+if [ -f "$skia_root/lib/libavif.dylib" ] && [ -f "$skia_root/include/avif/avif.h" ]; then
+    avif_library="$build_dir/libVoxAVIF.dylib"
+    python3 "$repo_dir/tools/build_native_avif.py" --sdk-root "$skia_root" --output "$avif_library"
+fi
 bridge_library=""
 graphite_library=""
 dawn_library=""
@@ -359,6 +364,18 @@ if [ -n "${jpegxl_library:-}" ]; then
     fi
 else
     rm -f "$binary_dir/libVoxJPEGXL.dylib"
+fi
+
+if [ -n "$avif_library" ]; then
+    avif_resource_tmp=$(mktemp "$binary_dir/.avif.XXXXXX")
+    cp "$avif_library" "$avif_resource_tmp"
+    chmod 755 "$avif_resource_tmp"
+    mv -f "$avif_resource_tmp" "$binary_dir/libVoxAVIF.dylib"
+    if command -v codesign >/dev/null 2>&1; then
+        codesign --force --sign - "$binary_dir/libVoxAVIF.dylib" >/dev/null
+    fi
+else
+    rm -f "$binary_dir/libVoxAVIF.dylib"
 fi
 
 if [ -n "$bridge_library" ]; then

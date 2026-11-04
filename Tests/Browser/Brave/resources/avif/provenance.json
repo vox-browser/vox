@@ -1,0 +1,32 @@
+{
+  "slate-hero.jpeg": {
+    "url": "https://compote.slate.com/images/802c476a-96f3-4afe-9594-3fbbf118ba72.jpeg?crop=7774%2C5183%2Cx0%2Cy1&s=image-585",
+    "sha256": "74b6cd0e9f818fe149dca18389f09fbef9c7e72f7b555f9c2e9af91dd40b158d",
+    "archive": "Tests/Browser/Brave/sites/slate/manifest.json"
+  },
+  "slate-card.jpeg": {
+    "url": "https://compote.slate.com/images/2658dce5-16d8-4087-b464-227c25eef17d.jpeg?crop=1560%2C1040%2Cx0%2Cy0&s=image-390",
+    "sha256": "846e82ad4bc98ca6fb99fe33aa6d32a6c92b7a179064f4ff738b2df437c19bbc",
+    "archive": "Tests/Browser/Brave/sites/slate/manifest.json"
+  },
+  "red.avif": {
+    "generated": "Pillow AVIF encoder; geometric decoder controls",
+    "sha256": "ae279df65993a1d2f6e5674ab57de03b97df99b478a4109f2d45bbae3a75c5f9"
+  },
+  "oversize.avif": {
+    "generated": "Pillow AVIF encoder; geometric decoder controls",
+    "sha256": "261b3ff0d5b075e1b0e7adfbc752724e887c50c66045c2e795ecbb36cdbbbb8f"
+  },
+  "animated.avif": {
+    "generated": "Pillow AVIF encoder; geometric decoder controls",
+    "sha256": "5edb7167fca5c24f9ce84509375d7c7a3e55297b6919725e2e0a17ed49f111ea"
+  },
+  "alpha.avif": {
+    "generated": "Pillow AVIF encoder; geometric decoder controls",
+    "sha256": "f3d8fad46acacaef7102b90b727d4ecbb0a82a5632b3dbb16380e579cc327e93"
+  },
+  "icc.avif": {
+    "generated": "Pillow AVIF encoder; geometric decoder controls",
+    "sha256": "a0396807adf9558ffcb2275765476eaeb8c2ff8217f0996859ae72843569f76d"
+  }
+}

@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_static_avif_images_decode_by_bytes_in_models_and_backgrounds(self):
+        self.compare_fixture('avif-image-paths', width=1024, height=768)
+
     def test_svg_background_round_caps_and_curves_share_the_parent_picture(self):
         self.compare_fixture('register-svg-stroke-recording', width=1024, height=768)
 
