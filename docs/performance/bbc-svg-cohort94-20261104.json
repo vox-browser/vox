@@ -1,0 +1,490 @@
+{
+  "status": "Cohort94completes7alternating triples, all21native/content/pixel/ownership audits pass and identities stay pinned. Strict10percent target fails. SVG candidate median regresses161472487instructions(0.5925percent),3paired improvements4regressions; conservative control fails. No robust saving or catalog entry.",
+  "engine_commit": "1606bff4c",
+  "control_commit": "27b30a001",
+  "native": [
+    {
+      "label": "first completed SVG bundle",
+      "checks": [
+        {
+          "arm": "vox",
+          "passed": true,
+          "exit": 0,
+          "native_exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "original_external_sources_exact": true,
+          "path_before_png": true,
+          "runtime_images_pinned": true
+        },
+        {
+          "arm": "control",
+          "passed": true,
+          "exit": 0,
+          "native_exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "original_external_sources_exact": true,
+          "path_before_png": false,
+          "runtime_images_pinned": true
+        }
+      ],
+      "production": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "efbd9bb05ad26dc97a1954934d4be54f0b7f2ffd9ef7eae1c273fa47fd396a2f",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-225635-0a6b68ce/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "14d76b3f1efcd6097f81222f28ff2f1b029356c6e811c9db6c880b73151c86dc",
+          "dirty": true,
+          "head": "27b30a0018402ed80c432a101b6d92278ccd4770",
+          "repository_sha256": "e1958bcab121af9a62b26f815f3c8608f03b5903bbf8a5bc7af2cd5784719a91"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "653dcf6112ccd6fdb034d56c2e24c0817c60334d7796ecd29623f948ea0f18d9",
+          "dirty": true,
+          "head": "0fa6cbc52ad69af5d836ce66889d0424d10dcb5e",
+          "repository_sha256": "17269ba8f567759b7619f07468aef1c1d07a43358b4a362c441124bbe8015468"
+        },
+        "request": {
+          "head": "27b30a0018402ed80c432a101b6d92278ccd4770",
+          "id": "3fec93ec24ad456da87a3adf27fdc101"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "14d76b3f1efcd6097f81222f28ff2f1b029356c6e811c9db6c880b73151c86dc",
+          "dirty": true,
+          "head": "27b30a0018402ed80c432a101b6d92278ccd4770",
+          "repository_sha256": "b2b7c1e038b1c52446a63f38c7886048288820803b3a4859c24d95d92ebf0d5e"
+        }
+      },
+      "source_proof": {
+        "preserved_source": "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/production/native-diagnostic/production-compilation/efbd9bb05ad26dc97a1954934d4be54f0b7f2ffd9ef7eae1c273fa47fd396a2f/0-0-Vox.c.i",
+        "sha256": "eac460cc0d9adf37005e22229c0085ce0bdfe8820d618c7a9acce4771f96fbc9",
+        "witnesses": {
+          "Vox SVG measurement: reused owned closed shape geometry": true,
+          "layout__own_measurement_svg_path": true,
+          "layout__retained_simple_svg_input_is_current": true,
+          "disable_svg_measurement_reuse": true
+        },
+        "hash_matches": true
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-diagnostic.py",
+          "--capture-reference",
+          "--output",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/production/native-diagnostic",
+          "--archive",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/fixture/clock-archive-v3",
+          "--memory-guard-registry",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/production/native-pids.json",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--expected-vox",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/fixture/reference-complete/pair-1-vox/document.png",
+          "--expected-brave",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/fixture/reference-complete/pair-1-brave/document.png",
+          "--preserve-inputs",
+          "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+          "--control-vox-app",
+          "Build/v/Vox.app",
+          "--control-disable-svg-measurement-reuse",
+          "--retain-logical-paint-snapping",
+          "--retain-css-layout-for-svg"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {
+          "24235": "Wed Nov  4 23:04:27 2026    ",
+          "24249": "Wed Nov  4 23:04:27 2026    ",
+          "25097": "Wed Nov  4 23:04:34 2026    ",
+          "25103": "Wed Nov  4 23:04:34 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1379745792,
+        "elapsed_seconds": 16.496623916,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "label": "cohort94bundle",
+      "checks": [
+        {
+          "arm": "vox",
+          "passed": true,
+          "exit": 0,
+          "native_exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "original_external_sources_exact": true,
+          "path_before_png": true,
+          "runtime_images_pinned": true
+        },
+        {
+          "arm": "control",
+          "passed": true,
+          "exit": 0,
+          "native_exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "original_external_sources_exact": true,
+          "path_before_png": false,
+          "runtime_images_pinned": true
+        }
+      ],
+      "production": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "6c57297b8944be97201dec4dc929ac71a75f5be8272f8419830a81070942621b",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-230357-f295c520/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "653dcf6112ccd6fdb034d56c2e24c0817c60334d7796ecd29623f948ea0f18d9",
+          "dirty": true,
+          "head": "0fa6cbc52ad69af5d836ce66889d0424d10dcb5e",
+          "repository_sha256": "17269ba8f567759b7619f07468aef1c1d07a43358b4a362c441124bbe8015468"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "653dcf6112ccd6fdb034d56c2e24c0817c60334d7796ecd29623f948ea0f18d9",
+          "dirty": true,
+          "head": "dd030a74891a12b471fd0f9e688d560247484353",
+          "repository_sha256": "08a0ae247b4733787d1b6411226c02aea2282ddc1b5c3afa797705dae6a458dc"
+        },
+        "request": {
+          "head": "0fa6cbc52ad69af5d836ce66889d0424d10dcb5e",
+          "id": "6f225d1d15324eed8914a0790873b35e"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "653dcf6112ccd6fdb034d56c2e24c0817c60334d7796ecd29623f948ea0f18d9",
+          "dirty": true,
+          "head": "0fa6cbc52ad69af5d836ce66889d0424d10dcb5e",
+          "repository_sha256": "a95db30f5a51e53ea2a9f8f2467a464da786c770802d339db04bad9972456c8b"
+        }
+      },
+      "source_proof": {
+        "preserved_source": "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/production/native-diagnostic/production-compilation/6c57297b8944be97201dec4dc929ac71a75f5be8272f8419830a81070942621b/0-0-Vox.c.i",
+        "sha256": "0f0054f323a7af9ab01f8791c8da5b5088a1aa5ed67600c07b6b0350bfc3903e",
+        "witnesses": {
+          "Vox SVG measurement: reused owned closed shape geometry": true,
+          "layout__own_measurement_svg_path": true,
+          "layout__retained_simple_svg_input_is_current": true,
+          "disable_svg_measurement_reuse": true
+        },
+        "hash_matches": true
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/native-diagnostic.py",
+          "--capture-reference",
+          "--output",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/production/native-diagnostic",
+          "--archive",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/fixture/clock-archive-v3",
+          "--memory-guard-registry",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/production/native-pids.json",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--expected-vox",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/fixture/reference-complete/pair-1-vox/document.png",
+          "--expected-brave",
+          "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/fixture/reference-complete/pair-1-brave/document.png",
+          "--preserve-inputs",
+          "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+          "--control-vox-app",
+          "Build/v/Vox.app",
+          "--control-disable-svg-measurement-reuse",
+          "--retain-logical-paint-snapping",
+          "--retain-css-layout-for-svg"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {
+          "54459": "Wed Nov  4 23:12:31 2026    ",
+          "54465": "Wed Nov  4 23:12:31 2026    ",
+          "55326": "Wed Nov  4 23:12:39 2026    ",
+          "55330": "Wed Nov  4 23:12:39 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1423163392,
+        "elapsed_seconds": 21.50713725,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "cohort": {
+    "number": 94,
+    "attempted_browser_trials": 21,
+    "runtime_discovery_validation_launches": 4,
+    "capture_audits_passed": 21,
+    "vox_upper": [
+      27304081133,
+      27488642091,
+      26139854248,
+      27211703026,
+      27412908500,
+      27758208944,
+      27469258434
+    ],
+    "control_lower": [
+      27884530837,
+      27509609145,
+      27535521328,
+      26800647212,
+      26881858302,
+      27251436013,
+      26715122392
+    ],
+    "brave_lower": [
+      17403958422,
+      17414266556,
+      17453492895,
+      17330117515,
+      17438681792,
+      17604859667,
+      17335857804
+    ],
+    "medians": {
+      "vox": 27412908500,
+      "control": 27251436013,
+      "brave_lower": 17414266556
+    },
+    "matched_control": {
+      "point_difference": -161472487,
+      "point_percent": -0.5925283604246444,
+      "paired_improvements": 3,
+      "paired_regressions": 4,
+      "conservative_ratio": 1.039044797800079,
+      "robust_saving": false
+    },
+    "strict_target": {
+      "left": 277582089440,
+      "right": 155971057635,
+      "passed": false,
+      "conservative_ratio": 1.6017322975435115
+    },
+    "summary": {
+      "brave_median_lower_bound_instructions": 17414266556,
+      "cross_browser_pixels": {
+        "actual": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-vox/document.png",
+        "diff": "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/cohort94/cohort-94/cross-browser.diff.png",
+        "different_pixels": 2602001,
+        "exact": false,
+        "expected": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+        "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/cohort94/cohort-94/cross-browser.diff.png\n"
+      },
+      "instruction_scope": "launch",
+      "matched_control": {
+        "brave_median_lower_bound_instructions": 27251436013,
+        "instruction_scope": "launch",
+        "pairs": 7,
+        "passed": false,
+        "target_vox_fraction": 0.9,
+        "vox_median_instructions": 27412908500,
+        "worst_vox_over_best_brave": 1.039044797800079
+      },
+      "pairs": 7,
+      "passed": false,
+      "target_vox_fraction": 0.9,
+      "vox_median_instructions": 27412908500,
+      "worst_vox_over_best_brave": 1.6017322975435115
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/cohort-with-host.py",
+        "--output",
+        "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/cohort94/cohort-94",
+        "--repeat",
+        "7",
+        "--control-vox-app",
+        "Build/v/Vox.app",
+        "--control-disable-svg-measurement-reuse",
+        "--archive",
+        "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/fixture/clock-archive-v3",
+        "--memory-guard-registry",
+        "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/cohort94/cohort94-pids.json",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--expected-vox",
+        "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/fixture/reference-complete/pair-1-vox/document.png",
+        "--expected-brave",
+        "/Users/alex/code/vox2/Build/bbc-svg-measurement-20261104-2250/native-recheck-231224/fixture/reference-complete/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+        "--retain-logical-paint-snapping",
+        "--retain-css-layout-for-svg"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "71554": "Wed Nov  4 23:23:14 2026    ",
+        "71560": "Wed Nov  4 23:23:14 2026    ",
+        "72202": "Wed Nov  4 23:23:19 2026    ",
+        "72205": "Wed Nov  4 23:23:19 2026    ",
+        "72870": "Wed Nov  4 23:23:26 2026    ",
+        "72877": "Wed Nov  4 23:23:26 2026    ",
+        "73118": "Wed Nov  4 23:23:31 2026    ",
+        "73123": "Wed Nov  4 23:23:31 2026    ",
+        "73380": "Wed Nov  4 23:23:36 2026    ",
+        "73384": "Wed Nov  4 23:23:36 2026    ",
+        "73620": "Wed Nov  4 23:23:41 2026    ",
+        "73624": "Wed Nov  4 23:23:41 2026    ",
+        "73928": "Wed Nov  4 23:23:46 2026    ",
+        "73935": "Wed Nov  4 23:23:46 2026    ",
+        "73940": "Wed Nov  4 23:23:46 2026    ",
+        "73941": "Wed Nov  4 23:23:46 2026    ",
+        "73943": "Wed Nov  4 23:23:46 2026    ",
+        "74185": "Wed Nov  4 23:23:51 2026    ",
+        "74189": "Wed Nov  4 23:23:51 2026    ",
+        "74191": "Wed Nov  4 23:23:51 2026    ",
+        "74192": "Wed Nov  4 23:23:51 2026    ",
+        "74195": "Wed Nov  4 23:23:51 2026    ",
+        "74270": "Wed Nov  4 23:23:55 2026    ",
+        "74272": "Wed Nov  4 23:23:55 2026    ",
+        "74423": "Wed Nov  4 23:24:00 2026    ",
+        "74425": "Wed Nov  4 23:24:00 2026    ",
+        "74613": "Wed Nov  4 23:24:05 2026    ",
+        "74615": "Wed Nov  4 23:24:05 2026    ",
+        "74768": "Wed Nov  4 23:24:10 2026    ",
+        "74770": "Wed Nov  4 23:24:10 2026    ",
+        "74926": "Wed Nov  4 23:24:15 2026    ",
+        "74928": "Wed Nov  4 23:24:15 2026    ",
+        "74934": "Wed Nov  4 23:24:15 2026    ",
+        "74935": "Wed Nov  4 23:24:15 2026    ",
+        "74936": "Wed Nov  4 23:24:15 2026    ",
+        "75040": "Wed Nov  4 23:24:20 2026    ",
+        "75043": "Wed Nov  4 23:24:20 2026    ",
+        "75045": "Wed Nov  4 23:24:20 2026    ",
+        "75046": "Wed Nov  4 23:24:20 2026    ",
+        "75047": "Wed Nov  4 23:24:20 2026    ",
+        "75106": "Wed Nov  4 23:24:24 2026    ",
+        "75108": "Wed Nov  4 23:24:24 2026    ",
+        "75267": "Wed Nov  4 23:24:29 2026    ",
+        "75271": "Wed Nov  4 23:24:29 2026    ",
+        "75416": "Wed Nov  4 23:24:34 2026    ",
+        "75418": "Wed Nov  4 23:24:34 2026    ",
+        "75570": "Wed Nov  4 23:24:39 2026    ",
+        "75572": "Wed Nov  4 23:24:39 2026    ",
+        "75727": "Wed Nov  4 23:24:44 2026    ",
+        "75730": "Wed Nov  4 23:24:44 2026    ",
+        "75736": "Wed Nov  4 23:24:44 2026    ",
+        "75737": "Wed Nov  4 23:24:44 2026    ",
+        "75738": "Wed Nov  4 23:24:44 2026    ",
+        "75799": "Wed Nov  4 23:24:49 2026    ",
+        "75802": "Wed Nov  4 23:24:49 2026    ",
+        "75804": "Wed Nov  4 23:24:49 2026    ",
+        "75805": "Wed Nov  4 23:24:49 2026    ",
+        "75807": "Wed Nov  4 23:24:49 2026    ",
+        "75858": "Wed Nov  4 23:24:53 2026    ",
+        "75861": "Wed Nov  4 23:24:53 2026    ",
+        "76030": "Wed Nov  4 23:24:58 2026    ",
+        "76033": "Wed Nov  4 23:24:58 2026    ",
+        "76192": "Wed Nov  4 23:25:03 2026    ",
+        "76194": "Wed Nov  4 23:25:03 2026    ",
+        "76351": "Wed Nov  4 23:25:09 2026    ",
+        "76353": "Wed Nov  4 23:25:09 2026    ",
+        "76511": "Wed Nov  4 23:25:14 2026    ",
+        "76515": "Wed Nov  4 23:25:14 2026    ",
+        "76520": "Wed Nov  4 23:25:14 2026    ",
+        "76521": "Wed Nov  4 23:25:14 2026    ",
+        "76522": "Wed Nov  4 23:25:14 2026    ",
+        "76533": "Wed Nov  4 23:25:14 2026    ",
+        "76534": "Wed Nov  4 23:25:14 2026    ",
+        "76539": "Wed Nov  4 23:25:15 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1469153280,
+      "elapsed_seconds": 127.020201125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "controller_exit": {
+      "exit": 1
+    },
+    "scope": {
+      "cohort": 94,
+      "comparison": "Seven alternating matched control/Vox/Brave triples. Same executable in both Vox arms, only closed-SVG grid/flex measurement reuse disabled in control. Target evaluates Vox/Brave; marginal SVG-measurement comparison reported separately. Separate traced runtime discovery and pinned-set validation precede acceptance. Every attempt retained; no profiler/probe/dyld tracing in acceptance. No credit from protocol corrections or historical cross-build differences.",
+      "scope": "Exclusive coalition creation through encoded document PNG; startup and native window/target setup included. Vox endpoint before filewrite; Brave includes CDP delivery. Content audits and teardown follow endpoint. GPU/outside services excluded.",
+      "workload": "Unchanged609response replay, originalauthor scripts,1024x768CSS,DPR/capture2,two-second settle after identity/readiness/visibledecode,fresh profiles/caches,OSfilesystem/shadercaches retained. Fixed original references; historical logical font/paint and CSS SVG fallback common to both Voxarms.",
+      "host_gate": "Record variable host load without a launch-load cap; Free disk must cover prospective1111573390byte planning budget(3xcohort93footprint+64MiB); earlier extra2GiBgate corrected before any acceptance launch. No optimization credit. Native exits, ownership, content, exact pixels and all pinned inputs required. Strict goal10maxVoxUpper<=9minBraveLower.",
+      "engine_commit": "1606bff4c",
+      "control_tool_commit": "27b30a001",
+      "runtime_tool_commits": [
+        "cd836ed37",
+        "2b7c4428f"
+      ],
+      "production": {
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "6c57297b8944be97201dec4dc929ac71a75f5be8272f8419830a81070942621b",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-230357-f295c520/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "653dcf6112ccd6fdb034d56c2e24c0817c60334d7796ecd29623f948ea0f18d9",
+          "dirty": true,
+          "head": "0fa6cbc52ad69af5d836ce66889d0424d10dcb5e",
+          "repository_sha256": "17269ba8f567759b7619f07468aef1c1d07a43358b4a362c441124bbe8015468"
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "653dcf6112ccd6fdb034d56c2e24c0817c60334d7796ecd29623f948ea0f18d9",
+          "dirty": true,
+          "head": "dd030a74891a12b471fd0f9e688d560247484353",
+          "repository_sha256": "08a0ae247b4733787d1b6411226c02aea2282ddc1b5c3afa797705dae6a458dc"
+        },
+        "request": {
+          "head": "0fa6cbc52ad69af5d836ce66889d0424d10dcb5e",
+          "id": "6f225d1d15324eed8914a0790873b35e"
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "653dcf6112ccd6fdb034d56c2e24c0817c60334d7796ecd29623f948ea0f18d9",
+          "dirty": true,
+          "head": "0fa6cbc52ad69af5d836ce66889d0424d10dcb5e",
+          "repository_sha256": "a95db30f5a51e53ea2a9f8f2467a464da786c770802d339db04bad9972456c8b"
+        }
+      }
+    },
+    "storage_policy": {
+      "protocol_correction": "Prospective acceptance launch storage budget replaces the extra absolute2GiBgate before any cohort94acceptance browser launches. Prior fully completed cohort93retained raw bytes plus private profile/cache logical sizes are348154842; use3xplus64MiB. This is a planning budget, not an upper bound on OS or future output writes. Any missing outputs/errors/changed identities invalidate acceptance. No scope/reference/policy change or instruction credit.",
+      "cohort93_profile_cache_bytes": 215539733,
+      "cohort93_raw_bytes": 132615109,
+      "budget_bytes": 1111573390,
+      "prior_preflights_retained": [
+        "cohort94-preflight-disk",
+        "cohort94-preflight-disk2"
+      ],
+      "target_protocol_unchanged": true
+    }
+  },
+  "history": {
+    "attempted_cohorts": 94,
+    "attempted_browser_trials": 2064
+  },
+  "housekeeping": "Two earlier2GiBdisk preflights launch no acceptance browser and remain retained. Storage later reachesENOSPC, preventing a guard report or cleanup-script creation. Existing benchmark Brave copy is fully verified against installed app with distinct inodes, but rmtree stops at immutable CodeResources; OS denies clearing flags, so final removal is not performed. Installed comparison app remains unchanged, as cohort94fingerprints independently verify. Only hash-verified archived generated files, finished private profiles and one completed standalone profile executable are otherwise removed; receipts retained. Capacity recovers before cohort94. Its prospective footprint-based launch budget changes no capture/counter/reference/JS/memory requirement and earns no engine credit.",
+  "target_met": false,
+  "catalog_entry_added": false,
+  "limitations": "Frozen original-origin609response replay, original scripts, fresh profiles/caches, OSfilesystem/shadercaches retained. Launch through encodedPNG includes startup and nativewindow/targetsetup; Brave includesCDPdelivery, Vox endpoint precedes filewrite; audits/teardown follow. Exclusive coalition totals include exited-task aggregates and allowed ownedservices, notGPUexecution/outside work. Original per-engine references exact, cross-engine pixels differ82.7154percent. Unsupportedperformance.measure, incompleteDOM/script behavior, unavailable localArialfonts and paint_decoded=false remain disclosed. No live-site claim.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-svg-cohort94-20261104.tar.gz",
+    "bytes": 24526278,
+    "sha256": "661ea0f3459bc355a8493a4ecd516b65c84502a53bce57c5e5b7250a5db4fe8f",
+    "members": 400,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793824317.996267,
+  "archive_completion_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-svg-measurement-20261104-2250/archive-cohort94.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 108560384,
+    "elapsed_seconds": 4.874033208999999,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

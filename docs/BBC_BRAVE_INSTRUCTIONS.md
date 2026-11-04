@@ -1,5 +1,40 @@
 # BBC homepage instruction comparison
 
+**Latest complete comparison — cohort 94:** seven alternating control/Vox/Brave
+triples complete on pinned executable
+`6c57297b8944be97201dec4dc929ac71a75f5be8272f8419830a81070942621b`.
+All **21 capture audits** pass original pixels, complete content, native exits,
+helper ownership and unchanged input identities. Medians are **27,412,908,500
+Vox**, **27,251,436,013 SVG control** and **17,414,266,556 Brave lower bound**
+instructions. The strict target fails `277582089440 > 155971057635`;
+conservative ratio is **1.6017322975435115**. SVG's point result is a
+**161,472,487-instruction regression (0.5925%)**, with three paired improvements
+and four regressions. Conservative control ratio **1.039044797800079** fails;
+no robust saving is credited. History is now **94 attempted cohorts / 2,064
+attempted browser trials**, plus separate runtime diagnostics. BBC homepage
+remains unqualified for `OPTIMIZED_SITES.md`. See the
+[cohort/native ledger](performance/bbc-svg-cohort94-20261104.json) and
+[raw evidence](performance/raw/bbc-svg-cohort94-20261104.tar.gz).
+
+The two earlier disk preflights remain unlaunched and retained. The volume later
+reaches `ENOSPC`, preventing a guard report or cleanup-script creation. Only
+verified archived generated files, finished private profiles and a completed
+standalone diagnostic executable are released. An old benchmark Brave copy is
+fully byte-verified against the installed browser, but immutable flags stop its
+removal and the OS denies clearing them. The installed browser stays unchanged;
+cohort 94's input fingerprints independently verify it. No app copy supplies the
+new comparison. Both preflight/native epochs and storage receipts remain in the
+raw archive.
+
+Before any cohort 94 acceptance launch, the extra absolute 2 GiB storage minimum
+is corrected prospectively to a **1,111,573,390-byte planning budget**: three times
+cohort 93's 215,539,733 private-profile/cache bytes plus 132,615,109 raw bytes,
+then 64 MiB reserve. This is a planning margin, not an OS/write upper bound.
+Every trial records free disk before/after; failed writes or missing output would
+invalidate acceptance. The frozen workload, counters, original references,
+author-script policy, memory guard, launch/PNG endpoints and strict integer target
+remain unchanged. The gate correction earns **no engine optimization credit**.
+
 The latest **514-case broad-check receipts** are now durable in the
 [broad ledger](performance/bbc-svg-measurement-broad-20261104.json) and
 [raw checks](performance/raw/bbc-svg-measurement-broad-20261104.tar.gz).
