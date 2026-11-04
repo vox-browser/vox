@@ -7,7 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { captureArchive, captureEncodedResponseCache } from './capture_archive.mjs';
+import { captureArchive, captureEncodedResponseCache, installCSSOMAuthorRecorder } from './capture_archive.mjs';
 import { createOracleProfile, saveClosedOracleProfile } from './oracle_profile.mjs';
 import {closeOracleBrowser} from './oracle_shutdown.mjs';
 import {parseArchiveFocus,restoreArchiveFocus} from './archive_focus.mjs';
@@ -249,6 +249,9 @@ try {
         };
     })()`);
     await page.send('Page.enable');
+    if(options['capture-dir']) await page.send('Page.addScriptToEvaluateOnNewDocument', {
+        source:`(${installCSSOMAuthorRecorder.toString()})();`,
+    });
     await page.send('Network.enable', options['capture-dir'] || options['cache-preparation-dir'] ? {maxTotalBufferSize: 128 * 1024 * 1024, maxResourceBufferSize: 16 * 1024 * 1024} : {});
     if (options['capture-dir'] || options['pixel-reference']) {
         await page.send('Emulation.setDeviceMetricsOverride', {width:1024,height:768,deviceScaleFactor:1,mobile:false});

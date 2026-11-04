@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import vm from 'node:vm';
-import {archiveHeaders, archiveResponseWithExtraHeaders, captureArchive, captureEncodedResponseCache, freezeDocument, imageAccept, reuseArchivedResponseHeaders} from './capture_archive.mjs';
+import {archiveHeaders, archiveResponseWithExtraHeaders, captureArchive, captureEncodedResponseCache, freezeDocument, imageAccept, installCSSOMAuthorRecorder, reuseArchivedResponseHeaders} from './capture_archive.mjs';
 
 const ready = snapshot => ({ready:'complete',fonts:'loaded',images:[],styles:[],rects:[],...snapshot});
 
@@ -37,6 +37,78 @@ test('freezing retains live CSSOM author rules, raw color syntax and document mo
         assert.equal(result.html.startsWith('<!DOCTYPE'),Boolean(doctype));
         if(doctype?.publicId) assert(result.html.startsWith('<!DOCTYPE html PUBLIC "'+doctype.publicId+'">'));
     }
+});
+
+test('author-rule recording preserves insertion order, native returns and exceptions without coercing inputs twice',()=>{
+    class Sheet {
+        cssRules=[];
+        insertRule(rule,index=0) {
+            if(arguments.length===0) throw new TypeError('A rule is required');
+            const text=String(rule);
+            if(text==='invalid') throw new SyntaxError('Invalid rule');
+            this.cssRules.splice(index,0,{cssText:text.includes('font:var(')
+                ? '.label { font-size: ; font-family: ; font-feature-settings: normal; }' : text});
+            return index;
+        }
+    }
+    class Group extends Sheet {}
+    const original=Object.getOwnPropertyDescriptor(Sheet.prototype,'insertRule');
+    const context=vm.createContext({CSSStyleSheet:Sheet,CSSGroupingRule:Group});
+    vm.runInContext('('+installCSSOMAuthorRecorder.toString()+')()',context);
+    const wrapped=Sheet.prototype.insertRule;
+    vm.runInContext('('+installCSSOMAuthorRecorder.toString()+')()',context);
+    assert.equal(Sheet.prototype.insertRule,wrapped,'Installing twice must not stack wrappers');
+    const descriptor=Object.getOwnPropertyDescriptor(Sheet.prototype,'insertRule');
+    for(const name of ['writable','enumerable','configurable']) assert.equal(descriptor[name],original[name]);
+    assert.equal(wrapped.length,1);
+    const sheet=new Sheet(),author='.label {font:var(--font);font-feature-settings:normal}';
+    assert.equal(sheet.insertRule(author),0);
+    const label=sheet.cssRules[0];
+    assert.equal(sheet.insertRule('p {color:red}',0),0);
+    assert.equal(sheet.cssRules[1],label);
+    const state=vm.runInContext('globalThis[Symbol.for("vox.capture.cssom-author-inputs")]',context);
+    assert.equal(state.rules.get(label).text,author);
+    assert.equal(state.rules.get(label).serialized,label.cssText);
+    assert.throws(()=>sheet.insertRule(),/A rule is required/);
+    assert.throws(()=>sheet.insertRule('invalid'),/Invalid rule/);
+    assert.equal(sheet.cssRules.length,2);
+    let conversions=0;
+    sheet.insertRule({toString(){++conversions;return 'i {color:blue}';}});
+    assert.equal(conversions,1);
+    assert.equal(state.rules.has(sheet.cssRules[0]),false);
+    assert.deepEqual(Array.from(state.errors),[]);
+});
+
+test('freezing replays original pending shorthand inputs and rejects mutations or lost values',()=>{
+    const serialized='.label { font-size: ; font-family: ; font-feature-settings: normal; }';
+    const author='.label {font:var(--font);font-feature-settings:normal}';
+    const rule={cssText:serialized,style:Object.assign(['font-size'],{getPropertyValue:()=>''})};
+    const sheet={cssRules:[rule]};
+    const styles=[{textContent:'',sheet}],cloned=[{textContent:''}];
+    const clone={querySelectorAll:selector=>selector==='style'?cloned:[],
+        querySelector:()=>({prepend:()=>{}}),get outerHTML(){return '<html><style>'+cloned[0].textContent+'</style></html>';}};
+    const document={documentElement:{cloneNode:()=>clone},doctype:null,activeElement:null,
+        compatMode:'BackCompat',baseURI:'https://example.com/',title:'Test',body:{innerText:'story '.repeat(300)},
+        querySelectorAll:()=>styles,createElement:()=>({})};
+    const context=vm.createContext({document,location:{href:document.baseURI},
+        innerWidth:1024,innerHeight:768,devicePixelRatio:1});
+    const freeze=()=>vm.runInContext('('+freezeDocument.toString()+')()',context);
+    assert.throws(freeze,/lost an author value/);
+    const state={rules:new WeakMap([[rule,{text:author,serialized}]]),errors:[]};
+    context[Symbol.for('vox.capture.cssom-author-inputs')]=state;
+    const result=freeze();
+    assert(result.html.includes(author));
+    assert(!result.html.includes('font-size: ;'));
+    assert.equal(result.cssom_styles,1);
+    assert.equal(result.authored_cssom_rules,1);
+    rule.cssText=serialized+' p { color:blue }';
+    assert.throws(freeze,/author rule changed/);
+    rule.cssText=serialized;state.errors.push('Cannot read an inserted rule');
+    assert.throws(freeze,/Failed to record/);
+    state.errors.length=0;state.rules.delete(rule);
+    rule.cssText='.label { --empty: ; content: "font-size: ;"; }';
+    rule.style=Object.assign(['--empty','content'],{getPropertyValue:p=>p==='--empty'?'':'"font-size: ;"'});
+    assert(freeze().html.includes(rule.cssText),'Valid empty custom properties and strings must survive');
 });
 
 test('decoded body keeps response policy and repeated values, replacing only wire framing', () => {

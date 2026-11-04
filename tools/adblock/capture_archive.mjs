@@ -9,11 +9,43 @@ import {capturePixelReference} from './pixel_reference.mjs';
 export const imageAccept = 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8';
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 
+// Install before author scripts run. Blink's CSSOM (including the debugger's
+// stylesheet text) can serialize pending shorthand substitutions as empty
+// longhands, e.g. font:var(--font) followed by font-feature-settings. Keep the
+// original input, never computed values, and verify its live rule at freeze.
+export function installCSSOMAuthorRecorder() {
+    const key=Symbol.for('vox.capture.cssom-author-inputs');
+    if(globalThis[key]) return;
+    const state={rules:new WeakMap(),errors:[]};
+    Object.defineProperty(globalThis,key,{value:state});
+    for(const prototype of [CSSStyleSheet.prototype,
+        ...(typeof CSSGroupingRule==='undefined' ? [] : [CSSGroupingRule.prototype])]) {
+        const descriptor=Object.getOwnPropertyDescriptor(prototype,'insertRule');
+        if(!descriptor) continue;
+        const original=descriptor.value;
+        Object.defineProperty(prototype,'insertRule',{...descriptor,value:function insertRule(rule) {
+            const index=Reflect.apply(original,this,arguments);
+            if(typeof rule==='string') {
+                try {
+                    const inserted=this.cssRules[index];
+                    state.rules.set(inserted,{text:rule,serialized:inserted.cssText});
+                } catch(error) {state.errors.push(String(error));}
+            }
+            return index;
+        }});
+    }
+}
+
 export function freezeDocument() {
     const clone = document.documentElement.cloneNode(true);
     const styles=[...document.querySelectorAll('style')];
     const clonedStyles=[...clone.querySelectorAll('style')];
-    let cssomStyles=0;
+    let cssomStyles=0,authoredCSSOMRules=0;
+    const authorInputs=globalThis[Symbol.for('vox.capture.cssom-author-inputs')];
+    if(authorInputs?.errors.length) throw Error('Failed to record CSSOM author inputs');
+    const lostValue=rule=>Boolean(rule.style && [...rule.style].some(property=>
+        !property.startsWith('--') && rule.style.getPropertyValue(property)===''))
+        || Boolean(rule.cssRules && [...rule.cssRules].some(lostValue));
     for(let index=0;index<styles.length;++index) {
         const source=styles[index],sheet=source.sheet;
         if(!sheet) continue;
@@ -22,7 +54,20 @@ export function freezeDocument() {
         // outerHTML contains none of the author rules actually being painted.
         // Retain raw authored text whenever it exists, including color syntax.
         if(source.textContent.trim()) continue;
-        const rules=[...sheet.cssRules].map(rule=>rule.cssText);
+        const rules=[...sheet.cssRules].map(rule=>{
+            const input=authorInputs?.rules.get(rule);
+            if(input) {
+                if(input.serialized!==rule.cssText)
+                    throw Error('An inserted author rule changed before freezing; cannot replay its original input');
+                ++authoredCSSOMRules;
+                return input.text;
+            }
+            // Silently accepting empty pending longhands loses the author's
+            // value even though the source still paints with it.
+            if(lostValue(rule))
+                throw Error('CSSOM serialization lost an author value without a recorded rule input');
+            return rule.cssText;
+        });
         if(rules.length) {
             clonedStyles[index].textContent=rules.join('\n');
             ++cssomStyles;
@@ -46,6 +91,7 @@ export function freezeDocument() {
     return {html: doctype + clone.outerHTML, url: location.href,
         base: document.baseURI, removed_scripts: removedScripts,
         compat_mode:document.compatMode,cssom_styles:cssomStyles,
+        authored_cssom_rules:authoredCSSOMRules,
         elements: clone.querySelectorAll('*').length, title: document.title,
         text: document.body.innerText, width: innerWidth, height: innerHeight,
         active_element:activeElement,
