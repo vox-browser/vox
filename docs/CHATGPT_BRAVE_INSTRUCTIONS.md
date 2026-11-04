@@ -343,3 +343,55 @@ neither partial cohort can satisfy the seven-pair acceptance rule. The
 preserves the failures, tool checks, input identities and raw evidence. There is
 no isolated page credit for the numeric change: these different browser builds
 do not supply a matched control.
+
+## Animation arena ownership scans
+
+The earlier V profile recorded 495,660 conservative scans of retained animation
+style records. Commit `0ab6f0528` reads each settled arena's address envelope once
+per record, rejects words outside it, and keeps the exact block-ownership check
+for possible matches inside it. Holes between mapped blocks remain unowned.
+`VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER=1` retains the original scalar loop
+for matched controls.
+
+Sixteen focused runtime executions pass: byte boundaries at every candidate word
+position, block starts/ends, unrelated pointers, partial words, empty/reset/
+released arenas, and existing typed-payload, property-page, density-projection
+and target-storage lifetime cases. Candidate, scalar-control and poisoned-arena
+runs preserve the same ownership decisions. Default GC, `-gc none` and production
+`-prealloc` platform checks also pass.
+
+| Two component trials per implementation, 256,000 records | Retired CPU instructions |
+| --- | ---: |
+| Scalar control median | 233,335,805 |
+| Prefilter candidate median | 201,916,609 |
+| Conservative component reduction | 31,275,652 |
+
+The component median falls 13.47%; it excludes browser launch and rendering.
+Separate fresh production processes on executable
+`666161a760ca7d580cfba54d07d4a2cc1a24ab465065dafb18f53980e3b9d968`
+confirm that the optimized CSS branch executes on the replacement ChatGPT page.
+Both diagnostic pairs and all four uninstrumented matched pairs pass unchanged
+pixels, complete content, script bootstrap and kernel-exit checks with stable
+inputs. Both browsers use their canonical installed bundles and the original
+author-script bytes; no library is injected.
+
+| Two matched Vox trials per implementation | Launch-to-PNG instructions |
+| --- | ---: |
+| Scalar control median | 33,088,309,954.5 |
+| Prefilter candidate median | 33,073,731,227 |
+| Conservative reduction | −299,880,878 |
+
+The whole-page ranges overlap. The median point reduction is only 14,578,727.5
+instructions, so this change receives zero conservative page credit and no
+5,000,000-instruction broad-cadence advance. The 5% Brave target remains unmet.
+
+A subsequent native stack sample used a different 15-second settle. Its Vox
+document retained exact content/bootstrap but differed in 25,320 pixels within
+a 334×80 device-pixel cookie-button rectangle, with maximum channel error 13.
+That exploratory attempt stopped after one pair and receives no performance
+credit; its native trace and both browser observations are retained. The
+five-second diagnostic and matched captures above remain separate and exact.
+
+The [arena scan receipt](performance/chatgpt-arena-words-20261104.json) and its
+linked evidence archive preserve every test, failed compile, diagnostic,
+control/candidate count, PNG, audit, native sample, input identity and guard exit.

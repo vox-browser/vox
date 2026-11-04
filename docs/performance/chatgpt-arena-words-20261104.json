@@ -1,0 +1,1918 @@
+{
+  "version": 1,
+  "implementation_commit": "0ab6f0528",
+  "status": "Animation arena address prefilter executes on production ChatGPT with exact output; matched whole-page ranges overlap and receive zero conservative credit",
+  "profiling_basis": {
+    "receipt": "docs/performance/chatgpt-v-profile-20261104.json",
+    "function": "css__RetiringAnimationSamples__struct_references_arena",
+    "calls": 495660,
+    "limitation": "Earlier archived-page V profile identifies a candidate cost. Separate replacement-fixture diagnostics now verify its production path; profiling itself provides no instruction credit."
+  },
+  "implementation": {
+    "sources": [
+      {
+        "path": "platform/prealloc_arena.v",
+        "sha256": "ed0ea6f09c7c169e6aa449144149d99381aa62ca7881c1b8553592861ce0a516",
+        "bytes": 24082
+      },
+      {
+        "path": "platform/arena_word_scan_test.v",
+        "sha256": "1effae56d88622371946185d7b78e44cf19c2c5cdbe52f6e56fad16554aada46",
+        "bytes": 2846
+      },
+      {
+        "path": "css/animation_samples.v",
+        "sha256": "35265d8facfd5c06dfda25de3375807b96cd93b481a61f946e49e537e8f08c75",
+        "bytes": 21363
+      }
+    ],
+    "behavior": "Read a settled arena address envelope once per struct; reject words outside it, and use exact block ownership for candidates inside it. Preserve partial-word and arena lifetime semantics.",
+    "control": "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER=1 retains the original scalar loop",
+    "diagnostic": "VOX_ANIMATION_SAMPLE_WORD_DIAGNOSTICS=1 prints once when the CSS optimized branch executes"
+  },
+  "checks": {
+    "runtime_executions": 16,
+    "commands": [
+      {
+        "label": "run-platform-prealloc",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-platform-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-platform-prealloc.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-prealloc"
+        ],
+        "environment": {},
+        "exit": 0
+      },
+      {
+        "label": "run-platform-prealloc-poison",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-platform-prealloc-poison.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-platform-prealloc-poison.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-platform-default",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-platform-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-platform-default.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-default",
+          "platform/arena_word_scan_test.v"
+        ],
+        "environment": {},
+        "exit": 0
+      },
+      {
+        "label": "run-platform-default",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-platform-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-platform-default.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-default"
+        ],
+        "environment": {},
+        "exit": 0
+      },
+      {
+        "label": "compile-platform-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-platform-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-platform-none.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-none",
+          "platform/arena_word_scan_test.v"
+        ],
+        "environment": {},
+        "exit": 0
+      },
+      {
+        "label": "run-platform-none",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-platform-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-platform-none.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-none"
+        ],
+        "environment": {},
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_typed_payload",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-animation_sample_typed_payload.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-animation_sample_typed_payload.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_typed_payload",
+          "css/animation_sample_typed_payload_test.v"
+        ],
+        "environment": {},
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_typed_payload-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_typed_payload-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_typed_payload-candidate.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_typed_payload"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "",
+          "VOX_ANIMATION_SAMPLE_WORD_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_typed_payload-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_typed_payload-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_typed_payload-control.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_typed_payload"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_typed_payload-poison",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_typed_payload-poison.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_typed_payload-poison.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_typed_payload"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "",
+          "VOX_ARENA_POISON": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_property_pages",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-animation_sample_property_pages.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-animation_sample_property_pages.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_property_pages",
+          "css/animation_sample_property_pages_test.v"
+        ],
+        "environment": {},
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_property_pages-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_property_pages-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_property_pages-candidate.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_property_pages"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "",
+          "VOX_ANIMATION_SAMPLE_WORD_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_property_pages-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_property_pages-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_property_pages-control.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_property_pages"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_property_pages-poison",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_property_pages-poison.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_property_pages-poison.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_property_pages"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "",
+          "VOX_ARENA_POISON": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_projection",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-animation_sample_projection.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-animation_sample_projection.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_projection",
+          "css/animation_sample_projection_test.v"
+        ],
+        "environment": {},
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_projection-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_projection-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_projection-candidate.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_projection"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "",
+          "VOX_ANIMATION_SAMPLE_WORD_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_projection-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_projection-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_projection-control.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_projection"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_projection-poison",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_projection-poison.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_projection-poison.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_projection"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "",
+          "VOX_ARENA_POISON": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "compile-animation_sample_target_storage",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-animation_sample_target_storage.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/compile-animation_sample_target_storage.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-nocache",
+          "-cc",
+          "clang",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_target_storage",
+          "css/animation_sample_target_storage_test.v"
+        ],
+        "environment": {},
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_target_storage-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_target_storage-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_target_storage-candidate.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_target_storage"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "",
+          "VOX_ANIMATION_SAMPLE_WORD_DIAGNOSTICS": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_target_storage-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_target_storage-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_target_storage-control.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_target_storage"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "1"
+        },
+        "exit": 0
+      },
+      {
+        "label": "run-animation_sample_target_storage-poison",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_target_storage-poison.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/run-animation_sample_target_storage-poison.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_target_storage"
+        ],
+        "environment": {
+          "VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER": "",
+          "VOX_ARENA_POISON": "1"
+        },
+        "exit": 0
+      }
+    ],
+    "source_inputs_before": {
+      "/Users/alex/code/vox2/platform/prealloc_arena.v": "ed0ea6f09c7c169e6aa449144149d99381aa62ca7881c1b8553592861ce0a516",
+      "/Users/alex/code/vox2/platform/arena_word_scan_test.v": "1effae56d88622371946185d7b78e44cf19c2c5cdbe52f6e56fad16554aada46",
+      "/Users/alex/code/vox2/css/animation_samples.v": "35265d8facfd5c06dfda25de3375807b96cd93b481a61f946e49e537e8f08c75"
+    },
+    "source_inputs_after": {
+      "/Users/alex/code/vox2/platform/prealloc_arena.v": "ed0ea6f09c7c169e6aa449144149d99381aa62ca7881c1b8553592861ce0a516",
+      "/Users/alex/code/vox2/platform/arena_word_scan_test.v": "1effae56d88622371946185d7b78e44cf19c2c5cdbe52f6e56fad16554aada46",
+      "/Users/alex/code/vox2/css/animation_samples.v": "35265d8facfd5c06dfda25de3375807b96cd93b481a61f946e49e537e8f08c75"
+    },
+    "platform_modes": [
+      "default GC",
+      "-gc none",
+      "-prod -prealloc -gc none",
+      "-prod -prealloc -gc none with VOX_ARENA_POISON=1"
+    ],
+    "cases": "All byte boundaries for every candidate word position, owned block starts/ends, unrelated pointers, scalars, nil, partial words, empty/reset/released scopes and negative sizes",
+    "lifetime": "Existing typed payload, property-page, density-projection and target-storage cases pass with candidate, original control and poisoned retired arenas",
+    "diagnostic_branch_executions": {
+      "run-animation_sample_projection-candidate.log": 1,
+      "run-animation_sample_target_storage-candidate.log": 0,
+      "run-animation_sample_property_pages-candidate.log": 1,
+      "run-animation_sample_typed_payload-candidate.log": 1
+    }
+  },
+  "component": {
+    "scope": "Component only: 256,000 128-word arena scans, with nonpointer words, unrelated pointers and owned pointers at either end. Process instruction snapshots surround only the loops; excludes setup and launch.",
+    "control": "Original scalar ownership loop; same executable and input corpus for both implementations",
+    "raw_control": [
+      233324657,
+      233346953
+    ],
+    "raw_candidate": [
+      202049005,
+      201784213
+    ],
+    "control_median": 233335805.0,
+    "candidate_median": 201916609.0,
+    "median_reduction_fraction": 0.13465227079058872,
+    "conservative_component_reduction": 31275652,
+    "operations_per_trial": 256000,
+    "words_per_record": 128,
+    "checksum": 128000,
+    "order": [
+      "control",
+      "candidate",
+      "candidate",
+      "control"
+    ],
+    "executable": {
+      "path": "Build/chatgpt-arena-words-20261104-1540/benchmark",
+      "sha256": "58394127940115b768caf47a9c46a9c190324dcbea0e20db68679100b64b778d",
+      "bytes": 129152
+    },
+    "benchmark_input": {
+      "path": "Build/chatgpt-arena-words-20261104-1540/benchmark.v",
+      "sha256": "1c22f027b808619425a497122a1ffcd0c7dfe1664f710538a3fdda078ef77298",
+      "bytes": 1751
+    },
+    "compiler_flags": [
+      "-prod",
+      "-prealloc",
+      "-gc none",
+      "-nocache",
+      "-cc clang",
+      "-memory-limit 10G"
+    ],
+    "observations": [
+      {
+        "variant": "control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/component-0-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/component-0-control.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/benchmark",
+          "control"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            19.7578125,
+            24.76953125,
+            22.00439453125
+          ],
+          "unix": 1793796279.698076
+        },
+        "exit": 0,
+        "host_after": {
+          "load": [
+            19.7578125,
+            24.76953125,
+            22.00439453125
+          ],
+          "unix": 1793796280.155162
+        },
+        "instructions": 233324657,
+        "checksum": 128000,
+        "records": 256000,
+        "words_per_record": 128
+      },
+      {
+        "variant": "candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/component-1-candidate.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/benchmark",
+          "candidate"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            19.7578125,
+            24.76953125,
+            22.00439453125
+          ],
+          "unix": 1793796280.2009048
+        },
+        "exit": 0,
+        "host_after": {
+          "load": [
+            19.7578125,
+            24.76953125,
+            22.00439453125
+          ],
+          "unix": 1793796280.388324
+        },
+        "instructions": 202049005,
+        "checksum": 128000,
+        "records": 256000,
+        "words_per_record": 128
+      },
+      {
+        "variant": "candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/component-2-candidate.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/benchmark",
+          "candidate"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            19.7578125,
+            24.76953125,
+            22.00439453125
+          ],
+          "unix": 1793796280.436525
+        },
+        "exit": 0,
+        "host_after": {
+          "load": [
+            19.7578125,
+            24.76953125,
+            22.00439453125
+          ],
+          "unix": 1793796280.696089
+        },
+        "instructions": 201784213,
+        "checksum": 128000,
+        "records": 256000,
+        "words_per_record": 128
+      },
+      {
+        "variant": "control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--limit-gib",
+          "3",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/component-3-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/component-3-control.json",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/benchmark",
+          "control"
+        ],
+        "host_before": {
+          "cpu_count": 18,
+          "load": [
+            19.7578125,
+            24.76953125,
+            22.00439453125
+          ],
+          "unix": 1793796280.75006
+        },
+        "exit": 0,
+        "host_after": {
+          "load": [
+            19.7578125,
+            24.76953125,
+            22.00439453125
+          ],
+          "unix": 1793796281.0798552
+        },
+        "instructions": 233346953,
+        "checksum": 128000,
+        "records": 256000,
+        "words_per_record": 128
+      }
+    ],
+    "identity_stable": true,
+    "page_instruction_credit": 0
+  },
+  "page_validation": {
+    "executable": {
+      "sha256": "666161a760ca7d580cfba54d07d4a2cc1a24ab465065dafb18f53980e3b9d968",
+      "bytes": 32615536
+    },
+    "scope": "Fresh canonical production executable and native dependencies, frozen original author scripts, launch through encoded document PNG; no injected library or alternative page policy",
+    "path_verified": true,
+    "diagnostic_runs": 2,
+    "matched_order": [
+      "control",
+      "candidate",
+      "candidate",
+      "control"
+    ],
+    "raw_vox_counts": {
+      "control": [
+        {
+          "lower": 33285817529,
+          "upper": 33285817529
+        },
+        {
+          "lower": 32890802380,
+          "upper": 32890802380
+        }
+      ],
+      "candidate": [
+        {
+          "lower": 32956779196,
+          "upper": 32956779196
+        },
+        {
+          "lower": 33190683258,
+          "upper": 33190683258
+        }
+      ]
+    },
+    "control_median": 33088309954.5,
+    "candidate_median": 33073731227.0,
+    "conservative_page_instruction_reduction": -299880878,
+    "browser_observations": 12,
+    "all_browser_kernel_exits_zero": true,
+    "pixels_content_bootstrap_exact": true,
+    "inputs_stable": true,
+    "interpretation": "Two unprofiled trials per implementation on the same canonical production build. Ranges overlap; no confirmed whole-page gain, no seven-pair acceptance claim."
+  },
+  "guards": {
+    "component-compile": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-prod",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "Build/chatgpt-arena-words-20261104-1540/benchmark",
+        "Build/chatgpt-arena-words-20261104-1540/benchmark.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 469024768,
+      "elapsed_seconds": 4.332789709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_property_pages-poison": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_property_pages"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 442368,
+      "elapsed_seconds": 0.235602667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-platform-none": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-skip-running",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-none",
+        "platform/arena_word_scan_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 382976000,
+      "elapsed_seconds": 2.728035334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-animation_sample_typed_payload": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_typed_payload",
+        "css/animation_sample_typed_payload_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1941045248,
+      "elapsed_seconds": 42.303727042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_projection-control": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_projection"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 7618560,
+      "elapsed_seconds": 0.137401875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-platform-default": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-skip-running",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-default",
+        "platform/arena_word_scan_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 384172032,
+      "elapsed_seconds": 3.1327207500000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-sample-guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-arena-words-20261104-1540/sample.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "37531": "Wed Nov  4 15:57:31 2026    ",
+        "37535": "Wed Nov  4 15:57:31 2026    ",
+        "38923": "Wed Nov  4 15:57:51 2026    ",
+        "38926": "Wed Nov  4 15:57:51 2026    ",
+        "38932": "Wed Nov  4 15:57:51 2026    ",
+        "38933": "Wed Nov  4 15:57:51 2026    ",
+        "38935": "Wed Nov  4 15:57:51 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2340945920,
+      "elapsed_seconds": 44.739346583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_projection-poison": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_projection"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 933888,
+      "elapsed_seconds": 0.27115829199999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-animation_sample_property_pages": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_property_pages",
+        "css/animation_sample_property_pages_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1927725056,
+      "elapsed_seconds": 37.03019725,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_target_storage-candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_target_storage"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.513686167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "component-0-control": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/benchmark",
+        "control"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.38416558300000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "diagnostic-guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-arena-words-20261104-1540/page.py",
+        "diagnostic"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "27088": "Wed Nov  4 15:53:22 2026    ",
+        "27090": "Wed Nov  4 15:53:22 2026    ",
+        "27474": "Wed Nov  4 15:53:32 2026    ",
+        "27476": "Wed Nov  4 15:53:32 2026    ",
+        "27486": "Wed Nov  4 15:53:32 2026    ",
+        "27487": "Wed Nov  4 15:53:32 2026    ",
+        "27488": "Wed Nov  4 15:53:32 2026    ",
+        "27883": "Wed Nov  4 15:53:43 2026    ",
+        "27888": "Wed Nov  4 15:53:43 2026    ",
+        "27894": "Wed Nov  4 15:53:43 2026    ",
+        "27895": "Wed Nov  4 15:53:43 2026    ",
+        "27896": "Wed Nov  4 15:53:43 2026    ",
+        "28328": "Wed Nov  4 15:53:54 2026    ",
+        "28330": "Wed Nov  4 15:53:54 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1733033984,
+      "elapsed_seconds": 47.601723042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_typed_payload-poison": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_typed_payload"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 442368,
+      "elapsed_seconds": 0.292324958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_target_storage-poison": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_target_storage"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 442368,
+      "elapsed_seconds": 0.244418083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_target_storage-control": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_target_storage"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 442368,
+      "elapsed_seconds": 0.109527459,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "component-3-control": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/benchmark",
+        "control"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 8667136,
+      "elapsed_seconds": 0.199781708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_typed_payload-control": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_typed_payload"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 0,
+      "elapsed_seconds": 0.20714983400000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "matched-guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-arena-words-20261104-1540/page.py",
+        "matched"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "30077": "Wed Nov  4 15:54:40 2026    ",
+        "30081": "Wed Nov  4 15:54:40 2026    ",
+        "30906": "Wed Nov  4 15:54:51 2026    ",
+        "30911": "Wed Nov  4 15:54:51 2026    ",
+        "30937": "Wed Nov  4 15:54:52 2026    ",
+        "30938": "Wed Nov  4 15:54:52 2026    ",
+        "30941": "Wed Nov  4 15:54:52 2026    ",
+        "31503": "Wed Nov  4 15:55:04 2026    ",
+        "31508": "Wed Nov  4 15:55:04 2026    ",
+        "31515": "Wed Nov  4 15:55:04 2026    ",
+        "31516": "Wed Nov  4 15:55:04 2026    ",
+        "31523": "Wed Nov  4 15:55:04 2026    ",
+        "32165": "Wed Nov  4 15:55:15 2026    ",
+        "32171": "Wed Nov  4 15:55:15 2026    ",
+        "32707": "Wed Nov  4 15:55:25 2026    ",
+        "32709": "Wed Nov  4 15:55:25 2026    ",
+        "33134": "Wed Nov  4 15:55:35 2026    ",
+        "33140": "Wed Nov  4 15:55:35 2026    ",
+        "33147": "Wed Nov  4 15:55:35 2026    ",
+        "33148": "Wed Nov  4 15:55:35 2026    ",
+        "33149": "Wed Nov  4 15:55:35 2026    ",
+        "33571": "Wed Nov  4 15:55:45 2026    ",
+        "33577": "Wed Nov  4 15:55:46 2026    ",
+        "33583": "Wed Nov  4 15:55:46 2026    ",
+        "33584": "Wed Nov  4 15:55:46 2026    ",
+        "33585": "Wed Nov  4 15:55:46 2026    ",
+        "33998": "Wed Nov  4 15:55:56 2026    ",
+        "34000": "Wed Nov  4 15:55:56 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1732280320,
+      "elapsed_seconds": 93.31402200000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_property_pages-candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_property_pages"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.508601584,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "component-2-candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/benchmark",
+        "candidate"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 8667136,
+      "elapsed_seconds": 0.1524375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_property_pages-control": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_property_pages"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 442368,
+      "elapsed_seconds": 0.09582675000000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-platform-initial": {
+      "command": [
+        "Build/chatgpt-arena-words-20261104-1540/platform-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.275921541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-platform-prealloc-poison": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 5029888,
+      "elapsed_seconds": 0.10412908299999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-platform-none": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-none"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.41843225,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-platform-default": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-default"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.419167792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-platform-prealloc": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/platform-prealloc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 212992,
+      "elapsed_seconds": 0.109772709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-platform-prealloc-fixed": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-prod",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-skip-running",
+        "-o",
+        "Build/chatgpt-arena-words-20261104-1540/platform-prealloc",
+        "platform/arena_word_scan_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 410435584,
+      "elapsed_seconds": 5.7982837499999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-animation_sample_projection": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_projection",
+        "css/animation_sample_projection_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1950334976,
+      "elapsed_seconds": 35.774461792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-sample-pids": [
+      {
+        "pid": 37531,
+        "started": "Wed Nov  4 15:57:31 2026    "
+      },
+      {
+        "pid": 37535,
+        "started": "Wed Nov  4 15:57:31 2026    "
+      },
+      {
+        "pid": 38923,
+        "started": "Wed Nov  4 15:57:51 2026    "
+      },
+      {
+        "pid": 38926,
+        "started": "Wed Nov  4 15:57:51 2026    "
+      },
+      {
+        "pid": 38932,
+        "started": "Wed Nov  4 15:57:51 2026    "
+      },
+      {
+        "pid": 38933,
+        "started": "Wed Nov  4 15:57:51 2026    "
+      },
+      {
+        "pid": 38935,
+        "started": "Wed Nov  4 15:57:51 2026    "
+      },
+      {
+        "pid": 38954,
+        "started": "Wed Nov  4 15:57:52 2026    "
+      },
+      {
+        "pid": 38964,
+        "started": "Wed Nov  4 15:57:52 2026    "
+      }
+    ],
+    "diagnostic-pids": [
+      {
+        "pid": 27088,
+        "started": "Wed Nov  4 15:53:22 2026    "
+      },
+      {
+        "pid": 27090,
+        "started": "Wed Nov  4 15:53:22 2026    "
+      },
+      {
+        "pid": 27474,
+        "started": "Wed Nov  4 15:53:32 2026    "
+      },
+      {
+        "pid": 27476,
+        "started": "Wed Nov  4 15:53:32 2026    "
+      },
+      {
+        "pid": 27486,
+        "started": "Wed Nov  4 15:53:32 2026    "
+      },
+      {
+        "pid": 27487,
+        "started": "Wed Nov  4 15:53:32 2026    "
+      },
+      {
+        "pid": 27488,
+        "started": "Wed Nov  4 15:53:32 2026    "
+      },
+      {
+        "pid": 27512,
+        "started": "Wed Nov  4 15:53:33 2026    "
+      },
+      {
+        "pid": 27535,
+        "started": "Wed Nov  4 15:53:33 2026    "
+      },
+      {
+        "pid": 27883,
+        "started": "Wed Nov  4 15:53:43 2026    "
+      },
+      {
+        "pid": 27888,
+        "started": "Wed Nov  4 15:53:43 2026    "
+      },
+      {
+        "pid": 27894,
+        "started": "Wed Nov  4 15:53:43 2026    "
+      },
+      {
+        "pid": 27895,
+        "started": "Wed Nov  4 15:53:43 2026    "
+      },
+      {
+        "pid": 27896,
+        "started": "Wed Nov  4 15:53:43 2026    "
+      },
+      {
+        "pid": 27924,
+        "started": "Wed Nov  4 15:53:44 2026    "
+      },
+      {
+        "pid": 27955,
+        "started": "Wed Nov  4 15:53:44 2026    "
+      },
+      {
+        "pid": 28328,
+        "started": "Wed Nov  4 15:53:54 2026    "
+      },
+      {
+        "pid": 28330,
+        "started": "Wed Nov  4 15:53:54 2026    "
+      }
+    ],
+    "matched-pids": [
+      {
+        "pid": 30077,
+        "started": "Wed Nov  4 15:54:40 2026    "
+      },
+      {
+        "pid": 30081,
+        "started": "Wed Nov  4 15:54:40 2026    "
+      },
+      {
+        "pid": 30906,
+        "started": "Wed Nov  4 15:54:51 2026    "
+      },
+      {
+        "pid": 30911,
+        "started": "Wed Nov  4 15:54:51 2026    "
+      },
+      {
+        "pid": 30937,
+        "started": "Wed Nov  4 15:54:52 2026    "
+      },
+      {
+        "pid": 30938,
+        "started": "Wed Nov  4 15:54:52 2026    "
+      },
+      {
+        "pid": 30941,
+        "started": "Wed Nov  4 15:54:52 2026    "
+      },
+      {
+        "pid": 30990,
+        "started": "Wed Nov  4 15:54:53 2026    "
+      },
+      {
+        "pid": 31000,
+        "started": "Wed Nov  4 15:54:53 2026    "
+      },
+      {
+        "pid": 31503,
+        "started": "Wed Nov  4 15:55:04 2026    "
+      },
+      {
+        "pid": 31508,
+        "started": "Wed Nov  4 15:55:04 2026    "
+      },
+      {
+        "pid": 31515,
+        "started": "Wed Nov  4 15:55:04 2026    "
+      },
+      {
+        "pid": 31516,
+        "started": "Wed Nov  4 15:55:04 2026    "
+      },
+      {
+        "pid": 31523,
+        "started": "Wed Nov  4 15:55:04 2026    "
+      },
+      {
+        "pid": 31550,
+        "started": "Wed Nov  4 15:55:04 2026    "
+      },
+      {
+        "pid": 31557,
+        "started": "Wed Nov  4 15:55:05 2026    "
+      },
+      {
+        "pid": 32165,
+        "started": "Wed Nov  4 15:55:15 2026    "
+      },
+      {
+        "pid": 32171,
+        "started": "Wed Nov  4 15:55:15 2026    "
+      },
+      {
+        "pid": 32707,
+        "started": "Wed Nov  4 15:55:25 2026    "
+      },
+      {
+        "pid": 32709,
+        "started": "Wed Nov  4 15:55:25 2026    "
+      },
+      {
+        "pid": 33134,
+        "started": "Wed Nov  4 15:55:35 2026    "
+      },
+      {
+        "pid": 33140,
+        "started": "Wed Nov  4 15:55:35 2026    "
+      },
+      {
+        "pid": 33147,
+        "started": "Wed Nov  4 15:55:35 2026    "
+      },
+      {
+        "pid": 33148,
+        "started": "Wed Nov  4 15:55:35 2026    "
+      },
+      {
+        "pid": 33149,
+        "started": "Wed Nov  4 15:55:35 2026    "
+      },
+      {
+        "pid": 33175,
+        "started": "Wed Nov  4 15:55:35 2026    "
+      },
+      {
+        "pid": 33196,
+        "started": "Wed Nov  4 15:55:36 2026    "
+      },
+      {
+        "pid": 33571,
+        "started": "Wed Nov  4 15:55:45 2026    "
+      },
+      {
+        "pid": 33577,
+        "started": "Wed Nov  4 15:55:46 2026    "
+      },
+      {
+        "pid": 33583,
+        "started": "Wed Nov  4 15:55:46 2026    "
+      },
+      {
+        "pid": 33584,
+        "started": "Wed Nov  4 15:55:46 2026    "
+      },
+      {
+        "pid": 33585,
+        "started": "Wed Nov  4 15:55:46 2026    "
+      },
+      {
+        "pid": 33613,
+        "started": "Wed Nov  4 15:55:46 2026    "
+      },
+      {
+        "pid": 33616,
+        "started": "Wed Nov  4 15:55:46 2026    "
+      },
+      {
+        "pid": 33998,
+        "started": "Wed Nov  4 15:55:56 2026    "
+      },
+      {
+        "pid": 34000,
+        "started": "Wed Nov  4 15:55:56 2026    "
+      }
+    ],
+    "run-animation_sample_projection-candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_projection"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1458176,
+      "elapsed_seconds": 0.4033695,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-platform-prealloc": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-prod",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-skip-running",
+        "-o",
+        "Build/chatgpt-arena-words-20261104-1540/platform-prealloc",
+        "platform/arena_word_scan_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 277397504,
+      "elapsed_seconds": 1.4533402500000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "run-animation_sample_typed_payload-candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_typed_payload"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.648666334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "component-1-candidate": {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/benchmark",
+        "candidate"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 6094848,
+      "elapsed_seconds": 0.11347595800000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-animation_sample_target_storage": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-cc",
+        "clang",
+        "-skip-running",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-o",
+        "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/animation_sample_target_storage",
+        "css/animation_sample_target_storage_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1937522688,
+      "elapsed_seconds": 34.331361667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "retained_failure": "The first new-test compile required explicit nil initialization for its pointer array; corrected test retained every assertion and passed",
+  "production": {
+    "latest_completed": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "b54dc7d5ca9f94278388c3f3a159d2968e5547b04443c2e09cedc1161626b398",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-155132-0e5205de/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "f9cc76c5be4c3dfe096980b415e45c6c845049368db811bc7a960e00a7353d88",
+        "dirty": true,
+        "head": "006253c2ef7344de05c8aee92b72c653dab894ee",
+        "repository_sha256": "97f2e60525d6ab9d8a80acabf94264dad13c9f3f637d8f06188a632e30ec2820"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "f9cc76c5be4c3dfe096980b415e45c6c845049368db811bc7a960e00a7353d88",
+        "dirty": true,
+        "head": "a207cb17c492409a6bb0eae2200487b7d4fa1a11",
+        "repository_sha256": "d6aa8d098ae763cd0a0cff50fe1aa4ff67d97334f289b79c8790bbb43a4501d8"
+      },
+      "request": {
+        "head": "006253c2ef7344de05c8aee92b72c653dab894ee",
+        "id": "a8ce785868584d0b9c5974aafd6a7881"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "f9cc76c5be4c3dfe096980b415e45c6c845049368db811bc7a960e00a7353d88",
+        "dirty": true,
+        "head": "006253c2ef7344de05c8aee92b72c653dab894ee",
+        "repository_sha256": "2daa6e4da7d94204541981d9b8000ed06e1db46f87cf182b7a241e70acfed9fe"
+      }
+    },
+    "executable": {
+      "path": "Build/v/Vox.app/Contents/MacOS/Vox",
+      "sha256": "b54dc7d5ca9f94278388c3f3a159d2968e5547b04443c2e09cedc1161626b398",
+      "bytes": 32615536
+    },
+    "diagnostic_marker_present": true,
+    "status": "Source branch verified in focused tests and separate fresh production page processes. Matched page observations receive zero conservative credit."
+  },
+  "broad_cadence": {
+    "whole_page_instruction_credit": 0,
+    "advance": 0,
+    "threshold": 5000000,
+    "reason": "Component counts and focused eligibility do not establish whole-page savings"
+  },
+  "acceptance": false,
+  "original_goal": "5% fewer launch-to-encoded-PNG instructions than Brave remains unmet",
+  "network": "No new page download; frozen capture retained",
+  "limitations": [
+    "Production path executes, but matched whole-page ranges overlap",
+    "Component counts exclude launch, setup, GPU work and browser rendering; not page instructions or FPS"
+  ],
+  "native_stack_diagnostic": {
+    "instrumented_diagnostic": true,
+    "acceptance": false,
+    "page_instruction_credit": 0,
+    "scope": "Sampling diagnostic only; 15-second settle differs from acceptance workload; no performance credit",
+    "driver_exit": 1,
+    "complete": false,
+    "error": "Invalid page capture",
+    "observations": [
+      {
+        "engine": "vox",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Users/alex/code/vox2/Build/v/Vox.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/browser.log",
+          "--env",
+          "LADYBIRD_CACHE_DIR=/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/cache",
+          "--env",
+          "LADYBIRD_ENABLE_SNAPSHOT_CACHE=",
+          "--env",
+          "LADYBIRD_SCREENSHOT_DELAY_SECONDS=15",
+          "--env",
+          "LADYBIRD_SCREENSHOT_SCALE=2",
+          "--env",
+          "SSL_CERT_FILE=/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/replay/cert.pem",
+          "--env",
+          "VOX_BLOCK_COOKIE_BANNERS=0",
+          "--env",
+          "VOX_CAPTURE_AUDIT_CONFIG=/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/audit-config.json",
+          "--env",
+          "VOX_CAPTURE_AUDIT_PATH=/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/audit.json",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ACTIVE=0",
+          "--env",
+          "VOX_CAPTURE_DOCUMENT_ONLY=1",
+          "--env",
+          "VOX_COOKIE_FILE=",
+          "--env",
+          "VOX_PROFILE_DIR=/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/profile",
+          "--env",
+          "VOX_PROFILE_INSTRUCTIONS=1",
+          "--env",
+          "VOX_PROXY=socks5h://127.0.0.1:52688",
+          "--env",
+          "VOX_SCREENSHOT_NATIVE_LAYOUT=1",
+          "--env",
+          "VOX_TEST_WINDOW=1",
+          "--args",
+          "--screenshot-viewport-height",
+          "768",
+          "--js-engine=javascriptcore",
+          "--enable-javascript",
+          "--window-width",
+          "1024",
+          "--window-height",
+          "852",
+          "--screenshot",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/document.png",
+          "https://chatgpt.com/"
+        ],
+        "exit": 1,
+        "kernel_exit_status": 0,
+        "error": "Captured document differs from its unchanged pixel reference",
+        "pixels_exact": false,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": false,
+          "different_pixels": 25320,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/document.diff.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 25320 (0.8049%)\ndifference_bounds: 1440,1289 334x80\nmaximum_error_pixel: 1479,1291 expected=255,255,255,255 actual=242,242,242,255\nmaximum_error_pixel: 1480,1291 expected=255,255,255,255 actual=242,242,242,255\nmaximum_error_pixel: 1481,1291 expected=255,255,255,255 actual=242,242,242,255\nmaximum_error_pixel: 1482,1291 expected=255,255,255,255 actual=242,242,242,255\nmaximum_error_pixel: 1483,1291 expected=255,255,255,255 actual=242,242,242,255\nmaximum_error_pixel: 1484,1291 expected=255,255,255,255 actual=242,242,242,255\nmaximum_error_pixel: 1485,1291 expected=255,255,255,255 actual=242,242,242,255\nmaximum_error_pixel: 1486,1291 expected=255,255,255,255 actual=242,242,242,255\npixels_over_3: 23511 (0.7474%)\npixels_over_10: 22538 (0.7165%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 13\nmean_absolute_error: 0.0715\nrmse: 0.9531\ndiff: /Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/document.diff.png\n"
+        },
+        "content_audit": {
+          "title": "ChatGPT: Chat, Work, Create & Code with AI",
+          "counts": {
+            "headings": 1,
+            "editors": 1,
+            "buttons": 52,
+            "links": 27,
+            "images": 2,
+            "bootstrap": 1,
+            "performance_policy": 0
+          }
+        },
+        "memory": {
+          "instrumented_diagnostic": true,
+          "kind": "12-second native stack sample at 1ms intervals, beginning after fresh root discovery",
+          "command": [
+            "sample",
+            "37531",
+            "12",
+            "1",
+            "-mayDie",
+            "-file",
+            "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/native-sample.txt"
+          ],
+          "exit": 0,
+          "identity": {
+            "pid": 37531,
+            "start_ticks": 1618071928410
+          },
+          "output": "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-vox/native-sample.txt",
+          "present": true
+        },
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            10.51513671875,
+            12.8779296875,
+            15.84619140625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            10.05615234375,
+            12.62451171875,
+            15.68603515625
+          ]
+        }
+      },
+      {
+        "engine": "brave",
+        "command": [
+          "/usr/bin/open",
+          "-n",
+          "-g",
+          "-a",
+          "/Applications/Brave Browser.app",
+          "--stdout",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-brave/stdout.log",
+          "--stderr",
+          "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-brave/browser.log",
+          "--args",
+          "--no-startup-window",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--enable-automation",
+          "--disable-background-networking",
+          "--disable-sync",
+          "--proxy-server=socks5://127.0.0.1:52688",
+          "--hide-scrollbars",
+          "--force-color-profile=srgb",
+          "--lang=en-US",
+          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+          "--remote-debugging-port=0",
+          "--user-data-dir=/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-brave/profile",
+          "--ignore-certificate-errors-spki-list=I98bruFA339AQRL0ruvvdSsSAG7kLZfPL44Tqvvkafk=",
+          "--force-device-scale-factor=2",
+          "--disable-backgrounding-occluded-windows"
+        ],
+        "exit": 0,
+        "kernel_exit_status": 0,
+        "error": null,
+        "pixels_exact": true,
+        "content_exact": true,
+        "pixel_comparison": {
+          "exact": true,
+          "different_pixels": 0,
+          "expected": "/Users/alex/code/vox2/Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+          "actual": "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-brave/document.png",
+          "diff": "/Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-brave/document.diff.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/chatgpt-arena-words-20261104-1540/native-sample/pair-1-brave/document.diff.png\n"
+        },
+        "content_audit": {
+          "title": "ChatGPT: Chat, Work, Create & Code with AI",
+          "counts": {
+            "headings": 1,
+            "editors": 1,
+            "buttons": 52,
+            "links": 27,
+            "images": 2,
+            "bootstrap": 1,
+            "performance_policy": 0
+          }
+        },
+        "memory": null,
+        "host_before": {
+          "cpu_count": 18,
+          "load_average": [
+            10.05615234375,
+            12.62451171875,
+            15.68603515625
+          ]
+        },
+        "host_after": {
+          "cpu_count": 18,
+          "load_average": [
+            10.529296875,
+            12.55322265625,
+            15.587890625
+          ]
+        }
+      }
+    ],
+    "qualification": "Exploratory only: the first sampled Vox document passes content/bootstrap but differs in 25,320 pixels within a 334x80 device-pixel cookie-button rectangle, maximum channel error 13. The changed 15-second settle/instrumented workload cannot supply performance credit. Both attempted browser observations and the native trace are retained."
+  },
+  "evidence": {
+    "archive": {
+      "path": "docs/performance/chatgpt-arena-words-20261104-evidence.zip",
+      "sha256": "80606a2d3c004c8483b48a2eed8f833cbfff50ac0684b4d505ba251c6b618e82",
+      "bytes": 2507897
+    },
+    "entries": 233,
+    "unique_blobs": 179,
+    "format": "index.json maps artifact paths to hashes; blobs/<sha256> holds original bytes"
+  }
+}
