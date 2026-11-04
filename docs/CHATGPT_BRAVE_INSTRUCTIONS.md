@@ -628,3 +628,32 @@ library identities, commands, host loads and actual memory-guard exits. It also
 retains the initial benchmark compile failure caused by a POSIX macro hiding
 Darwin libproc types; the same source compiles after removing that flag. No
 additional live download, altered script, reference or tolerance was used.
+
+## Refreshed V profile
+
+The [fresh V profile receipt](performance/chatgpt-v-profile-refresh-20261104.json)
+records a separate `v -profile - -profile-no-inline -profile-fns main__main`
+diagnostic. It uses a standalone signed executable, C `-O1`, thread-local profile
+scope and a thirty-second diagnostic settle. JavaScriptCore executes the original
+author bootstrap, all content checks pass, and the document is pixel-exact to the
+unchanged retained reference. All 11,305 function rows are unique and no self
+time is negative. No production bundle or source tree was copied.
+
+Initial source sealing rejected a repository input change during V generation.
+That failure remains retained. A separate diagnostic sealed the unchanged
+generated C and its native/link inputs with normal checks. Its generated,
+preprocessed and executable hashes identify the diagnostic; it cannot attribute
+cost to a single source commit or establish an unprofiled speedup.
+
+| Instrumented function | Calls | Self time |
+| --- | ---: | ---: |
+| Text-scroll layer completion | 91 | 2,564.017 ms |
+| Contoured corner drawing | 632 | 2,220.060 ms |
+| `array.get` | 140,315,258 | 1,367.449 ms |
+| `CSSRuleList.evaluate_media_queries` | 6,704,997 | 525.429 ms |
+
+Self time includes native/JSC callees and waits. Recursive inclusive rows overlap
+and must not be added or treated as CPU instruction partitions. The thirty-second
+settle and profiling instrumentation differ from acceptance conditions. The
+repeated media-query traversal is a lead for a focused empty-child-list guard;
+this profile gives no page credit or broad-cadence advance.
