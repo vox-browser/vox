@@ -23,6 +23,17 @@ known failures. No full pass or cadence reset is claimed. See the
 [cohort 87 ledger](performance/bbc-cohort87-grid-measurement-20261104.json) and
 [verified raw evidence](performance/raw/bbc-cohort87-grid-measurement-20261104.tar.gz).
 
+Separate native startup sampling diagnostics preserve exact original pixels,
+complete content and all 72 external script evaluations. A diagnostic constructor
+delays V initialization so the sampler can attach; its samples include that wait,
+startup, rendering and teardown. The grouped stacks are investigative leads,
+not instruction counts, elapsed-time gains or optimization credit. The first
+ungated sample attached too late and remains retained. Replay files and the
+author probe that disappeared from the shared workspace were restored exactly
+from committed evidence, including a byte-identical rebuilt probe; no reference,
+workload or policy changed. See the [sampling ledger](performance/bbc-native-startup-samples-20261104.json)
+and [verified raw evidence](performance/raw/bbc-native-startup-samples-20261104.tar.gz).
+
 A guarded within-pass grid measurement cache is committed
 (`b35fac88d`), with an ancestor-key refinement (`109077f25`). The refined version
 passes **30 focused case executions** across candidate/control and default,
