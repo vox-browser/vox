@@ -741,3 +741,100 @@ excerpts, complete diagnostic and matched journals, memory guards and all failed
 attempts. No additional live download, author-script change, pixel reference or
 tolerance change was used. Results remain limited to the frozen anonymous
 homepage; live sign-in and submission behavior have not been established.
+
+## Media-query candidate lists
+
+Commit `65ad25a94` caches the ordered rules that can reach a media condition or
+an import, avoiding repeated traversal through ordinary style-only branches.
+Media rules remain eligible even when empty. Imports remain eligible before
+their stylesheet arrives. Inactive grouping branches are included so their
+first evaluation still occurs when the parent condition becomes active.
+Match results are never cached.
+
+Every CSSOM structural change increments an atomic process-wide epoch before
+change callbacks. This invalidates summaries even for detached or shared lists
+without parent links. Candidate buffers are reused and old references cleared;
+publication uses the existing retained/persistent allocation boundaries so
+scratch retirement cannot leave dangling summaries, including in shared UA
+sheets. `VOX_DISABLE_MEDIA_RULE_CANDIDATES=1` selects the previous traversal.
+`VOX_MEDIA_RULE_CANDIDATE_DIAGNOSTICS=1` reports a pruned list once.
+
+Eight new tests cover filtering, nested detached/shared edits, same-length
+replacement, inactive conditions, live media-text edits, late imports, ignored
+group types, callback ordering and allocation lifetime. Together with the nine
+existing empty-list and media-evaluation tests, they pass 68 test-function
+executions in default GC and no-GC modes with both implementations. Another 16
+test-function executions pass with preallocation and poisoned retired arenas;
+the storage assertions execute in both of those variants. Initial compiler and
+fixture failures remain retained separately from the final stable checks.
+
+The same fixed-work archived-CSS component benchmark observes:
+
+| 512 warmed stylesheet evaluations | Retired instructions |
+| --- | ---: |
+| Previous traversal median | 168,388,656.5 |
+| Candidate-list median | 118,937,107.5 |
+| Conservative reduction | 48,979,711 |
+
+The median reduction is 29.368%. All evaluations retain the zero-change
+checksum. Parsing, summary construction, startup and teardown are excluded;
+this is a warmed traversal result, not a page-level claim.
+
+[Production diagnostics](performance/chatgpt-media-candidates-diagnostic-20261104.json)
+pin executable
+`d83a3d8367719c90a632deaaabc068210b57d9dcac3104a5f7136bf7b6bf3c6e`.
+The enabled process reports 155 of 206 rules pruned in its first large eligible
+list; the control reports no pruning. All four captures pass exact pixels,
+content, author bootstrap and exits. Sealed function excerpts establish the
+candidate iteration, allocation boundaries and invalidation before callbacks.
+
+The [first matched attempt](performance/chatgpt-media-candidates-matched-20261104.json)
+is rejected because a shared production build replaced the executable during
+capture. All seven observations and the failing controller/guard exit remain
+retained; no partial-cohort benefit is extracted.
+
+A [new complete cohort](performance/chatgpt-media-candidates-matched2-20261104.json)
+pins completed executable
+`62b566b5d18cc6658acf55c2d23b9605aad23ee1fe1ea08ee8ecd1a58147f62c`.
+Its sealed candidate, traversal and change-hook functions are byte-identical to
+the diagnostic's. Control/candidate/candidate/control Vox runs interleave with
+four Brave references under the unchanged launch-to-encoded-PNG protocol.
+All eight captures pass unchanged pixels, complete content, bootstrap and zero
+browser/kernel exits, with stable inputs and successful guard PID adoption.
+
+| Observed whole-page Vox result | Launch-to-PNG instructions |
+| --- | ---: |
+| Previous traversal median | 32,417,125,422 |
+| Candidate-list median | 31,304,223,405 |
+| Conservative observed reduction | 999,069,050 |
+
+The observed median is 3.433% lower. However, controls complete 269 and 276
+frames, while candidates complete 180 and 170; paint checkpoints vary too.
+All four runs retain eleven box-building checkpoints. Host load ranges from
+29.1 to 33.7 at the Vox launches on eighteen CPUs. The
+[frame-work analysis](performance/chatgpt-media-candidates-frame-work-20261104.json)
+retains these differences and the ordered current-process frame intervals.
+Those intervals are not exclusive function costs or coalition totals. The
+entire observed saving cannot be assigned to CSS traversal alone, and no
+isolated engine saving is credited or acceptance endpoint changed.
+
+The observed count difference crosses the regression threshold. All 47 broad
+jobs pass: six diff controls, twenty visual cases, eleven compiled native
+renderer tests, and all one hundred upstream AST fixtures in both GC modes.
+Seventeen visual cases are pixel-exact, including all nine SVG mutation cases;
+the other three pass their existing tolerances. Visual and feature identities
+remain stable, and every compile/runtime guard exits zero. The broad cadence
+is zero after this checkpoint.
+
+Evidence review found that the six diff controls wrote their result array to
+the guard's report filename. The mixed file and original zero-exit guard log
+remain retained. A control-only rerun uses separate result and guard paths;
+all six expected outcomes pass. This makes 48 job attempts for the 47 selected
+checks, with no visual or native test retried to obtain a pass.
+
+The [candidate-list receipt](performance/chatgpt-media-candidates-20261104.json)
+links all checks, raw observations, rejected attempts, function proofs, PNGs,
+guards and per-observation evidence journals. The four-pair cohort remains
+diagnostic; it neither supplies seven-pair acceptance nor meets the 5% Brave
+goal. Original author scripts, the single SOCKS capture and all references and
+tolerances remain unchanged. No additional live download was performed.

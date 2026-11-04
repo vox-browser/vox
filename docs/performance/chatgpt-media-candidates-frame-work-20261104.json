@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "source": "docs/performance/chatgpt-media-candidates-matched2-20261104-evidence.zip",
+  "observations": [
+    {
+      "log": "Build/chatgpt-media-candidates-20261104-1910/matched2/matched/pair-1-vox/browser.log",
+      "variant": "control",
+      "frames": 269,
+      "frame_interval_process_instructions": 6109254482,
+      "build_box_checkpoints": 11,
+      "paint_checkpoints": 35
+    },
+    {
+      "log": "Build/chatgpt-media-candidates-20261104-1910/matched2/matched/pair-2-vox/browser.log",
+      "variant": "candidate",
+      "frames": 180,
+      "frame_interval_process_instructions": 5940023716,
+      "build_box_checkpoints": 11,
+      "paint_checkpoints": 21
+    },
+    {
+      "log": "Build/chatgpt-media-candidates-20261104-1910/matched2/matched/pair-3-vox/browser.log",
+      "variant": "candidate",
+      "frames": 170,
+      "frame_interval_process_instructions": 5996148095,
+      "build_box_checkpoints": 11,
+      "paint_checkpoints": 18
+    },
+    {
+      "log": "Build/chatgpt-media-candidates-20261104-1910/matched2/matched/pair-4-vox/browser.log",
+      "variant": "control",
+      "frames": 276,
+      "frame_interval_process_instructions": 5955188728,
+      "build_box_checkpoints": 11,
+      "paint_checkpoints": 32
+    }
+  ],
+  "scope": "Diagnostic differences between ordered current-process frame_prepared/frame_complete counters. Concurrent threads may contribute. These intervals are not exclusive function costs, coalition totals or a revised acceptance endpoint.",
+  "qualification": "Candidate trials complete fewer frames and paint checkpoints. Retain the observed launch-to-PNG count reduction, but do not attribute its full size to media-candidate traversal or claim an isolated engine saving. No independently attributed whole-page credit is awarded.",
+  "whole_page_credit": 0,
+  "source_sha256": "dd42981eff9201bc16c751440c9a2dfb3a772dc4b28fe71db801e0f3bb6e7d30"
+}

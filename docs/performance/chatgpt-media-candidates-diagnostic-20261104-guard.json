@@ -1,0 +1,29 @@
+{
+  "command": [
+    "python3",
+    "Build/chatgpt-media-candidates-20261104-1910/diagnostic/page.py"
+  ],
+  "reason": "completed",
+  "child_exit_code": 0,
+  "adopted_processes": {
+    "76109": "Wed Nov  4 19:24:32 2026    ",
+    "76115": "Wed Nov  4 19:24:32 2026    ",
+    "76942": "Wed Nov  4 19:24:41 2026    ",
+    "76950": "Wed Nov  4 19:24:41 2026    ",
+    "76963": "Wed Nov  4 19:24:41 2026    ",
+    "76964": "Wed Nov  4 19:24:41 2026    ",
+    "76966": "Wed Nov  4 19:24:41 2026    ",
+    "78502": "Wed Nov  4 19:24:51 2026    ",
+    "78510": "Wed Nov  4 19:24:51 2026    ",
+    "78530": "Wed Nov  4 19:24:52 2026    ",
+    "78531": "Wed Nov  4 19:24:52 2026    ",
+    "78534": "Wed Nov  4 19:24:52 2026    ",
+    "82044": "Wed Nov  4 19:25:03 2026    ",
+    "82048": "Wed Nov  4 19:25:03 2026    "
+  },
+  "adoption_error": null,
+  "limit_bytes": 12884901888,
+  "observed_peak_rss_bytes": 1910505472,
+  "elapsed_seconds": 47.849767,
+  "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+}
