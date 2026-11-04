@@ -21,6 +21,9 @@ pub:
 	// The provider's intrinsic CSS size may differ from the decoded frame
 	// bitmap (notably for SVG images). Object fitting uses this size.
 	intrinsic_size ?css.SizeWithAspectRatio
+	// Paint containment starts a pixel-snapped fragment before its children
+	// are snapped. Layout and object-fit sizes remain in their original space.
+	paint_offset_adjustment Point
 }
 
 pub struct ImagePaintResult {
@@ -35,7 +38,10 @@ pub:
 // every intermediate fitted size is quantized to CSSPixels.
 pub fn (paintable ImagePaintable) paint(bitmap_id string, bitmap_rect IntRect,
 	converter DevicePixelConverter) ?ImagePaintResult {
-	image_rect_device_pixels := converter.rounded_device_rect(paintable.image_rect)
+	image_rect := Rect{paintable.image_rect.x + paintable.paint_offset_adjustment.x,
+		paintable.image_rect.y + paintable.paint_offset_adjustment.y,
+		paintable.image_rect.width, paintable.image_rect.height}
+	image_rect_device_pixels := converter.rounded_device_rect(image_rect)
 	if bitmap_rect.width <= 0 || bitmap_rect.height <= 0 || paintable.image_rect.width <= 0
 		|| paintable.image_rect.height <= 0 {
 		return none
@@ -51,7 +57,7 @@ pub fn (paintable ImagePaintable) paint(bitmap_id string, bitmap_rect IntRect,
 	}
 	concrete_size := css.run_default_sizing_algorithm(none, none, natural_size, css.CSSPixelSize.new(css.CSSPixels.nearest_value_for(paintable.image_rect.width), css.CSSPixels.nearest_value_for(paintable.image_rect.height)))
 	content_size := Size{concrete_size.width().to_double(), concrete_size.height().to_double()}
-	draw_rect := get_replaced_box_painting_area(paintable.image_rect, content_size, paintable.object_fit, paintable.object_position, paintable.resolution_context, converter) or { return none }
+	draw_rect := get_replaced_box_painting_area(image_rect, content_size, paintable.object_fit, paintable.object_position, paintable.resolution_context, converter) or { return none }
 
 	mut clip_radii := paintable.border_radii
 	clip_radii.shrink(paintable.border_widths.top, paintable.border_widths.right, paintable.border_widths.bottom, paintable.border_widths.left)
