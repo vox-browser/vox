@@ -43,12 +43,12 @@ fn test_height_orientation_ranges_and_cssom_edits_keep_live_results() {
 	assert !list.evaluate(document)
 }
 
-fn test_relative_calculated_preference_and_compound_queries_keep_ordinary_evaluation() {
+fn test_calculated_container_and_preference_queries_keep_ordinary_evaluation() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }
 	document.set_viewport_rect(dom.Rect{0, 0, 600, 300})
-	for text in ['(min-width: 20em)', '(min-width: calc(100px + 1px))', '(prefers-color-scheme: dark)',
-		'(width >= 100px) and (height >= 100px)'] {
+	for text in ['(min-width: 20cqw)', '(min-width: calc(100px + 1px))', '(prefers-color-scheme: dark)',
+		'(width >= 100px) and (prefers-color-scheme: dark)'] {
 		mut list := MediaList.create([MediaQueryListEntry{ text: text }])
 		_ = list.evaluate(document)
 		assert !list.media[0].viewport_query_cacheable_, text

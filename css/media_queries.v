@@ -2,7 +2,13 @@ module css
 
 import dom
 import math
+import os
 import strings
+
+const disable_extended_literal_media_cache = os.getenv('VOX_DISABLE_EXTENDED_LITERAL_MEDIA_CACHE') != ''
+const literal_media_cache_diagnostics = os.getenv('VOX_LITERAL_MEDIA_CACHE_DIAGNOSTICS') != ''
+
+__global literal_media_font_cache_reported bool
 
 // Translated media/support CSSOM logic formerly hosted as stubs in cssom_rules.v.
 
@@ -798,6 +804,15 @@ mut:
 	viewport_width_           f64
 	viewport_height_          f64
 	viewport_chromium_        bool
+	viewport_font_relative_   bool
+	viewport_font_metrics_    MediaQueryInitialFontMetrics
+}
+
+// Media queries resolve font units against initial font metrics, independently
+// of author styles. Own only those values; never retain a document or element.
+struct MediaQueryInitialFontMetrics {
+	font LengthFontMetrics
+	root LengthFontMetrics
 }
 
 @[heap]
@@ -989,13 +1004,15 @@ pub fn serialize_a_media_query_list_entries(media_queries []MediaQueryListEntry)
 
 fn parse_media_query_entry(medium string) ?MediaQueryListEntry {
 	query := parse_media_query_from_text(medium) or { return none }
+	cacheable, font_relative := literal_media_query_dependencies(query)
 	return MediaQueryListEntry{
 		text:                      query.to_string()
 		matches:                   query.matches()
 		parsed_query_:             query
 		parsed_text_:              query.to_string()
 		has_parsed_query_:         true
-		viewport_query_cacheable_: media_query_has_only_literal_viewport_input(query)
+		viewport_query_cacheable_: cacheable
+		viewport_font_relative_: font_relative
 	}
 }
 
@@ -1007,18 +1024,40 @@ fn evaluate_media_query_entry(mut entry MediaQueryListEntry, document &dom.Docum
 		entry.parsed_text_ = entry.text
 		entry.has_parsed_query_ = true
 		entry.viewport_result_valid_ = false
-		entry.viewport_query_cacheable_ = if query := entry.parsed_query_ {
-			media_query_has_only_literal_viewport_input(query)
+		if query := entry.parsed_query_ {
+			cacheable, font_relative := literal_media_query_dependencies(query)
+			entry.viewport_query_cacheable_ = cacheable
+			entry.viewport_font_relative_ = font_relative
 		} else {
-			false
+			entry.viewport_query_cacheable_ = false
+			entry.viewport_font_relative_ = false
 		}
 	}
 	query := entry.parsed_query_ or { return false }
 	if entry.viewport_query_cacheable_ {
 		viewport := document.viewport_rect()
 		chromium := document.font_rendering_policy() == .chromium
+		mut initial_fonts_match := true
+		if entry.viewport_font_relative_ {
+			context := LengthResolutionContext.for_document(document)
+			initial_fonts_match = entry.viewport_result_valid_
+				&& entry.viewport_font_metrics_.font == context.font_metrics
+				&& entry.viewport_font_metrics_.root == context.root_font_metrics
+			if !initial_fonts_match {
+				entry.viewport_font_metrics_ = MediaQueryInitialFontMetrics{
+					font: context.font_metrics
+					root: context.root_font_metrics
+				}
+			}
+		}
 		if entry.viewport_result_valid_ && entry.viewport_width_ == viewport.width
-			&& entry.viewport_height_ == viewport.height && entry.viewport_chromium_ == chromium {
+			&& entry.viewport_height_ == viewport.height && entry.viewport_chromium_ == chromium
+			&& initial_fonts_match {
+			if literal_media_cache_diagnostics && entry.viewport_font_relative_
+				&& !literal_media_font_cache_reported {
+				literal_media_font_cache_reported = true
+				eprintln('Vox literal media cache: reused initial-font result')
+			}
 			return entry.viewport_result_
 		}
 		result := query.evaluate(document)
@@ -1032,46 +1071,78 @@ fn evaluate_media_query_entry(mut entry MediaQueryListEntry, document &dom.Docum
 	return query.evaluate(document)
 }
 
-// These parsed trees are private to MediaList entries. Only a single geometry
-// feature with literal absolute lengths or an orientation keyword is eligible;
-// relative/calculated lengths and preference callbacks keep ordinary evaluation.
-fn media_query_has_only_literal_viewport_input(query &MediaQuery) bool {
-	mut condition := query.media_condition or { return false }
-	for condition.kind == .in_parens && condition.children.len == 1 {
-		condition = condition.children[0]
+// These parsed trees are private to MediaList entries. Cache only expressions
+// whose complete environment is known here. Live preferences, calculated
+// values, container units and unsupported expressions keep ordinary evaluation.
+fn literal_media_query_dependencies(query &MediaQuery) (bool, bool) {
+	condition := query.media_condition or { return !disable_extended_literal_media_cache, false }
+	return literal_media_condition_dependencies(condition)
+}
+
+fn literal_media_condition_dependencies(condition &BooleanExpression) (bool, bool) {
+	if condition.kind == .in_parens && condition.children.len == 1 {
+		return literal_media_condition_dependencies(condition.children[0])
+	}
+	if condition.kind in [.and, .or, .not] {
+		if disable_extended_literal_media_cache || condition.children.len == 0 { return false, false }
+		mut uses_initial_fonts := false
+		for child in condition.children {
+			cacheable, font_relative := literal_media_condition_dependencies(child)
+			if !cacheable { return false, false }
+			uses_initial_fonts = uses_initial_fonts || font_relative
+		}
+		return true, uses_initial_fonts
 	}
 	if condition.kind != .general_enclosed || condition.style_feature_is_range
-		|| condition.style_feature_property != none || condition.size_feature_name != ''
-		|| condition.media_feature_name !in ['width', 'height', 'device-width', 'device-height',
-			'orientation'] {
-		return false
+		|| condition.style_feature_property != none || condition.size_feature_name != '' {
+		return false, false
 	}
+	match condition.media_feature_name {
+		'width', 'height', 'device-width', 'device-height', 'orientation' {}
+		'hover', 'any-hover', 'pointer', 'any-pointer', 'forced-colors' {
+			// These features currently have fixed identifier answers. Their
+			// comparisons do not resolve typed RHS lengths or calculations.
+			// A future live input must also become a cache dependency here.
+			return !disable_extended_literal_media_cache, false
+		}
+		else { return false, false }
+	}
+	mut uses_initial_fonts := false
 	for candidate in [condition.media_feature_value, condition.media_feature_right_value] {
 		value := candidate or { continue }
 		if value.kind == .ident { continue }
 		if typed := value.typed_value {
 			if typed is LengthStyleValue {
-				if !typed.length().is_absolute() { return false }
+				length := typed.length()
+				if !length.is_absolute() {
+					if disable_extended_literal_media_cache
+						|| (!length.is_font_relative() && !length.is_viewport_relative()) {
+						return false, false
+					}
+					uses_initial_fonts = uses_initial_fonts || length.is_font_relative()
+				}
 			} else {
-				return false
+				return false, false
 			}
 		} else if value.kind !in [.ident, .length] {
-			return false
+			return false, false
 		}
 	}
-	return true
+	return true, uses_initial_fonts
 }
 
 fn media_query_entries_from_queries(queries []&MediaQuery) []MediaQueryListEntry {
 	mut entries := []MediaQueryListEntry{cap: queries.len}
 	for query in queries {
+		cacheable, font_relative := literal_media_query_dependencies(query)
 		entries << MediaQueryListEntry{
 			text:                      query.to_string()
 			matches:                   query.matches()
 			parsed_query_:             query
 			parsed_text_:              query.to_string()
 			has_parsed_query_:         true
-			viewport_query_cacheable_: media_query_has_only_literal_viewport_input(query)
+			viewport_query_cacheable_: cacheable
+			viewport_font_relative_: font_relative
 		}
 	}
 	return entries
