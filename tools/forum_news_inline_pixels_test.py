@@ -46,6 +46,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_relative_paint_clients_keep_disjoint_text_in_the_document_raster(self):
         self.compare_fixture('relative-paint-client-chunks', width=1024, height=768)
 
+    def test_svg_current_color_keeps_css_and_graphics_opacity_scopes(self):
+        self.compare_fixture('svg-currentcolor-opacity-alpha', width=1024, height=768)
+
     def test_svg_background_round_caps_and_curves_share_the_parent_picture(self):
         self.compare_fixture('register-svg-stroke-recording', width=1024, height=768)
 

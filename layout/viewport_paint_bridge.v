@@ -819,6 +819,8 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 			blend_mode: box.mix_blend_mode
 			filter: gfx_filter
 			isolated: isolated_surface
+			svg_graphics_opacity: box.layout_handle != unsafe { nil }
+				&& unsafe { &Node(box.layout_handle) }.is_svg_box()
 		}, own_state)
 		box.own_effects_visual_context_idx = own_state
 	}
@@ -2101,6 +2103,7 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 					opacity: node.data.opacity
 					blend_mode: node.data.blend_mode
 					clip_rect: if flattened.has_clip { flattened.clip } else { none }
+					svg_graphics_opacity: node.data.svg_graphics_opacity
 				}
 				flattened.group_opacity *= node.data.opacity
 			}

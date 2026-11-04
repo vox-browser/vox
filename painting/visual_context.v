@@ -254,6 +254,7 @@ pub:
 	filter     ?GfxFilter
 	// A compositor surface also isolates descendants at full opacity.
 	isolated   bool
+	svg_graphics_opacity bool
 }
 
 pub fn (effects EffectsVisualData) needs_layer() bool {

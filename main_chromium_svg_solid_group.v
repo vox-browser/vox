@@ -129,6 +129,12 @@ fn chromium_svg_folded_opacity(commands []layout.PaintCommand, layers []int, sta
 	}
 	inner := &commands[start + 1]
 	opening := &commands[start]
+	// A CSS SVG viewport resolves its translucent paint into a bitmap before
+	// applying CSS opacity. Inner SVG graphics can fold a single paint instead.
+	if !opening.visual_layer().svg_graphics_opacity
+		&& inner.retained_svg_solid_alpha(inner.color == '') != none {
+		return none
+	}
 	if f32(inner.opacity) != f32(inner.group_opacity)
 		|| !chromium_shared_recording_clips_supported(opening) {
 		return none

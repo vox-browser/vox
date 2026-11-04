@@ -657,7 +657,7 @@ fn (b &BlockBox) collect_stacking_context_references(mut order []PaintOrderEntry
 	for box in buckets.normal {
 		order << PaintOrderEntry{
 			box: unsafe { box }
-			opacity: effective_opacity * box.opacity
+			opacity: effective_opacity * box.opacity * non_stacking_svg_ancestor_opacity(box)
 		}
 	}
 	for box in buckets.zero {
@@ -666,13 +666,30 @@ fn (b &BlockBox) collect_stacking_context_references(mut order []PaintOrderEntry
 		} else {
 			order << PaintOrderEntry{
 				box: unsafe { box }
-				opacity: effective_opacity * box.opacity
+				opacity: effective_opacity * box.opacity * non_stacking_svg_ancestor_opacity(box)
 			}
 		}
 	}
 	for context in stable_sort_box_references_by_z(buckets.positive) {
 		context.collect_stacking_context_references(mut order, effective_opacity)
 	}
+}
+
+fn non_stacking_svg_ancestor_opacity(box &BlockBox) f64 {
+	if box.layout_handle == unsafe { nil } {
+		return 1
+	}
+	mut parent := unsafe { &Node(box.layout_handle) }.parent()
+	mut opacity := 1.0
+	for {
+		node := parent or { break }
+		if !node.is_svg_box() {
+			break
+		}
+		opacity *= f64(node.computed_values().opacity())
+		parent = node.parent()
+	}
+	return opacity
 }
 
 // A single entry in the display list produced from a laid-out box tree: either a filled rectangle
@@ -724,6 +741,7 @@ pub:
 	clip_rect  ?LayoutRect
 	filter     ?painting.GfxFilter = ?painting.GfxFilter(none)
 	mask_clip  PaintClip
+	svg_graphics_opacity bool
 }
 
 pub struct PaintVisualLayerList {
