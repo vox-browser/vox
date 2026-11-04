@@ -7424,7 +7424,7 @@ fn (mut app BrowserApp) draw() {
 			if paint_document {
 				stationary_reused = app.begin_stationary_document_raster()
 			} else {
-				C.native_discard_stationary_raster()
+				stationary_reused = begin_stationary_blank_raster()
 			}
 		}
 	}
@@ -7664,10 +7664,13 @@ fn (mut app BrowserApp) draw() {
 		}
 	} else if !paint_document {
 		$if macos { C.native_discard_scroll_raster() }
-		draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+		if !stationary_reused {
+			draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
+		}
 	}
 	$if macos {
-		if app.ctx.native_rendering && paint_document { C.native_end_stationary_raster() }
+		// A no-op unless this frame began a stationary document or blank raster.
+		if app.ctx.native_rendering { C.native_end_stationary_raster() }
 	}
 
 	if frame_part_diagnostics_enabled {

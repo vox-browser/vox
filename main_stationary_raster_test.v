@@ -72,3 +72,9 @@ fn test_stationary_raster_rechecks_mutated_retained_commands() {
 	commands[0].video_bitmap = none
 	assert stationary_document_raster_eligible(commands)
 }
+
+fn test_stationary_blank_raster_declines_without_a_native_frame() {
+	// Callers fill the blank frame themselves unless a retained one is selected.
+	assert !begin_stationary_blank_raster()
+	assert stationary_blank_raster_owner != 0
+}

@@ -142,6 +142,74 @@ static void test_snapshot_copy_mode_transitions(void) {
     native_discard_stationary_raster(); free(expected);
     NSGraphicsContext.currentContext = nil; CGContextRelease(context);
 }
+// Before a document has pixels, UI2 frames are one white fill keyed by a
+// reserved owner. Later same-size blank frames present the retained frame and
+// never touch their own fresh bitmap; a document key replaces the cache.
+static int begin_blank(void) {
+    return native_begin_stationary_raster_snapshot(UINT64_MAX, 0, 0, 0, 0, 1, 0, 1, 1);
+}
+static int all_bytes(CGContextRef context, uint8_t value) {
+    const uint8_t *pixels = CGBitmapContextGetData(context);
+    size_t pitch = CGBitmapContextGetBytesPerRow(context), height = CGBitmapContextGetHeight(context);
+    size_t row = CGBitmapContextGetWidth(context) * 4;
+    for (size_t y = 0; y < height; ++y) for (size_t x = 0; x < row; ++x)
+        if (pixels[y * pitch + x] != value) return 0;
+    return 1;
+}
+static void white(CGContextRef context) {
+    CGContextSetRGBFillColor(context, 1, 1, 1, 1);
+    CGContextFillRect(context, CGRectMake(0, 0, 32, 24));
+}
+static void test_blank_frames(int scale) {
+    BOOL copied = getenv("VOX_COPY_STATIONARY_RASTER_PIXELS") != NULL;
+    native_discard_stationary_raster();
+    CGContextRef first = bitmap(32, 24, scale);
+    NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:first flipped:NO];
+    VoxFrameSnapshot previous = vox_frame_snapshot_begin(first);
+    assert(!begin_blank());
+    white(first);
+    native_end_stationary_raster();
+    assert(all_bytes(first, 255));
+    vox_frame_snapshot_restore(previous);
+    for (int frame = 0; frame < 3; ++frame) {
+        CGContextRef fresh = bitmap(32, 24, scale);
+        NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:fresh flipped:NO];
+        previous = vox_frame_snapshot_begin(fresh);
+        assert(begin_blank());
+        native_end_stationary_raster();
+        CGImageRef image = vox_frame_snapshot_copy(fresh);
+        assert(image);
+        if (copied) assert(all_bytes(fresh, 255));
+        else {
+            // The frame presents the retained white image; its bitmap stays fresh.
+            assert(image == native_stationary_raster.image && all_bytes(fresh, 0));
+            CFDataRef data = CGDataProviderCopyData(CGImageGetDataProvider(image));
+            const uint8_t *bytes = CFDataGetBytePtr(data);
+            for (CFIndex i = 0; i < CFDataGetLength(data); ++i) assert(bytes[i] == 255);
+            CFRelease(data);
+        }
+        CGImageRelease(image);
+        vox_frame_snapshot_restore(previous);
+        NSGraphicsContext.currentContext = nil;
+        CGContextRelease(fresh);
+    }
+    // A resized blank frame fills again; the first document frame replaces the cache.
+    CGContextRef resized = bitmap(33, 24, scale);
+    NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:resized flipped:NO];
+    assert(!begin_blank());
+    native_end_stationary_raster();
+    CGContextRef document = bitmap(33, 24, scale);
+    NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:document flipped:NO];
+    assert(!native_begin_stationary_raster_snapshot(7, 1, 1, 0, 0, 1, 0, 1, 1));
+    assert(native_stationary_raster.image == NULL);
+    native_end_stationary_raster();
+    assert(!begin_blank());
+    NSGraphicsContext.currentContext = nil;
+    native_discard_stationary_raster();
+    CGContextRelease(document);
+    CGContextRelease(resized);
+    CGContextRelease(first);
+}
 int main(void) {
     @autoreleasepool {
         for (int scale = 1; scale <= 2; ++scale) {
@@ -209,8 +277,10 @@ int main(void) {
         BOOL copied = getenv("VOX_COPY_STATIONARY_RASTER_PIXELS") != NULL;
         test_snapshot_copy_mode_transitions();
         if (copied) setenv("VOX_COPY_STATIONARY_RASTER_PIXELS", "1", 1);
+        test_blank_frames(1);
+        test_blank_frames(2);
         native_discard_stationary_raster();
     }
-    puts("stationary raster: exact copies, all input invalidations, dynamic content and clip guards passed");
+    puts("stationary raster: exact copies, all input invalidations, dynamic content, clip guards and blank frames passed");
     return 0;
 }

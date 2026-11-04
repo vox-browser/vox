@@ -84,3 +84,22 @@ fn (app &BrowserApp) begin_stationary_document_raster() bool {
 	}
 	return false
 }
+
+// Before a document has pixels, each frame is one full-canvas white fill.
+// UI2 draws its chrome in separate native views, so later blank frames of the
+// same size can present the retained white frame instead of filling a new
+// bitmap. The reserved owner never matches a document, whose first frame
+// replaces this cache. Other builds draw chrome into the bitmap and keep
+// clearing it.
+const stationary_blank_raster_owner = u64(0xffff_ffff_ffff_ffff)
+
+fn begin_stationary_blank_raster() bool {
+	$if macos {
+		$if vox_ui2 ? {
+			return C.native_begin_stationary_raster_snapshot(stationary_blank_raster_owner,
+				0, 0, 0, 0, 1, 0, 1, 1) != 0
+		}
+		C.native_discard_stationary_raster()
+	}
+	return false
+}
