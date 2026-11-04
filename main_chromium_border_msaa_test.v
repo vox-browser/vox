@@ -4,6 +4,18 @@ import html
 import layout
 import os
 
+fn test_dashed_border_paths_share_msaa_with_their_document_tile() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}div{position:absolute;left:812px;top:343px;width:197px;height:30px;border-top:1px dashed #ccc}</style><div></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('paint') })
+	triggers := chromium_msaa_triggers(commands)
+	assert triggers.len == 1
+	assert commands[triggers[0].command_index].svg().stroke_dasharray.len == 2
+	assert chromium_msaa_tiles_for_triggers(triggers, 0, 1, 256) == [1]
+}
+
 fn test_elliptical_border_shares_msaa_with_other_boxes_in_its_tiles() {
 	mut document := html.parse_document(os.read_file('${@VMODROOT}/Tests/Browser/Brave/diagnostic/inset-rounded-box-shadow.html') or { panic(err) })
 	defer { document.finalize() }
