@@ -1,0 +1,1262 @@
+{
+  "schema": 1,
+  "date": "2026-11-04",
+  "commits": {
+    "damage_budget": "4b41a2670",
+    "filter_experiment": "78bb5923e",
+    "filter_opt_in_policy": "12fc06ffe"
+  },
+  "decision": "Damage coalescing enabled; stationary-filter reuse opt-in after both pairs regressed. 60 FPS remains open.",
+  "admission": {
+    "enable_filter_reuse": "VOX_ENABLE_STATIONARY_FILTER_REUSE=1",
+    "disable_filter_reuse": "VOX_DISABLE_STATIONARY_FILTER_REUSE=1",
+    "disable_coalescing": "VOX_DISABLE_COALESCED_SCROLL_DAMAGE=1"
+  },
+  "scope": "Changed native layer publications with changed scroll position after updateLayer over the complete first-to-last input interval; not physical scanout.",
+  "correctness": {
+    "unique_budget_cases": 6,
+    "unique_filter_cases": 4,
+    "existing_scroll_raster_cases": 20,
+    "native_stationary_filter_clip_scenes": 32,
+    "policy_matrix": [
+      "default",
+      "explicitly enabled",
+      "enable plus disable override"
+    ],
+    "checks": [
+      {
+        "name": "diagnostic-test-run",
+        "cases": 6,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 34979840,
+        "command": [
+          "env",
+          "VOX_SCROLL_RASTER_DAMAGE_DIAGNOSTICS=1",
+          "Build/vlang-damage-20261104-1630/diagnostic-test"
+        ]
+      },
+      {
+        "name": "filter-run",
+        "cases": 4,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "command": [
+          "Build/vlang-damage-20261104-1630/filter-identity-test"
+        ]
+      },
+      {
+        "name": "regression-run",
+        "cases": 20,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 90177536,
+        "command": [
+          "Build/vlang-damage-20261104-1630/scroll-raster-regression-test"
+        ]
+      },
+      {
+        "name": "native-run",
+        "cases": null,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 68452352,
+        "command": [
+          "Build/vlang-damage-20261104-1630/native-scroll-test"
+        ]
+      },
+      {
+        "name": "native-filter-final",
+        "cases": 32,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 581222400,
+        "command": [
+          "sh",
+          "tools/test_native_stationary_filter_clip.sh"
+        ]
+      },
+      {
+        "name": "filter-policy-default",
+        "cases": 4,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "command": [
+          "env",
+          "-u",
+          "VOX_ENABLE_STATIONARY_FILTER_REUSE",
+          "-u",
+          "VOX_DISABLE_STATIONARY_FILTER_REUSE",
+          "Build/vlang-damage-20261104-1630/filter-policy-test"
+        ]
+      },
+      {
+        "name": "filter-policy-enabled",
+        "cases": 4,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "command": [
+          "env",
+          "VOX_ENABLE_STATIONARY_FILTER_REUSE=1",
+          "Build/vlang-damage-20261104-1630/filter-policy-test"
+        ]
+      },
+      {
+        "name": "filter-policy-disabled",
+        "cases": 4,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "command": [
+          "env",
+          "VOX_ENABLE_STATIONARY_FILTER_REUSE=1",
+          "VOX_DISABLE_STATIONARY_FILTER_REUSE=1",
+          "Build/vlang-damage-20261104-1630/filter-policy-test"
+        ]
+      },
+      {
+        "name": "policy-regression-default",
+        "cases": 20,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 47611904,
+        "command": [
+          "env",
+          "-u",
+          "VOX_ENABLE_STATIONARY_FILTER_REUSE",
+          "-u",
+          "VOX_DISABLE_STATIONARY_FILTER_REUSE",
+          "Build/vlang-damage-20261104-1630/filter-policy-regression-test"
+        ]
+      },
+      {
+        "name": "policy-regression-enabled",
+        "cases": 20,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 81395712,
+        "command": [
+          "env",
+          "VOX_ENABLE_STATIONARY_FILTER_REUSE=1",
+          "Build/vlang-damage-20261104-1630/filter-policy-regression-test"
+        ]
+      },
+      {
+        "name": "policy-regression-disabled",
+        "cases": 20,
+        "child_exit": 0,
+        "memory_limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 96731136,
+        "command": [
+          "env",
+          "VOX_ENABLE_STATIONARY_FILTER_REUSE=1",
+          "VOX_DISABLE_STATIONARY_FILTER_REUSE=1",
+          "Build/vlang-damage-20261104-1630/filter-policy-regression-test"
+        ]
+      }
+    ]
+  },
+  "cohorts": {
+    "coalescing": {
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "5aea11987f231d53605b77e66b3e53ea13be353e0a585710cd86be6e774fddf4",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "16efe3bfc7a4a37e7dea9f73e4ae529ed084fab3015d032d380bddd8cf2119d1",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "100356905520dca5a7f9e2d8aa6db52232b1f8ea13c58cddb43c988bfc751d5e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": "6cd348efdbac344cd0db88f0a6c2c7695cf4d2165f7f103059792620302d6c27",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": "160f184eb6c42ec3343a5f9952dea7b37c647697ef4427a66cbfc7c8d2f9ce2b"
+      },
+      "runs": [
+        {
+          "tag": "paired-control-1",
+          "pair": 1,
+          "arm": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-control-1.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-control-1-guard.json",
+            "--",
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/measure_precise_scroll.py",
+            "--url",
+            "https://vlang.io/",
+            "--width",
+            "1024",
+            "--height",
+            "768",
+            "--chrome-height",
+            "112",
+            "--inputs",
+            "600",
+            "--input-hz",
+            "60",
+            "--delta",
+            "2",
+            "--reverse-every",
+            "60",
+            "--require-title",
+            "V — The V Programming Language",
+            "--settle-seconds",
+            "30",
+            "--script-policy",
+            "automatic",
+            "--timeout",
+            "240",
+            "--network-policy",
+            "Live direct HTTPS; empty private profile/cache; automatic author scripts; OS caches retained",
+            "--output",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-control-1",
+            "--env",
+            "VOX_DISABLE_COALESCED_SCROLL_DAMAGE=1"
+          ],
+          "started_unix": 1793800050.0356648,
+          "guard_exit": 0,
+          "finished_unix": 1793800092.961765,
+          "cohort_identity_unchanged": true,
+          "valid": true,
+          "browser_exit": 0,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              9.078125,
+              10.97607421875,
+              11.34521484375
+            ],
+            "load_average_after": [
+              11.31591796875,
+              11.2705078125,
+              11.4326171875
+            ]
+          },
+          "error": null,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V — The V Programming Language — vox [prod · built 2026-11-04 13:40:56 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=1031 duration_us=10357668.625",
+            "completed_inputs": 600,
+            "completed_publications": 1031,
+            "measured_publications": 1000,
+            "moving_intervals": 549,
+            "measurement_window_us": 10100516.042,
+            "mean_publication_fps": 99.00484250921406,
+            "mean_scroll_fps": 54.353658537558516,
+            "mean_publication_interval_fps": 99.64994092948008,
+            "mean_scroll_interval_fps": 54.812682481435274,
+            "first_publication_delay_us": 74299.25,
+            "last_publication_gap_us": 1123.0419999994338,
+            "first_counted_scroll_delay_us": 129404.459,
+            "last_scroll_publication_gap_us": 10286.625,
+            "input_delivery_hz": 59.30390066301922,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 16862.29723205342,
+              "median": 16724.125,
+              "p95": 22320.291999999434,
+              "max": 32038.3330000001
+            },
+            "publication_interval_us": {
+              "n": 999,
+              "mean": 10035.128878878879,
+              "median": 8571.207999999635,
+              "p95": 19879.5839999998,
+              "max": 138081.12500000003
+            },
+            "scroll_interval_us": {
+              "n": 549,
+              "mean": 18243.95294535519,
+              "median": 16975.208999998868,
+              "p95": 25997.292000000365,
+              "max": 138081.12500000003
+            },
+            "update_layer_us": {
+              "n": 1000,
+              "mean": 7038.954544,
+              "median": 4901.291499999999,
+              "p95": 14165.167,
+              "max": 137752.833
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 309,
+            "fraction_over_budget": 0.5628415300546448
+          }
+        },
+        {
+          "tag": "paired-candidate-1",
+          "pair": 1,
+          "arm": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-candidate-1.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-candidate-1-guard.json",
+            "--",
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/measure_precise_scroll.py",
+            "--url",
+            "https://vlang.io/",
+            "--width",
+            "1024",
+            "--height",
+            "768",
+            "--chrome-height",
+            "112",
+            "--inputs",
+            "600",
+            "--input-hz",
+            "60",
+            "--delta",
+            "2",
+            "--reverse-every",
+            "60",
+            "--require-title",
+            "V — The V Programming Language",
+            "--settle-seconds",
+            "30",
+            "--script-policy",
+            "automatic",
+            "--timeout",
+            "240",
+            "--network-policy",
+            "Live direct HTTPS; empty private profile/cache; automatic author scripts; OS caches retained",
+            "--output",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-candidate-1"
+          ],
+          "started_unix": 1793800093.014099,
+          "guard_exit": 0,
+          "finished_unix": 1793800136.129376,
+          "cohort_identity_unchanged": true,
+          "valid": true,
+          "browser_exit": 0,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              11.31591796875,
+              11.2705078125,
+              11.4326171875
+            ],
+            "load_average_after": [
+              9.6025390625,
+              10.8125,
+              11.25390625
+            ]
+          },
+          "error": null,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V — The V Programming Language — vox [prod · built 2026-11-04 13:40:56 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=1035 duration_us=10489872.625",
+            "completed_inputs": 600,
+            "completed_publications": 1035,
+            "measured_publications": 1004,
+            "moving_intervals": 546,
+            "measurement_window_us": 10235244.375,
+            "mean_publication_fps": 98.09243074374568,
+            "mean_scroll_fps": 53.34508683873022,
+            "mean_publication_interval_fps": 98.89330414154966,
+            "mean_scroll_interval_fps": 53.88530970742128,
+            "first_publication_delay_us": 89678.417,
+            "last_publication_gap_us": 3322.1660000011325,
+            "first_counted_scroll_delay_us": 149789.625,
+            "last_scroll_publication_gap_us": 12934.208000000566,
+            "input_delivery_hz": 58.52327292380842,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 17087.219323873123,
+              "median": 16672.625,
+              "p95": 21225.625,
+              "max": 44091.292
+            },
+            "publication_interval_us": {
+              "n": 1003,
+              "mean": 10111.90806779661,
+              "median": 8883.5,
+              "p95": 20821.7080000001,
+              "max": 153073.12499999997
+            },
+            "scroll_interval_us": {
+              "n": 546,
+              "mean": 18557.933608058607,
+              "median": 16705.520999999717,
+              "p95": 28357.917000000365,
+              "max": 153073.12499999997
+            },
+            "update_layer_us": {
+              "n": 1004,
+              "mean": 7174.06569621514,
+              "median": 4683.2295,
+              "p95": 14940.292,
+              "max": 150241.708
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 279,
+            "fraction_over_budget": 0.510989010989011
+          }
+        },
+        {
+          "tag": "paired-control-2",
+          "pair": 2,
+          "arm": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-control-2.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-control-2-guard.json",
+            "--",
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/measure_precise_scroll.py",
+            "--url",
+            "https://vlang.io/",
+            "--width",
+            "1024",
+            "--height",
+            "768",
+            "--chrome-height",
+            "112",
+            "--inputs",
+            "600",
+            "--input-hz",
+            "60",
+            "--delta",
+            "2",
+            "--reverse-every",
+            "60",
+            "--require-title",
+            "V — The V Programming Language",
+            "--settle-seconds",
+            "30",
+            "--script-policy",
+            "automatic",
+            "--timeout",
+            "240",
+            "--network-policy",
+            "Live direct HTTPS; empty private profile/cache; automatic author scripts; OS caches retained",
+            "--output",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-control-2",
+            "--env",
+            "VOX_DISABLE_COALESCED_SCROLL_DAMAGE=1"
+          ],
+          "started_unix": 1793800136.194606,
+          "guard_exit": 0,
+          "finished_unix": 1793800179.536693,
+          "cohort_identity_unchanged": true,
+          "valid": true,
+          "browser_exit": 0,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              9.6025390625,
+              10.8125,
+              11.25390625
+            ],
+            "load_average_after": [
+              9.54345703125,
+              10.64501953125,
+              11.169921875
+            ]
+          },
+          "error": null,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V — The V Programming Language — vox [prod · built 2026-11-04 13:40:56 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=892 duration_us=10556584.333",
+            "completed_inputs": 600,
+            "completed_publications": 892,
+            "measured_publications": 861,
+            "moving_intervals": 523,
+            "measurement_window_us": 10299574.25,
+            "mean_publication_fps": 83.59568843343209,
+            "mean_scroll_fps": 50.77879796827524,
+            "mean_publication_interval_fps": 84.49777393542513,
+            "mean_scroll_interval_fps": 51.43194534339402,
+            "first_publication_delay_us": 120294.0,
+            "last_publication_gap_us": 1497.3339999988675,
+            "first_counted_scroll_delay_us": 211142.91600000003,
+            "last_scroll_publication_gap_us": 10502.916999999434,
+            "input_delivery_hz": 58.1577437533401,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 17194.614774624373,
+              "median": 16680.125,
+              "p95": 24186.582999999984,
+              "max": 52093.0
+            },
+            "publication_interval_us": {
+              "n": 860,
+              "mean": 11834.63129767442,
+              "median": 10200.4375,
+              "p95": 22924.625,
+              "max": 217138.12499999997
+            },
+            "scroll_interval_us": {
+              "n": 523,
+              "mean": 19443.16889674952,
+              "median": 16696.41599999927,
+              "p95": 28803.5,
+              "max": 217138.12499999997
+            },
+            "update_layer_us": {
+              "n": 861,
+              "mean": 9394.192422764228,
+              "median": 6899.542,
+              "p95": 18790.208,
+              "max": 215428.917
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 266,
+            "fraction_over_budget": 0.5086042065009561
+          }
+        },
+        {
+          "tag": "paired-candidate-2",
+          "pair": 2,
+          "arm": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-candidate-2.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-candidate-2-guard.json",
+            "--",
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/measure_precise_scroll.py",
+            "--url",
+            "https://vlang.io/",
+            "--width",
+            "1024",
+            "--height",
+            "768",
+            "--chrome-height",
+            "112",
+            "--inputs",
+            "600",
+            "--input-hz",
+            "60",
+            "--delta",
+            "2",
+            "--reverse-every",
+            "60",
+            "--require-title",
+            "V — The V Programming Language",
+            "--settle-seconds",
+            "30",
+            "--script-policy",
+            "automatic",
+            "--timeout",
+            "240",
+            "--network-policy",
+            "Live direct HTTPS; empty private profile/cache; automatic author scripts; OS caches retained",
+            "--output",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/paired-candidate-2"
+          ],
+          "started_unix": 1793800179.602096,
+          "guard_exit": 0,
+          "finished_unix": 1793800222.759629,
+          "cohort_identity_unchanged": true,
+          "valid": true,
+          "browser_exit": 0,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              9.54345703125,
+              10.64501953125,
+              11.169921875
+            ],
+            "load_average_after": [
+              10.25537109375,
+              10.673828125,
+              11.15380859375
+            ]
+          },
+          "error": null,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V — The V Programming Language — vox [prod · built 2026-11-04 13:40:56 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=1052 duration_us=10389909.208",
+            "completed_inputs": 600,
+            "completed_publications": 1052,
+            "measured_publications": 1021,
+            "moving_intervals": 548,
+            "measurement_window_us": 10135216.333999999,
+            "mean_publication_fps": 100.7378595930817,
+            "mean_scroll_fps": 54.068900153779396,
+            "mean_publication_interval_fps": 101.47802830805946,
+            "mean_scroll_interval_fps": 54.570298829134224,
+            "first_publication_delay_us": 79878.75,
+            "last_publication_gap_us": 3900.6669999994338,
+            "first_counted_scroll_delay_us": 133719.5,
+            "last_scroll_publication_gap_us": 13244.875,
+            "input_delivery_hz": 59.10085983962382,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 16920.22760267112,
+              "median": 16673.45900000073,
+              "p95": 21627.875,
+              "max": 37570.99999999997
+            },
+            "publication_interval_us": {
+              "n": 1020,
+              "mean": 9854.349918627451,
+              "median": 8792.000000000466,
+              "p95": 20251.292000000365,
+              "max": 151733.834
+            },
+            "scroll_interval_us": {
+              "n": 548,
+              "mean": 18324.986695255473,
+              "median": 16746.020499999635,
+              "p95": 25003.75,
+              "max": 151733.834
+            },
+            "update_layer_us": {
+              "n": 1021,
+              "mean": 6657.782976493634,
+              "median": 4057.708,
+              "p95": 14643.75,
+              "max": 151408.042
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 289,
+            "fraction_over_budget": 0.5273722627737226
+          }
+        }
+      ],
+      "resource_audits": [
+        {
+          "pair": 1,
+          "resource_count": 29,
+          "equal_url_body_hashes": true
+        },
+        {
+          "pair": 2,
+          "resource_count": 29,
+          "equal_url_body_hashes": true
+        }
+      ]
+    },
+    "filter": {
+      "identity": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "4d55ec4468623f9d2449dd9fef4c3a34515da8ce9a0a99faf33035cab142bc34",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "b4a9cf2d70eeaae4d5aee8fa4409916e8aa490124a5e725fce71c6ab79592bbd",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "8add048d060198f19094445b44b21bb9be6d9286d94ea3bf86af9d8b5d25baf7",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "100356905520dca5a7f9e2d8aa6db52232b1f8ea13c58cddb43c988bfc751d5e",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "b6b9fe07c79f1e6a14061b80e55346f9eb66f2872b4fb107ee07f58a24c1bbcb",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll.py": "6cd348efdbac344cd0db88f0a6c2c7695cf4d2165f7f103059792620302d6c27",
+        "/Users/alex/code/vox2/tools/measure_precise_scroll_darwin.m": "160f184eb6c42ec3343a5f9952dea7b37c647697ef4427a66cbfc7c8d2f9ce2b"
+      },
+      "runs": [
+        {
+          "tag": "filter-paired-control-1",
+          "pair": 1,
+          "arm": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-control-1.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-control-1-guard.json",
+            "--",
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/measure_precise_scroll.py",
+            "--url",
+            "https://vlang.io/",
+            "--width",
+            "1024",
+            "--height",
+            "768",
+            "--chrome-height",
+            "112",
+            "--inputs",
+            "600",
+            "--input-hz",
+            "60",
+            "--delta",
+            "2",
+            "--reverse-every",
+            "60",
+            "--require-title",
+            "V — The V Programming Language",
+            "--settle-seconds",
+            "30",
+            "--script-policy",
+            "automatic",
+            "--timeout",
+            "240",
+            "--network-policy",
+            "Live direct HTTPS; empty private profile/cache; automatic author scripts; OS caches retained",
+            "--output",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-control-1",
+            "--env",
+            "VOX_DISABLE_STATIONARY_FILTER_REUSE=1"
+          ],
+          "started_unix": 1793800961.7365499,
+          "guard_exit": 0,
+          "finished_unix": 1793801009.047658,
+          "cohort_identity_unchanged": true,
+          "valid": true,
+          "browser_exit": 0,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              63.32177734375,
+              32.61572265625,
+              19.27587890625
+            ],
+            "load_average_after": [
+              75.79443359375,
+              39.982421875,
+              22.66064453125
+            ]
+          },
+          "error": null,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V — The V Programming Language — vox [prod · built 2026-11-04 13:54:11 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=502 duration_us=11652506.375",
+            "completed_inputs": 600,
+            "completed_publications": 502,
+            "measured_publications": 472,
+            "moving_intervals": 405,
+            "measurement_window_us": 11395833.667,
+            "mean_publication_fps": 41.41864595363614,
+            "mean_scroll_fps": 35.539304261064906,
+            "mean_publication_interval_fps": 42.36283732065571,
+            "mean_scroll_interval_fps": 36.46633171906388,
+            "first_publication_delay_us": 115750.917,
+            "last_publication_gap_us": 161847.29199999943,
+            "first_counted_scroll_delay_us": 243369.667,
+            "last_scroll_publication_gap_us": 173947.83300000057,
+            "input_delivery_hz": 52.563069758957724,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 19024.76405175292,
+              "median": 18944.916000001132,
+              "p95": 30314.75,
+              "max": 68089.0
+            },
+            "publication_interval_us": {
+              "n": 471,
+              "mean": 23605.5954522293,
+              "median": 18253.08400000073,
+              "p95": 41571.332999999635,
+              "max": 314337.458
+            },
+            "scroll_interval_us": {
+              "n": 405,
+              "mean": 27422.555350617284,
+              "median": 21914.667000000365,
+              "p95": 42866.375,
+              "max": 314337.458
+            },
+            "update_layer_us": {
+              "n": 472,
+              "mean": 21177.673815677965,
+              "median": 16356.771,
+              "p95": 37836.333,
+              "max": 311836.833
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 293,
+            "fraction_over_budget": 0.7234567901234568
+          }
+        },
+        {
+          "tag": "filter-paired-candidate-1",
+          "pair": 1,
+          "arm": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-candidate-1.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-candidate-1-guard.json",
+            "--",
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/measure_precise_scroll.py",
+            "--url",
+            "https://vlang.io/",
+            "--width",
+            "1024",
+            "--height",
+            "768",
+            "--chrome-height",
+            "112",
+            "--inputs",
+            "600",
+            "--input-hz",
+            "60",
+            "--delta",
+            "2",
+            "--reverse-every",
+            "60",
+            "--require-title",
+            "V — The V Programming Language",
+            "--settle-seconds",
+            "30",
+            "--script-policy",
+            "automatic",
+            "--timeout",
+            "240",
+            "--network-policy",
+            "Live direct HTTPS; empty private profile/cache; automatic author scripts; OS caches retained",
+            "--output",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-candidate-1"
+          ],
+          "started_unix": 1793801009.137964,
+          "guard_exit": 0,
+          "finished_unix": 1793801056.5535748,
+          "cohort_identity_unchanged": true,
+          "valid": true,
+          "browser_exit": 0,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              74.369140625,
+              40.28125,
+              22.86767578125
+            ],
+            "load_average_after": [
+              78.18994140625,
+              46.341796875,
+              26.01220703125
+            ]
+          },
+          "error": null,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V — The V Programming Language — vox [prod · built 2026-11-04 13:54:11 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=447 duration_us=11857349.458",
+            "completed_inputs": 600,
+            "completed_publications": 447,
+            "measured_publications": 416,
+            "moving_intervals": 369,
+            "measurement_window_us": 11596342.917,
+            "mean_publication_fps": 35.8733786140588,
+            "mean_scroll_fps": 31.82037670333581,
+            "mean_publication_interval_fps": 36.703104030495446,
+            "mean_scroll_interval_fps": 32.659735629549544,
+            "first_publication_delay_us": 125757.042,
+            "last_publication_gap_us": 163640.29199999943,
+            "first_counted_scroll_delay_us": 201176.375,
+            "last_scroll_publication_gap_us": 172270.29199999943,
+            "input_delivery_hz": 51.65421584091639,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 19359.50403505843,
+              "median": 19124.5,
+              "p95": 31380.625,
+              "max": 88164.0
+            },
+            "publication_interval_us": {
+              "n": 415,
+              "mean": 27245.652007228917,
+              "median": 20969.7089999998,
+              "p95": 43492.75,
+              "max": 656302.1249999999
+            },
+            "scroll_interval_us": {
+              "n": 369,
+              "mean": 30618.741417344176,
+              "median": 23943.417000000365,
+              "p95": 47250.4169999999,
+              "max": 656302.1249999999
+            },
+            "update_layer_us": {
+              "n": 416,
+              "mean": 24483.67456730769,
+              "median": 18549.979,
+              "p95": 40243.958,
+              "max": 596748.542
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 277,
+            "fraction_over_budget": 0.7506775067750677
+          }
+        },
+        {
+          "tag": "filter-paired-control-2",
+          "pair": 2,
+          "arm": "control",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-control-2.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-control-2-guard.json",
+            "--",
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/measure_precise_scroll.py",
+            "--url",
+            "https://vlang.io/",
+            "--width",
+            "1024",
+            "--height",
+            "768",
+            "--chrome-height",
+            "112",
+            "--inputs",
+            "600",
+            "--input-hz",
+            "60",
+            "--delta",
+            "2",
+            "--reverse-every",
+            "60",
+            "--require-title",
+            "V — The V Programming Language",
+            "--settle-seconds",
+            "30",
+            "--script-policy",
+            "automatic",
+            "--timeout",
+            "240",
+            "--network-policy",
+            "Live direct HTTPS; empty private profile/cache; automatic author scripts; OS caches retained",
+            "--output",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-control-2",
+            "--env",
+            "VOX_DISABLE_STATIONARY_FILTER_REUSE=1"
+          ],
+          "started_unix": 1793801056.638316,
+          "guard_exit": 0,
+          "finished_unix": 1793801104.090374,
+          "cohort_identity_unchanged": true,
+          "valid": true,
+          "browser_exit": 0,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              78.18994140625,
+              46.341796875,
+              26.01220703125
+            ],
+            "load_average_after": [
+              70.5927734375,
+              48.703125,
+              27.9228515625
+            ]
+          },
+          "error": null,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V — The V Programming Language — vox [prod · built 2026-11-04 13:54:11 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=489 duration_us=11364703.000",
+            "completed_inputs": 600,
+            "completed_publications": 489,
+            "measured_publications": 461,
+            "moving_intervals": 396,
+            "measurement_window_us": 11112428.25,
+            "mean_publication_fps": 41.48508225463683,
+            "mean_scroll_fps": 35.635775646065476,
+            "mean_publication_interval_fps": 42.355865464419985,
+            "mean_scroll_interval_fps": 36.49296395956953,
+            "first_publication_delay_us": 104979.209,
+            "last_publication_gap_us": 147087.79100000113,
+            "first_counted_scroll_delay_us": 225400.5,
+            "last_scroll_publication_gap_us": 156042.16600000113,
+            "input_delivery_hz": 53.90361013129601,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 18551.633138564273,
+              "median": 18422.833000000566,
+              "p95": 29539.9169999999,
+              "max": 66331.375
+            },
+            "publication_interval_us": {
+              "n": 460,
+              "mean": 23609.480978260868,
+              "median": 18186.916499999817,
+              "p95": 38444.292000000365,
+              "max": 282300.292
+            },
+            "scroll_interval_us": {
+              "n": 396,
+              "mean": 27402.542613636364,
+              "median": 21528.062500000466,
+              "p95": 54098.7080000001,
+              "max": 282300.292
+            },
+            "update_layer_us": {
+              "n": 461,
+              "mean": 21033.31525596529,
+              "median": 15843.792,
+              "p95": 43066.208,
+              "max": 281887.75
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 276,
+            "fraction_over_budget": 0.696969696969697
+          }
+        },
+        {
+          "tag": "filter-paired-candidate-2",
+          "pair": 2,
+          "arm": "candidate",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-candidate-2.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-candidate-2-guard.json",
+            "--",
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "tools/measure_precise_scroll.py",
+            "--url",
+            "https://vlang.io/",
+            "--width",
+            "1024",
+            "--height",
+            "768",
+            "--chrome-height",
+            "112",
+            "--inputs",
+            "600",
+            "--input-hz",
+            "60",
+            "--delta",
+            "2",
+            "--reverse-every",
+            "60",
+            "--require-title",
+            "V — The V Programming Language",
+            "--settle-seconds",
+            "30",
+            "--script-policy",
+            "automatic",
+            "--timeout",
+            "240",
+            "--network-policy",
+            "Live direct HTTPS; empty private profile/cache; automatic author scripts; OS caches retained",
+            "--output",
+            "/Users/alex/code/vox2/Build/vlang-damage-20261104-1630/filter-paired-candidate-2"
+          ],
+          "started_unix": 1793801104.175416,
+          "guard_exit": 0,
+          "finished_unix": 1793801152.2425852,
+          "cohort_identity_unchanged": true,
+          "valid": true,
+          "browser_exit": 0,
+          "host": {
+            "cpu_count": 18,
+            "load_average_before": [
+              69.583984375,
+              48.857421875,
+              28.0986328125
+            ],
+            "load_average_after": [
+              78.3662109375,
+              53.62890625,
+              30.89794921875
+            ]
+          },
+          "error": null,
+          "summary": {
+            "protocol_version": 2,
+            "endpoint": "changed Cocoa layer contents after updateLayer; not physical scanout",
+            "start": "SCROLL_START precise=1 delta_y=-2 view_width=1024 view_height=880 document_width=1024 document_height=768 chrome_height=112 scale=2 input_hz=60 title=V — The V Programming Language — vox [prod · built 2026-11-04 13:54:11 UTC]",
+            "completion": "SCROLL_DONE inputs=600 publications=355 duration_us=12596804.500",
+            "completed_inputs": 600,
+            "completed_publications": 355,
+            "measured_publications": 335,
+            "moving_intervals": 316,
+            "measurement_window_us": 12336263.625,
+            "mean_publication_fps": 27.155710203947592,
+            "mean_scroll_fps": 25.61553559536549,
+            "mean_publication_interval_fps": 27.81086948822125,
+            "mean_scroll_interval_fps": 26.312080114604537,
+            "first_publication_delay_us": 165983.375,
+            "last_publication_gap_us": 160587.41600000113,
+            "first_counted_scroll_delay_us": 263414.0,
+            "last_scroll_publication_gap_us": 160587.41600000113,
+            "input_delivery_hz": 48.55603108108838,
+            "input_interval_us": {
+              "n": 599,
+              "mean": 20594.76398163606,
+              "median": 19566.207999999635,
+              "p95": 33821.54100000113,
+              "max": 150038.8330000001
+            },
+            "publication_interval_us": {
+              "n": 334,
+              "mean": 35957.164173652694,
+              "median": 27445.791999999434,
+              "p95": 62355.207999999984,
+              "max": 695300.75
+            },
+            "scroll_interval_us": {
+              "n": 316,
+              "mean": 38005.35706962025,
+              "median": 28660.875,
+              "p95": 65481.25,
+              "max": 695300.75
+            },
+            "update_layer_us": {
+              "n": 335,
+              "mean": 32737.964056716417,
+              "median": 24850.708,
+              "p95": 54906.708,
+              "max": 628999.083
+            },
+            "target_hz": 60,
+            "frame_budget_us": 16666.666666666668,
+            "intervals_over_budget": 273,
+            "fraction_over_budget": 0.8639240506329114
+          }
+        }
+      ],
+      "resource_audits": [
+        {
+          "pair": 1,
+          "resource_count": 29,
+          "equal_url_body_hashes": true
+        },
+        {
+          "pair": 2,
+          "resource_count": 29,
+          "equal_url_body_hashes": true
+        }
+      ]
+    }
+  },
+  "diagnostics": [
+    {
+      "name": "baseline",
+      "valid": true,
+      "browser_exit": 0,
+      "complete_replays": 10,
+      "complete_replay_median_us": 60793.0,
+      "area_fallbacks": 10,
+      "reported_areas": [],
+      "diagnostic_only": true
+    },
+    {
+      "name": "prototype-diag",
+      "valid": true,
+      "browser_exit": 0,
+      "complete_replays": 10,
+      "complete_replay_median_us": 77008.5,
+      "area_fallbacks": 10,
+      "reported_areas": [],
+      "diagnostic_only": true
+    },
+    {
+      "name": "final-diag",
+      "valid": true,
+      "browser_exit": 0,
+      "complete_replays": 11,
+      "complete_replay_median_us": 206375,
+      "area_fallbacks": 11,
+      "reported_areas": [
+        "786432.0",
+        "494648.0",
+        "428980.0",
+        "430496.0",
+        "428980.0",
+        "436560.0",
+        "428980.0",
+        "430496.0",
+        "428980.0",
+        "430496.0",
+        "428980.0"
+      ],
+      "diagnostic_only": true
+    }
+  ],
+  "coalescing_measured_policy": {
+    "measured_receipt": "20261104-164034-11ba6b48",
+    "measured_executable_sha256": "5aea11987f231d53605b77e66b3e53ea13be353e0a585710cd86be6e774fddf4",
+    "preceding_source_sha256": "a39c57673a2fceb8cbf712d97788e05b42855c8cffed09ac42f9522a484d536b",
+    "committed_source_sha256": "91bf30227ba8eb9b49c9da80a495e0d2e47eee50217c02fefea1ba5ff96c34c1",
+    "difference": "Only the two optional VOX_SCROLL_RASTER_AREA logging blocks follow this compiled revision. Both policy/restore guards are present in generated production C."
+  },
+  "final_diagnostic_production_receipt": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "4d55ec4468623f9d2449dd9fef4c3a34515da8ce9a0a99faf33035cab142bc34",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-165354-07f93a6d/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "7b8e3e3f54a041e284c9d6fe78eb235ff64b8de4df482a0e508f79c0546ee36d",
+      "dirty": true,
+      "head": "8c5d9c80e6bb5d4a56522f3c1d6dff50ee706f9b",
+      "repository_sha256": "df9bf7763ac33bdf8e20688360f8fd7c6f7ad58afb6455d2a2236af77d708780"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "67cfc464ea29f9557ff32091858c976dc5fbd35f4ab0ae46b0454ff2bb3d1786",
+      "dirty": true,
+      "head": "19ab7a17fb261a92427992b3e672f72a54e7f7da",
+      "repository_sha256": "ab24a9d96809a3b00082659466c36a2d9898084fcd1b15a201bd93be10068dc8"
+    },
+    "request": {
+      "head": "8c5d9c80e6bb5d4a56522f3c1d6dff50ee706f9b",
+      "id": "c4dbf1cd3f3a410699b0cf6e6362e57b"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "7b8e3e3f54a041e284c9d6fe78eb235ff64b8de4df482a0e508f79c0546ee36d",
+      "dirty": true,
+      "head": "8c5d9c80e6bb5d4a56522f3c1d6dff50ee706f9b",
+      "repository_sha256": "c49daa0c23c7f53f26a008b5352d70ebb0cf200cac9781de228a92c9faf3eb3a"
+    }
+  },
+  "final_sources": {
+    "main_scroll_raster_damage.v": "f8c4d3c0541072d3e6bf89cb529067cfc5dfc6a7604ff7a5ed8725f939a60a85",
+    "main_scroll_raster_damage_budget_test.v": "48f913fc2d9d0da4f93c9b69177041c77402e2bc303bc677755f07746a615569",
+    "main_scroll_raster_filter_identity_test.v": "fba9e4166bf38d68713b881fe11486c6597e1abfa0ac79ebe0adcbe3ead92a87",
+    "main_scroll_raster_test.v": "6e8623fca6ac8df9f9ba613c9cd370e84e6a41099e721e6252e2d3a83f266a90",
+    "tools/native_stationary_filter_clip_test.cpp": "fefe981a913aa4b2815e1aa873616ec0a365446909b36e3fed36a50a7deae336",
+    "tools/test_native_stationary_filter_clip.sh": "314ed08dbf29415a9bf51b7a10314b93626378f8daed1fb9b2d2bd68c40d9fe1"
+  },
+  "measured_filter_sources": {
+    "main_scroll_raster_damage.v": "2e5a574ab97f01e544b842a423865121b5ed9f26539d38dd56bde717810c9a86",
+    "main_scroll_raster_test.v": "587a0577ed13e7f23e430270a60146135d90aa87fcf2f0189b96c08e7dae6302",
+    "main_scroll_raster_filter_identity_test.v": "4d1ac6c95a03467ebe680cddffe57521468b858bfcfe8c252458e897dcaa28ef",
+    "tools/native_stationary_filter_clip_test.cpp": "fefe981a913aa4b2815e1aa873616ec0a365446909b36e3fed36a50a7deae336",
+    "tools/test_native_stationary_filter_clip.sh": "314ed08dbf29415a9bf51b7a10314b93626378f8daed1fb9b2d2bd68c40d9fe1"
+  },
+  "limitations": [
+    "Live animation phases are not frozen.",
+    "Coalescing pair 1 regressed; no reliable FPS improvement claimed.",
+    "Filter pairs both regressed under load 63.3–78.4 on 18 logical CPUs; no optimization credit.",
+    "Optional filter policy changed after the measured experimental build; final default-off production publication is pending.",
+    "Preliminary UI2-path, fixture and launch-order failures are retained with actual exits.",
+    "Only focused checks; no broad-suite pass, instruction saving or cadence reset claimed."
+  ],
+  "raw_evidence": {
+    "path": "docs/performance/raw/vlang-damage-filter-20261104.tar.gz",
+    "sha256": "4d265f6fee0a5fa23ed83d8cb056d7f7c371897c3465689655df52921832053b",
+    "bytes": 1573418,
+    "files": 174,
+    "contents": "Raw commands, driver/browser/compiler logs, run/summary/guard JSON, production metadata, resource URL/body-hash maps, custom orchestration and measured-policy patch. No application bundles, source trees or native binaries."
+  },
+  "working_evidence": "Build/vlang-damage-20261104-1630"
+}

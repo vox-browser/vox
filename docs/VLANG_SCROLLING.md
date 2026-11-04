@@ -1266,7 +1266,7 @@ Focused checks pass under the memory guard:
 
 The shared production build guard was busy, so the native checks reused the
 newest completed bundle, executable `f77039aa…` (receipt
-`20261104-151223-21d94207`), supplied the host; both arms selected the same
+`20261104-151223-21d94207`); both arms selected the same
 explicit unpublished native libraries. These are native-candidate observations,
 not validation of an installed production optimization. The measured bridge
 enabled batching by default; the committed bridge changes only that admission
@@ -1312,3 +1312,100 @@ The working evidence is in `Build/vlang-scroll-next-20261104-1520`.
 [Durable results](performance/vlang-image-tile-batch-20261104.json) and the
 [raw logs, commands and receipts](performance/raw/vlang-image-tile-batch-20261104.tar.gz)
 are committed so deleting `Build/` does not erase this cohort.
+
+### Damage budgets and stationary filters (2026-11-04, evening)
+
+**The live 60 FPS goal remains open.** Two separate changes address unnecessary
+invalidation, with independent same-binary controls:
+
+- `4b41a2670` budgets coalesced damage instead of charging overlapping old/new
+  command ink repeatedly. Hundreds of changes inside one small region can
+  reconcile. Conservative bounding joins never omit damaged pixels; the planner
+  declines after 48 disjoint rectangles, preserving the native limit and bounded
+  work. A join touching a saved video backdrop converts it to ordinary damage.
+  `VOX_DISABLE_COALESCED_SCROLL_DAMAGE=1` restores the old accounting.
+- Experiment `78bb5923e` gives non-pointwise filters an ordered input identity. Identical
+  inputs at the same raster position retain their pixels. Scrolling changes a
+  position-dependent filter's key, while changed descendants damage its complete
+  inflated output. Nested groups, input order, clips, canvas draws and video
+  generations participate; the content-anchored gradient blur still translates
+  exactly. Policy follow-up `12fc06ffe` retains it behind `VOX_ENABLE_STATIONARY_FILTER_REUSE=1` after
+  the paired regressions below; `VOX_DISABLE_STATIONARY_FILTER_REUSE=1` wins.
+  The default keeps per-frame invalidation and skips input-identity bookkeeping.
+
+Focused verification covers six new budget cases, four new filter-identity cases
+and the existing 20-case scroll-raster file. The budget checks compare partial
+replay with complete repaint in both scroll directions, and retain large-area,
+unbounded-content, paint-order and native-capacity refusals. The filter checks
+retain complete blur extents after a child changes. Thirty-two native blur and
+drop-shadow scenes match complete repaints under partial publication at 1x/2x,
+with opaque/translucent backdrops and padded rows. The existing native ring
+pixel check also passes. These are focused checks, not a broad-suite pass or an
+instruction-saving claim. One default planner fix and one opt-in experiment are recorded;
+no broad-check baseline is reset.
+The final four-case and 20-case filter executables also pass in separate
+fresh processes with default admission, explicit enable, and enable plus the
+disable override; enabled mode exercises all stationary-reuse assertions.
+
+The first unprofiled cohort isolates damage coalescing on completed production
+`5aea1198…`, receipt `20261104-164034-11ba6b48`. Its implementation includes the
+final budget/video guards; only the later optional area logging is absent.
+Each pair alternates `VOX_DISABLE_COALESCED_SCROLL_DAMAGE=1` and the default.
+
+| Run | Scroll FPS | Median / p95 / max interval | Over 16.7 ms | Input delivery |
+| --- | ---: | --- | ---: | ---: |
+| control-1 | 54.4 | 17.0 / 26.0 / 138.1 ms | 56% | 59.3 Hz |
+| candidate-1 | 53.3 | 16.7 / 28.4 / 153.1 ms | 51% | 58.5 Hz |
+| control-2 | 50.8 | 16.7 / 28.8 / 217.1 ms | 51% | 58.2 Hz |
+| candidate-2 | 54.1 | 16.7 / 25.0 / 151.7 ms | 53% | 59.1 Hz |
+
+All four browser/guard exits are zero and all cohort input identities remain
+unchanged. Each pair's 29 cached resource URL/body-hash records match. Host load
+ranged from 9.1 to 11.3 on 18 logical CPUs. One pair regresses, so these live
+animated-page observations do not establish a reliable throughput gain.
+The protocol remains the 1024x768, scale-2, 112px-chrome, 30s matching-title
+settle and 600 precise delta-2 wheel inputs of `rQ`, with automatic scripts,
+private empty profiles/caches, direct HTTPS and retained OS caches. Reported
+throughput spans the entire first-to-last input interval and counts changed
+scrolling layer publications, not physical display scanout.
+
+Separate diagnostics on the preceding baseline and an intermediate coalescing
+build each retain ten complete repaints. The final installed-build diagnostic
+`final-diag`, executable `4d55ec44…` (receipt `20261104-165354-07f93a6d`), completes
+all 600 inputs and retains eleven area fallbacks. The new area log exposes
+why coalescing alone does not remove them: most cover 428,980–436,560 CSS pixels
+of the 786,432-pixel viewport, still above the 393,216-pixel budget. The full
+viewport and a 494,648-pixel update also occur. Instrumented FPS is not used for
+optimization credit, and comparisons across these different builds are not
+attributed to either fix.
+
+A second unprofiled cohort isolates stationary-filter reuse on that final
+`4d55ec44…` bundle, with coalescing enabled in both arms. The measured revision
+enabled stationary-filter reuse by default; controls disable it. The final
+source gates it explicitly, and the archive retains a source-hash-verified
+patch reconstructing the measured policy.
+
+| Run | Scroll FPS | Median / p95 / max interval | Over 16.7 ms | Input delivery |
+| --- | ---: | --- | ---: | ---: |
+| control-1 | 35.5 | 21.9 / 42.9 / 314.3 ms | 72% | 52.6 Hz |
+| candidate-1 | 31.8 | 23.9 / 47.3 / 656.3 ms | 75% | 51.7 Hz |
+| control-2 | 35.6 | 21.5 / 54.1 / 282.3 ms | 70% | 53.9 Hz |
+| candidate-2 | 25.6 | 28.7 / 65.5 / 695.3 ms | 86% | 48.6 Hz |
+
+All four browser/guard exits are zero and identities remain unchanged.
+Host contention rose sharply: one-minute load was 63.3–78.4 on 18 logical CPUs,
+with candidates facing high/rising load. Both paired observations regress, so
+they provide no optimization credit; their cause remains unresolved. They also
+cannot be compared with the earlier low-load cohort as engine performance.
+Stationary-filter reuse remains opt-in. The newest completed browser used here
+predates that admission-policy rollback; installation of the final default-off
+policy remains pending the shared production build.
+
+Original compile/fixture failures, the provisional browser checks and all paired
+attempts are retained. The corrected checks use the repository's UI2 embedding
+module path and explicit Clang backend; obsolete per-frame-filter assertions
+were updated to require stationary reuse and continued scroll invalidation.
+Working evidence is under `Build/vlang-damage-20261104-1630`.
+[Durable results](performance/vlang-damage-filter-20261104.json) and
+[raw commands, logs and receipts](performance/raw/vlang-damage-filter-20261104.tar.gz)
+preserve the evidence independently of that directory.
