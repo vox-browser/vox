@@ -5,6 +5,19 @@ import html
 import platform
 import x.json2
 
+fn test_compact_query_envelope_keeps_owned_fields_after_workspace_finish() {
+	input := '{"key":"__element_12","action":"querySelector","selector":"main a"}'.clone()
+	request := decode_compact_element_query_request(input)!
+	request.workspace.finish()
+	unsafe { C.memset(input.str, `x`, uint(input.len)) }
+	gc_collect()
+	assert request.key == '__element_12'
+	assert request.action? == 'querySelector'
+	assert request.selector? == 'main a'
+	assert request.snapshot == none
+	assert request.log_count == 0
+}
+
 fn test_compact_query_request_retires_json_graphs_and_owns_replayed_strings() {
 	input := json2.encode({
 		'action': json2.Any('setMarkup')
