@@ -55,3 +55,21 @@ fn test_inset_decoration_groups_reject_incomplete_or_incompatible_sequences() {
 		assert chromium_inset_decoration_end(changed, layers, start) == start
 	}
 }
+
+fn test_inset_decoration_bounds_use_the_scroll_already_in_the_transform() {
+	// Viewport-only recording folds the root scroll into the transform.
+	scrolled := layout.PaintCommand{
+		kind:      'fill_rect'
+		x:         32
+		y:         302
+		width:     960
+		height:    220
+		transform: [f64(1), 0, 0, 1, 0, -100]!
+	}
+	left, top, width, height := chromium_inset_decoration_bounds(&scrolled, 112)
+	assert left == 32
+	assert top == 112 + 302 - 100
+	assert width == 960
+	// The whole box stays inside the group at every scroll offset.
+	assert height == 220
+}

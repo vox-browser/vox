@@ -38,6 +38,25 @@ fn chromium_inset_decoration_end(commands []layout.PaintCommand, layers []int, i
 	return end + 1
 }
 
+// Canvas bounds of a decoration group's shared paint box. Commands already
+// include the viewport scroll in their transforms, as in ordinary replay; only
+// browser chrome shifts the canvas rows. Subtracting the scroll again would
+// shift the group region up and drop the box's lower rows from publication.
+fn chromium_inset_decoration_bounds(background &layout.PaintCommand, page_y f32) (f32, f32, f32, f32) {
+	points := transformed_rect_points(*background, 0, page_y, 0)
+	mut left := points[0]
+	mut top := points[1]
+	mut right := left
+	mut bottom := top
+	for i := 2; i < points.len; i += 2 {
+		left = math.min(left, points[i])
+		top = math.min(top, points[i + 1])
+		right = math.max(right, points[i])
+		bottom = math.max(bottom, points[i + 1])
+	}
+	return left, top, right - left, bottom - top
+}
+
 fn (mut app BrowserApp) draw_chromium_inset_decorations(index int, page_y f32, window_height int) int {
 	$if macos {
 		if !app.ctx.native_rendering || app.page_zoom != 1 || app.document == unsafe { nil }
@@ -46,19 +65,9 @@ fn (mut app BrowserApp) draw_chromium_inset_decorations(index int, page_y f32, w
 			app.chromium_raster_plan.command_layers, index)
 		if end == index { return index }
 		app.flush_rounded_rect_underlay(0, page_y, window_height)
-		points := transformed_rect_points(app.paint_commands[index], 0, page_y, app.scroll_y)
-		mut left := points[0]
-		mut top := points[1]
-		mut right := left
-		mut bottom := top
-		for i := 2; i < points.len; i += 2 {
-			left = math.min(left, points[i])
-			top = math.min(top, points[i + 1])
-			right = math.max(right, points[i])
-			bottom = math.max(bottom, points[i + 1])
-		}
-		if C.native_begin_deferred_inset_decorations(left, top, right - left, bottom - top,
-			f32(app.ctx.width), f32(app.ctx.height), page_y, f32(app.scroll_y)) == 0 { return index }
+		left, top, width, height := chromium_inset_decoration_bounds(&app.paint_commands[index], page_y)
+		if C.native_begin_deferred_inset_decorations(left, top, width, height,
+			f32(app.ctx.width), f32(app.ctx.height), page_y, 0) == 0 { return index }
 		for i in index .. end {
 			app.draw_command(app.paint_commands[i], 0, page_y, window_height)
 		}
