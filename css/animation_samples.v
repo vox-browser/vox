@@ -3,6 +3,12 @@ module css
 import dom
 import os
 import platform
+import sync.stdatomic
+
+const disable_animation_sample_word_prefilter = os.getenv('VOX_DISABLE_ANIMATION_SAMPLE_WORD_PREFILTER') != ''
+const animation_sample_word_diagnostics = os.getenv('VOX_ANIMATION_SAMPLE_WORD_DIAGNOSTICS') != ''
+
+__global animation_sample_word_reported stdatomic.AtomicVal[bool]
 
 // Storage for sampled animation values under -prealloc.
 //
@@ -473,6 +479,12 @@ fn (retiring &RetiringAnimationSamples) computed_references_arena_at_depth(compu
 
 // Scan a struct's words for pointers into the arena.
 fn (retiring &RetiringAnimationSamples) struct_references_arena(start voidptr, size int) bool {
+	if !disable_animation_sample_word_prefilter {
+		if animation_sample_word_diagnostics && animation_sample_word_reported.compare_and_swap(false, true) {
+			eprintln('Vox animation sample word prefilter executed')
+		}
+		return unsafe { retiring.arena.contains_any_word(start, size) }
+	}
 	words := unsafe { &voidptr(start) }
 	for index in 0 .. size / int(sizeof(voidptr)) {
 		if retiring.arena.contains(unsafe { words[index] }) {

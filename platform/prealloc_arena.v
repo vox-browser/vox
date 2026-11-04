@@ -687,3 +687,29 @@ pub fn (arena &Arena) contains(pointer voidptr) bool {
 	}
 	return false
 }
+
+// Conservatively scan complete machine words for pointers into a settled
+// arena. Read its address envelope once: most style words are scalars or point
+// into other storage. Values inside the envelope still need the exact block
+// ownership check, since separately mapped arena blocks can have gaps.
+// The caller supplies a readable, pointer-aligned buffer of at least size
+// bytes, and must not grow, reset or release the arena during this scan.
+@[unsafe]
+pub fn (arena &Arena) contains_any_word(start voidptr, size int) bool {
+	if arena.scope == unsafe { nil } || start == unsafe { nil } || size < int(sizeof(voidptr)) {
+		return false
+	}
+	$if prealloc {
+		lower, upper := unsafe { prealloc_scope_address_range(voidptr(arena.scope)) }
+		if lower >= upper { return false }
+		words := unsafe { &voidptr(start) }
+		for index in 0 .. size / int(sizeof(voidptr)) {
+			pointer := unsafe { words[index] }
+			address := uint(pointer)
+			if address >= lower && address < upper && arena.contains(pointer) {
+				return true
+			}
+		}
+	}
+	return false
+}
