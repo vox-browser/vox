@@ -110,7 +110,7 @@ public:
 };
 std::list<RegionTarget> region_targets;
 size_t region_target_bytes = 0;
-constexpr size_t region_target_limit = 4 * 1024 * 1024;
+constexpr size_t region_target_limit = 64 * 1024 * 1024;
 
 void clear_region_targets()
 {
