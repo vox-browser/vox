@@ -1,0 +1,354 @@
+{
+  "version": 1,
+  "implementation_commit": "225685a15",
+  "production_executable_sha256": "0265539a5c31ef86517916e4870b19e0161a3562345694249a07da6a2f632d2b",
+  "scope": "Fresh canonical production browser, original author scripts, frozen single SOCKS capture, launch through encoded document PNG; numeric dimension control/candidate/candidate/control comparison. Four pairs are below seven-pair acceptance.",
+  "source_and_runtime_path_verified": true,
+  "diagnostic_captures": 4,
+  "unprofiled_captures": 8,
+  "all_pixels_content_bootstrap_browser_and_kernel_exits_pass": true,
+  "benchmark_driver_exits": {
+    "diagnostic": 1,
+    "matched": 1
+  },
+  "driver_qualification": "Canonical driver exits retain their Brave target and seven-pair requirement. Validation controllers and outer guard exit zero.",
+  "control": [
+    {
+      "lower": 33051566692,
+      "upper": 33051566692
+    },
+    {
+      "lower": 32839599342,
+      "upper": 32839599342
+    }
+  ],
+  "candidate": [
+    {
+      "lower": 32973831878,
+      "upper": 32973831878
+    },
+    {
+      "lower": 33819350563,
+      "upper": 33819350563
+    }
+  ],
+  "control_median": 32945583017.0,
+  "candidate_median": 33396591220.5,
+  "median_reduction_fraction": -0.013689489218244422,
+  "conservative_observed_page_instruction_reduction": -979751221,
+  "page_instruction_credit": 0,
+  "broad_checkpoint_required": false,
+  "broad_jobs": 0,
+  "broad_all_pass": null,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "work": [
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 466,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          6.94140625,
+          6.2158203125,
+          6.009765625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          7.02587890625,
+          6.2451171875,
+          6.02099609375
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 467,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          6.1025390625,
+          6.08251953125,
+          5.96728515625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          6.07373046875,
+          6.0791015625,
+          5.96728515625
+        ]
+      }
+    },
+    {
+      "variant": "candidate",
+      "frame_complete_checkpoints": 459,
+      "build_boxes_checkpoints": 12,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          6.07373046875,
+          6.0791015625,
+          5.96728515625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          6.1474609375,
+          6.09423828125,
+          5.97314453125
+        ]
+      }
+    },
+    {
+      "variant": "control",
+      "frame_complete_checkpoints": 426,
+      "build_boxes_checkpoints": 11,
+      "host_before": {
+        "cpu_count": 18,
+        "load_average": [
+          6.78173828125,
+          6.23486328125,
+          6.025390625
+        ]
+      },
+      "host_after": {
+        "cpu_count": 18,
+        "load_average": [
+          6.57421875,
+          6.2099609375,
+          6.0185546875
+        ]
+      }
+    }
+  ],
+  "contention": "Host CPU count, timestamp and load and per-capture frame/box checkpoint counts retained in work. Frame variation limits attribution; a median difference alone receives no conservative saving credit.",
+  "guard": {
+    "exit": 0,
+    "adopted_processes": 42,
+    "peak_rss_bytes": 1931575296,
+    "limit_bytes": 12884901888
+  },
+  "publication_policy": "Used the latest completed canonical production bundle while the build lock was busy. Every capture fingerprint and full before/after receipt remained unchanged. No copied bundle or additional build request.",
+  "earlier_attempts": {
+    "r1": {
+      "controller": {
+        "started_unix": 1793831488.8007832,
+        "lock": "/Users/alex/code/vox2/Build/production-build/build.lock",
+        "acquired": true,
+        "scope": "Nonblocking publication lease across one diagnostic and one matched cohort; no build enqueued. Existing queued requests are woken on release.",
+        "rows": [
+          {
+            "name": "diagnostic",
+            "command": [
+              "/Library/Developer/CommandLineTools/usr/bin/python3",
+              "/Users/alex/code/vox2/Build/chatgpt-numeric-production-20261105-r1/diagnostic/page.py"
+            ],
+            "exit": 1
+          }
+        ],
+        "request_before": {
+          "head": "225685a15ae0640c32e1678d6861877e6a3e7187",
+          "id": "5d6aa405780c43b1ad01806eb7f61a89"
+        },
+        "status": "rejected",
+        "production_before": {
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "0265539a5c31ef86517916e4870b19e0161a3562345694249a07da6a2f632d2b",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-012540-989d72be/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "ce87a986d192fad7f0282878f0d1cedd58a5ada54aea0d1a9d4a4b21f54aa575",
+            "dirty": true,
+            "head": "5c5ed9a4663087bbcfffdb86c3a937ed41912042",
+            "repository_sha256": "8afeda8eb8e62fcc2fb1a5094a4bffd0f80704c6ec59643bbc5923e69de23e5c"
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "ce87a986d192fad7f0282878f0d1cedd58a5ada54aea0d1a9d4a4b21f54aa575",
+            "dirty": true,
+            "head": "225685a15ae0640c32e1678d6861877e6a3e7187",
+            "repository_sha256": "69fe04c89dd345ea9cd18717ac5aa652ff14d03f71cef42a9c7db4ebac5cc95a"
+          },
+          "request": {
+            "head": "5c5ed9a4663087bbcfffdb86c3a937ed41912042",
+            "id": "c77a75f4ff2241bfa69b0a0645a2ed6a"
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "ce87a986d192fad7f0282878f0d1cedd58a5ada54aea0d1a9d4a4b21f54aa575",
+            "dirty": true,
+            "head": "5c5ed9a4663087bbcfffdb86c3a937ed41912042",
+            "repository_sha256": "7e6fdf1ca8869eea22c76b632ab4e7c7a8b9cb062fcb8357829b1b1ccedf23cc"
+          }
+        },
+        "production_after": {
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "0265539a5c31ef86517916e4870b19e0161a3562345694249a07da6a2f632d2b",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-012540-989d72be/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "ce87a986d192fad7f0282878f0d1cedd58a5ada54aea0d1a9d4a4b21f54aa575",
+            "dirty": true,
+            "head": "5c5ed9a4663087bbcfffdb86c3a937ed41912042",
+            "repository_sha256": "8afeda8eb8e62fcc2fb1a5094a4bffd0f80704c6ec59643bbc5923e69de23e5c"
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "ce87a986d192fad7f0282878f0d1cedd58a5ada54aea0d1a9d4a4b21f54aa575",
+            "dirty": true,
+            "head": "225685a15ae0640c32e1678d6861877e6a3e7187",
+            "repository_sha256": "69fe04c89dd345ea9cd18717ac5aa652ff14d03f71cef42a9c7db4ebac5cc95a"
+          },
+          "request": {
+            "head": "5c5ed9a4663087bbcfffdb86c3a937ed41912042",
+            "id": "c77a75f4ff2241bfa69b0a0645a2ed6a"
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "ce87a986d192fad7f0282878f0d1cedd58a5ada54aea0d1a9d4a4b21f54aa575",
+            "dirty": true,
+            "head": "5c5ed9a4663087bbcfffdb86c3a937ed41912042",
+            "repository_sha256": "7e6fdf1ca8869eea22c76b632ab4e7c7a8b9cb062fcb8357829b1b1ccedf23cc"
+          }
+        },
+        "request_after": {
+          "head": "225685a15ae0640c32e1678d6861877e6a3e7187",
+          "id": "5d6aa405780c43b1ad01806eb7f61a89"
+        },
+        "woke_existing_request": true,
+        "finished_unix": 1793831489.887805
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-numeric-production-20261105-r1/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 235126784,
+        "elapsed_seconds": 1.214219042,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "browser_trials": 0,
+      "page_instruction_credit": 0
+    },
+    "r2": {
+      "controller": {
+        "started_unix": 1793831545.358228,
+        "lock": "/Users/alex/code/vox2/Build/production-build/build.lock",
+        "acquired": false,
+        "scope": "Nonblocking publication lease across one diagnostic and one matched cohort; no build enqueued. Existing queued requests are woken on release.",
+        "rows": [],
+        "status": "busy",
+        "finished_unix": 1793831545.3582752
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-numeric-production-20261105-r2/run.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 75,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3424256,
+        "elapsed_seconds": 0.151572709,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "browser_trials": 0,
+      "page_instruction_credit": 0
+    }
+  },
+  "earlier_qualification": "R1 source-proof preflight expected a diagnostic string inline; V uses a shared literal. Rejected before browser launch, then corrected to resolve and verify the exact string binding. R2 nonblocking publication lease was busy; no browser trial. All raw attempts retained.",
+  "brave_intervals": [
+    {
+      "lower": 20987387263,
+      "upper": 20997852372
+    },
+    {
+      "lower": 20625287002,
+      "upper": 20646214627
+    },
+    {
+      "lower": 20960947583,
+      "upper": 20998215521
+    },
+    {
+      "lower": 20732037450,
+      "upper": 20752367348
+    }
+  ],
+  "candidate_worst_over_best_brave": 1.6397032710245725,
+  "observed_brave_inequality": false,
+  "acceptance": false,
+  "target_fraction": "0.95",
+  "qualification": "Four alternating Vox/Brave pairs, two per Vox variant, below seven-pair acceptance. Original single SOCKS capture, author scripts, JSC bootstrap, private profiles/caches, viewport/scale, five-second settle and references unchanged; OS filesystem/shader caches retained. No new download or live interaction claim. The 5% Brave advantage remains unmet.",
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-numeric-production-20261105-evidence.zip",
+      "sha256": "1b1f7e43fcfe81fe196e59f2be91a489381ce3f49b752913c04ea95e237605d5",
+      "bytes": 484507
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-r1-lease-20261105.json",
+      "sha256": "8c0e5be8b9a963d7db2ceef5b4d515de72bb70d2d57f8ea29e60501b243166fe",
+      "bytes": 3647
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-r2-lease-20261105.json",
+      "sha256": "23efba31700e1268731b565d19ff4e7fe2478458f911ac3ada17d1e548e1066f",
+      "bytes": 359
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-r3-controller-20261105.json",
+      "sha256": "c2f8fb76c65c220aa61c8f1d0545a76247f778347e854b2c32c93807eb85a29d",
+      "bytes": 3627
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-r3-diagnostic-20261105.json",
+      "sha256": "fab338cd294dec65f24f5d69e836bb6bf9af2e4c4d533bb4d12044382cf7ed9a",
+      "bytes": 1637754
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-r3-diagnostic-20261105-evidence.zip",
+      "sha256": "1ba95c1598ba4a24472d174abd5b45cfebd77162141a72f9adb3d924eaff5212",
+      "bytes": 1328268
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-r3-matched-20261105.json",
+      "sha256": "c8a8cf30457f3c434e8632a7d94e7ee48dff7e672792a4b1e773c4e1a18c81f1",
+      "bytes": 2557414
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-r3-matched-20261105-evidence.zip",
+      "sha256": "9591ac9ca845bcb8d099bdb4a47c8bea5e29b64ecabbcedf068fc478b5624be6",
+      "bytes": 2719530
+    },
+    {
+      "path": "docs/performance/chatgpt-numeric-production-finalization-20261105-evidence.zip",
+      "sha256": "e62842b85c66fe36c1e1e4b278ab3f5b8a0c63b052777c518228d6eb857b9d54",
+      "bytes": 1806
+    }
+  ],
+  "finalization_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-numeric-production-20261105-r3/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 45023232,
+    "elapsed_seconds": 0.28918699999999997,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

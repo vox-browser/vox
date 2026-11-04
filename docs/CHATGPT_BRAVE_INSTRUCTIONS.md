@@ -1535,3 +1535,43 @@ focused-check guard. These component results grant no whole-page instruction
 credit and do not advance the broad-check cadence. The original single SOCKS
 capture, author scripts and pixel references remain unchanged. The requested
 5% advantage over Brave remains open pending production browser measurements.
+
+## November 5: numeric predicate production comparison
+
+The latest completed canonical production executable
+`0265539a5c31ef86517916e4870b19e0161a3562345694249a07da6a2f632d2b`
+contains the final direct predicate, scalar sentinel and original-loop control,
+verified from its sealed compiler input. No separate build was requested for
+this comparison. Its identity stayed unchanged throughout all captures while
+another shared build was running.
+
+Two preflights remain retained: the first rejected a source-proof assumption
+that V stored the diagnostic message inline, before any browser launch; the
+second could not acquire the nonblocking publication lease and launched nothing.
+The completed run uses the available bundle with full input fingerprints. Its
+four diagnostic and eight unprofiled captures all pass the unchanged content
+and pixel audits, JSC bootstrap and browser/kernel exits. The direct-path marker
+appears only in the candidate diagnostic.
+
+Original-loop control counts are **33,051,566,692** and **32,839,599,342**;
+direct-predicate counts are **32,973,831,878** and **33,819,350,563**. Medians
+are **32,945,583,017** and **33,396,591,220.5**: the observed candidate is
+**1.369% more expensive**. The conservative separation is **−979,751,221**,
+so no whole-page saving is credited. Frame checkpoints vary 426–467 and one
+candidate has twelve box-building checkpoints rather than eleven. Starting
+loads range 6.07–6.94 on 18 CPUs; the ranges and differing frame/layout work
+prevent attributing this page difference to the predicate.
+
+The enclosing guard exits zero, adopts 42 process identities and observes peak
+aggregate RSS of 1,931,575,296 bytes. Both canonical drivers retain exit 1 for
+the Brave target and seven-pair minimum; validation controllers exit zero. The
+highest candidate divided by the lowest Brave lower bound is **1.640**, above
+the requested 0.95. Broad verification is not due and its cadence remains zero.
+
+The [production receipt](performance/chatgpt-numeric-production-20261105.json)
+retains both rejected preflights, all counters, PNGs, audits, source proofs,
+identities and guard exits. These four alternating Vox/Brave pairs are a
+diagnostic cohort, below seven-pair acceptance. The original single SOCKS
+capture and author scripts, empty private profiles/caches, five-second settle,
+viewport/scale and references remain unchanged. This result establishes neither
+the requested 5% Brave advantage nor live interaction parity.
