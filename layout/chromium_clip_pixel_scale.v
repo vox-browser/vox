@@ -6,7 +6,15 @@ import painting
 // replaying it among CSS-coordinate transforms, retaining half-CSS-pixel edges.
 fn compatibility_clip_visual_data(box &BlockBox, rect LayoutRect, radii BoxRadii) painting.ClipVisualData {
 	scale := chromium_paint_pixel_scale(box.layout_handle)
+	mut precise_rect := ?painting.Rect(none)
+	if box.layout_handle != unsafe { nil } {
+		node := unsafe { &Node(box.layout_handle) }
+		if node.is_svg_svg_box() && node.document().font_rendering_policy() == .chromium {
+			precise_rect = painting.Rect{rect.x, rect.y, rect.width, rect.height}
+		}
+	}
 	return painting.ClipVisualData{
+		layout_rect_override: precise_rect
 		rect: compatibility_rounded_int_rect(LayoutRect{
 			rect.x * scale, rect.y * scale, rect.width * scale, rect.height * scale
 		})

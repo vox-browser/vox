@@ -37,6 +37,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_computed_hsl_colors_retain_float_alpha_in_text_and_paths(self):
         self.compare_fixture('chromium-hsl-alpha', width=1024, height=768)
 
+    def test_fractional_svg_viewports_keep_their_covered_edge_samples(self):
+        self.compare_fixture('fractional-svg-viewport-fringe', width=1024, height=768)
+
     def test_svg_background_round_caps_and_curves_share_the_parent_picture(self):
         self.compare_fixture('register-svg-stroke-recording', width=1024, height=768)
 
