@@ -1,6 +1,35 @@
 module main
 
 import layout
+import html
+import os
+
+fn test_captured_svg_header_retains_its_opaque_continuation_after_layout() {
+	mut document := html.parse_document(os.read_file('Tests/Browser/Brave/input/opaque-svg-mask-ellipse-resume.html') or { panic(err) })
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	document.set_font_size_keyword_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('paint') })
+	viewport := layout.LayoutRect{0, 0, 1024, 768}
+	mut plan := layout.ChromiumRasterLayerPlan{}
+	layout.update_chromium_raster_layer_plan_for_viewport(document, commands, 1, viewport, mut plan)
+	mut masks := 0
+	for index, command in commands {
+		if command.kind != 'begin_svg_mask_layer' { continue }
+		masks++
+		assert index + 3 < commands.len
+		parent := plan.command_layers[index + 3]
+		assert parent > 0
+		assert commands[index + 3].kind == 'draw_svg_path'
+		assert commands[index + 3].svg_data.path_data[0] == 6
+		assert chromium_svg_compositor_layer_supported_for_viewport(commands, plan, parent, viewport)
+		assert !chromium_compositor_opaque_mask_resume(commands, plan, parent,
+			plan.layers[parent].command_indices.first())
+		assert chromium_compositor_opaque_mask_resume(commands, plan, parent, index + 3)
+	}
+	assert masks == 1
+}
 
 fn opaque_mask_gap_test_commands() []layout.PaintCommand {
 	mask := &layout.PaintVisualLayer{kind:.svg_mask, scope_id:47,

@@ -69,7 +69,7 @@ fn (mut app BrowserApp) begin_chromium_text_scroll_layer(index int, command_inde
 			app.chromium_raster_plan, index, command_index)
 		resume := opaque_effect || (recorded && chromium_compositor_opaque_mask_resume(app.paint_commands,
 			app.chromium_raster_plan, index, command_index))
-		C.native_set_chromium_opaque_layer_continuation(i32(opaque_effect))
+		C.native_set_chromium_opaque_layer_continuation(i32(resume))
 		C.native_set_chromium_layer_shared_recording(i32(resume))
 		C.native_begin_css_effect_layer(1, 0)
 		C.native_set_chromium_layer_shared_recording(i32(recorded))
