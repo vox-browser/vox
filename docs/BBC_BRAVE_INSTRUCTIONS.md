@@ -1,7 +1,40 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Cohort 87 completes all seven alternating matched
+`OPTIMIZED_SITES.md`.** Cohort 88 completes all seven alternating matched
+control/Vox/Brave triples with exact original pixels, complete content, ownership,
+input identity and normal native exits in all 21 trials. Median counts are
+**28,170,148,069 Vox**, **28,315,073,501 control**, and **17,115,035,937 Brave
+lower bound**. The strict gate fails `287760261590 > 152821718487`, conservative
+ratio **1.6946821302302713**.
+
+The compact query decoder (`888a778d3`) avoids a generic JSON map for the exact
+ordered three-string ASCII envelope. Escaped, Unicode, snapshot, extra-field and
+other forms retain the existing decoder. Its marginal median point reduction is
+**144,925,432 (0.5118%)**, with four paired improvements and three regressions.
+The conservative control ratio **1.0261708034759418** fails; no robust saving is
+credited. The host gate passes at load 14.57 on 18 CPUs. All attempts remain.
+
+Twenty-eight focused case executions pass across memory modes and both decoder
+arms, with actual test calls verified in executable disassembly. All 300
+instruction-tool tests pass. A separate native diagnostic verifies the path only
+in the candidate before PNG, exact pixels/content, and all 72 original external
+script evaluations in both arms. All nine SVG image and paint-server mutation
+comparisons remain pixel-exact. The tested and production decoder functions
+match after actual C macro expansion and literal-checked string-pool mapping.
+The pinned executable is
+`e39d48b8a2cbbe729066e81e6f6dac3aeabb489f5f7aa146f184632db4edb8d9`.
+
+The measured point reduction triggers broad verification: **495 entered / 492
+passed** in each default and no-GC mode, preserving the same three known failures.
+No full pass or cadence reset is claimed. The historical total is now 88 cohorts
+and 1,961 attempted acceptance browser trials, excluding seven older contention
+attempts. See the [cohort 88 ledger](performance/bbc-cohort88-query-envelope-20261104.json)
+and [verified raw evidence](performance/raw/bbc-cohort88-query-envelope-20261104.tar.gz).
+These remain frozen-page observations with the rendering and scripting
+limitations below; no new live-site fix is claimed.
+
+Earlier cohort 87 completes all seven alternating matched
 control/Vox/Brave triples. All 21 original pixel, complete-content, ownership,
 input-identity and normal native-exit checks pass. Vox's median is
 **28,566,284,244**, control **28,680,897,060**, and Brave's lower-bound median
