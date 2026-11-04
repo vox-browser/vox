@@ -9,12 +9,17 @@
 #include <stdio.h>
 #endif
 
+#define VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS 48
+
 // One bounded viewport, never a growing document-sized backing store. The
 // caller supplies a content revision and excludes non-translating content.
 typedef struct {
     uint8_t *pixels;
     size_t bytes, width, height, top, canvas_width, canvas_height;
     size_t row_origin, dirty_first, dirty_rows;
+    // Rows of in-page damage rectangles, stored back besides the strip.
+    size_t damage_rows[VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS][2];
+    int damage_row_count;
     double scale, scroll;
     uint64_t owner, revision;
     int valid, active, reused, independent_content, damage_optimized;
@@ -23,7 +28,6 @@ typedef struct {
 
 static VoxScrollRaster native_scroll_raster;
 
-#define VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS 48
 
 // Chromium composites a video as its own layer over the unchanged raster
 // beneath it. The single-surface equivalent retains, in document device rows,
@@ -214,6 +218,7 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     cache->damage_optimized = damage_optimized;
     cache->dirty_first = 0;
     cache->dirty_rows = h;
+    cache->damage_row_count = 0;
     native_video_backdrops_keep_visible(cache, reuse);
     native_scroll_repainted_count = -1;
     if (!reuse) {
@@ -274,10 +279,16 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
         double left = fmax(0, rect[0]), right = fmin(width, rect[0] + rect[2]);
         double top_edge = fmax(0, rect[1]), bottom_edge = fmin(height, rect[1] + rect[3]);
         if (right <= left || bottom_edge <= top_edge) continue;
-        // Changed content anywhere in the viewport rewrites rows outside the
-        // exposed strip; store the complete viewport back into the ring.
-        cache->dirty_first = 0;
-        cache->dirty_rows = h;
+        // Changed content rewrites rows outside the exposed strip; store
+        // those rows back into the ring as well, and only those.
+        size_t first_row = (size_t)floor(top_edge * scale + 0.0000001);
+        size_t end_row = (size_t)ceil(bottom_edge * scale - 0.0000001);
+        if (end_row > h) end_row = h;
+        if (end_row > first_row) {
+            cache->damage_rows[cache->damage_row_count][0] = first_row;
+            cache->damage_rows[cache->damage_row_count][1] = end_row - first_row;
+            ++cache->damage_row_count;
+        }
         clips[clip_count++] = CGRectMake(left, bottom + height - bottom_edge,
             right - left, bottom_edge - top_edge);
         // Only whole device pixels inside the clip are freshly painted.
@@ -308,6 +319,9 @@ static void native_end_scroll_raster(void) {
         if (cache->damage_optimized) {
             native_scroll_raster_copy_rows(cache, pixels, pitch,
                 cache->dirty_first, cache->dirty_rows, 1);
+            for (int index = 0; index < cache->damage_row_count; ++index)
+                native_scroll_raster_copy_rows(cache, pixels, pitch,
+                    cache->damage_rows[index][0], cache->damage_rows[index][1], 1);
         } else {
             for (size_t y = 0; y < cache->height; ++y)
                 memcpy(cache->pixels + y * cache->width * 4,

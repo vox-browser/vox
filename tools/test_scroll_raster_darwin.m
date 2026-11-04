@@ -298,8 +298,11 @@ static void test_damage_rects_repaint_only_changed_content(int scale) {
     double delta = 1;
     assert(native_begin_scroll_raster(3, 2, 100, top, width, height, 1, &delta, rect, 1, 1) == 1);
     assert(delta == 0);
-    assert(native_scroll_raster.dirty_first == 0);
-    assert(native_scroll_raster.dirty_rows == (size_t)(height * scale));
+    // Only the damaged rows return to the ring; there is no exposed strip.
+    assert(native_scroll_raster.dirty_rows == 0);
+    assert(native_scroll_raster.damage_row_count == 1);
+    assert(native_scroll_raster.damage_rows[0][0] == (size_t)(30 * scale));
+    assert(native_scroll_raster.damage_rows[0][1] == (size_t)(20 * scale));
     white(actual, width, canvas_height);
     paint(actual, width, height, top, 100, scale);
     patch(actual, height, top, 40, 30, 50, 20, scale);
