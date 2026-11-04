@@ -16,6 +16,7 @@ import { collectVisibility, validateVisibilityProbe } from './visibility_probe.m
 import { collectOracleCosmetics } from './oracle_cosmetics.mjs';
 import { createOracleTarget } from './oracle_target.mjs';
 import { oracleTabEntries } from './oracle_network.mjs';
+import { installOracleLists, oracleAssetIdentities } from './oracle_assets.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const options = {
@@ -200,15 +201,21 @@ try {
     await background.evaluate(`(async()=>{
         const u=(await import('./js/background.js')).default;
         const a=(await import('./js/assets.js')).default;
-        u.userSettings.autoUpdate=false;
-        await u.saveUserFilters('');
         const lists=${JSON.stringify(lists)};
-        await u.saveSelectedFilterLists(lists.map(x=>x.name));
-        for(const list of lists) await a.put(list.name,list.content);
-        await a.remove(/^compiled\\//);
-        await u.loadFilterLists();
-        return u.selectedFilterLists;
+        return (${installOracleLists.toString()})(u,a,lists);
     })()`);
+    const listIdentity={expected:manifest.lists.map(({name,sha256})=>({name,sha256}))};
+    const checkListIdentity=async phase=>{
+        listIdentity[phase]=await background.evaluate(`(async()=>{
+            const assets=(await import('./js/assets.js')).default;
+            return (${oracleAssetIdentities.toString()})(assets,${JSON.stringify(listIdentity.expected)});
+        })()`);
+        await fs.mkdir(path.dirname(path.resolve(options.output)),{recursive:true});
+        await fs.writeFile(options.output+'.list-identity.json',JSON.stringify(listIdentity,null,2)+'\n');
+        if(JSON.stringify(listIdentity[phase])!==JSON.stringify(listIdentity.expected))
+            throw Error('Full-uBO list bytes changed at '+phase+'; see '+options.output+'.list-identity.json');
+    };
+    await checkListIdentity('before');
     const oracleTarget=await createOracleTarget(background,async()=>
         (await fetch(`http://127.0.0.1:${port}/json/list`)).json());
     page = await new CDP().connect(oracleTarget.target.webSocketDebuggerUrl);
@@ -414,6 +421,7 @@ try {
         oracle: { browser: execFileSync(options.brave, ['--version'], { encoding: 'utf8' }).trim(), extension: 'uBlock Origin (full, Manifest V2)', version: extensionManifest.version, shields: 'disabled in isolated profile', settings: 'repository-selected lists; identical snapshots; empty user filters', profile: options['profile-template'] ? { kind: 'temporary-copy', template: path.resolve(options['profile-template']) } : { kind: 'fresh-temporary' } },
         engine: manifest.engine,
         lists: manifest.lists.map(({ name, sha256 }) => ({ name, sha256 })),
+        list_identity:listIdentity,
         counts: { requests: requests.length, blocked: expected.filter(x => x.blocked).length, allowed: expected.filter(x => !x.blocked).length, mismatches: mismatches.length, oracle_disagreements: oracleDisagreements.length },
         network_observation: { request_events: networkRequests.length, ublock_network_log_entries: logs.length, response_header_checks: headerChecks.length,
             other_tab_network_log_entries: browserLogs.length - logs.length,
@@ -429,6 +437,7 @@ try {
         actual: entry.actual || actualByCheck.get(requestIdentity(entry.request)),
         expected: expectedByCheck.get(requestIdentity(entry.request)),
     })));
+    await checkListIdentity('after');
     await fs.mkdir(path.dirname(path.resolve(options.output)), { recursive: true });
     await fs.writeFile(options.output, JSON.stringify(capture, null, 2) + '\n');
     console.log(JSON.stringify({ output: path.resolve(options.output), ...capture.counts, common_stream: { requests: capture.common_stream.distinct_requests, vox_blocked: capture.common_stream.vox.blocked, full_ublock_origin_blocked: capture.common_stream.full_ublock_origin.blocked, matches: capture.common_stream.matches }, ...(visibility ? { visibility: { ...visibility.counts, matches: visibility.matches } } : {}), ...(navigation ? {coverage: navigation.coverage, status: navigation.status, title: navigation.title} : {}), ...(cosmeticComparison ? { css_matches: cosmeticComparison.css_matches, procedural_matches: cosmeticComparison.procedural_matches, scriptlet_filters_match: cosmeticComparison.scriptlet_filters_match } : {}) }));
