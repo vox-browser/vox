@@ -320,3 +320,26 @@ The [numeric iteration receipt](performance/chatgpt-numeric-iteration-20261104.j
 and its linked evidence archive preserve every compile attempt, command, guard,
 counter, checksum and source identity, including the one-off benchmark input.
 Production ChatGPT validation and the requested 5% Brave advantage remain open.
+
+Production executable
+`8eeafcba18c3a7fa5b216063dc3b3785eb1c179d9cd9ff6e5015088f0e064269`
+now contains the numeric-array change. Five fresh Vox observations pass the
+unchanged pixel, complete content and author-bootstrap checks. Their surrounding
+browser comparison attempts are both invalid and receive no instruction credit.
+
+The first seven-pair attempt stopped after pair two: its ownership audit rejected
+new renderers of a pinned, unrelated interactive Brave root whose command had no
+arguments. Commit `c1dd3bbc5` recognizes an exact executable command as well as
+one with arguments, retaining creation-time, ancestry, executable and separate
+coalition checks. Twelve focused ownership tests and 264 instruction-tool tests
+pass. A live identity check confirms three surviving rejected helpers belong to
+the older interactive root and its separate coalition.
+
+The corrected protocol completed three pairs and a fourth Brave observation,
+then rejected the cohort because a new shared production bundle replaced its
+pinned inputs. All eleven observations across both attempts remain recorded;
+neither partial cohort can satisfy the seven-pair acceptance rule. The
+[production follow-up](performance/chatgpt-numeric-production-20261104.json)
+preserves the failures, tool checks, input identities and raw evidence. There is
+no isolated page credit for the numeric change: these different browser builds
+do not supply a matched control.
