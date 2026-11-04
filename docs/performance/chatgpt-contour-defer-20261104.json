@@ -1,0 +1,283 @@
+{
+  "version": 1,
+  "implementation_commit": "6d335d14a",
+  "status": "Exact rendering retained; overlapping whole-page instruction ranges; 5% Brave goal remains unmet",
+  "workload": {
+    "url": "https://chatgpt.com/",
+    "scope": "Exclusive browser resource-coalition creation through encoded document PNG availability, including browser/window startup and the navigation/capture workflow described by navigation_scope. Brave includes CDP target/window setup. OS filesystem and shader caches are not cleared. This is a full startup/capture workflow, not isolated page navigation or rendering work.",
+    "viewport_css": [
+      1024,
+      768
+    ],
+    "scale": 2,
+    "settle_seconds": 5,
+    "focus": "unfocused",
+    "fixture": {
+      "path": "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/manifest.json",
+      "sha256": "7b13757f970e2f615267938bd52f902b852da239962fa265660db813622923f7",
+      "bytes": 608737
+    },
+    "reference": {
+      "path": "Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/reference/document.png",
+      "sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e",
+      "bytes": 165383
+    },
+    "network": "Original-origin disk-only frozen replay; no new download",
+    "author_scripts": "Original bytes; required JavaScriptCore bootstrap executed",
+    "caches": "Empty private browser profiles/caches; OS filesystem and shader caches retained"
+  },
+  "identity": {
+    "executable": {
+      "sha256": "5f425ea9c19c900da3d4cee432710d164609b7a64619b240bb9aee7c641a327f",
+      "bytes": 32738400
+    },
+    "native_bridge": {
+      "path": "Build/chatgpt-contour-defer-20261104-1450/native-current/libLadybirdVSkiaText.dylib",
+      "sha256": "3554f23dfdab3b34ee4b0e9ff331d4b7bff6b87f7cd48b9776782b6469c17bee",
+      "bytes": 665712
+    },
+    "policy": "Unpublished contour bridge inserted in both control and candidate; all other native libraries and browser executable are canonical. No production-bundle acceptance claim.",
+    "inputs_stable": true
+  },
+  "diagnostics": {
+    "instrumented": true,
+    "path_verified": true,
+    "runs": [
+      {
+        "recorded": 32,
+        "deferred": 3,
+        "selected_library_logged": true
+      },
+      {
+        "recorded": 32,
+        "deferred": 3,
+        "selected_library_logged": true
+      }
+    ],
+    "interpretation": "Each capture records 32 contour calls and defers three eligible leaves: two shadows and one border. Loader logs verify the selected candidate library. Diagnostic counts receive no optimization credit."
+  },
+  "matched": {
+    "instrumented": false,
+    "order": [
+      "control",
+      "candidate",
+      "candidate",
+      "control"
+    ],
+    "raw_vox_counts": {
+      "control": [
+        {
+          "lower": 33399015137,
+          "upper": 33399015137
+        },
+        {
+          "lower": 33111027943,
+          "upper": 33111027943
+        }
+      ],
+      "candidate": [
+        {
+          "lower": 32862897025,
+          "upper": 32862897025
+        },
+        {
+          "lower": 33238889925,
+          "upper": 33238889925
+        }
+      ]
+    },
+    "control_median": 33255021540.0,
+    "candidate_median": 33050893475.0,
+    "median_point_reduction": 204128065.0,
+    "conservative_page_instruction_reduction": -127861982,
+    "interpretation": "Two trials per implementation isolate the contour switch within the same unpublished bridge and installed executable. Ranges overlap; no confirmed whole-page gain."
+  },
+  "checks": {
+    "focused_contour_checks": 162,
+    "existing_exact_brave_picture_checks": 24,
+    "compared_page_captures": 12,
+    "all_browser_and_kernel_exits_zero": true,
+    "pixels_and_content_exact": true,
+    "inputs_stable": true
+  },
+  "attempts": {
+    "initial_bridge_build": "Preflight failed on incorrect libdeflate path before compilation; corrected build passed",
+    "initial_page_diagnostic": "Dependency audit rejected the library self install ID before browser launch; corrected audit pins all real imports",
+    "failed_attempts_retained": true
+  },
+  "guards": {
+    "native-build": {
+      "command": [
+        "python3",
+        "Build/chatgpt-contour-defer-20261104-1450/build_bridge.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 24100864,
+      "elapsed_seconds": 0.9241095420000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-build-fixed": {
+      "command": [
+        "python3",
+        "Build/chatgpt-contour-defer-20261104-1450/build_bridge.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 607731712,
+      "elapsed_seconds": 10.037554709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focused": {
+      "command": [
+        "sh",
+        "tools/test_native_chromium_contour_deferred.sh"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 586596352,
+      "elapsed_seconds": 26.360183666,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "final-focused": {
+      "command": [
+        "sh",
+        "tools/test_native_chromium_contour_deferred.sh"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 591888384,
+      "elapsed_seconds": 22.560215416000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "diagnostic": {
+      "command": [
+        "python3",
+        "Build/chatgpt-contour-defer-20261104-1450/page.py",
+        "diagnostic"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 23347200,
+      "elapsed_seconds": 0.189339625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "diagnostic-fixed": {
+      "command": [
+        "python3",
+        "Build/chatgpt-contour-defer-20261104-1450/page.py",
+        "diagnostic-fixed"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "39859": "Wed Nov  4 15:10:05 2026    ",
+        "39870": "Wed Nov  4 15:10:06 2026    ",
+        "40260": "Wed Nov  4 15:10:15 2026    ",
+        "40262": "Wed Nov  4 15:10:15 2026    ",
+        "40271": "Wed Nov  4 15:10:15 2026    ",
+        "40272": "Wed Nov  4 15:10:15 2026    ",
+        "40276": "Wed Nov  4 15:10:15 2026    ",
+        "40296": "Wed Nov  4 15:10:16 2026    ",
+        "40533": "Wed Nov  4 15:10:25 2026    ",
+        "40536": "Wed Nov  4 15:10:25 2026    ",
+        "40541": "Wed Nov  4 15:10:25 2026    ",
+        "40542": "Wed Nov  4 15:10:25 2026    ",
+        "40543": "Wed Nov  4 15:10:25 2026    ",
+        "40561": "Wed Nov  4 15:10:26 2026    ",
+        "40566": "Wed Nov  4 15:10:26 2026    ",
+        "40801": "Wed Nov  4 15:10:35 2026    ",
+        "40803": "Wed Nov  4 15:10:35 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1721434112,
+      "elapsed_seconds": 44.525851334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "matched": {
+      "command": [
+        "python3",
+        "Build/chatgpt-contour-defer-20261104-1450/page.py",
+        "matched"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {
+        "42781": "Wed Nov  4 15:11:48 2026    ",
+        "42785": "Wed Nov  4 15:11:48 2026    ",
+        "43244": "Wed Nov  4 15:11:58 2026    ",
+        "43246": "Wed Nov  4 15:11:58 2026    ",
+        "43255": "Wed Nov  4 15:11:58 2026    ",
+        "43256": "Wed Nov  4 15:11:58 2026    ",
+        "43258": "Wed Nov  4 15:11:58 2026    ",
+        "43282": "Wed Nov  4 15:11:58 2026    ",
+        "43940": "Wed Nov  4 15:12:09 2026    ",
+        "43948": "Wed Nov  4 15:12:09 2026    ",
+        "43967": "Wed Nov  4 15:12:09 2026    ",
+        "43968": "Wed Nov  4 15:12:09 2026    ",
+        "43972": "Wed Nov  4 15:12:10 2026    ",
+        "45039": "Wed Nov  4 15:12:21 2026    ",
+        "45042": "Wed Nov  4 15:12:21 2026    ",
+        "45723": "Wed Nov  4 15:12:31 2026    ",
+        "45726": "Wed Nov  4 15:12:31 2026    ",
+        "46307": "Wed Nov  4 15:12:41 2026    ",
+        "46311": "Wed Nov  4 15:12:41 2026    ",
+        "46323": "Wed Nov  4 15:12:41 2026    ",
+        "46325": "Wed Nov  4 15:12:41 2026    ",
+        "46327": "Wed Nov  4 15:12:41 2026    ",
+        "46812": "Wed Nov  4 15:12:52 2026    ",
+        "46814": "Wed Nov  4 15:12:52 2026    ",
+        "46823": "Wed Nov  4 15:12:52 2026    ",
+        "46824": "Wed Nov  4 15:12:52 2026    ",
+        "46826": "Wed Nov  4 15:12:52 2026    ",
+        "47272": "Wed Nov  4 15:13:03 2026    ",
+        "47276": "Wed Nov  4 15:13:03 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1736441856,
+      "elapsed_seconds": 93.132046667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "broad_cadence": {
+    "whole_page_instruction_credit": 0,
+    "advance": 0,
+    "threshold": 5000000,
+    "reason": "Overlapping page ranges do not advance the broad-check cadence"
+  },
+  "acceptance": false,
+  "production_validation": "Candidate native library validated through both focused native tests and fresh production-executable processes; this is not a published-bundle acceptance result",
+  "limitations": [
+    "Frozen anonymous homepage; no live-site, sign-in or chat-submission result",
+    "Launch-to-encoded-PNG workflow includes startup and Brave CDP delivery; not isolated rendering time or FPS",
+    "Exclusive resource coalitions include exited owned helpers; GPU execution and unrelated services excluded",
+    "Every sample retained; references and tolerances unchanged; fewer than seven pairs cannot establish Brave acceptance"
+  ],
+  "evidence": {
+    "archive": {
+      "path": "docs/performance/chatgpt-contour-defer-20261104-evidence.zip",
+      "sha256": "b24f52bdc5c23cfc02095942c78dc86ece3945bbbd442fa046d46b76fe166dcc",
+      "bytes": 2000267
+    },
+    "entries": 143,
+    "unique_blobs": 99,
+    "format": "index.json maps canonical artifact paths to hashes; blobs/<sha256> holds original bytes"
+  }
+}

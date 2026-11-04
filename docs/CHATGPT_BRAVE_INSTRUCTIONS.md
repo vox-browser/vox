@@ -246,3 +246,37 @@ overlap. The URL masks receive zero conservative page credit, and the cumulative
 component gain is not a whole-page gain. The replacement receipt retains every
 control, candidate and diagnostic observation separately from the seven-pair
 Brave comparison. No reference or tolerance was changed to obtain credit.
+
+## Contoured compositor leaves
+
+Commit `6d335d14a` avoids a redundant leaf raster when an isolated compositor
+picture already owns the complete contoured fill, border or shadow. The existing
+clip, ink-bound and deferred-publication guards retain the ordinary fallback,
+including a full redraw if publication fails. The focused native checks cover
+162 exact scenes and guard/failure cases, plus 24 existing exact Brave
+picture/native cases, at both raster scales.
+
+Two separate page diagnostics verify that each capture records 32 contour calls
+and defers three eligible leaves: two shadows and one border. Loader logs verify
+the candidate native library. Four uninstrumented captures then alternate
+control/candidate/candidate/control in the same installed executable and candidate
+bridge. All twelve Vox/Brave diagnostic and matched captures retain the original
+author scripts and pass unchanged pixel/content checks, with stable inputs.
+
+| Two matched Vox trials per implementation | Launch-to-PNG instructions |
+| --- | ---: |
+| Ordinary leaf control median | 33,255,021,540 |
+| Deferred leaf candidate median | 33,050,893,475 |
+| Conservative reduction | −127,861,982 |
+
+The median point reduction is 204,128,065 instructions, but the ranges overlap.
+This change receives zero conservative whole-page credit and does not advance
+the 5,000,000-instruction broad-check cadence. The selected library is unpublished;
+these fresh production-executable processes establish component validation, not
+production-bundle acceptance. The original 5% Brave goal remains open.
+
+The [contour receipt](performance/chatgpt-contour-defer-20261104.json) retains
+every count, command, guard exit and identity, including the two preflight failures
+that occurred before compilation/browser launch. Its linked evidence archive
+preserves raw logs, counters, audits and PNGs independently of `Build/` cleanup.
+No additional live download or reference/tolerance change was made.
