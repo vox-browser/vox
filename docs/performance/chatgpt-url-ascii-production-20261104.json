@@ -1,0 +1,615 @@
+{
+  "version": 1,
+  "status": "Production startup verified; original ChatGPT page comparison blocked by deleted fixture and references",
+  "implementation_commit": "bec575426",
+  "preflight_commit": "2d51c5fce",
+  "production": {
+    "identity": {
+      "path": "Build/production-build/receipts/20261104-135552-90689c5a/result.json",
+      "sha256": "c0f674c1f0ef78637a0ede7e2ab9c07a3da37ff4c785a5f60cc7009e72f43163",
+      "bytes": 1298
+    },
+    "receipt": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "0994c97bdcaddf9dedbcbcea73c1b6c97e1d41323c10b0324df0867284787d7f",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261104-135552-90689c5a/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "2fafab8139e45bb4dac7d5c504bbdc4652b1633908e75307fd4c044e9c9e6629",
+        "dirty": true,
+        "head": "1e031448a05832a61e54e48cdb23897957e40b11",
+        "repository_sha256": "890b9b0f130d2004494e914eabc6f6441c88a159bd3f31849ff3a170351bbccb"
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "2fafab8139e45bb4dac7d5c504bbdc4652b1633908e75307fd4c044e9c9e6629",
+        "dirty": true,
+        "head": "b79507f770a305bf1fd830e332b94184b4dca8e8",
+        "repository_sha256": "cededec862e4af5049ea041af64b69118af587579d2b5c311248193ec135dd0f"
+      },
+      "request": {
+        "head": "1e031448a05832a61e54e48cdb23897957e40b11",
+        "id": "6c73b6548a584d79952a60bc1fff4957"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "2fafab8139e45bb4dac7d5c504bbdc4652b1633908e75307fd4c044e9c9e6629",
+        "dirty": true,
+        "head": "b79507f770a305bf1fd830e332b94184b4dca8e8",
+        "repository_sha256": "890b9b0f130d2004494e914eabc6f6441c88a159bd3f31849ff3a170351bbccb"
+      }
+    }
+  },
+  "startup": {
+    "command": [
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "--headless-smoke"
+    ],
+    "inputs_before": {
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+        "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+        "bytes": 150024
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+        "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+        "bytes": 69928
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+        "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+        "bytes": 102592
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+        "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+        "bytes": 181544
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+        "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+        "bytes": 335064
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+        "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+        "bytes": 768872
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+        "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+        "bytes": 33371048
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+        "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+        "bytes": 2158624
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+        "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+        "bytes": 245016
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+        "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+        "bytes": 5744128
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+        "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+        "bytes": 106528
+      },
+      "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/startup.py": {
+        "sha256": "6634e2df5aa7bbe8c88336f2bb0dbf4ba9b3ada44e57d598bde7c3bab557e80a",
+        "bytes": 1619
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+        "sha256": "0994c97bdcaddf9dedbcbcea73c1b6c97e1d41323c10b0324df0867284787d7f",
+        "bytes": 32738016
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+        "sha256": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+        "bytes": 293648
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+        "sha256": "7519782b85d5f4a65b8ad8def3f29a52be926283d383d99bc87a11ffacf7fbb5",
+        "bytes": 665712
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": {
+        "sha256": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "bytes": 50450
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": {
+        "sha256": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "bytes": 21679
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": {
+        "sha256": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "bytes": 28599847
+      },
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": {
+        "sha256": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "bytes": 22876
+      },
+      "/Users/alex/code/vox2/aria/aria_roles.json": {
+        "sha256": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "bytes": 121440
+      },
+      "/Users/alex/code/vox2/browserhistory/history.css": {
+        "sha256": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "bytes": 5830
+      },
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": {
+        "sha256": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "bytes": 20560
+      },
+      "/Users/alex/code/vox2/css/ua_default.css": {
+        "sha256": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "bytes": 91086
+      },
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": {
+        "sha256": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "bytes": 2415
+      },
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": {
+        "sha256": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "bytes": 1083
+      },
+      "/Users/alex/code/vox2/css/ua_svg_default.css": {
+        "sha256": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "bytes": 478
+      },
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": {
+        "sha256": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "bytes": 65952
+      },
+      "/Users/alex/code/vox2/html/media_controls.css": {
+        "sha256": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+        "bytes": 3913
+      },
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": {
+        "sha256": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "bytes": 448
+      },
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": {
+        "sha256": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "bytes": 810
+      },
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": {
+        "sha256": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "bytes": 7527
+      },
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": {
+        "sha256": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "bytes": 1662
+      },
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": {
+        "sha256": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "bytes": 29026
+      },
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": {
+        "sha256": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "bytes": 2734
+      },
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": {
+        "sha256": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "bytes": 141881
+      },
+      "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+        "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+        "bytes": 125264
+      }
+    },
+    "scope": "Fresh non-windowed production startup and embedded JavaScript/DOM smoke; no ChatGPT page or instruction credit",
+    "host_before": {
+      "cpu_count": 18,
+      "load": [
+        16.27294921875,
+        18.1015625,
+        22.12158203125
+      ],
+      "unix": 1793790354.338392
+    },
+    "exit": 0,
+    "inputs_after": {
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib": {
+        "sha256": "739887ff9bf51b5ca25410836527873fcc3ec326ce17b584f9a3ebc00cf1209b",
+        "bytes": 150024
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib": {
+        "sha256": "b7616f7a7ed07ee1002c533db0291af054b2c6e03012eeed0f08b2a7e3e5b9c8",
+        "bytes": 69928
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib": {
+        "sha256": "85122c0b485e1c955683a02a72395a79313e22123847cf2af734eda30564f4c9",
+        "bytes": 102592
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib": {
+        "sha256": "c7231e22a2b2416ced00381c7f0ac26155ab5fe2773d4de9415d5862053b35b5",
+        "bytes": 181544
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib": {
+        "sha256": "e6de385b8e86846d49e95d3ea4d5824b222cb2e32f595bc6f886e4c39a5e46f8",
+        "bytes": 335064
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": {
+        "sha256": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+        "bytes": 768872
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib": {
+        "sha256": "4c15a650080f69986c7d87342c95882cc8c47487807fe487c117304e295542b5",
+        "bytes": 33371048
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib": {
+        "sha256": "9c22a0ad6834ec6388d2fb80576ce16af5580ec4109162faf6fdf48d0357063e",
+        "bytes": 2158624
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib": {
+        "sha256": "2b037dd591ca062f22d8f5f4e162dce363e2f46b5cd74d5d36a52370a1c17e72",
+        "bytes": 245016
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": {
+        "sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+        "bytes": 5744128
+      },
+      "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib": {
+        "sha256": "99dcce7f94a8669878832c827a3554b0e63df8cf5648419353cfa2bd16786bd4",
+        "bytes": 106528
+      },
+      "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/startup.py": {
+        "sha256": "6634e2df5aa7bbe8c88336f2bb0dbf4ba9b3ada44e57d598bde7c3bab557e80a",
+        "bytes": 1619
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": {
+        "sha256": "0994c97bdcaddf9dedbcbcea73c1b6c97e1d41323c10b0324df0867284787d7f",
+        "bytes": 32738016
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": {
+        "sha256": "66f73e1e5318da5d40ebfd6710363e56523896bb34bca8d9104d77e7f461fa9d",
+        "bytes": 293648
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": {
+        "sha256": "7519782b85d5f4a65b8ad8def3f29a52be926283d383d99bc87a11ffacf7fbb5",
+        "bytes": 665712
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.js.gz": {
+        "sha256": "e55863749a156fc56330f985e643276f124043fa488b1eb304211fa0e18c273e",
+        "bytes": 50450
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.engine.snapshot.json.gz": {
+        "sha256": "3682dd08d6fbff0e5dd27d6ace1db24e3d62639b43b80a502239fff41f41ab1a",
+        "bytes": 21679
+      },
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/Resources/adblock.snapshot.bin": {
+        "sha256": "b6976cc1a2ea1a46e61ddb9fc5977380d70976b92506ad68e92c3d47635ace39",
+        "bytes": 28599847
+      },
+      "/Users/alex/code/vox2/adblock/extended/procedural.js": {
+        "sha256": "8457cd7c87cf618b478c9fcf3e9716e120f3a469a530a22c951bc6f7c79e3d73",
+        "bytes": 22876
+      },
+      "/Users/alex/code/vox2/aria/aria_roles.json": {
+        "sha256": "e7532e29afb386fadfe50a397d3befb7d510ac4a9a6b9be48022d550fb0442f4",
+        "bytes": 121440
+      },
+      "/Users/alex/code/vox2/browserhistory/history.css": {
+        "sha256": "985d867c212b777faac0ef9f9806a6aae59e427893ae147c630204623affeea1",
+        "bytes": 5830
+      },
+      "/Users/alex/code/vox2/browserjs/vendor/es-module-lexer-1.7.0/lexer.asm.js": {
+        "sha256": "11c73b8379b531f2b77ffd89c75ca720ecf7059ab15bdc71da66ee22f3fc9ae7",
+        "bytes": 20560
+      },
+      "/Users/alex/code/vox2/css/ua_default.css": {
+        "sha256": "6d5d1cb77ef79369e27ec4fa91715803e6e4a81b44600634077cc02c56fb62de",
+        "bytes": 91086
+      },
+      "/Users/alex/code/vox2/css/ua_mathml_default.css": {
+        "sha256": "76ee50b3d89d2c1b30c40ed9d914b2cd857c5e6616da63010e4d50346b9db9b6",
+        "bytes": 2415
+      },
+      "/Users/alex/code/vox2/css/ua_quirks_mode.css": {
+        "sha256": "ffc53dff907436121a6c4875e5c400329289606605ffc66edc75bf53318cf5e7",
+        "bytes": 1083
+      },
+      "/Users/alex/code/vox2/css/ua_svg_default.css": {
+        "sha256": "e203969648852c73c5932cb1d464024a3dbbcb3a678427c0ef13cde44f4cf253",
+        "bytes": 478
+      },
+      "/Users/alex/code/vox2/dom/resources/pdfjs/viewer.html": {
+        "sha256": "c251ad7b712831c24ced34b54bedb8a7ead48ca3f9c6e6cfdd9ca97a84985972",
+        "bytes": 65952
+      },
+      "/Users/alex/code/vox2/html/media_controls.css": {
+        "sha256": "3e3557897c9227f49c8971714dce1c570a9447dcbb3a77b313f883424f2c1570",
+        "bytes": 3913
+      },
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-100.png": {
+        "sha256": "efcb5c77b9b97421b60982637d0a3d1e352b0275f294be3c62173743b3f0d8ee",
+        "bytes": 448
+      },
+      "/Users/alex/code/vox2/layout/resources/chromium/broken-image-200.png": {
+        "sha256": "072fb1710ffa7096a8ef3842ac168b1e774d8879054eedad39bc947306389c2d",
+        "bytes": 810
+      },
+      "/Users/alex/code/vox2/optimizedsites/assets/hacker-news.ico": {
+        "sha256": "402519a37fed7880aea64ce37c210cd32c33be9b468fb2668ffcd6faec51260d",
+        "bytes": 7527
+      },
+      "/Users/alex/code/vox2/optimizedsites/assets/reddit.png": {
+        "sha256": "58acb31ef9f7363f1afefc083bff69e8fe11d77115573b606a0fa05b2868c7d2",
+        "bytes": 1662
+      },
+      "/Users/alex/code/vox2/optimizedsites/assets/vlang.png": {
+        "sha256": "6e652d625ddcf19a258c9e6f8ba9c5cacf6e39e62244292077044f0299d9c7b2",
+        "bytes": 29026
+      },
+      "/Users/alex/code/vox2/optimizedsites/assets/wikipedia.ico": {
+        "sha256": "3638de61226857e62cf5187d7d59cf902111ad4f792b5bdff1bfed3f5ed5e608",
+        "bytes": 2734
+      },
+      "/Users/alex/code/vox2/url/public_suffix_list_reversed.dat": {
+        "sha256": "a57cb89160bc348f19977174645ec9f475674ec3f764c7fa5f1b0f6c881f8375",
+        "bytes": 141881
+      },
+      "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib": {
+        "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+        "bytes": 125264
+      }
+    },
+    "identity_stable": true,
+    "host_after": {
+      "cpu_count": 18,
+      "load": [
+        16.27294921875,
+        18.1015625,
+        22.12158203125
+      ],
+      "unix": 1793790354.64711
+    },
+    "passed": true
+  },
+  "startup_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-url-ascii-20261104-1330/startup.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 52789248,
+    "elapsed_seconds": 1.0027396659999999,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "missing_inputs": [
+    {
+      "path": "Build/chatgpt-instructions-input-20261104-0830/manifest.json",
+      "sha256": "5c59adf716301d5a32484f67343db29ba026fa3f8527daa1c8c14c6ae78d9a59"
+    },
+    {
+      "path": "Build/chatgpt-instructions-input-20261104-0830/bodies/20960cf144422190847df92297356039f0faa822135f12f2b868fb38ad11dd38",
+      "sha256": "20960cf144422190847df92297356039f0faa822135f12f2b868fb38ad11dd38",
+      "bytes": 465877
+    },
+    {
+      "path": "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+      "sha256": "6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e"
+    },
+    {
+      "path": "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json"
+    }
+  ],
+  "recovery": {
+    "paths_surveyed": 189,
+    "matching_sources": [],
+    "downloads": 0,
+    "original_archive_missing": true,
+    "original_reference_missing": true
+  },
+  "preflight_cli": {
+    "command": [
+      "python3",
+      "tools/chatgpt_browser_instructions.py",
+      "--archive",
+      "Build/chatgpt-instructions-input-20261104-0830",
+      "--output",
+      "Build/chatgpt-url-ascii-20261104-1330/preflight-real-run",
+      "--expected",
+      "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png",
+      "--reference-audit",
+      "Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json",
+      "--title",
+      "ChatGPT: Chat, Work, Create & Code with AI",
+      "--diff-tool",
+      "Build/chatgpt-url-ascii-20261104-1330/diff-verification/pixel_diff",
+      "--memory-guard-registry",
+      "Build/chatgpt-url-ascii-20261104-1330/preflight-unused-pids.json",
+      "--repeat",
+      "2",
+      "--unfocused"
+    ],
+    "exit": 2,
+    "stdout": "",
+    "stderr": "ChatGPT benchmark input error: Retained benchmark inputs are missing:\n  sealed page manifest: /Users/alex/code/vox2/Build/chatgpt-instructions-input-20261104-0830/manifest.json\n  Brave pixel reference: Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png\n  retained content audit: Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/audit.json\n  audit pixel reference: Build/chatgpt-unfocused-control-20261104-0905/run/pair-1-brave/document.png\nRestore the captured fixture and its references before measuring.\n",
+    "output_created": false
+  },
+  "helper_verification": [
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/diff-verification/pixel_diff",
+        "Build/chatgpt-url-ascii-20261104-1330/diff-verification/red.png",
+        "Build/chatgpt-url-ascii-20261104-1330/diff-verification/red.png",
+        "Build/chatgpt-url-ascii-20261104-1330/diff-verification/red.png.strict.diff.png",
+        "0",
+        "0"
+      ],
+      "exit": 0,
+      "stdout": "pixels: 1\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: Build/chatgpt-url-ascii-20261104-1330/diff-verification/red.png.strict.diff.png\nPASS: within maximum_channel_error=0, different_pixels=0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/alex/code/vox2/Build/chatgpt-url-ascii-20261104-1330/diff-verification/pixel_diff",
+        "Build/chatgpt-url-ascii-20261104-1330/diff-verification/red.png",
+        "Build/chatgpt-url-ascii-20261104-1330/diff-verification/blue.png",
+        "Build/chatgpt-url-ascii-20261104-1330/diff-verification/blue.png.strict.diff.png",
+        "0",
+        "0"
+      ],
+      "exit": 1,
+      "stdout": "pixels: 1\ndifferent_pixels: 1 (100.0000%)\ndifference_bounds: 0,0 1x1\nmaximum_error_pixel: 0,0 expected=255,0,0,255 actual=0,0,255,255\npixels_over_3: 1 (100.0000%)\npixels_over_10: 1 (100.0000%)\npixels_over_25: 1 (100.0000%)\npixels_over_50: 1 (100.0000%)\nmaximum_channel_error: 255\nmean_absolute_error: 127.5000\nrmse: 180.3122\ndiff: Build/chatgpt-url-ascii-20261104-1330/diff-verification/blue.png.strict.diff.png\nout_of_tolerance_pixel: 0,0 error=255 expected=255,0,0,255 actual=0,0,255,255\n",
+      "stderr": "FAIL: allowed maximum_channel_error=0, different_pixels=0\n"
+    }
+  ],
+  "tests": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tools",
+      "-p",
+      "chatgpt*test.py",
+      "-v"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 37502976,
+    "elapsed_seconds": 0.486454958,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "checks": {
+    "preflight_tests": 28,
+    "production_startup": "DOM mutation, click handler, native wheel routing and ordinary element wheel listeners passed",
+    "url_optimization_path_on_chatgpt": "Unverified; the source fixture is missing",
+    "browser_comparison_launches": 0
+  },
+  "attempt": {
+    "log": {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/browser-diagnostic.log",
+      "sha256": "a255db1054eb2814eb1a9c9d465b708ea66da1ebcc221d48b2cf22c300b4192c",
+      "bytes": 1547
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "Build/chatgpt-url-ascii-20261104-1330/browser.py",
+        "browser-diagnostic"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 64372736,
+      "elapsed_seconds": 1.525304791,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "error": "The old pixel-diff executable was removed by cleanup. Fingerprinting failed before browser setup. Subsequent recovery found the original archive, references, and earlier raw Build evidence directories also missing."
+  },
+  "limits": {
+    "downloads": 0,
+    "references_regenerated": 0,
+    "page_instruction_credit": 0,
+    "broad_cadence_advance": 0,
+    "brave_acceptance": false,
+    "note": "Durable historical counts survive in docs/performance; deleted raw files can no longer be independently rehashed in this workspace. Restore original inputs or explicitly authorize a new single SOCKS capture and a separately labelled new baseline."
+  },
+  "artifacts": [
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/startup.py",
+      "sha256": "6634e2df5aa7bbe8c88336f2bb0dbf4ba9b3ada44e57d598bde7c3bab557e80a",
+      "bytes": 1619
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/startup-result.json",
+      "sha256": "3eb8bbeac5b9ccdb5ec92840dc534ff8fe088570e8201ea15757418c28a496c9",
+      "bytes": 14688
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/startup-browser.log",
+      "sha256": "a997518fc6621d1a50b43cfc2902f4a6e806c5ce2b487ccc1e643ef569f1a218",
+      "bytes": 271
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/startup.log",
+      "sha256": "2dbb61f2c221e604d201e1a091fac77a8a90fcb5bf102d640852cf18457e436b",
+      "bytes": 851
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/startup-guard.json",
+      "sha256": "f650ee2517de9d0c42d9a28487432dfed8ae181058ecd39074d32b7916856e90",
+      "bytes": 386
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/recovery-paths.txt",
+      "sha256": "aee1beae499a8e786cc80eae4a5b71b038548e2558b44a432ef7ade908a88381",
+      "bytes": 15979
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/recovery-result.json",
+      "sha256": "0582a18e490b8c92d5cd7f6a90428f5d3f10d6401c97bc4f4f360ef959026a28",
+      "bytes": 146
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/preflight-cli.json",
+      "sha256": "fe00294feb488f9fca28415218d538b65193d851cb7019f7567e612b3d5d9889",
+      "bytes": 1368
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/preflight-tests.log",
+      "sha256": "6420224e850fd08b3098d03f3190f57491e551a3fd73689c527d5615b70794bc",
+      "bytes": 3931
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/preflight-tests-guard.json",
+      "sha256": "ea9d072624958d9d4d7f42b4e3d81db046770595de4eb4025b35a579b80a95a2",
+      "bytes": 431
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/browser-diagnostic.log",
+      "sha256": "a255db1054eb2814eb1a9c9d465b708ea66da1ebcc221d48b2cf22c300b4192c",
+      "bytes": 1547
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/browser-diagnostic-guard.json",
+      "sha256": "637db321a036113501f2a76bd16de37a2561e8ebaea88b6596c8f0de1e26f273",
+      "bytes": 406
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/diff-verification/compile.log",
+      "sha256": "d2d734c4625ab786d4c66d3196789659dd4e6e7818ec3a3468a9d04f746dc7d5",
+      "bytes": 501
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/diff-verification/compile-guard.json",
+      "sha256": "51df7b4c39b63e6871103584db94fa4ae4c93182ba1caa437f4967377e6f4984",
+      "bytes": 573
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/diff-verification/verification.json",
+      "sha256": "983d2ba25e7ab99f13706d1e9bf1205c6180fd026c712ef9071ef17a4198cc60",
+      "bytes": 1812
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/diff-verification/red.png",
+      "sha256": "4ff6ab670a58c14270e034e2090d9a432caa263a14e0a25785386b0c12f880b5",
+      "bytes": 70
+    },
+    {
+      "path": "Build/chatgpt-url-ascii-20261104-1330/diff-verification/blue.png",
+      "sha256": "6a34118ba2e0bf5da5ab14cb63b121e2e8b2987a876668a9b2f9c30e1357470b",
+      "bytes": 70
+    },
+    {
+      "path": "tools/chatgpt_browser_instructions.py",
+      "sha256": "f0db008312f4e533ba968c38c012018fd98f81d21f50eab36097eb2ceb40ebeb",
+      "bytes": 21239
+    },
+    {
+      "path": "tools/chatgpt_browser_instructions_test.py",
+      "sha256": "b41469c6e1412ea9acf78ddf035f1f4afb6748eb97d6993c9cb4751f1a8996cb",
+      "bytes": 13577
+    },
+    {
+      "path": "tools/pixel_diff.v",
+      "sha256": "3e34f4d1ed211a5476bc54c3483ab074b2ace8c36239d77f15e6f50d990ddfb7",
+      "bytes": 7619
+    }
+  ]
+}

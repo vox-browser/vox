@@ -1,10 +1,16 @@
 # ChatGPT instruction comparison
 
-The requested 5% advantage over Brave remains **unmet**. The latest complete
+The requested 5% advantage over Brave remains **unmet**. The latest recorded complete
 cohort uses production executable `401745782b25ace562042922ce4511c6138e41f1b15ee0aa0c146c72e3fe207b`
-and seven alternating fresh Vox/Brave pairs. All fourteen observations exit
-successfully and match the retained document PNG exactly, with complete content,
+and seven alternating fresh Vox/Brave pairs. All fourteen observations exited
+successfully and matched the retained document PNG exactly, with complete content,
 readiness, bootstrap and ownership audits.
+
+Those checks were verified when collected. Subsequent disk cleanup removed the
+saved page, pixel references and earlier raw `Build/` evidence directories.
+Durable counts below survive, but the missing files cannot now be independently
+rehashed or replayed. The new production bundle passes startup; its full-page
+comparison requires restored inputs or an explicitly authorized fresh capture.
 
 | Launch through document PNG encoding | Retired CPU instructions |
 | --- | ---: |
@@ -168,7 +174,7 @@ Original author scripts remain unchanged. The
 [URL optimization receipt](performance/chatgpt-url-ascii-20261104.json)
 records the exact commands, raw counts, checks and production validation status.
 
-Production page validation is pending. The first shared replacement failed at
+The initial production page validation was pending. The first shared replacement failed at
 linking when the disk filled; the next attempt also failed with insufficient
 space and could not finish its guard receipt. Space later became available and
 another shared build began. The completed bundle available during the bounded
@@ -177,3 +183,25 @@ and the pending build are recorded; one earlier failed receipt disappeared
 during external disk cleanup, and the receipt distinguishes its captured
 transcript from original files. No page instruction saving, broad-cadence
 advance or Brave acceptance credit is claimed for this change yet.
+
+Production executable
+`0994c97bdcaddf9dedbcbcea73c1b6c97e1d41323c10b0324df0867284787d7f`
+now contains the URL masks. A fresh process passes the embedded JavaScript DOM
+mutation/click checks and native wheel-routing checks with stable executable and
+runtime input identities. This is startup evidence, not a ChatGPT page result.
+
+The first page-test preflight found that cleanup had also removed the old
+pixel-diff helper. Its replacement passes independent exact/mismatch controls.
+A recovery survey then found the original sealed archive and retained PNG/audit
+missing, with no matching copy in the surveyed repository manifests, document
+PNGs, named ChatGPT directories or default Vox page caches. No browser comparison
+launched, no page was downloaded again, and no reference was regenerated.
+
+The comparison driver now verifies retained input files and archived body hashes
+before creating an output directory or starting browser setup. Twenty-eight
+focused tooling tests pass, including missing inputs, corrupt/deleted bodies,
+the audit's companion PNG, executable checks and input preservation. The
+[production follow-up receipt](performance/chatgpt-url-ascii-production-20261104.json)
+records the startup, recovery, preflight failure and exact missing-input hashes.
+The original single-download restriction requires authorization before replacing
+the lost fixture with a fresh SOCKS capture and a separately labelled baseline.
