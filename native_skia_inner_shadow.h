@@ -254,6 +254,10 @@ static bool draw_inset_picture_batch(InsetDecorationRecording const& group, SkPi
         }, std::getenv("VOX_DISABLE_LARGE_DECORATION_BATCH") ? 1024 * 1024 : 4 * 1024 * 1024);
 }
 
+#ifdef VOX_TEST_CLIPPED_DECORATION_GROUPS
+static unsigned s_test_clipped_decoration_groups;
+#endif
+
 // Retain the original backdrop before the fallback leaves draw. A failed or
 // unsupported recording leaves those ordinary draws intact.
 extern "C" int ladybird_v_skia_begin_inset_decorations(CGContextRef destination,
@@ -270,6 +274,18 @@ extern "C" int ladybird_v_skia_begin_inset_decorations(CGContextRef destination,
     auto group = std::make_unique<InsetDecorationRecording>();
     if (!clipped_raster_region(SkRect::MakeXYWH(x, y, width, height),
             canvas_width, canvas_height, 2, group->region)) return 0;
+    // A strip or damage repaint publishes only its clipped rows. Root grid
+    // tiles are anchored to the document, so the group's backdrop, batch and
+    // composite can cover just those rows without changing any of them.
+    RasterRegion visible;
+    if (s_raster_layer_is_root && s_msaa_grid_columns > 0 && !screenshot_uses_logical_pixels()
+        && !std::getenv("VOX_DISABLE_CLIPPED_DECORATION_GROUPS")
+        && visible_raster_region(destination, canvas_height, group->region, visible)) {
+        group->region = visible;
+#ifdef VOX_TEST_CLIPPED_DECORATION_GROUPS
+        ++s_test_clipped_decoration_groups;
+#endif
+    }
     group->destination = destination;
     group->scale = screenshot_uses_logical_pixels() ? 1 : raster_scale_for_context(destination);
     group->width = raster_dimension(group->region.width(), group->scale);
