@@ -124,11 +124,14 @@ static void native_scroll_raster_copy_rows(VoxScrollRaster *cache,
 // rectangles do not overlap horizontally. Each store copies the complete row;
 // publish its final canvas bytes to the ring once, including exposed rows.
 static void native_scroll_raster_store_rows(VoxScrollRaster *cache, uint8_t *pixels, size_t pitch) {
-    const char *disabled = NULL;
-    if (cache->damage_row_count > 1 || (cache->damage_row_count && cache->dirty_rows))
-        disabled = getenv("VOX_DISABLE_SCROLL_RASTER_ROW_UNION");
+    const char *enabled = NULL, *disabled = NULL;
+    if (cache->damage_row_count > 1 || (cache->damage_row_count && cache->dirty_rows)) {
+        // Keep the original default until matched page trials establish a gain.
+        enabled = getenv("VOX_ENABLE_SCROLL_RASTER_ROW_UNION");
+        if (enabled && *enabled) disabled = getenv("VOX_DISABLE_SCROLL_RASTER_ROW_UNION");
+    }
     if (!cache->damage_row_count || (cache->damage_row_count == 1 && !cache->dirty_rows)
-        || (disabled && *disabled)) {
+        || !enabled || !*enabled || (disabled && *disabled)) {
         native_scroll_raster_copy_rows(cache, pixels, pitch, cache->dirty_first, cache->dirty_rows, 1);
         for (int index = 0; index < cache->damage_row_count; ++index)
             native_scroll_raster_copy_rows(cache, pixels, pitch,
