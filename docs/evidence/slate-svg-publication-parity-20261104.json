@@ -1,0 +1,508 @@
+{
+  "status": "in_progress",
+  "site": "slate",
+  "archive_unchanged": true,
+  "archive_manifest_sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227",
+  "workload": "1024x768 frozen guest DOM, original encoded resources, full pinned MV2 uBO, no external replay fetches",
+  "fixes": [
+    {
+      "commit": "f79723f02",
+      "change": "Preserve SVG graphics opacity and CSS bitmap opacity scopes"
+    },
+    {
+      "commit": "8c5d9c80e",
+      "change": "Publish opaque clipped SVG leaves through the audited GPU clip path"
+    },
+    {
+      "commit": "94c603d80",
+      "change": "Require actual overflow on the permitted scrolling axis"
+    },
+    {
+      "commit": "ab4c39108",
+      "change": "Preserve both hard SVG-image bounds and destination edge coverage"
+    }
+  ],
+  "native_diagnostics": [
+    {
+      "directory": "Build/slate-contained-clip-20261104/native-after-svg-opacity",
+      "different_pixels": 14,
+      "scope": "Native only, against independently stable qualified frozen Brave PNG"
+    },
+    {
+      "directory": "Build/slate-contained-clip-20261104/native-leaf-clip-published",
+      "different_pixels": 4,
+      "executable_sha256": "2530bb64e699e913b25f47adaf2813c7a1b84dad0813eb669259c28d83715819",
+      "scope": "Native only; logo, sun, photos, authors and search match; three close-icon and one button-corner pixels remain"
+    },
+    {
+      "directory": "Build/slate-contained-clip-20261104/native-image-viewport-latest",
+      "different_pixels": 4,
+      "executable_sha256": "4d55ec4468623f9d2449dd9fef4c3a34515da8ce9a0a99faf33035cab142bc34",
+      "scope": "Intermediate hard-only image-clip control: top edge fixed but three trailing-edge pixels fail; superseded by paired hard/AA implementation"
+    }
+  ],
+  "remaining_gates": {
+    "production_pixels": "Pending a bundle containing paired image bounds and scrolling-axis eligibility",
+    "source_fidelity_different_pixels": 19064,
+    "source_gate_latest_full_run": "Build/slate-after-svg-layout-clip-20261104/slate",
+    "original_source_reference_changed": false,
+    "reference_tolerance": 0,
+    "full_original_source_capture_is_not_qualified": true
+  },
+  "checks": {
+    "svg_group_opacity_layout": "Pass default GC and GC none",
+    "css_svg_opacity_scope": "Pass default GC",
+    "opaque_leaf_clip": "16 cases pass optimized and ASan/UBSan; failing unmodified control retained",
+    "image_viewport": "16 native cases pass optimized and ASan/UBSan",
+    "native_clip_driver": "All 13 native programs pass under ASan/UBSan, including existing masks, colors, MSAA, borders and image clips",
+    "scroll_axis_layout": "16 DOM combinations pass default GC and GC none",
+    "existing_raster_layer_layout": "Pass default GC",
+    "new_authored_references": "Source plus two independent full-uBO Brave screenshots agree for each new SVG regression"
+  },
+  "superseded_experiments": [
+    {
+      "directory": "Build/slate-contained-clip-20261104/translated-clip-prototype",
+      "result": "Removed V geometry workaround; real clips are retained by the native publication fix"
+    },
+    {
+      "directory": "Build/slate-contained-clip-20261104/native-after-leaf-clip",
+      "result": "Rejected: shared executable changed during capture"
+    },
+    {
+      "directory": "Build/slate-contained-clip-20261104/rounded-button-panel-reference",
+      "result": "Exact control did not reproduce full-page corner; retained as diagnosis, not a replacement site reference"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "Tests/Browser/Brave/sites/slate/manifest.json",
+      "sha256": "e28a9ed99eac29aed3e945928a7aa0f2e3ef7859353bbeec707c2a1c69f6f227",
+      "bytes": 90335
+    },
+    {
+      "path": "Tests/Browser/Brave/sites/slate/live.png",
+      "sha256": "5743dcb13bf400ab11c6f7e135bdeb93175c2afe620b69eead3bd4e6be73549d",
+      "bytes": 309052
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-after-svg-opacity/identity.json",
+      "sha256": "681253495ea5e047aea48d1c82a1d870d39e0dfef50ee62965684252475de680",
+      "bytes": 3641
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-after-svg-opacity/pixels.json",
+      "sha256": "6396b9dc49ad21ad2a4c47c1a4cbc27ed9ae03293623a56278594fae56e88d88",
+      "bytes": 976
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-after-svg-opacity/capture.guard.json",
+      "sha256": "dde6152bb466a7d6888c4363c3ac00e769d0f39413793d8e76ccebad3baf1cbb",
+      "bytes": 588
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-after-svg-opacity/audit.json",
+      "sha256": "133d76acc62d966a6b37a88ccd23eb341b21f22f06c70512438ac2038ab4ab5d",
+      "bytes": 48362
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-after-svg-opacity/actual.png",
+      "sha256": "cfe0240551c6a9b99fc6d8e234d563bc3ebb26cf66bacbaa93206b90c72d8383",
+      "bytes": 481841
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-after-svg-opacity/reference-inputs.json",
+      "sha256": "c13f2c4168bcbfaa46c03d0005b3566bf4f908e54f7a700fdea93cfb33a7b759",
+      "bytes": 298
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-published/identity.json",
+      "sha256": "968bbf5c667504f2540267fcb9fa467ac01abfdf67c2e844b86d8815fb9aca53",
+      "bytes": 3641
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-published/pixels.json",
+      "sha256": "7c5b061dc627a164a57c2b8b2c24c6d38df7bf4238f054e7ad2c6fdc6851730e",
+      "bytes": 825
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-published/capture.guard.json",
+      "sha256": "225d684cea35114e1ffabfa3b738bd11a69ade072619d68213731283f7eecdf5",
+      "bytes": 590
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-published/audit.json",
+      "sha256": "3ea9686c069070d15f93968961aaf97aea0d32bb27c5f9630166a9bc7458b26e",
+      "bytes": 48362
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-published/actual.png",
+      "sha256": "2e3953c812ca5581b9e7c54c248c1b51da167055525c2819d192b9fc33169b63",
+      "bytes": 481831
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-published/reference-inputs.json",
+      "sha256": "c13f2c4168bcbfaa46c03d0005b3566bf4f908e54f7a700fdea93cfb33a7b759",
+      "bytes": 298
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-latest/identity.json",
+      "sha256": "5728f196c75841ad084abe274e74270577a83f7266a92cd5f145faab30ac1c0e",
+      "bytes": 3641
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-latest/pixels.json",
+      "sha256": "c3da17d41a09aba18f4f48669b652d1ffcdd66cc568d8b787213ead0c086590f",
+      "bytes": 831
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-latest/capture.guard.json",
+      "sha256": "5f37cc8a4309c1d919b1ca06781e720df2d872f055c2d05602517cfc1028e3e0",
+      "bytes": 598
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-latest/audit.json",
+      "sha256": "e9b453d490b61ac537c35f6cc7391fec1b678046b01549a23902f8053dc543f7",
+      "bytes": 48362
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-latest/actual.png",
+      "sha256": "8c7b36f89e5d32b54cee17a7b03b32e17f39a43b7c8ab3402079456ec6080d87",
+      "bytes": 481822
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-latest/reference-inputs.json",
+      "sha256": "c13f2c4168bcbfaa46c03d0005b3566bf4f908e54f7a700fdea93cfb33a7b759",
+      "bytes": 298
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/svg-group-alpha-run.guard.json",
+      "sha256": "2e92bf8cad4bb45ae850e705c6e276df1f3ec2d66e30be6cc6dc92456f419fb6",
+      "bytes": 372
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/svg-group-alpha-none-run.guard.json",
+      "sha256": "24628db352c3ee7433e6d294573f006c98de88bd9a2075e669591842561770e9",
+      "bytes": 382
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/svg-scope-run.guard.json",
+      "sha256": "fa7bae38aba7d435e7ae20c891ac880c92d47737842002686f843d112ba46e52",
+      "bytes": 363
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/svg-leaf-before-run.guard.json",
+      "sha256": "5c71334b92af3d023195716e171a722008b305f1f288ea122237d1d61d118f9b",
+      "bytes": 372
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/svg-leaf-after-run.guard.json",
+      "sha256": "05a612455f3eed3f3c9a9322ef5f35d9d1ead0ed64d2c5b1bb272598615bda45",
+      "bytes": 371
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/svg-image-viewport-run.guard.json",
+      "sha256": "d1459408b1e4e95d3c38827d62f6c8fda99c6583124fc24e1b396f576910b1c2",
+      "bytes": 375
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/scroll-axis-run.guard.json",
+      "sha256": "f9e178b9d73e352db5919497b44ef3c048ad82a3ba30c93871da32c43663819b",
+      "bytes": 367
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/scroll-axis-none-run.guard.json",
+      "sha256": "1e86ab8dc760b4338b4ff9ffd74f42d1d769e24bce60996c5a5b50db78dd3eac",
+      "bytes": 380
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/scroll-layers-run.guard.json",
+      "sha256": "3b9435307a8f1f5dd67328510a8a0cb64ccd1eb257e08c70439ca717ebd01f02",
+      "bytes": 370
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/svg-opacity-alpha-reference/reference.json",
+      "sha256": "88fe0095452c2d99b0ea5cf516acc91a54d34250d2ee48d3be18ea6eab89cb5a",
+      "bytes": 1444
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/svg-translated-tall-reference/reference.json",
+      "sha256": "ff5b24536746ea09c54e828115273a35dd97746445c5a14b9101b4a76607bf1a",
+      "bytes": 1460
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/svg-background-viewport-reference/reference.json",
+      "sha256": "a692eab7ad87f04ddcb1079e3110ca58256c1406106538b74eacc4c17f8e0417",
+      "bytes": 1492
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/contoured-box-compile.guard.json",
+      "sha256": "ad58a38c4fc7d6e09ea5c53a691a012c0ce42e23995907abc673ec873f8003f2",
+      "bytes": 1331
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/contoured-box-run.guard.json",
+      "sha256": "5b994fec70793db854424d2f864fdae9847434dab61326335065ca7f0f93d579",
+      "bytes": 414
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/dashed-border-compile.guard.json",
+      "sha256": "bfafeba164b6c317808408bc73b01b7688f35b9b93d6c7a0a6980d6fdc68ea2c",
+      "bytes": 1349
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/dashed-border-run.guard.json",
+      "sha256": "835fd70744aedac8b7e519b793d4b9031ebfee99a2a47fca14ce00f0e9249370",
+      "bytes": 413
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/equal-image-clip-compile.guard.json",
+      "sha256": "6341635afc67da93d7f3ea270ad1e2a43e4c54782f147257193075d21dca0916",
+      "bytes": 1355
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/equal-image-clip-run.guard.json",
+      "sha256": "d342f04d0aac4e68c4dd1f0f8ff31b9e88940429867952f4c0915c72b85b4a45",
+      "bytes": 494
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/masked-image-compile.guard.json",
+      "sha256": "09c27aa0d6ccfd8e6d864a0cbd7351e99104ebecdeb7554241125fd0bc87050a",
+      "bytes": 1314
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/masked-image-run.guard.json",
+      "sha256": "cbae933066a2774553d4d2d5d17499cccbf5d10e92d0a60f72995d385ed76b94",
+      "bytes": 413
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/rounded-underlay-color-compile.guard.json",
+      "sha256": "03b9f1362468706938486968095135b48e2210a4d6006ace11029bde830af258",
+      "bytes": 1340
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/rounded-underlay-color-run-no-batch.guard.json",
+      "sha256": "017a2c34dc5a10850cfbc7c310fa325b87a6d4b773180fc20efd0856b51ae197",
+      "bytes": 423
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/rounded-underlay-color-run-no-patches.guard.json",
+      "sha256": "f413d3904fb5bb268f1608c4cf10448aa9083c4317eb94af05944b99291d4107",
+      "bytes": 423
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/rounded-underlay-color-run.guard.json",
+      "sha256": "e1eda6ecc8ef8de674c3bd4ba307a1bdbcd8156fc2c7def44d4d6977626414e2",
+      "bytes": 422
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/superellipse-geometry-compile.guard.json",
+      "sha256": "70679a52e09eb16671df34211b94db9225a52c8e7282925c34677214583d39b6",
+      "bytes": 1325
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/superellipse-geometry-run.guard.json",
+      "sha256": "9c94711094624689492a0a7c096ec9682df56c3abedf698b9bd2725f4bec69b2",
+      "bytes": 418
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/svg-clip-compile.guard.json",
+      "sha256": "50724843d243528502343edcdd71c6c659c4b9514a25b966c93b83386fb7399d",
+      "bytes": 1306
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/svg-clip-run.guard.json",
+      "sha256": "cfec416e3555a95eb3669172ca140be03a76447a3f679d0b1e603c44f8f207bf",
+      "bytes": 416
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/svg-color-compile.guard.json",
+      "sha256": "0dca9b86c804187e4960d0ae695661ec738d47ea05f6e482bab75865358eb293",
+      "bytes": 1308
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/svg-color-run.guard.json",
+      "sha256": "d9db0f44256faef21a056944e676d20cf1e6c5e53c8bd31fa747ecb3412c20ba",
+      "bytes": 410
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/svg-leaf-clip-compile.guard.json",
+      "sha256": "17a01f28b06ba021b7d9b6cc4cd747cdc2d40fc795527c234a935de6ba8a9fa9",
+      "bytes": 1322
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/svg-leaf-clip-run.guard.json",
+      "sha256": "de85cb57c8c3f31059e9edad3b829f460be7eed6aa8f5c3ca7550418b088db07",
+      "bytes": 414
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/svg-mask-backdrop-compile.guard.json",
+      "sha256": "a464c94c908233a0579a664ae4f768bacaf89e2b2f6921ab8bacb6ebbda8d735",
+      "bytes": 1324
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/svg-mask-backdrop-run.guard.json",
+      "sha256": "273a0e0b2944374faf91b95c8a89b014180ace8582b9cb338983bf8491cc8779",
+      "bytes": 418
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/svg-parent-msaa-compile.guard.json",
+      "sha256": "fe004618e2368e9fff88373fda467e6044fcff5c3cc4b9d60136c548667831ee",
+      "bytes": 1317
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/svg-parent-msaa-run.guard.json",
+      "sha256": "0f11f81858fc63548423408471a13b9470eb80fa504ca08f22d2043558854921",
+      "bytes": 416
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/uniform-border-clip-layer-compile.guard.json",
+      "sha256": "a779b44e70ba24b6c7708def0c973df3b2a3444fcce719d407039528bce9d0d9",
+      "bytes": 1340
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-leaf-clip-controls/uniform-border-clip-layer-run.guard.json",
+      "sha256": "aee3845e4499a35a352d16d717dfba2f6d0d4b7b829dbc9da180cfb911ba95b4",
+      "bytes": 426
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/contoured-box-compile.guard.json",
+      "sha256": "9ac4a7db496b2776abfb403686ed0fec89556790fae63187b679e1c851ba5959",
+      "bytes": 1330
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/contoured-box-run.guard.json",
+      "sha256": "d858fd74eded62ca24266a09f85d17a9a585c44abde1ed58ed0fa7e151653a1e",
+      "bytes": 416
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/dashed-border-compile.guard.json",
+      "sha256": "2fbe463ab3e0f0c401f2cf24aa840e70900ca253f26c40f21cb6bb57b7a3f3bb",
+      "bytes": 1354
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/dashed-border-run.guard.json",
+      "sha256": "86e93a39200eb102c936316cf88d46263357500900ee118c08dc14f507c787da",
+      "bytes": 425
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/equal-image-clip-compile.guard.json",
+      "sha256": "f9ac5ea9b7c46c279ffe6015dfc896b7cf388885a623a1c4faf3486d50431c33",
+      "bytes": 1360
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/equal-image-clip-run.guard.json",
+      "sha256": "c7b6bb06277993d62ca241b6f0f08624b98be622e79759a29b4ebe200f0c688e",
+      "bytes": 499
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/masked-image-compile.guard.json",
+      "sha256": "e83dec3ffb79071266939cc8180a867d08ad95a3c7dff60f5c42d224c5205bf2",
+      "bytes": 1319
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/masked-image-run.guard.json",
+      "sha256": "5beebaf0e44ec3c282ced7d3a2e8a4c611a434de61a9851d3f47a7fec8197c95",
+      "bytes": 418
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/rounded-underlay-color-compile.guard.json",
+      "sha256": "afc23abd01f02c6ade151b4b84069acaf62fc73a7a96551fb6fb1143e9a17b6d",
+      "bytes": 1339
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/rounded-underlay-color-run-no-batch.guard.json",
+      "sha256": "b716141652647d72b18c6eeb0c2a33c79432e2d311487c1f5a55c4a62a803d37",
+      "bytes": 435
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/rounded-underlay-color-run-no-patches.guard.json",
+      "sha256": "8ce1f30e6a2188b884df178ac32030d351cbd48185088a4e478df142aeb6c2c6",
+      "bytes": 435
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/rounded-underlay-color-run.guard.json",
+      "sha256": "ad4b6da958431f53ecf23dd708f8999e683395a976ef793627ba15a5684fe39a",
+      "bytes": 428
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/superellipse-geometry-compile.guard.json",
+      "sha256": "5c1ee5fce3fe7bd3b8942cf8a92aa9904f62b2618db3aa5ed4e8198f0167c748",
+      "bytes": 1330
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/superellipse-geometry-run.guard.json",
+      "sha256": "eb3090cee0101392e8c08a9d27c725b34da3373b09050c3bf5d0a6efd4376608",
+      "bytes": 423
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-clip-compile.guard.json",
+      "sha256": "caa03830bb4292ebbc1a117155de3348bf3327b674c88e53c37c3b7a3cd4f3a8",
+      "bytes": 1310
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-clip-run.guard.json",
+      "sha256": "55f89c357de8a9a9b4744eb3ef2a6cd213b7a0df82615bd37c4b6210135a10b4",
+      "bytes": 421
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-color-compile.guard.json",
+      "sha256": "79df8049f498d052c2d52bc7129dde2dd850ba213f2806f310ee822c33ff680c",
+      "bytes": 1319
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-color-run.guard.json",
+      "sha256": "7831aa06c0a0ffa232b353d8b975444cd842a808b0a9bf706f14391ee98abede",
+      "bytes": 415
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-image-viewport-compile.guard.json",
+      "sha256": "d852203cd3d73484a3f8610bd1dcbd6edc509a79e692363a912d8174bb5a891b",
+      "bytes": 1337
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-image-viewport-run.guard.json",
+      "sha256": "c8caeda195e059fbda0398c66c273e10e75f65dfe152723fa99165903995e699",
+      "bytes": 424
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-leaf-clip-compile.guard.json",
+      "sha256": "4399e2747a67794dd8934d38debf421b3fff0c1b1839f4a0e1b11b44f5e40548",
+      "bytes": 1327
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-leaf-clip-run.guard.json",
+      "sha256": "333bda957f338972eccf74e1d0492ccd3100f6ca9b4d211c2bbaf4180770c1fd",
+      "bytes": 426
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-mask-backdrop-compile.guard.json",
+      "sha256": "29936fd354fb77bdf449ccdd83fa8bfa0e832024c54e2a428fa3531d278df324",
+      "bytes": 1329
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-mask-backdrop-run.guard.json",
+      "sha256": "0b4a61ddb4a16cac90c5c870e1e7b25b6647b8b50163a5c3d9ac9c1ef095bd2b",
+      "bytes": 421
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-parent-msaa-compile.guard.json",
+      "sha256": "0ac941bf7316758f91b2ae0eedeb7e8f7d680ac3240f73d0600ebb7cd302ccd1",
+      "bytes": 1325
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/svg-parent-msaa-run.guard.json",
+      "sha256": "6c3e21d51c2874f81a6058eddfd05d704798a81a5a9ede8650ef5f09ef328df3",
+      "bytes": 421
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/uniform-border-clip-layer-compile.guard.json",
+      "sha256": "335ab4b731b2fe78f1762c60ccb0171cfdab2f0858176ccfb615f05692a1ea96",
+      "bytes": 1345
+    },
+    {
+      "path": "Build/slate-contained-clip-20261104/native-image-viewport-controls/uniform-border-clip-layer-run.guard.json",
+      "sha256": "da0eaf205f692ef48a28e9f790d8c2eee36345e0c33f527788957efa1b82ced1",
+      "bytes": 431
+    }
+  ]
+}

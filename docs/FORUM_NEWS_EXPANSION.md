@@ -934,6 +934,46 @@ changed to obtain a pass.
 [latest registered comparison](../Build/slate-contained-clip-20261104/production-wrap/summary.json),
 [cache/header candidate](../Build/slate-source-20261104-pinned-lists/comparison/summary.json).
 
+## Slate: SVG publication and scrolling-axis eligibility (2026-11-04)
+
+The same registered archive now reaches **4 native differing pixels** on
+executable `2530bb64…`. This is a native-only diagnostic against the qualified,
+independently stable frozen Brave reference. Both author labels, the photos,
+logo, crown, sun and search icon match. The remaining pixels are three in the
+consent close icon and one at a button corner. The independent original-source
+fidelity gate still differs by **19,064 pixels**; this is not a strict pass.
+
+Commit `f79723f02` preserves non-stacking SVG ancestor opacity and distinguishes
+inner SVG graphics from the outer CSS SVG bitmap scope. Its six-icon authored
+matrix is exact in production; layout controls pass with both GC modes.
+Commit `8c5d9c80e` retains the actual fractional clips when publishing opaque SVG
+leaves through the existing audited GPU batch bridge. Its unmodified native
+control fails, while all 16 candidate cases match complete GPU pictures,
+optimized and sanitized. The complete-page logo improves from ten pixels to zero.
+The attempted V clip-geometry workaround was removed.
+
+Commit `ab4c39108` carries hard image-domain clipping alongside antialiased
+SVG-image destination coverage. Three independent full-uBO Brave references
+agree on its authored scene. The hard-only intermediate browser fixes the
+leading edge but fails at three trailing-edge pixels; that failure is retained.
+All 16 native hard/overflow-clip cases pass, and all 13 native clip, mask, color,
+MSAA, image and border programs pass under AddressSanitizer/UndefinedBehaviorSanitizer.
+Production validation of the final paired clipping remains pending.
+
+Commit `94c603d80` prevents horizontal hidden overflow from promoting an inert
+vertical `auto` axis to a scrolling raster. Slate's banner has 1,036 pixels of
+horizontal overflow in a 1,024-pixel container, with no vertical overflow. The
+old policy creates extra layers absent from Brave's layer tree and changes the
+button's raster origin. Sixteen DOM combinations pass in both GC modes, and
+the existing raster-layer controls pass. Its production screenshot check is
+also pending a shared bundle containing the change.
+
+No registered source PNG or tolerance changed. Build replacements invalidate
+interrupted comparisons rather than earning a result. The older full strict
+run, failed intermediate clips, exact authored controls, pinned identities and
+focused checks are retained in the
+[durable evidence](evidence/slate-svg-publication-parity-20261104.json).
+
 ## Run
 
 ```sh
