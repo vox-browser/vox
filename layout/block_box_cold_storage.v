@@ -50,6 +50,7 @@ pub:
 	background_gradient   ?&LinearGradient
 	background_images     []BackgroundImageLayer
 	background_color_clip string = 'border-box'
+	background_paint_offset painting.Point
 }
 
 __global empty_block_box_decoration = &BlockBoxDecorationData{}
@@ -154,7 +155,8 @@ pub fn retained_block_box_decoration(value BlockBoxDecorationData) &BlockBoxDeco
 	if value.border_radius == 0 && box_radii_are_zero(value.border_radii)
 		&& value.outline_width == 0 && value.outline_offset == 0 && value.shadow == none
 		&& value.shadows.len == 0 && value.background_gradient == none
-		&& value.background_images.len == 0 && value.background_color_clip == 'border-box' {
+		&& value.background_images.len == 0 && value.background_color_clip == 'border-box'
+		&& value.background_paint_offset == painting.Point{} {
 		return unsafe { nil }
 	}
 	return &BlockBoxDecorationData{ ...value }

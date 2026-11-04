@@ -86,3 +86,42 @@ fn test_nested_containment_overflow_clip_uses_the_same_fragment_origin_as_images
 		}
 	}
 }
+
+fn test_contained_backgrounds_snap_their_edges_in_the_same_fragment_as_content() {
+	for chromium in [false, true] {
+		mut document := html.parse_document('<!doctype html><style>html,body{margin:0}.outer{position:absolute;left:10.25px;top:20.25px;width:500px;height:400px;contain:paint}.inner{position:absolute;left:10.25px;top:10.25px;width:259.421875px;height:50px;background:rgb(9 8 7)}</style><div class="outer"><div class="inner" style="contain:paint"></div><div class="inner" style="top:70.25px"></div></div>')
+		defer { document.finalize() }
+		if chromium { document.set_font_rendering_policy(.chromium) }
+		_ = layout_document_typed_in_viewport(document, 1024, 768)
+		commands := display_list_commands(document.record_display_list() or { panic('paint') })
+		fills := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(9 8 7)')
+		assert fills.len == 2
+		assert fills[0].x == if chromium { 20.0 } else { 20.5 }
+		assert fills[0].y == if chromium { 30.0 } else { 30.5 }
+		assert fills[0].width == if chromium { 259.0 } else { 259.421875 }
+		assert fills[1].x == if chromium { 20.0 } else { 20.5 }
+		assert fills[1].y == if chromium { 90.0 } else { 90.5 }
+		assert fills[1].width == if chromium { 260.0 } else { 259.421875 }
+	}
+}
+
+fn test_retained_contained_background_and_clip_refresh_after_fractional_flow_movement() {
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}#changed{font:14px/14.25px Arial}.parent{contain:paint;width:500px;height:400px}#target{background:rgb(9 8 7);width:259.421875px;height:50px;overflow:hidden}</style><div id="changed">line</div><div class="parent"><section id="target"></section></div>')
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout_document_typed_in_viewport(document, 1024, 768)
+	_ = document.record_display_list() or { panic('paint') }
+	mut changed := document.get_element_by_id('changed') or { panic('changed') }
+	for content in ['line<br>line', 'line', 'line<br>line<br>line'] {
+		changed.set_inner_html(content) or { panic(err) }
+		document.update_layout(.debugging)
+		element := document.get_element_by_id('target') or { panic('target') }
+		bridge := element.as_node().layout_node() or { panic('bridge') }
+		node := unsafe { &Node(bridge.real_layout_handle()) }
+		state := (document_layout_result(document) or { panic('layout') }).state
+		actual := ordinary_paint_box_from_typed_layout(node, state, [6]f64{})
+		expected := uncached_block_box_from_typed_layout_shallow(node, state, [6]f64{})
+		assert actual.decorations().background_paint_offset == expected.decorations().background_paint_offset
+		assert (actual.overflow_clip or { panic('actual clip') }).rect == (expected.overflow_clip or { panic('expected clip') }).rect
+	}
+}

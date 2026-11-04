@@ -2149,7 +2149,10 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 		background_border_rect := if box.canvas().paints_canvas_background && box.canvas().canvas_width > 0 && box.canvas().canvas_height > 0 {
 			rect_union(border_rect, LayoutRect{box.canvas().canvas_x, box.canvas().canvas_y, box.canvas().canvas_width, box.canvas().canvas_height})
 		} else if box.snaps_background_rect {
-			pixel_snapped_layout_rect_at_scale(border_rect, chromium_paint_pixel_scale(box.layout_handle))
+			offset := box.decorations().background_paint_offset
+			pixel_snapped_layout_rect_at_scale(LayoutRect{border_rect.x + offset.x,
+				border_rect.y + offset.y, border_rect.width, border_rect.height},
+				chromium_paint_pixel_scale(box.layout_handle))
 		} else {
 			border_rect
 		}

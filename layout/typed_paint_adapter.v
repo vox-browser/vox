@@ -4314,6 +4314,9 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			background_gradient: retained_box_paint_payload(background_gradient)
 			background_images: background_images
 			background_color_clip: background_box_name(computed.background_color_clip())
+			background_paint_offset: if background_color.a > 0 || background_images.len > 0 {
+				chromium_contained_fragment_adjustment(node, state)
+			} else { painting.Point{} }
 		})
 
 		filter_data: retained_block_box_filter(BlockBoxFilterData{

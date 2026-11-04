@@ -135,6 +135,21 @@ fn rebase_retained_paint_box_into(snapshot &RetainedBlockPaintBox, node &Node, u
 	state &LayoutState, position css.CSSPixelPoint, mut box BlockBox) bool {
 	dx := position.x().to_double() - snapshot.origin.x().to_double()
 	dy := position.y().to_double() - snapshot.origin.y().to_double()
+	if snapshot.box.snaps_background_rect {
+		if snapshot.box.background_color.a > 0 || snapshot.box.decorations().background_images.len > 0 {
+			if chromium_contained_fragment_adjustment(node, state) != snapshot.box.decorations().background_paint_offset {
+				return false
+			}
+		}
+		if old_clip := snapshot.box.overflow_clip {
+			styled := node.as_node_with_style() or { return false }
+			fresh_clip := compatibility_overflow_clip(node, styled.computed_values(), used,
+				position, snapshot.box.decorations().border_radii) or { return false }
+			adjustment := chromium_contained_fragment_adjustment(node, state)
+			if fresh_clip.rect.x + adjustment.x != old_clip.rect.x + dx
+				|| fresh_clip.rect.y + adjustment.y != old_clip.rect.y + dy { return false }
+		}
+	}
 	if clip := snapshot.box.overflow_clip {
 		if !retained_paint_rect_can_translate(clip.rect, dx, dy) { return false }
 	}
