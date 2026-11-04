@@ -24,7 +24,7 @@ def main():
                             'arm64-osx-dynamic' if platform.machine() == 'arm64' else 'x64-osx-dynamic')
     skia = upstream / 'Build/release/vcpkg_installed' / triplet
     executable = output / 'svg-ink-bounds'
-    command = ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address',
+    command = ['clang++', '-std=c++20', '-O1', '-fno-rtti', '-g', '-fsanitize=address',
                '-fno-omit-frame-pointer', '-x', 'objective-c++',
                '-I' + str(skia / 'include/skia'), '-I' + str(skia / 'include'),
                str(REPO / 'tools/native_skia_svg_ink_bounds_test.cpp'),
