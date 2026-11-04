@@ -1,7 +1,29 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** A guarded within-pass grid measurement cache is committed
+`OPTIMIZED_SITES.md`.** Cohort 87 completes all seven alternating matched
+control/Vox/Brave triples. All 21 original pixel, complete-content, ownership,
+input-identity and normal native-exit checks pass. Vox's median is
+**28,566,284,244**, control **28,680,897,060**, and Brave's lower-bound median
+**17,600,850,507** instructions. The strict gate fails
+`294965265120 > 156774454236`, conservative ratio **1.6933162988938066**.
+
+The grid change has a **114,612,816 (0.3996%)** marginal median point reduction,
+four paired improvements and three regressions. Its conservative control ratio
+**1.0499726848480195** fails; no robust saving is credited. The predeclared host
+gate passes at load 15.82 on 18 CPUs, but load rises during the cohort and controls
+vary. No trial is excluded. Candidate-only grid reuse executes before PNG in a
+separate native diagnostic, with all 72 original external scripts verified in
+both arms. The pinned executable is
+`4eee3fd0fbb5c5ed18eba9fbdff609a1bec067117e448f29a10ed0ecf16559e5`.
+
+Broad verification preserves all 490 historical cases and the five new cases:
+**495 entered / 492 passed** in each default and no-GC mode, with the same three
+known failures. No full pass or cadence reset is claimed. See the
+[cohort 87 ledger](performance/bbc-cohort87-grid-measurement-20261104.json) and
+[verified raw evidence](performance/raw/bbc-cohort87-grid-measurement-20261104.tar.gz).
+
+A guarded within-pass grid measurement cache is committed
 (`b35fac88d`), with an ancestor-key refinement (`109077f25`). The refined version
 passes **30 focused case executions** across candidate/control and default,
 no-GC and bounded-preallocation modes. All **287 instruction-tool tests** pass.
@@ -17,13 +39,14 @@ intrinsic constraint changes effective definiteness, and compares reused results
 with a separate unpooled oracle. Initial tests, failed diagnostics and manual
 termination receipts remain retained.
 
-The latest inspected completed bundle lacks this refinement; its native path
-witness and unprofiled matched cohort remain pending the shared build. No cohort
-87, new instruction saving, broad-check reset or catalog entry is claimed. See
+The first archived checkpoint lacked a completed bundle with the refinement;
+cohort 87 above subsequently validates its native path and records the failing
+instruction comparison. The earlier pending receipts remain historical. No
+robust instruction saving or catalog entry is claimed. See
 the [grid measurement ledger](performance/bbc-grid-measurement-20261104.json) and
 [verified raw evidence](performance/raw/bbc-grid-measurement-20261104.tar.gz).
 
-Latest attempted cohort 86 retains all seven alternating
+Earlier cohort 86 retains all seven alternating
 Vox/Brave pairs. All native exits, complete-content, ownership and input-identity
 checks pass, but Brave pair 6 differs by 53,392 pixels (maximum channel error 6),
 invalidating acceptance. Every Vox capture preserves the original reference.
@@ -105,7 +128,7 @@ No optimization credit or new broad-check cadence reset is claimed. See the
 [cohort 84 and rollback ledger](performance/bbc-cohort84-fresh-media-rollback-20261104.json)
 and [verified raw evidence](performance/raw/bbc-cohort84-fresh-media-rollback-20261104.tar.gz).
 
-The latest fully valid acceptance remains cohort 83, which completes seven alternating
+Earlier valid cohort 83 completes seven alternating
 control/Vox/Brave triples, with all 21 original pixel, content, ownership,
 native-exit and input-identity checks passing. Vox's median is
 **29,609,230,829**, control **29,758,720,791**, and Brave's lower-bound median
@@ -186,7 +209,7 @@ The ownership audit now authenticates distinct private capture roots and their
 live task identities in separate coalitions, retaining all measured-root and
 CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
-History is **86 cohorts / 1,919 attempted browser trials**, excluding separately
+History is **87 cohorts / 1,940 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
 
 The requested `v -profile` follow-up now covers the main thread from V's main
