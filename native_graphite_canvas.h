@@ -6,6 +6,8 @@
 namespace {
 struct CanvasTile {
     int x, y, width, height;
+    // The repainted rectangle inside this surface, in surface coordinates.
+    SkIRect clip;
     sk_sp<SkSurface> surface;
 };
 std::unique_ptr<skgpu::graphite::Recorder> canvas_recorder;
@@ -57,7 +59,7 @@ int canvas_draw(float const* bounds, VoxGraphiteCanvasClip const* clips, int cli
         auto* canvas = tile.surface->getCanvas();
         canvas->save();
         canvas->resetMatrix();
-        canvas->clipRect(SkRect::MakeIWH(tile.width, tile.height));
+        canvas->clipRect(SkRect::Make(tile.clip));
         apply_canvas_clips(canvas, tile, clips, clip_count);
         draw(canvas, tile);
         canvas->restore();
@@ -77,6 +79,8 @@ void canvas_local_matrix(float const* device, float* local, CanvasTile const& ti
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_begin(int const* rects, int count)
 {
+    // Eight values per rectangle: the surface x, y, width, height and the
+    // repainted device rectangle drawn inside it, both in canvas device pixels.
     if (!rects || count <= 0 || count > 16) return 0;
     std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
@@ -89,7 +93,7 @@ int vox_graphite_canvas_begin(int const* rects, int count)
         if (!canvas_recorder) return 0;
     }
     for (int index = 0; index < count; ++index) {
-        int const* rect = rects + index * 4;
+        int const* rect = rects + index * 8;
         if (rect[2] <= 0 || rect[3] <= 0 || rect[2] > 16384 || rect[3] > 16384) {
             canvas_release_tiles();
             return 0;
@@ -107,7 +111,12 @@ int vox_graphite_canvas_begin(int const* rects, int count)
             canvas_release_tiles();
             return 0;
         }
-        canvas_tiles.push_back({rect[0], rect[1], rect[2], rect[3], std::move(surface)});
+        auto clip = SkIRect::MakeXYWH(rect[4] - rect[0], rect[5] - rect[1], rect[6], rect[7]);
+        if (!clip.intersect(SkIRect::MakeWH(rect[2], rect[3]))) {
+            canvas_release_tiles();
+            return 0;
+        }
+        canvas_tiles.push_back({rect[0], rect[1], rect[2], rect[3], clip, std::move(surface)});
     }
     return 1;
 }
@@ -148,6 +157,21 @@ int vox_graphite_canvas_draw_shape(VoxGraphiteShape const* shape, float const* b
         canvas_local_matrix(shape->matrix, local.matrix, tile);
         draw_shape_on_canvas(canvas, local, tile.width, tile.height);
     });
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_path(VoxGraphitePath const* path, float const* bounds,
+    VoxGraphiteCanvasClip const* clips, int clip_count)
+{
+    if (!path || !path->segments || path->segment_count <= 0) return 0;
+    std::lock_guard lock(gpu_mutex);
+    bool drawn = true;
+    int result = canvas_draw(bounds, clips, clip_count, [&](SkCanvas* canvas, CanvasTile const& tile) {
+        auto local = *path;
+        canvas_local_matrix(path->matrix, local.matrix, tile);
+        drawn = draw_path_on_canvas(canvas, &local) && drawn;
+    });
+    return result && drawn;
 }
 
 // Premultiplied BGRA pixels rasterized on a transparent CPU target, composited

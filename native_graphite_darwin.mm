@@ -929,8 +929,6 @@ static void draw_shape_on_canvas(SkCanvas* canvas, VoxGraphiteShape const& shape
         canvas->drawRRect(rounded_rect(shape.rect), paint);
 }
 
-#include "native_graphite_canvas.h"
-
 // Read back only the border of large rounded shapes. Opaque fills have a flat
 // interior; the original GPU draw supplies fractional edges, corners and
 // strokes, including their backdrop and MSAA mode. Cache only those patches,
@@ -1593,6 +1591,8 @@ static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path,
     canvas->drawPath(geometry, paint);
     return true;
 }
+
+#include "native_graphite_canvas.h"
 
 // Chromium draws SVG paths through its GPU rasterizer, whose multisampled
 // coverage differs from Skia's CPU analytic antialiasing on complex outlines.

@@ -14,6 +14,8 @@ struct GpuCanvasFrame {
     CGContextRef destination = nullptr;
     float scale = 1;
     std::vector<SkIRect> rects;
+    // GPU surfaces: each repainted rectangle widened to the 8-pixel dither grid.
+    std::vector<SkIRect> tiles;
     bool gpu_valid = false;
     bool cpu_stale = false;
     unsigned draws = 0, uploads = 0, flushes = 0, declined = 0;
@@ -39,6 +41,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_draw_shape) draw_shape = nullptr;
     decltype(&vox_graphite_canvas_read) read = nullptr;
     decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
+    decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
     decltype(&vox_graphite_canvas_end) end = nullptr;
 };
 
@@ -54,11 +57,12 @@ GpuCanvasApi const* gpu_canvas_api()
         value.draw_shape = reinterpret_cast<decltype(value.draw_shape)>(dlsym(library, "vox_graphite_canvas_draw_shape"));
         value.read = reinterpret_cast<decltype(value.read)>(dlsym(library, "vox_graphite_canvas_read"));
         value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
+        value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
         value.end = reinterpret_cast<decltype(value.end)>(dlsym(library, "vox_graphite_canvas_end"));
         return value;
     }();
     return api.begin && api.upload && api.draw_shadow && api.draw_shape && api.read && api.end
-        && api.draw_pixels
+        && api.draw_pixels && api.draw_path
         ? &api : nullptr;
 }
 
@@ -114,9 +118,10 @@ void gpu_canvas_flush()
         std::vector<VoxGraphitePixelRegion> views;
         for (size_t index = 0; index < frame->rects.size(); ++index) {
             auto const& rect = frame->rects[index];
+            auto const& tile = frame->tiles[index];
             pixels[index].resize(size_t(rect.width()) * rect.height());
-            views.push_back({0, 0, rect.width(), rect.height(), rect.width() * 4,
-                reinterpret_cast<uint8_t*>(pixels[index].data())});
+            views.push_back({rect.left() - tile.left(), rect.top() - tile.top(), rect.width(),
+                rect.height(), rect.width() * 4, reinterpret_cast<uint8_t*>(pixels[index].data())});
         }
         if (api && data && api->read(views.data(), int(views.size())) && gpu_canvas_verify()) {
             CGContextFlush(frame->destination);
@@ -169,8 +174,8 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
     if (!api || !data) return false;
     CGContextFlush(frame.destination);
     size_t pitch = CGBitmapContextGetBytesPerRow(frame.destination);
-    for (size_t index = 0; index < frame.rects.size(); ++index) {
-        auto const& rect = frame.rects[index];
+    for (size_t index = 0; index < frame.tiles.size(); ++index) {
+        auto const& rect = frame.tiles[index];
         std::vector<uint32_t> pixels(size_t(rect.width()) * rect.height());
         for (int row = 0; row < rect.height(); ++row)
             swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.data() + size_t(row) * rect.width()),
@@ -239,6 +244,7 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
         return true;
     if (kind == "fill_rect") return !(flags & (1 | 2 | 4 | 64));
     if (kind == "draw_text") return !gpu_canvas_text_disabled();
+    if (kind == "draw_svg_path" || kind == "fill_gradient") return true;
     return false;
 }
 
@@ -334,8 +340,14 @@ extern "C" int ladybird_v_skia_gpu_canvas_begin(CGContextRef destination, int co
         auto rect = SkIRect::MakeXYWH(rects[index * 4], rects[index * 4 + 1],
             rects[index * 4 + 2], rects[index * 4 + 3]);
         if (!rect.intersect(SkIRect::MakeWH(width, height))) continue;
+        // Skia's ordered gradient dither repeats every eight device pixels from
+        // the surface origin; leaf rasters align their surfaces the same way.
+        auto tile = SkIRect::MakeLTRB(rect.left() - rect.left() % 8, rect.top() - rect.top() % 8,
+            rect.right(), rect.bottom());
         frame->rects.push_back(rect);
-        device.insert(device.end(), {rect.x(), rect.y(), rect.width(), rect.height()});
+        frame->tiles.push_back(tile);
+        device.insert(device.end(), {tile.x(), tile.y(), tile.width(), tile.height(),
+            rect.x(), rect.y(), rect.width(), rect.height()});
     }
     if (frame->rects.empty() || !api->begin(device.data(), int(frame->rects.size()))) return 0;
     s_gpu_canvas = std::move(frame);

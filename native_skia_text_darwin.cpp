@@ -5814,6 +5814,47 @@ extern "C" int ladybird_v_skia_draw_svg_path_with_colors(CGContextRef destinatio
 		if (bounds_paint.canComputeFastBounds())
 			device_bounds.join(bounds_paint.computeFastBounds(transformed_stroke_path.getBounds(), &stroke_bounds));
 	}
+    if (s_gpu_canvas && s_gpu_canvas->destination == destination) {
+        std::vector<VoxGraphiteCanvasClip> clips;
+        bool dashed = has_stroke && stroke_width > 0.0f && dash_data && dash_count > 0;
+        GpuCanvasFrame* frame = nullptr;
+        if (dashed) gpu_canvas_decline(destination);
+        else frame = gpu_canvas_for_leaf(destination, clips);
+        if (frame) {
+            auto scale = SkMatrix::Scale(frame->scale, frame->scale);
+            auto device = SkMatrix::Concat(scale, matrix);
+            auto bounds = scale.mapRect(device_bounds).makeOutset(4, 4);
+            float canvas_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
+            bool drawn = true;
+            if (has_fill) {
+                VoxGraphitePath fill {};
+                fill.segments = data; fill.segment_count = segment_count; fill.even_odd = even_odd;
+                fill.red = fill_red; fill.green = fill_green; fill.blue = fill_blue; fill.alpha = fill_alpha;
+                fill.has_float_color = fill_components != nullptr;
+                if (fill_components) std::copy(fill_components, fill_components + 4, fill.float_color);
+                device.get9(fill.matrix);
+                drawn = gpu_canvas_api()->draw_path(&fill, canvas_bounds, clips.data(), int(clips.size()));
+            }
+            if (drawn && has_stroke && stroke_width > 0.0f) {
+                VoxGraphitePath stroke {};
+                stroke.segments = data; stroke.segment_count = segment_count; stroke.even_odd = even_odd;
+                stroke.stroke = 1; stroke.line_cap = line_cap; stroke.line_join = line_join;
+                stroke.miter_limit = miter_limit; stroke.non_scaling_stroke = non_scaling_stroke;
+                stroke.stroke_width = non_scaling_stroke ? stroke_width * frame->scale : stroke_width;
+                stroke.red = stroke_red; stroke.green = stroke_green; stroke.blue = stroke_blue;
+                stroke.alpha = stroke_alpha; stroke.has_float_color = stroke_components != nullptr;
+                if (stroke_components) std::copy(stroke_components, stroke_components + 4, stroke.float_color);
+                device.get9(stroke.matrix);
+                drawn = gpu_canvas_api()->draw_path(&stroke, canvas_bounds, clips.data(), int(clips.size()));
+            }
+            if (drawn) {
+                gpu_canvas_name_leaf(*frame, "svg", bounds, has_fill + 2 * has_stroke, clips.size());
+                frame->cpu_stale = true;
+                ++frame->draws;
+                if (!gpu_canvas_verify()) return 1;
+            } else gpu_canvas_flush();
+        }
+    }
     // A clipped opaque leaf needs the same GPU clip coverage as a complete
     // SVG picture. Applying Quartz's clip to an already resolved leaf bitmap
     // attenuates its edge samples again. The batch bridge retains the real
@@ -6449,6 +6490,7 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
     auto raster_scale_y = static_cast<float>(raster_height)
         / static_cast<float>(region.height());
     std::vector<uint32_t> pixels;
+    if (!s_chromium_painting) gpu_canvas_decline(destination);
     if (s_chromium_painting) {
         // Chromium fills and strokes SVG paths with its GPU rasterizer.
         std::vector<float> stops;
@@ -6478,6 +6520,25 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
         }
         raster_matrix(matrix, region, raster_scale_x, raster_scale_y).get9(descriptor.matrix);
         gradient_matrix.get9(descriptor.gradient_matrix);
+        if (s_gpu_canvas && s_gpu_canvas->destination == destination) {
+            std::vector<VoxGraphiteCanvasClip> clips;
+            GpuCanvasFrame* frame = nullptr;
+            if (picture_pattern) gpu_canvas_decline(destination);
+            else frame = gpu_canvas_for_leaf(destination, clips);
+            if (frame) {
+                auto scale = SkMatrix::Scale(frame->scale, frame->scale);
+                auto gpu = descriptor;
+                SkMatrix::Concat(scale, matrix).get9(gpu.matrix);
+                auto bounds = scale.mapRect(matrix.mapRect(local_bounds)).makeOutset(4, 4);
+                float canvas_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
+                if (gpu_canvas_api()->draw_path(&gpu, canvas_bounds, clips.data(), int(clips.size()))) {
+                    gpu_canvas_name_leaf(*frame, "gradient", bounds, gradient_kind, clips.size());
+                    frame->cpu_stale = true;
+                    ++frame->draws;
+                    if (!gpu_canvas_verify()) return 1;
+                } else gpu_canvas_flush();
+            }
+        }
         if (!picture_pattern && opaque_backdrop && draw_clipped_root_gradient(destination, region,
                 destination_scale, canvas_height, raster_width, raster_height, descriptor,
                 page_x, page_y, scroll_y)) return 1;
