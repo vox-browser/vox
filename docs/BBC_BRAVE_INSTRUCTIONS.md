@@ -1,7 +1,15 @@
 # BBC homepage instruction comparison
 
 **The requested 10% advantage remains open; BBC does not qualify for
-`OPTIMIZED_SITES.md`.** Cohort 81 completes seven alternating control/Vox/Brave
+`OPTIMIZED_SITES.md`.** The November 4 continuation has committed selector-targeted
+invalidation for deleted style-only conditional groups, with 78 focused
+executions passing. A newer shared SVG layout policy changes 445,313 pixels
+against the original reference in both control and candidate. This rejected
+diagnostic earns no instruction credit and does not constitute cohort 82.
+An explicit common historical SVG-layout option passes 42 focused executions;
+the unchanged-reference production check and matched cohort are pending.
+
+Cohort 81 completes seven alternating control/Vox/Brave
 triples on the 609-response frozen 2026-11-03 homepage. All 21 captures pass
 unchanged pixels, full content, normal native exits, ownership and pinned-input
 checks. Vox's launch-through-encoded-PNG median is **30,345,423,496** instructions;
@@ -45,6 +53,31 @@ CDP-helper checks. Its 12 focused tests and 247 existing instruction-tool tests
 pass. The measurement correction earns no engine optimization credit.
 History is **81 cohorts / 1,821 attempted browser trials**, excluding separately
 labeled acquisition/reference/profile diagnostics.
+
+The requested `v -profile` follow-up now covers the main thread from V's main
+entry after startup initialization through exit, including waits and work after
+PNG capture. Its generated scope gate is thread-local; the measured-time
+accumulator was already thread-local. `-profile-no-inline` omits instrumentation
+for inline-marked functions; it does not disable compiler inlining. The corrected
+run retains 10,683 rows, exact original pixels, complete frozen content and 72
+exact external author-script evaluations through JavaScriptCore. Its timings
+are diagnostic and supply no instruction savings. The first incompatible
+preallocation-runtime compile failure remains recorded.
+
+A separate automatically continued LLDB trace identifies five full-style-update
+calls from `CSSStyleSheet.deleteRule`. An invasive diagnostic wrapper identifies
+the deleted groups: one `@supports` and four `@media` rules containing only style
+leaves. That wrapper is excluded from acceptance. The original LLDB result read
+the wrong output stream and reported zero author scripts; the retained corrected
+derivation validates 72 exact external sources in debugger stdout. The first
+LLDB attempt stopped at `exec` and never completed a document capture.
+
+A separate fresh live BBC launch passes document identity and substantial content
+checks, with 94 headlines and 74 successful external script evaluations. The
+unsupported `performance.measure` call and incomplete image-paint audit fields
+remain limitations; this is a limited functional check, not full BBC scripting
+or rendering parity. See the [profile and rule-deletion ledger](performance/bbc-main-profile-rule-deletion-20261104.json)
+and [verified raw diagnostic evidence](performance/raw/bbc-main-profile-rule-deletion-20261104.tar.gz).
 
 ## Historical results on the earlier fixture
 
