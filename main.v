@@ -1078,6 +1078,10 @@ fn cache_resource_response_headers_with_status(resource_url string, final_url st
 	path := browser_cache_entry_path(browser_cache_root(), 'resources', resource_url)
 	// Discard old status provenance before replacing any part of the response.
 	os.rm(path + '.status') or {}
+	if browser_response_forbids_storage(headers) {
+		discard_browser_cache_resource(path)
+		return
+	}
 	body_written := try_write_browser_cache_entry(path, body)
 	// A torn URL would be filtered as a different request, so keep it atomic.
 	url_written := try_write_browser_cache_entry(path + '.url', final_url)
@@ -1174,6 +1178,8 @@ fn cached_browser_resource_response(resolved string, filtered_url string, owner_
 				// assuming an empty header list could expose a header-blocked ad.
 				if encoded_headers := read_browser_cache_entry(path + '.headers.json') {
 					if headers := decode_browser_cached_response_headers(encoded_headers) {
+						// Including entries stored before no-store was honored.
+						if browser_response_forbids_storage(headers) { continue }
 						filter_browser_response_headers(final_request, headers)!
 						// An old unvaried key cannot identify the Accept value that
 						// selected a negotiated image representation.
