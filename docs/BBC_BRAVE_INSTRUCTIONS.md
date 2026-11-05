@@ -42,6 +42,16 @@ History through cohort 125 is **119 measured cohorts / 2,566 acceptance browser 
 104, 110, 111, 113, 118 and 124 are preflight-only. Every earlier result remains
 preserved. [Complete current evidence](performance/bbc-empty-pseudo-indexes-cohort123-20261106.json).
 
+A new **attribute byte-pair prefilter** (`ff90485a2`, control `b54c3d910`) is
+under native validation. All **228 focused executions** (38 cases, both arms,
+three GC modes) and **342 tooling tests** pass. The local 1024-bit filter checks
+necessary ASCII-folded byte pairs for static one-compound attribute selectors;
+collisions retain extra candidates for the ordinary matcher. Dynamic, scoped,
+container, namespace-dependent, small-bucket and long-value cases keep the
+ordinary path. It retains no DOM, selector or value storage. No workload saving
+is credited before candidate-only execution and an unprofiled matched cohort.
+[Checks and retained fixture failures](performance/bbc-attribute-byte-pairs-focus-20261106.json).
+
 The empty-index candidate (`34d4000d9`, isolated control `9717aa4b7`) skips
 metadata reads only when the corresponding pseudo-candidate rule index is
 currently empty. Populated buckets, mutable rule hints, namespace/quirks rules
