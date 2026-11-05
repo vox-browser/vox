@@ -2473,3 +2473,23 @@ no author code, downloads nothing and launches no browser. The
 retain the dependency graph, wrapped-import contexts, exact decisions and guards.
 
 The requested **5% advantage over Brave remains unmet**.
+
+
+## November 5: encoder production availability follow-up
+
+Two newer parallel builds completed compilation and smoke checks but were
+superseded after their source inputs changed. The next attempt failed in
+`native_graphite_canvas.h`: the pinned Skia API has no
+`SkCanvas::writePixels(SkPixmap, int, int)` overload. That graphics file belongs
+to concurrent work and is not changed by this task. The
+[availability receipt](performance/chatgpt-percent-encoding-bytes-production-20261105.json)
+retains the completed/superseded attempts, compiler failure, memory guards and
+verified archives. A read lease confirmed that the available executable still
+has SHA-256 `e05f01a6c41853464760ce4b59cf1782813fca8b9b1e45de22d7fe22be7a1b5c`;
+its receipt still cannot prove the final encoder and nested-cache source.
+
+The shared build guard remains busy. No separate build is queued, no app is
+copied and no browser trial is launched. The 48 focused jobs and component
+results remain valid in their separate receipts; final production comparison
+is pending. No whole-page saving is credited, broad-check cadence stays at
+zero, and the requested **5% advantage over Brave remains unmet**.
