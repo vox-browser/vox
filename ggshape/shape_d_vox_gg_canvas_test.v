@@ -314,9 +314,10 @@ fn test_path_descriptors_draw_like_gg_canvas() {
 	s.free()
 	assert pixels == want
 	assert want != backdrop()
-	// Non-scaling strokes and gradients keep the original backend.
+	// Perspective non-scaling strokes keep the original backend.
 	path.stroke = 1
 	path.non_scaling_stroke = 1
+	path.matrix[6] = 0.01
 	pixels = backdrop()
 	assert draw_path(pixels.data, test_width, test_height, test_width * 4, 1, &path) == 0
 	assert pixels == backdrop()

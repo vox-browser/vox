@@ -44,16 +44,15 @@ pub mut:
 
 // path_supported reports whether gg.canvas may reproduce the descriptor:
 // solid or gradient fills and strokes with optional rounded clips. Gradients
-// in a linear color space and non-scaling strokes (stroked in device space)
-// are not ported yet; gg.canvas declines the other gradient draws it cannot
-// reproduce.
+// in a linear color space are not ported yet; gg.canvas declines the other
+// gradient draws it cannot reproduce. Non-scaling strokes transform their
+// geometry before stroking, while preserving the original device-space clips.
 fn path_supported(path &C.VoxGraphitePath) bool {
 	if path.gradient != 0 && (path.stops == unsafe { nil } || path.stop_count < 2
 		|| path.linear_color_space != 0) {
 		return false
 	}
 	return path.segments != unsafe { nil } && path.segment_count > 0
-		&& path.non_scaling_stroke == 0
 }
 
 // path_gradient mirrors the shader draw_path_on_canvas() makes: five floats
@@ -180,7 +179,7 @@ fn is_finite(v f32) bool {
 pub fn draw_path(pixels &u8, width i32, height i32, pitch i32, has_background i32, path &C.VoxGraphitePath) i32 {
 	result := draw_path_pixels(pixels, width, height, pitch, has_background, path)
 	if diagnostics && path != unsafe { nil } {
-		eprintln('VOX_GG path stroke=${path.stroke} gradient=${path.gradient} even_odd=${path.even_odd} drawn=${result}')
+		eprintln('VOX_GG path stroke=${path.stroke} non_scaling=${path.non_scaling_stroke} gradient=${path.gradient} even_odd=${path.even_odd} drawn=${result}')
 	}
 	return result
 }
@@ -210,6 +209,29 @@ fn draw_path_pixels(pixels &u8, width i32, height i32, pitch i32, has_background
 // rounded clips and its paint.
 fn draw_descriptor(mut target canvas.GpuSurface, path &C.VoxGraphitePath, parent ?canvas.Matrix) ! {
 	clipped := path.has_clip != 0 || path.has_ancestor_clip != 0
+	non_scaling := path.stroke != 0 && path.non_scaling_stroke != 0
+	if non_scaling && !non_scaling_matrix_is_affine(path.matrix) {
+		return error('non-scaling strokes require a finite affine matrix')
+	}
+	inverse := if non_scaling && parent != none {
+		non_scaling_inverse(path.matrix)
+	} else {
+		none
+	}
+	if non_scaling && parent != none && inverse == none {
+		// The original SVG image bridge skips a stroke whose local matrix
+		// cannot be inverted, including any clips installed for that path.
+		return
+	}
+	if non_scaling && clipped {
+		x := f64(path.matrix[0]) * f64(path.matrix[4])
+		y := f64(path.matrix[1]) * f64(path.matrix[3])
+		if x == y {
+			// An intersecting clip collapsed to a line has no area. Skia
+			// clips the draw out before resetting the stroke's matrix.
+			return
+		}
+	}
 	if clipped {
 		target.save()
 	}
@@ -226,7 +248,18 @@ fn draw_descriptor(mut target canvas.GpuSurface, path &C.VoxGraphitePath, parent
 	if path.has_ancestor_clip != 0 {
 		target.clip_rrect(rounded_rect(path.ancestor_clip), .intersect, true)!
 	}
-	geometry := path_from_segments(path.segments, int(path.segment_count), path.even_odd != 0)
+	mut geometry := path_from_segments(path.segments, int(path.segment_count), path.even_odd != 0)
+	if non_scaling {
+		geometry = transform_non_scaling_path(geometry, path.matrix)!
+		if cancel := inverse {
+			// The bridge cancels only the path's user-space transform. Keep
+			// SkMatrix's inverse and the two SkM44 concatenations, including
+			// their rounding, instead of replacing the matrix by `parent`.
+			target.concat(cancel)
+		} else {
+			target.set_matrix(canvas.Matrix.identity())
+		}
+	}
 	mut color := shape_color([path.red, path.green, path.blue, path.alpha]!, path.has_float_color != 0,
 		path.float_color)
 	if path.has_float_alpha != 0 {

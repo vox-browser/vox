@@ -5,13 +5,15 @@
 //   v -memory-limit 10G -enable-globals -d vox_gg_canvas \
 //     -path "$PWD|@vlib|@vmodules" -o Build/gg-oracle/path-bridge-check \
 //     tools/gg_migration/path_bridge_check.v
-// Usage: path-bridge-check LIBVOXGRAPHITE [COUNT [SEED]] [--gradients] [--svg]
+// Usage: path-bridge-check LIBVOXGRAPHITE [COUNT [SEED]] [--gradients] [--svg] [--non-scaling]
 // With --gradients most descriptors also get a linear or two-point conical
 // gradient from a separate random stream (the paths stay the same). With --svg
 // it draws SVG images instead: one to five descriptors after a parent matrix
 // and inside a viewport, with vox_graphite_draw_svg_image_pixels() and
 // ggshape.draw_svg_image, and the same images with
 // vox_graphite_draw_svg_image_region_pixels() and the bridge's region wrapper.
+// --non-scaling changes each stroke to a non-scaling stroke without consuming
+// random values, preserving the geometry/paint cohort for comparisons.
 module main
 
 import ggshape
@@ -265,6 +267,7 @@ fn random_descriptor(mut rng rand.PRNG, mut gradient_rng rand.PRNG, gradients bo
 		path.line_cap = i32(rng.u32() % 3)
 		path.line_join = i32(rng.u32() % 3)
 		path.miter_limit = [f32(4), 1, 1.5, 10][int(rng.u32() % 4)]
+		path.non_scaling_stroke = i32('--non-scaling' in os.args)
 	}
 	if rng.u32() % 4 == 0 {
 		path.has_clip = 1
