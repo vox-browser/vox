@@ -1,0 +1,3700 @@
+{
+  "status": "Original-reference fidelity regression isolated to changed degenerate-border tile MSAA choice. New-source C-O0 and production C-O3 fail the same one pixel; exact earlier helper alone restores original pixels. Historical-policy implementation validation pending, no optimization credit.",
+  "comparison104": {
+    "measured_pairs": 0,
+    "acceptance_browser_attempts": 0,
+    "preflight_only": true,
+    "exit": {
+      "driver_guard_exit": 1
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/Users/alex/code/vox2/Build/bbc-measurement-policy-20261105-0900/cohort-with-host.py",
+        "--output",
+        "/Users/alex/code/vox2/Build/bbc-measurement-policy-20261105-0900/cohort104/cohort-104",
+        "--repeat",
+        "7",
+        "--control-vox-app",
+        "Build/v/Vox.app",
+        "--control-disable-grid-measurement-reuse",
+        "--control-disable-flex-measurement-reuse",
+        "--control-disable-inline-measurement-reuse",
+        "--archive",
+        "/Users/alex/code/vox2/Build/bbc-measurement-policy-20261105-0900/fixture/clock-archive-v3",
+        "--memory-guard-registry",
+        "/Users/alex/code/vox2/Build/bbc-measurement-policy-20261105-0900/cohort104/pids.json",
+        "--diff-tool",
+        "Build/pixel-tools/pixel_diff",
+        "--expected-vox",
+        "/Users/alex/code/vox2/Build/bbc-measurement-policy-20261105-0900/fixture/reference-complete/pair-1-vox/document.png",
+        "--expected-brave",
+        "/Users/alex/code/vox2/Build/bbc-measurement-policy-20261105-0900/fixture/reference-complete/pair-1-brave/document.png",
+        "--preserve-inputs",
+        "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+        "--retain-logical-paint-snapping",
+        "--retain-css-layout-for-svg"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {
+        "34054": "Thu Nov  5 09:21:12 2026    ",
+        "34057": "Thu Nov  5 09:21:12 2026    "
+      },
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1530839040,
+      "elapsed_seconds": 25.691807792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "reason": "Mandatory runtime discovery rejects one-pixel original-reference mismatch before any measured pair. The prospective diagnostic seven triples did not execute; no gate bypass, references/tolerances unchanged."
+  },
+  "native_policies": {
+    "native": {
+      "passed": true,
+      "checks": [
+        {
+          "arm": "vox",
+          "passed": true,
+          "native_exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "scripts72": true,
+          "runtime_images_pinned": true,
+          "paths": {
+            "Vox grid measurement: reused resolved within-pass geometry": true,
+            "Vox flex measurement: reused resolved within-pass geometry": true,
+            "Vox inline measurement: reused closed text layout within pass": true
+          },
+          "provisional_path_fired": false
+        },
+        {
+          "arm": "control",
+          "passed": true,
+          "native_exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "scripts72": true,
+          "runtime_images_pinned": true,
+          "paths": {
+            "Vox grid measurement: reused resolved within-pass geometry": false,
+            "Vox flex measurement: reused resolved within-pass geometry": false,
+            "Vox inline measurement: reused closed text layout within pass": false
+          },
+          "provisional_path_fired": false
+        }
+      ],
+      "executable_unchanged": true,
+      "scope": "Correctness and eligibility of aggregate legacy grid/flex/inline measurement policy; no performance credit. Provisional removed experiments forced off in both arms."
+    },
+    "native-fc1b35e2a33b": {
+      "passed": false,
+      "checks": [
+        {
+          "arm": "vox",
+          "passed": false,
+          "native_exit": 0,
+          "pixels_exact": false,
+          "content_exact": true,
+          "scripts72": true,
+          "runtime_images_pinned": true,
+          "paths": {
+            "Vox grid measurement: reused resolved within-pass geometry": true,
+            "Vox flex measurement: reused resolved within-pass geometry": true,
+            "Vox inline measurement: reused closed text layout within pass": true
+          },
+          "provisional_path_fired": false
+        },
+        {
+          "arm": "control",
+          "passed": false,
+          "native_exit": 0,
+          "pixels_exact": false,
+          "content_exact": true,
+          "scripts72": true,
+          "runtime_images_pinned": true,
+          "paths": {
+            "Vox grid measurement: reused resolved within-pass geometry": false,
+            "Vox flex measurement: reused resolved within-pass geometry": false,
+            "Vox inline measurement: reused closed text layout within pass": false
+          },
+          "provisional_path_fired": false
+        }
+      ],
+      "executable_unchanged": true,
+      "scope": "Correctness and eligibility of aggregate legacy grid/flex/inline measurement policy; no performance credit. Provisional removed experiments forced off in both arms."
+    },
+    "native-68cec4406133": {
+      "passed": false,
+      "checks": [
+        {
+          "arm": "vox",
+          "passed": false,
+          "native_exit": 0,
+          "pixels_exact": false,
+          "content_exact": true,
+          "scripts72": true,
+          "runtime_images_pinned": true,
+          "paths": {
+            "Vox grid measurement: reused resolved within-pass geometry": true,
+            "Vox flex measurement: reused resolved within-pass geometry": true,
+            "Vox inline measurement: reused closed text layout within pass": true
+          },
+          "provisional_path_fired": false
+        },
+        {
+          "arm": "control",
+          "passed": false,
+          "native_exit": 0,
+          "pixels_exact": false,
+          "content_exact": true,
+          "scripts72": true,
+          "runtime_images_pinned": true,
+          "paths": {
+            "Vox grid measurement: reused resolved within-pass geometry": false,
+            "Vox flex measurement: reused resolved within-pass geometry": false,
+            "Vox inline measurement: reused closed text layout within pass": false
+          },
+          "provisional_path_fired": false
+        }
+      ],
+      "executable_unchanged": true,
+      "scope": "Correctness and eligibility of aggregate legacy grid/flex/inline measurement policy; no performance credit. Provisional removed experiments forced off in both arms."
+    }
+  },
+  "common_mismatch": {
+    "position": [
+      398,
+      1061
+    ],
+    "expected": [
+      59,
+      68,
+      78,
+      255
+    ],
+    "actual": [
+      58,
+      68,
+      78,
+      255
+    ],
+    "different_pixels": 1,
+    "cache_policies_identical": true,
+    "other_audits_pass": true
+  },
+  "diagnostics": {
+    "new-source-O0": {
+      "diagnostic_only": true,
+      "browser_exit": 0,
+      "input_identity_unchanged": true,
+      "host_after": {
+        "unix": 1793860461.219033,
+        "load_average": [
+          62.2275390625,
+          66.23876953125,
+          70.8193359375
+        ]
+      },
+      "acceptance": false,
+      "performance_credit": 0,
+      "content_audit": {
+        "passed": true,
+        "headlines": 91,
+        "images": 125,
+        "visible_decoded_images": 3,
+        "dom_elements": 2704,
+        "unavailable_local_fallbacks": [
+          {
+            "family": "BBCReithSans-fallback",
+            "sources": [
+              "Arial"
+            ]
+          },
+          {
+            "family": "BBCReithSans-fallback",
+            "sources": [
+              "Arial Bold"
+            ]
+          }
+        ],
+        "body_text_sha256": "9f689d46fee94b5f006334ba6fa200ce30df5711b0acf9142caf52e3f63dae29"
+      },
+      "pixels": {
+        "exit": 0,
+        "exact": false,
+        "metrics": "pixels: 3145728\ndifferent_pixels: 1 (0.0000%)\ndifference_bounds: 398,1061 1x1\nmaximum_error_pixel: 398,1061 expected=59,68,78,255 actual=58,68,78,255\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 1\nmean_absolute_error: 0.0000\nrmse: 0.0003\ndiff: /Users/alex/code/vox2/Build/bbc-pixel-codegen-20261105-0925/page-probe-1/diff.png\n"
+      },
+      "before_png_exact_external_sources": true,
+      "encoded_png_marker_present": true,
+      "actual_images": [
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libwebpdecoder.3.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/jsc-author-probe.dylib",
+        "/Users/alex/code/vox2/Build/bbc-pixel-codegen-20261105-0925/Vox-probe",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib"
+      ],
+      "unpinned_actual_images": [],
+      "actual_image_coverage_valid": true,
+      "author_evaluations": [
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "c509306a81e47ba10fe0774ebcd79e2bb841e012dfdaafe3b0dd96fb8bd1e17e",
+          "bytes": 403,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "8341cbd9dd4861255d63cb2043ab679e07a95921570377b3d80e72ef0e4d4a3e",
+          "bytes": 26,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "64706be7c32755c1dcc3f01c570bbb1809482ff90353035140e9defe99b6417b",
+          "bytes": 998,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "c89389e1183b21a8b36a12c2fffd9701bf2cdb4019e712fc4a1e551f97865849",
+          "bytes": 2252,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "b0a707f6d7cc37e31a1ff909334dd2dae5de86cec510d9758987313ebb21756e",
+          "bytes": 93,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "5fa37dfab923a502bf66b5000fdc4da2200a542d9caba432e75dc8a19cf5261a",
+          "bytes": 51,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "fbc325c2e16d559854d6a056d0bfeb40abafd89bf73f7350abf486cf93d7ad45",
+          "bytes": 107,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://static.bbci.co.uk/frameworks/requirejs/0.13.0/sharedmodules/require.js",
+          "sha256": "ac67b60f44b8f1771c6e3ef5b0718f9e2d2e8a764114191e195fadd7876f41c0",
+          "bytes": 26631,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://cdn.tinypass.com/api/tinypass.min.js",
+          "sha256": "b7c42d08846f10e6c2def4ea4ea19867b85a9e956361be06914343da58ac48fb",
+          "bytes": 497751,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://emp.bbci.co.uk/emp/bump-4/bump-4.js",
+          "sha256": "c2c7875f2aab40fd9815ec650f4d34a0b18f8d76037e1b025f7aeef413cf07da",
+          "bytes": 135871,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/03~yq9q893hmn.js",
+          "sha256": "0973c1d64c88adc8e3c950410cb58b288f72118d5965b78049438deb8f2f9683",
+          "bytes": 112594,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b-tgv1_m1uo9.js",
+          "sha256": "8ff3b4fc6689d2b983dd480c82dc932148f428029040cc65809f1cc047ba0fe2",
+          "bytes": 5926,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0d9awe5d081.2.js",
+          "sha256": "75802ee56057653bcc2b605089e5462edbc8474f41c9d7bf03df55a3fbde9aad",
+          "bytes": 34454,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0s_kjwmep8yf2.js",
+          "sha256": "43a274c8e775e4745b5675363f437c01feac88662e7f6040a53f21cba5ad272b",
+          "bytes": 25448,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-a6nanpwqpag.js",
+          "sha256": "6382492412736c25323b49c8282e48c2da65de65bfba9fc23ee9b299891e5f31",
+          "bytes": 23644,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/178~uy1pz6ka4.js",
+          "sha256": "0e507fb2b10a6e5f7952b05eccbef421dc85fe59a617fcab505e6d746dc78768",
+          "bytes": 1511,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02w2j6a0szhem.js",
+          "sha256": "eb96b7160f75c0e779c8e775e73bda35fddc31bdb0c616f8e4f15b0c5e0feae7",
+          "bytes": 25157,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/01ahds4cdfgmx.js",
+          "sha256": "73591aedcda1a85382794bcc8647dc1044d879d990f9e50dffc5180938584042",
+          "bytes": 1391,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/004vauwu48azs.js",
+          "sha256": "c6976ec6cc131d87d5e7f11d0e783b85d503b264a28a2751b486fd4ab3321197",
+          "bytes": 7574,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jl4bpoiy-t_p.js",
+          "sha256": "dff644624d905c732f9a0ef6e564d052584e957ae393366d0319fea89b695d48",
+          "bytes": 6821,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0k530rgixl5kt.js",
+          "sha256": "e369265a9d8c40769f6ccdcd0b87cb392a3672fedbba01f16075d4f298d59166",
+          "bytes": 36524,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zpz-874su9ks.js",
+          "sha256": "9ea3f2b34d76ce6a162b709cc65c34cc37a66660de2853e1c305dd93bf294314",
+          "bytes": 29966,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jcf7ay9pl-s0.js",
+          "sha256": "d92c8ba375ebd3e3c604d93124841f2a250371a73291efbeb403ad3188160033",
+          "bytes": 1651,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0gmos.wajd.qx.js",
+          "sha256": "4c946bc766052d9dce2c45f0e6bbaddb4c97f4ef73611d009df80024d56d2891",
+          "bytes": 1433,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0na6onp8uomzi.js",
+          "sha256": "a26e7e6fb52587c33e5b49e4db4a00951b9564e6ca908ca7cce6e655dd7c9edb",
+          "bytes": 4791,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0pr885e78gdj8.js",
+          "sha256": "43278b629a1156a81e375dff43ad5735d9f1cd531c230d4863593d9eabd4570e",
+          "bytes": 23393,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0u17oyz1d609w.js",
+          "sha256": "c10777b2a4195b77c5f897973fe307e71473533852fa91eb8cdee62226569f24",
+          "bytes": 1361,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ogvtm3jmac~r.js",
+          "sha256": "31d3f1f63e416587d220cab1ff104bc18487ceefa94ca33973391d739c32560b",
+          "bytes": 22677,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0~~24znpk8vc1.js",
+          "sha256": "f58b0adb797260e75b3560b55e9a1187ad0a7cebd1592d5146f89f5e4a887c28",
+          "bytes": 1371,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/116azxjox4uhk.js",
+          "sha256": "289638f4f398843c2e4ca6b5b9f52843f4ede9b223346482f6d2e298735fc7f1",
+          "bytes": 19790,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00su1kxuv.aa_.js",
+          "sha256": "a524098545ef1cd851bfe249d8547418701553c1271fa61df83e322d31ef1bda",
+          "bytes": 29178,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05el2iwpn3pyx.js",
+          "sha256": "b41e787f031780654f9aefaf4baf901cebb143defbb07e9d84abc01ee1af33c6",
+          "bytes": 25798,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/12w5u9fluro3i.js",
+          "sha256": "87b2c72ef5a9e6a9ec946db9e608f362b0eaff7f7fcffb6f49eade74019c71da",
+          "bytes": 33911,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00pv_7c.hjx18.js",
+          "sha256": "ecb85f0c77754c57fe55dbd3869570c0dfce669aef10642534b50564e1524976",
+          "bytes": 37329,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06nzlhdny82mu.js",
+          "sha256": "7321beafb2b2fd4ec44c729f04b6fbff625d333de2a3feb6e1caf5ea3e59213c",
+          "bytes": 31925,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0z3rjge5m4grx.js",
+          "sha256": "dd181f9f615bb71d8f0a5b7c0ad50bd47dcee782ef2a3a516577a56bd4d53cfd",
+          "bytes": 15392,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/1556fllq~t8x3.js",
+          "sha256": "880c3492ac7473e1ebcd83c06baf55b55a9a8628626393fc6973fd255fb32e98",
+          "bytes": 37689,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0c.fzizjof3_9.js",
+          "sha256": "15a112fb236ba9ac3559681959e5b63c3a0245be19d7424f0f067b24961c2221",
+          "bytes": 27920,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04n.yg_e~~1ci.js",
+          "sha256": "671df04e43515714028382bc50ac1dd17c9a725934d803433bff1ac0d1f23052",
+          "bytes": 36570,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05bsy3xzra8wq.js",
+          "sha256": "90c64d6b7765acb8ea15202ec1b7e5eb5c5093202291ae13c00fb1bf3d5bb367",
+          "bytes": 246296,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0a--~b-snp6to.js",
+          "sha256": "03b522f1bdba75c82eda171462e44f29263e09779bf61acb06465c126156ceaa",
+          "bytes": 71931,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13ad5orspgznk.js",
+          "sha256": "28a1e4258d181f3e67e1c23bab3850c64c7c42d0ab173d3b65f2f262067c995c",
+          "bytes": 29927,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/18bprfc204vpd.js",
+          "sha256": "f5cb72d4776976e5f53690a42356a1c6a83d8d069c6574ee83c3b5139f714556",
+          "bytes": 69240,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0x01rgvk49mtx.js",
+          "sha256": "2d1c012683cdac3406f62e3c3356b04b6a25655e245ad5134d3e97dd64ee0963",
+          "bytes": 23725,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0y-nyl-getpga.js",
+          "sha256": "5044522b2e87659006670afa4c8b2b418a0aaaa021f8f447f808bebbc3f63d0a",
+          "bytes": 191503,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.ws-k_jzc8i2.js",
+          "sha256": "40ec1bea360585aa83b6ae7aa29eafb0996067d723d1f036da0ced04a18ea25a",
+          "bytes": 45132,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0iid2kl3pm46u.js",
+          "sha256": "82978ff2c40aa53e0e140eca17e3c49276f4b855765289c3ff5495d91a0479c6",
+          "bytes": 104809,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/138t46x7lzh0_.js",
+          "sha256": "39370398a4b17414b2d5de02138c9c8e8cd13e95a33537fe609d653d1a879da2",
+          "bytes": 32500,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0n-kjrsnwe2tb.js",
+          "sha256": "eeabd9d60a251b8ae244bda6cfae43d533a163143cea5f870f3a065c095d8ca9",
+          "bytes": 192983,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0sm_sfi0c1mq-.js",
+          "sha256": "6c90bd457fe4dfa7671de01af36c490f6d8ba473a5933bc39def8ee76c40f0b2",
+          "bytes": 91052,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0uleyy2687dl3.js",
+          "sha256": "cbbcbf316e5eadd37b184ca485ac753e4fd082ea39174c7a68acbd71d2574f38",
+          "bytes": 11234,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02-eeonhl._fb.js",
+          "sha256": "3eb4b0ea5e700623fd5a082d70a1d7f915f647a0de76b5b62f0c036fd7001933",
+          "bytes": 19790,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13lckzgg918t5.js",
+          "sha256": "eb66a6c5b6557a50f7bc232d448fff6ad8e3aee32cc5f5c7e1bcff9f3bc45c99",
+          "bytes": 23413,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07ngao.t8frq0.js",
+          "sha256": "6d8c53b4d26e809bd41c2898450138d6f0e277cf410c2bd94da8f9fb4dfa830f",
+          "bytes": 16523,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0fmsfuctu-bad.js",
+          "sha256": "2bec8483b973c921eb7cac7cc629c41b780da563c1f63c862c992730d8095270",
+          "bytes": 29748,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07yl_.h914mqi.js",
+          "sha256": "8af3e6c19c648d2a9be92bcb64b35d720aeaf07907973dbe031fb59a543943fd",
+          "bytes": 41302,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0rn767pe.qoie.js",
+          "sha256": "24b5c759dc0b1743ac6980b5d01a2bee0cc2357b78e77b823bdeff0213f4cc00",
+          "bytes": 70436,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06~h23gcdri8t.js",
+          "sha256": "50f43cfdc412de60ba410311562423de537e03c0d53a89b731751feb4ea0eb80",
+          "bytes": 69240,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b_bpuxw-.1p..js",
+          "sha256": "8763f828f40b14b1147ac48596546e0e63b230d891bb4dad4fe6d6f8fcd4a29f",
+          "bytes": 154276,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ltjlb3luz40f.js",
+          "sha256": "19201380cfad57644d52f26d1da9b3d7d52ce477e9e0ba8e6c9eaef71ecb6eb5",
+          "bytes": 120020,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ua0r8ey9cy9_.js",
+          "sha256": "5e739186cf2cf4ccf0482c1b9ecbae5ef3779c64341b18daf1ad39599dfc51e2",
+          "bytes": 32500,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/17t.2dba68ndj.js",
+          "sha256": "825c72eaadac1dfffd882f5f956d45a62a09347d944055ac5f5c195c0b358479",
+          "bytes": 44857,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0eg_6rsvcuq6e.js",
+          "sha256": "4de48db9fc3e1d91ee5907327ee0f1017a4821ba3b52ccbc16f42ceea5afe232",
+          "bytes": 11399,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_buildManifest.js",
+          "sha256": "44ba1dfcdd0ae1d11c4efd797d53811f869baf259d2d59d7eb5440583c5472d0",
+          "bytes": 1693,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_ssgManifest.js",
+          "sha256": "678f6ce2cb80b1fe72fc67e7412be6e2ab6ada083111b64f7c40d35e3cba5e00",
+          "bytes": 80,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_clientMiddlewareManifest.js",
+          "sha256": "95ea07356281f634824367e07931feac78ad1c53ad48fc9080913a8331f04e66",
+          "bytes": 458,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04x.wea_ofqc1.js",
+          "sha256": "72dd68e7e9eace4236a374c4653d79195934ce4b7999f3bf01dad024b4f02d23",
+          "bytes": 37794,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0r-xplh.6.-03.js",
+          "sha256": "f3561669372187e138a67d11b7ff6e9ccc69781baa82abe5990e1ebb8986864b",
+          "bytes": 12167,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0w54l~99pq3b9.js",
+          "sha256": "02f2ba1c7b10847bee0af25990cad7772701041e5c7671bc03a5662e7257d183",
+          "bytes": 1851,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0_a80-qmpyc3s.js",
+          "sha256": "fe0a1d5f3640b599ff12b7409b7b4ce4272d5396e3983bb8fc07e3e9efe0f4d9",
+          "bytes": 38828,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-e.cy8zqdh4a.js",
+          "sha256": "056df528e4c1a9ac77cb9043f3e7029642ace68478ec45f296a73423e8b6fc9c",
+          "bytes": 32984,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zm-lheg_tx40.js",
+          "sha256": "5396e44b4684df27b645211631585bcb5a618d62624cda64b04424584e004df8",
+          "bytes": 17446,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04_rrh.j6.wba.js",
+          "sha256": "5a0825ea07e3075a80d5652fe1b57a8254265e841621fb9892e6810e302ca790",
+          "bytes": 2870,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02xyfoe1v.vkw.js",
+          "sha256": "11b391e39f59b1029c76cfbbde2b439ee91de8a558dfce3f576f13675c3e4292",
+          "bytes": 8114,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.44191m_y6r1.js",
+          "sha256": "c0d233d34bde493ebdd970be1680c9c1db7f42fdafe91e5d19ace1622a51b03c",
+          "bytes": 5427,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.gu_l8v2fg11.js",
+          "sha256": "3e2bd65a17d5f45c51df4036753d0dcd283c45b4dd48e7ca22bf4eeb38449e68",
+          "bytes": 5376,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yv_0~sh~88vc.js",
+          "sha256": "7f2a92b3dfe6ad237ddde904dc01caff1fd37de4c13e874cdb71e8b5c0a7a46a",
+          "bytes": 938,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yoghfwkswxeg.js",
+          "sha256": "edfc0707656673b8095aedee9bf84317dc398e39a762cf59ff68aea7386df26a",
+          "bytes": 15509,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/127xbfgjo2hre.js",
+          "sha256": "ea2b7ead2c0aebb45328cd673a5f0450d1ab4667cac3729cbf72d416248cd96b",
+          "bytes": 3712,
+          "success": true,
+          "exact_external": true
+        }
+      ],
+      "successful_exact_external_sources": 72,
+      "edge_path_before_png": true,
+      "logical_font_policy_witness": true
+    },
+    "earlier-source-O0": {
+      "diagnostic_only": true,
+      "browser_exit": 0,
+      "input_identity_unchanged": true,
+      "host_after": {
+        "unix": 1793860725.592431,
+        "load_average": [
+          42.85400390625,
+          56.61962890625,
+          65.4873046875
+        ]
+      },
+      "acceptance": false,
+      "performance_credit": 0,
+      "content_audit": {
+        "passed": true,
+        "headlines": 91,
+        "images": 125,
+        "visible_decoded_images": 3,
+        "dom_elements": 2704,
+        "unavailable_local_fallbacks": [
+          {
+            "family": "BBCReithSans-fallback",
+            "sources": [
+              "Arial"
+            ]
+          },
+          {
+            "family": "BBCReithSans-fallback",
+            "sources": [
+              "Arial Bold"
+            ]
+          }
+        ],
+        "body_text_sha256": "9f689d46fee94b5f006334ba6fa200ce30df5711b0acf9142caf52e3f63dae29"
+      },
+      "pixels": {
+        "exit": 0,
+        "exact": true,
+        "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/bbc-pixel-codegen-e9b0-20261105-0940/page-probe-1/diff.png\n"
+      },
+      "before_png_exact_external_sources": true,
+      "encoded_png_marker_present": true,
+      "actual_images": [
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libwebpdecoder.3.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/jsc-author-probe.dylib",
+        "/Users/alex/code/vox2/Build/bbc-pixel-codegen-e9b0-20261105-0940/Vox-probe",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib"
+      ],
+      "unpinned_actual_images": [],
+      "actual_image_coverage_valid": true,
+      "author_evaluations": [
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "c509306a81e47ba10fe0774ebcd79e2bb841e012dfdaafe3b0dd96fb8bd1e17e",
+          "bytes": 403,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "8341cbd9dd4861255d63cb2043ab679e07a95921570377b3d80e72ef0e4d4a3e",
+          "bytes": 26,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "64706be7c32755c1dcc3f01c570bbb1809482ff90353035140e9defe99b6417b",
+          "bytes": 998,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "c89389e1183b21a8b36a12c2fffd9701bf2cdb4019e712fc4a1e551f97865849",
+          "bytes": 2252,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "b0a707f6d7cc37e31a1ff909334dd2dae5de86cec510d9758987313ebb21756e",
+          "bytes": 93,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "5fa37dfab923a502bf66b5000fdc4da2200a542d9caba432e75dc8a19cf5261a",
+          "bytes": 51,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "fbc325c2e16d559854d6a056d0bfeb40abafd89bf73f7350abf486cf93d7ad45",
+          "bytes": 107,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://static.bbci.co.uk/frameworks/requirejs/0.13.0/sharedmodules/require.js",
+          "sha256": "ac67b60f44b8f1771c6e3ef5b0718f9e2d2e8a764114191e195fadd7876f41c0",
+          "bytes": 26631,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://cdn.tinypass.com/api/tinypass.min.js",
+          "sha256": "b7c42d08846f10e6c2def4ea4ea19867b85a9e956361be06914343da58ac48fb",
+          "bytes": 497751,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://emp.bbci.co.uk/emp/bump-4/bump-4.js",
+          "sha256": "c2c7875f2aab40fd9815ec650f4d34a0b18f8d76037e1b025f7aeef413cf07da",
+          "bytes": 135871,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/03~yq9q893hmn.js",
+          "sha256": "0973c1d64c88adc8e3c950410cb58b288f72118d5965b78049438deb8f2f9683",
+          "bytes": 112594,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b-tgv1_m1uo9.js",
+          "sha256": "8ff3b4fc6689d2b983dd480c82dc932148f428029040cc65809f1cc047ba0fe2",
+          "bytes": 5926,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0d9awe5d081.2.js",
+          "sha256": "75802ee56057653bcc2b605089e5462edbc8474f41c9d7bf03df55a3fbde9aad",
+          "bytes": 34454,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0s_kjwmep8yf2.js",
+          "sha256": "43a274c8e775e4745b5675363f437c01feac88662e7f6040a53f21cba5ad272b",
+          "bytes": 25448,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-a6nanpwqpag.js",
+          "sha256": "6382492412736c25323b49c8282e48c2da65de65bfba9fc23ee9b299891e5f31",
+          "bytes": 23644,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/178~uy1pz6ka4.js",
+          "sha256": "0e507fb2b10a6e5f7952b05eccbef421dc85fe59a617fcab505e6d746dc78768",
+          "bytes": 1511,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02w2j6a0szhem.js",
+          "sha256": "eb96b7160f75c0e779c8e775e73bda35fddc31bdb0c616f8e4f15b0c5e0feae7",
+          "bytes": 25157,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/01ahds4cdfgmx.js",
+          "sha256": "73591aedcda1a85382794bcc8647dc1044d879d990f9e50dffc5180938584042",
+          "bytes": 1391,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/004vauwu48azs.js",
+          "sha256": "c6976ec6cc131d87d5e7f11d0e783b85d503b264a28a2751b486fd4ab3321197",
+          "bytes": 7574,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jl4bpoiy-t_p.js",
+          "sha256": "dff644624d905c732f9a0ef6e564d052584e957ae393366d0319fea89b695d48",
+          "bytes": 6821,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0k530rgixl5kt.js",
+          "sha256": "e369265a9d8c40769f6ccdcd0b87cb392a3672fedbba01f16075d4f298d59166",
+          "bytes": 36524,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zpz-874su9ks.js",
+          "sha256": "9ea3f2b34d76ce6a162b709cc65c34cc37a66660de2853e1c305dd93bf294314",
+          "bytes": 29966,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jcf7ay9pl-s0.js",
+          "sha256": "d92c8ba375ebd3e3c604d93124841f2a250371a73291efbeb403ad3188160033",
+          "bytes": 1651,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0gmos.wajd.qx.js",
+          "sha256": "4c946bc766052d9dce2c45f0e6bbaddb4c97f4ef73611d009df80024d56d2891",
+          "bytes": 1433,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0na6onp8uomzi.js",
+          "sha256": "a26e7e6fb52587c33e5b49e4db4a00951b9564e6ca908ca7cce6e655dd7c9edb",
+          "bytes": 4791,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0pr885e78gdj8.js",
+          "sha256": "43278b629a1156a81e375dff43ad5735d9f1cd531c230d4863593d9eabd4570e",
+          "bytes": 23393,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0u17oyz1d609w.js",
+          "sha256": "c10777b2a4195b77c5f897973fe307e71473533852fa91eb8cdee62226569f24",
+          "bytes": 1361,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ogvtm3jmac~r.js",
+          "sha256": "31d3f1f63e416587d220cab1ff104bc18487ceefa94ca33973391d739c32560b",
+          "bytes": 22677,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0~~24znpk8vc1.js",
+          "sha256": "f58b0adb797260e75b3560b55e9a1187ad0a7cebd1592d5146f89f5e4a887c28",
+          "bytes": 1371,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/116azxjox4uhk.js",
+          "sha256": "289638f4f398843c2e4ca6b5b9f52843f4ede9b223346482f6d2e298735fc7f1",
+          "bytes": 19790,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00su1kxuv.aa_.js",
+          "sha256": "a524098545ef1cd851bfe249d8547418701553c1271fa61df83e322d31ef1bda",
+          "bytes": 29178,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05el2iwpn3pyx.js",
+          "sha256": "b41e787f031780654f9aefaf4baf901cebb143defbb07e9d84abc01ee1af33c6",
+          "bytes": 25798,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/12w5u9fluro3i.js",
+          "sha256": "87b2c72ef5a9e6a9ec946db9e608f362b0eaff7f7fcffb6f49eade74019c71da",
+          "bytes": 33911,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00pv_7c.hjx18.js",
+          "sha256": "ecb85f0c77754c57fe55dbd3869570c0dfce669aef10642534b50564e1524976",
+          "bytes": 37329,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06nzlhdny82mu.js",
+          "sha256": "7321beafb2b2fd4ec44c729f04b6fbff625d333de2a3feb6e1caf5ea3e59213c",
+          "bytes": 31925,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0z3rjge5m4grx.js",
+          "sha256": "dd181f9f615bb71d8f0a5b7c0ad50bd47dcee782ef2a3a516577a56bd4d53cfd",
+          "bytes": 15392,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/1556fllq~t8x3.js",
+          "sha256": "880c3492ac7473e1ebcd83c06baf55b55a9a8628626393fc6973fd255fb32e98",
+          "bytes": 37689,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0c.fzizjof3_9.js",
+          "sha256": "15a112fb236ba9ac3559681959e5b63c3a0245be19d7424f0f067b24961c2221",
+          "bytes": 27920,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04n.yg_e~~1ci.js",
+          "sha256": "671df04e43515714028382bc50ac1dd17c9a725934d803433bff1ac0d1f23052",
+          "bytes": 36570,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05bsy3xzra8wq.js",
+          "sha256": "90c64d6b7765acb8ea15202ec1b7e5eb5c5093202291ae13c00fb1bf3d5bb367",
+          "bytes": 246296,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0a--~b-snp6to.js",
+          "sha256": "03b522f1bdba75c82eda171462e44f29263e09779bf61acb06465c126156ceaa",
+          "bytes": 71931,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13ad5orspgznk.js",
+          "sha256": "28a1e4258d181f3e67e1c23bab3850c64c7c42d0ab173d3b65f2f262067c995c",
+          "bytes": 29927,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/18bprfc204vpd.js",
+          "sha256": "f5cb72d4776976e5f53690a42356a1c6a83d8d069c6574ee83c3b5139f714556",
+          "bytes": 69240,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0x01rgvk49mtx.js",
+          "sha256": "2d1c012683cdac3406f62e3c3356b04b6a25655e245ad5134d3e97dd64ee0963",
+          "bytes": 23725,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0y-nyl-getpga.js",
+          "sha256": "5044522b2e87659006670afa4c8b2b418a0aaaa021f8f447f808bebbc3f63d0a",
+          "bytes": 191503,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.ws-k_jzc8i2.js",
+          "sha256": "40ec1bea360585aa83b6ae7aa29eafb0996067d723d1f036da0ced04a18ea25a",
+          "bytes": 45132,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0iid2kl3pm46u.js",
+          "sha256": "82978ff2c40aa53e0e140eca17e3c49276f4b855765289c3ff5495d91a0479c6",
+          "bytes": 104809,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/138t46x7lzh0_.js",
+          "sha256": "39370398a4b17414b2d5de02138c9c8e8cd13e95a33537fe609d653d1a879da2",
+          "bytes": 32500,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0n-kjrsnwe2tb.js",
+          "sha256": "eeabd9d60a251b8ae244bda6cfae43d533a163143cea5f870f3a065c095d8ca9",
+          "bytes": 192983,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0sm_sfi0c1mq-.js",
+          "sha256": "6c90bd457fe4dfa7671de01af36c490f6d8ba473a5933bc39def8ee76c40f0b2",
+          "bytes": 91052,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0uleyy2687dl3.js",
+          "sha256": "cbbcbf316e5eadd37b184ca485ac753e4fd082ea39174c7a68acbd71d2574f38",
+          "bytes": 11234,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02-eeonhl._fb.js",
+          "sha256": "3eb4b0ea5e700623fd5a082d70a1d7f915f647a0de76b5b62f0c036fd7001933",
+          "bytes": 19790,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13lckzgg918t5.js",
+          "sha256": "eb66a6c5b6557a50f7bc232d448fff6ad8e3aee32cc5f5c7e1bcff9f3bc45c99",
+          "bytes": 23413,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07ngao.t8frq0.js",
+          "sha256": "6d8c53b4d26e809bd41c2898450138d6f0e277cf410c2bd94da8f9fb4dfa830f",
+          "bytes": 16523,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0fmsfuctu-bad.js",
+          "sha256": "2bec8483b973c921eb7cac7cc629c41b780da563c1f63c862c992730d8095270",
+          "bytes": 29748,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07yl_.h914mqi.js",
+          "sha256": "8af3e6c19c648d2a9be92bcb64b35d720aeaf07907973dbe031fb59a543943fd",
+          "bytes": 41302,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0rn767pe.qoie.js",
+          "sha256": "24b5c759dc0b1743ac6980b5d01a2bee0cc2357b78e77b823bdeff0213f4cc00",
+          "bytes": 70436,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06~h23gcdri8t.js",
+          "sha256": "50f43cfdc412de60ba410311562423de537e03c0d53a89b731751feb4ea0eb80",
+          "bytes": 69240,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b_bpuxw-.1p..js",
+          "sha256": "8763f828f40b14b1147ac48596546e0e63b230d891bb4dad4fe6d6f8fcd4a29f",
+          "bytes": 154276,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ltjlb3luz40f.js",
+          "sha256": "19201380cfad57644d52f26d1da9b3d7d52ce477e9e0ba8e6c9eaef71ecb6eb5",
+          "bytes": 120020,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ua0r8ey9cy9_.js",
+          "sha256": "5e739186cf2cf4ccf0482c1b9ecbae5ef3779c64341b18daf1ad39599dfc51e2",
+          "bytes": 32500,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/17t.2dba68ndj.js",
+          "sha256": "825c72eaadac1dfffd882f5f956d45a62a09347d944055ac5f5c195c0b358479",
+          "bytes": 44857,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0eg_6rsvcuq6e.js",
+          "sha256": "4de48db9fc3e1d91ee5907327ee0f1017a4821ba3b52ccbc16f42ceea5afe232",
+          "bytes": 11399,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_buildManifest.js",
+          "sha256": "44ba1dfcdd0ae1d11c4efd797d53811f869baf259d2d59d7eb5440583c5472d0",
+          "bytes": 1693,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_ssgManifest.js",
+          "sha256": "678f6ce2cb80b1fe72fc67e7412be6e2ab6ada083111b64f7c40d35e3cba5e00",
+          "bytes": 80,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_clientMiddlewareManifest.js",
+          "sha256": "95ea07356281f634824367e07931feac78ad1c53ad48fc9080913a8331f04e66",
+          "bytes": 458,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-e.cy8zqdh4a.js",
+          "sha256": "056df528e4c1a9ac77cb9043f3e7029642ace68478ec45f296a73423e8b6fc9c",
+          "bytes": 32984,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04x.wea_ofqc1.js",
+          "sha256": "72dd68e7e9eace4236a374c4653d79195934ce4b7999f3bf01dad024b4f02d23",
+          "bytes": 37794,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04_rrh.j6.wba.js",
+          "sha256": "5a0825ea07e3075a80d5652fe1b57a8254265e841621fb9892e6810e302ca790",
+          "bytes": 2870,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0_a80-qmpyc3s.js",
+          "sha256": "fe0a1d5f3640b599ff12b7409b7b4ce4272d5396e3983bb8fc07e3e9efe0f4d9",
+          "bytes": 38828,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02xyfoe1v.vkw.js",
+          "sha256": "11b391e39f59b1029c76cfbbde2b439ee91de8a558dfce3f576f13675c3e4292",
+          "bytes": 8114,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0r-xplh.6.-03.js",
+          "sha256": "f3561669372187e138a67d11b7ff6e9ccc69781baa82abe5990e1ebb8986864b",
+          "bytes": 12167,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zm-lheg_tx40.js",
+          "sha256": "5396e44b4684df27b645211631585bcb5a618d62624cda64b04424584e004df8",
+          "bytes": 17446,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0w54l~99pq3b9.js",
+          "sha256": "02f2ba1c7b10847bee0af25990cad7772701041e5c7671bc03a5662e7257d183",
+          "bytes": 1851,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.gu_l8v2fg11.js",
+          "sha256": "3e2bd65a17d5f45c51df4036753d0dcd283c45b4dd48e7ca22bf4eeb38449e68",
+          "bytes": 5376,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.44191m_y6r1.js",
+          "sha256": "c0d233d34bde493ebdd970be1680c9c1db7f42fdafe91e5d19ace1622a51b03c",
+          "bytes": 5427,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yoghfwkswxeg.js",
+          "sha256": "edfc0707656673b8095aedee9bf84317dc398e39a762cf59ff68aea7386df26a",
+          "bytes": 15509,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yv_0~sh~88vc.js",
+          "sha256": "7f2a92b3dfe6ad237ddde904dc01caff1fd37de4c13e874cdb71e8b5c0a7a46a",
+          "bytes": 938,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/127xbfgjo2hre.js",
+          "sha256": "ea2b7ead2c0aebb45328cd673a5f0450d1ab4667cac3729cbf72d416248cd96b",
+          "bytes": 3712,
+          "success": true,
+          "exact_external": true
+        }
+      ],
+      "successful_exact_external_sources": 72,
+      "edge_path_before_png": true,
+      "logical_font_policy_witness": true
+    },
+    "single-helper-control": {
+      "diagnostic_only": true,
+      "browser_exit": 0,
+      "input_identity_unchanged": true,
+      "host_after": {
+        "unix": 1793860995.566676,
+        "load_average": [
+          61.3251953125,
+          58.56494140625,
+          63.814453125
+        ]
+      },
+      "acceptance": false,
+      "performance_credit": 0,
+      "content_audit": {
+        "passed": true,
+        "headlines": 91,
+        "images": 125,
+        "visible_decoded_images": 3,
+        "dom_elements": 2704,
+        "unavailable_local_fallbacks": [
+          {
+            "family": "BBCReithSans-fallback",
+            "sources": [
+              "Arial"
+            ]
+          },
+          {
+            "family": "BBCReithSans-fallback",
+            "sources": [
+              "Arial Bold"
+            ]
+          }
+        ],
+        "body_text_sha256": "9f689d46fee94b5f006334ba6fa200ce30df5711b0acf9142caf52e3f63dae29"
+      },
+      "pixels": {
+        "exit": 0,
+        "exact": true,
+        "metrics": "pixels: 3145728\ndifferent_pixels: 0 (0.0000%)\npixels_over_3: 0 (0.0000%)\npixels_over_10: 0 (0.0000%)\npixels_over_25: 0 (0.0000%)\npixels_over_50: 0 (0.0000%)\nmaximum_channel_error: 0\nmean_absolute_error: 0.0000\nrmse: 0.0000\ndiff: /Users/alex/code/vox2/Build/bbc-pixel-msaa-control-20261105-0944/page-probe-1/diff.png\n"
+      },
+      "before_png_exact_external_sources": true,
+      "encoded_png_marker_present": true,
+      "actual_images": [
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlicommon.1.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbrotlidec.1.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libbz2.1.0.8.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcrypto.3.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libcurl.4.8.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libexpat.1.11.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfontconfig.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicudata.78.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.78.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp2.14.29.2.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libnghttp3.9.6.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2.16.7.4.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libngtcp2_crypto_ossl.0.1.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libpng16.16.50.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libssl.3.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libwebpdecoder.3.2.0.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libz.1.3.1.dylib",
+        "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libzstd.1.5.7.dylib",
+        "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/jsc-author-probe.dylib",
+        "/Users/alex/code/vox2/Build/bbc-pixel-msaa-control-20261105-0944/Vox-probe",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib",
+        "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib"
+      ],
+      "unpinned_actual_images": [],
+      "actual_image_coverage_valid": true,
+      "author_evaluations": [
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "c509306a81e47ba10fe0774ebcd79e2bb841e012dfdaafe3b0dd96fb8bd1e17e",
+          "bytes": 403,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "8341cbd9dd4861255d63cb2043ab679e07a95921570377b3d80e72ef0e4d4a3e",
+          "bytes": 26,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "64706be7c32755c1dcc3f01c570bbb1809482ff90353035140e9defe99b6417b",
+          "bytes": 998,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "c89389e1183b21a8b36a12c2fffd9701bf2cdb4019e712fc4a1e551f97865849",
+          "bytes": 2252,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "b0a707f6d7cc37e31a1ff909334dd2dae5de86cec510d9758987313ebb21756e",
+          "bytes": 93,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "5fa37dfab923a502bf66b5000fdc4da2200a542d9caba432e75dc8a19cf5261a",
+          "bytes": 51,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://www.bbc.com/",
+          "sha256": "fbc325c2e16d559854d6a056d0bfeb40abafd89bf73f7350abf486cf93d7ad45",
+          "bytes": 107,
+          "success": true,
+          "exact_external": false
+        },
+        {
+          "url": "https://static.bbci.co.uk/frameworks/requirejs/0.13.0/sharedmodules/require.js",
+          "sha256": "ac67b60f44b8f1771c6e3ef5b0718f9e2d2e8a764114191e195fadd7876f41c0",
+          "bytes": 26631,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://cdn.tinypass.com/api/tinypass.min.js",
+          "sha256": "b7c42d08846f10e6c2def4ea4ea19867b85a9e956361be06914343da58ac48fb",
+          "bytes": 497751,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://emp.bbci.co.uk/emp/bump-4/bump-4.js",
+          "sha256": "c2c7875f2aab40fd9815ec650f4d34a0b18f8d76037e1b025f7aeef413cf07da",
+          "bytes": 135871,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/03~yq9q893hmn.js",
+          "sha256": "0973c1d64c88adc8e3c950410cb58b288f72118d5965b78049438deb8f2f9683",
+          "bytes": 112594,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b-tgv1_m1uo9.js",
+          "sha256": "8ff3b4fc6689d2b983dd480c82dc932148f428029040cc65809f1cc047ba0fe2",
+          "bytes": 5926,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0d9awe5d081.2.js",
+          "sha256": "75802ee56057653bcc2b605089e5462edbc8474f41c9d7bf03df55a3fbde9aad",
+          "bytes": 34454,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0s_kjwmep8yf2.js",
+          "sha256": "43a274c8e775e4745b5675363f437c01feac88662e7f6040a53f21cba5ad272b",
+          "bytes": 25448,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-a6nanpwqpag.js",
+          "sha256": "6382492412736c25323b49c8282e48c2da65de65bfba9fc23ee9b299891e5f31",
+          "bytes": 23644,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/178~uy1pz6ka4.js",
+          "sha256": "0e507fb2b10a6e5f7952b05eccbef421dc85fe59a617fcab505e6d746dc78768",
+          "bytes": 1511,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02w2j6a0szhem.js",
+          "sha256": "eb96b7160f75c0e779c8e775e73bda35fddc31bdb0c616f8e4f15b0c5e0feae7",
+          "bytes": 25157,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/01ahds4cdfgmx.js",
+          "sha256": "73591aedcda1a85382794bcc8647dc1044d879d990f9e50dffc5180938584042",
+          "bytes": 1391,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/004vauwu48azs.js",
+          "sha256": "c6976ec6cc131d87d5e7f11d0e783b85d503b264a28a2751b486fd4ab3321197",
+          "bytes": 7574,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jl4bpoiy-t_p.js",
+          "sha256": "dff644624d905c732f9a0ef6e564d052584e957ae393366d0319fea89b695d48",
+          "bytes": 6821,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0k530rgixl5kt.js",
+          "sha256": "e369265a9d8c40769f6ccdcd0b87cb392a3672fedbba01f16075d4f298d59166",
+          "bytes": 36524,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zpz-874su9ks.js",
+          "sha256": "9ea3f2b34d76ce6a162b709cc65c34cc37a66660de2853e1c305dd93bf294314",
+          "bytes": 29966,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0jcf7ay9pl-s0.js",
+          "sha256": "d92c8ba375ebd3e3c604d93124841f2a250371a73291efbeb403ad3188160033",
+          "bytes": 1651,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0gmos.wajd.qx.js",
+          "sha256": "4c946bc766052d9dce2c45f0e6bbaddb4c97f4ef73611d009df80024d56d2891",
+          "bytes": 1433,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0na6onp8uomzi.js",
+          "sha256": "a26e7e6fb52587c33e5b49e4db4a00951b9564e6ca908ca7cce6e655dd7c9edb",
+          "bytes": 4791,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0pr885e78gdj8.js",
+          "sha256": "43278b629a1156a81e375dff43ad5735d9f1cd531c230d4863593d9eabd4570e",
+          "bytes": 23393,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0u17oyz1d609w.js",
+          "sha256": "c10777b2a4195b77c5f897973fe307e71473533852fa91eb8cdee62226569f24",
+          "bytes": 1361,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ogvtm3jmac~r.js",
+          "sha256": "31d3f1f63e416587d220cab1ff104bc18487ceefa94ca33973391d739c32560b",
+          "bytes": 22677,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0~~24znpk8vc1.js",
+          "sha256": "f58b0adb797260e75b3560b55e9a1187ad0a7cebd1592d5146f89f5e4a887c28",
+          "bytes": 1371,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/116azxjox4uhk.js",
+          "sha256": "289638f4f398843c2e4ca6b5b9f52843f4ede9b223346482f6d2e298735fc7f1",
+          "bytes": 19790,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00su1kxuv.aa_.js",
+          "sha256": "a524098545ef1cd851bfe249d8547418701553c1271fa61df83e322d31ef1bda",
+          "bytes": 29178,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05el2iwpn3pyx.js",
+          "sha256": "b41e787f031780654f9aefaf4baf901cebb143defbb07e9d84abc01ee1af33c6",
+          "bytes": 25798,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/12w5u9fluro3i.js",
+          "sha256": "87b2c72ef5a9e6a9ec946db9e608f362b0eaff7f7fcffb6f49eade74019c71da",
+          "bytes": 33911,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/00pv_7c.hjx18.js",
+          "sha256": "ecb85f0c77754c57fe55dbd3869570c0dfce669aef10642534b50564e1524976",
+          "bytes": 37329,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06nzlhdny82mu.js",
+          "sha256": "7321beafb2b2fd4ec44c729f04b6fbff625d333de2a3feb6e1caf5ea3e59213c",
+          "bytes": 31925,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0z3rjge5m4grx.js",
+          "sha256": "dd181f9f615bb71d8f0a5b7c0ad50bd47dcee782ef2a3a516577a56bd4d53cfd",
+          "bytes": 15392,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/1556fllq~t8x3.js",
+          "sha256": "880c3492ac7473e1ebcd83c06baf55b55a9a8628626393fc6973fd255fb32e98",
+          "bytes": 37689,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0c.fzizjof3_9.js",
+          "sha256": "15a112fb236ba9ac3559681959e5b63c3a0245be19d7424f0f067b24961c2221",
+          "bytes": 27920,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04n.yg_e~~1ci.js",
+          "sha256": "671df04e43515714028382bc50ac1dd17c9a725934d803433bff1ac0d1f23052",
+          "bytes": 36570,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/05bsy3xzra8wq.js",
+          "sha256": "90c64d6b7765acb8ea15202ec1b7e5eb5c5093202291ae13c00fb1bf3d5bb367",
+          "bytes": 246296,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0a--~b-snp6to.js",
+          "sha256": "03b522f1bdba75c82eda171462e44f29263e09779bf61acb06465c126156ceaa",
+          "bytes": 71931,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13ad5orspgznk.js",
+          "sha256": "28a1e4258d181f3e67e1c23bab3850c64c7c42d0ab173d3b65f2f262067c995c",
+          "bytes": 29927,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/18bprfc204vpd.js",
+          "sha256": "f5cb72d4776976e5f53690a42356a1c6a83d8d069c6574ee83c3b5139f714556",
+          "bytes": 69240,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0x01rgvk49mtx.js",
+          "sha256": "2d1c012683cdac3406f62e3c3356b04b6a25655e245ad5134d3e97dd64ee0963",
+          "bytes": 23725,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0y-nyl-getpga.js",
+          "sha256": "5044522b2e87659006670afa4c8b2b418a0aaaa021f8f447f808bebbc3f63d0a",
+          "bytes": 191503,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.ws-k_jzc8i2.js",
+          "sha256": "40ec1bea360585aa83b6ae7aa29eafb0996067d723d1f036da0ced04a18ea25a",
+          "bytes": 45132,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0iid2kl3pm46u.js",
+          "sha256": "82978ff2c40aa53e0e140eca17e3c49276f4b855765289c3ff5495d91a0479c6",
+          "bytes": 104809,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/138t46x7lzh0_.js",
+          "sha256": "39370398a4b17414b2d5de02138c9c8e8cd13e95a33537fe609d653d1a879da2",
+          "bytes": 32500,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0n-kjrsnwe2tb.js",
+          "sha256": "eeabd9d60a251b8ae244bda6cfae43d533a163143cea5f870f3a065c095d8ca9",
+          "bytes": 192983,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0sm_sfi0c1mq-.js",
+          "sha256": "6c90bd457fe4dfa7671de01af36c490f6d8ba473a5933bc39def8ee76c40f0b2",
+          "bytes": 91052,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0uleyy2687dl3.js",
+          "sha256": "cbbcbf316e5eadd37b184ca485ac753e4fd082ea39174c7a68acbd71d2574f38",
+          "bytes": 11234,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02-eeonhl._fb.js",
+          "sha256": "3eb4b0ea5e700623fd5a082d70a1d7f915f647a0de76b5b62f0c036fd7001933",
+          "bytes": 19790,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/13lckzgg918t5.js",
+          "sha256": "eb66a6c5b6557a50f7bc232d448fff6ad8e3aee32cc5f5c7e1bcff9f3bc45c99",
+          "bytes": 23413,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07ngao.t8frq0.js",
+          "sha256": "6d8c53b4d26e809bd41c2898450138d6f0e277cf410c2bd94da8f9fb4dfa830f",
+          "bytes": 16523,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0fmsfuctu-bad.js",
+          "sha256": "2bec8483b973c921eb7cac7cc629c41b780da563c1f63c862c992730d8095270",
+          "bytes": 29748,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/07yl_.h914mqi.js",
+          "sha256": "8af3e6c19c648d2a9be92bcb64b35d720aeaf07907973dbe031fb59a543943fd",
+          "bytes": 41302,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0rn767pe.qoie.js",
+          "sha256": "24b5c759dc0b1743ac6980b5d01a2bee0cc2357b78e77b823bdeff0213f4cc00",
+          "bytes": 70436,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/06~h23gcdri8t.js",
+          "sha256": "50f43cfdc412de60ba410311562423de537e03c0d53a89b731751feb4ea0eb80",
+          "bytes": 69240,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0b_bpuxw-.1p..js",
+          "sha256": "8763f828f40b14b1147ac48596546e0e63b230d891bb4dad4fe6d6f8fcd4a29f",
+          "bytes": 154276,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ltjlb3luz40f.js",
+          "sha256": "19201380cfad57644d52f26d1da9b3d7d52ce477e9e0ba8e6c9eaef71ecb6eb5",
+          "bytes": 120020,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0ua0r8ey9cy9_.js",
+          "sha256": "5e739186cf2cf4ccf0482c1b9ecbae5ef3779c64341b18daf1ad39599dfc51e2",
+          "bytes": 32500,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/17t.2dba68ndj.js",
+          "sha256": "825c72eaadac1dfffd882f5f956d45a62a09347d944055ac5f5c195c0b358479",
+          "bytes": 44857,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/turbopack-0eg_6rsvcuq6e.js",
+          "sha256": "4de48db9fc3e1d91ee5907327ee0f1017a4821ba3b52ccbc16f42ceea5afe232",
+          "bytes": 11399,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_buildManifest.js",
+          "sha256": "44ba1dfcdd0ae1d11c4efd797d53811f869baf259d2d59d7eb5440583c5472d0",
+          "bytes": 1693,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_ssgManifest.js",
+          "sha256": "678f6ce2cb80b1fe72fc67e7412be6e2ab6ada083111b64f7c40d35e3cba5e00",
+          "bytes": 80,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/ucIVEZCJOb7mWOSdECe6w/_clientMiddlewareManifest.js",
+          "sha256": "95ea07356281f634824367e07931feac78ad1c53ad48fc9080913a8331f04e66",
+          "bytes": 458,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0-e.cy8zqdh4a.js",
+          "sha256": "056df528e4c1a9ac77cb9043f3e7029642ace68478ec45f296a73423e8b6fc9c",
+          "bytes": 32984,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0w54l~99pq3b9.js",
+          "sha256": "02f2ba1c7b10847bee0af25990cad7772701041e5c7671bc03a5662e7257d183",
+          "bytes": 1851,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0r-xplh.6.-03.js",
+          "sha256": "f3561669372187e138a67d11b7ff6e9ccc69781baa82abe5990e1ebb8986864b",
+          "bytes": 12167,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04_rrh.j6.wba.js",
+          "sha256": "5a0825ea07e3075a80d5652fe1b57a8254265e841621fb9892e6810e302ca790",
+          "bytes": 2870,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0_a80-qmpyc3s.js",
+          "sha256": "fe0a1d5f3640b599ff12b7409b7b4ce4272d5396e3983bb8fc07e3e9efe0f4d9",
+          "bytes": 38828,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/04x.wea_ofqc1.js",
+          "sha256": "72dd68e7e9eace4236a374c4653d79195934ce4b7999f3bf01dad024b4f02d23",
+          "bytes": 37794,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0zm-lheg_tx40.js",
+          "sha256": "5396e44b4684df27b645211631585bcb5a618d62624cda64b04424584e004df8",
+          "bytes": 17446,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/02xyfoe1v.vkw.js",
+          "sha256": "11b391e39f59b1029c76cfbbde2b439ee91de8a558dfce3f576f13675c3e4292",
+          "bytes": 8114,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.gu_l8v2fg11.js",
+          "sha256": "3e2bd65a17d5f45c51df4036753d0dcd283c45b4dd48e7ca22bf4eeb38449e68",
+          "bytes": 5376,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0.44191m_y6r1.js",
+          "sha256": "c0d233d34bde493ebdd970be1680c9c1db7f42fdafe91e5d19ace1622a51b03c",
+          "bytes": 5427,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/127xbfgjo2hre.js",
+          "sha256": "ea2b7ead2c0aebb45328cd673a5f0450d1ab4667cac3729cbf72d416248cd96b",
+          "bytes": 3712,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yv_0~sh~88vc.js",
+          "sha256": "7f2a92b3dfe6ad237ddde904dc01caff1fd37de4c13e874cdb71e8b5c0a7a46a",
+          "bytes": 938,
+          "success": true,
+          "exact_external": true
+        },
+        {
+          "url": "https://static.files.bbci.co.uk/bbcdotcom/web/20261027-121803-88dfe2b2c8-web-3.26.0-4/_next/static/chunks/0yoghfwkswxeg.js",
+          "sha256": "edfc0707656673b8095aedee9bf84317dc398e39a762cf59ff68aea7386df26a",
+          "bytes": 15509,
+          "success": true,
+          "exact_external": true
+        }
+      ],
+      "successful_exact_external_sources": 72,
+      "edge_path_before_png": true,
+      "logical_font_policy_witness": true
+    }
+  },
+  "single_helper_proof": {
+    "new_source": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-085357-ec81582c/frozen-compiler-inputs/0-Vox.c.i",
+    "new_sha256": "dfd7ca5b6488e0c9f2f99663a41e16238c64c14635ac6f72e390fccba6b3310f",
+    "old_source": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-083546-274127d5/frozen-compiler-inputs/0-Vox.c.i",
+    "old_sha256": "2d7037c96353d6f926c57f545561ed9de4753e6e1cac6740ea0cadcf65fd09fe",
+    "new_body": "_Bool chromium_border_has_diagonal_path(layout__PaintCommand command) {\n if (command.svg_data == ((void*)0)) {\n  return 0;\n }\n Array data = command.svg_data->path_data;\n i64 stride = (12);\n float x = (float)((float)(0));\n float y = (float)((float)(0));\n float start_x = (float)((float)(0));\n float start_y = (float)((float)(0));\n _Bool has_point = 0;\n {\n  i64 v_index = 0;\n  for (; (v_index + stride) <= data.len; v_index += stride) {\n   i64 kind = (i64)((*(float*)array__get(data, v_index)));\n   if (kind == 5) {\n    if (has_point && (x != start_x) && (y != start_y)) {\n     return 1;\n    }\n    x = start_x;\n    y = start_y;\n    continue;\n   }\n   float next_x = (*(float*)array__get(data, v_index + 1));\n   float next_y = (*(float*)array__get(data, v_index + 2));\n   if (kind == 4) {\n    if (!has_point) {\n     return 1;\n    }\n    if ((next_x == x) && (next_y == y)) {\n     continue;\n    }\n    if (((*(float*)array__get(data, v_index + 7)) != 0) && ((*(float*)array__get(data, v_index + 8)) != 0)) {\n     return 1;\n    }\n   } else if (kind > 1) {\n    return 1;\n   }\n   if (kind == 0) {\n    start_x = next_x;\n    start_y = next_y;\n   } else if (has_point && (next_x != x) && (next_y != y)) {\n    return 1;\n   }\n   x = next_x;\n   y = next_y;\n   has_point = 1;\n  }\n }\n return 0;\n}",
+    "old_body": "_Bool chromium_border_has_diagonal_path(layout__PaintCommand command) {\n if (command.svg_data == ((void*)0)) {\n  return 0;\n }\n Array data = command.svg_data->path_data;\n i64 stride = (12);\n float x = (float)((float)(0));\n float y = (float)((float)(0));\n float start_x = (float)((float)(0));\n float start_y = (float)((float)(0));\n _Bool has_point = 0;\n {\n  i64 v_index = 0;\n  for (; (v_index + stride) <= data.len; v_index += stride) {\n   i64 kind = (i64)((*(float*)array__get(data, v_index)));\n   if (kind == 5) {\n    if (has_point && (x != start_x) && (y != start_y)) {\n     return 1;\n    }\n    x = start_x;\n    y = start_y;\n    continue;\n   }\n   if (kind > 1) {\n    return 1;\n   }\n   float next_x = (*(float*)array__get(data, v_index + 1));\n   float next_y = (*(float*)array__get(data, v_index + 2));\n   if (kind == 0) {\n    start_x = next_x;\n    start_y = next_y;\n   } else if (has_point && (next_x != x) && (next_y != y)) {\n    return 1;\n   }\n   x = next_x;\n   y = next_y;\n   has_point = 1;\n  }\n }\n return 0;\n}",
+    "only_change": "Replace chromium_border_has_diagonal_path with its exact earlier body; other source bytes identical. C-O0 diagnostic only, no instruction credit."
+  },
+  "interpretation": "C-O0 diagnostic reuses exact fc1 sealed source, changing only chromium_border_has_diagonal_path to its exact e9b0 body. Original C/native inputs and loaded libraries pinned before/after; native0, original PNG exact, content and72external scripts pass. Old-sourceO0 separately exact. These diagnostics establish pixel attribution, not instruction savings. Generated string/anonymous-name classifier is investigative only, not a proof of whole-program equivalence.",
+  "renderer_change": "c2deb6773 recognizes omitted and zero-radius border arcs as analytic. Changing tile-wide MSAA also changes a sample inside a neighboring image. Current default source remains intact; fixed workload needs explicit old sampling common to both arms, with zero policy-change credit.",
+  "native_source_comparison": {
+    "files_before": {
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/ptypes.h": {
+        "lines": 3,
+        "sha256": "9042aadcbbc4b34a083e71e3ffa39bed9d14d7e869704ad305f3631059dd1f54"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/umachine.h": {
+        "lines": 10,
+        "sha256": "ed2e093761e59f22af9c03d6408ad64118c50a7c249be8509e5357f98aa01146"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/uversion.h": {
+        "lines": 9,
+        "sha256": "323c6239d758c9e8bd59ce4eedf53d005d681ee9f4f65a296ab9edd580e59696"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/utypes.h": {
+        "lines": 297,
+        "sha256": "808df7cb3a5e432cf22bb9f85007f620567a0d31fd4fc1266ed0415ba1bdd0e1"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/utf8.h": {
+        "lines": 8,
+        "sha256": "4c9ad14f4dd98a7ab014db81c661eeaefdb516ea54678261897d2d89c62d4142"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/utf.h": {
+        "lines": 2,
+        "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/utf_old.h": {
+        "lines": 1,
+        "sha256": "5ff4c0a404e7b3991e43d47469a6a8e1049556262788656b71d1210f3b903916"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/ucpmap.h": {
+        "lines": 21,
+        "sha256": "7350f9665f1136e4eab38c8446c03691b73b13d1e28576059f7e60fccbea25a5"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/uchar.h": {
+        "lines": 2532,
+        "sha256": "34da1dd8c2157d85e8b99307119e1c0bd35c277730657c6eb0f298fa2ec4c349"
+      },
+      "/Users/alex/code/vox2/native_runtime_bounds.h": {
+        "lines": 4,
+        "sha256": "dd13367d8b63735ef39541b086a32bd89c9a650837b7d856e6d9e90160126052"
+      },
+      "/Users/alex/code/vox2/platform/layout_font_policy.h": {
+        "lines": 25,
+        "sha256": "c4d8a87b8d03e25a928fa2a5e50c803a63316988f988f00b664459028696937b"
+      },
+      "/Users/alex/code/vox2/platform/thread_scratch_leases.h": {
+        "lines": 114,
+        "sha256": "d149a87adb626b060d49723414729d79e8bb81bf1d2efdd6583b5b6493527b86"
+      },
+      "/Users/alex/code/vox2/platform/coretext_macos.h": {
+        "lines": 553,
+        "sha256": "ed9cb14e2e2cabfede25a123350443bb30ca27cd9050e5e5ebfba12c28aa2fde"
+      },
+      "/Users/alex/code/vox2/platform/hyphenation_bridge.h": {
+        "lines": 72,
+        "sha256": "5b68cf1d504fa8e658d7db6da93d0bff4c8938c89d4894ffd4a84014ab44090f"
+      },
+      "/Users/alex/code/vox2/platform/timer_host_bridge.h": {
+        "lines": 66,
+        "sha256": "a5235c44abb04b07d537d2df2608f5ca5aba29cba4ca95d68a39e00938586d9e"
+      },
+      "/Users/alex/code/vox2/platform/unicode_case_bridge.h": {
+        "lines": 87,
+        "sha256": "48559ec9e2a333a19a1ab8515ef9f8e66b1b295af0869336b00ae7ccaf05c69f"
+      },
+      "/Users/alex/code/vox2/platform/unicode_case_mapping.h": {
+        "lines": 17,
+        "sha256": "8bae6908bc1b356df90664a69ecb1dbc49e84d8a188ac1b29442341bcc96f161"
+      },
+      "/Users/alex/code/vox2/platform/unicode_categories_bridge.h": {
+        "lines": 17,
+        "sha256": "d9fc546771104294fae69ecde1a06ddf466f51661e37688ffd15ce4368daf462"
+      },
+      "/Users/alex/code/vox2/gfxfont/woff2.h": {
+        "lines": 7,
+        "sha256": "51c76ecf0fe30a411c1f81852b29ad5f2fef112c87eea5c595c20dd89223a0cf"
+      },
+      "/Users/alex/code/vox2/platform/arena_poison_report.h": {
+        "lines": 64,
+        "sha256": "36b0ba3c1e811adb21f2e3ec8af628d31bb153c4ad6b0336b43bb68b553c79ea"
+      },
+      "/Users/alex/code/vox2/platform/arena_page_retirement.h": {
+        "lines": 26,
+        "sha256": "be6a9c522ffc10791cb054958d58d778668fccb063ac8bc3b621128070a24abc"
+      },
+      "/Users/alex/code/vox2/platform/harfbuzz_coretext_macos.h": {
+        "lines": 121,
+        "sha256": "39eceb372b1028873d19eda5e903d6406c2d43d789db716fa33144a8eb862341"
+      },
+      "/Users/alex/code/vox2/platform/native_deferred_bridge.h": {
+        "lines": 17,
+        "sha256": "79f9b3846bdf7a1124ac1c6431c047ee7c010f5135d48f5249e095ba1d84e9b8"
+      },
+      "/Users/alex/code/vox2/url/idna_bridge.h": {
+        "lines": 50,
+        "sha256": "aca53605ca09b90b127f5b5d59c19e975af4b47a5d3ca890f3e301687399ebee"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/parseerr.h": {
+        "lines": 20,
+        "sha256": "00ea235f4571ab23994180b73f7d8f5a8c86b60f78daff7d5400c5f53c1a535e"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/uidna.h": {
+        "lines": 217,
+        "sha256": "ba21a16909647d3a3b345ac3d2f904cd99912c15d0766eb83e1d721a79bacd25"
+      },
+      "/Users/alex/code/vox2/libjs/stack_info_host.h": {
+        "lines": 4,
+        "sha256": "d368383c7e6a72921cbf78c4571ebb9d83aa922f3335bab713ad1a762631490d"
+      },
+      "/Users/alex/code/vox2/libjs/float16.h": {
+        "lines": 23,
+        "sha256": "6a0bdfebf57b502e3645272e3aba8cada186fa1323b33f7118e7cdcb8cd66c9b"
+      },
+      "/Users/alex/code/vox2/libjs/regex_case_folding.h": {
+        "lines": 10,
+        "sha256": "888fc9a548254768a7919d3649cbff4abc40a820e0ffc6d9af8dcfe8fb38916f"
+      },
+      "/Users/alex/code/vox2/libjs/regex_unicode_property.h": {
+        "lines": 25,
+        "sha256": "83b1a76de09588a64340bab85b88e6659e34e597b388bc3843de57bc97856d2a"
+      },
+      "/Users/alex/code/vox2/libjs/regex_unicode_set.h": {
+        "lines": 14,
+        "sha256": "7d5200191c103fcf7822c5b4723737ea129851328e846bb7d6f5e21db151ffe9"
+      },
+      "/Users/alex/code/vox2/libjs/unicode_transform.h": {
+        "lines": 14,
+        "sha256": "7dc1c202037bca086d9a5c38d84acdecd5f4035b1368feb6dbde16c96dbda675"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/putil.h": {
+        "lines": 8,
+        "sha256": "b05efa43c065ea72b728c531e482d474333fc6f9b6eca71e1f1c77a155db994e"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/uiter.h": {
+        "lines": 119,
+        "sha256": "b1bfb71d529d7622defabd6a77c0f39179f4c47b743e45cae95e3bcd2fff55cb"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/ustring.h": {
+        "lines": 231,
+        "sha256": "72e83b607c1bd1d97cd2587ca92456441b8b2fac443bf3dc8869b13288e9d7a8"
+      },
+      "/Users/alex/code/vox2/libgc/primitive_storage_host.h": {
+        "lines": 32,
+        "sha256": "aad560e79a49223b30359e9aa0850496c870273be259c2ec64e7e77e722a045c"
+      },
+      "/Users/alex/code/vox2/libjs/math_random_entropy.h": {
+        "lines": 24,
+        "sha256": "83ebc79feb9dd42798478da2d91643a4df54bf86f226bbfcd4958da9b54c02e5"
+      },
+      "/Users/alex/code/vox2/adblock/../browserjs/jsc_abi.h": {
+        "lines": 363,
+        "sha256": "3ae41f4edf52bf03e85f04fed8f246f59efb21cc084855de33434ef2c3a258ba"
+      },
+      "/Users/alex/code/vox2/adblock/runtime.h": {
+        "lines": 65,
+        "sha256": "cc26f3ddfb022e4ccdd4c9548c410426056e8e644686d56a7e929c77ce2cb855"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/zconf.h": {
+        "lines": 20,
+        "sha256": "8adc34ed6f795e0e576dc4b3b701f3467d067ae6443f598b3743c7e6c5791487"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/zlib.h": {
+        "lines": 226,
+        "sha256": "b33ce1df3cf1024baad62371e4ddc4b2ff5a9b3a7454f79cc105ae2e0e0e4794"
+      },
+      "/Users/alex/code/vox2/adblock/snapshot.h": {
+        "lines": 316,
+        "sha256": "e5d01eb4dbc4dca0298b84db864eacd8978a201828ba83fb53d6a17e0b6c100b"
+      },
+      "/Users/alex/code/vox2/adblock/../native_crc32.h": {
+        "lines": 32,
+        "sha256": "85646b74c7abb11ee939d68cfe0bcf6a183e5f334dec40807d2e73292baf30a2"
+      },
+      "/Users/alex/code/vox2/adblock/snapshot_packed.h": {
+        "lines": 128,
+        "sha256": "6419948597b4959b94911eca9629873d044af6e200b0c3922c7f4f660466617a"
+      },
+      "/Users/alex/code/vox2/adblock/worker_transport_api.h": {
+        "lines": 13,
+        "sha256": "0f4b0096fc3b484a0584ecba7d0c0fbf3c2a2d158565e68780101f9eadff82dc"
+      },
+      "/Users/alex/code/vox2/processlock/lock.h": {
+        "lines": 13,
+        "sha256": "8c16a15fe6192bade6d6c45d680aa449737c13e5d0c230e7163d4bad76bfe510"
+      },
+      "/Users/alex/code/vox2/browsernet/websocket_wake.h": {
+        "lines": 65,
+        "sha256": "f303fee277f3c7df67c8cf6d5cf88512915d93d0692d2fe97021329cccf44379"
+      },
+      "/Users/alex/code/vox2/css/affine_rounding.h": {
+        "lines": 14,
+        "sha256": "13881d29f17d000c3257b5b42fd6243865a3d258c436235a6b6c32624d4a73af"
+      },
+      "/Users/alex/code/vox2/skia/bitmap_export.h": {
+        "lines": 6,
+        "sha256": "a10b1b46c2e28301ec57fccebfed588e5d25f844a56e6674a781a0ddedc9363b"
+      },
+      "/Users/alex/code/vox2/skia/canvas_raster.h": {
+        "lines": 74,
+        "sha256": "d26fef245c93cf3cf4f9de8e88ef40bab17d10273b214ddbebbf7d3cd52c4b18"
+      },
+      "/Users/alex/code/vox2/skia/font_typeface.h": {
+        "lines": 6,
+        "sha256": "dd1e5a9c5a8454731ef9fa66abda286e7b0008043479c743c244a94e7624d149"
+      },
+      "/Users/alex/code/vox2/skia/shadow_raster.h": {
+        "lines": 28,
+        "sha256": "84712e1029e568b413ddc7a9e5c03227bed8ac683992597be4e2f5bcba30dfa2"
+      },
+      "/Users/alex/code/vox2/threading/condition_bridge.h": {
+        "lines": 32,
+        "sha256": "e2fc6853a4fb5e2e9ca11d300e8a5a614691531502447f83d521d62c610777fe"
+      },
+      "/Users/alex/code/vox2/processmetrics/instruction_counter_darwin.h": {
+        "lines": 117,
+        "sha256": "771937c8a0964a6cc34aa3b2bd87aff815ac2b4a1442ae5edd31f696a029d90f"
+      },
+      "/Users/alex/code/vox2/processmetrics/memory_darwin.h": {
+        "lines": 16,
+        "sha256": "a62396dad9caf94545772b3a4ccc467859e02998e7245bef8b5d3483343c02b0"
+      },
+      "/Users/alex/code/vox2/webgl/native_egl.h": {
+        "lines": 647,
+        "sha256": "ac855940470c23012c22abed7357b0e63b05e87cb18ee4bdb6295b7d04780672"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/KHR/khrplatform.h": {
+        "lines": 32,
+        "sha256": "a0332ec16f2277b917f2a9565d6f011f52416aaf28f4b592054b515700eb0a0f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/EGL/eglplatform.h": {
+        "lines": 7,
+        "sha256": "ad4e46359a90bb4e94770f66752659915884c09999506fbb52826659ec3b90a6"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/EGL/egl.h": {
+        "lines": 117,
+        "sha256": "5c376fbc2bfa488ecd26ade214569890bda7266956c734e4443385495d747ae2"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/EGL/eglext.h": {
+        "lines": 211,
+        "sha256": "c217b6ccadec519971f067c43359a6800dc957e8337e04624817208962cf09cf"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/EGL/eglext_angle.h": {
+        "lines": 28,
+        "sha256": "bb7b5b09e7e616ae9e768b8f82508b171989051e71724722dd7acb3b512fc986"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/GLES3/gl3.h": {
+        "lines": 520,
+        "sha256": "b9ba55e7c88ff62ffb62c2f7bb7d07baf59749c2fe83da487e408a783673c141"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/GLES2/gl2ext.h": {
+        "lines": 1393,
+        "sha256": "0c4f286fdebc5a58ba55124bd299a72c277cc1bee8b6fcc29ec13698675f9ec1"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/GLES2/gl2ext_angle.h": {
+        "lines": 447,
+        "sha256": "1819ebf7e117fbae4c1c12087910330051d2d6bfc96433979a6fe5f85119d728"
+      },
+      "/Users/alex/code/vox2/webgl/angle_dispatch_darwin.h": {
+        "lines": 42,
+        "sha256": "a85fd7f8325d5433a4d8fd6b11bb56906e827321fe0d75ad77435f3d7a895851"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_aes.h": {
+        "lines": 137,
+        "sha256": "34ac25966e9fcd27a7580c9ce66e90c23aea2aeb5b8c4f9ff7d25279076918e2"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/evp.h": {
+        "lines": 1692,
+        "sha256": "9680f5b120baf6d848d70fef2c26729ba387165224a7803de4629f3503a07beb"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/e_os2.h": {
+        "lines": 2,
+        "sha256": "637ee7bd30f9b823f508ef8e97c62898c97f84b3e28a373cb2fc1bca6e9a1b20"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/stack.h": {
+        "lines": 36,
+        "sha256": "67d1ee607e4cd8de9c0af0e2bd07023ae1a74d894777457f6c49449d0120e237"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/safestack.h": {
+        "lines": 6,
+        "sha256": "b6d1a3101f56ac036a9be855077a1c6f449a4758fc5ce4d96d812fd964b3637d"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/types.h": {
+        "lines": 189,
+        "sha256": "277e2c3b2db26ee5811af60637fbc19663802e56f6ec712bee33edbf086a3ac8"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/core.h": {
+        "lines": 67,
+        "sha256": "03af0144eb174f6b2c5db87e10bfeabe2790190295a3b3d685c35cc5a77935d0"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/bn.h": {
+        "lines": 382,
+        "sha256": "c451832f258e893e69502b293f03dbb5cfcc69b5286289c54464bb07c4fd3524"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/crypto.h": {
+        "lines": 207,
+        "sha256": "850cc739a12225ea06bbd78b764191ed3423294dd2330b875c1f7f797665e28c"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/cryptoerr_legacy.h": {
+        "lines": 47,
+        "sha256": "35e2965308e99d3d97bea1578c0710aba55904739b334c9ba1b47cc21e32e08d"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/params.h": {
+        "lines": 88,
+        "sha256": "8c35d37566141e66b60de09ec6c91aaf423f26f9a3bb3404da67aebb00c27192"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/indicator.h": {
+        "lines": 8,
+        "sha256": "67c170fb5cf3920626e086e6f3c1dab7c7608388e00185b646daeb2713d0a9a1"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/core_dispatch.h": {
+        "lines": 665,
+        "sha256": "32271ee739d4b1643e37571d34ed7137bbc79e7f154b753e1759ac9ff894113b"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/bio.h": {
+        "lines": 338,
+        "sha256": "4326c14b109636d71e9dc516aa712cbd92657974e52d1ca29a44840af22f94aa"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/objects.h": {
+        "lines": 56,
+        "sha256": "4fc5411f1daeb18013b47bfe2d6b18c0abe7e2386f735691e9f4ed2a891bc13d"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/asn1.h": {
+        "lines": 446,
+        "sha256": "85d94f1652e2492b8cd480c3f974e2d56695ada2f14818b5b5f6ef7d4fe1423e"
+      },
+      "/Users/alex/code/vox2/webcrypto/openssl_dispatch_darwin.h": {
+        "lines": 476,
+        "sha256": "53e01e0c63b033b309274418d9a1896eede00490090639b999a09d94faf252b9"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/param_build.h": {
+        "lines": 42,
+        "sha256": "10d0da751d2048d00fac96021f2bf14b98284e3a231d69b2f45855511392f19f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/rsa.h": {
+        "lines": 416,
+        "sha256": "4aed95a3ff118c4e46c73041c28bc3de1462056832fbfdcc5e55a6d481ffe042"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/ec.h": {
+        "lines": 898,
+        "sha256": "c495b21b9f092d5981a9fe3475952f5c394a10ba2d28bd8ef54e21d76a671bd6"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/kdf.h": {
+        "lines": 75,
+        "sha256": "4ad9f2c836b944c8b9aa33029c3355599a5bc138ba912c27d8d28b1178eb598d"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/thread.h": {
+        "lines": 8,
+        "sha256": "03c5b394b8d87823dbfda83a15b1598975ef5af4086ccfb690794c6d2d706935"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_chacha.h": {
+        "lines": 54,
+        "sha256": "b86815306da0616df411ba3563f3de55d54a69e3ba087916a47dfb2313652694"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_crypto.h": {
+        "lines": 108,
+        "sha256": "a18735203b47f753e22e0673dd52cc03951ae2c415cd80013c8e2a905d592f3b"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_ec.h": {
+        "lines": 201,
+        "sha256": "0873fb9d282ba2498af74b5173521e318a9d698d7d5f49d00729e382fb1612b5"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_edwards.h": {
+        "lines": 87,
+        "sha256": "a87286b3436aa716214aca7811e1f8234dc368a9b06c3fa410fa3872c32184d9"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_kdf.h": {
+        "lines": 68,
+        "sha256": "3bff3fb4e5728af48775396f0cf2984405f3b9227e47da63607541eab0212a95"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_ml.h": {
+        "lines": 173,
+        "sha256": "1f4538562d73d136e74e93a8144092fbb6a5c9508122cb22fa394190bd330006"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_rsa.h": {
+        "lines": 240,
+        "sha256": "32963fc3157bf4ed36009eeebba0e925a7381523090a9761c72f8624331445ad"
+      },
+      "/Users/alex/code/vox2/libregex/native_abi.h": {
+        "lines": 53,
+        "sha256": "dcb2067b0a8b6ecc62250c7154e629f2401606abd8671dc4e042217b22fc9c30"
+      },
+      "/Users/alex/code/vox2/requestserver/curl_bridge.h": {
+        "lines": 263,
+        "sha256": "e9d97fb404e6a95453223f12d3b7a732a1cdc6779876accf02630d2f539c46f3"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/system.h": {
+        "lines": 7,
+        "sha256": "61f71b6754f585471c97c89d5d0ab1b25ff87dbd8d0138594955bcd396bed353"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/curl.h": {
+        "lines": 2056,
+        "sha256": "bf586de964180ee8e377dc7ce39c643b5636d328f028777e775cbccc10e6c816"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/easy.h": {
+        "lines": 19,
+        "sha256": "c7693d10bb2d59af8b4f224118cf1b1116a2638d50038a411e98cc9cfd9f59e4"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/multi.h": {
+        "lines": 215,
+        "sha256": "a4c07ea4b4012689ede0b3ce9a71a6f178374f1a2b8c617ed83c1fb0b2fd0ba6"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/urlapi.h": {
+        "lines": 98,
+        "sha256": "9ea6f1a59dc24d008d8d746aca537cd608970d45c288c5dbe6e1f9ba7bc74f1b"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/options.h": {
+        "lines": 26,
+        "sha256": "1fd77e67ab2f6206e034464fa8d5c41053af2c587d9c7a683ba2904ff30bb78f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/header.h": {
+        "lines": 30,
+        "sha256": "d7fadefcab10e14e0060850b3ff5cf849a8f8cd829e47f613916a914aff1004c"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/websockets.h": {
+        "lines": 23,
+        "sha256": "be17c037fe0f0add726fdb6abffbd3499456fdab53c870b8ded70c7c793110ee"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/mprintf.h": {
+        "lines": 22,
+        "sha256": "5a4113abcfb0a5b44294cf6606114b6c8962c8f5d5850d936958c3655c3d479f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/typecheck-gcc.h": {
+        "lines": 212,
+        "sha256": "569effe606dda986e5f01c6cfd2ee1e82b3b29cbb6b4692f6cb63caa844a8be8"
+      },
+      "/Users/alex/code/vox2/browserjs/crypto_views_darwin.h": {
+        "lines": 19,
+        "sha256": "7235c5a9faa699b4febbb182638b98b348c9b79b77b3f0569b44441fd4c045b8"
+      },
+      "/Users/alex/code/vox2/browserjs/host_function_darwin.h": {
+        "lines": 108,
+        "sha256": "cbc3da7a59d0705af252fc2cd43ab84c97fe64246d64d652372dc6f9569696b9"
+      },
+      "/Users/alex/code/vox2/browserjs/module_loader_darwin.h": {
+        "lines": 9,
+        "sha256": "f5050ad3e2892cc25eef5e2f1bcd2ebf65806907603610421b3a50c78f94caaa"
+      },
+      "/Users/alex/code/vox2/browserjs/source_string_darwin.h": {
+        "lines": 24,
+        "sha256": "f2f1438c9df2aa405ec5b2179db5661e83947f014cf3946aece06aa7d6ef5e28"
+      },
+      "/Users/alex/code/vox2/browserjs/runtime_agent_context.h": {
+        "lines": 51,
+        "sha256": "82c987f801558df3c4656619afa3f502ef3cbdaa0b586faec53e0f8288b7dc97"
+      },
+      "/Users/alex/code/vox2/browserjs/source_array_buffer_darwin.h": {
+        "lines": 32,
+        "sha256": "49ae85d7dc8ec51248294ac6f4bcbebadb2de96c025c46bb2bcc281d19084ee9"
+      },
+      "/Users/alex/code/vox2/browserjs/worker_process.h": {
+        "lines": 323,
+        "sha256": "4858e3040c321157eb43dcaf3abf9cf7c91e9ad04843d399914c32f7ce46a6f0"
+      },
+      "/Users/alex/code/vox2/browsertabs/process.h": {
+        "lines": 31,
+        "sha256": "9516001ac644eea9d537e4654d5727b24bd2924c9c984c5e35419d4258b7400c"
+      },
+      "/Users/alex/code/vox2/native_avif.h": {
+        "lines": 86,
+        "sha256": "381b478b68e4f8e7731c5b2c6b9f97864d5840e7d6184ee62aa696ea926ed91d"
+      },
+      "/Users/alex/code/vox2/native_graphite_bridge.h": {
+        "lines": 248,
+        "sha256": "fb4a865213503fa6b54c92b51b89f02012ba852eaeefd913b612baceaed503d6"
+      },
+      "/Users/alex/code/vox2/native_image_color_profile.h": {
+        "lines": 10,
+        "sha256": "0f5dc4ad869e1287c7248dbf12fd50196c75374628df957c6bd6156dfc7c4d57"
+      },
+      "/Users/alex/code/vox2/native_jpegxl.h": {
+        "lines": 65,
+        "sha256": "2648cc73490acb4a8b62640b8280f8bef7df4544c14714a3f60ea515145ccd8d"
+      },
+      "/Users/alex/code/vox2/native_capture_darwin.m": {
+        "lines": 6781,
+        "sha256": "78809fba9cbcb3d9d1d12a9c5acbb3cc82b63cc9e65a9e441f76036dc445a0bc"
+      },
+      "/Users/alex/code/vox2/native_snapshot_png_darwin.h": {
+        "lines": 42,
+        "sha256": "f83feaa23f147a497bca0f27c2899303c80bc48a8aafcca803c26fac93cd2a95"
+      },
+      "/Users/alex/code/vox2/native_snapshot_png_opaque_darwin.h": {
+        "lines": 166,
+        "sha256": "f76bb8ba626ebc22f52ff19467580167cdb70cf9583c64f81c7a0aa33fa7e89b"
+      },
+      "/Users/alex/code/vox2/native_rgba_is_opaque.h": {
+        "lines": 48,
+        "sha256": "2f91b4d2a9e86fcb7bbd2e901fb79aff1de99180484ea00346d7ff8d93016608"
+      },
+      "/Users/alex/code/vox2/native_presented_pixels_darwin.h": {
+        "lines": 31,
+        "sha256": "3207e04f44fa6f7e6ae2fd3cb35cae6123307470e17f540c19cc144d5632e162"
+      },
+      "/Users/alex/code/vox2/native_allocator_policy_darwin.h": {
+        "lines": 25,
+        "sha256": "3bb07d53e5e0f97956928c7efb585cc746844ce88ec70d88069f5ed4db7f9b7c"
+      },
+      "/Users/alex/code/vox2/native_glyph_flags.h": {
+        "lines": 6,
+        "sha256": "d4062f701d69a91c1d85f396571e0762dc2041fad0e2938f33efea8c4106390a"
+      },
+      "/Users/alex/code/vox2/native_test_window_darwin.h": {
+        "lines": 84,
+        "sha256": "b286c0cb54fc8183b2f300433495b445969834cb49151a7a2f5aaffa89ba15c7"
+      },
+      "/Users/alex/code/vox2/native_media_preferences_darwin.h": {
+        "lines": 11,
+        "sha256": "0ee016e46aa6b65e0617b097166c6c36451cfba218976cc9f7e16bbc2cb25c12"
+      },
+      "/Users/alex/code/vox2/native_layer_presentation_darwin.h": {
+        "lines": 554,
+        "sha256": "a824c82e5e5bbab61c8abc8e4ce357e0c7f82e9fa83dbb84a8d9ae5b9559e686"
+      },
+      "/Users/alex/code/vox2/native_document_submission_darwin.h": {
+        "lines": 38,
+        "sha256": "be3bf672ea2a0eb15b219de9299e36ac69ae998d1daf549615cc46f2ef138e3f"
+      },
+      "/Users/alex/code/vox2/native_initial_document_clear.h": {
+        "lines": 44,
+        "sha256": "faca5928166546d236798e223b5ab1cf312371ac1ddcb1d8156dcea8feb37a70"
+      },
+      "/Users/alex/code/vox2/native_frame_snapshot_darwin.h": {
+        "lines": 38,
+        "sha256": "22e8d128ee18c20c5a3ae3eb93985c819a01b04940768d7613a40e38169687a3"
+      },
+      "/Users/alex/code/vox2/native_presented_capture_darwin.h": {
+        "lines": 122,
+        "sha256": "64e1bf5087b2f07a1dc2c5b619fe5966f7006c0a0c9b3c57954c6434534e2fce"
+      },
+      "/Users/alex/code/vox2/native_image_capture_policy_darwin.h": {
+        "lines": 21,
+        "sha256": "5f2c9d525fefee2011be5c4e287992c78ca55a15e10f7573e04549400677a4a8"
+      },
+      "/Users/alex/code/vox2/native_scroll_raster_darwin.h": {
+        "lines": 482,
+        "sha256": "9dd95dcb3d7ca6eba9692bc6bdb8cd102e9e49c89915de636a3ecbde9d10ebf7"
+      },
+      "/Users/alex/code/vox2/native_raster_row_ranges.h": {
+        "lines": 36,
+        "sha256": "57fc0468a47945374fef8ccd87149d7e31627d7997ab55456a879f056dfe2a2f"
+      },
+      "/Users/alex/code/vox2/native_stationary_raster_darwin.h": {
+        "lines": 164,
+        "sha256": "9573af76e5175744a176277c7b89ad5fe45b056a3ec3470b0f88b8f1659431a3"
+      },
+      "/Users/alex/code/vox2/native_deferred_font_darwin.h": {
+        "lines": 48,
+        "sha256": "40b0d65dab051fcfa840d08c6df5e9b41e4a0de9dec2599e1e6e4e432ffdd608"
+      },
+      "/Users/alex/code/vox2/native_svg_mask_layer_darwin.h": {
+        "lines": 19,
+        "sha256": "b76b326f3d0a21e18e766b2de2aa96e86c4bd1745ab528f5ee90d2a7802d313d"
+      },
+      "/Users/alex/code/vox2/native_svg_mask_pixels.h": {
+        "lines": 54,
+        "sha256": "46d765f5cc8ace27381271c5f546e368a4150997d0d2e381f4ff3ae5e7eca543"
+      },
+      "/Users/alex/code/vox2/native_ffmpeg_darwin.h": {
+        "lines": 234,
+        "sha256": "f7fefe0a156db392ce30802f9d1bb08ba157377f35c3c63a74d4f63f80dc09a5"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/samplefmt.h": {
+        "lines": 65,
+        "sha256": "faedb39bd02fb51a309a609c6d97dda465ef0750d8753de755ab65237a574e3f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/avutil.h": {
+        "lines": 63,
+        "sha256": "8f096c56d649d9f6a49b15e89a721a6c96b464db90dfb73c73a7df9b5d25ad58"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/common.h": {
+        "lines": 232,
+        "sha256": "3eb852cb699410c328d4d489c0a887671e50f9249750d9681fc3426d030c7e1d"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/error.h": {
+        "lines": 7,
+        "sha256": "7a3560b943312b06b90e40522c388dcf5e8fa1d624d38abdc8b146f4aaeb1e2f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/mem.h": {
+        "lines": 26,
+        "sha256": "8e090ba1f73bdd9705749476f0fe78813d191460ad4798778d51b249e09cc5f1"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/rational.h": {
+        "lines": 81,
+        "sha256": "f6ae7cdc870ac75cae16aac88c4f2c9f88c2374bc2b8220ca1d6b782905cf08f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/intfloat.h": {
+        "lines": 49,
+        "sha256": "ac01f7c795a48cef7e5d712395b743854aaa18586d962a15b054be17f77010fa"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/mathematics.h": {
+        "lines": 23,
+        "sha256": "a43f8bed5f4182781d01f9a2d7b60a8640f4b5effbc1ae419e53d28aab9b2106"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/log.h": {
+        "lines": 103,
+        "sha256": "a1c634c5e0c68e7b58b6ca7be21c51a6a45e59a630cf14d581606e7e8dc71b72"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/pixfmt.h": {
+        "lines": 422,
+        "sha256": "40865c27a73aea3d32f6987f85731bdb2425a9ee4ff35cdc6f3f34eeed8fb343"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/buffer.h": {
+        "lines": 94,
+        "sha256": "33e728e31cd50483edccec4450b7597c14576c96ac572205adba2917566f05b9"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/channel_layout.h": {
+        "lines": 191,
+        "sha256": "b21b107cd302f09b0f18081cfe66ba1a668ed07a9685201925e443f988468fac"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/dict.h": {
+        "lines": 39,
+        "sha256": "756ac5b69ed8445c568eeb645fa807b9fcaaf074ba63162590e092a991f746b3"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/frame.h": {
+        "lines": 481,
+        "sha256": "84e68d974a66248b91b7e6ac0e7274bb7ed96325e1b2428645a350798ac34cd3"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/avcodec.h": {
+        "lines": 1046,
+        "sha256": "c4e59646f39171870a785b5e25a28a2b531f6f9214f05cee5a4ffec8a799ac27"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/hwcontext.h": {
+        "lines": 193,
+        "sha256": "771a94226f74a3bcf933d1fe001b14d591bdf5f360ec5c3329c461ae05e20dc0"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/codec.h": {
+        "lines": 138,
+        "sha256": "019f0bdd22f395c97044cc4205a2270c9052e8b33cf55745304884ae348a281b"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/codec_id.h": {
+        "lines": 594,
+        "sha256": "686c77829cd9e73f34cc5e84f24060872902dd36a7d61965fb600891efbeb2fd"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/defs.h": {
+        "lines": 110,
+        "sha256": "f7fb419d1cbf223f1045f9e72712e9550b1c616e5bc4e4bef27c3286b79fd354"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/packet.h": {
+        "lines": 329,
+        "sha256": "8fdcd80a15155454cea8ad3b1bcbb59b9d947418827a1b4b45625d23f13a1544"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/codec_desc.h": {
+        "lines": 37,
+        "sha256": "177f8e25a5be3a2c537639375e97df8b5ca6d039079c450b17dc16243a0a0539"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/codec_par.h": {
+        "lines": 144,
+        "sha256": "43c73b2ae41f9210d4936ecfa9f77fefe3a3c55e565e7cd7ffa1a04bd52b822e"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavformat/avformat.h": {
+        "lines": 992,
+        "sha256": "74a2c6ab1d67a809216edb58ec58ba58e96b27bc8165be28b7eca5d7b5ef1c15"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavformat/avio.h": {
+        "lines": 332,
+        "sha256": "8a54d18bbe7dce982dcdcc41b13107fd4797fd98ab46f6495116d118bf877175"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/imgutils.h": {
+        "lines": 62,
+        "sha256": "990da281e10b8eaecd2a8dd51a042b418efc736574af12193763051086dee893"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/pixdesc.h": {
+        "lines": 158,
+        "sha256": "0b5d519a8b78ff7f49009db9a929dc612bb1332c8469a42f32f8cd8ee426db2b"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libswscale/swscale.h": {
+        "lines": 144,
+        "sha256": "b5cabd466de8d60b079b9658ea8a6db9af10b3312ebefc4a31918157acd3644e"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libyuv/convert_argb.h": {
+        "lines": 2207,
+        "sha256": "a11c1b84a02a2778224b439e6348471b5958fb6878a4ec9969533aa3e93c5e7a"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libyuv/rotate.h": {
+        "lines": 268,
+        "sha256": "99f94d9301c301247f32a1787635728f302140814947d602e109834f988903a8"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libyuv/scale.h": {
+        "lines": 235,
+        "sha256": "64b2298daf82ef0f94955f11e1261b5faeb15e58d6d07fdeae02e85e8ab3a010"
+      },
+      "/Users/alex/code/vox2/native_media_darwin.h": {
+        "lines": 151,
+        "sha256": "75f3f73b6b55a7e1999aa58c861f9edc1f7c5fb5970e28bfd567583ec3a5efb5"
+      },
+      "/Users/alex/code/vox2/native_avfoundation_darwin.h": {
+        "lines": 33,
+        "sha256": "2e062a3b96c2195d3f1a9441781ec745eb0177d6f713c981495474f991d90551"
+      },
+      "/Users/alex/code/vox2/native_webp_darwin.h": {
+        "lines": 169,
+        "sha256": "a365ec34309412e49ab55bb2a766916009b2b6500304aca98ec26cc33f336277"
+      },
+      "/Users/alex/code/vox2/native_jpeg_darwin.h": {
+        "lines": 152,
+        "sha256": "f45c66695de30ffed6e1dd89b3736605cc9890db3343fa6c50767565d0165da9"
+      },
+      "/Users/alex/code/vox2/native_png_color_darwin.h": {
+        "lines": 139,
+        "sha256": "3d9b75dd1ed34e5958797cfd02904842799e0807d44fd1336cc0ae4c6a1a91be"
+      },
+      "/Users/alex/code/vox2/native_png_icc_darwin.h": {
+        "lines": 187,
+        "sha256": "5d0a257e4db3b7f3489cab032958c52d3f9e11203eb1e6de96bd268ecf0fd38e"
+      },
+      "/Users/alex/code/vox2/native_opacity_group_darwin.h": {
+        "lines": 178,
+        "sha256": "fb219b7ca2a66341400d71b3557509fa71e314c0d8f2d80a97797932d7b36291"
+      },
+      "/Users/alex/code/vox2/native_opacity_canvas_pool_darwin.h": {
+        "lines": 140,
+        "sha256": "5e9dc4be450e2ebac67d8c1b23c148f19473eb0574afebf455d027575096e5d3"
+      },
+      "/Users/alex/code/vox2/native_bitmap_snapshot_darwin.h": {
+        "lines": 85,
+        "sha256": "daec9c9268e42c4bba0a922380d1d6818d1fec4fd58b9177bf4a6eba0ee4cd1b"
+      },
+      "/Users/alex/code/vox2/native_svg_mask_opacity_darwin.h": {
+        "lines": 92,
+        "sha256": "d9fbe9a78d05901d490796f8aff47aa8fce67510902c5b21fe92cdace508ba2a"
+      },
+      "/Users/alex/code/vox2/native_sparse_opacity_ink_darwin.h": {
+        "lines": 54,
+        "sha256": "6e86f2a5d1f1855a57ad29dc9b5272b7bf4f9cb4e7f73ab8a5e8545b193afd60"
+      },
+      "/Users/alex/code/vox2/native_chromium_screen_blend.h": {
+        "lines": 24,
+        "sha256": "4a5408dc2f70226c894601dbaa9aa77e0b93dcf0e0bdb8b30dd3ab5fe66d7a0d"
+      },
+      "/Users/alex/code/vox2/native_rounded_svg_ancestor_darwin.h": {
+        "lines": 88,
+        "sha256": "a2426954d700d5d244ef0645ff4cd9d4dc249b02f1e6fb6edce5f58c0f12f618"
+      },
+      "/Users/alex/code/vox2/native_chromium_corner_shapes_darwin.h": {
+        "lines": 25,
+        "sha256": "a5febba0b01256d5dcdc5e4169d1a08ccc7650be0145ca3bca53a18e79b877c7"
+      },
+      "/Users/alex/code/vox2/native_browser_chrome_style_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_browser_chrome_style_darwin.h": {
+        "lines": 115,
+        "sha256": "575f957cc7b604e245a9ef2d5be26102b6dc672de1caa2cd50c9161d193efaf1"
+      },
+      "/Users/alex/code/vox2/native_browser_tab_detach_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_browser_tab_detach_darwin.h": {
+        "lines": 25,
+        "sha256": "2d16a3694e29f52fa88ad2ef27feefaa99eb41a2ba7d706bfa59f01c71344a7d"
+      },
+      "/Users/alex/code/vox2/native_browser_tab_process_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_browser_tab_process_darwin.h": {
+        "lines": 60,
+        "sha256": "b42d5cb8a8da9d25d389f054527cf88672973d0ce91fb5cafe1a0404442a64a8"
+      },
+      "/Users/alex/code/vox2/native_browser_window_state_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_browser_window_state_darwin.h": {
+        "lines": 86,
+        "sha256": "7ca2e03d84cffb24b5735ac5184e29bc704b25177cc829400621b1946d7edbc7"
+      },
+      "/Users/alex/code/vox2/native_history_swipe_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_history_swipe_darwin.h": {
+        "lines": 70,
+        "sha256": "7c8f7502e0fd8fbae9201ff37cd9376f554133ac3438b85bd86e12fc05a3d81c"
+      },
+      "/Users/alex/code/vox2/native_navigation_work_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_navigation_work_darwin.h": {
+        "lines": 41,
+        "sha256": "a053ab7465359caf085fff234e43c5c89678fc842b89698591feca7621baee7d"
+      }
+    },
+    "files_after": {
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/ptypes.h": {
+        "lines": 3,
+        "sha256": "9042aadcbbc4b34a083e71e3ffa39bed9d14d7e869704ad305f3631059dd1f54"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/umachine.h": {
+        "lines": 10,
+        "sha256": "ed2e093761e59f22af9c03d6408ad64118c50a7c249be8509e5357f98aa01146"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/uversion.h": {
+        "lines": 9,
+        "sha256": "323c6239d758c9e8bd59ce4eedf53d005d681ee9f4f65a296ab9edd580e59696"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/utypes.h": {
+        "lines": 297,
+        "sha256": "808df7cb3a5e432cf22bb9f85007f620567a0d31fd4fc1266ed0415ba1bdd0e1"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/utf8.h": {
+        "lines": 8,
+        "sha256": "4c9ad14f4dd98a7ab014db81c661eeaefdb516ea54678261897d2d89c62d4142"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/utf.h": {
+        "lines": 2,
+        "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/utf_old.h": {
+        "lines": 1,
+        "sha256": "5ff4c0a404e7b3991e43d47469a6a8e1049556262788656b71d1210f3b903916"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/ucpmap.h": {
+        "lines": 21,
+        "sha256": "7350f9665f1136e4eab38c8446c03691b73b13d1e28576059f7e60fccbea25a5"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/uchar.h": {
+        "lines": 2532,
+        "sha256": "34da1dd8c2157d85e8b99307119e1c0bd35c277730657c6eb0f298fa2ec4c349"
+      },
+      "/Users/alex/code/vox2/native_runtime_bounds.h": {
+        "lines": 4,
+        "sha256": "dd13367d8b63735ef39541b086a32bd89c9a650837b7d856e6d9e90160126052"
+      },
+      "/Users/alex/code/vox2/platform/layout_font_policy.h": {
+        "lines": 25,
+        "sha256": "c4d8a87b8d03e25a928fa2a5e50c803a63316988f988f00b664459028696937b"
+      },
+      "/Users/alex/code/vox2/platform/thread_scratch_leases.h": {
+        "lines": 114,
+        "sha256": "d149a87adb626b060d49723414729d79e8bb81bf1d2efdd6583b5b6493527b86"
+      },
+      "/Users/alex/code/vox2/platform/coretext_macos.h": {
+        "lines": 553,
+        "sha256": "ed9cb14e2e2cabfede25a123350443bb30ca27cd9050e5e5ebfba12c28aa2fde"
+      },
+      "/Users/alex/code/vox2/platform/hyphenation_bridge.h": {
+        "lines": 72,
+        "sha256": "5b68cf1d504fa8e658d7db6da93d0bff4c8938c89d4894ffd4a84014ab44090f"
+      },
+      "/Users/alex/code/vox2/platform/timer_host_bridge.h": {
+        "lines": 66,
+        "sha256": "a5235c44abb04b07d537d2df2608f5ca5aba29cba4ca95d68a39e00938586d9e"
+      },
+      "/Users/alex/code/vox2/platform/unicode_case_bridge.h": {
+        "lines": 87,
+        "sha256": "48559ec9e2a333a19a1ab8515ef9f8e66b1b295af0869336b00ae7ccaf05c69f"
+      },
+      "/Users/alex/code/vox2/platform/unicode_case_mapping.h": {
+        "lines": 17,
+        "sha256": "8bae6908bc1b356df90664a69ecb1dbc49e84d8a188ac1b29442341bcc96f161"
+      },
+      "/Users/alex/code/vox2/platform/unicode_categories_bridge.h": {
+        "lines": 17,
+        "sha256": "d9fc546771104294fae69ecde1a06ddf466f51661e37688ffd15ce4368daf462"
+      },
+      "/Users/alex/code/vox2/gfxfont/woff2.h": {
+        "lines": 7,
+        "sha256": "51c76ecf0fe30a411c1f81852b29ad5f2fef112c87eea5c595c20dd89223a0cf"
+      },
+      "/Users/alex/code/vox2/platform/arena_poison_report.h": {
+        "lines": 64,
+        "sha256": "36b0ba3c1e811adb21f2e3ec8af628d31bb153c4ad6b0336b43bb68b553c79ea"
+      },
+      "/Users/alex/code/vox2/platform/arena_page_retirement.h": {
+        "lines": 26,
+        "sha256": "be6a9c522ffc10791cb054958d58d778668fccb063ac8bc3b621128070a24abc"
+      },
+      "/Users/alex/code/vox2/platform/harfbuzz_coretext_macos.h": {
+        "lines": 121,
+        "sha256": "39eceb372b1028873d19eda5e903d6406c2d43d789db716fa33144a8eb862341"
+      },
+      "/Users/alex/code/vox2/platform/native_deferred_bridge.h": {
+        "lines": 17,
+        "sha256": "79f9b3846bdf7a1124ac1c6431c047ee7c010f5135d48f5249e095ba1d84e9b8"
+      },
+      "/Users/alex/code/vox2/url/idna_bridge.h": {
+        "lines": 50,
+        "sha256": "aca53605ca09b90b127f5b5d59c19e975af4b47a5d3ca890f3e301687399ebee"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/parseerr.h": {
+        "lines": 20,
+        "sha256": "00ea235f4571ab23994180b73f7d8f5a8c86b60f78daff7d5400c5f53c1a535e"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/uidna.h": {
+        "lines": 217,
+        "sha256": "ba21a16909647d3a3b345ac3d2f904cd99912c15d0766eb83e1d721a79bacd25"
+      },
+      "/Users/alex/code/vox2/libjs/stack_info_host.h": {
+        "lines": 4,
+        "sha256": "d368383c7e6a72921cbf78c4571ebb9d83aa922f3335bab713ad1a762631490d"
+      },
+      "/Users/alex/code/vox2/libjs/float16.h": {
+        "lines": 23,
+        "sha256": "6a0bdfebf57b502e3645272e3aba8cada186fa1323b33f7118e7cdcb8cd66c9b"
+      },
+      "/Users/alex/code/vox2/libjs/regex_case_folding.h": {
+        "lines": 10,
+        "sha256": "888fc9a548254768a7919d3649cbff4abc40a820e0ffc6d9af8dcfe8fb38916f"
+      },
+      "/Users/alex/code/vox2/libjs/regex_unicode_property.h": {
+        "lines": 25,
+        "sha256": "83b1a76de09588a64340bab85b88e6659e34e597b388bc3843de57bc97856d2a"
+      },
+      "/Users/alex/code/vox2/libjs/regex_unicode_set.h": {
+        "lines": 14,
+        "sha256": "7d5200191c103fcf7822c5b4723737ea129851328e846bb7d6f5e21db151ffe9"
+      },
+      "/Users/alex/code/vox2/libjs/unicode_transform.h": {
+        "lines": 14,
+        "sha256": "7dc1c202037bca086d9a5c38d84acdecd5f4035b1368feb6dbde16c96dbda675"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/putil.h": {
+        "lines": 8,
+        "sha256": "b05efa43c065ea72b728c531e482d474333fc6f9b6eca71e1f1c77a155db994e"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/uiter.h": {
+        "lines": 119,
+        "sha256": "b1bfb71d529d7622defabd6a77c0f39179f4c47b743e45cae95e3bcd2fff55cb"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/unicode/ustring.h": {
+        "lines": 231,
+        "sha256": "72e83b607c1bd1d97cd2587ca92456441b8b2fac443bf3dc8869b13288e9d7a8"
+      },
+      "/Users/alex/code/vox2/libgc/primitive_storage_host.h": {
+        "lines": 32,
+        "sha256": "aad560e79a49223b30359e9aa0850496c870273be259c2ec64e7e77e722a045c"
+      },
+      "/Users/alex/code/vox2/libjs/math_random_entropy.h": {
+        "lines": 24,
+        "sha256": "83ebc79feb9dd42798478da2d91643a4df54bf86f226bbfcd4958da9b54c02e5"
+      },
+      "/Users/alex/code/vox2/adblock/../browserjs/jsc_abi.h": {
+        "lines": 363,
+        "sha256": "3ae41f4edf52bf03e85f04fed8f246f59efb21cc084855de33434ef2c3a258ba"
+      },
+      "/Users/alex/code/vox2/adblock/runtime.h": {
+        "lines": 65,
+        "sha256": "cc26f3ddfb022e4ccdd4c9548c410426056e8e644686d56a7e929c77ce2cb855"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/zconf.h": {
+        "lines": 20,
+        "sha256": "8adc34ed6f795e0e576dc4b3b701f3467d067ae6443f598b3743c7e6c5791487"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/zlib.h": {
+        "lines": 226,
+        "sha256": "b33ce1df3cf1024baad62371e4ddc4b2ff5a9b3a7454f79cc105ae2e0e0e4794"
+      },
+      "/Users/alex/code/vox2/adblock/snapshot.h": {
+        "lines": 316,
+        "sha256": "e5d01eb4dbc4dca0298b84db864eacd8978a201828ba83fb53d6a17e0b6c100b"
+      },
+      "/Users/alex/code/vox2/adblock/../native_crc32.h": {
+        "lines": 32,
+        "sha256": "85646b74c7abb11ee939d68cfe0bcf6a183e5f334dec40807d2e73292baf30a2"
+      },
+      "/Users/alex/code/vox2/adblock/snapshot_packed.h": {
+        "lines": 128,
+        "sha256": "6419948597b4959b94911eca9629873d044af6e200b0c3922c7f4f660466617a"
+      },
+      "/Users/alex/code/vox2/adblock/worker_transport_api.h": {
+        "lines": 13,
+        "sha256": "0f4b0096fc3b484a0584ecba7d0c0fbf3c2a2d158565e68780101f9eadff82dc"
+      },
+      "/Users/alex/code/vox2/processlock/lock.h": {
+        "lines": 13,
+        "sha256": "8c16a15fe6192bade6d6c45d680aa449737c13e5d0c230e7163d4bad76bfe510"
+      },
+      "/Users/alex/code/vox2/browsernet/websocket_wake.h": {
+        "lines": 65,
+        "sha256": "f303fee277f3c7df67c8cf6d5cf88512915d93d0692d2fe97021329cccf44379"
+      },
+      "/Users/alex/code/vox2/css/affine_rounding.h": {
+        "lines": 14,
+        "sha256": "13881d29f17d000c3257b5b42fd6243865a3d258c436235a6b6c32624d4a73af"
+      },
+      "/Users/alex/code/vox2/skia/bitmap_export.h": {
+        "lines": 6,
+        "sha256": "a10b1b46c2e28301ec57fccebfed588e5d25f844a56e6674a781a0ddedc9363b"
+      },
+      "/Users/alex/code/vox2/skia/canvas_raster.h": {
+        "lines": 74,
+        "sha256": "d26fef245c93cf3cf4f9de8e88ef40bab17d10273b214ddbebbf7d3cd52c4b18"
+      },
+      "/Users/alex/code/vox2/skia/font_typeface.h": {
+        "lines": 6,
+        "sha256": "dd1e5a9c5a8454731ef9fa66abda286e7b0008043479c743c244a94e7624d149"
+      },
+      "/Users/alex/code/vox2/skia/shadow_raster.h": {
+        "lines": 28,
+        "sha256": "84712e1029e568b413ddc7a9e5c03227bed8ac683992597be4e2f5bcba30dfa2"
+      },
+      "/Users/alex/code/vox2/threading/condition_bridge.h": {
+        "lines": 32,
+        "sha256": "e2fc6853a4fb5e2e9ca11d300e8a5a614691531502447f83d521d62c610777fe"
+      },
+      "/Users/alex/code/vox2/processmetrics/instruction_counter_darwin.h": {
+        "lines": 117,
+        "sha256": "771937c8a0964a6cc34aa3b2bd87aff815ac2b4a1442ae5edd31f696a029d90f"
+      },
+      "/Users/alex/code/vox2/processmetrics/memory_darwin.h": {
+        "lines": 16,
+        "sha256": "a62396dad9caf94545772b3a4ccc467859e02998e7245bef8b5d3483343c02b0"
+      },
+      "/Users/alex/code/vox2/webgl/native_egl.h": {
+        "lines": 647,
+        "sha256": "ac855940470c23012c22abed7357b0e63b05e87cb18ee4bdb6295b7d04780672"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/KHR/khrplatform.h": {
+        "lines": 32,
+        "sha256": "a0332ec16f2277b917f2a9565d6f011f52416aaf28f4b592054b515700eb0a0f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/EGL/eglplatform.h": {
+        "lines": 7,
+        "sha256": "ad4e46359a90bb4e94770f66752659915884c09999506fbb52826659ec3b90a6"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/EGL/egl.h": {
+        "lines": 117,
+        "sha256": "5c376fbc2bfa488ecd26ade214569890bda7266956c734e4443385495d747ae2"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/EGL/eglext.h": {
+        "lines": 211,
+        "sha256": "c217b6ccadec519971f067c43359a6800dc957e8337e04624817208962cf09cf"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/EGL/eglext_angle.h": {
+        "lines": 28,
+        "sha256": "bb7b5b09e7e616ae9e768b8f82508b171989051e71724722dd7acb3b512fc986"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/GLES3/gl3.h": {
+        "lines": 520,
+        "sha256": "b9ba55e7c88ff62ffb62c2f7bb7d07baf59749c2fe83da487e408a783673c141"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/GLES2/gl2ext.h": {
+        "lines": 1393,
+        "sha256": "0c4f286fdebc5a58ba55124bd299a72c277cc1bee8b6fcc29ec13698675f9ec1"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/GLES2/gl2ext_angle.h": {
+        "lines": 447,
+        "sha256": "1819ebf7e117fbae4c1c12087910330051d2d6bfc96433979a6fe5f85119d728"
+      },
+      "/Users/alex/code/vox2/webgl/angle_dispatch_darwin.h": {
+        "lines": 42,
+        "sha256": "a85fd7f8325d5433a4d8fd6b11bb56906e827321fe0d75ad77435f3d7a895851"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_aes.h": {
+        "lines": 137,
+        "sha256": "34ac25966e9fcd27a7580c9ce66e90c23aea2aeb5b8c4f9ff7d25279076918e2"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/evp.h": {
+        "lines": 1692,
+        "sha256": "9680f5b120baf6d848d70fef2c26729ba387165224a7803de4629f3503a07beb"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/e_os2.h": {
+        "lines": 2,
+        "sha256": "637ee7bd30f9b823f508ef8e97c62898c97f84b3e28a373cb2fc1bca6e9a1b20"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/stack.h": {
+        "lines": 36,
+        "sha256": "67d1ee607e4cd8de9c0af0e2bd07023ae1a74d894777457f6c49449d0120e237"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/safestack.h": {
+        "lines": 6,
+        "sha256": "b6d1a3101f56ac036a9be855077a1c6f449a4758fc5ce4d96d812fd964b3637d"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/types.h": {
+        "lines": 189,
+        "sha256": "277e2c3b2db26ee5811af60637fbc19663802e56f6ec712bee33edbf086a3ac8"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/core.h": {
+        "lines": 67,
+        "sha256": "03af0144eb174f6b2c5db87e10bfeabe2790190295a3b3d685c35cc5a77935d0"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/bn.h": {
+        "lines": 382,
+        "sha256": "c451832f258e893e69502b293f03dbb5cfcc69b5286289c54464bb07c4fd3524"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/crypto.h": {
+        "lines": 207,
+        "sha256": "850cc739a12225ea06bbd78b764191ed3423294dd2330b875c1f7f797665e28c"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/cryptoerr_legacy.h": {
+        "lines": 47,
+        "sha256": "35e2965308e99d3d97bea1578c0710aba55904739b334c9ba1b47cc21e32e08d"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/params.h": {
+        "lines": 88,
+        "sha256": "8c35d37566141e66b60de09ec6c91aaf423f26f9a3bb3404da67aebb00c27192"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/indicator.h": {
+        "lines": 8,
+        "sha256": "67c170fb5cf3920626e086e6f3c1dab7c7608388e00185b646daeb2713d0a9a1"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/core_dispatch.h": {
+        "lines": 665,
+        "sha256": "32271ee739d4b1643e37571d34ed7137bbc79e7f154b753e1759ac9ff894113b"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/bio.h": {
+        "lines": 338,
+        "sha256": "4326c14b109636d71e9dc516aa712cbd92657974e52d1ca29a44840af22f94aa"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/objects.h": {
+        "lines": 56,
+        "sha256": "4fc5411f1daeb18013b47bfe2d6b18c0abe7e2386f735691e9f4ed2a891bc13d"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/asn1.h": {
+        "lines": 446,
+        "sha256": "85d94f1652e2492b8cd480c3f974e2d56695ada2f14818b5b5f6ef7d4fe1423e"
+      },
+      "/Users/alex/code/vox2/webcrypto/openssl_dispatch_darwin.h": {
+        "lines": 476,
+        "sha256": "53e01e0c63b033b309274418d9a1896eede00490090639b999a09d94faf252b9"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/param_build.h": {
+        "lines": 42,
+        "sha256": "10d0da751d2048d00fac96021f2bf14b98284e3a231d69b2f45855511392f19f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/rsa.h": {
+        "lines": 416,
+        "sha256": "4aed95a3ff118c4e46c73041c28bc3de1462056832fbfdcc5e55a6d481ffe042"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/ec.h": {
+        "lines": 898,
+        "sha256": "c495b21b9f092d5981a9fe3475952f5c394a10ba2d28bd8ef54e21d76a671bd6"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/kdf.h": {
+        "lines": 75,
+        "sha256": "4ad9f2c836b944c8b9aa33029c3355599a5bc138ba912c27d8d28b1178eb598d"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/openssl/thread.h": {
+        "lines": 8,
+        "sha256": "03c5b394b8d87823dbfda83a15b1598975ef5af4086ccfb690794c6d2d706935"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_chacha.h": {
+        "lines": 54,
+        "sha256": "b86815306da0616df411ba3563f3de55d54a69e3ba087916a47dfb2313652694"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_crypto.h": {
+        "lines": 108,
+        "sha256": "a18735203b47f753e22e0673dd52cc03951ae2c415cd80013c8e2a905d592f3b"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_ec.h": {
+        "lines": 201,
+        "sha256": "0873fb9d282ba2498af74b5173521e318a9d698d7d5f49d00729e382fb1612b5"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_edwards.h": {
+        "lines": 87,
+        "sha256": "a87286b3436aa716214aca7811e1f8234dc368a9b06c3fa410fa3872c32184d9"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_kdf.h": {
+        "lines": 68,
+        "sha256": "3bff3fb4e5728af48775396f0cf2984405f3b9227e47da63607541eab0212a95"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_ml.h": {
+        "lines": 173,
+        "sha256": "1f4538562d73d136e74e93a8144092fbb6a5c9508122cb22fa394190bd330006"
+      },
+      "/Users/alex/code/vox2/webcrypto/native_rsa.h": {
+        "lines": 240,
+        "sha256": "32963fc3157bf4ed36009eeebba0e925a7381523090a9761c72f8624331445ad"
+      },
+      "/Users/alex/code/vox2/libregex/native_abi.h": {
+        "lines": 53,
+        "sha256": "dcb2067b0a8b6ecc62250c7154e629f2401606abd8671dc4e042217b22fc9c30"
+      },
+      "/Users/alex/code/vox2/requestserver/curl_bridge.h": {
+        "lines": 263,
+        "sha256": "e9d97fb404e6a95453223f12d3b7a732a1cdc6779876accf02630d2f539c46f3"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/system.h": {
+        "lines": 7,
+        "sha256": "61f71b6754f585471c97c89d5d0ab1b25ff87dbd8d0138594955bcd396bed353"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/curl.h": {
+        "lines": 2056,
+        "sha256": "bf586de964180ee8e377dc7ce39c643b5636d328f028777e775cbccc10e6c816"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/easy.h": {
+        "lines": 19,
+        "sha256": "c7693d10bb2d59af8b4f224118cf1b1116a2638d50038a411e98cc9cfd9f59e4"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/multi.h": {
+        "lines": 215,
+        "sha256": "a4c07ea4b4012689ede0b3ce9a71a6f178374f1a2b8c617ed83c1fb0b2fd0ba6"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/urlapi.h": {
+        "lines": 98,
+        "sha256": "9ea6f1a59dc24d008d8d746aca537cd608970d45c288c5dbe6e1f9ba7bc74f1b"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/options.h": {
+        "lines": 26,
+        "sha256": "1fd77e67ab2f6206e034464fa8d5c41053af2c587d9c7a683ba2904ff30bb78f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/header.h": {
+        "lines": 30,
+        "sha256": "d7fadefcab10e14e0060850b3ff5cf849a8f8cd829e47f613916a914aff1004c"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/websockets.h": {
+        "lines": 23,
+        "sha256": "be17c037fe0f0add726fdb6abffbd3499456fdab53c870b8ded70c7c793110ee"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/mprintf.h": {
+        "lines": 22,
+        "sha256": "5a4113abcfb0a5b44294cf6606114b6c8962c8f5d5850d936958c3655c3d479f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/curl/typecheck-gcc.h": {
+        "lines": 212,
+        "sha256": "569effe606dda986e5f01c6cfd2ee1e82b3b29cbb6b4692f6cb63caa844a8be8"
+      },
+      "/Users/alex/code/vox2/browserjs/crypto_views_darwin.h": {
+        "lines": 19,
+        "sha256": "7235c5a9faa699b4febbb182638b98b348c9b79b77b3f0569b44441fd4c045b8"
+      },
+      "/Users/alex/code/vox2/browserjs/host_function_darwin.h": {
+        "lines": 108,
+        "sha256": "cbc3da7a59d0705af252fc2cd43ab84c97fe64246d64d652372dc6f9569696b9"
+      },
+      "/Users/alex/code/vox2/browserjs/module_loader_darwin.h": {
+        "lines": 9,
+        "sha256": "f5050ad3e2892cc25eef5e2f1bcd2ebf65806907603610421b3a50c78f94caaa"
+      },
+      "/Users/alex/code/vox2/browserjs/source_string_darwin.h": {
+        "lines": 24,
+        "sha256": "f2f1438c9df2aa405ec5b2179db5661e83947f014cf3946aece06aa7d6ef5e28"
+      },
+      "/Users/alex/code/vox2/browserjs/runtime_agent_context.h": {
+        "lines": 51,
+        "sha256": "82c987f801558df3c4656619afa3f502ef3cbdaa0b586faec53e0f8288b7dc97"
+      },
+      "/Users/alex/code/vox2/browserjs/source_array_buffer_darwin.h": {
+        "lines": 32,
+        "sha256": "49ae85d7dc8ec51248294ac6f4bcbebadb2de96c025c46bb2bcc281d19084ee9"
+      },
+      "/Users/alex/code/vox2/browserjs/worker_process.h": {
+        "lines": 323,
+        "sha256": "4858e3040c321157eb43dcaf3abf9cf7c91e9ad04843d399914c32f7ce46a6f0"
+      },
+      "/Users/alex/code/vox2/browsertabs/process.h": {
+        "lines": 31,
+        "sha256": "9516001ac644eea9d537e4654d5727b24bd2924c9c984c5e35419d4258b7400c"
+      },
+      "/Users/alex/code/vox2/native_avif.h": {
+        "lines": 86,
+        "sha256": "381b478b68e4f8e7731c5b2c6b9f97864d5840e7d6184ee62aa696ea926ed91d"
+      },
+      "/Users/alex/code/vox2/native_graphite_bridge.h": {
+        "lines": 248,
+        "sha256": "fb4a865213503fa6b54c92b51b89f02012ba852eaeefd913b612baceaed503d6"
+      },
+      "/Users/alex/code/vox2/native_image_color_profile.h": {
+        "lines": 10,
+        "sha256": "0f5dc4ad869e1287c7248dbf12fd50196c75374628df957c6bd6156dfc7c4d57"
+      },
+      "/Users/alex/code/vox2/native_jpegxl.h": {
+        "lines": 65,
+        "sha256": "2648cc73490acb4a8b62640b8280f8bef7df4544c14714a3f60ea515145ccd8d"
+      },
+      "/Users/alex/code/vox2/native_capture_darwin.m": {
+        "lines": 6781,
+        "sha256": "78809fba9cbcb3d9d1d12a9c5acbb3cc82b63cc9e65a9e441f76036dc445a0bc"
+      },
+      "/Users/alex/code/vox2/native_snapshot_png_darwin.h": {
+        "lines": 42,
+        "sha256": "f83feaa23f147a497bca0f27c2899303c80bc48a8aafcca803c26fac93cd2a95"
+      },
+      "/Users/alex/code/vox2/native_snapshot_png_opaque_darwin.h": {
+        "lines": 166,
+        "sha256": "f76bb8ba626ebc22f52ff19467580167cdb70cf9583c64f81c7a0aa33fa7e89b"
+      },
+      "/Users/alex/code/vox2/native_rgba_is_opaque.h": {
+        "lines": 48,
+        "sha256": "2f91b4d2a9e86fcb7bbd2e901fb79aff1de99180484ea00346d7ff8d93016608"
+      },
+      "/Users/alex/code/vox2/native_presented_pixels_darwin.h": {
+        "lines": 31,
+        "sha256": "3207e04f44fa6f7e6ae2fd3cb35cae6123307470e17f540c19cc144d5632e162"
+      },
+      "/Users/alex/code/vox2/native_allocator_policy_darwin.h": {
+        "lines": 25,
+        "sha256": "3bb07d53e5e0f97956928c7efb585cc746844ce88ec70d88069f5ed4db7f9b7c"
+      },
+      "/Users/alex/code/vox2/native_glyph_flags.h": {
+        "lines": 6,
+        "sha256": "d4062f701d69a91c1d85f396571e0762dc2041fad0e2938f33efea8c4106390a"
+      },
+      "/Users/alex/code/vox2/native_test_window_darwin.h": {
+        "lines": 84,
+        "sha256": "b286c0cb54fc8183b2f300433495b445969834cb49151a7a2f5aaffa89ba15c7"
+      },
+      "/Users/alex/code/vox2/native_media_preferences_darwin.h": {
+        "lines": 11,
+        "sha256": "0ee016e46aa6b65e0617b097166c6c36451cfba218976cc9f7e16bbc2cb25c12"
+      },
+      "/Users/alex/code/vox2/native_writing_tools_darwin.h": {
+        "lines": 45,
+        "sha256": "6eba361bfde5a1620b060307878635045e007be225b4df3b41ebf8370f27e18e"
+      },
+      "/Users/alex/code/vox2/native_layer_presentation_darwin.h": {
+        "lines": 554,
+        "sha256": "a824c82e5e5bbab61c8abc8e4ce357e0c7f82e9fa83dbb84a8d9ae5b9559e686"
+      },
+      "/Users/alex/code/vox2/native_document_submission_darwin.h": {
+        "lines": 38,
+        "sha256": "be3bf672ea2a0eb15b219de9299e36ac69ae998d1daf549615cc46f2ef138e3f"
+      },
+      "/Users/alex/code/vox2/native_initial_document_clear.h": {
+        "lines": 44,
+        "sha256": "faca5928166546d236798e223b5ab1cf312371ac1ddcb1d8156dcea8feb37a70"
+      },
+      "/Users/alex/code/vox2/native_frame_snapshot_darwin.h": {
+        "lines": 38,
+        "sha256": "22e8d128ee18c20c5a3ae3eb93985c819a01b04940768d7613a40e38169687a3"
+      },
+      "/Users/alex/code/vox2/native_presented_capture_darwin.h": {
+        "lines": 122,
+        "sha256": "64e1bf5087b2f07a1dc2c5b619fe5966f7006c0a0c9b3c57954c6434534e2fce"
+      },
+      "/Users/alex/code/vox2/native_image_capture_policy_darwin.h": {
+        "lines": 21,
+        "sha256": "5f2c9d525fefee2011be5c4e287992c78ca55a15e10f7573e04549400677a4a8"
+      },
+      "/Users/alex/code/vox2/native_scroll_raster_darwin.h": {
+        "lines": 482,
+        "sha256": "9dd95dcb3d7ca6eba9692bc6bdb8cd102e9e49c89915de636a3ecbde9d10ebf7"
+      },
+      "/Users/alex/code/vox2/native_raster_row_ranges.h": {
+        "lines": 36,
+        "sha256": "57fc0468a47945374fef8ccd87149d7e31627d7997ab55456a879f056dfe2a2f"
+      },
+      "/Users/alex/code/vox2/native_stationary_raster_darwin.h": {
+        "lines": 164,
+        "sha256": "9573af76e5175744a176277c7b89ad5fe45b056a3ec3470b0f88b8f1659431a3"
+      },
+      "/Users/alex/code/vox2/native_deferred_font_darwin.h": {
+        "lines": 48,
+        "sha256": "40b0d65dab051fcfa840d08c6df5e9b41e4a0de9dec2599e1e6e4e432ffdd608"
+      },
+      "/Users/alex/code/vox2/native_svg_mask_layer_darwin.h": {
+        "lines": 19,
+        "sha256": "b76b326f3d0a21e18e766b2de2aa96e86c4bd1745ab528f5ee90d2a7802d313d"
+      },
+      "/Users/alex/code/vox2/native_svg_mask_pixels.h": {
+        "lines": 54,
+        "sha256": "46d765f5cc8ace27381271c5f546e368a4150997d0d2e381f4ff3ae5e7eca543"
+      },
+      "/Users/alex/code/vox2/native_ffmpeg_darwin.h": {
+        "lines": 234,
+        "sha256": "f7fefe0a156db392ce30802f9d1bb08ba157377f35c3c63a74d4f63f80dc09a5"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/samplefmt.h": {
+        "lines": 65,
+        "sha256": "faedb39bd02fb51a309a609c6d97dda465ef0750d8753de755ab65237a574e3f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/avutil.h": {
+        "lines": 63,
+        "sha256": "8f096c56d649d9f6a49b15e89a721a6c96b464db90dfb73c73a7df9b5d25ad58"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/common.h": {
+        "lines": 232,
+        "sha256": "3eb852cb699410c328d4d489c0a887671e50f9249750d9681fc3426d030c7e1d"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/error.h": {
+        "lines": 7,
+        "sha256": "7a3560b943312b06b90e40522c388dcf5e8fa1d624d38abdc8b146f4aaeb1e2f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/mem.h": {
+        "lines": 26,
+        "sha256": "8e090ba1f73bdd9705749476f0fe78813d191460ad4798778d51b249e09cc5f1"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/rational.h": {
+        "lines": 81,
+        "sha256": "f6ae7cdc870ac75cae16aac88c4f2c9f88c2374bc2b8220ca1d6b782905cf08f"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/intfloat.h": {
+        "lines": 49,
+        "sha256": "ac01f7c795a48cef7e5d712395b743854aaa18586d962a15b054be17f77010fa"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/mathematics.h": {
+        "lines": 23,
+        "sha256": "a43f8bed5f4182781d01f9a2d7b60a8640f4b5effbc1ae419e53d28aab9b2106"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/log.h": {
+        "lines": 103,
+        "sha256": "a1c634c5e0c68e7b58b6ca7be21c51a6a45e59a630cf14d581606e7e8dc71b72"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/pixfmt.h": {
+        "lines": 422,
+        "sha256": "40865c27a73aea3d32f6987f85731bdb2425a9ee4ff35cdc6f3f34eeed8fb343"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/buffer.h": {
+        "lines": 94,
+        "sha256": "33e728e31cd50483edccec4450b7597c14576c96ac572205adba2917566f05b9"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/channel_layout.h": {
+        "lines": 191,
+        "sha256": "b21b107cd302f09b0f18081cfe66ba1a668ed07a9685201925e443f988468fac"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/dict.h": {
+        "lines": 39,
+        "sha256": "756ac5b69ed8445c568eeb645fa807b9fcaaf074ba63162590e092a991f746b3"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/frame.h": {
+        "lines": 481,
+        "sha256": "84e68d974a66248b91b7e6ac0e7274bb7ed96325e1b2428645a350798ac34cd3"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/avcodec.h": {
+        "lines": 1046,
+        "sha256": "c4e59646f39171870a785b5e25a28a2b531f6f9214f05cee5a4ffec8a799ac27"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/hwcontext.h": {
+        "lines": 193,
+        "sha256": "771a94226f74a3bcf933d1fe001b14d591bdf5f360ec5c3329c461ae05e20dc0"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/codec.h": {
+        "lines": 138,
+        "sha256": "019f0bdd22f395c97044cc4205a2270c9052e8b33cf55745304884ae348a281b"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/codec_id.h": {
+        "lines": 594,
+        "sha256": "686c77829cd9e73f34cc5e84f24060872902dd36a7d61965fb600891efbeb2fd"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/defs.h": {
+        "lines": 110,
+        "sha256": "f7fb419d1cbf223f1045f9e72712e9550b1c616e5bc4e4bef27c3286b79fd354"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/packet.h": {
+        "lines": 329,
+        "sha256": "8fdcd80a15155454cea8ad3b1bcbb59b9d947418827a1b4b45625d23f13a1544"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/codec_desc.h": {
+        "lines": 37,
+        "sha256": "177f8e25a5be3a2c537639375e97df8b5ca6d039079c450b17dc16243a0a0539"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavcodec/codec_par.h": {
+        "lines": 144,
+        "sha256": "43c73b2ae41f9210d4936ecfa9f77fefe3a3c55e565e7cd7ffa1a04bd52b822e"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavformat/avformat.h": {
+        "lines": 992,
+        "sha256": "74a2c6ab1d67a809216edb58ec58ba58e96b27bc8165be28b7eca5d7b5ef1c15"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavformat/avio.h": {
+        "lines": 332,
+        "sha256": "8a54d18bbe7dce982dcdcc41b13107fd4797fd98ab46f6495116d118bf877175"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/imgutils.h": {
+        "lines": 62,
+        "sha256": "990da281e10b8eaecd2a8dd51a042b418efc736574af12193763051086dee893"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libavutil/pixdesc.h": {
+        "lines": 158,
+        "sha256": "0b5d519a8b78ff7f49009db9a929dc612bb1332c8469a42f32f8cd8ee426db2b"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libswscale/swscale.h": {
+        "lines": 144,
+        "sha256": "b5cabd466de8d60b079b9658ea8a6db9af10b3312ebefc4a31918157acd3644e"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libyuv/convert_argb.h": {
+        "lines": 2207,
+        "sha256": "a11c1b84a02a2778224b439e6348471b5958fb6878a4ec9969533aa3e93c5e7a"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libyuv/rotate.h": {
+        "lines": 268,
+        "sha256": "99f94d9301c301247f32a1787635728f302140814947d602e109834f988903a8"
+      },
+      "/Users/alex/code/vox2/platform/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/libyuv/scale.h": {
+        "lines": 235,
+        "sha256": "64b2298daf82ef0f94955f11e1261b5faeb15e58d6d07fdeae02e85e8ab3a010"
+      },
+      "/Users/alex/code/vox2/native_media_darwin.h": {
+        "lines": 151,
+        "sha256": "75f3f73b6b55a7e1999aa58c861f9edc1f7c5fb5970e28bfd567583ec3a5efb5"
+      },
+      "/Users/alex/code/vox2/native_avfoundation_darwin.h": {
+        "lines": 33,
+        "sha256": "2e062a3b96c2195d3f1a9441781ec745eb0177d6f713c981495474f991d90551"
+      },
+      "/Users/alex/code/vox2/native_webp_darwin.h": {
+        "lines": 169,
+        "sha256": "a365ec34309412e49ab55bb2a766916009b2b6500304aca98ec26cc33f336277"
+      },
+      "/Users/alex/code/vox2/native_jpeg_darwin.h": {
+        "lines": 152,
+        "sha256": "f45c66695de30ffed6e1dd89b3736605cc9890db3343fa6c50767565d0165da9"
+      },
+      "/Users/alex/code/vox2/native_png_color_darwin.h": {
+        "lines": 139,
+        "sha256": "3d9b75dd1ed34e5958797cfd02904842799e0807d44fd1336cc0ae4c6a1a91be"
+      },
+      "/Users/alex/code/vox2/native_png_icc_darwin.h": {
+        "lines": 187,
+        "sha256": "5d0a257e4db3b7f3489cab032958c52d3f9e11203eb1e6de96bd268ecf0fd38e"
+      },
+      "/Users/alex/code/vox2/native_opacity_group_darwin.h": {
+        "lines": 178,
+        "sha256": "fb219b7ca2a66341400d71b3557509fa71e314c0d8f2d80a97797932d7b36291"
+      },
+      "/Users/alex/code/vox2/native_opacity_canvas_pool_darwin.h": {
+        "lines": 140,
+        "sha256": "5e9dc4be450e2ebac67d8c1b23c148f19473eb0574afebf455d027575096e5d3"
+      },
+      "/Users/alex/code/vox2/native_bitmap_snapshot_darwin.h": {
+        "lines": 85,
+        "sha256": "daec9c9268e42c4bba0a922380d1d6818d1fec4fd58b9177bf4a6eba0ee4cd1b"
+      },
+      "/Users/alex/code/vox2/native_svg_mask_opacity_darwin.h": {
+        "lines": 92,
+        "sha256": "d9fbe9a78d05901d490796f8aff47aa8fce67510902c5b21fe92cdace508ba2a"
+      },
+      "/Users/alex/code/vox2/native_sparse_opacity_ink_darwin.h": {
+        "lines": 54,
+        "sha256": "6e86f2a5d1f1855a57ad29dc9b5272b7bf4f9cb4e7f73ab8a5e8545b193afd60"
+      },
+      "/Users/alex/code/vox2/native_chromium_screen_blend.h": {
+        "lines": 24,
+        "sha256": "4a5408dc2f70226c894601dbaa9aa77e0b93dcf0e0bdb8b30dd3ab5fe66d7a0d"
+      },
+      "/Users/alex/code/vox2/native_rounded_svg_ancestor_darwin.h": {
+        "lines": 88,
+        "sha256": "a2426954d700d5d244ef0645ff4cd9d4dc249b02f1e6fb6edce5f58c0f12f618"
+      },
+      "/Users/alex/code/vox2/native_chromium_corner_shapes_darwin.h": {
+        "lines": 25,
+        "sha256": "a5febba0b01256d5dcdc5e4169d1a08ccc7650be0145ca3bca53a18e79b877c7"
+      },
+      "/Users/alex/code/vox2/native_browser_chrome_style_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_browser_chrome_style_darwin.h": {
+        "lines": 115,
+        "sha256": "575f957cc7b604e245a9ef2d5be26102b6dc672de1caa2cd50c9161d193efaf1"
+      },
+      "/Users/alex/code/vox2/native_browser_tab_detach_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_browser_tab_detach_darwin.h": {
+        "lines": 25,
+        "sha256": "2d16a3694e29f52fa88ad2ef27feefaa99eb41a2ba7d706bfa59f01c71344a7d"
+      },
+      "/Users/alex/code/vox2/native_browser_tab_process_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_browser_tab_process_darwin.h": {
+        "lines": 60,
+        "sha256": "b42d5cb8a8da9d25d389f054527cf88672973d0ce91fb5cafe1a0404442a64a8"
+      },
+      "/Users/alex/code/vox2/native_browser_window_state_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_browser_window_state_darwin.h": {
+        "lines": 86,
+        "sha256": "7ca2e03d84cffb24b5735ac5184e29bc704b25177cc829400621b1946d7edbc7"
+      },
+      "/Users/alex/code/vox2/native_history_swipe_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_history_swipe_darwin.h": {
+        "lines": 70,
+        "sha256": "7c8f7502e0fd8fbae9201ff37cd9376f554133ac3438b85bd86e12fc05a3d81c"
+      },
+      "/Users/alex/code/vox2/native_navigation_work_darwin.m": {
+        "lines": 1,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "/Users/alex/code/vox2/native_navigation_work_darwin.h": {
+        "lines": 41,
+        "sha256": "a053ab7465359caf085fff234e43c5c89678fc842b89698591feca7621baee7d"
+      }
+    },
+    "changed": [
+      {
+        "path": "/Users/alex/code/vox2/native_writing_tools_darwin.h",
+        "before": null,
+        "after": {
+          "lines": 45,
+          "sha256": "6eba361bfde5a1620b060307878635045e007be225b4df3b41ebf8370f27e18e"
+        }
+      }
+    ]
+  },
+  "retained_inconclusive": "First render-function classifier matches only one main__ function due production symbol naming; corrected1535-function scan and literal-resolved scan retained. Initial expensive whole-source diff explicitly interrupted, no conclusion from it. Broad anonymous-name classifier does not prove callback equivalence.",
+  "acceptance_history": {
+    "measured_cohorts": 103,
+    "acceptance_browser_attempts": 2230,
+    "comparison104_preflight_only": true
+  },
+  "target_met": false,
+  "catalog_entry_added": false,
+  "instruction_credit": 0,
+  "archive": {
+    "path": "docs/performance/raw/bbc-pixel-msaa-attribution-20261105.tar.gz",
+    "bytes": 40985598,
+    "sha256": "84cc3e87f9c0a67282b35a8be33137ca37ed4bb315d6999808d00366570ae224",
+    "members": 302,
+    "all_members_verified": true
+  },
+  "unix": 1793861652.929814
+}

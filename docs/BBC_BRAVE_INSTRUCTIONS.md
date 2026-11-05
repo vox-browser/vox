@@ -6018,3 +6018,51 @@ remains outside `OPTIMIZED_SITES.md`; the 10% target remains open.
 [Exact counts, all attempts, focused/native checks, restoration proofs and
 storage receipts](performance/bbc-placement-cohort103-and-restorations-20261105.json)
 are preserved in a fully verified archive.
+
+
+## Original pixel regression and comparison 104 preflight (2026-11-05)
+
+The proposed aggregate grid/flex/inline-cache comparison 104 runs **no measured
+pairs**. The driver's mandatory runtime discovery rejects an original-reference
+pixel mismatch before its first triple. Its guard/controller status is 1;
+the discovery browser's actual native exit is 0. The prospective diagnostic
+comparison is not a completed cohort and adds no acceptance attempts.
+
+Production `fc1b35e2a33b`, then the newer `68cec4406133` containing both experiment
+removals, produce identical PNGs with the legacy measurement caches on and off.
+Both policies differ from the immutable original Vox reference at exactly
+**(398,1061)**: red **59 → 58**, with green 68, blue 78 and alpha 255 unchanged.
+Complete content, all 72 original external scripts, actual loaded-image pins,
+input identities and native exits pass. The SVG source-switch guards remain
+exact. Neither reference nor tolerance is changed, masked or bypassed.
+
+A fresh C-O0 compilation of the exact newer sealed source reproduces the same
+one-pixel mismatch. A fresh C-O0 compilation of the earlier `e9b0f545f8f7` source
+still matches the original PNG. Most named rendering functions match after
+resolving generated string constants; initial namespace-limited and anonymous-
+name classifiers remain investigative records, not proofs of whole-program
+equivalence. The native include comparison finds only the added writing-tools
+header; previously existing native files and linked libraries are unchanged.
+
+The decisive control changes **only** `chromium_border_has_diagonal_path` in the
+newer sealed source to its exact earlier body. That fresh C-O0 launch restores
+the original PNG exactly, with complete content, 72 exact external scripts,
+actual loaded-image pins and unchanged inputs. The corrected default in
+`c2deb6773` recognizes omitted and zero-radius border arcs as analytic. Its
+different tile-wide MSAA decision also changes an image sample inside the same
+tile. This explains the observed mismatch without attributing an instruction
+saving or changing the original workload.
+
+An explicit historical border-sampling option is being validated so both Vox
+arms can retain the references' original raster policy. The current default
+remains intact. Production validation of that option is still pending; the
+standalone C-O0 control is diagnostic evidence only. The 326 instruction-tool
+tests pass for the common-arm option (`7cb843063`). No launch counts from the
+JSC-witness or C-O0 diagnostics earn optimization credit.
+
+History stays **103 measured cohorts / 2,230 acceptance browser attempts**,
+plus comparison 104's rejected runtime-discovery preflight. The 10% target
+remains open, and BBC homepage stays outside the catalog.
+[Every failed capture, exact single-helper control, source/input hashes,
+commands and actual exits](performance/bbc-pixel-msaa-attribution-20261105.json)
+are preserved in a verified durable archive.
