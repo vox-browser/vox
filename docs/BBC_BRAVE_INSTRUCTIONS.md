@@ -5778,3 +5778,83 @@ An older executable earns no validation for this feature. Cohort 100 remains
 the latest complete comparison and fails the target. There is no new broad
 trigger, instruction credit, catalog entry or completion claim. See the
 [focused results and retained failures](performance/bbc-native-callback-focus-20261105.json).
+
+
+## Callback rollback and unused measurement heights (2026-11-05)
+
+Cohort 101 tests the captured-Function.call experiment on production `8a1e86fa`.
+Separate fresh native launches pass the original pixels/content, 72 external
+script execution checks and actual native-image pins; only the candidate emits
+the callback marker before PNG. The SVG source-switch guard is exact. All 21
+acceptance attempts are retained, but pair 7 control is rejected before capture
+by the coalition ownership audit and pair 7 Brave differs by 171,581 pixels.
+The raw ownership scan records another session's HN screenshot Vox process and
+helper, both gone during identity lookup. That uncertainty remains a rejection;
+it does not justify weakening ownership or retroactively accepting the trial.
+
+The six complete control/candidate pairs have medians 27,669,811,064.5 control
+and 28,559,023,141.5 candidate, a negative point difference of 889,212,077.
+All seven observed candidate/Brave medians are 28,360,337,963 and 17,582,118,355.
+These are diagnostic counts from an invalid cohort. No saving or causal
+regression is attributed under host contention. `de5d186f9` removes the callback
+experiment and retains its five new semantic cases. The restored implementation
+passes all 60 focused executions (20 cases in three memory modes), with actual
+test calls verified in main disassembly. Its source rollback still awaits a
+production executable containing it; the completed bundles used below predate
+that rollback.
+
+`fff39c3d6` permits closed grid/flex measurement reuse across unused stored
+numeric heights only when the existing complete subtree proof excludes every
+external-height consumer. Definite root heights and immediate containing-block
+definiteness remain keyed, together with widths, constraints, edges and node
+identities. All 315 focused executions pass: 35 cases in three arms and three
+memory modes, with scratch retirement, owned geometry, copy-on-write, committed
+replay, dependent-subtree rejections and complete uncached geometry oracles.
+All 323 then-selected tooling tests pass; `2d1592da0` supplies the isolated
+height control.
+
+Fresh native candidate/control captures on production `2f50a29e` pass the
+original pixel/content/72-script/native-image audits and the SVG source-switch
+guard. Only the candidate emits the unused-height marker before PNG. This
+bundle includes the callback experiment equally in both arms: it isolates the
+height comparison and provides no validation of the callback rollback.
+
+Cohort 102 completes all 21 captures with stable identities, normal browser
+exits, complete content, and exact pixels/ownership for every Vox arm. Brave
+pairs 4 and 5 differ by 224,973 and 53,392 pixels, so acceptance is invalid.
+Observed medians are **28,910,002,538 control**, **28,880,421,922 Vox**, and
+**17,496,430,647 Brave lower bound**. The **29,580,616** median point reduction
+(0.102%) has two paired improvements and five regressions; highest candidate /
+lowest control is **1.13755**. It earns no robust saving. The strict target also
+fails: `303024301730 > 156361532166`, ratio **1.74417**.
+
+That positive point difference triggers the broader regression batch. All
+**532 unique cases** execute in both default and no-GC modes, with **529 passes
+and the same three baseline failures** per mode (root percentage height,
+text-control baseline and radio baseline). All eight added image/height cases
+pass. Checked inputs remain unchanged. There is no full-suite pass or cadence
+reset. No own compiler jobs run during cohort 102; independent host contention
+and raw host records remain disclosed.
+
+A separate Brave diagnostic forces hover, then clears it. Forced hover does
+not reproduce cohort 101's failed PNG; clearing hover still leaves 441 pixels
+with maximum channel error 1 against the original reference. This experiment
+is inconclusive about the mismatch's cause. References, tolerances and capture
+policy are unchanged; every failed acceptance attempt stays recorded.
+
+The unchanged frozen 609-response original-origin replay, original author
+scripts, 1024×768 CSS viewport, scale 2, private profiles/caches, retained OS
+caches, readiness/decode and two-second settle policy remain in force. Counts
+cover exclusive coalition creation through encoded document PNG availability,
+including startup/window/target setup; Vox stops before file writing, Brave
+includes CDP delivery, and semantic audits/teardown follow the endpoint.
+Exited aggregates/allowed owned services are included; GPU/outside work is
+excluded. The 82.7154% cross-engine pixel difference and documented DOM/script,
+local-font and decoded-paint limitations remain. No live-page, scrolling or
+isolated rendering-time claim is made.
+
+History is **102 attempted cohorts / 2,209 acceptance browser attempts**.
+BBC homepage remains outside `OPTIMIZED_SITES.md`, and the 10% task remains
+open. [Exact counts, all failed attempts, focused/native/broad checks and the
+inconclusive hover diagnostic](performance/bbc-callback-heights-cohorts101-102-20261105.json)
+are preserved in a verified durable archive.

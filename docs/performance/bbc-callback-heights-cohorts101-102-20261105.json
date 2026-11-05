@@ -1,0 +1,2218 @@
+{
+  "status": "BBC 10% target remains unmet. Cohort101 invalid due one ownership rejection and one Brave pixel mismatch. Callback experiment shows no saving and is rolled back with60passing semantic executions. Cohort102 invalid due two Brave pixel mismatches; unused-height reuse315focus passes but variable29,580,616 median point reduction earns no robust credit. All532broader cases entered in each memory mode; known baseline failures retained. Inconclusive hover diagnostic changes no references or policy.",
+  "cohorts": {
+    "101": {
+      "rows": [
+        {
+          "trial": "pair-1-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17772278277,
+            "upper": 17773080470
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              128.8310546875,
+              144.78125,
+              130.78271484375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              131.18212890625,
+              144.46240234375,
+              130.90966796875
+            ]
+          }
+        },
+        {
+          "trial": "pair-1-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27055180685,
+            "upper": 27055180685
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              142.16455078125,
+              148.73291015625,
+              131.5234375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              136.92822265625,
+              147.3232421875,
+              131.32470703125
+            ]
+          }
+        },
+        {
+          "trial": "pair-1-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28859359894,
+            "upper": 28859359894
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              136.92822265625,
+              147.3232421875,
+              131.32470703125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              131.25390625,
+              145.5205078125,
+              130.95849609375
+            ]
+          }
+        },
+        {
+          "trial": "pair-2-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17563302178,
+            "upper": 17578722010
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              131.18212890625,
+              144.46240234375,
+              130.90966796875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              128.9736328125,
+              143.3017578125,
+              130.73046875
+            ]
+          }
+        },
+        {
+          "trial": "pair-2-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28798074691,
+            "upper": 28798074691
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              128.3046875,
+              142.10693359375,
+              130.669921875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              123.85986328125,
+              140.46435546875,
+              130.2841796875
+            ]
+          }
+        },
+        {
+          "trial": "pair-2-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28360337963,
+            "upper": 28360337963
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              131.5380859375,
+              143.59521484375,
+              130.90771484375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              129.72412109375,
+              142.615234375,
+              130.7802734375
+            ]
+          }
+        },
+        {
+          "trial": "pair-3-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17584081103,
+            "upper": 17585251747
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              123.0078125,
+              137.962890625,
+              129.82275390625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              119.97607421875,
+              136.57275390625,
+              129.4697265625
+            ]
+          }
+        },
+        {
+          "trial": "pair-3-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27125781140,
+            "upper": 27125781140
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              121.38818359375,
+              139.67626953125,
+              130.0654296875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              120.45703125,
+              138.89208984375,
+              129.900390625
+            ]
+          }
+        },
+        {
+          "trial": "pair-3-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28757708320,
+            "upper": 28757708320
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              121.70166015625,
+              138.84375,
+              129.93603515625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              120.74560546875,
+              137.77685546875,
+              129.7099609375
+            ]
+          }
+        },
+        {
+          "trial": "pair-4-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17401166583,
+            "upper": 17409936326
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              116.9345703125,
+              135.66650390625,
+              129.19140625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              118.98779296875,
+              135.4814453125,
+              129.20068359375
+            ]
+          }
+        },
+        {
+          "trial": "pair-4-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28213840989,
+            "upper": 28213840989
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              108.13818359375,
+              131.935546875,
+              128.07421875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              103.48828125,
+              130.171875,
+              127.494140625
+            ]
+          }
+        },
+        {
+          "trial": "pair-4-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28784186020,
+            "upper": 28784186020
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              115.62548828125,
+              134.51025390625,
+              128.89453125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              110.84912109375,
+              132.86328125,
+              128.37548828125
+            ]
+          }
+        },
+        {
+          "trial": "pair-5-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17358942489,
+            "upper": 17360037657
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              106.79150390625,
+              128.03955078125,
+              126.82275390625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              110.36279296875,
+              128.09033203125,
+              126.85400390625
+            ]
+          }
+        },
+        {
+          "trial": "pair-5-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28890273624,
+            "upper": 28890273624
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              101.36669921875,
+              129.2890625,
+              127.1982421875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              105.89306640625,
+              129.35693359375,
+              127.24755859375
+            ]
+          }
+        },
+        {
+          "trial": "pair-5-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 26954803434,
+            "upper": 26954803434
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              103.5791015625,
+              128.4873046875,
+              126.953125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              109.1240234375,
+              128.8505859375,
+              127.09912109375
+            ]
+          }
+        },
+        {
+          "trial": "pair-6-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17582118355,
+            "upper": 17603702653
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              111.13427734375,
+              127.95556640625,
+              126.8134765625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              114.9921875,
+              128.18212890625,
+              126.904296875
+            ]
+          }
+        },
+        {
+          "trial": "pair-6-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27000265703,
+            "upper": 27000265703
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              119.85107421875,
+              128.57177734375,
+              127.08154296875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              123.9443359375,
+              129.16162109375,
+              127.30810546875
+            ]
+          }
+        },
+        {
+          "trial": "pair-6-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28247651985,
+            "upper": 28247651985
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              120.51806640625,
+              129.1083984375,
+              127.23876953125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              119.92529296875,
+              128.7333984375,
+              127.12939453125
+            ]
+          }
+        },
+        {
+          "trial": "pair-7-brave",
+          "exit": 1,
+          "pixels_exact": false,
+          "content_exact": true,
+          "instructions": {
+            "lower": 18068277368,
+            "upper": 18089545860
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": "Captured document differs from its unchanged pixel reference",
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              133.7529296875,
+              131.06103515625,
+              128.03173828125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              131.24365234375,
+              130.62060546875,
+              127.92626953125
+            ]
+          }
+        },
+        {
+          "trial": "pair-7-control",
+          "exit": 1,
+          "pixels_exact": null,
+          "content_exact": null,
+          "instructions": null,
+          "ownership": null,
+          "kernel_exit": null,
+          "cleanup_kernel_exit": 15,
+          "error": "A private browser helper is outside its resource coalition",
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              125.95068359375,
+              129.49072265625,
+              127.43505859375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              125.95068359375,
+              129.49072265625,
+              127.43505859375
+            ]
+          }
+        },
+        {
+          "trial": "pair-7-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 25461242145,
+            "upper": 25461242145
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              125.95068359375,
+              129.49072265625,
+              127.43505859375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              133.7529296875,
+              131.06103515625,
+              128.03173828125
+            ]
+          }
+        }
+      ],
+      "summary": {
+        "cross_browser_pixels": {
+          "actual": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/cohort101/cohort-101/cross-browser.diff.png",
+          "different_pixels": 2602001,
+          "exact": false,
+          "expected": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/cohort101/cohort-101/cross-browser.diff.png\n"
+        },
+        "error": "Every Vox capture needs endpoint-matched live coalition ownership",
+        "pairs": 7,
+        "passed": false
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/cohort-with-host.py",
+          "--output",
+          "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/cohort101/cohort-101",
+          "--repeat",
+          "7",
+          "--control-vox-app",
+          "Build/v/Vox.app",
+          "--control-disable-native-callback-call",
+          "--archive",
+          "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/fixture/clock-archive-v3",
+          "--memory-guard-registry",
+          "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/cohort101/cohort101-pids.json",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--expected-vox",
+          "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/fixture/reference-complete/pair-1-vox/document.png",
+          "--expected-brave",
+          "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/fixture/reference-complete/pair-1-brave/document.png",
+          "--preserve-inputs",
+          "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+          "--retain-logical-paint-snapping",
+          "--retain-css-layout-for-svg"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "74239": "Thu Nov  5 06:56:07 2026    ",
+          "74249": "Thu Nov  5 06:56:07 2026    ",
+          "76197": "Thu Nov  5 06:56:25 2026    ",
+          "76215": "Thu Nov  5 06:56:25 2026    ",
+          "79356": "Thu Nov  5 06:56:49 2026    ",
+          "79366": "Thu Nov  5 06:56:49 2026    ",
+          "83295": "Thu Nov  5 06:57:06 2026    ",
+          "83304": "Thu Nov  5 06:57:06 2026    ",
+          "87239": "Thu Nov  5 06:57:24 2026    ",
+          "87247": "Thu Nov  5 06:57:24 2026    ",
+          "89064": "Thu Nov  5 06:57:41 2026    ",
+          "89068": "Thu Nov  5 06:57:41 2026    ",
+          "91007": "Thu Nov  5 06:57:59 2026    ",
+          "91013": "Thu Nov  5 06:57:59 2026    ",
+          "91045": "Thu Nov  5 06:58:00 2026    ",
+          "91046": "Thu Nov  5 06:58:00 2026    ",
+          "91052": "Thu Nov  5 06:58:00 2026    ",
+          "91171": "Thu Nov  5 06:58:01 2026    ",
+          "91172": "Thu Nov  5 06:58:01 2026    ",
+          "91245": "Thu Nov  5 06:58:01 2026    ",
+          "93026": "Thu Nov  5 06:58:15 2026    ",
+          "93035": "Thu Nov  5 06:58:15 2026    ",
+          "93078": "Thu Nov  5 06:58:16 2026    ",
+          "93079": "Thu Nov  5 06:58:16 2026    ",
+          "93086": "Thu Nov  5 06:58:16 2026    ",
+          "95276": "Thu Nov  5 06:58:34 2026    ",
+          "95281": "Thu Nov  5 06:58:34 2026    ",
+          "97743": "Thu Nov  5 06:58:54 2026    ",
+          "97752": "Thu Nov  5 06:58:54 2026    ",
+          "99883": "Thu Nov  5 06:59:12 2026    ",
+          "99890": "Thu Nov  5 06:59:12 2026    ",
+          "2294": "Thu Nov  5 06:59:29 2026    ",
+          "2306": "Thu Nov  5 06:59:29 2026    ",
+          "4590": "Thu Nov  5 06:59:49 2026    ",
+          "4602": "Thu Nov  5 06:59:49 2026    ",
+          "4643": "Thu Nov  5 06:59:49 2026    ",
+          "4646": "Thu Nov  5 06:59:49 2026    ",
+          "4651": "Thu Nov  5 06:59:49 2026    ",
+          "8083": "Thu Nov  5 07:00:08 2026    ",
+          "8096": "Thu Nov  5 07:00:09 2026    ",
+          "8131": "Thu Nov  5 07:00:09 2026    ",
+          "8133": "Thu Nov  5 07:00:09 2026    ",
+          "8137": "Thu Nov  5 07:00:09 2026    ",
+          "9938": "Thu Nov  5 07:00:24 2026    ",
+          "9943": "Thu Nov  5 07:00:24 2026    ",
+          "11976": "Thu Nov  5 07:00:39 2026    ",
+          "11980": "Thu Nov  5 07:00:39 2026    ",
+          "13714": "Thu Nov  5 07:00:54 2026    ",
+          "13724": "Thu Nov  5 07:00:54 2026    ",
+          "15548": "Thu Nov  5 07:01:09 2026    ",
+          "15556": "Thu Nov  5 07:01:09 2026    ",
+          "17425": "Thu Nov  5 07:01:24 2026    ",
+          "17438": "Thu Nov  5 07:01:24 2026    ",
+          "17471": "Thu Nov  5 07:01:24 2026    ",
+          "17472": "Thu Nov  5 07:01:24 2026    ",
+          "17478": "Thu Nov  5 07:01:24 2026    ",
+          "19417": "Thu Nov  5 07:01:38 2026    ",
+          "19426": "Thu Nov  5 07:01:38 2026    ",
+          "19458": "Thu Nov  5 07:01:38 2026    ",
+          "19459": "Thu Nov  5 07:01:38 2026    ",
+          "19467": "Thu Nov  5 07:01:38 2026    ",
+          "21178": "Thu Nov  5 07:01:53 2026    ",
+          "21180": "Thu Nov  5 07:01:53 2026    ",
+          "22900": "Thu Nov  5 07:02:07 2026    ",
+          "22904": "Thu Nov  5 07:02:07 2026    ",
+          "24566": "Thu Nov  5 07:02:22 2026    ",
+          "25001": "Thu Nov  5 07:02:26 2026    ",
+          "25007": "Thu Nov  5 07:02:26 2026    ",
+          "26750": "Thu Nov  5 07:02:40 2026    ",
+          "26759": "Thu Nov  5 07:02:40 2026    ",
+          "26797": "Thu Nov  5 07:02:40 2026    ",
+          "26798": "Thu Nov  5 07:02:40 2026    ",
+          "26806": "Thu Nov  5 07:02:41 2026    ",
+          "26930": "Thu Nov  5 07:02:42 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1647427584,
+        "elapsed_seconds": 433.24482525,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "driver_exit": {
+        "driver_guard_exit": 1
+      },
+      "protocol": {
+        "cohort": 101,
+        "comparison": "Seven alternating matched control/Vox/Brave triples. Same pinned production executable in both Vox arms; only captured Function.call callback invocation disabled in control. Captured Function.call callback invocation has candidate-only native eligibility; original pixels/content,72external scripts and loaded-image closure verified separately. No profiler/probe/dyld tracing in acceptance. Independent capped height-cache compiler tests may overlap; host contention is recorded and variable points earn no robust attribution. Every attempt retained.",
+        "scope": "Exclusive coalition creation through encoded document PNG; startup and native window/target setup included. Vox endpoint before filewrite; Brave includes CDP delivery. Content audits and teardown follow endpoint. Exited aggregate included; GPU/outside services excluded.",
+        "workload": "Unchanged609response replay, original author scripts,1024x768CSS,DPR/capture2,two-second settle after identity/readiness/visibledecode,fresh profiles/caches,OSfilesystem/shadercaches retained. Original per-engine references; historical logical font/paint and CSS SVG fallback common to both Vox arms.",
+        "host_gate": "Record variable host load without a launch-load cap; free disk must cover prospective1111573390byte planning budget inherited from94(3xcomplete93footprint+64MiB),not an allocation upper bound. Identity,ownership,complete content,exact pixels,normal exits required. Strict target10maxVoxUpper<=9minBraveLower.",
+        "engine_commits": [
+          "a3824ecec"
+        ],
+        "control_tool_commits": [
+          "7d94db9b8"
+        ],
+        "runtime_tool_commits": [
+          "cd836ed37",
+          "2b7c4428f"
+        ],
+        "production": {
+          "c_compile": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+            "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+            "mode": "single",
+            "requested": "parallel"
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "8a1e86fa09d39144053b74e3df2b6703701d67d85c2b6dfdae02656fd12a2dcb",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-062348-76f1b0f0/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "5070720038bc938008d9c7d8fd8ccdc3224a943a286af6e9289b19e165c1c740",
+            "dirty": true,
+            "head": "996d37b9258b3ac8128aca3b4632d47aa1e7f880",
+            "repository_sha256": "eb9e321d44f028e57e08403bfb2bed99321574ea5e4e1ff63fe02876d3950bcd"
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "50630249d0cb904f6cc36b5c15bec3d541681a6e5476b9bc7f8de4061ce93d55",
+            "dirty": true,
+            "head": "dbb11957d6318208f0fbc038aafdb5cfefe12659",
+            "repository_sha256": "a40579c447988af84981660dc4de2f1aef339fb0dc94396cc4a5cfdc4de7a3a9"
+          },
+          "request": {
+            "c_mode": "parallel",
+            "head": "996d37b9258b3ac8128aca3b4632d47aa1e7f880",
+            "id": "1f2681bfa234419e9f1b76413fc5cc7e"
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "5070720038bc938008d9c7d8fd8ccdc3224a943a286af6e9289b19e165c1c740",
+            "dirty": true,
+            "head": "996d37b9258b3ac8128aca3b4632d47aa1e7f880",
+            "repository_sha256": "801b536b76aef2fe4b291fdc8cf4a279f178ef8d6f94d289aa981b986c91bba8"
+          }
+        },
+        "build_qualification": "Pinned completed production from separate native/SVG validation. Candidate-only native callback marker and compiled input validation verified. Cohort isolates the callback call path; image and flex paths stay identical in both arms. Prior coarse V-profile is diagnostic only. Cohorts98and99remain retained, including the partial identity failure and the complete valid failing comparison; no exclusions."
+      },
+      "statistics": {
+        "observed_median_vox_upper": 28360337963,
+        "observed_median_brave_lower": 17582118355,
+        "complete_control_pair_numbers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "paired_candidate_median": 28559023141.5,
+        "paired_control_median": 27669811064.5,
+        "paired_median_point_difference": -889212077.0,
+        "paired_differences": [
+          -1804179209,
+          437736728,
+          -1631927180,
+          -570345031,
+          1935470190,
+          -1247386282
+        ],
+        "highest_candidate_lowest_control": 1.0688546628188713,
+        "highest_vox_lowest_brave": 1.6625067979969157,
+        "strict_left": 288593598940,
+        "strict_right": 156230482401
+      },
+      "qualification": "Diagnostic observed counts only: this cohort is invalid. All attempts retained; no samples excluded or pooled across builds."
+    },
+    "102": {
+      "rows": [
+        {
+          "trial": "pair-1-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17663931985,
+            "upper": 17682515366
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              181.03759765625,
+              124.74462890625,
+              102.98388671875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              173.70263671875,
+              125.01806640625,
+              103.33447265625
+            ]
+          }
+        },
+        {
+          "trial": "pair-1-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 29227495872,
+            "upper": 29227495872
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              190.44921875,
+              120.052734375,
+              100.5947265625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              191.08740234375,
+              122.53076171875,
+              101.7021484375
+            ]
+          }
+        },
+        {
+          "trial": "pair-1-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 29392349533,
+            "upper": 29392349533
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              191.16015625,
+              123.68359375,
+              102.23095703125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              184.1748046875,
+              124.40283203125,
+              102.736328125
+            ]
+          }
+        },
+        {
+          "trial": "pair-2-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17607078236,
+            "upper": 17607259755
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              173.70263671875,
+              125.01806640625,
+              103.33447265625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              164.86572265625,
+              124.7353515625,
+              103.4873046875
+            ]
+          }
+        },
+        {
+          "trial": "pair-2-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28910002538,
+            "upper": 28910002538
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              156.140625,
+              124.791015625,
+              103.87939453125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              152.2041015625,
+              124.9921875,
+              104.1953125
+            ]
+          }
+        },
+        {
+          "trial": "pair-2-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 26978441356,
+            "upper": 26978441356
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              164.86572265625,
+              124.7353515625,
+              103.4873046875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              156.140625,
+              124.791015625,
+              103.87939453125
+            ]
+          }
+        },
+        {
+          "trial": "pair-3-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17496430647,
+            "upper": 17508315706
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              140.50634765625,
+              124.85205078125,
+              104.87060546875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              137.9228515625,
+              124.82177734375,
+              105.09326171875
+            ]
+          }
+        },
+        {
+          "trial": "pair-3-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27642211886,
+            "upper": 27642211886
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              152.908203125,
+              125.58984375,
+              104.52783203125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              147.0986328125,
+              125.267578125,
+              104.66064453125
+            ]
+          }
+        },
+        {
+          "trial": "pair-3-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28880421922,
+            "upper": 28880421922
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              147.0986328125,
+              125.267578125,
+              104.66064453125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              141.2470703125,
+              124.7314453125,
+              104.7109375
+            ]
+          }
+        },
+        {
+          "trial": "pair-4-brave",
+          "exit": 1,
+          "pixels_exact": false,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17820157318,
+            "upper": 17834694689
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": "Captured document differs from its unchanged pixel reference",
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              137.9228515625,
+              124.82177734375,
+              105.09326171875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              131.02197265625,
+              123.77392578125,
+              104.951171875
+            ]
+          }
+        },
+        {
+          "trial": "pair-4-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 29583350395,
+            "upper": 29583350395
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              133.39111328125,
+              124.55859375,
+              105.55419921875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              147.75390625,
+              128.1181640625,
+              107.1533203125
+            ]
+          }
+        },
+        {
+          "trial": "pair-4-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 30302430173,
+            "upper": 30302430173
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              129.17822265625,
+              123.51171875,
+              104.96875
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              133.39111328125,
+              124.55859375,
+              105.55419921875
+            ]
+          }
+        },
+        {
+          "trial": "pair-5-brave",
+          "exit": 1,
+          "pixels_exact": false,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17373503574,
+            "upper": 17392747121
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": "Captured document differs from its unchanged pixel reference",
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              152.2822265625,
+              130.73193359375,
+              108.70068359375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              155.7197265625,
+              132.2001953125,
+              109.47998046875
+            ]
+          }
+        },
+        {
+          "trial": "pair-5-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28985315843,
+            "upper": 28985315843
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              147.75390625,
+              128.1181640625,
+              107.1533203125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              149.70361328125,
+              129.5146484375,
+              108.01806640625
+            ]
+          }
+        },
+        {
+          "trial": "pair-5-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 26949762441,
+            "upper": 26949762441
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              149.70361328125,
+              129.5146484375,
+              108.01806640625
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              152.2822265625,
+              130.73193359375,
+              108.70068359375
+            ]
+          }
+        },
+        {
+          "trial": "pair-6-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17486698608,
+            "upper": 17507317150
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              156.14208984375,
+              132.67822265625,
+              109.78173828125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              154.66552734375,
+              133.11962890625,
+              110.20458984375
+            ]
+          }
+        },
+        {
+          "trial": "pair-6-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 26638252756,
+            "upper": 26638252756
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              166.3583984375,
+              136.7685546875,
+              111.90673828125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              170.73388671875,
+              138.16650390625,
+              112.5458984375
+            ]
+          }
+        },
+        {
+          "trial": "pair-6-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 28231685272,
+            "upper": 28231685272
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              154.66552734375,
+              133.11962890625,
+              110.20458984375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              164.64892578125,
+              135.9375,
+              111.47021484375
+            ]
+          }
+        },
+        {
+          "trial": "pair-7-brave",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 17460487714,
+            "upper": 17470657840
+          },
+          "ownership": null,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              174.79541015625,
+              142.208984375,
+              114.89453125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              169.9267578125,
+              141.740234375,
+              114.88916015625
+            ]
+          }
+        },
+        {
+          "trial": "pair-7-control",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 27404687988,
+            "upper": 27404687988
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              170.7548828125,
+              138.71142578125,
+              112.88818359375
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              169.82177734375,
+              139.58740234375,
+              113.501953125
+            ]
+          }
+        },
+        {
+          "trial": "pair-7-vox",
+          "exit": 0,
+          "pixels_exact": true,
+          "content_exact": true,
+          "instructions": {
+            "lower": 29550451947,
+            "upper": 29550451947
+          },
+          "ownership": true,
+          "kernel_exit": 0,
+          "cleanup_kernel_exit": null,
+          "error": null,
+          "host_before": {
+            "cpu_count": 18,
+            "load_average": [
+              169.82177734375,
+              139.58740234375,
+              113.501953125
+            ]
+          },
+          "host_after": {
+            "cpu_count": 18,
+            "load_average": [
+              175.822265625,
+              141.8583984375,
+              114.611328125
+            ]
+          }
+        }
+      ],
+      "summary": {
+        "cross_browser_pixels": {
+          "actual": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-vox/document.png",
+          "diff": "/Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/cohort102/cohort-102/cross-browser.diff.png",
+          "different_pixels": 2602001,
+          "exact": false,
+          "expected": "/Users/alex/code/vox2/Build/bbc-edge-reuse-20261104-2030/fixture/reference-complete/pair-1-brave/document.png",
+          "metrics": "pixels: 3145728\ndifferent_pixels: 2602001 (82.7154%)\ndifference_bounds: 0,0 2048x1536\nmaximum_error_pixel: 1633,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1634,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1635,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1636,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1637,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1638,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1639,598 expected=0,0,0,255 actual=255,255,255,255\nmaximum_error_pixel: 1640,598 expected=0,0,0,255 actual=255,255,255,255\npixels_over_3: 2597091 (82.5593%)\npixels_over_10: 1848307 (58.7561%)\npixels_over_25: 1779752 (56.5768%)\npixels_over_50: 1716097 (54.5533%)\nmaximum_channel_error: 255\nmean_absolute_error: 73.1078\nrmse: 115.8413\ndiff: /Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/cohort102/cohort-102/cross-browser.diff.png\n"
+        },
+        "error": "Every observation must exit successfully and match pixels and full row identity",
+        "pairs": 7,
+        "passed": false
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/cohort-with-host.py",
+          "--output",
+          "/Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/cohort102/cohort-102",
+          "--repeat",
+          "7",
+          "--control-vox-app",
+          "Build/v/Vox.app",
+          "--control-disable-unused-measurement-heights",
+          "--archive",
+          "/Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/fixture/clock-archive-v3",
+          "--memory-guard-registry",
+          "/Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/cohort102/cohort102-pids.json",
+          "--diff-tool",
+          "Build/pixel-tools/pixel_diff",
+          "--expected-vox",
+          "/Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/fixture/reference-complete/pair-1-vox/document.png",
+          "--expected-brave",
+          "/Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/fixture/reference-complete/pair-1-brave/document.png",
+          "--preserve-inputs",
+          "docs/performance/raw/bbc-fresh-fixed-inputs-20261103.tar.gz",
+          "--retain-logical-paint-snapping",
+          "--retain-css-layout-for-svg"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {
+          "47972": "Thu Nov  5 07:25:27 2026    ",
+          "47977": "Thu Nov  5 07:25:27 2026    ",
+          "49078": "Thu Nov  5 07:25:41 2026    ",
+          "49087": "Thu Nov  5 07:25:41 2026    ",
+          "51031": "Thu Nov  5 07:26:01 2026    ",
+          "51038": "Thu Nov  5 07:26:01 2026    ",
+          "52531": "Thu Nov  5 07:26:16 2026    ",
+          "52539": "Thu Nov  5 07:26:16 2026    ",
+          "55383": "Thu Nov  5 07:26:32 2026    ",
+          "55387": "Thu Nov  5 07:26:32 2026    ",
+          "56681": "Thu Nov  5 07:26:47 2026    ",
+          "56685": "Thu Nov  5 07:26:47 2026    ",
+          "57789": "Thu Nov  5 07:27:02 2026    ",
+          "57796": "Thu Nov  5 07:27:02 2026    ",
+          "57824": "Thu Nov  5 07:27:02 2026    ",
+          "57825": "Thu Nov  5 07:27:02 2026    ",
+          "57833": "Thu Nov  5 07:27:02 2026    ",
+          "58938": "Thu Nov  5 07:27:15 2026    ",
+          "58944": "Thu Nov  5 07:27:15 2026    ",
+          "58969": "Thu Nov  5 07:27:15 2026    ",
+          "58971": "Thu Nov  5 07:27:15 2026    ",
+          "58974": "Thu Nov  5 07:27:15 2026    ",
+          "59983": "Thu Nov  5 07:27:26 2026    ",
+          "59985": "Thu Nov  5 07:27:27 2026    ",
+          "61321": "Thu Nov  5 07:27:40 2026    ",
+          "61328": "Thu Nov  5 07:27:40 2026    ",
+          "62536": "Thu Nov  5 07:27:52 2026    ",
+          "62540": "Thu Nov  5 07:27:53 2026    ",
+          "63750": "Thu Nov  5 07:28:05 2026    ",
+          "63752": "Thu Nov  5 07:28:05 2026    ",
+          "64941": "Thu Nov  5 07:28:17 2026    ",
+          "64955": "Thu Nov  5 07:28:17 2026    ",
+          "64984": "Thu Nov  5 07:28:17 2026    ",
+          "64985": "Thu Nov  5 07:28:17 2026    ",
+          "64996": "Thu Nov  5 07:28:17 2026    ",
+          "66359": "Thu Nov  5 07:28:30 2026    ",
+          "66376": "Thu Nov  5 07:28:30 2026    ",
+          "66402": "Thu Nov  5 07:28:30 2026    ",
+          "66403": "Thu Nov  5 07:28:30 2026    ",
+          "66407": "Thu Nov  5 07:28:30 2026    ",
+          "68119": "Thu Nov  5 07:28:42 2026    ",
+          "68128": "Thu Nov  5 07:28:42 2026    ",
+          "69461": "Thu Nov  5 07:28:56 2026    ",
+          "69467": "Thu Nov  5 07:28:56 2026    ",
+          "72069": "Thu Nov  5 07:29:10 2026    ",
+          "72071": "Thu Nov  5 07:29:10 2026    ",
+          "73365": "Thu Nov  5 07:29:24 2026    ",
+          "73369": "Thu Nov  5 07:29:24 2026    ",
+          "74645": "Thu Nov  5 07:29:36 2026    ",
+          "74657": "Thu Nov  5 07:29:36 2026    ",
+          "74692": "Thu Nov  5 07:29:36 2026    ",
+          "74694": "Thu Nov  5 07:29:36 2026    ",
+          "74695": "Thu Nov  5 07:29:36 2026    ",
+          "76023": "Thu Nov  5 07:29:49 2026    ",
+          "76029": "Thu Nov  5 07:29:49 2026    ",
+          "76061": "Thu Nov  5 07:29:49 2026    ",
+          "76062": "Thu Nov  5 07:29:49 2026    ",
+          "76067": "Thu Nov  5 07:29:49 2026    ",
+          "77404": "Thu Nov  5 07:30:01 2026    ",
+          "77407": "Thu Nov  5 07:30:01 2026    ",
+          "78811": "Thu Nov  5 07:30:12 2026    ",
+          "78817": "Thu Nov  5 07:30:12 2026    ",
+          "80455": "Thu Nov  5 07:30:23 2026    ",
+          "80462": "Thu Nov  5 07:30:23 2026    ",
+          "81803": "Thu Nov  5 07:30:34 2026    ",
+          "81808": "Thu Nov  5 07:30:34 2026    ",
+          "83122": "Thu Nov  5 07:30:47 2026    ",
+          "83134": "Thu Nov  5 07:30:47 2026    ",
+          "83164": "Thu Nov  5 07:30:47 2026    ",
+          "83165": "Thu Nov  5 07:30:47 2026    ",
+          "83172": "Thu Nov  5 07:30:47 2026    ",
+          "83248": "Thu Nov  5 07:30:48 2026    ",
+          "83249": "Thu Nov  5 07:30:48 2026    ",
+          "83323": "Thu Nov  5 07:30:48 2026    "
+        },
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1683718144,
+        "elapsed_seconds": 344.766329833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "driver_exit": {
+        "driver_guard_exit": 1
+      },
+      "protocol": {
+        "cohort": 102,
+        "comparison": "Seven alternating matched control/Vox/Brave triples. Same pinned production executable in both Vox arms; only unused numeric measurement height reuse disabled in control. Unused numeric measurement height reuse has candidate-only native eligibility; original pixels/content,72external scripts and loaded-image closure verified separately. No profiler/probe/dyld tracing in acceptance. No own compiler jobs scheduled during this cohort; independent host contention is recorded and variable points earn no robust attribution. Every attempt retained.",
+        "scope": "Exclusive coalition creation through encoded document PNG; startup and native window/target setup included. Vox endpoint before filewrite; Brave includes CDP delivery. Content audits and teardown follow endpoint. Exited aggregate included; GPU/outside services excluded.",
+        "workload": "Unchanged609response replay, original author scripts,1024x768CSS,DPR/capture2,two-second settle after identity/readiness/visibledecode,fresh profiles/caches,OSfilesystem/shadercaches retained. Original per-engine references; historical logical font/paint and CSS SVG fallback common to both Vox arms.",
+        "host_gate": "Record variable host load without a launch-load cap; free disk must cover prospective1111573390byte planning budget inherited from94(3xcomplete93footprint+64MiB),not an allocation upper bound. Identity,ownership,complete content,exact pixels,normal exits required. Strict target10maxVoxUpper<=9minBraveLower.",
+        "engine_commits": [
+          "fff39c3d6"
+        ],
+        "control_tool_commits": [
+          "2d1592da0"
+        ],
+        "runtime_tool_commits": [
+          "cd836ed37",
+          "2b7c4428f"
+        ],
+        "production": {
+          "c_compile": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v",
+            "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/5e9982a5ed41c4c3e606760e21a6e34de840eb9b3505a3e44749949fbb43e1a9/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+            "mode": "single",
+            "requested": "parallel"
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "2f50a29e33c6cd82593177ff220e9f87a44ef95bff6f68660b485b1ed8ee270a",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-070444-b6aa04d6/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "698f5b4b5991881f2a7a73ffd30ca2d988de009028466f70172bdf7002900b19",
+            "dirty": true,
+            "head": "fff39c3d6998898cbd6666e72bad3c15fd75063a",
+            "repository_sha256": "0b72fecda74e0af288376476a23b0b703d8ca042a4c4c7f7b9d61de3729317cf"
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "200c049fb95330f1450bcee291ec0fbbbe6f8cd64b034703fa01b385f1353402",
+            "dirty": true,
+            "head": "de5d186f90ee8d1f482e58927a5c6d9a31559383",
+            "repository_sha256": "f133463ca53ffdbf3bde84f784d69a0db0a6e85dd9f12c8e9685863d788fc658"
+          },
+          "request": {
+            "c_mode": "parallel",
+            "head": "fff39c3d6998898cbd6666e72bad3c15fd75063a",
+            "id": "aebecbc5b62642ab92b98ac0f631bb57"
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "698f5b4b5991881f2a7a73ffd30ca2d988de009028466f70172bdf7002900b19",
+            "dirty": true,
+            "head": "af68bcf86afac0071a40964e3b403d05dd7c964a",
+            "repository_sha256": "0477884939c653716ccb69747270116705edc4c000871db0ec10cc8a3c3ddab1"
+          }
+        },
+        "build_qualification": "Pinned completed production from separate native/SVG validation. Candidate-only unused-height marker and compiled input validation verified. Cohort isolates the unused-height key comparison; callback and image paths stay identical in both arms. Pinned bundle still contains the callback experiment, common to both arms; this run does not validate its source rollback. Prior coarse V-profile is diagnostic only. Cohorts98and99remain retained, including the partial identity failure and the complete valid failing comparison; no exclusions."
+      },
+      "statistics": {
+        "observed_median_vox_upper": 28880421922,
+        "observed_median_brave_lower": 17496430647,
+        "complete_control_pair_numbers": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "paired_candidate_median": 28880421922,
+        "paired_control_median": 28910002538,
+        "paired_median_point_difference": 29580616,
+        "paired_differences": [
+          -164853661,
+          1931561182,
+          -1238210036,
+          -719079778,
+          2035553402,
+          -1593432516,
+          -2145763959
+        ],
+        "highest_candidate_lowest_control": 1.1375532190704467,
+        "highest_vox_lowest_brave": 1.7441749756421352,
+        "strict_left": 303024301730,
+        "strict_right": 156361532166
+      },
+      "qualification": "Diagnostic observed counts only: this cohort is invalid. All attempts retained; no samples excluded or pooled across builds."
+    }
+  },
+  "height_focus": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-height-control",
+        "exit": 0
+      },
+      {
+        "name": "default-cache-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-height-control",
+        "exit": 0
+      },
+      {
+        "name": "none-cache-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-height-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-cache-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+          "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+          "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+          "test_flex_measurement_reuses_unused_root_and_immediate_containing_heights",
+          "test_flex_measurement_preserves_unused_height_proof_rejections",
+          "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+          "test_measurement_grid_array_borrows_remain_independent_across_population",
+          "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+          "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+          "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+          "test_flex_measurement_reuses_unused_root_and_immediate_containing_heights",
+          "test_flex_measurement_preserves_unused_height_proof_rejections",
+          "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+          "test_measurement_grid_array_borrows_remain_independent_across_population",
+          "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+          "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+          "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+          "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+          "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+          "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+          "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+          "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+          "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+          "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+          "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+          "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+          "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+          "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_grid_measurement_revalidates_svg_attributes_before_replay",
+          "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+          "test_grid_measurement_preserves_unused_height_proof_rejections",
+          "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+          "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+          "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+          "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+          "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+          "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+          "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+          "test_flex_measurement_revalidates_svg_attributes_before_replay",
+          "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+          "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+          "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+          "test_flex_measurement_reuses_unused_root_and_immediate_containing_heights",
+          "test_flex_measurement_preserves_unused_height_proof_rejections",
+          "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+          "test_measurement_grid_array_borrows_remain_independent_across_population",
+          "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "efa9559bcd7586babaa3813f2cae113a3118e859523c689d5f865503bf030def",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "f967984ce58e863b1fb03a4e5a0698cff952270cedf629c6af0e675120e37f14",
+      "/Users/alex/code/vox2/layout/measurement_rare_data_lifetime_test.v": "8cfb78169db046a12ed1f3af96d293e5000e947be1385d37b5a66c5c41f51f3e",
+      "/Users/alex/code/vox2/layout/measurement_images.v": "2be46d9507d02f25f394bfd9ca8a890bd608da5033d326a67e664c2ac79cc20a",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "d5f1aecf082ededc5a7c0ac38491955b0dc7c18cb7de5cd9d8da7dbecb24f647",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "4793ffc680283a3c2a205665143778f579ae58dc7286bbb980fc248a960a5e0b",
+      "/Users/alex/code/vox2/layout/retained_block_layout.v": "969728a8c1c1ea70fabe9e0194fd8194e5865e7aed6a6804eda00f27edc95ffc",
+      "/Users/alex/code/vox2/layout/retained_inline_layout.v": "8f82c8793b2c058974e8807f1ed176844bd8dc675c96bcd5155e2d425aa2ccdd",
+      "/Users/alex/code/vox2/layout/special_boxes.v": "7ff33ed2bcaace8a7174d6c1b5d7840a7e32291215b07aeb6ae05c7e42f0ff20",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a"
+    },
+    "unchanged": true,
+    "cases_per_run": 35,
+    "expected_cases": [
+      "test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release",
+      "test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind",
+      "test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached",
+      "test_image_measurements_promote_nested_absolute_geometry_into_final_layout",
+      "test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement",
+      "test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree",
+      "test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached",
+      "test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges",
+      "test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions",
+      "test_committed_grid_reuses_owned_measurement_across_unused_outer_heights",
+      "test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases",
+      "test_committed_grid_preserves_outer_heights_for_dependent_subtrees",
+      "test_grid_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_grid_measurement_rejects_relative_geometry_after_insets_change",
+      "test_grid_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_grid_measurement_revalidates_svg_attributes_before_replay",
+      "test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes",
+      "test_grid_measurement_preserves_unused_height_proof_rejections",
+      "test_flex_measurement_owns_replayed_geometry_after_scratch_release",
+      "test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry",
+      "test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached",
+      "test_flex_measurement_replays_decoded_image_geometry_after_scratch_release",
+      "test_flex_measurement_revalidates_decoded_image_source_and_natural_size",
+      "test_flex_measurement_replays_unshifted_relative_root_and_descendants",
+      "test_flex_measurement_rejects_relative_geometry_after_insets_change",
+      "test_flex_measurement_owns_closed_svg_shapes_across_scratch_release",
+      "test_flex_measurement_revalidates_svg_attributes_before_replay",
+      "test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry",
+      "test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool",
+      "test_committed_flex_preserves_external_heights_for_dependent_descendants",
+      "test_flex_measurement_reuses_unused_root_and_immediate_containing_heights",
+      "test_flex_measurement_preserves_unused_height_proof_rejections",
+      "test_measurement_rare_scalars_keep_independent_snapshots_after_either_owner_changes",
+      "test_measurement_grid_array_borrows_remain_independent_across_population",
+      "test_measurement_empty_reserved_array_borrows_do_not_share_writable_capacity"
+    ]
+  },
+  "height_commits": [
+    "2d1592da0",
+    "fff39c3d6"
+  ],
+  "height_native": [
+    {
+      "arm": "vox",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": true,
+      "runtime_images_pinned": true
+    },
+    {
+      "arm": "control",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": false,
+      "runtime_images_pinned": true
+    }
+  ],
+  "height_source_preflight": {
+    "source": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-070444-b6aa04d6/frozen-compiler-inputs/0-Vox.c.i",
+    "sha256": "ea5a08877f87daf946b63ce8b89a6a953fe13d8412b1c9a575e026523665ff46",
+    "height_policy_call_present": true,
+    "callback_shortcut_present": true,
+    "qualification": "Height reuse only; compiled callback variant common to both arms. No callback rollback validation from a bundle containing that experiment."
+  },
+  "callback_native": [
+    {
+      "arm": "vox",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": true,
+      "runtime_images_pinned": true
+    },
+    {
+      "arm": "control",
+      "passed": true,
+      "exit": 0,
+      "native_exit": 0,
+      "pixels_exact": true,
+      "content_exact": true,
+      "original_external_sources_exact": true,
+      "path_before_png": false,
+      "runtime_images_pinned": true
+    }
+  ],
+  "callback_rollback": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-restored",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-restored",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-restored",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+          "test_native_callback_call_preserves_argument_counts_and_actual_values",
+          "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+          "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+          "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+          "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+          "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+          "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+          "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+          "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+          "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+          "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+          "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+          "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+          "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+          "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+          "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+          "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+          "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+          "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/browserjs/native_callback_call_test.v": "eb68266c03e9e6bce13e32721826f97e569eb5e11751dcd874f3a23d26a40e37",
+      "/Users/alex/code/vox2/browserjs/host_value_function_test.v": "14099b04df0a5e4a66bd818dc5c87205693f5389dbeb93713325229bec8d6f73",
+      "/Users/alex/code/vox2/browserjs/native_forwarding_test.v": "90ea8610b38b0306dbfa4b7c172a2242f9fdf1f0057b1ee088615cdcd7c742be",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_test.v": "5090f7912eac597840cb4f9b0720042a2f39e925f9a6a9d0f4e9094076078dbf",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_order_test.v": "7bb3a225bae0707116294749abaf7e6f4a6af1c27b6d90c160211fae015984cb",
+      "/Users/alex/code/vox2/browserjs/runtime.v": "d007055bb498b4c573e57c307fb10bed6956ba768955ffda363213771fbb4982",
+      "/Users/alex/code/vox2/browserjs/host_value_function_jsc.c.v": "18d709baed3bb30519a7b021f0933de75058a41069d66bd9c760fe0ba062760a",
+      "/Users/alex/code/vox2/browserjs/host_function_darwin.h": "a40f9e479f5dd45ce0bc6aba77de53a7fe4982f676244a62886fc76ccf63fa57",
+      "/Users/alex/code/vox2/browserjs/jsc_abi.h": "b5c14c9e2223ebc86095d03e64408a298be66bb236126cbd0654be0b2faa0302",
+      "/Users/alex/code/vox2/browserjs/microtask_binding_jsc.c.v": "e66af94ca5e4f504f4d01e3458302b29dec8c049e84c54ac49bb33ec6ed767aa",
+      "/Users/alex/code/vox2/browserjs/webidl_callback_jsc.c.v": "c54798c92cda5344055133aa350949265c9719514821d1d665816ef4f2d00605",
+      "/Users/alex/code/vox2/browserjs/native_forwarding_test.h": "9e9721a9f1edf04851de359595f007a05d1dfbb81f7569166a6e8a89e0a19dc6"
+    },
+    "unchanged": true,
+    "cases_per_run": 20,
+    "expected_cases": [
+      "test_native_callback_call_preserves_strict_and_sloppy_primitive_receivers",
+      "test_native_callback_call_preserves_argument_counts_and_actual_values",
+      "test_native_callback_call_keeps_captured_intrinsics_and_ignores_target_call_properties",
+      "test_native_callback_call_preserves_bound_functions_proxies_and_noncallable_errors",
+      "test_native_callback_call_preserves_thrown_values_reentry_and_promise_order",
+      "test_raw_javascript_host_values_preserve_actual_receiver_chunks_symbols_functions_and_cycles",
+      "test_raw_javascript_callback_preserves_strict_primitive_this_and_actual_thrown_value",
+      "test_actual_javascript_promise_capability_remains_pending_adopts_thenables_and_keeps_identity",
+      "test_actual_javascript_promise_observation_uses_real_engine_thenable_and_rejection_values",
+      "test_raw_values_remain_rooted_in_actual_gc_and_context_ownership_is_checked",
+      "test_actual_javascript_promise_observation_releases_ephemeral_roots_after_settlement",
+      "test_native_forwarding_keeps_exception_identity_without_an_intermediate_api_exception",
+      "test_native_forwarding_preserves_strict_receivers_success_values_reentry_and_intrinsics",
+      "test_native_forwarding_retains_thrown_values_for_collection_and_rejects_closed_runtimes",
+      "test_microtask_binding_shares_promise_fifo_and_keeps_nested_jobs_asynchronous",
+      "test_microtask_binding_reports_original_exception_continues_and_ignores_results",
+      "test_microtask_binding_webidl_receiver_callback_and_native_function_shape",
+      "test_microtask_binding_uses_private_intrinsics_after_author_mutation",
+      "test_microtask_binding_releases_completed_callback_roots_and_runtime_ownership",
+      "test_native_generic_callback_invokes_when_callable_without_adding_caller_script_gate"
+    ]
+  },
+  "callback_rollback_proof": {
+    "experiment": "a3824ecec",
+    "restored_parent": "a3824ecec^",
+    "sources": {
+      "host_value_function_jsc.c.v": "18d709baed3bb30519a7b021f0933de75058a41069d66bd9c760fe0ba062760a",
+      "runtime.v": "d007055bb498b4c573e57c307fb10bed6956ba768955ffda363213771fbb4982",
+      "jsc_abi.h": "b5c14c9e2223ebc86095d03e64408a298be66bb236126cbd0654be0b2faa0302",
+      "native_forwarding_test.h": "9e9721a9f1edf04851de359595f007a05d1dfbb81f7569166a6e8a89e0a19dc6"
+    },
+    "new_semantic_tests_retained": true,
+    "reason": "Cohort101invalid and six complete matched pairs do not establish BBC savings; no causal regression attribution under contention."
+  },
+  "callback_rollback_commit": "de5d186f9",
+  "rollback_native_pending": true,
+  "tool_tests": {
+    "passed": 323,
+    "guard": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools",
+        "-p",
+        "*instructions_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 68829184,
+      "elapsed_seconds": 9.159218125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "broader": {
+    "default": {
+      "entered": 532,
+      "unique": 532,
+      "failed_jobs": [
+        {
+          "job": "default-all",
+          "log": "BBC_BROAD_ENTER test_block_width_auto\nBBC_BROAD_ENTER test_block_width_definite_auto_margins\nBBC_BROAD_ENTER test_block_width_percentage\nBBC_BROAD_ENTER test_block_flow_vertical_layout\nBBC_BROAD_ENTER test_width_min_max_clamp\nBBC_BROAD_ENTER test_height_min_max_clamp\nBBC_BROAD_ENTER test_adjacent_margin_collapse\nBBC_BROAD_ENTER test_trailing_collapsed_margin_does_not_replace_the_last_child_margin\n/Users/alex/code/vox2/layout/bbc_unused_heights_broad_test.v:246: fn test_trailing_collapsed_margin_does_not_replace_the_last_child_margin\n   > assert html_used.content_height().to_double() == 60.0\n     Left value (len: 4): `40.0`\n    Right value (len: 4): `60.0`\n\nBBC_BROAD_ENTER test_parent_child_margin_collapse\nBBC_BROAD_ENTER test_percentage_height\nBBC_BROAD_ENTER test_percentage_height_indefinite_containing_block\nBBC_BROAD_ENTER test_chromium_hacker_news_controls_match_brave_intrinsic_sizes\nBBC_BROAD_ENTER test_chromium_control_theme_preserves_author_borders_and_backgrounds\nBBC_BROAD_ENTER test_chromium_textarea_intrinsic_width_rounds_after_device_projection\nBBC_BROAD_ENTER test_chromium_definite_flex_basis_keeps_its_main_size_after_cross_axis_constraints\nBBC_BROAD_ENTER test_chromium_grid_flex_preserves_float_factor_subtraction_when_freezing\nBBC_BROAD_ENTER test_chromium_grid_flex_carries_fractional_layout_units_to_later_tracks\nBBC_BROAD_ENTER test_chromium_grid_flex_uses_the_same_rounding_for_columns_and_rows\nBBC_BROAD_ENTER test_chromium_inline_block_propagates_a_nested_block_flex_first_baseline\nBBC_BROAD_ENTER test_chromium_middle_alignment_retains_odd_subpixels_in_the_box_height\nBBC_BROAD_ENTER test_chromium_middle_inline_text_does_not_export_its_face_baseline_to_the_parent_line\nBBC_BROAD_ENTER test_chromium_middle_atomic_boxes_do_not_raise_the_line_by_their_internal_baseline\nBBC_BROAD_ENTER test_text_control_baseline_ignores_editor_overflow_under_chromium_policy\n/Users/alex/code/vox2/layout/bbc_unused_heights_broad_test.v:672: fn test_text_control_baseline_ignores_editor_overflow_under_chromium_policy\n   > assert text_control_baseline(true) == 13\n     Left value (len: 4): `13.5`\n    Right value (len: 2): `13`\n\nBBC_BROAD_ENTER test_chromium_toggle_controls_align_their_border_box_with_the_baseline\n/Users/alex/code/vox2/layout/bbc_unused_heights_broad_test.v:698: fn test_chromium_toggle_controls_align_their_border_box_with_the_baseline\n   > assert toggle_control_baseline(true, 'radio') == toggle_control_baseline(false, 'radio') + 3\n     Left value (len: 4): `16.0`\n    Right value (len: 4): `15.0`\n\nBBC_BROAD_ENTER test_definite_preferred_width_excludes_overflow_and_preserves_outer_edges\nBBC_BROAD_ENTER test_definite_intrinsic_preference_keeps_minimum_precedence_and_zero_content_floor\nBBC_BROAD_ENTER test_cyclic_percentage_preference_still_measures_content_with_definite_ancestor_basis\nBBC_BROAD_ENTER test_definite_preference_still_measures_intrinsic_minimum_and_maximum\nBBC_BROAD_ENTER test_geometry_workspaces_retire_while_used_values_remain_document_owned\nBBC_BROAD_ENTER test_native_geometry_survives_retired_workspaces_for_text_grid_tables_and_svg\nBBC_BROAD_ENTER test_layout_grid_data_defaults_and_empty_updates_do_not_allocate_payloads\nlayout_node_bytes=336 managed_allocation_bytes=352 grid_payload_bytes=200\nBBC_BROAD_ENTER test_layout_grid_data_replacement_preserves_value_copies_and_live_aliases\nBBC_BROAD_ENTER test_layout_grid_data_keeps_existing_nested_array_alias_semantics\nBBC_BROAD_ENTER test_layout_grid_data_retains_subgrid_and_line_name_only_records\nBBC_BROAD_ENTER test_dom_grid_bridge_resolved_tracks_follow_live_layout_and_keep_value_snapshots\nBBC_BROAD_ENTER test_dom_grid_bridge_reusing_a_placeholder_discards_retired_grid_payload\nBBC_BROAD_ENTER test_dominant_baseline_offset_matches_font_metrics\nBBC_BROAD_ENTER test_dominant_baseline_auto_resolves_from_writing_mode\nBBC_BROAD_ENTER test_explicit_dominant_baseline_overrides_writing_mode\nBBC_BROAD_ENTER test_all_frozen_empty_line_keeps_an_empty_owned_result\nBBC_BROAD_ENTER test_all_frozen_zero_factors_and_constraint_freezing_keep_hypotheticals\nBBC_BROAD_ENTER test_all_frozen_targets_own_storage_and_leave_source_arrays_unchanged\nBBC_BROAD_ENTER test_flex_work_inside_retained_inline_construction_retires_its_workspace\nBBC_BROAD_ENTER test_flex_does_not_shorten_an_existing_workspace_or_intrinsic_probe\nBBC_BROAD_ENTER test_inline_flex_rows_columns_and_nested_grid_remain_paintable_after_reflow\nBBC_BROAD_ENTER test_flex_measurement_owns_replayed_geometry_after_scratch_release\nBBC_BROAD_ENTER test_flex_measurement_revalidates_text_style_fonts_tree_and_geometry\nBBC_BROAD_ENTER test_flex_measurement_keeps_unpooled_and_specialized_layout_uncached\nBBC_BROAD_ENTER test_flex_measurement_replays_decoded_image_geometry_after_scratch_release\nBBC_BROAD_ENTER test_flex_measurement_revalidates_decoded_image_source_and_natural_size\nBBC_BROAD_ENTER test_flex_measurement_replays_unshifted_relative_root_and_descendants\nBBC_BROAD_ENTER test_flex_measurement_rejects_relative_geometry_after_insets_change\nBBC_BROAD_ENTER test_flex_measurement_owns_closed_svg_shapes_across_scratch_release\nBBC_BROAD_ENTER test_flex_measurement_revalidates_svg_attributes_before_replay\nBBC_BROAD_ENTER test_committed_flex_consumes_owned_measurement_without_replacing_caller_geometry\nBBC_BROAD_ENTER test_committed_flex_misses_validate_measurement_inputs_without_mutating_the_pool\nBBC_BROAD_ENTER test_committed_flex_preserves_external_heights_for_dependent_descendants\nBBC_BROAD_ENTER test_flex_measurement_reuses_unused_root_and_immediate_containing_heights\nBBC_BROAD_ENTER test_flex_measurement_preserves_unused_height_proof_rejections\nBBC_BROAD_ENTER test_deep_auto_height_flex_layout_reuses_unchanged_item_geometry\nBBC_BROAD_ENTER test_flex_relayout_keeps_percentage_height_dependencies_through_wrappers\nBBC_BROAD_ENTER test_flex_relayout_still_lays_out_items_when_stretch_changes_their_height\nBBC_BROAD_ENTER test_block_flex_resolves_its_automatic_height_in_its_own_layout\nBBC_BROAD_ENTER test_deep_auto_height_column_flex_keeps_natural_geometry\nBBC_BROAD_ENTER test_column_flex_promotes_unchanged_height_for_percentage_descendants\nBBC_BROAD_ENTER test_column_flex_reruns_contents_when_flexing_changes_the_height\nBBC_BROAD_ENTER test_nested_column_flex_reuses_automatic_implicit_grid_rows\nBBC_BROAD_ENTER test_column_flex_keeps_definite_height_relayout_for_percentage_grid_rows\nBBC_BROAD_ENTER test_column_flex_reruns_automatic_grid_rows_when_height_changes\nBBC_BROAD_ENTER test_flex_formatting_context_grows_and_aligns_items\nBBC_BROAD_ENTER test_flex_intrinsic_height_accounts_for_line_clamping_and_nested_baselines\nBBC_BROAD_ENTER test_button_content_percentages_resolve_against_the_button\nBBC_BROAD_ENTER test_button_content_height_uses_clamped_border_box_height\nBBC_BROAD_ENTER test_button_layout_establishes_a_block_formatting_context\nBBC_BROAD_ENTER test_empty_button_content_is_skipped_by_flex_layout\nBBC_BROAD_ENTER test_inline_grid_whitespace_runs_do_not_acquire_used_values\nBBC_BROAD_ENTER test_fractional_calculated_flex_basis_does_not_wrap_the_third_item\nBBC_BROAD_ENTER test_large_percentage_width_retains_precision_before_saturation\nBBC_BROAD_ENTER test_inline_math_uses_completed_run_height_without_enclosing_margin\nBBC_BROAD_ENTER test_auto_width_text_input_stretches_in_nested_column_flex\nBBC_BROAD_ENTER test_text_input_padding_belongs_to_the_host_box\nBBC_BROAD_ENTER test_visible_input_placeholder_overlays_the_full_width_editor\nBBC_BROAD_ENTER test_live_input_placeholder_overlays_after_attribute_mutation\nBBC_BROAD_ENTER test_number_input_stepper_icons_keep_computed_path_geometry\nBBC_BROAD_ENTER test_native_input_min_max_height_clamps_are_definite_for_shadow_content\nBBC_BROAD_ENTER test_visible_textarea_placeholder_overlays_the_full_width_editor\nBBC_BROAD_ENTER test_text_input_auto_height_uses_selected_font_metrics\nBBC_BROAD_ENTER test_multiline_flex_align_content_distributes_cross_axis_space\nBBC_BROAD_ENTER test_flex_min_height_stretches_lines_before_centering_items\nBBC_BROAD_ENTER test_wrap_reverse_stretch_places_flex_lines_from_the_far_cross_edge\nBBC_BROAD_ENTER test_flex_auto_placement_uses_bucketed_order_modified_document_order\nBBC_BROAD_ENTER test_reverse_direction_sorts_order_keys_descending\nBBC_BROAD_ENTER test_rtl_row_counts_as_the_reverse_direction_for_order_keys\nBBC_BROAD_ENTER test_single_line_column_flex_swaps_cross_edges_for_wrap_reverse\nBBC_BROAD_ENTER test_rtl_and_wrap_reverse_cancel_each_other_on_the_column_cross_axis\nBBC_BROAD_ENTER test_indefinite_column_flex_uses_the_intrinsic_main_size_algorithm\nBBC_BROAD_ENTER test_indefinite_column_flex_intrinsic_main_size_counts_gaps_and_edges\nBBC_BROAD_ENTER test_wrapping_container_sizes_its_only_line_to_its_items\nBBC_BROAD_ENTER test_nowrap_container_still_stretches_its_line_to_the_definite_cross_size\nBBC_BROAD_ENTER test_negative_align_content_free_space_falls_back_to_center\nBBC_BROAD_ENTER test_only_normal_alignment_follows_a_wrap_reversed_cross_axis\nBBC_BROAD_ENTER test_column_cross_alignment_ignores_the_inline_direction\nBBC_BROAD_ENTER test_flex_percentage_gaps_resolve_against_their_axis_inner_size\nBBC_BROAD_ENTER test_automatic_flex_cross_size_uses_used_inner_size_for_percentage_gap\nBBC_BROAD_ENTER test_wrap_reverse_swaps_align_content_cross_start_and_end\nBBC_BROAD_ENTER test_row_flex_auto_margins_absorb_main_and_cross_axis_space\nBBC_BROAD_ENTER test_column_flex_auto_margins_absorb_main_and_cross_axis_space\nBBC_BROAD_ENTER test_row_reverse_places_flex_start_at_reversed_main_edge\nBBC_BROAD_ENTER test_row_flex_main_sizes_use_content_box_targets_for_border_box_items\nBBC_BROAD_ENTER test_flex_main_axis_minimum_clamps_border_box_target\nBBC_BROAD_ENTER test_row_flex_automatic_minimum_size_is_content_based\nBBC_BROAD_ENTER test_flex_automatic_minimum_size_is_capped_by_preferred_and_maximum_sizes\nBBC_BROAD_ENTER test_flex_length_resolution_redistributes_minimum_violations\nBBC_BROAD_ENTER test_flex_factors_below_one_leave_part_of_free_space_unfilled\nBBC_BROAD_ENTER test_definite_single_line_flex_skips_automatic_minimum_intrinsic_layout\nBBC_BROAD_ENTER test_definite_item_basis_skips_redundant_automatic_minimum_intrinsic_layout\nBBC_BROAD_ENTER test_per_item_skipped_minimum_is_restored_for_flex_violations\nBBC_BROAD_ENTER test_skipped_hypothetical_minimum_is_restored_for_flex_violations\nBBC_BROAD_ENTER test_flex_wrap_collects_lines_using_outer_hypothetical_sizes\nBBC_BROAD_ENTER test_column_flex_automatic_minimum_size_is_content_based\nBBC_BROAD_ENTER test_nested_flex_with_parent_resolved_size_still_runs_intrinsic_relayout\nBBC_BROAD_ENTER test_nested_grid_with_parent_resolved_size_skips_intrinsic_relayout\nBBC_BROAD_ENTER test_flex_automatic_minimum_uses_transferred_aspect_ratio_suggestion\nBBC_BROAD_ENTER test_auto_height_row_flex_ignores_unresolved_percentage_min_height_for_ratio_transfer\nBBC_BROAD_ENTER test_intrinsic_column_flex_width_does_not_create_a_cyclic_percentage_minimum_basis\nBBC_BROAD_ENTER test_flex_basis_intrinsic_sizing_keywords_choose_their_matching_contribution\nBBC_BROAD_ENTER test_svg_partial_intrinsic_height_sets_its_max_content_width\nBBC_BROAD_ENTER test_ratio_only_svg_cyclic_percentage_uses_replaced_max_content_fallback\nBBC_BROAD_ENTER test_ratio_only_replaced_max_content_transfers_constraints\nBBC_BROAD_ENTER test_column_flex_intrinsic_cross_size_keeps_cyclic_percentage_minimum_indefinite\nBBC_BROAD_ENTER test_wrapped_column_flex_max_content_cross_size_sums_flex_lines\nBBC_BROAD_ENTER test_abspos_max_content_width_sums_adjacent_floats\nBBC_BROAD_ENTER test_font_relative_width_uses_selected_face_metrics\nBBC_BROAD_ENTER test_flex_content_basis_uses_definite_cross_size_and_aspect_ratio\nBBC_BROAD_ENTER test_anchor_size_flex_basis_is_unresolvable_in_flex_formatting_context\nBBC_BROAD_ENTER test_column_flex_base_size_is_adjusted_through_natural_aspect_ratio\nBBC_BROAD_ENTER test_row_flex_baseline_alignment_uses_each_items_last_line_baseline\nBBC_BROAD_ENTER test_inline_flex_baseline_uses_its_wrapped_childs_first_line\nBBC_BROAD_ENTER test_intrinsic_inline_flex_resolves_auto_height_before_alignment_and_caches_baseline\nBBC_BROAD_ENTER test_overflow_clip_inline_block_keeps_its_content_baseline\nBBC_BROAD_ENTER test_inline_table_exports_its_first_row_baseline\nBBC_BROAD_ENTER test_table_row_baseline_ignores_middle_aligned_cells\nBBC_BROAD_ENTER test_table_row_grows_to_contain_shifted_baseline_aligned_cell\nBBC_BROAD_ENTER test_relative_insets_resolve_against_the_containing_block_without_changing_flow_offsets\nBBC_BROAD_ENTER test_multicol_used_column_count_and_width_follow_the_upstream_pseudo_algorithm\nBBC_BROAD_ENTER test_column_flex_main_size_uses_content_box_target_for_border_box_item\nBBC_BROAD_ENTER test_column_flex_stretched_cross_size_respects_border_box_max_width\nBBC_BROAD_ENTER test_row_reverse_flex_end_and_space_between_use_reversed_physical_offsets\nBBC_BROAD_ENTER test_column_reverse_places_flex_start_at_reversed_main_edge\nBBC_BROAD_ENTER test_row_reverse_justify_start_remains_physical_inline_start\nBBC_BROAD_ENTER test_rtl_column_flex_item_alignment_names_a_fixed_edge\nBBC_BROAD_ENTER test_wrapping_column_flex_forms_columns_and_stretches_line_cross_sizes\nBBC_BROAD_ENTER test_wrapping_column_flex_applies_column_gap_and_align_content\nBBC_BROAD_ENTER test_reversed_cross_axis_reverses_wrapping_column_flex_line_order\nBBC_BROAD_ENTER test_wrapping_column_reverse_places_each_line_from_bottom_main_edge\nBBC_BROAD_ENTER test_explicit_flex_start_is_not_flipped_within_a_wrap_reversed_line\nBBC_BROAD_ENTER test_intrinsic_width_keywords_relayout_content_under_constraints\nBBC_BROAD_ENTER test_huge_font_size_min_content_measurement_is_clamped_before_shaping\nBBC_BROAD_ENTER test_intrinsic_min_and_max_width_constraints_clamp_used_width\nBBC_BROAD_ENTER test_grid_intrinsic_measurement_does_not_apply_items_own_percentage_min_max_width\nBBC_BROAD_ENTER test_min_content_width_does_not_collapse_at_zero_minimum_descendant\nBBC_BROAD_ENTER test_grid_formatting_context_sizes_fr_tracks_and_gap\nBBC_BROAD_ENTER test_grid_formatting_context_sizes_calculated_fr_tracks\nBBC_BROAD_ENTER test_fr_track_sizing_truncates_like_a_css_pixel_fraction\nBBC_BROAD_ENTER test_auto_fit_collapse_looks_only_at_the_first_cell_of_a_track\nBBC_BROAD_ENTER test_auto_fit_collapse_keeps_a_track_whose_first_cell_is_taken\nBBC_BROAD_ENTER test_grid_max_content_flexible_track_accounts_for_spanning_item\nBBC_BROAD_ENTER test_grid_spanning_item_minimum_grows_flexible_track_before_expansion\nBBC_BROAD_ENTER test_flexible_grid_tracks_honor_intrinsic_minimum_phases\nBBC_BROAD_ENTER test_grid_spanning_intrinsic_distribution_freezes_at_growth_limits\nBBC_BROAD_ENTER test_grid_fixed_minimum_does_not_become_an_intrinsic_base_size\nBBC_BROAD_ENTER test_grid_explicit_item_minimum_contribution_includes_box_edges\nBBC_BROAD_ENTER test_grid_spanning_item_increases_intrinsic_growth_limits\nBBC_BROAD_ENTER test_grid_maximum_width_retries_track_maximization\nBBC_BROAD_ENTER test_grid_definite_available_height_limits_row_maximization\nBBC_BROAD_ENTER test_grid_indefinite_flexible_row_accounts_for_spanning_item\nBBC_BROAD_ENTER test_grid_multispan_flexible_row_uses_zero_automatic_minimum\nBBC_BROAD_ENTER test_grid_intrinsic_flexible_row_uses_limited_min_content_contribution\nBBC_BROAD_ENTER test_grid_percentage_height_items_contribute_auto_sizes_to_rows\nBBC_BROAD_ENTER test_grid_limited_contribution_is_clamped_by_fit_content_row\nBBC_BROAD_ENTER test_grid_percentage_gaps_resolve_against_their_axis_available_size\nBBC_BROAD_ENTER test_grid_auto_placement_expands_repeat_and_accommodates_largest_span\nBBC_BROAD_ENTER test_grid_auto_placement_uses_order_modified_document_order\nBBC_BROAD_ENTER test_grid_occupation_uses_distinct_packed_signed_coordinates\nBBC_BROAD_ENTER test_grid_dense_auto_placement_backfills_earlier_holes\nBBC_BROAD_ENTER test_grid_position_can_be_derived_from_definite_end_line\nBBC_BROAD_ENTER test_grid_auto_fill_repeats_definite_tracks_to_fill_available_width\nBBC_BROAD_ENTER test_grid_auto_fit_collapses_empty_flexible_repeated_tracks\nBBC_BROAD_ENTER test_grid_implicit_tracks_use_grid_auto_column_and_row_sizes\nBBC_BROAD_ENTER test_grid_spanning_items_grow_intrinsic_columns_and_rows\nBBC_BROAD_ENTER test_grid_default_content_alignment_stretches_auto_tracks\nBBC_BROAD_ENTER test_grid_item_with_definite_width_does_not_stretch_to_area\nBBC_BROAD_ENTER test_grid_content_alignment_positions_fixed_tracks_in_definite_container\nBBC_BROAD_ENTER test_grid_space_between_adds_free_space_between_tracks\nBBC_BROAD_ENTER test_grid_negative_and_reversed_line_numbers_resolve_against_explicit_grid\nBBC_BROAD_ENTER test_grid_negative_lines_before_explicit_grid_prepend_implicit_tracks\nBBC_BROAD_ENTER test_grid_start_span_can_create_multiple_implicit_tracks_before_explicit_grid\nBBC_BROAD_ENTER test_grid_named_lines_resolve_authored_start_and_end_names\nBBC_BROAD_ENTER test_grid_template_area_names_create_implicit_start_and_end_lines\nBBC_BROAD_ENTER test_grid_items_inherit_container_alignment_and_allow_self_overrides\nBBC_BROAD_ENTER test_grid_auto_margins_absorb_free_space_before_self_alignment\nBBC_BROAD_ENTER test_grid_normal_alignment_does_not_stretch_replaced_items\nBBC_BROAD_ENTER test_rtl_grid_places_logical_first_column_at_right_and_aligns_from_inline_start\nBBC_BROAD_ENTER test_rtl_grid_content_start_and_end_are_logical_while_left_is_physical\nBBC_BROAD_ENTER test_rtl_absolutely_positioned_grid_child_uses_physical_grid_area_rect\nBBC_BROAD_ENTER test_grid_item_percentages_and_border_box_resolve_against_grid_area\nBBC_BROAD_ENTER test_grid_forced_item_sizes_apply_min_max_with_border_box_sizing\nBBC_BROAD_ENTER test_absolutely_positioned_grid_child_uses_its_grid_area_as_containing_block\nBBC_BROAD_ENTER test_absolutely_positioned_grid_child_auto_insets_apply_self_alignment_in_grid_area\nBBC_BROAD_ENTER test_absolutely_positioned_grid_child_percentages_resolve_against_grid_area\nBBC_BROAD_ENTER test_absolute_descendant_of_grid_item_uses_ancestor_grid_area\nBBC_BROAD_ENTER test_positioned_grid_item_remains_nearer_abspos_containing_block\nBBC_BROAD_ENTER test_abspos_grid_line_at_end_uses_padding_edge_track_and_auto_axis_uses_padding_box\nBBC_BROAD_ENTER test_table_formatting_context_builds_columns_and_rows\nBBC_BROAD_ENTER test_rtl_table_places_logical_first_column_at_right\nBBC_BROAD_ENTER test_rtl_table_cell_spanning_logical_columns_uses_mirrored_range\nBBC_BROAD_ENTER test_fixed_table_cell_border_box_width_is_not_counted_twice\nBBC_BROAD_ENTER test_fixed_table_auto_columns_ignore_cell_padding_and_later_rows\nBBC_BROAD_ENTER test_fixed_table_percentage_cell_adds_content_box_offsets\nBBC_BROAD_ENTER test_fixed_table_cells_shrink_padding_to_stay_within_columns\nBBC_BROAD_ENTER test_fixed_table_cells_shrink_borders_after_padding\nBBC_BROAD_ENTER test_collapsed_table_odd_borders_split_between_table_and_cells\nBBC_BROAD_ENTER test_percentage_collapsed_table_resolves_border_box_from_split_outer_borders\nBBC_BROAD_ENTER test_inline_block_intrinsic_width_includes_anonymous_collapsed_table_outer_border\nBBC_BROAD_ENTER test_collapsed_table_uses_winning_outer_grid_borders\nBBC_BROAD_ENTER test_missing_collapsed_table_cells_take_no_border_share\nBBC_BROAD_ENTER test_table_cell_height_uses_content_box_except_for_border_box_and_quirks\nBBC_BROAD_ENTER test_collapsed_table_ignores_authored_padding\nBBC_BROAD_ENTER test_table_lays_out_first_header_first_and_first_footer_last\nBBC_BROAD_ENTER test_table_row_groups_span_their_rows_across_loose_rows\nBBC_BROAD_ENTER test_table_auto_layout_uses_definite_cell_width_contributions\nBBC_BROAD_ENTER test_table_min_content_measure_does_not_use_the_cells_preferred_width\nBBC_BROAD_ENTER test_constrained_table_column_uses_cell_min_content_for_its_max_measure\nBBC_BROAD_ENTER test_table_cell_margins_do_not_participate_in_grid_measurement_or_positioning\nBBC_BROAD_ENTER test_table_spanning_cell_distributes_its_minimum_width_over_columns\nBBC_BROAD_ENTER test_table_captions_are_laid_out_above_and_below_the_grid\nBBC_BROAD_ENTER test_table_cell_vertical_alignment_distributes_extra_row_height_to_padding\nBBC_BROAD_ENTER test_table_rowspan_zero_matches_upstream_unimplemented_downward_growth\nBBC_BROAD_ENTER test_percentage_table_cell_height_is_applied_during_second_layout_pass\nBBC_BROAD_ENTER test_percentage_table_cell_alignment_retains_signed_row_difference\nBBC_BROAD_ENTER test_collapsed_table_row_has_zero_height_and_does_not_advance_row_cursor\nBBC_BROAD_ENTER test_collapsed_table_column_has_zero_width_and_no_border_spacing\nBBC_BROAD_ENTER test_collapsed_table_column_hides_only_cells_wholly_inside_it_from_paint\nBBC_BROAD_ENTER test_block_container_vertical_align_does_not_shift_its_own_text\nBBC_BROAD_ENTER test_collapsed_table_column_group_collapses_its_columns\nBBC_BROAD_ENTER test_collapsed_table_row_group_spans_its_positioned_rows\nBBC_BROAD_ENTER test_table_auto_row_height_distribution_truncates_fractional_increment\nBBC_BROAD_ENTER test_percentage_height_rowspan_cell_is_relaid_out_in_second_pass\nBBC_BROAD_ENTER test_table_rowspan_height_uses_intrinsic_row_measure_contributions\nBBC_BROAD_ENTER test_table_cell_min_height_affects_row_measure_but_not_cell_content_height\nBBC_BROAD_ENTER test_table_caption_flows_inside_the_wrapper_with_its_outer_edges\nBBC_BROAD_ENTER test_table_caption_uses_its_content_width_to_lay_out_descendants\nBBC_BROAD_ENTER test_table_wrapper_flow_includes_bottom_captions_and_stretches_the_grid\nBBC_BROAD_ENTER test_table_caption_capmin_includes_outer_edges_and_definite_width\nBBC_BROAD_ENTER test_table_caption_capmin_resolves_intrinsic_and_border_box_widths\nBBC_BROAD_ENTER test_fixed_table_layout_uses_first_row_widths_and_shares_unassigned_space\nBBC_BROAD_ENTER test_fixed_table_equal_distribution_truncates_css_pixel_fractions\nBBC_BROAD_ENTER test_spanning_table_measure_zero_baseline_truncates_fraction\nBBC_BROAD_ENTER test_table_wrapper_and_percentage_table_share_final_width_before_centering\nBBC_BROAD_ENTER test_legacy_center_does_not_shift_an_oversized_table_before_the_containing_block\nBBC_BROAD_ENTER test_empty_table_row_is_retained_when_the_grid_has_no_columns\nBBC_BROAD_ENTER test_empty_table_row_group_uses_current_group_cursor\nBBC_BROAD_ENTER test_fixed_table_layout_distributes_excess_proportionally_when_all_columns_are_sized\nBBC_BROAD_ENTER test_specified_table_row_height_establishes_row_minimum\nBBC_BROAD_ENTER test_table_column_elements_constrain_fixed_layout_column_widths\nBBC_BROAD_ENTER test_table_column_constraints_receive_priority_in_auto_layout_excess_distribution\nBBC_BROAD_ENTER test_table_column_boxes_cover_their_grid_tracks\nBBC_BROAD_ENTER test_table_column_percentage_resolves_against_table_width\nBBC_BROAD_ENTER test_empty_column_group_does_not_create_a_grid_track\nBBC_BROAD_ENTER test_absolute_positioning_solves_inset_equations\nBBC_BROAD_ENTER test_css_anchor_positioning_resolves_names_sides_and_fallbacks\nBBC_BROAD_ENTER test_css_anchor_positioning_resolves_anchor_functions_in_calculations\nBBC_BROAD_ENTER test_span_all_position_area_unites_the_containing_block_and_centers_on_anchor\nBBC_BROAD_ENTER test_css_anchor_positioning_skips_ineligible_later_named_elements\nBBC_BROAD_ENTER test_css_anchor_positioning_resolves_logical_inside_and_percentage_sides\nBBC_BROAD_ENTER test_absolute_positioning_resolves_border_box_sizes_to_content_box\nBBC_BROAD_ENTER test_absolute_inset_size_and_min_max_constraints_respect_box_sizing\nBBC_BROAD_ENTER test_block_abspos_auto_insets_use_normal_flow_static_position\nBBC_BROAD_ENTER test_block_abspos_static_position_includes_pending_collapsed_margin\nBBC_BROAD_ENTER test_inline_abspos_auto_insets_follow_the_line_marker\nBBC_BROAD_ENTER test_baseline_aligned_inline_block_keeps_the_containing_strut_descent\nBBC_BROAD_ENTER test_line_box_baseline_comes_from_final_unshifted_text_fragment\nBBC_BROAD_ENTER test_atomic_inline_applies_calculated_vertical_align_offset\nBBC_BROAD_ENTER test_inline_display_native_inputs_are_atomic_inlines\nBBC_BROAD_ENTER test_text_bottom_atomic_inline_fits_the_parent_content_area\nBBC_BROAD_ENTER test_text_top_and_bottom_use_parent_inline_font_metrics\nBBC_BROAD_ENTER test_top_and_bottom_align_complete_inline_subtrees_to_line_edges\nBBC_BROAD_ENTER test_normal_heading_line_height_uses_selected_font_typo_metrics\nBBC_BROAD_ENTER test_abspos_static_position_is_converted_to_actual_containing_block_space\nBBC_BROAD_ENTER test_abspos_static_position_uses_final_atomic_inline_offset\nBBC_BROAD_ENTER test_flex_abspos_static_position_uses_main_and_cross_alignment\nBBC_BROAD_ENTER test_replaced_element_uses_intrinsic_dimensions\nBBC_BROAD_ENTER test_zero_canvas_dimensions_are_valid_intrinsic_dimensions\nBBC_BROAD_ENTER test_css_aspect_ratio_overrides_and_auto_falls_back_to_replaced_natural_ratio\nBBC_BROAD_ENTER test_ratio_only_content_replacement_uses_definite_width_for_max_content_size\nBBC_BROAD_ENTER test_non_replaced_auto_height_uses_preferred_aspect_ratio\nBBC_BROAD_ENTER test_intrinsic_height_keyword_relays_out_block_children\nBBC_BROAD_ENTER test_intrinsic_height_keywords_stay_indefinite_for_percentage_children\nBBC_BROAD_ENTER test_intrinsic_min_and_max_height_constraints_clamp_used_height\nBBC_BROAD_ENTER test_svg_formatting_context_keeps_geometry_in_viewport_user_units\nBBC_BROAD_ENTER test_svg_text_is_materialized_as_glyph_outline_path_like_cpp\nBBC_BROAD_ENTER test_svg_text_shapes_each_code_point_with_its_computed_font_cascade\nBBC_BROAD_ENTER test_svg_tspans_advance_from_shaped_run_width_instead_of_ink_bounds\nBBC_BROAD_ENTER test_svg_text_path_places_rotated_glyph_outlines_on_first_contour\nBBC_BROAD_ENTER test_svg_text_path_start_offset_resolves_against_first_contour_length\nBBC_BROAD_ENTER test_svg_text_path_text_anchor_adjusts_the_start_offset\nBBC_BROAD_ENTER test_svg_text_path_dom_node_retains_only_the_placed_glyph_geometry\nBBC_BROAD_ENTER test_svg_foreign_object_delegates_its_contents_to_block_layout\nBBC_BROAD_ENTER test_svg_foreign_object_geometry_is_not_a_definite_percentage_height_basis\nBBC_BROAD_ENTER test_svg_resource_attached_to_foreign_object_keeps_its_own_coordinate_space\nBBC_BROAD_ENTER test_svg_computed_geometry_properties_override_presentation_attributes_where_upstream_uses_them\nBBC_BROAD_ENTER test_svg_path_d_uses_the_css_cascade_and_presentation_attribute_syntax\nBBC_BROAD_ENTER test_svg_rect_uses_computed_geometry_and_used_corner_radii\nBBC_BROAD_ENTER test_svg_ellipse_uses_computed_geometry_and_auto_radii\nBBC_BROAD_ENTER test_svg_image_uses_computed_geometry_and_default_sizing\nBBC_BROAD_ENTER test_svg_use_translation_uses_computed_x_and_y\nBBC_BROAD_ENTER test_relative_positioning_does_not_move_following_flow_content\nBBC_BROAD_ENTER test_viewport_text_blocks_preserve_utf16_positions_and_find_in_page_boundaries\nBBC_BROAD_ENTER test_layout_node_stacking_context_rules_match_upstream\nBBC_BROAD_ENTER test_floats_are_positioned_at_available_edges_and_clearance_moves_blocks_below_them\nBBC_BROAD_ENTER test_clearance_moves_past_every_stacked_float\nBBC_BROAD_ENTER test_float_is_lowered_past_an_opposite_side_blocker\nBBC_BROAD_ENTER test_intrinsic_width_ignores_a_float_that_does_not_overlap_the_widest_line\nBBC_BROAD_ENTER test_auto_width_float_is_clamped_by_max_width\nBBC_BROAD_ENTER test_inline_lines_wrap_through_float_intrusion_bands\nBBC_BROAD_ENTER test_overflow_wrap_anywhere_splits_long_run_around_float\nBBC_BROAD_ENTER test_inline_line_uses_float_band_that_starts_midway_through_its_height\nBBC_BROAD_ENTER test_line_break_skips_crossing_opposite_float_bands\nBBC_BROAD_ENTER test_independent_formatting_context_avoids_preceding_float\nBBC_BROAD_ENTER test_container_type_establishes_an_independent_formatting_context\nBBC_BROAD_ENTER test_auto_height_flex_items_make_their_used_cross_size_definite_for_descendants\nBBC_BROAD_ENTER test_aspect_ratio_box_with_definite_height_transfers_through_the_ratio\nBBC_BROAD_ENTER test_aspect_ratio_transfer_applies_to_floats_and_absolute_positioning\nBBC_BROAD_ENTER test_block_level_replaced_border_box_width_is_converted_twice\nBBC_BROAD_ENTER test_inline_block_replaced_border_box_width_is_converted_once\nBBC_BROAD_ENTER test_aspect_ratio_box_with_two_automatic_axes_uses_the_stretch_fit_width\nBBC_BROAD_ENTER test_replaced_size_constraints_use_content_box_space\nBBC_BROAD_ENTER test_specified_axis_clamps_each_axis_through_the_box_sizing_conversion\nBBC_BROAD_ENTER test_replaced_constraints_compare_and_assign_converted_sizes\nBBC_BROAD_ENTER test_replaced_form_control_block_constraints_rerun_intrinsic_sizing\nBBC_BROAD_ENTER test_block_size_is_clamped_before_it_transfers_through_the_ratio\nBBC_BROAD_ENTER test_replaced_intrinsic_width_transfers_from_definite_height\nBBC_BROAD_ENTER test_unresolved_percentage_height_only_transfers_for_replaced_sizing\nBBC_BROAD_ENTER test_floating_border_box_ratio_transfer_converts_the_inline_size_twice\nBBC_BROAD_ENTER test_inline_table_honours_intrinsic_sizing_keywords\nBBC_BROAD_ENTER test_table_fit_content_distinguishes_zero_argument_from_keyword\nBBC_BROAD_ENTER test_over_constrained_block_keeps_the_right_edge_in_rtl\nBBC_BROAD_ENTER test_meter_builds_its_slider_track_and_fill\nBBC_BROAD_ENTER test_absolutely_positioned_boxes_record_their_solved_insets\nBBC_BROAD_ENTER test_split_inline_containing_blocks_include_block_descendants_and_valid_inline_triggers\nBBC_BROAD_ENTER test_inline_containing_block_lookup_crosses_shadow_roots\nBBC_BROAD_ENTER test_flex_fieldsets_apply_layout_to_the_anonymous_content_box\nBBC_BROAD_ENTER test_grid_containers_record_their_used_track_sizes\nBBC_BROAD_ENTER test_size_containment_uses_explicit_intrinsic_inner_sizes\nBBC_BROAD_ENTER test_grid_table_wrappers_use_table_constraints_and_grid_item_properties\nBBC_BROAD_ENTER test_wrapped_inline_blocks_preserve_strut_descent_between_lines\nBBC_BROAD_ENTER test_inline_end_static_position_survives_consecutive_forced_breaks\nBBC_BROAD_ENTER test_list_items_with_independent_formatting_contexts_lay_out_their_markers\nBBC_BROAD_ENTER test_outside_list_marker_aligns_with_the_list_item_first_baseline\nBBC_BROAD_ENTER test_list_item_marker_line_height_floors_only_automatic_heights\nBBC_BROAD_ENTER test_floating_list_item_remeasures_marker_after_fieldset_intrinsic_probe\nBBC_BROAD_ENTER test_inline_abspos_static_position_accounts_for_float_intrusion\nBBC_BROAD_ENTER test_range_input_keeps_intrinsic_inline_size_and_stretches_in_grid\nBBC_BROAD_ENTER test_unsupported_input_types_fall_back_to_text_input_layout\nBBC_BROAD_ENTER test_flex_item_baseline_ignores_vertical_align\nBBC_BROAD_ENTER test_zero_height_flex_and_grid_containers_stop_margin_collapse\nBBC_BROAD_ENTER test_subgrid_inherits_tracks_and_contributes_descendants_to_parent_sizing\nBBC_BROAD_ENTER test_subgrid_inherits_clipped_parent_grid_area_line_names\nBBC_BROAD_ENTER test_interrupting_block_is_laid_out_between_inline_lines\nBBC_BROAD_ENTER test_trailing_interrupting_block_margin_extends_bfc_root_height\nBBC_BROAD_ENTER test_float_after_interrupting_block_consumes_its_bottom_margin\nBBC_BROAD_ENTER test_inline_start_padding_attaches_after_interrupting_block\nBBC_BROAD_ENTER test_line_before_interrupting_block_is_not_justified\nBBC_BROAD_ENTER test_intrinsic_flex_basis_honors_border_box_sizing\nBBC_BROAD_ENTER test_inline_box_geometry_spans_atomic_inline_margin_boxes\nBBC_BROAD_ENTER test_inline_box_geometry_unites_pieces_across_lines\nBBC_BROAD_ENTER test_abspos_static_position_uses_line_marker_after_inline_content\nBBC_BROAD_ENTER test_block_level_abspos_static_position_follows_line_content\nBBC_BROAD_ENTER test_inline_containing_block_spans_atomic_inline_margin_box\nBBC_BROAD_ENTER test_inline_containing_block_inside_table_cell_uses_cell_coordinates\nBBC_BROAD_ENTER test_formatting_context_roots_clear_floats_they_would_overlap\nBBC_BROAD_ENTER test_grid_auto_repeat_floors_zero_tracks_and_collapses_gutters\nBBC_BROAD_ENTER test_grid_auto_repeat_count_subtracts_fixed_template_tracks\nBBC_BROAD_ENTER test_grid_auto_placement_cursor_keeps_the_row_of_spanning_items\nBBC_BROAD_ENTER test_auto_grid_item_block_cache_matches_an_independent_intrinsic_probe\nBBC_BROAD_ENTER test_grid_block_reuse_excludes_constraints_and_tracks_live_content_changes\nBBC_BROAD_ENTER test_flexible_grid_phases_measure_nested_breakable_content_and_live_changes\nBBC_BROAD_ENTER test_flexible_grid_row_contributions_keep_intrinsic_limits_and_scroll_minimums\nBBC_BROAD_ENTER test_unchanged_grid_item_height_preserves_nested_auto_rows_and_live_resizing\nBBC_BROAD_ENTER test_unchanged_grid_item_height_still_resolves_percentage_descendants\nBBC_BROAD_ENTER test_unchanged_grid_item_height_still_resolves_percentage_row_gaps\nBBC_BROAD_ENTER test_changed_grid_item_height_still_realigns_nested_flex_contents\nBBC_BROAD_ENTER test_grid_measurement_reuses_owned_nested_geometry_after_scratch_retirement\nBBC_BROAD_ENTER test_grid_measurement_invalidates_constraints_fonts_text_style_and_tree\nBBC_BROAD_ENTER test_grid_measurement_keeps_external_effects_and_specialized_layout_uncached\nBBC_BROAD_ENTER test_grid_measurement_keys_include_external_ancestor_bases_and_root_edges\nBBC_BROAD_ENTER test_grid_measurement_reuses_resolved_geometry_across_ancestor_intrinsic_questions\nBBC_BROAD_ENTER test_committed_grid_reuses_owned_measurement_across_unused_outer_heights\nBBC_BROAD_ENTER test_committed_grid_misses_preserve_cache_and_validate_inputs_and_consumed_bases\nBBC_BROAD_ENTER test_committed_grid_preserves_outer_heights_for_dependent_subtrees\nBBC_BROAD_ENTER test_grid_measurement_replays_unshifted_relative_root_and_descendants\nBBC_BROAD_ENTER test_grid_measurement_rejects_relative_geometry_after_insets_change\nBBC_BROAD_ENTER test_grid_measurement_owns_closed_svg_shapes_across_scratch_release\nBBC_BROAD_ENTER test_grid_measurement_revalidates_svg_attributes_before_replay\nBBC_BROAD_ENTER test_grid_measurement_reuses_indefinite_stored_heights_but_preserves_definite_sizes\nBBC_BROAD_ENTER test_grid_measurement_preserves_unused_height_proof_rejections\nBBC_BROAD_ENTER test_completed_image_with_a_definite_size_repaints_without_layout\nBBC_BROAD_ENTER test_paint_only_image_frames_replace_shared_pixels_without_changing_old_commands\nBBC_BROAD_ENTER test_completed_image_sized_by_its_contents_needs_layout\nBBC_BROAD_ENTER test_fixed_size_image_with_a_new_source_needs_layout\nBBC_BROAD_ENTER test_positioned_image_source_replacement_keeps_geometry_only_with_the_same_natural_ratio\nBBC_BROAD_ENTER test_positioned_image_repaint_rejects_changed_ratio_and_intrinsic_constraints\nBBC_BROAD_ENTER test_positioned_image_repaint_preserves_pending_attribute_selector_relayout\nBBC_BROAD_ENTER test_retained_inline_text_replaces_glyph_fonts_after_a_live_font_size_change\nBBC_BROAD_ENTER test_retained_inline_text_tracks_font_family_and_inherited_font_changes\nBBC_BROAD_ENTER test_retained_text_chunks_survive_font_generations_only_with_unchanged_faces_and_style\nBBC_BROAD_ENTER test_pending_text_chunks_and_shape_owners_survive_only_unrelated_font_changes\nBBC_BROAD_ENTER test_pending_text_chunks_expire_after_the_selected_face_loads_or_changes_descriptor\nBBC_BROAD_ENTER test_inline_workspace_export_owns_nested_payloads_and_preserves_run_aliases\nBBC_BROAD_ENTER test_closed_inline_workspace_preserves_old_lines_and_intrinsic_cache_owners\nBBC_BROAD_ENTER test_closed_inline_workspace_retires_builders_and_intermediate_shaping_storage\nBBC_BROAD_ENTER test_closed_inline_workspace_matches_uncached_unicode_wrapping_and_ellipsis\nBBC_BROAD_ENTER test_native_inline_workspace_keeps_cached_lines_and_retired_paint_snapshots_readable\nBBC_BROAD_ENTER test_closed_inline_workspace_empty_return_restores_geometry_scope\nBBC_BROAD_ENTER test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires\nBBC_BROAD_ENTER test_inline_measurement_invalidates_text_style_width_font_and_tree_inputs\nBBC_BROAD_ENTER test_inline_measurement_excludes_unpooled_committed_positioned_and_clamped_layout\nBBC_BROAD_ENTER test_inline_measurement_does_not_cache_discarded_whitespace\nBBC_BROAD_ENTER test_committed_inline_consumes_measured_lines_with_document_ownership_and_copy_on_write\nBBC_BROAD_ENTER test_committed_inline_misses_never_populate_or_evict_measurements\nBBC_BROAD_ENTER test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question\nBBC_BROAD_ENTER test_shrink_wrapped_ancestors_apply_child_border_box_maximum_once\nBBC_BROAD_ENTER test_shrink_wrapped_border_box_minimum_and_minimum_precedence\nBBC_BROAD_ENTER test_border_box_intrinsic_maximum_cannot_remove_border_and_padding\nBBC_BROAD_ENTER test_intrinsic_column_keeps_first_pass_text_baseline_before_discarding_lines\nBBC_BROAD_ENTER test_intrinsic_column_still_resolves_percentage_descendants_after_height_promotion\nBBC_BROAD_ENTER test_intrinsic_column_still_lays_out_items_after_changed_flex_targets\nBBC_BROAD_ENTER test_external_seed_alone_copies_the_complete_deep_root_chain\nBBC_BROAD_ENTER test_external_seed_creates_missing_source_ancestors_and_hoisted_blocks\nBBC_BROAD_ENTER test_public_intrinsic_width_and_height_keep_external_percentage_geometry\nBBC_BROAD_ENTER test_intrinsic_seed_retains_external_blocks_with_shared_ancestor_chains\nBBC_BROAD_ENTER test_intrinsic_sizes_survive_unrelated_font_completion_without_changing_geometry\nBBC_BROAD_ENTER test_intrinsic_sizes_expire_when_a_descendant_cascade_was_already_replaced\nBBC_BROAD_ENTER test_intrinsic_sizes_expire_when_an_ancestor_font_supplies_changed_relative_metrics\nBBC_BROAD_ENTER test_intrinsic_sizes_reject_unknown_descendant_font_inputs\nBBC_BROAD_ENTER test_intrinsic_sizes_reject_containing_blocks_outside_the_parent_chain\nBBC_BROAD_ENTER test_intrinsic_sizes_with_unresolved_fonts_retain_original_geometry_until_selected_family_changes\nBBC_BROAD_ENTER test_borrowed_intrinsic_width_matches_full_geometry\nBBC_BROAD_ENTER test_borrowed_runs_merge_without_modifying_source_glyphs\nBBC_BROAD_ENTER test_intrinsic_width_cache_keeps_both_height_axes_absent_without_allocating_reads\nBBC_BROAD_ENTER test_intrinsic_first_height_slot_preserves_none_zero_and_independent_axes\nBBC_BROAD_ENTER test_intrinsic_height_overflow_preserves_distinct_widths_optional_values_and_first_identity\nBBC_BROAD_ENTER test_intrinsic_height_reset_replaces_owner_and_keeps_retained_old_snapshot_after_gc\nBBC_BROAD_ENTER test_intrinsic_height_measurement_uses_cached_zero_and_recomputes_stored_none\nBBC_BROAD_ENTER test_intrinsic_soft_wrap_decisions_match_fully_measured_signed_advances\nBBC_BROAD_ENTER test_intrinsic_overflow_splitting_keeps_the_measured_width\nBBC_BROAD_ENTER test_disposable_intrinsic_lines_recycle_without_losing_earlier_widths\nBBC_BROAD_ENTER test_seed_visits_match_general_hoisted_chains_and_copy_current_source_values\nBBC_BROAD_ENTER test_seed_visits_wrap_clears_old_epochs_before_visiting_again\nBBC_BROAD_ENTER test_seed_visits_nested_measurements_keep_outer_geometry_independent\nBBC_BROAD_ENTER test_seed_visits_mutated_reindexed_and_closed_trees_use_general_fallback\nBBC_BROAD_ENTER test_intrinsic_shape_miss_and_hit_consumers_keep_cached_owner_immutable\nBBC_BROAD_ENTER test_intrinsic_cache_owners_and_published_lines_survive_merging_and_collection\nBBC_BROAD_ENTER test_intrinsic_shape_order_matches_linear_search_and_keeps_equal_keys_stable\nBBC_BROAD_ENTER test_intrinsic_shape_order_handles_clearing_and_rebuilding_the_same_size\nBBC_BROAD_ENTER test_intrinsic_shape_order_preserves_every_shape_key_and_forks_owners\nBBC_BROAD_ENTER test_intrinsic_shape_order_normal_misses_do_not_populate_cache\nBBC_BROAD_ENTER test_disposable_width_matches_complete_intrinsic_layout\nBBC_BROAD_ENTER test_measurement_chunk_pool_is_opt_in_and_preserves_public_unpooled_probe_lifetime\nBBC_BROAD_ENTER test_measurement_chunk_pool_clears_gc_edges_and_restores_complete_slot_defaults\nBBC_BROAD_ENTER test_measurement_chunk_pool_never_lends_live_parent_or_sibling_probe_chunks\nBBC_BROAD_ENTER test_measurement_chunk_pool_has_a_fixed_bound_and_explicitly_closes_at_layout_end\nBBC_BROAD_ENTER test_measurement_chunk_pool_preserves_retained_snapshots_after_probe_reuse_and_close\nBBC_BROAD_ENTER test_measurement_chunk_pool_isolated_passes_do_not_share_chunks_and_closed_arenas_stay_reusable\nBBC_BROAD_ENTER test_image_measurements_own_pending_and_absolute_geometry_after_scratch_release\nBBC_BROAD_ENTER test_image_measurements_recheck_live_requests_sources_sizes_and_provider_kind\nBBC_BROAD_ENTER test_image_measurements_keep_external_containing_blocks_and_fixed_images_uncached\nBBC_BROAD_ENTER test_image_measurements_promote_nested_absolute_geometry_into_final_layout\nBBC_BROAD_ENTER test_native_measurement_scratch_reuses_whole_probes_and_preserves_nested_results\nBBC_BROAD_ENTER test_native_intrinsic_caches_survive_probe_reuse_and_later_layout_passes\nBBC_BROAD_ENTER test_auto_grid_rows_include_a_block_childs_nested_grid_height\nBBC_BROAD_ENTER test_decoded_image_block_layout_survives_an_external_change_and_retains_old_paint\nBBC_BROAD_ENTER test_retained_image_geometry_expires_after_source_and_intrinsic_size_changes\nBBC_BROAD_ENTER test_same_size_image_replacement_paints_current_pixels_without_mutating_old_commands\nBBC_BROAD_ENTER test_unavailable_images_and_other_replaced_elements_reject_block_retention\nBBC_BROAD_ENTER test_retained_independent_flow_reuses_descendants_after_preceding_comment_changes\nBBC_BROAD_ENTER test_retained_independent_flow_rechecks_width_height_inherited_style_and_content\nBBC_BROAD_ENTER test_retained_independent_flow_leaves_specialized_layout_and_float_dependencies_uncached\nBBC_BROAD_ENTER test_retained_independent_flow_keeps_atomic_action_menu_geometry_and_intrinsic_sizes\nBBC_BROAD_ENTER test_retained_independent_flow_observes_changed_available_space_without_tree_rebuilding\nBBC_BROAD_ENTER test_independent_flex_layout_reuses_rows_columns_and_reverse_directions_after_external_movement\nBBC_BROAD_ENTER test_retained_flex_descendants_keep_nested_inline_baselines_and_old_paint_immutable\nBBC_BROAD_ENTER test_retained_flex_layout_rechecks_available_width_and_percentage_height_bases\nBBC_BROAD_ENTER test_retained_flex_layout_rechecks_order_alignment_and_descendant_text_changes\nBBC_BROAD_ENTER test_retained_flex_layout_keeps_positioned_subgrid_and_floating_descendants_uncached\nBBC_BROAD_ENTER test_decoded_raster_image_branches_keep_tree_identity_and_refresh_geometry\nBBC_BROAD_ENTER test_retained_image_tree_source_and_natural_size_changes_keep_current_pixels\nBBC_BROAD_ENTER test_cached_image_tree_rechecks_svg_and_broken_provider_transitions\nBBC_BROAD_ENTER test_broken_css_replacement_and_fixed_images_keep_full_tree_builder\nBBC_BROAD_ENTER test_pending_and_absolute_image_branches_retain_only_structure_across_sibling_mutations\nBBC_BROAD_ENTER test_pending_tree_rechecks_success_svg_and_failure_before_reusing_cached_nodes\nBBC_BROAD_ENTER test_absolute_image_tree_recomputes_containing_blocks_after_resize_and_role_changes\nBBC_BROAD_ENTER test_retained_flow_items_rewrap_in_new_grid_tracks_and_flex_sizes\nBBC_BROAD_ENTER test_retained_flow_items_rebuild_after_parent_role_and_text_changes\nBBC_BROAD_ENTER test_retained_flow_items_drop_old_roles_when_only_the_parent_display_changes\nBBC_BROAD_ENTER test_noop_restyles_preserve_closed_flow_grid_and_flex_layout_trees\nBBC_BROAD_ENTER test_restyled_retained_flow_observes_changed_text_color_width_and_tree_order\nBBC_BROAD_ENTER test_restyled_flow_keeps_replaced_and_generated_descendants_on_the_builder_path\nBBC_BROAD_ENTER test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations\nBBC_BROAD_ENTER test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice\nBBC_BROAD_ENTER test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes\nBBC_BROAD_ENTER test_retained_formatting_trees_keep_replaced_generated_and_subgrid_content_on_the_builder_path\nBBC_BROAD_ENTER test_retained_grid_layout_preserves_tracks_placement_and_baselines_after_movement\nBBC_BROAD_ENTER test_retained_grid_layout_rechecks_available_size_and_percentage_bases\nBBC_BROAD_ENTER test_retained_grid_layout_rechecks_text_order_spans_and_tracks\nBBC_BROAD_ENTER test_retained_grid_layout_keeps_nested_tracks_and_old_paint_immutable\nBBC_BROAD_ENTER test_retained_grid_layout_keeps_subgrid_and_positioned_descendants_on_full_path\nBBC_BROAD_ENTER test_retained_grid_track_vectors_detach_from_cached_and_previous_layouts\nBBC_BROAD_ENTER test_static_svg_parent_grid_reuses_geometry_after_movement_and_keeps_old_paint\nBBC_BROAD_ENTER test_svg_attribute_inputs_reject_path_viewbox_transform_and_namespace_mutations\nBBC_BROAD_ENTER test_static_svg_cache_rechecks_css_geometry_and_parent_size\nBBC_BROAD_ENTER test_svg_resource_instances_text_animation_and_foreign_content_keep_the_full_path\nBBC_BROAD_ENTER test_svg_input_rejects_inserted_nonlayout_animation_children_and_reordered_shapes\nBBC_BROAD_ENTER test_svg_snapshot_bounds_and_css_resource_dependencies_keep_the_full_path\nBBC_BROAD_ENTER test_retained_value_restore_keeps_record_identity_and_rebinds_independent_geometry\nBBC_BROAD_ENTER test_svg_intrinsic_scan_does_not_copy_the_document_tail\nBBC_BROAD_ENTER test_background_intrinsic_dimensions_use_the_retained_svg_resource\nBBC_BROAD_ENTER test_background_intrinsic_optional_dimensions_preserve_ratio_transfer\nBBC_BROAD_ENTER test_svg_path_data_attribute_refreshes_committed_bounds_and_paint_without_rebuilding_the_tree\nBBC_BROAD_ENTER test_svg_css_path_data_changes_relayout_while_fill_changes_only_paint\nBBC_BROAD_ENTER test_intrinsic_grid_rows_count_table_outer_borders_once\ntable grid chromium=true border=1 captions=false authored=false grid=220.421875 card=220.421875 control=220.421875 expected=220.421875\ntable grid chromium=true border=1 captions=false authored=true grid=220.421875 card=220.421875 control=220.421875 expected=220.421875\ntable grid chromium=true border=1 captions=true authored=false grid=260.421875 card=260.421875 control=260.421875 expected=260.421875\ntable grid chromium=true border=1 captions=true authored=true grid=260.421875 card=260.421875 control=260.421875 expected=260.421875\ntable grid chromium=true border=2 captions=false authored=false grid=224.421875 card=224.421875 control=224.421875 expected=224.421875\ntable grid chromium=true border=2 captions=false authored=true grid=224.421875 card=224.421875 control=224.421875 expected=224.421875\ntable grid chromium=true border=2 captions=true authored=false grid=264.421875 card=264.421875 control=264.421875 expected=264.421875\ntable grid chromium=true border=2 captions=true authored=true grid=264.421875 card=264.421875 control=264.421875 expected=264.421875\ntable grid chromium=true border=3 captions=false authored=false grid=228.421875 card=228.421875 control=228.421875 expected=228.421875\ntable grid chromium=true border=3 captions=false authored=true grid=228.421875 card=228.421875 control=228.421875 expected=228.421875\ntable grid chromium=true border=3 captions=true authored=false grid=268.421875 card=268.421875 control=268.421875 expected=268.421875\ntable grid chromium=true border=3 captions=true authored=true grid=268.421875 card=268.421875 control=268.421875 expected=268.421875\ntable grid chromium=false border=1 captions=false authored=false grid=220.421875 card=220.421875 control=220.421875 expected=220.421875\ntable grid chromium=false border=1 captions=false authored=true grid=220.421875 card=220.421875 control=220.421875 expected=220.421875\ntable grid chromium=false border=1 captions=true authored=false grid=260.421875 card=260.421875 control=260.421875 expected=260.421875\ntable grid chromium=false border=1 captions=true authored=true grid=260.421875 card=260.421875 control=260.421875 expected=260.421875\ntable grid chromium=false border=2 captions=false authored=false grid=224.421875 card=224.421875 control=224.421875 expected=224.421875\ntable grid chromium=false border=2 captions=false authored=true grid=224.421875 card=224.421875 control=224.421875 expected=224.421875\ntable grid chromium=false border=2 captions=true authored=false grid=264.421875 card=264.421875 control=264.421875 expected=264.421875\ntable grid chromium=false border=2 captions=true authored=true grid=264.421875 card=264.421875 control=264.421875 expected=264.421875\ntable grid chromium=false border=3 captions=false authored=false grid=228.421875 card=228.421875 control=228.421875 expected=228.421875\ntable grid chromium=false border=3 captions=false authored=true grid=228.421875 card=228.421875 control=228.421875 expected=228.421875\ntable grid chromium=false border=3 captions=true authored=false grid=268.421875 card=268.421875 control=268.421875 expected=268.421875\ntable grid chromium=false border=3 captions=true authored=true grid=268.421875 card=268.421875 control=268.421875 expected=268.421875\nBBC_BROAD_ENTER test_text_input_auto_size_tracks_style_and_size_attribute_changes\n{\"command\": [\"/Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/broad-after-unused-heights/default\"], \"reason\": \"completed\", \"child_exit_code\": 1, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 852803584, \"elapsed_seconds\": 19.672681208, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n"
+        }
+      ]
+    },
+    "none": {
+      "entered": 532,
+      "unique": 532,
+      "failed_jobs": [
+        {
+          "job": "none-1",
+          "log": "BBC_BROAD_ENTER test_height_min_max_clamp\nBBC_BROAD_ENTER test_adjacent_margin_collapse\nBBC_BROAD_ENTER test_trailing_collapsed_margin_does_not_replace_the_last_child_margin\n/Users/alex/code/vox2/layout/bbc_unused_heights_broad_test.v:246: fn test_trailing_collapsed_margin_does_not_replace_the_last_child_margin\n   > assert html_used.content_height().to_double() == 60.0\n     Left value (len: 4): `40.0`\n    Right value (len: 4): `60.0`\n\nBBC_BROAD_ENTER test_parent_child_margin_collapse\nBBC_BROAD_ENTER test_percentage_height\n{\"command\": [\"/Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/broad-after-unused-heights/none\"], \"reason\": \"completed\", \"child_exit_code\": 1, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 6045696, \"elapsed_seconds\": 0.14496900000000001, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n"
+        },
+        {
+          "job": "none-4",
+          "log": "BBC_BROAD_ENTER test_chromium_middle_inline_text_does_not_export_its_face_baseline_to_the_parent_line\nBBC_BROAD_ENTER test_chromium_middle_atomic_boxes_do_not_raise_the_line_by_their_internal_baseline\nBBC_BROAD_ENTER test_text_control_baseline_ignores_editor_overflow_under_chromium_policy\n/Users/alex/code/vox2/layout/bbc_unused_heights_broad_test.v:672: fn test_text_control_baseline_ignores_editor_overflow_under_chromium_policy\n   > assert text_control_baseline(true) == 13\n     Left value (len: 4): `13.5`\n    Right value (len: 2): `13`\n\nBBC_BROAD_ENTER test_chromium_toggle_controls_align_their_border_box_with_the_baseline\n/Users/alex/code/vox2/layout/bbc_unused_heights_broad_test.v:698: fn test_chromium_toggle_controls_align_their_border_box_with_the_baseline\n   > assert toggle_control_baseline(true, 'radio') == toggle_control_baseline(false, 'radio') + 3\n     Left value (len: 4): `16.0`\n    Right value (len: 4): `15.0`\n\nBBC_BROAD_ENTER test_definite_preferred_width_excludes_overflow_and_preserves_outer_edges\n{\"command\": [\"/Users/alex/code/vox2/Build/bbc-unused-heights-20261105-0636/broad-after-unused-heights/none\"], \"reason\": \"completed\", \"child_exit_code\": 1, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 3221225472, \"observed_peak_rss_bytes\": 704512, \"elapsed_seconds\": 0.329664833, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n"
+        }
+      ]
+    }
+  },
+  "broad_summary": {
+    "default": {
+      "entered": 532,
+      "failed_jobs": [
+        "default-all"
+      ]
+    },
+    "none": {
+      "entered": 532,
+      "failed_jobs": [
+        "none-1",
+        "none-4"
+      ]
+    }
+  },
+  "broad_trigger_point": 29580616,
+  "broad_qualification": "All532selected cases in default and noGC. No full-suite pass or cadence reset with retained baseline failures. No prealloc broad claim.",
+  "ownership101": "The raw scan recorded a concurrent HN screenshot Vox24319 and helper24329 under Build/hn-1700-20261105/jit1/trial-2-nojit; both vanished during identity lookup and were conservatively unaccounted private processes. Do not retroactively validate that rejection or weaken ownership.",
+  "hover": "Separate fresh Brave diagnostic: forced hover16elements/image opacity0.8 differs491903pixels from failed101pair7 and original reference, so does not reproduce it. After clearing hover nohovermatches/imageopacity1 remains441differingpixels,max1 from original. Inconclusive; no causal claim, policy/tolerance/reference change or credit.",
+  "history": {
+    "cohorts": 102,
+    "acceptance_attempts": 2209
+  },
+  "target_met": false,
+  "catalog_entry_added": false,
+  "archive": {
+    "path": "docs/performance/raw/bbc-callback-heights-cohorts101-102-20261105.tar.gz",
+    "bytes": 82420838,
+    "sha256": "f128c6124ec4a2892cbed8bf4d890ca29ebba42ac54358897705f02f1d4bcb56",
+    "members": 1169,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793854112.270648
+}
