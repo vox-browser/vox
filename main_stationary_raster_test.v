@@ -3,6 +3,58 @@ module main
 import layout
 import dom
 import painting
+import math
+
+fn test_stationary_offscreen_video_uses_retained_clip_and_transform() {
+	mut video := layout.PaintCommand{
+		kind: 'draw_video'
+		x: 5000
+		y: 5000
+		width: 20
+		height: 20
+		video_frame_source: &painting.VideoFrameSource{}
+		video_paintable: &painting.VideoPaintable{video_rect: painting.Rect{10, 10, 20, 20}}
+	}
+	assert !stationary_document_raster_viewport_eligible([video], 60, 800, 660)
+	video.video_paintable = &painting.VideoPaintable{video_rect: painting.Rect{10, -100, 20, 20}}
+	assert stationary_document_raster_viewport_eligible([video], 60, 800, 660)
+	assert !stationary_document_raster_eligible([video])
+	video.transform = [f64(1), 0, 0, 1, 0, 50]!
+	assert !stationary_document_raster_viewport_eligible([video], 60, 800, 660)
+	video.transform = [f64(1), 0, 0, 1, 0, 0]!
+	video.video_paintable = &painting.VideoPaintable{video_rect: painting.Rect{10, -83, 20, 20}}
+	assert !stationary_document_raster_viewport_eligible([video], 60, 800, 660)
+	video.video_paintable = &painting.VideoPaintable{video_rect: painting.Rect{10, math.nan(), 20, 20}}
+	assert !stationary_document_raster_viewport_eligible([video], 60, 800, 660)
+	video.video_paintable = none
+	assert !stationary_document_raster_viewport_eligible([video], 60, 800, 660)
+}
+
+fn test_stationary_offscreen_video_keeps_resource_inputs_and_other_live_content() {
+	video := layout.PaintCommand{kind: 'draw_video', video_frame_source: &painting.VideoFrameSource{},
+		video_paintable: &painting.VideoPaintable{video_rect: painting.Rect{10, -100, 20, 20}}}
+	assert stationary_document_raster_viewport_eligible([video], 60, 800, 660)
+	for kind in ['begin_css_filter_layer', 'begin_svg_mask_layer', 'begin_background_text_clip'] {
+		assert !stationary_document_raster_viewport_eligible([
+			layout.PaintCommand{kind: kind}, video, layout.PaintCommand{kind: 'end_scope'}], 60, 800, 660)
+	}
+	assert stationary_document_raster_viewport_eligible([
+		layout.PaintCommand{kind: 'begin_css_effect_layer'}, video,
+		layout.PaintCommand{kind: 'end_css_effect_layer'}], 60, 800, 660)
+	// A whole skipped opacity group cannot contribute pixels, including a
+	// nested filter whose source would otherwise require conservative replay.
+	assert stationary_document_raster_viewport_eligible([
+		layout.PaintCommand{kind: 'begin_css_effect_layer', has_clip: true,
+			clip_x: 0, clip_y: -200, clip_width: 100, clip_height: 100},
+		layout.PaintCommand{kind: 'begin_css_filter_layer'}, video,
+		layout.PaintCommand{kind: 'end_css_filter_layer'},
+		layout.PaintCommand{kind: 'end_css_effect_layer'}], 60, 800, 660)
+	for live in [layout.PaintCommand{kind: 'draw_canvas'},
+		layout.PaintCommand{kind: 'draw_nested_document'},
+		layout.PaintCommand{kind: 'paint_nested_display_list', nested_viewport_commands: [video]}] {
+		assert !stationary_document_raster_viewport_eligible([video, live], 60, 800, 660)
+	}
+}
 
 fn test_stationary_raster_skips_initial_frame_without_a_document() {
 	app := BrowserApp{}

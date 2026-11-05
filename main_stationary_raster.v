@@ -6,6 +6,7 @@ import os
 const disable_static_media_raster_reuse = os.getenv('VOX_DISABLE_STATIC_MEDIA_RASTER_REUSE') != ''
 const copy_stationary_raster_commands = os.getenv('VOX_COPY_STATIONARY_RASTER_COMMANDS') != ''
 const stationary_raster_borrow_diagnostics = os.getenv('VOX_STATIONARY_RASTER_BORROW_DIAGNOSTICS') != ''
+const disable_offscreen_video_stationary_reuse = os.getenv('VOX_DISABLE_OFFSCREEN_VIDEO_STATIONARY_REUSE') != ''
 
 __global stationary_raster_borrow_reported bool
 
@@ -62,13 +63,51 @@ fn stationary_document_raster_command_eligible(command &layout.PaintCommand, dep
 	return true
 }
 
+// A native video is clipped to its retained paintable rectangle even when
+// object-fit places its source elsewhere. Use that rectangle, with a rounding
+// fringe, rather than the compatibility command bounds. Resource scopes can
+// move offscreen source pixels into view and must retain their ordinary veto.
+fn stationary_video_is_outside_canvas(command &layout.PaintCommand, page_y f64,
+	width f64, height f64) bool {
+	paintable := command.video_paintable or { return false }
+	rect := paintable.video_rect
+	return layout.paint_leaf_is_outside_canvas(&layout.PaintCommand{
+		kind: 'fill_rect'
+		x: rect.x - 1
+		y: rect.y - 1
+		width: rect.width + 2
+		height: rect.height + 2
+		transform: command.transform
+	}, 0, page_y, width, height)
+}
+
+fn stationary_document_raster_viewport_eligible(commands []layout.PaintCommand,
+	page_y f64, width f64, height f64) bool {
+	mut culling := PaintCanvasCulling{enabled: true}
+	for index in 0 .. commands.len {
+		command := &commands[index]
+		skipped := culling.skip(command, 0, page_y, width, height)
+		if stationary_document_raster_command_eligible(command, 0) { continue }
+		if !disable_static_media_raster_reuse && !disable_offscreen_video_stationary_reuse
+			&& command.kind == 'draw_video' && (skipped || (culling.resource_depth == 0
+				&& stationary_video_is_outside_canvas(command, page_y, width, height))) {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 // Canvas and media can provide new pixels during replay without replacing the
 // display list. Animated native images also veto storage while being painted.
 fn (app &BrowserApp) begin_stationary_document_raster() bool {
 	$if macos {
 		// AppKit can request the first frame before navigation creates a document.
 		if app.document == unsafe { nil } { return false }
-		eligible := stationary_document_raster_eligible(app.paint_commands)
+		eligible := if app.ctx != unsafe { nil } && app.page_zoom == 1 && !app.paint_canvas_culling_disabled {
+			stationary_document_raster_viewport_eligible(app.paint_commands, app.page_top(),
+				app.ctx.width, app.ctx.height)
+		} else { stationary_document_raster_eligible(app.paint_commands) }
 		$if vox_ui2 ? {
 			// UI2 updates separate native views after document replay. Nothing
 			// else draws into this bitmap, so an immutable frame can supply it.
