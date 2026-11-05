@@ -62,7 +62,8 @@ static NSBitmapImageRep *native_presented_capture_bitmap(NSView *root, NSRect bo
         NSPoint zero = [canvas convertPoint:NSMakePoint(0,0) toView:root];
         NSPoint unit = [canvas convertPoint:NSMakePoint(1,1) toView:root];
         if (unit.x - zero.x != 1 || fabs(unit.y - zero.y) != 1) return nil;
-        CGImageRef image = (__bridge CGImageRef)layer.contents;
+        CGImageRef image = native_layer_frame_image(canvas);
+        if (!image) return nil;
         if (CGImageGetBitsPerComponent(image) != 8 || CGImageGetBitsPerPixel(image) != 32
             || CGImageGetBitmapInfo(image) != (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big)) return nil;
         CGColorSpaceRef srgb = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);

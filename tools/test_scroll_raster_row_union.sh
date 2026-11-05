@@ -13,13 +13,13 @@ for mode in ordinary sanitized; do
     ASAN_OPTIONS=detect_leaks=0 python3 "$repo_dir/tools/run_memory_bounded.py" --limit-gib 3 \
         --lock "$output_dir/ranges-$mode.lock" --report "$output_dir/ranges-$mode.json" -- \
         "$output_dir/ranges-$mode"
-    clang -O2 $sanitize_flags -framework Cocoa -framework QuartzCore \
+    clang -O2 $sanitize_flags -framework Cocoa -framework QuartzCore -framework IOSurface \
         "$repo_dir/tools/native_scroll_raster_row_union_test.m" -o "$output_dir/pixels-$mode"
     ASAN_OPTIONS=detect_leaks=0 python3 "$repo_dir/tools/run_memory_bounded.py" --limit-gib 3 \
         --lock "$output_dir/pixels-$mode.lock" --report "$output_dir/pixels-$mode.json" -- \
         "$output_dir/pixels-$mode"
 done
-clang -O2 -framework Cocoa -framework QuartzCore \
+clang -O2 -framework Cocoa -framework QuartzCore -framework IOSurface \
     "$repo_dir/tools/test_scroll_raster_darwin.m" -o "$output_dir/scroll-regression"
 python3 "$repo_dir/tools/run_memory_bounded.py" --limit-gib 3 \
     --lock "$output_dir/scroll-regression.lock" --report "$output_dir/scroll-regression.json" -- \

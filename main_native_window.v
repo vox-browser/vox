@@ -4,6 +4,8 @@ import gg
 import sokol.sapp
 import time
 
+#flag darwin -framework IOSurface
+
 fn C.native_configure_browser_drawables()
 fn C.native_install_browser_layer_presentation()
 fn C.native_set_opaque_browser_frames(i32)

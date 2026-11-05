@@ -3,6 +3,7 @@
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/QuartzCore.h>
 #import <objc/runtime.h>
+#import <IOSurface/IOSurface.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -33,6 +34,7 @@ static uint64_t native_layer_last_prepared_generation;
 static BOOL native_layer_paint_started;
 static char native_layer_frame_generation_key;
 static char native_layer_frame_bounds_key;
+static char native_layer_frame_image_key;
 
 // This surface exists only during one native frame callback. The enclosing
 // document canvas claims it before any pixels are painted; nested canvases
@@ -256,7 +258,10 @@ static CGFloat native_layer_effective_scale(NSView *view) {
 #define VOX_LAYER_FRAME_BUFFERS 3
 typedef struct {
     void *pixels;
-    size_t bytes, width, height;
+    size_t bytes, width, height, pitch;
+    IOSurfaceRef surface;
+    CGDataProviderRef provider;
+    BOOL locked;
     // Atomic: an image's last release can run on another thread. Builtins keep
     // this header usable from Objective-C++ alongside <atomic>.
     int busy;
@@ -270,11 +275,20 @@ static unsigned native_test_frame_buffer_deferred_clears;
 static void native_layer_release_frame_buffer(void *info, const void *data, size_t size) {
     (void)data;
     (void)size;
-    __atomic_store_n(&((VoxLayerFrameBuffer *)info)->busy, 0, __ATOMIC_RELEASE);
+    VoxLayerFrameBuffer *buffer = (VoxLayerFrameBuffer *)info;
+    __atomic_store_n(&buffer->provider, NULL, __ATOMIC_RELEASE);
+    __atomic_store_n(&buffer->busy, 0, __ATOMIC_RELEASE);
+}
+
+static void native_layer_unlock_frame_buffer(VoxLayerFrameBuffer *buffer) {
+    if (buffer && buffer->locked) {
+        IOSurfaceUnlock(buffer->surface, 0, NULL);
+        buffer->locked = NO;
+    }
 }
 
 static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size_t height,
-    BOOL defer_clear) {
+    BOOL defer_clear, BOOL shared) {
     static int disabled = -1;
     if (disabled < 0) {
         const char *value = getenv("VOX_DISABLE_LAYER_FRAME_BUFFER_POOL");
@@ -285,11 +299,20 @@ static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size
     VoxLayerFrameBuffer *spare = NULL;
     for (int index = 0; index < VOX_LAYER_FRAME_BUFFERS; ++index) {
         VoxLayerFrameBuffer *buffer = &native_layer_frame_buffers[index];
+        if (buffer->surface && IOSurfaceIsInUse(buffer->surface)) continue;
         int idle = 0;
         if (buffer->pixels && buffer->width == width && buffer->height == height
+            && (buffer->surface != NULL) == shared
             && __atomic_compare_exchange_n(&buffer->busy, &idle, 1, false,
                 __ATOMIC_ACQUIRE, __ATOMIC_RELAXED)) {
-            if (!defer_clear) memset(buffer->pixels, 0, bytes);
+            if (buffer->surface) {
+                if (IOSurfaceLock(buffer->surface, 0, NULL) != kIOReturnSuccess) {
+                    __atomic_store_n(&buffer->busy, 0, __ATOMIC_RELEASE);
+                    continue;
+                }
+                buffer->locked = YES;
+            }
+            if (!defer_clear) memset(buffer->pixels, 0, buffer->bytes);
 #ifdef VOX_TEST_LAYER_FRAME_BUFFERS
             ++native_test_frame_buffer_reuses;
             if (defer_clear) ++native_test_frame_buffer_deferred_clears;
@@ -301,14 +324,43 @@ static VoxLayerFrameBuffer *native_layer_acquire_frame_buffer(size_t width, size
     int idle = 0;
     if (!spare || !__atomic_compare_exchange_n(&spare->busy, &idle, 1, false,
             __ATOMIC_ACQUIRE, __ATOMIC_RELAXED)) return NULL;
-    if (spare->pixels) munmap(spare->pixels, spare->bytes);
+    if (spare->surface) CFRelease(spare->surface);
+    else if (spare->pixels) munmap(spare->pixels, spare->bytes);
     spare->pixels = NULL;
-    void *pixels = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-    if (pixels == MAP_FAILED) {
+    spare->surface = NULL;
+    spare->locked = NO;
+    spare->pitch = width * 4;
+    if (shared) {
+        NSDictionary *properties = @{
+            (__bridge id)kIOSurfaceWidth: @(width), (__bridge id)kIOSurfaceHeight: @(height),
+            (__bridge id)kIOSurfaceBytesPerElement: @4,
+            (__bridge id)kIOSurfacePixelFormat: @((uint32_t)'RGBA'),
+        };
+        spare->surface = IOSurfaceCreate((__bridge CFDictionaryRef)properties);
+        if (spare->surface) {
+            CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+            CFPropertyListRef profile = color ? CGColorSpaceCopyPropertyList(color) : NULL;
+            BOOL tagged = profile != NULL;
+            if (profile) { IOSurfaceSetValue(spare->surface, kIOSurfaceColorSpace, profile); CFRelease(profile); }
+            if (color) CGColorSpaceRelease(color);
+            if (tagged && IOSurfaceLock(spare->surface, 0, NULL) == kIOReturnSuccess) {
+                spare->locked = YES;
+                spare->pixels = IOSurfaceGetBaseAddress(spare->surface);
+                spare->pitch = IOSurfaceGetBytesPerRow(spare->surface);
+                bytes = spare->pitch * height;
+            }
+        }
+    } else {
+        void *pixels = mmap(NULL, bytes, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+        if (pixels != MAP_FAILED) spare->pixels = pixels;
+    }
+    if (!spare->pixels) {
+        native_layer_unlock_frame_buffer(spare);
+        if (spare->surface) CFRelease(spare->surface);
+        spare->surface = NULL;
         __atomic_store_n(&spare->busy, 0, __ATOMIC_RELEASE);
         return NULL;
     }
-    spare->pixels = pixels;
     spare->bytes = bytes;
     spare->width = width;
     spare->height = height;
@@ -330,14 +382,38 @@ static CGImageRef native_layer_pooled_frame_image(CGContextRef bitmap,
     CGDataProviderRef provider = CGDataProviderCreateWithData(buffer, buffer->pixels,
         buffer->bytes, native_layer_release_frame_buffer);
     if (!provider) return NULL;
+    __atomic_store_n(&buffer->provider, provider, __ATOMIC_RELEASE);
     *owned = YES;
     // Match CGBitmapContextCreateImage's interpolation preference.
-    CGImageRef image = CGImageCreate(buffer->width, buffer->height, 8, 32, buffer->width * 4,
+    CGImageRef image = CGImageCreate(buffer->width, buffer->height, 8, 32, buffer->pitch,
         CGBitmapContextGetColorSpace(bitmap), CGBitmapContextGetBitmapInfo(bitmap), provider,
         NULL, true, kCGRenderingIntentDefault);
     // Without an image the provider's release returns the buffer.
     CGDataProviderRelease(provider);
     return image;
+}
+
+static IOSurfaceRef native_layer_surface_for_image(CGImageRef image) {
+    CGDataProviderRef provider = image ? CGImageGetDataProvider(image) : NULL;
+    if (!provider) return NULL;
+    for (int index = 0; index < VOX_LAYER_FRAME_BUFFERS; ++index) {
+        VoxLayerFrameBuffer *buffer = &native_layer_frame_buffers[index];
+        if (__atomic_load_n(&buffer->provider, __ATOMIC_ACQUIRE) == provider)
+            return buffer->surface;
+    }
+    return NULL;
+}
+
+// The image keeps the presented bytes immutable for capture and stationary
+// snapshots, while Core Animation can consume their shared storage directly.
+static CGImageRef native_layer_frame_image(NSView *view) {
+    id contents = view.layer.contents;
+    if (!contents) return NULL;
+    CFTypeID type = CFGetTypeID((__bridge CFTypeRef)contents);
+    if (type == CGImageGetTypeID()) return (__bridge CGImageRef)contents;
+    if (type != IOSurfaceGetTypeID()) return NULL;
+    CGImageRef image = (__bridge CGImageRef)objc_getAssociatedObject(view, &native_layer_frame_image_key);
+    return image && (__bridge id)native_layer_surface_for_image(image) == contents ? image : NULL;
 }
 
 // The image owns its bitmap storage after the temporary CGContext is released.
@@ -357,14 +433,20 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
     const char *force_clear = getenv("VOX_CLEAR_OPAQUE_FRAME_BUFFERS");
     BOOL defer_clear = native_layer_opaque_frames && native_layer_is_browser_view(view)
         && !(force_clear && *force_clear);
-    VoxLayerFrameBuffer *pooled = native_layer_acquire_frame_buffer(width, height, defer_clear);
+    const char *surface_option = getenv("VOX_IOSURFACE_FRAMES");
+    BOOL shared = surface_option && *surface_option && native_layer_is_browser_view(view)
+        && width * 4 * height <= 64 * 1024 * 1024;
+    VoxLayerFrameBuffer *pooled = native_layer_acquire_frame_buffer(width, height, defer_clear, shared);
     BOOL pooled_owned = NO;
     CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     CGContextRef bitmap = CGBitmapContextCreate(pooled ? pooled->pixels : NULL, width, height,
-        8, width * 4, color, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+        8, pooled ? pooled->pitch : width * 4, color, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(color);
     if (!bitmap) {
-        if (pooled) __atomic_store_n(&pooled->busy, 0, __ATOMIC_RELEASE);
+        if (pooled) {
+            native_layer_unlock_frame_buffer(pooled);
+            __atomic_store_n(&pooled->busy, 0, __ATOMIC_RELEASE);
+        }
         return NULL;
     }
     CGContextScaleCTM(bitmap, scale, scale);
@@ -406,6 +488,7 @@ static CGImageRef native_layer_raster_frame_with_submission(NSView *view, CGFloa
         native_layer_opaque_frame_complete = previous_opaque_complete;
         NSGraphicsContext.currentContext = previous;
         CGContextRelease(bitmap);
+        native_layer_unlock_frame_buffer(pooled);
         if (pooled && !pooled_owned) __atomic_store_n(&pooled->busy, 0, __ATOMIC_RELEASE);
     }
     if (image && submission) *submission = frame;
@@ -439,8 +522,15 @@ static void native_layer_present_frame(NSView *view, CGFloat scale, IMP draw) {
     view.layer.opaque = YES;
     view.layer.contentsGravity = kCAGravityResize;
     view.layer.contentsScale = scale;
-    view.layer.contents = (__bridge id)image;
+    IOSurfaceRef surface = native_layer_surface_for_image(image);
+    objc_setAssociatedObject(view, &native_layer_frame_image_key,
+        surface ? (__bridge id)image : nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    view.layer.contents = surface ? (__bridge id)surface : (__bridge id)image;
     [CATransaction commit];
+    if (getenv("VOX_FRAME_SURFACE_DIAGNOSTICS"))
+        fprintf(stderr, "Vox frame storage: %s %zux%zu pitch=%zu\n",
+            surface ? "IOSurface" : "CGImage", CGImageGetWidth(image),
+            CGImageGetHeight(image), CGImageGetBytesPerRow(image));
     native_document_submission_acknowledge(&submission);
     objc_setAssociatedObject(view, &native_layer_frame_generation_key,
         @(generation), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -459,12 +549,10 @@ static void native_layer_restore_frame_scale(NSView *view) {
 static BOOL native_layer_frame_matches_input(NSView *view, CGFloat scale) {
     NSNumber *generation = objc_getAssociatedObject(view, &native_layer_frame_generation_key);
     NSValue *bounds = objc_getAssociatedObject(view, &native_layer_frame_bounds_key);
-    id contents = view.layer.contents;
-    if (!generation || !bounds || !contents
+    CGImageRef image = native_layer_frame_image(view);
+    if (!generation || !bounds || !image
         || generation.unsignedLongLongValue != native_layer_redraw_generation
-        || !NSEqualRects(bounds.rectValue, view.bounds) || view.layer.contentsScale != scale
-        || CFGetTypeID((__bridge CFTypeRef)contents) != CGImageGetTypeID()) return NO;
-    CGImageRef image = (__bridge CGImageRef)contents;
+        || !NSEqualRects(bounds.rectValue, view.bounds) || view.layer.contentsScale != scale) return NO;
     return CGImageGetWidth(image) == ceil(view.bounds.size.width * scale)
         && CGImageGetHeight(image) == ceil(view.bounds.size.height * scale);
 }
@@ -485,7 +573,7 @@ static void native_layer_draw(id self, SEL command, NSRect rect) {
                 CGContextScaleCTM(context, 1, -1);
             }
             CGContextSetBlendMode(context, kCGBlendModeCopy);
-            CGContextDrawImage(context, view.bounds, (__bridge CGImageRef)view.layer.contents);
+            CGContextDrawImage(context, view.bounds, native_layer_frame_image(view));
             CGContextRestoreGState(context);
             if (getenv("VOX_PROFILE_INSTRUCTIONS")) fprintf(stderr, "Vox capture draw: copied presented raster\n");
             return;

@@ -23,7 +23,7 @@ def main():
     for mode, flag in (("mrc", "-fno-objc-arc"), ("arc", "-fobjc-arc")):
         binary = output / mode
         command = [shutil.which("clang"), "-O2", "-fblocks", flag,
-                   "-framework", "Cocoa", "-framework", "QuartzCore", "-framework", "CoreGraphics",
+                   "-framework", "Cocoa", "-framework", "QuartzCore", "-framework", "IOSurface", "-framework", "CoreGraphics",
                    "-I", str(root), str(root / "tools/native_layer_frame_pool_test.m"), "-o", str(binary)]
         with (output / (mode + ".log")).open("w") as log:
             compiled = subprocess.call(command, stdout=log, stderr=subprocess.STDOUT)

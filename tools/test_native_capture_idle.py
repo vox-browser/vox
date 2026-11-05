@@ -61,7 +61,7 @@ def main():
         directory.mkdir()
         artifacts = directory / "artifacts"
         artifacts.mkdir()
-        command = [str(compiler), flag, "-fblocks", "-framework", "Cocoa", "-framework", "ImageIO", "-framework", "QuartzCore",
+        command = [str(compiler), flag, "-fblocks", "-framework", "Cocoa", "-framework", "ImageIO", "-framework", "QuartzCore", "-framework", "IOSurface",
                    "-framework", "CoreGraphics", "-lz", "-I", str(source), "-I", str(output), str(fixture),
                    "-o", str(directory / "tests")]
         row = {"command": command}

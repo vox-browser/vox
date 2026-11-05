@@ -72,7 +72,7 @@ def main():
             command = [str(compiler), arc, "-fblocks", *flags, *cxx, "-Wno-deprecated-declarations",
                        "-I", str(source), "-I", str(output), str(source / "tools" / fixture),
                        "-framework", "Cocoa", "-framework", "CoreGraphics", "-framework", "CoreImage",
-                       "-framework", "QuartzCore", "-o", str(binary)]
+                       "-framework", "QuartzCore", "-framework", "IOSurface", "-o", str(binary)]
             row = {"fixture": fixture, "mode": mode, "command": command}
             log_path = binary.with_suffix(".log")
             with log_path.open("x") as log:

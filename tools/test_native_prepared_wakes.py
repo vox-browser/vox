@@ -35,7 +35,7 @@ def main():
     for mode, flag in [('mrc', '-fno-objc-arc'), ('arc', '-fobjc-arc')]:
         binary = args.output / mode
         command = [shutil.which('clang'), '-O2', '-fblocks', flag,
-                   '-framework', 'Cocoa', '-framework', 'QuartzCore', '-framework', 'CoreGraphics',
+                   '-framework', 'Cocoa', '-framework', 'QuartzCore', '-framework', 'IOSurface', '-framework', 'CoreGraphics',
                    '-I', str(root), '-I', str(args.output.resolve()),
                    str(root / 'tools/native_prepared_wakes_test.m'), '-o', str(binary)]
         with (args.output / (mode + '.log')).open('w') as log:

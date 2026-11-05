@@ -35,7 +35,7 @@ def main():
                "-DLADYBIRD_V_HAS_SKIA_TEXT",
                '-DVOX_NATIVE_MEMORY_FRAGMENT="' + str(fragment_path) + '"',
                str(test), "-framework", "Cocoa", "-framework", "CoreImage",
-               "-framework", "QuartzCore", "-o", str(executable)]
+               "-framework", "QuartzCore", "-framework", "IOSurface", "-o", str(executable)]
     result = {"source_sha256": pins, "fragment_sha256": digest(fragment_path),
               "compile_command": command, "actual_test_exit_code": None}
     with (output / "compile.log").open("w") as log:
