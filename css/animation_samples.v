@@ -148,10 +148,18 @@ fn (mut storage AnimationSampleStorage) begin_update(document &dom.Document) boo
 	} else {
 		storage.update_bytes - storage.update_bytes / 8
 	}
-	limit := if animation_sample_arena_updates * storage.update_bytes > animation_sample_arena_bytes {
+	original_limit := if animation_sample_arena_updates * storage.update_bytes > animation_sample_arena_bytes {
 		animation_sample_arena_updates * storage.update_bytes
 	} else {
 		animation_sample_arena_bytes
+	}
+	limit := if retain_short_animation_sample_batch {
+		original_limit
+	} else {
+		expanded_animation_sample_arena_limit(original_limit, storage.update_bytes)
+	}
+	if !retain_short_animation_sample_batch && animation_sample_batch_diagnostics {
+		report_animation_sample_batch_extension(document, used, original_limit, limit)
 	}
 	if used < limit {
 		storage.update_start_used = used

@@ -72,6 +72,7 @@ fn test_animation_sample_rotation_preserves_descendant_selector_context() {
 		// Force a full refresh without claiming this allocation was one frame's
 		// normal sampling demand, which would enlarge its adaptive budget.
 		samples.update_start_used = samples.current.usage().used
+		samples.update_bytes = 0
 		computer.set_animation_time_ms(200)
 		document.update_style()
 		assert samples.current_serial > before
