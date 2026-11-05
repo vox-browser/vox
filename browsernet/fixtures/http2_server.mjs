@@ -7,6 +7,7 @@ import http from 'node:http';
 import net from 'node:net';
 import { gzipSync } from 'node:zlib';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const directory = process.argv[2];
 process.chdir(directory);
@@ -23,7 +24,7 @@ for (const [name, hostname] of [['server', 'DNS:localhost,IP:127.0.0.1'], ['wron
     run(['req', '-new', '-key', name + '.key', '-subj', '/CN=localhost', '-out', name + '.csr']);
     run(['x509', '-req', '-in', name + '.csr', '-CA', 'ca.pem', '-CAkey', 'ca.key', '-CAcreateserial', '-days', '2', '-sha256', '-extfile', name + '.cnf', '-out', name + '.pem']);
 }
-const state = { handshakes: { h2: 0, h1: 0, wrong_host: 0 }, requests: [], active: 0, maximum_active: 0, proxy_hosts: [] };
+const state = { handshakes: { h2: 0, h1: 0, wrong_host: 0 }, requests: [], active: 0, maximum_active: 0, proxy_hosts: [], websockets: [], pongs: 0 };
 function save() {
     fs.writeFileSync('stats.json.tmp', JSON.stringify(state));
     fs.renameSync('stats.json.tmp', 'stats.json');
@@ -59,6 +60,52 @@ function request(req, res) {
     if (gzip) headers['content-encoding'] = 'gzip';
     const send = () => { res.writeHead(200, headers); res.end(body); };
     if (req.url.startsWith('/pooled/')) setTimeout(send, 20); else send();
+}
+// Minimal RFC 6455 server: fragmented greeting, ping, echo and both closing
+// directions. Client frames must be masked; server frames are not.
+function websocket(req, socket, head) {
+    state.websockets.push({ url: req.url, headers: req.headers });
+    save();
+    if (req.url.startsWith('/ws/reject')) { socket.end('HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n'); return; }
+    const accept = createHash('sha1').update(req.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+    const offered = (req.headers['sec-websocket-protocol'] || '').split(',').map(value => value.trim()).filter(Boolean);
+    const lines = ['HTTP/1.1 101 Switching Protocols', 'Upgrade: websocket', 'Connection: Upgrade', 'Sec-WebSocket-Accept: ' + accept,
+        'Set-Cookie: websocket=accepted; Path=/'];
+    if (offered.includes('chat')) lines.push('Sec-WebSocket-Protocol: chat');
+    socket.write(lines.join('\r\n') + '\r\n\r\n');
+    socket.on('error', () => {});
+    const send = (opcode, payload, fin = true) => {
+        const length = payload.length;
+        const header = length < 126 ? Buffer.from([(fin ? 0x80 : 0) | opcode, length])
+            : length <= 0xffff ? Buffer.from([(fin ? 0x80 : 0) | opcode, 126, length >> 8, length & 255])
+            : Buffer.concat([Buffer.from([(fin ? 0x80 : 0) | opcode, 127]), (() => { const b = Buffer.alloc(8); b.writeBigUInt64BE(BigInt(length)); return b; })()]);
+        socket.write(Buffer.concat([header, payload]));
+    };
+    send(0x1, Buffer.from('hel'), false);
+    send(0x9, Buffer.from('p'));
+    send(0x0, Buffer.from('lo'));
+    let buffer = Buffer.from(head || []);
+    socket.on('data', chunk => {
+        buffer = Buffer.concat([buffer, chunk]);
+        for (;;) {
+            if (buffer.length < 2) return;
+            const opcode = buffer[0] & 15, masked = (buffer[1] & 128) !== 0;
+            let length = buffer[1] & 127, offset = 2;
+            if (length === 126) { if (buffer.length < 4) return; length = buffer.readUInt16BE(2); offset = 4; }
+            else if (length === 127) { if (buffer.length < 10) return; length = Number(buffer.readBigUInt64BE(2)); offset = 10; }
+            if (!masked) { socket.destroy(); return; }
+            if (buffer.length < offset + 4 + length) return;
+            const mask = buffer.subarray(offset, offset + 4);
+            const payload = Buffer.from(buffer.subarray(offset + 4, offset + 4 + length));
+            for (let index = 0; index < payload.length; index++) payload[index] ^= mask[index & 3];
+            buffer = buffer.subarray(offset + 4 + length);
+            if (opcode === 10) { state.pongs++; save(); }
+            else if (opcode === 8) { send(8, payload.subarray(0, 2)); socket.end(); return; }
+            else if (opcode === 1 && payload.toString() === 'close-me') { send(8, Buffer.concat([Buffer.from([0x0f, 0xa1]), Buffer.from('bye')])); }
+            else if (opcode === 1) send(1, Buffer.from('echo:' + payload.toString()));
+            else if (opcode === 2) send(2, payload);
+        }
+    });
 }
 function configure(server, name) {
     server.on('secureConnection', () => { state.handshakes[name]++; save(); });
@@ -105,6 +152,8 @@ const proxy = net.createServer(client => {
     }
     client.on('data', receive);
 });
+h1.on('upgrade', websocket);
+plain.on('upgrade', websocket);
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
 const [h2_port, h1_port, wrong_host_port, http_port, proxy_port] = await Promise.all([
     configure(h2, 'h2'), configure(h1, 'h1'), configure(wrong, 'wrong_host'), listen(plain), listen(proxy)]);
