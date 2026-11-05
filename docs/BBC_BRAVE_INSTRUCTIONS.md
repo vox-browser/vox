@@ -6673,3 +6673,20 @@ tool tests** pass. Original fixture failures and the detached-child crash remain
 retained with the superseded checks. Native BBC eligibility and an unprofiled
 matched cohort remain pending; the 10% target and homepage catalog entry stay open.
 [Focused evidence and verified raw archive](performance/bbc-retained-intrinsic-width-focus-20261105.json).
+
+Preflight **113** launched only two separate native diagnostics. Both retain
+exact original pixels/content, all 72 external scripts, pinned runtime images,
+ownership and normal native exits. Neither reports scalar-width reuse before
+PNG. Review of the recorded launch environments found two inherited common
+diagnostic flags disabling grid placement and markerless reuse; the initial
+protocol prose calling other layout reuse default was incorrect. This no-hit
+result therefore does **not** establish default acceptance ineligibility.
+
+The provisional cache and its control are removed in `17e01e5`; the detached
+input validator fix `5bd6e1e03` remains. All **66 rollback executions** and
+**334 instruction-tool tests** pass. No acceptance browser launched, no
+instruction credit is assigned, and no failed attempt is retried or excluded.
+History remains **109 measured cohorts / 2,356 acceptance browser attempts**,
+last measured ID 112; ID 113 is also preflight-only. A fresh expanded
+`v -profile` diagnostic is pending. The 10% target and catalog entry stay open.
+[Native no-hit qualification, retained attempts and rollback checks](performance/bbc-intrinsic-width-preflight113-20261105.json).
