@@ -13,6 +13,30 @@ claimed. History is **117 measured cohorts / 2,524 acceptance browser attempts**
 104, 110, 111, 113 and 118 are preflight-only. Every earlier result remains
 preserved. [Complete cohort evidence](performance/bbc-previous-measurement-cohort122-20261106.json).
 
+The next candidate (`34d4000d9`, isolated control `9717aa4b7`) skips element
+metadata reads when the corresponding pseudo-candidate rule index is empty.
+Populated buckets, mutable rule hints and later population/removal retain the
+ordinary query. All **96 focused executions** (16 cases × two arms × three GC
+modes) and **341 tooling tests** pass; native BBC eligibility and matched
+instructions remain pending a completed production bundle containing this code.
+[Focused evidence](performance/bbc-empty-pseudo-indexes-focus-20261106.json).
+
+A separate **73-scope `v -profile`** diagnostic passes original pixels/content,
+all 72 external author-source witnesses, native images, normal exits and exact
+caller-group reconciliation. It restores 29 original profiler scopes on the
+sealed earlier diagnostic baseline, with unchanged normalized engine bodies;
+it is not a fresh-source production build. There are 70 executed scopes and
+7,340,584 main-thread counter reads. Selected rows include 132,962 rule-cache
+pseudo-candidate calls (920,289,065 self / 1,561,577,566 inclusive) and 340,790
+bucket scans (641,288,501 self), plus 1,230,492 attribute namespace matches
+(3,318,978,879 self). These include substantial probe overhead and supply no
+production instruction share or saving. Independent focused/native checks
+overlap the diagnostic; recursive inclusive counts overlap and post-PNG work
+can be included. [Profile and sealed compiler evidence](performance/bbc-v-profile-pseudo-candidates-20261106.json).
+The separate fresh [production CPU sample](performance/bbc-current-production-sample-20261106.json)
+validates PID/start identity, executable UUID and Vox address ranges; its
+requested six-second/1-ms cadence is not an instruction measurement.
+
 The regressing cross-pass history has now been **retired** (`0a8de752f`), with
 its comparison control removed separately (`7fdffd5e0`). All **102 restoration
 executions** (34 existing grid/flex/image cases in three GC modes) and **340

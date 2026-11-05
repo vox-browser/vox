@@ -1,0 +1,88 @@
+{
+  "passed": true,
+  "implementation": "34d4000d9",
+  "tooling": "9717aa4b7",
+  "focused": {
+    "cases": 16,
+    "new_cases": 1,
+    "modes": 3,
+    "arms": 2,
+    "executions": 96,
+    "all_native_test_main_calls_verified": true,
+    "inputs": {
+      "/Users/alex/code/vox2/css/pseudo_candidate_direct_test.v": "8f73089f5ffcc339715112982ce75d98f8be2a67f9cb0b7257ad8558c766aa11",
+      "/Users/alex/code/vox2/css/sparse_rule_bucket_test.v": "e7ce165cd3638f84462cc957a86cd6bee9e83bcd4dbd0fa7ab7ac92c34c61348",
+      "/Users/alex/code/vox2/css/empty_rule_bucket_entry_test.v": "bb119766bb691b1324850e6403e65da2f70458c55e4f11722f4f03561bcf85ae",
+      "/Users/alex/code/vox2/css/quirks_selector_buckets_test.v": "0e034e6ef08a69467ef1d864c0ac879f2ca5f0b20df784ce576a6a551af9b1b2",
+      "/Users/alex/code/vox2/css/rule_bucket_iterator_test.v": "5f06622596a77631337dc6ff7b871c7908a4155e6ec775f1ba294dea933e7ccf",
+      "/Users/alex/code/vox2/css/attribute_tag_bucket_test.v": "8196132d496c6231e73a4c30e63671b9d73fc97ce4f9943928b9b84259dc72ce",
+      "/Users/alex/code/vox2/css/style_scope_cache.v": "d8316a3e206eb47ad0df3555605a7d95070245bbed2c092f1102f373309eb57d",
+      "/Users/alex/code/vox2/css/empty_pseudo_candidate_indexes.v": "8a179cd4f6928cb152c7a319e3529ea0af49af493e19e780f30ee2bc38459428",
+      "/Users/alex/code/vox2/css/attribute_tag_bucket.v": "fa6c6862a7908676dbd583d8a43fce55653b8cdb5397d64977627503b9956e35",
+      "/Users/alex/code/vox2/css/rule_bucket_iterator.v": "5dacf8b57cdac2696e8fbf130430987c435d16a388f0948607ed8db01181b672",
+      "/Users/alex/code/vox2/css/style_computer.v": "7a28a28624fa5aa20b392e112baa865c6e5321df53e0ded1b4ea8767d1f583b5"
+    },
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ]
+  },
+  "tool_tests": 341,
+  "qualifications": "Empty index guard only: populated index membership,candidate order,namespace/quirks handling,mutable rule hints and later cache population/removal stay live. Existing exhaustive bucket oracle plus late-population/clear/hint mutation check pass in both arms. No BBC workload eligibility or instruction credit from focused checks. Generated C retained; focused compilation is not claimed sealed.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-empty-pseudo-indexes-focus-20261106.tar.gz",
+    "bytes": 7084676,
+    "sha256": "df9c54bde9a622ba9626e88512704007d088b4c6a9247c63d1a88dd268dd3592",
+    "members": 45,
+    "all_members_verified": true
+  },
+  "unix": 1793916774.5121422,
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-empty-pseudo-indexes-20261106-0120/archive-focus.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 63078400,
+    "elapsed_seconds": 0.649983458,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}
