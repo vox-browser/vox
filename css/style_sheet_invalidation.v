@@ -380,7 +380,7 @@ fn invalidate_elements_matching_style_sheet_invalidation(root &dom.Node, result 
 		// effect once per sheet change while the full cascade covers the flags.
 		mut document := unsafe { &dom.Document(root.document()) }
 		document.set_needs_repaint_with_invalidation(.no)
-		report_covered_style_sheet_invalidation()
+		report_covered_style_sheet_invalidation(result)
 		return
 	}
 	primary_dom_set := invalidation_set_to_dom(result.invalidation_set)

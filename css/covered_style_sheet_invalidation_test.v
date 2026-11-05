@@ -82,18 +82,22 @@ fn test_partial_cascade_still_marks_matching_stylesheet_targets() {
 	assert covered_sheet_test_color(child) == Color{255, 0, 0, 255}
 }
 
-fn test_pending_full_cascade_keeps_anchor_and_trailing_universal_walks() {
+fn test_pending_full_cascade_covers_anchor_and_trailing_universal_walks() {
 	for selector in ['.target ::before', '.target > *'] {
 		mut document, mut sheet, target, child := covered_sheet_test_fixture()
 		defer { document.finalize() }
 		document.set_needs_full_style_update(true)
 		assert sheet.insert_rule('${selector} { color:red;content:"x" }', 0)! == 0
 		if selector.ends_with('*') {
-			assert child.needs_style_update()
+			assert child.needs_style_update() == (retain_covered_style_sheet_walk || retain_covered_style_sheet_anchor_walks)
 			covered_sheet_test_flush(document)
 			assert covered_sheet_test_color(child) == Color{255, 0, 0, 255}
 		} else {
-			assert target.needs_style_update()
+			assert target.needs_style_update() == (retain_covered_style_sheet_walk || retain_covered_style_sheet_anchor_walks)
+			covered_sheet_test_flush(document)
+			before_bridge := dom.AbstractElement.new(child, dom.PseudoElement.before).computed_properties() or { panic('descendant before style') }
+			before_style := computed_properties_from_dom(before_bridge) or { panic('descendant before CSS style') }
+			assert resolve_computed_values_for_document(before_style, document).color() == Color{255, 0, 0, 255}
 		}
 	}
 }
@@ -110,4 +114,79 @@ fn test_active_style_batch_and_non_document_roots_keep_primary_walks() {
 	assert !style_sheet_primary_invalidation_is_covered(target.as_node(), &StyleSheetInvalidationSet{})
 	covered_sheet_test_flush(document)
 	assert covered_sheet_test_color(target) == Color{255, 0, 0, 255}
+}
+
+fn test_pending_full_cascade_covers_trailing_universal_sibling_targets() {
+	for selector in ['.target + *', '.target ~ *'] {
+		mut document, mut sheet, target, _ := covered_sheet_test_fixture()
+		defer { document.finalize() }
+		mut sibling := document.create_element_ns('http://www.w3.org/1999/xhtml', 'p')!
+		mut parent := target.as_node().parent_node() or { panic('parent') }
+		parent.append_child(sibling.as_node())!
+		covered_sheet_test_flush(document)
+		covered_sheet_test_clear(document.as_node())
+		document.set_needs_full_style_update(true)
+		assert sheet.insert_rule('${selector} { color:red }', 0)! == 0
+		assert sibling.needs_style_update() == (retain_covered_style_sheet_walk || retain_covered_style_sheet_anchor_walks)
+		covered_sheet_test_flush(document)
+		assert covered_sheet_test_color(sibling) == Color{255, 0, 0, 255}
+		assert covered_sheet_test_color(target) == Color{0, 0, 0, 255}
+	}
+}
+
+fn test_pending_full_cascade_covers_anchor_rule_removal_and_repaint() {
+	mut document, mut sheet, target, child := covered_sheet_test_fixture()
+	defer { document.finalize() }
+	assert sheet.insert_rule('.target > * { color:red }', 0)! == 0
+	assert sheet.insert_rule('.target ::before { content:"x";color:blue }', 1)! == 1
+	covered_sheet_test_flush(document)
+	assert covered_sheet_test_color(child) == Color{255, 0, 0, 255}
+	covered_sheet_test_clear(document.as_node())
+	document.set_needs_full_style_update(true)
+	paint_revision := document.paint_content_revision()
+	sheet.delete_rule(1)!
+	sheet.delete_rule(0)!
+	assert document.paint_content_revision() > paint_revision
+	assert target.needs_style_update() == (retain_covered_style_sheet_walk || retain_covered_style_sheet_anchor_walks)
+	assert child.needs_style_update() == (retain_covered_style_sheet_walk || retain_covered_style_sheet_anchor_walks)
+	covered_sheet_test_flush(document)
+	assert covered_sheet_test_color(child) == Color{0, 0, 0, 255}
+	assert dom.AbstractElement.new(child, dom.PseudoElement.before).computed_properties() == none
+}
+
+fn test_active_style_batch_keeps_anchor_walks_even_with_a_pending_full_cascade() {
+	for selector in ['.target ::before', '.target > *'] {
+		mut document, mut sheet, target, child := covered_sheet_test_fixture()
+		defer { document.finalize() }
+		document.set_needs_full_style_update(true)
+		computer := css_style_computer_for(document)
+		computer.begin_computed_property_page_batch()
+		assert sheet.insert_rule('${selector} { color:red;content:"x" }', 0)! == 0
+		if selector.ends_with('*') { assert child.needs_style_update() }
+		else { assert target.needs_style_update() }
+		computer.end_computed_property_page_batch()
+		covered_sheet_test_flush(document)
+		if selector.ends_with('*') {
+			assert covered_sheet_test_color(child) == Color{255, 0, 0, 255}
+		} else {
+			bridge := dom.AbstractElement.new(child, dom.PseudoElement.before).computed_properties() or { panic('before style') }
+			style := computed_properties_from_dom(bridge) or { panic('CSS style') }
+			assert resolve_computed_values_for_document(style, document).color() == Color{255, 0, 0, 255}
+		}
+	}
+}
+
+fn test_covered_anchor_invalidation_preserves_hidden_descendant_style_queries() {
+	mut document, mut sheet, mut target, child := covered_sheet_test_fixture()
+	defer { document.finalize() }
+	target.set_attribute_value('style', 'display:none')
+	covered_sheet_test_flush(document)
+	covered_sheet_test_clear(document.as_node())
+	document.set_needs_full_style_update(true)
+	assert sheet.insert_rule('.target > * { color:red }', 0)! == 0
+	covered_sheet_test_flush(document)
+	assert resolve_computed_values_for_document(up_to_date_computed_properties_for_element(child), document).color() == Color{255, 0, 0, 255}
+	target.set_attribute_value('style', 'display:block')
+	covered_sheet_test_flush(document)
+	assert covered_sheet_test_color(child) == Color{255, 0, 0, 255}
 }
