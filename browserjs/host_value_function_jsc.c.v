@@ -196,6 +196,9 @@ fn (runtime &Runtime) call_engine_function(function voidptr, arguments []voidptr
 
 pub fn (runtime &Runtime) call_javascript_function(function voidptr, receiver voidptr, arguments []voidptr) !voidptr {
 	runtime.require_javascript_value_context()!
+	if runtime.can_call_with_object_receiver(function, receiver) {
+		return runtime.call_with_object_receiver(function, receiver, arguments)
+	}
 	mut exception := unsafe { nil }
 	array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(arguments.len), arguments.data, &exception)
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
