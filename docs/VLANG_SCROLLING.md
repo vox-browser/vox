@@ -1914,3 +1914,75 @@ result nor these contended installed-bundle trials establishes 60 FPS.
 See the [continuation evidence](performance/vlang-gpu-scroll-followup-20261105.json)
 for raw runs, profiles, pixel comparisons, rejected copy experiment and filter
 checks; the original evidence archive is preserved.
+
+## Isolated GPU shape passes and video backdrops (2026-11-05)
+
+The latest installed check uses parallel-C executable
+`2de773e7b01c08e979c6925842a1233b51c801131f0394c7d8736453dcb2c95e`.
+Two fresh live trials measure **86.14 and 83.67 scroll-changing publications/s**,
+with median intervals 8.83/9.39 ms, p95 25.01/26.48 ms, maxima
+99.95/107.25 ms and 13.8/15.7% of intervals exceeding 16.67 ms. Actual input
+delivery is 93.82/90.47 Hz against the nominal 120 Hz schedule. These use the
+same 1708×953 document viewport, 2× backing, 600 precise delta-8 inputs and
+150-input reversals, title readiness and ten-second settle, automatic scripts,
+fresh private profile/cache and direct live HTTPS. OS filesystem/shader caches
+remain warm. This is native publication throughput, not physical scanout.
+The average exceeds 60 FPS, but the deadline misses leave smooth 60 FPS open.
+
+`be6aeb0f2` corrects a shape coverage problem exposed during live verification:
+the former GPU pass selected MSAA for an entire shape after any raster-tile
+overlap. Rounded strokes can differ by 29 channel levels, and a mixed-tile
+ordinary-texture control also exposes errors up to 14. The conservative path
+keeps these shapes on their established per-tile replay. Video retains its
+separate, explicit MSAA-rectangle API.
+
+`c937d6203` then isolates ordinary and multisampled shape passes, selecting
+their raster tiles only when compositing the results. Keeping each leaf's
+original raster extent is essential: an earlier damage-cropped scratch surface
+still differs by seven levels on a fractional fill. The final path stays within
+one level in focused fill/stroke cases and three in the live per-leaf check
+(1,183 comparison records). It prepares every scratch result before changing
+any destination, and failed preparation preserves the original backdrop.
+Optimized, ASan/UBSan, ownership, padding and forced-failure checks pass.
+`f640b922a` enables the verified path by default when the bridge supports it;
+`VOX_GPU_CANVAS_DISABLE_ISOLATED_SHAPES=1` retains the per-tile fallback.
+
+All pairs below use one executable, C mode and native-library configuration
+within their cohort. Different rows use different pinned builds and host loads;
+their absolute rates cannot establish a cross-build gain. All attempts and
+regressions remain in the [evidence and raw archive](performance/vlang-gpu-scroll-isolated-shapes-20261105.json).
+
+| Change | Control → candidate FPS, pair 1 | Pair 2 | Policy |
+| --- | ---: | ---: | --- |
+| CPU grayscale rows | 63.88 → 59.52 | 60.26 → 59.85 | Off by default |
+| Linear Metal canvas textures | 37.98 → 42.65 | 41.49 → 43.74 | Opt-in; early shape-error cohort is diagnostic |
+| Queued canvas uploads | 58.47 → 61.97 | 62.37 → 62.91 | Opt-in; mixed tails and falling host load |
+| Isolated shape passes | 81.95 → 84.03 | 65.79 → 84.08 | Default on |
+| Combined linear textures, queued uploads, direct readback | 85.26 → 81.98 | 84.12 → 86.56 | Opt-in; both maximum gaps regress |
+| GPU video-backdrop restore | 84.06 → 81.77 | 74.98 → 87.55 | Opt-in; mixed result |
+
+Isolated-shape p95 changes 28.97→26.90 and 41.21→26.27 ms; maxima change
+111.10→94.72 and 105.19→96.31 ms. The first median regresses 8.56→9.24 ms,
+and the controls vary materially. Candidate peak guarded process-tree RSS is
+2,147/2,318 MiB; all browser and guard exits are zero. These results support
+the default change while leaving the smoothness target open. A separate profile
+still finds synchronous readbacks around rounded-shape replay, retained row
+copies and frame preparation.
+
+`6a79e1871` adds opt-in `VOX_GPU_CANVAS_VIDEO_BACKDROP=1`. A capable host can
+restore cached RGBA rows directly on the GPU before drawing the video, keeping
+the pending frame off the CPU. A per-frame callback handshake preserves older
+hosts; captures and failed copies retain the CPU barrier and ordinary fallback.
+Tests cover odd widths, alpha, source eviction, legacy hosts, failed GPU copies
+and the verification path. Focused error is at most one level; live verification
+has 1,042 records, 14 input-window GPU restores and maximum error three. The
+unprofiled eligibility run also observes actual GPU restores during input.
+Its mixed paired results do not justify enabling it by default.
+
+`inline-node`, `canvas-text` and same-size SVG source switching pass their
+unchanged installed-bundle bounds; the SVG case remains pixel-exact. The first
+screenshot workflow overlaps a script edit and logs a shell parsing error despite
+returning zero, so it is rejected. The committed-script rerun pins the executable,
+libraries and scripts, observes no changed inputs, and completes without errors.
+`bb2f87162` also supplies the required V compiler memory limit in screenshot
+comparisons. Earlier evidence archives remain unchanged.
