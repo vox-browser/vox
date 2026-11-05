@@ -129,8 +129,15 @@ fn test_contoured_decorations_record_together_in_root_and_compositor_layers() {
 		command_layers: [1, 1, 1]
 	}
 	assert chromium_svg_compositor_layer_supported(commands, child, 1)
-	for unsupported in [layout.PaintCommand{ ...shadow, local_border_data: unsafe { nil } },
-		layout.PaintCommand{ ...shadow, box_shadow_data: unsafe { nil } },
+	// The isolated compositor recorder also supports complete ordinary shadows;
+	// the root recorder still needs the contoured path for this blurred leaf.
+	ordinary := layout.PaintCommand{ ...shadow, local_border_data: unsafe { nil } }
+	ordinary_supported, _ := chromium_shared_recording_leaf_supported(&ordinary)
+	assert !ordinary_supported
+	assert !chromium_shared_recording_supported([ordinary, background, border], root)
+	assert chromium_svg_compositor_layer_supported([ordinary, background, border], child, 1)
+		== !disable_complete_shadow_pictures
+	for unsupported in [layout.PaintCommand{ ...shadow, box_shadow_data: unsafe { nil } },
 		layout.PaintCommand{ ...shadow, blur: -1 }] {
 		accepted, _ := chromium_shared_recording_leaf_supported(&unsupported)
 		assert !accepted

@@ -66,3 +66,26 @@ fn test_complete_shadow_picture_rejects_invalid_geometry_and_legacy_shadow_state
 	translucent[1].opacity = .5
 	assert !chromium_svg_compositor_layer_supported(translucent, shadow_picture_test_plan(), 1)
 }
+
+fn test_contoured_compositor_shadows_reject_incomplete_geometry_and_invalid_blur() {
+	mut commands := shadow_picture_commands()
+	commands[1].local_border_data = &layout.PaintLocalBorderData{
+		corner_shapes: [f64(1.1), 1.1, 1.1, 1.1]!
+	}
+	assert chromium_svg_compositor_layer_supported(commands, shadow_picture_test_plan(), 1)
+	base := commands[1]
+	for invalid in [
+		layout.PaintCommand{...base, box_shadow_data: unsafe { nil }},
+		layout.PaintCommand{...base, box_shadow_data: &layout.PaintBoxShadowData{}},
+		layout.PaintCommand{...base, blur: -1},
+		layout.PaintCommand{...base, blur: math.nan()},
+		layout.PaintCommand{...base, blur: math.inf(1)},
+		layout.PaintCommand{...base, width: 0},
+		layout.PaintCommand{...base, height: 0},
+	] {
+		accepted, _ := chromium_shared_recording_leaf_supported(&invalid)
+		assert !accepted
+		commands[1] = invalid
+		assert !chromium_svg_compositor_layer_supported(commands, shadow_picture_test_plan(), 1)
+	}
+}

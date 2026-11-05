@@ -155,7 +155,14 @@ fn chromium_svg_compositor_layer_supported_for_viewport(commands []layout.PaintC
 		if rect := viewport {
 			if chromium_compositor_leaf_is_culled(command, rect) { continue }
 		}
-		contoured_shadow := command.kind == 'paint_outer_box_shadow' && chromium_contoured_box_supported(command)
+		mut contoured_shadow := false
+		if command.kind == 'paint_outer_box_shadow' && chromium_contoured_box_supported(command) {
+			// A supported corner shape alone does not establish that the native
+			// shadow has valid content bounds or blur. Use the same validation as
+			// the root recorder before retaining it in a compositor picture.
+			supported, _ := chromium_shared_recording_leaf_supported(command)
+			contoured_shadow = supported
+		}
 		recorded_shadow := contoured_shadow || (!disable_complete_shadow_pictures
 			&& chromium_complete_outer_shadow_supported(command))
 		if command.opacity != 1 || command.group_opacity != 1
