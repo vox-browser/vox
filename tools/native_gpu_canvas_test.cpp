@@ -413,6 +413,7 @@ static std::vector<uint8_t> shared_frame_pixels(NSView* view)
     return output;
 }
 
+static int s_overlay_stroke_antialias;
 static std::vector<uint8_t> render_overlay_batch(bool batch,int alpha,bool horizontal,float phase)
 {
     auto pixels=backdrop();auto color=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
@@ -429,7 +430,7 @@ static std::vector<uint8_t> render_overlay_batch(bool batch,int alpha,bool horiz
         if(batch) assert(ladybird_v_skia_gpu_canvas_command(fill?"fill_rounded_rect":"stroke_rounded_rect",fill?17:19,4));
         assert(ladybird_v_skia_draw_rounded_rect(context,axis?30:390+phase,axis?290:13+phase,
             axis?120:7,axis?6:140,3.5,3.5,3.5,3.5,3.5,3.5,3.5,3.5,
-            1,0,0,1,0,0,0,0,0,css_width,css_height,fill?50:60,fill?50:60,fill?50:60,alpha,fill,1,0,0));
+            1,0,0,1,0,0,0,0,0,css_width,css_height,fill?50:60,fill?50:60,fill?50:60,alpha,fill,1,0,fill?0:s_overlay_stroke_antialias));
     }
     if(batch)ladybird_v_skia_gpu_canvas_end();
     ladybird_v_skia_set_chromium_painting(0);NSGraphicsContext.currentContext=saved;
@@ -440,7 +441,8 @@ int main(int argc, char** argv)
 {
     if(argc==2 && !std::strcmp(argv[1],"--overlay-batch")) {
         int error=0;
-        for(int alpha:{73,128,255})for(bool horizontal:{false,true})for(float phase:{0.f,.25f,.5f,.75f}) {
+        for(int aa:{0,1})for(int alpha:{73,128,255})for(bool horizontal:{false,true})for(float phase:{0.f,.25f,.5f,.75f}) {
+            s_overlay_stroke_antialias=aa;
             auto reference=render_overlay_batch(false,alpha,horizontal,phase);
             auto candidate=render_overlay_batch(true,alpha,horizontal,phase);
             for(size_t i=0;i<reference.size();++i)error=std::max(error,std::abs(int(reference[i])-int(candidate[i])));

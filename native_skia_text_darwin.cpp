@@ -4625,10 +4625,11 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     // replay selects coverage per raster tile. Mixed tiles and fractional
     // corners can differ substantially; keep that established tile path.
     // Video has its own API with explicit MSAA rectangles and still batches.
-    bool direct_nonaa = !anti_alias && !s_raster_layer_is_root && !has_underlay
+    bool direct_layer = !s_raster_layer_is_root && !has_underlay
         && s_rect_clip_outs.empty() && fill <= 1 && matrix.isScaleTranslate()
-        && std::getenv("VOX_GPU_CANVAS_DIRECT_NONAA_SHAPES");
-    bool isolated_shapes = gpu_canvas_isolated_shapes_enabled() && !direct_nonaa;
+        && ((!anti_alias && std::getenv("VOX_GPU_CANVAS_DIRECT_NONAA_SHAPES"))
+            || std::getenv("VOX_GPU_CANVAS_DIRECT_LAYER_SHAPES"));
+    bool isolated_shapes = gpu_canvas_isolated_shapes_enabled() && !direct_layer;
     if (root_msaa_tile && !isolated_shapes) gpu_canvas_decline(destination);
     bool rounded_on_canvas = false;
     if ((!root_msaa_tile || isolated_shapes) && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
@@ -4670,8 +4671,8 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
                     msaa_rects.data(), int(msaa_rects.size() / 4))
                 : gpu_canvas_api()->draw_shape(&descriptor, device_bounds, clips.data(), int(clips.size()));
             if (drawn) {
-                if(direct_nonaa && gpu_canvas_diagnostics())
-                    std::fprintf(stderr,"Vox GPU direct non-AA shape: fill=%d\n",fill);
+                if(direct_layer && gpu_canvas_diagnostics())
+                    std::fprintf(stderr,"Vox GPU direct layer shape: fill=%d antialias=%d\n",fill,anti_alias);
                 if (isolated_shapes && std::getenv("VOX_GPU_CANVAS_ISOLATED_SHAPES_DIAGNOSTICS"))
                     std::fprintf(stderr, "Vox GPU isolated shape: fill=%d msaa_rects=%zu\n", fill, msaa_rects.size() / 4);
                 gpu_canvas_name_leaf(*frame, "shape", bounds, fill, clips.size());
