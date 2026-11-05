@@ -252,7 +252,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		if node := binding.node_for_key(key) {
 			return binding.document_query(node, action, selector)
 		}
-		return json2.encode(binding.document_state(binding.document))
+		return binding.encode_document_state(binding.document)
 	}
 	root := if key == '' {
 		unsafe { &dom.Node(binding.document) }

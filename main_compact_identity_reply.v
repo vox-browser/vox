@@ -12,6 +12,7 @@ fn (mut binding CompactElementQueryBinding) encode_element_state(element &dom.El
 }
 
 fn (mut binding CompactElementQueryBinding) encode_node_state(node &dom.Node) string {
+	if node.is_document() { return binding.encode_document_state(node.document()) }
 	if element := node.as_element() { return binding.encode_element_state(element) }
 	return json2.encode(binding.node_state(node))
 }

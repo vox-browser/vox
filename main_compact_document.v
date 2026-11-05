@@ -1,6 +1,7 @@
 module main
 
 import browserjs
+import browserjs.querywire
 import css
 import dom
 import html
@@ -41,13 +42,22 @@ fn install_compact_document_binding(binding &CompactElementQueryBinding, mut run
 	})
 }
 
-fn (mut binding CompactElementQueryBinding) document_state(document &dom.Document) json2.Any {
+fn (mut binding CompactElementQueryBinding) document_key(document &dom.Document) string {
 	key := if voidptr(document) == voidptr(binding.document) {
 		''
 	} else {
 		'__document_${document.as_node().unique_id()}'
 	}
 	if key != '' { binding.nodes[key] = document.as_node() }
+	return key
+}
+
+fn (mut binding CompactElementQueryBinding) encode_document_state(document &dom.Document) string {
+	return querywire.encode_document_reply(binding.document_key(document))
+}
+
+fn (mut binding CompactElementQueryBinding) document_state(document &dom.Document) json2.Any {
+	key := binding.document_key(document)
 	return json2.Any({
 		'bridgeKey': json2.Any(key)
 		'nodeType':  json2.Any(9)
@@ -65,7 +75,7 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 		return if root.is_document() {
 			'null'
 		} else {
-			json2.encode(binding.document_state(root.document()))
+			binding.encode_document_state(root.document())
 		}
 	}
 	if action == 'elementURL' {
@@ -86,7 +96,7 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 		css.install_document_selector_query_hook(created)
 		key := '__document_${created.as_node().unique_id()}'
 		binding.documents[key] = created
-		return json2.encode(binding.document_state(created))
+		return binding.encode_document_state(created)
 	}
 	if action == 'documentValue' {
 		if value == 'hidden' { return json2.encode(document.hidden()) }
