@@ -19,6 +19,7 @@ fn (mut app BrowserApp) synchronize_javascript_task_paint(replayed_effects bool)
 		|| !app.document.layout_is_up_to_date()
 		|| (stale_paint && (disable_javascript_paint_only_sync || app.initial_layout_pending
 			|| app.paint_tree_storage == unsafe { nil })) {
+		if app.defer_javascript_layout_to_current_frame() { return }
 		if javascript_paint_sync_diagnostics {
 			eprintln('VOX_JAVASCRIPT_PAINT_SYNC action=relayout')
 		}
