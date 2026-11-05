@@ -1,0 +1,86 @@
+{
+  "started_unix": 1793866528.045711,
+  "scope": "Use latest completed canonical bundle while the shared build lock is busy. No publication lease, copied bundle, queued build or waiting for compilation. Per-capture input fingerprints reject replacement.",
+  "rows": [
+    {
+      "phase": "fixture",
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alex/code/vox2/Build/chatgpt-effect-border-production-20261105-r1/fixture/page.py"
+      ],
+      "exit": 1
+    }
+  ],
+  "status": "rejected",
+  "production_before": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+      "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+      "mode": "single",
+      "requested": "parallel"
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "c21405463324fee09b119a326f4c2e047c30225650af19f8ee44763464b1cd57",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-110234-ddb624b5/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "7adce8016ceebd1b19c8847310e399671dcea4d2130ab055d69649f77adc9682",
+      "dirty": true,
+      "head": "f5139fcdcb44a2b2983d16ccd4897ba3ff9e5a8c",
+      "repository_sha256": "2733c51228183c5fd7101831afb9eb54aa907b52712ec20947dbf3ae925733a2"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "49782c34a3db3c96e3d0986c959fcb53774431ffd12d74f8504f994f3654b0c0",
+      "dirty": true,
+      "head": "c1debfe0f19c3ebafce48b6f4bec9385e2103e8c",
+      "repository_sha256": "ce7c6686fbf91071ade53ea4970c99a291cf63b9e8ae8186ea5683d29281e106"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "f5139fcdcb44a2b2983d16ccd4897ba3ff9e5a8c",
+      "id": "9c8e07fa935a4d0fb66f38b6fdd93f04"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "7adce8016ceebd1b19c8847310e399671dcea4d2130ab055d69649f77adc9682",
+      "dirty": true,
+      "head": "4517407d72cb9ecde42e7d55d30469370c20b603",
+      "repository_sha256": "339308e4ffe8f111a090456e57453776013d680e37db721255e63e0fd84626ce"
+    }
+  },
+  "finished_unix": 1793866531.1342132,
+  "production_after": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v",
+      "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/f28ec78bea815d656b4e324e844adfb4c7ea6c4e880e93f7f02a50a46414a04c/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+      "mode": "single",
+      "requested": "parallel"
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "c21405463324fee09b119a326f4c2e047c30225650af19f8ee44763464b1cd57",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261105-110234-ddb624b5/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "7adce8016ceebd1b19c8847310e399671dcea4d2130ab055d69649f77adc9682",
+      "dirty": true,
+      "head": "f5139fcdcb44a2b2983d16ccd4897ba3ff9e5a8c",
+      "repository_sha256": "2733c51228183c5fd7101831afb9eb54aa907b52712ec20947dbf3ae925733a2"
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "49782c34a3db3c96e3d0986c959fcb53774431ffd12d74f8504f994f3654b0c0",
+      "dirty": true,
+      "head": "c1debfe0f19c3ebafce48b6f4bec9385e2103e8c",
+      "repository_sha256": "ce7c6686fbf91071ade53ea4970c99a291cf63b9e8ae8186ea5683d29281e106"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "f5139fcdcb44a2b2983d16ccd4897ba3ff9e5a8c",
+      "id": "9c8e07fa935a4d0fb66f38b6fdd93f04"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "7adce8016ceebd1b19c8847310e399671dcea4d2130ab055d69649f77adc9682",
+      "dirty": true,
+      "head": "4517407d72cb9ecde42e7d55d30469370c20b603",
+      "repository_sha256": "339308e4ffe8f111a090456e57453776013d680e37db721255e63e0fd84626ce"
+    }
+  }
+}

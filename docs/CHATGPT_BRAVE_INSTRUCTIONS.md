@@ -2144,3 +2144,54 @@ links every capture, raw count, ownership audit, disassembly proof, broad check
 and verified archive. The requested **5% advantage over Brave remains unmet**.
 These frozen-page results establish neither live-site performance, isolated
 rendering time nor scrolling FPS, and no qualifying catalog entry is added.
+
+
+## November 5: uniform-border effect surfaces and eligibility rejection
+
+Commit `0413bb099` lets the effect-bounds pass enclose a uniform rounded border
+instead of treating it as unknown ink. It retains a full stroke width and an
+antialiasing fringe, covers both transformed native/SVG strokes and the portable
+line renderer's screen-space width, and rejects non-finite geometry, unsupported
+radii and native precision loss. Unknown operations and spatial filters keep
+unbounded surfaces. `VOX_RETAIN_UNBOUNDED_BORDER_EFFECTS` selects the original
+behavior; an opt-in diagnostic reports bounded groups.
+
+All **12 final focused jobs pass**, covering **224 case executions** across
+both variants, poisoned preallocation, ordinary GC, no GC and ASan/UBSan.
+Checks include nesting, ancestor clips, fractional/rotated/shrinking/collapsed
+transforms, scrolling, prior recording ownership and existing paint/border
+regressions. Compile peak is 9,055,305,728 bytes under 12 GiB; runtime peak is
+351,092,736 bytes under 3 GiB. The native static fixture is pixel-exact between
+control and candidate at capture/backing scales 1 and 2, with full title,
+readiness, viewport and element-count audits on all four fresh captures.
+
+The isolated native scan benchmark (`6835e42ea`) uses identical synthetic ink
+and exact expected bounds. Narrow versus full-viewport regions reduce observed
+scan instructions by 12.74%/12.22% in the sparse-write scenes and 65.73%/64.87%
+after full zero writes, at scales 1/2. This bypasses V lowering and excludes
+painting, compositing and browser startup/output. It establishes no browser
+saving or physical-residency guarantee.
+
+The production diagnostic uses completed single-unit executable
+`c21405463324fee09b119a326f4c2e047c30225650af19f8ee44763464b1cd57`.
+Sealed-source checks confirm the final portable extent, guards and control.
+All four frozen-page captures pass JavaScriptCore bootstrap, full content,
+unchanged pixels, stable input identities and zero browser/kernel exits. Both
+Vox variants report **zero eligible bounded border groups**. The harness rejects
+eligibility and starts no unprofiled optimization comparison. **No whole-page
+instructions are credited**, and no broad checkpoint is due.
+
+A separate valid production command trace explains the rejection: each visible
+effect group containing a uniform border also contains an SVG path, whose ink
+remains unknown to this pass. The trace omits some offscreen commands and is a
+diagnostic lead, not a complete rejection audit. Original scripts, the saved
+SOCKS capture, pixel/content references and five-second page protocol remain
+unchanged. Historical single/parallel compiler modes are not compared for credit.
+
+The [receipt and verified archives](performance/chatgpt-effect-border-20261105.json)
+retain the initial test's missing Chromium painting policy, the precursor
+selection stopped after the portable-extent source refinement, a component
+compile's unused shared-header function error, and a fixture audit using the
+wrong selector JSON shape. All corrected final focused and native fixture
+checks pass; every original failure remains retained. The broad-check cadence
+stays at zero. The requested **5% advantage over Brave remains unmet**.
