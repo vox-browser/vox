@@ -583,6 +583,8 @@ def parse_args(argv=None):
                         help='Retain the fixed references\' historical logical-pixel snapping in both Vox arms; no policy-change credit')
     parser.add_argument('--retain-css-layout-for-svg', action='store_true',
                         help='Retain the fixed references\' CSS-coordinate inline-SVG layout in both Vox arms; no policy-change credit')
+    parser.add_argument('--retain-degenerate-border-msaa', action='store_true',
+                        help='Retain the fixed references\' tile MSAA for degenerate border arcs in both Vox arms; no policy-change credit')
     parser.add_argument('--control-disable-shared-node-properties', action='store_true',
                         help='Create separate text/comment/fragment property accessors in the pinned Vox control')
     parser.add_argument('--control-disable-shared-element-geometry', action='store_true',
@@ -687,6 +689,8 @@ def replay_vox_environment(args, ready):
         environment['VOX_RETAIN_LOGICAL_PAINT_SNAPPING'] = '1'
     if getattr(args, 'retain_css_layout_for_svg', False):
         environment['VOX_RETAIN_CSS_LAYOUT_FOR_SVG'] = '1'
+    if getattr(args, 'retain_degenerate_border_msaa', False):
+        environment['VOX_RETAIN_DEGENERATE_BORDER_MSAA'] = '1'
     return environment
 
 

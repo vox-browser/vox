@@ -742,6 +742,29 @@ class BBCInstructionTests(unittest.TestCase):
                                         environment])
                 self.assertIs(args.vox_environment, environment)
 
+    def test_historical_border_sampling_is_explicit_and_shared_with_the_control(self):
+        ready = dict(proxy='socks5h://fixture', ca='/fixture/ca.pem')
+        base = ['--archive', 'archive', '--output', 'output', '--memory-guard-registry', 'pids.json',
+                '--capture-reference']
+        for retain in (False, True):
+            args = parse_args(base + (['--retain-degenerate-border-msaa'] if retain else []))
+            self.assertEqual(args.retain_degenerate_border_msaa, retain)
+            environment = replay_vox_environment(args, ready)
+            self.assertEqual(environment.get('VOX_RETAIN_DEGENERATE_BORDER_MSAA'),
+                             '1' if retain else None)
+            args.vox_environment = environment
+            args.control_disable_flex_measurement_reuse = True
+            seen = []
+            def observe(engine, app, folder, options):
+                seen.append(dict(options.vox_environment))
+                return {'exit': 0}
+            with patch('bbc_browser_instructions.browser.run_browser', side_effect=observe):
+                for engine in ('control', 'vox'):
+                    run_trial(engine, 'same-app', engine, args)
+            self.assertEqual(seen, [dict(environment, VOX_DISABLE_FLEX_MEASUREMENT_REUSE='1'),
+                                    environment])
+            self.assertIs(args.vox_environment, environment)
+
     def test_input_preservation_is_optional_and_requires_independent_storage(self):
         argv = ['--archive', 'archive', '--output', 'Build/result',
                 '--memory-guard-registry', 'pids.json', '--capture-reference']
