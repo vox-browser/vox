@@ -2,9 +2,29 @@
 #define VOX_NATIVE_FRAME_METAL_QUEUE_H
 #import <Metal/Metal.h>
 #include <time.h>
+#include <mach/mach_time.h>
 #ifndef VOX_METAL_QUEUE_FRAME_LIMIT
 #define VOX_METAL_QUEUE_FRAME_LIMIT 256
 #endif
+
+static id<MTLCommandBuffer> vox_metal_time_command(id<MTLCommandBuffer> command) {
+    static bool const enabled=getenv("VOX_METAL_COMMAND_TIMES")!=NULL;
+    if (!enabled || !command) return command;
+    mach_timebase_info_data_t clock;
+    mach_timebase_info(&clock);
+    double created=(double)mach_absolute_time()*clock.numer/clock.denom/1e9;
+    [command addCompletedHandler:^(id<MTLCommandBuffer> completed) {
+        @autoreleasepool {
+            double end=(double)mach_absolute_time()*clock.numer/clock.denom/1e9;
+            double start=completed.GPUStartTime,finish=completed.GPUEndTime;
+            // Creation-to-GPU includes CPU encoding and submission; it is not
+            // an isolated queue wait. Retain the raw host-clock endpoints.
+            fprintf(stderr,"Vox Metal command: created=%.9f gpu_start=%.9f gpu_end=%.9f completed=%.9f execution_us=%.3f before_gpu_us=%.3f after_gpu_us=%.3f status=%ld\n",
+                created,start,finish,end,(finish-start)*1e6,(start-created)*1e6,(end-finish)*1e6,(long)completed.status);
+        }
+    }];
+    return command;
+}
 
 // Graphite keeps this queue identity with its Context and compiled pipelines.
 // Reuse its real Metal queue for a bounded window of completed frames, amortizing
@@ -72,13 +92,13 @@
     return queue_;
 }
 - (id<MTLCommandBuffer>)commandBuffer {
-    @synchronized(self) { return [[self currentQueue] commandBuffer]; }
+    @synchronized(self) { return vox_metal_time_command([[self currentQueue] commandBuffer]); }
 }
 - (id<MTLCommandBuffer>)commandBufferWithUnretainedReferences {
-    @synchronized(self) { return [[self currentQueue] commandBufferWithUnretainedReferences]; }
+    @synchronized(self) { return vox_metal_time_command([[self currentQueue] commandBufferWithUnretainedReferences]); }
 }
 - (id<MTLCommandBuffer>)commandBufferWithDescriptor:(MTLCommandBufferDescriptor*)descriptor {
-    @synchronized(self) { return [[self currentQueue] commandBufferWithDescriptor:descriptor]; }
+    @synchronized(self) { return vox_metal_time_command([[self currentQueue] commandBufferWithDescriptor:descriptor]); }
 }
 - (void)insertDebugCaptureBoundary {
     @synchronized(self) {
