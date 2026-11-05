@@ -12,8 +12,8 @@ fidelity and native equality; CNN matches frozen Brave but retains its separate
 source-fidelity failure. Reddit is blocked, and Stack Overflow/Pikabu remain
 deferred. See [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
-The latest rendering checkpoint passes **134 tests / 140 captures at zero
-pixels** on `fcbdb3e6…`, with unchanged inputs and references. The AVIF sampling
+The latest rendering checkpoint passes **135 tests / 141 captures at zero
+pixels** on `18e8a898…`, with unchanged inputs and references. The AVIF sampling
 and two Pikabu image regressions are resolved. Full-site source qualification,
 access failures and deferred work remain separate from that suite result.
 
@@ -1434,6 +1434,69 @@ reported site limitations remain open.
 
 [Receipts, corrections and remaining gaps](evidence/techcrunch-pseudo-bridge-20261105.json),
 [all attempts and rendering captures](evidence/techcrunch-pseudo-bridge-20261105.zip).
+
+## TechCrunch: shaped-font ownership and completion snapshots (2026-11-05)
+
+Two additional cache guards have focused regressions, but **TechCrunch's full
+native parity remains open**. Commit `1993734cf` checks the actual fonts held by
+shaped text when publishing or reusing inline, block and measurement geometry.
+A newer computed author-font cascade cannot certify chunks shaped with a
+fallback face. The check preserves unchanged pending and settled cascades after
+unrelated font loads and leaves ordinary layout responsible for reshaping.
+
+The initial placement of this check rejected capture before reshaping; an
+existing control caught the missing refreshed cache. The committed version
+checks publication after layout finishes. Its two new cases pass with default
+GC, GC disabled and poisoned preallocation. All 26 related controls pass in
+both GC modes. Two pending-font controls require helpers from another test
+file; their original standalone compilation failure and the subsequent passing
+combined harness are both retained.
+
+Commit `531d40d09` preserves a selected face's notification dependency until
+the style applies its geometry invalidation. An early metric query can already
+replace the computed cascade; the original font-input refresh snapshot still
+records the fonts used by existing geometry. Its new regression fails before
+the correction. Both new cases pass in all three allocation modes, and all
+33 related font-refresh controls pass in both GC modes. The seven cascade
+controls use their unchanged canonical helper functions in a recorded harness.
+
+The first production cohort, executable `5bb0de16…`, passes all seven focused
+browser fixtures, Hacker News, first-frame WIRED and the SVG source-switch
+control. A later cohort on `0cf9c955…` contains both commits and passes the same
+seven fixtures, Hacker News and the SVG control. TechCrunch retains these
+strict failures with its original manifest `e96b9b25…` and references unchanged:
+
+| Production cohort | Cache | Saved source → Brave | Independent Brave replay | Vox → Brave |
+| --- | --- | ---: | ---: | ---: |
+| `5bb0de16…` | Cold | 0 | 0 | **34,710** |
+| `5bb0de16…` | Complete | 0 | 0 | **51,841** |
+| `0cf9c955…` | Cold | 0 | 0 | **34,838** |
+| `0cf9c955…` | Complete | 0 | 0 | **51,841** |
+
+The first cold capture has 34,709 one-level differences and one larger SVG-logo
+pixel. Its complete-cache capture additionally differs at 17,131 sidebar
+headline pixels. The later cold capture adds 128 menu-icon pixels. The warmed
+font mismatch survives both guards, so these results do not establish a
+deterministic full-page correction or a matched improvement over prior builds.
+
+The later WIRED attempt has zero saved-source and native differences, but its
+independent Brave replay differs at **1,838 pixels** in the bottom-left photo
+region `(48,735)`–`(175,767)`. That attempt fails reference qualification.
+The earlier strict WIRED pass remains tied to its earlier cohort; the failed
+attempt is retained without changing readiness requirements or tolerances.
+
+Two separate complete rendering cohorts pass **135 tests / 141 exact
+captures** on `cba0b798…` and `18e8a898…`. The latter is proven to contain both
+commits. Each cohort pins its own executable, native libraries, canonical
+tools, fixtures and references throughout a finite bundle lease. The broad
+suite does not close the full-site failures above. The four new focused cases
+and the 59 related controls retain their actual compiler/test/guard exits;
+failed reducers, disk exhaustion and discarded hypotheses remain in the
+evidence. No animation, live-site, scrolling or performance acceptance is
+claimed.
+
+[Results and qualifications](evidence/techcrunch-font-cache-guards-20261105.json),
+[complete attempts and captures](evidence/techcrunch-font-cache-guards-20261105.zip).
 
 ## The Register: block-content centering (2026-11-03)
 
