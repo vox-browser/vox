@@ -6895,6 +6895,29 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			if pattern_flags == 0 {
 				app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 			}
+			// Border-trimmed destinations keep the generic tile walk. Blink snaps
+			// in its paint-offset space, so resolve a translated command there.
+			mut chromium_single_tile := ?ChromiumSingleTileBackground(none)
+			if gpu_bitmap_tiles && pattern_flags == 0 && image_bounds == clip
+				&& matrix[0] == 1 && matrix[1] == 0 && matrix[2] == 0 && matrix[3] == 1 {
+				background_paint_rect := image_data.background_paint_rect()
+				paint_rect := painting.Rect{background_paint_rect.x, background_paint_rect.y,
+					background_paint_rect.width, background_paint_rect.height}
+				if background_data := image_data.background_layer_data {
+					if background_data.layout_coordinate_scale == 1 && paint_rect.width > 0
+						&& paint_rect.height > 0 {
+						offset_x, offset_y := matrix[4], matrix[5]
+						if single := chromium_single_tile_background(background_data.layer,
+							background_data.resolution_context, paint_rect.translated(painting.Point{offset_x, offset_y}),
+							area.translated(painting.Point{offset_x, offset_y}), f64(intrinsic_width), f64(intrinsic_height)) {
+							chromium_single_tile = ChromiumSingleTileBackground{
+								...single
+								destination: single.destination.translated(painting.Point{-offset_x, -offset_y})
+							}
+						}
+					}
+				}
+			}
 			if paint_command_image_allows_force_dark(*command, plan.first_tile.width,
 				plan.first_tile.height, image) {
 				image = app.force_dark_image_for_url(image_data.image_url, image)
@@ -6969,7 +6992,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 					}
 				}
 			}
-			tiles := if used_native_repeated_bitmap {
+			tiles := if used_native_repeated_bitmap || chromium_single_tile != none {
 				[]painting.Rect{}
 			} else {
 				painting.background_tiles_from_plan_limited(plan, image_bounds, 4096)
@@ -6979,6 +7002,31 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			mut native_tiles_nearest := 0
 			r := image_data.image_clip_radii
 			tile_clip_radii := [f32(r.top_left.x), f32(r.top_left.y), f32(r.top_right.x), f32(r.top_right.y), f32(r.bottom_right.x), f32(r.bottom_right.y), f32(r.bottom_left.x), f32(r.bottom_left.y)]!
+			// One drawImageRect takes the single-image path, which rasterizes in
+			// Chromium's tile grid like the original single-tile draw.
+			if single := chromium_single_tile {
+				destination := single.destination
+				source := single.source
+				scaling_mode := painting.to_gfx_scaling_mode(image_data.image_rendering,
+					painting.IntSize{image.width, image.height},
+					painting.IntSize{int(destination.width), int(destination.height)})
+				// Snap the clip in the same translated space as the destination.
+				offset := painting.Point{matrix[4], matrix[5]}
+				device_clip := pixel_snapped_background_bitmap_rect(original_clip.translated(offset))
+					.translated(painting.Point{-offset.x, -offset.y})
+				$if macos {
+					C.native_draw_image_part_transformed(image, f32(destination.x), f32(destination.y),
+						f32(destination.width), f32(destination.height), f32(source.x), f32(source.y),
+						f32(source.width), f32(source.height), f32(device_clip.x), f32(device_clip.y),
+						f32(device_clip.width), f32(device_clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]),
+						f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width),
+						f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
+						1
+					} else {
+						0
+					}, &tile_clip_radii[0])
+				}
+			}
 			for original_tile in tiles {
 				tile := if snap_bitmap { pixel_snapped_background_bitmap_rect(original_tile) } else { original_tile }
 				if image_data.background_svg_document != none || image_data.background_static_svg_resource != none {
@@ -7488,10 +7536,12 @@ fn (mut app BrowserApp) draw() {
 			if !scroll_damage.unoptimized || scroll_damage.reused {
 				draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 			}
-			// Experiment: keep the repainted rectangles on the GPU for this frame.
+			// Keep the repainted rectangles on the GPU for this frame unless the
+			// user turned GPU-accelerated scrolling off in advanced settings.
 			mut gpu_canvas := false
 			$if macos {
-				if scroll_damage.reused && app.ctx.native_rendering {
+				if scroll_damage.reused && app.ctx.native_rendering
+					&& !browsersettings.current().disable_gpu_canvas {
 					gpu_canvas = C.native_gpu_canvas_begin() != 0
 				}
 			}

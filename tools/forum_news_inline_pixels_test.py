@@ -271,6 +271,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
         write_json(output / 'pixels.json', verdict)
         self.assertTrue(verdict['exact'], verdict['metrics'] + '\nArtifacts: ' + str(output))
 
+    def test_snapped_backgrounds_sample_from_the_unsnapped_paint_rect(self):
+        self.compare_fixture('discord-background-paint-rect', width=1024, height=768)
+
     def test_cnn_solid_svg_background_keeps_the_header_in_one_picture(self):
         self.compare_fixture('cnn-svg-background-header', width=1024, height=768)
 

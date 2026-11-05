@@ -872,6 +872,11 @@ pub:
 	image_attachment            string
 	background_layer_data       ?&PaintBackgroundLayerData = ?&PaintBackgroundLayerData(none)
 	background_blend_mode       painting.BlendMode
+	// Blink positions and samples a background image against its unsnapped
+	// paint rect; the clip above is that rect after pixel snapping. Each byte
+	// holds one edge's signed offset from the snapped clip in 1/64 pixels
+	// (left, top, right, bottom), at most half a pixel, in the enum's padding.
+	background_paint_rect_snap  u32
 }
 
 // Immutable source-space path and SVG paint parameters, shared through
@@ -2371,11 +2376,29 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 					width: b.canvas().viewport_width
 					height: b.canvas().viewport_height
 				}, box.snaps_background_rect, image_destination, gradient_bleed_clip) {
+					mut placed := command
+					if box.snaps_background_rect && !box.canvas().paints_canvas_background
+						&& command.image_data != unsafe { nil } {
+						offset := box.decorations().background_paint_offset
+						unsnapped := background_box_rect_from_border(box, layer.clip,
+							LayoutRect{border_rect.x + offset.x, border_rect.y + offset.y,
+							border_rect.width, border_rect.height})
+						if snap := chromium_background_paint_rect_snap(unsnapped, clip) {
+							data := *command.image_data
+							placed = PaintCommand{
+								...command
+								image_data: &PaintImageData{
+									...data
+									background_paint_rect_snap: snap
+								}
+							}
+						}
+					}
 					// Canvas images move with the viewport's scroll frame. The
 					// canvas color and fixed layers stay in the box's own context.
 					commands << if box.canvas().paints_canvas_background && layer.attachment == 'scroll' {
-						PaintCommand{ ...command, visual_context_index: box.canvas_background_scroll_context }
-					} else { command }
+						PaintCommand{ ...placed, visual_context_index: box.canvas_background_scroll_context }
+					} else { placed }
 					if box.snaps_background_rect {
 						chromium_pair_background_image_color(mut commands)
 					}
@@ -6123,4 +6146,34 @@ fn rounded_rect_svg_path(x f64, y f64, width f64, height f64, input_radii BoxRad
 		path += ' L ${fmt_px(x)} ${fmt_px(y)}'
 	}
 	return path + ' Z'
+}
+
+// Packs an unsnapped paint rect as its edges' 1/64-pixel offsets from the
+// snapped clip. Offsets beyond half a pixel mean the rects are unrelated.
+fn chromium_background_paint_rect_snap(unsnapped LayoutRect, snapped LayoutRect) ?u32 {
+	edges := [unsnapped.x - snapped.x, unsnapped.y - snapped.y,
+		unsnapped.x + unsnapped.width - snapped.x - snapped.width,
+		unsnapped.y + unsnapped.height - snapped.y - snapped.height]
+	mut packed := u32(0)
+	for index, edge in edges {
+		units := math.round(edge * 64)
+		if units < -32 || units > 32 || units != edge * 64 { return none }
+		packed |= u32(u8(i8(units))) << (8 * index)
+	}
+	return packed
+}
+
+// The unsnapped paint rect recorded by chromium_background_paint_rect_snap().
+pub fn (data &PaintImageData) background_paint_rect() LayoutRect {
+	left := data.image_clip_x + background_paint_rect_snap_edge(data.background_paint_rect_snap, 0)
+	top := data.image_clip_y + background_paint_rect_snap_edge(data.background_paint_rect_snap, 1)
+	right := data.image_clip_x + data.image_clip_width
+		+ background_paint_rect_snap_edge(data.background_paint_rect_snap, 2)
+	bottom := data.image_clip_y + data.image_clip_height
+		+ background_paint_rect_snap_edge(data.background_paint_rect_snap, 3)
+	return LayoutRect{left, top, right - left, bottom - top}
+}
+
+fn background_paint_rect_snap_edge(snap u32, index int) f64 {
+	return f64(i8(u8(snap >> (8 * index)))) / 64
 }
