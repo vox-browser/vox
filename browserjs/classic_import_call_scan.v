@@ -61,8 +61,9 @@ fn classic_source_may_need_import_rewrite(source string) bool {
 }
 
 fn classic_import_call_scan_can_skip(source string) bool {
-	if disable_classic_import_call_scan || classic_source_may_need_import_rewrite(source) {
-		return false
+	if disable_classic_import_call_scan { return false }
+	if classic_source_may_need_import_rewrite(source) {
+		return classic_named_import_scan_can_skip(source)
 	}
 	if classic_import_call_diagnostics && !classic_import_call_skip_reported {
 		classic_import_call_skip_reported = true
