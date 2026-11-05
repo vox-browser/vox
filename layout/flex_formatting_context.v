@@ -495,6 +495,14 @@ fn flex_main_size_through_aspect_ratio(item &Node, item_state &UsedValues, main_
 fn flex_formatting_context_transferred_size_suggestion(item &Node, item_state &UsedValues, row_axis bool) ?CSSPixels {
 	box := item.as_box() or { return none }
 	ratio := box.preferred_aspect_ratio() or { return none }
+	// Blink transfers only a cross size that is definite from style or from
+	// stretching. A replaced item's height left by an earlier layout pass
+	// would otherwise round-trip its width through the ratio.
+	if item.is_replaced_box() && item.document().font_rendering_policy() == .chromium
+		&& item.computed_values().size_value(if row_axis { css.PropertyID.height } else { css.PropertyID.width }).is_auto() {
+		container := item.parent() or { return none }
+		if effective_flex_cross_alignment(container, item) !in [.stretch, .normal] { return none }
+	}
 	has_definite_cross_size := if row_axis {
 		item_state.has_definite_height()
 	} else {
@@ -515,12 +523,36 @@ fn flex_formatting_context_transferred_size_suggestion(item &Node, item_state &U
 	}
 }
 
+// Blink's content size suggestion is the replaced item's own min-content
+// size: its natural width, or a width transferred from its block size.
+// Percentage compression applies only to min-content contributions, so a
+// percentage width or max-width does not collapse this suggestion to zero.
+fn flex_chromium_replaced_min_content_width(mut state LayoutState, item &Node) ?CSSPixels {
+	if !item.is_replaced_box() || item.document().font_rendering_policy() != .chromium {
+		return none
+	}
+	box := item.as_box() or { return none }
+	if transferred := calculate_transferred_width_for_replaced_element(mut state, box) {
+		return transferred
+	}
+	return box.auto_content_box_size().width
+}
+
 // https://drafts.csswg.org/css-flexbox-1/#min-size-auto
 fn flex_formatting_context_automatic_minimum_size(mut state LayoutState, item &Node, item_state &UsedValues, row_axis bool, available_main_size ?CSSPixels) CSSPixels {
 	if flex_item_is_scroll_container(item) {
 		return CSSPixels.new(0)
 	}
-	mut content_suggestion := flex_intrinsic_main_size(mut state, item, item_state, row_axis, true)
+	// Blink resolves this suggestion only while laying items out in a definite
+	// container. Intrinsic container sizing sums plain min-content
+	// contributions, where a percentage-sized replaced item still contributes 0.
+	mut content_suggestion := if row_axis && available_main_size != none {
+		flex_chromium_replaced_min_content_width(mut state, item) or {
+			flex_intrinsic_main_size(mut state, item, item_state, row_axis, true)
+		}
+	} else {
+		flex_intrinsic_main_size(mut state, item, item_state, row_axis, true)
+	}
 	content_suggestion = flex_main_size_through_aspect_ratio(item, item_state, content_suggestion, row_axis)
 	mut minimum := content_suggestion
 	if transferred := flex_formatting_context_transferred_size_suggestion(item, item_state, row_axis) {
