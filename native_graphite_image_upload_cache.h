@@ -87,6 +87,9 @@ public:
         // An earlier non-mipmapped upload can gain GPU-generated levels.
         // New uploads still use the raster image's CPU mipmaps.
         bool needs_mipmaps = false;
+        // A retained planar upload gains GPU-generated levels per plane,
+        // without flattening the YUVA image into an RGBA texture.
+        bool needs_planar_mipmaps = false;
     };
     Request prepare(VoxGraphiteImage const& image, int upload_width, int upload_height, bool mipmapped)
     {
@@ -122,6 +125,7 @@ public:
             have_digest = true;
         };
         Texture mipmap_source {};
+        bool planar_mipmap_source = false;
         for (auto it = entries.begin(); it != entries.end(); ++it) {
             auto const& entry = **it;
             auto const& prior = entry.image;
@@ -143,7 +147,8 @@ public:
             // Prefer an existing complete upload to upgrading another entry.
             // Planar YUV retains its own plane-upload path.
             if (mipmapped && !entry.mipmapped) {
-                if (!(image.flags & 4)) mipmap_source = entry.texture;
+                if (image.flags & 4) planar_mipmap_source = true;
+                else mipmap_source = entry.texture;
                 continue;
             }
             auto texture = entry.texture;
@@ -164,7 +169,7 @@ public:
                 std::memcpy(entry->source.data() + y * row_bytes, image.pixels + y * pitch, row_bytes);
         }
         bool needs_mipmaps = bool(mipmap_source);
-        return {std::move(mipmap_source), std::move(entry), needs_mipmaps};
+        return {std::move(mipmap_source), std::move(entry), needs_mipmaps, planar_mipmap_source};
     }
     void finish(Request&& request, Texture texture)
     {

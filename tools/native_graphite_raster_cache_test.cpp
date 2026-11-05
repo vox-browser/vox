@@ -610,6 +610,8 @@ int main(int argc, char** argv)
         std::vector<uint8_t> planes(33, 91);
         auto yuv = descriptor; yuv.width = 3; yuv.height = 3; yuv.pitch = 12;
         yuv.flags = flags; yuv.pixels = planes.data();
+        auto cold_planar_mips = uploads.prepare(yuv, 3, 3, true);
+        assert(cold_planar_mips.pending && !cold_planar_mips.needs_planar_mipmaps);
         upload = uploads.prepare(yuv, 3, 3, false);
         assert(upload.pending);
         uploads.finish(std::move(upload), texture);
@@ -619,19 +621,31 @@ int main(int argc, char** argv)
         upload = uploads.prepare(yuv, 2, 2, false);
         uploads.finish(std::move(upload), texture);
         assert(!uploads.prepare(nearest, 2, 2, false).texture);
+        assert(!uploads.prepare(nearest, 2, 2, true).needs_planar_mipmaps);
         upload = uploads.prepare(yuv, 3, 3, false);
         uploads.finish(std::move(upload), texture);
         // Do not turn a planar upload into an RGBA copy while adding mips.
         auto planar_mips = uploads.prepare(yuv, 3, 3, true);
         assert(!planar_mips.texture && planar_mips.pending && !planar_mips.needs_mipmaps);
+        assert(planar_mips.needs_planar_mipmaps);
+        // Failed mipmap generation preserves the original upload and retry policy.
+        uploads.finish(std::move(planar_mips), nullptr);
+        assert(uploads.prepare(yuv, 3, 3, true).needs_planar_mipmaps);
+        planar_mips = uploads.prepare(yuv, 3, 3, true);
+        uploads.finish(std::move(planar_mips), mip_texture);
+        auto planar_hit = uploads.prepare(yuv, 3, 3, true);
+        assert(planar_hit.texture == mip_texture && !planar_hit.pending
+            && !planar_hit.needs_planar_mipmaps && !planar_hit.needs_mipmaps);
         size_t last = flags & 16 ? 26 : flags & VOX_GRAPHITE_IMAGE_YUV422 ? 20 : 16;
         planes[last]++;
         assert(!uploads.prepare(yuv, 3, 3, false).texture);
+        assert(!uploads.prepare(yuv, 3, 3, true).needs_planar_mipmaps);
     }
     uploads.clear();
     assert(!uploads.prepare(descriptor, 2, 2, false).texture);
     auto first_mips = uploads.prepare(descriptor, 2, 2, true);
     assert(!first_mips.texture && first_mips.pending && !first_mips.needs_mipmaps);
+    assert(!first_mips.needs_planar_mipmaps);
     upload = uploads.prepare(descriptor, 2, 2, false);
     uploads.finish(std::move(upload), nullptr);
     assert(!uploads.prepare(descriptor, 2, 2, false).texture);

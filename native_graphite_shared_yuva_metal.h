@@ -7,12 +7,29 @@
 // without opening a GPU blit encoder for three small luminance textures.
 static sk_sp<SkImage> vox_shared_yuva_image(skgpu::graphite::Recorder* recorder,
     SkYUVAPixmaps const& pixmaps, SkImage::RequiredProperties properties,
-    sk_sp<SkColorSpace> color_space)
+    sk_sp<SkColorSpace> color_space, bool generate_gpu_mips = false)
 { @autoreleasepool {
     auto fallback = [&] {
         return SkImages::TextureFromYUVAPixmaps(recorder, pixmaps, properties, false,
             color_space);
     };
+    if (generate_gpu_mips && properties.fMipmapped && pixmaps.isValid()
+        && pixmaps.yuvaInfo().planeConfig() == SkYUVAInfo::PlaneConfig::kY_U_V
+        && pixmaps.numPlanes() == 3) {
+        // Chromium upgrades the separate uploaded planes on the GPU. Fresh
+        // CPU mipmaps filter and round differently. Recreate the validated
+        // base uploads, then retain YUVA conversion until final sampling.
+        std::array<sk_sp<SkImage>, 3> planes;
+        for (int index = 0; index < 3; ++index) {
+            auto raster = SkImages::RasterFromPixmapCopy(pixmaps.plane(index));
+            auto base = SkImages::TextureFromImage(recorder, raster, {false});
+            if (!base) return nullptr;
+            planes[index] = SkImages::TextureFromImage(recorder, base, properties);
+            if (!planes[index]) return nullptr;
+        }
+        return SkImages::TextureFromYUVAImages(recorder, pixmaps.yuvaInfo(),
+            SkSpan<const sk_sp<SkImage>>(planes.data(), planes.size()), color_space);
+    }
     id<MTLDevice> device = vox_shared_metal_device(recorder);
     if (!device || properties.fMipmapped || !pixmaps.isValid()
         || pixmaps.yuvaInfo().planeConfig() != SkYUVAInfo::PlaneConfig::kY_U_V

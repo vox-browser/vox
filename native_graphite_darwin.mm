@@ -575,7 +575,7 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
             (image->flags & 8) ? kJPEG_Full_SkYUVColorSpace : kRec601_SkYUVColorSpace);
         auto pixmaps = SkYUVAPixmaps::FromExternalPixmaps(yuva, planes);
         texture = vox_shared_yuva_image(recorder, pixmaps, properties,
-            SkColorSpace::MakeSRGB());
+            SkColorSpace::MakeSRGB(), upload.needs_planar_mipmaps);
     } else if (!texture) {
         if (static_cast<size_t>(image->pitch) < static_cast<size_t>(image->width) * 4) return false;
         auto src_info = SkImageInfo::Make(image->width, image->height,

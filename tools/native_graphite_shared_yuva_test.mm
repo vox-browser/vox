@@ -82,7 +82,8 @@ int main(int argc, char** argv)
     int cases = 0;
     for (auto conversion : {kJPEG_Full_SkYUVColorSpace, kRec601_SkYUVColorSpace,
             kRec709_SkYUVColorSpace})
-        for (auto sampling : {SkYUVAInfo::Subsampling::k420, SkYUVAInfo::Subsampling::k444})
+        for (auto sampling : {SkYUVAInfo::Subsampling::k420, SkYUVAInfo::Subsampling::k422,
+                SkYUVAInfo::Subsampling::k444})
             for (bool padded : {false, true})
                 for (bool mipmaps : {false, true}) {
                     auto control = render_yuva(false, 37, 29, sampling, conversion, mipmaps,
