@@ -10,8 +10,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 SMOKE = r'''
 #include <sys/mman.h>
+#include <sys/wait.h>
 #include <stdint.h>
-int main(void) {
+#include "native_allocator_policy_darwin.h"
+int main(int argc, char **argv) {
     size_t size = 512 * 1024;
     volatile uint8_t *p = mmap(0, size, PROT_READ | PROT_WRITE,
         MAP_ANON | MAP_PRIVATE, -1, 0);
@@ -20,7 +22,18 @@ int main(void) {
     void *reset = mmap((void *)p, size, PROT_READ | PROT_WRITE,
         MAP_ANON | MAP_PRIVATE | MAP_FIXED, -1, 0);
     if (reset != (void *)p || p[0] || p[size - 1]) return 3;
-    return munmap((void *)p, size) ? 4 : 0;
+    if (munmap((void *)p, size)) return 4;
+    if (argc == 1) {
+        // A fork/exec child has the same executable and inherited owner token,
+        // but a different PID. It must not append events to its parent's file.
+        pid_t child = fork();
+        if (child < 0) return 5;
+        if (!child) { execl(argv[0], argv[0], "child", (char *)0); _exit(6); }
+        int status;
+        if (waitpid(child, &status, 0) != child || !WIFEXITED(status)
+            || WEXITSTATUS(status)) return 7;
+    }
+    return 0;
 }
 '''
 
@@ -54,8 +67,11 @@ def main():
 
     guarded('compile-probe', ['clang', '-O2', '-dynamiclib',
             str(ROOT / 'tools/prealloc_region_probe.c'), '-o', str(probe)])
-    guarded('compile-smoke', ['clang', '-O0', str(source), '-o', str(executable)])
+    guarded('compile-smoke', ['clang', '-O0', '-I', str(ROOT),
+                             str(source), '-o', str(executable)])
     env = dict(os.environ, DYLD_INSERT_LIBRARIES=str(probe))
+    env.pop('MallocSpaceEfficient', None)
+    env.pop('VOX_REGION_SAMPLE_OWNER', None)
     trace = out / 'mappings.txt'
     env.update(VOX_REGION_SAMPLE_OUT=str(trace),
                VOX_REGION_SAMPLE_PROCESS=executable.name)
@@ -65,18 +81,25 @@ def main():
     guarded('run-selected', [str(executable)], env=env, runtime=True)
     lines = trace.read_text().splitlines()
     target = [line for line in lines if line.startswith('# executable ')]
-    assert len(target) == 1 and target[0].endswith(' ' + str(executable)), target
+    # The native allocator constructor restarts the selected process once.
+    # Both epochs retain the PID and file; only the second runs main().
+    assert len(target) == 2 and len(set(target)) == 1, target
+    assert target[0].endswith(' ' + str(executable)), target
     events = [line.split() for line in lines if line.startswith(('M ', 'U '))]
     assert len(events) == 2, events
     assert events[0][0] == 'M' and events[1][0] == 'U', events
     assert events[0][1:3] == events[1][1:3], events
     assert int(events[0][2]) == 512 * 1024 and len(events[0]) > 4, events
+    original = trace.read_bytes()
+    guarded('run-existing-output', [str(executable)], env=env, runtime=True)
+    assert trace.read_bytes() == original, 'a new process claimed an existing trace'
     skipped = out / 'not-selected.txt'
     env.update(VOX_REGION_SAMPLE_OUT=str(skipped),
                VOX_REGION_SAMPLE_PROCESS='not-this-process')
     guarded('run-not-selected', [str(executable)], env=env, runtime=True)
     assert not skipped.exists()
-    print('Passed: target ownership, map/unmap stacks, fixed-map discard, and non-target exclusion.')
+    print('Passed: exec ownership, child exclusion, existing-output protection, '
+          'map/unmap stacks, fixed-map discard, and non-target exclusion.')
     return 0
 
 

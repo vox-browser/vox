@@ -5,6 +5,8 @@
 // the output file before the browser starts. Override VOX_REGION_SAMPLE_PROCESS
 // only for another explicit diagnostic target. MAP_FIXED arena discards are
 // excluded; mapping capacities do not establish live allocations or RSS.
+// The selected process retains its output descriptor across exec (Vox restarts
+// for native allocator policy). A different PID cannot inherit ownership.
 // VOX_REGION_SAMPLE_OUT is required. VOX_REGION_SAMPLE_TRIGGER optionally gates
 // events on an existing file; VOX_REGION_MIN_BYTES defaults to 256 KiB.
 #include <sys/mman.h>
@@ -24,6 +26,29 @@ static int output = -1;
 static size_t minimum = 256 * 1024;
 static const char *trigger;
 static __thread int busy;
+
+static int select_output(const char *path) {
+    const char *owner = getenv("VOX_REGION_SAMPLE_OWNER");
+    int pid, descriptor;
+    char extra;
+    struct stat inherited, named;
+    if (owner && sscanf(owner, "%d:%d%c", &pid, &descriptor, &extra) == 2
+        && pid == getpid() && descriptor >= 0
+        && !fstat(descriptor, &inherited) && !stat(path, &named)
+        && S_ISREG(inherited.st_mode) && inherited.st_dev == named.st_dev
+        && inherited.st_ino == named.st_ino) {
+        int flags = fcntl(descriptor, F_GETFL);
+        if (flags >= 0 && (flags & O_APPEND) && (flags & O_ACCMODE) == O_WRONLY)
+            return descriptor;
+    }
+    int descriptor_out = open(path, O_CREAT | O_EXCL | O_WRONLY | O_APPEND, 0600);
+    if (descriptor_out >= 0) {
+        char value[80];
+        snprintf(value, sizeof(value), "%d:%d", getpid(), descriptor_out);
+        setenv("VOX_REGION_SAMPLE_OWNER", value, 1);
+    }
+    return descriptor_out;
+}
 
 static void image_added(const struct mach_header *header, intptr_t slide) {
     (void)slide;
@@ -52,7 +77,7 @@ __attribute__((constructor)) static void initialize(void) {
     if (bytes && strtoull(bytes, 0, 10)) minimum = strtoull(bytes, 0, 10);
     trigger = getenv("VOX_REGION_SAMPLE_TRIGGER");
     busy = 1;
-    output = open(path, O_CREAT | O_EXCL | O_WRONLY | O_APPEND, 0600);
+    output = select_output(path);
     if (output >= 0) {
         char line[PATH_MAX + 80];
         int n = snprintf(line, sizeof(line), "# executable %d %s\n", getpid(), executable);
