@@ -4566,11 +4566,15 @@ static BOOL native_css_filter_bounded_output_is_empty(NativeCSSFilterLayer const
             CGRectMake(0, 0, layer->canvas_width * layer->scale,
                 layer->canvas_height * layer->scale))) return NO;
     CGRect clip = CGContextGetClipBoundingBox(layer->destination);
-    if (CGRectIsNull(clip) || CGRectIsInfinite(clip)
-        || !isfinite(CGRectGetMinX(clip)) || !isfinite(CGRectGetMaxX(clip))
-        || !isfinite(CGRectGetMinY(clip)) || !isfinite(CGRectGetMaxY(clip))) return NO;
-    clip = CGRectInset(clip, -2 / layer->scale, -2 / layer->scale);
-    if (CGRectIntersectsRect(clip, layer->pointwise_output_bounds)) return NO;
+    // Quartz reports a null rectangle when intersected damage clips are
+    // empty. That is also a no-op, rather than an unknown/unbounded clip.
+    if (!CGRectIsNull(clip) && !CGRectIsEmpty(clip)) {
+        if (CGRectIsInfinite(clip)
+            || !isfinite(CGRectGetMinX(clip)) || !isfinite(CGRectGetMaxX(clip))
+            || !isfinite(CGRectGetMinY(clip)) || !isfinite(CGRectGetMaxY(clip))) return NO;
+        clip = CGRectInset(clip, -2 / layer->scale, -2 / layer->scale);
+        if (CGRectIntersectsRect(clip, layer->pointwise_output_bounds)) return NO;
+    }
 #ifdef VOX_TEST_EMPTY_BOUNDED_POINTWISE_FILTERS
     ++native_test_empty_bounded_pointwise_filters;
 #endif

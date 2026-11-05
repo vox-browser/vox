@@ -17,7 +17,11 @@ static void paint(id view, SEL selector, NSRect rect) {
     CGContextRef frame = NSGraphicsContext.currentContext.CGContext;
     CGContextSetRGBFillColor(frame, .17, .43, .71, 1);
     CGContextFillRect(frame, rect);
-    if (clipped) CGContextClipToRect(frame, CGRectMake(49.5, 79.25, 73.5, 51.25));
+    if (clipped == 1) CGContextClipToRect(frame, CGRectMake(49.5, 79.25, 73.5, 51.25));
+    if (clipped == 2) {
+        CGContextClipToRect(frame, CGRectZero);
+        assert(CGRectIsEmpty(CGContextGetClipBoundingBox(frame)));
+    }
     if (fractional) CGContextTranslateCTM(frame, .25, 0);
     native_begin_css_filter_layer(211, 173);
     CGContextRef input = NSGraphicsContext.currentContext.CGContext;
@@ -60,7 +64,7 @@ int main(void) { @autoreleasepool {
     test_scale=1; check_guards();
     NSView *view=[[NSView alloc] initWithFrame:NSMakeRect(0,0,211,173)];
     unsigned cases=0, bounded=0, avoided=0;
-    for (int scale=1; scale<=2; ++scale) for (clipped=0; clipped<2; ++clipped)
+    for (int scale=1; scale<=2; ++scale) for (clipped=0; clipped<3; ++clipped)
     for (fractional=0; fractional<2; ++fractional) for (placement=-2; placement<=2; ++placement)
     for (content=0; content<4; ++content) for (operation=0; operation<9; ++operation) {
         @autoreleasepool {
@@ -71,7 +75,7 @@ int main(void) { @autoreleasepool {
             unsigned before=native_test_empty_bounded_pointwise_filters;
             CGImageRef candidate=native_layer_raster_frame(view,scale,(IMP)paint); assert(candidate);
             assert(admitted == (!fractional && operation != 8)); bounded += admitted;
-            BOOL expect_skip=admitted && (clipped ? placement != 0 : abs(placement) == 2)
+            BOOL expect_skip=admitted && (clipped == 2 || (clipped == 1 ? placement != 0 : abs(placement) == 2))
                 && !getenv("VOX_DISABLE_EMPTY_BOUNDED_POINTWISE_FILTERS");
             assert((native_test_empty_bounded_pointwise_filters > before) == expect_skip);
             avoided += expect_skip;
