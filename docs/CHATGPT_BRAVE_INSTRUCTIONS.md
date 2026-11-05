@@ -2195,3 +2195,69 @@ compile's unused shared-header function error, and a fixture audit using the
 wrong selector JSON shape. All corrected final focused and native fixture
 checks pass; every original failure remains retained. The broad-check cadence
 stays at zero. The requested **5% advantage over Brave remains unmet**.
+
+
+## November 5: solid SVG-fill effect surfaces
+
+Commit `4cfd616db` lets solid SVG fills contribute a known ink envelope to an
+opacity group. It reuses the serialized native path bounds, including both
+transforms, curve controls and arc extrema, with a screen-space antialiasing
+fringe. Strokes, gradients, patterns, malformed/non-finite paths and unsupported
+effects retain the original unbounded behavior. The existing border envelope
+can now participate in groups that also contain an eligible SVG fill.
+`VOX_RETAIN_UNBOUNDED_SVG_EFFECTS` selects the original SVG behavior.
+
+All **15 focused jobs pass**, covering **192 case executions**: the 23-case
+selection runs in both variants under poisoned preallocation, ordinary GC,
+no GC and ASan/UBSan, followed by two fresh four-case executions after the
+format-only test commit `73471acda`. Sanitizers use C `-O0`. Compile peak is
+5,531,303,936 bytes under 12 GiB; runtime peak is 282,001,408 bytes under 3 GiB.
+Tests cover transformed bounds, curve/arc envelopes, rejected geometry, nesting,
+clipping and live path replacement without altering an earlier recording.
+The native static fixture is pixel-exact between variants at scales 1 and 2;
+all four fresh captures pass title, readiness, viewport and element-count audits.
+The original formatter verification and optional-comma classifier failures are
+retained with the corrected verification and fresh executions.
+
+Completed parallel executable
+`e987541d3c1f1285d790a9886f45292a64c9a4671eb627d152f731f6b2e62cae`
+uses 33 C units. Its receipt has identical aggregate build-input hashes before
+and after compilation. Exact owned-source blobs at its recorded Git head and
+available bounds-function disassembly are retained; this is not a sealed-C
+proof. A nonblocking shared publication lease pins the canonical bundle through
+the four native fixture captures, eligibility diagnostic and matched cohort.
+No production build or app copy is made. The lease is released on completion.
+
+All twelve frozen-page captures pass JavaScriptCore bootstrap, full content,
+unchanged reference pixels, stable input identities and zero browser/kernel
+exits. Separate diagnostics confirm bounded SVG groups with the candidate and
+none with the control; diagnostics are disabled in the matched comparison.
+
+| Four-pair launch-through-encoded-PNG diagnostic | Observed instructions |
+| --- | ---: |
+| Unbounded-SVG control observations | 29,615,362,005; 29,294,512,158 |
+| Bounded-SVG candidate observations | 29,562,561,612; 29,137,324,292 |
+| Control median | 29,454,937,081.5 |
+| Candidate median | 29,349,942,952 |
+| Observed median reduction | 0.356% |
+| Conservative control/candidate separation | −268,049,454 |
+
+The count ranges overlap, so **no whole-page instruction saving is credited**.
+No broad checkpoint is due and the cadence stays at zero. Controls complete
+348/300 frame checkpoints; candidates complete 358/375. Starting Vox load
+averages range 21.97–30.37 on 18 CPUs. Those differences qualify causal
+attribution. Brave's four lower bounds range 16,131,979,373–19,398,305,754,
+below Vox; four pairs also remain below seven-pair acceptance.
+
+The cohort retains the saved SOCKS fixture, original author scripts, empty
+private profiles/caches, five-second unfocused settle, 1024×768 viewport,
+scale 2 and exclusive-coalition launch-through-encoded-PNG boundary. OS
+filesystem/shader caches remain retained. The memory guard adopts 50 process
+identities without errors and peaks at 1,715,683,328 bytes under 12 GiB;
+controller/guard exit is zero. Driver exit 1 records the unmet Brave target.
+
+The [receipt and verified archives](performance/chatgpt-effect-svg-20261105.json)
+retain the focused checks, source proofs, every raw count, ownership audit,
+capture, command, guard and host condition. The requested **5% advantage over
+Brave remains unmet**. These frozen-page results establish neither live-site
+performance, isolated rendering time nor scrolling FPS; no catalog entry is added.
