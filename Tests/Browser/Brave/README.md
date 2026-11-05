@@ -1,5 +1,12 @@
 # Brave rendering fixtures
 
+`pikabu-direct-composited-image` and `pikabu-hoisted-image-clip` keep authored
+overflow on the final compositor quad. Commit `81c3204c9` removes a synthetic
+first-stage clip, resolving 1,097 differences in each unchanged reference.
+`native_direct_image_pixels_test.mm` checks all visible photo pixels and
+rounded edges with cold and warm uploads. See the
+[direct-image evidence](../../../docs/evidence/pikabu-direct-overflow-20261105.json).
+
 `avif-yuv-sampling` also covers a full-size nearest-neighbor upload followed
 by a smaller smooth draw of the same original YUV planes. Commit `4b0036718`
 generates GPU mipmaps for that warm upload, removing 34,796 differing pixels

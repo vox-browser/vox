@@ -12,6 +12,11 @@ fidelity and native equality; CNN matches frozen Brave but retains its separate
 source-fidelity failure. Reddit is blocked, and Stack Overflow/Pikabu remain
 deferred. See [the original checkpoints](ADBLOCK_POPULAR_SITES.md).
 
+The latest rendering checkpoint passes **134 tests / 140 captures at zero
+pixels** on `fcbdb3e6…`, with unchanged inputs and references. The AVIF sampling
+and two Pikabu image regressions are resolved. Full-site source qualification,
+access failures and deferred work remain separate from that suite result.
+
 ## Initial production baseline, November 2, 2026
 
 All comparisons use a fresh private profile, an empty response cache, 1024×768
@@ -1463,6 +1468,48 @@ helpers, and inputs remain unchanged within each cohort.
 
 [Commands, attempts, identities and limits](evidence/effect-ancestor-clip-20261105.json),
 [raw checks and captures](evidence/effect-ancestor-clip-20261105.zip).
+
+## Pikabu: direct-image overflow clipping (2026-11-05)
+
+Commit `81c3204c9` removes the **1,097-pixel** differences in both existing
+Pikabu image regressions. Directly composited images first rasterize into
+source-scaled tiles, then clip the final compositor quad. The first stage had
+a synthetic square destination clip but inherited the authored-overflow flag,
+changing interior shader interpolation. That stage now clears the flag;
+the final rounded compositor clip remains in place.
+
+The native reduction first reproduces Vox's photo pixels exactly. Omitting
+the synthetic authored clip then matches every visible Brave photo pixel,
+including rounded edge coverage. All **four cold/warm native comparisons**
+pass normally and with an ASan/UBSan caller loading the release GPU library;
+the GPU library itself is not fully sanitizer-instrumented. The predecessor
+library fails the new test at exactly 1,097 pixels. Geometry guards and all
+**2,016 complete-target/image-batch controls** pass. Initial link, geometry
+and one-ULP diagnostic attempts remain recorded; no geometry perturbation
+was added to the engine.
+
+Both Pikabu browser regressions and seven image/header controls pass at zero
+pixels on the completed production browser `fcbdb3e6…`. The original encoded
+WebP remains embedded in the unchanged HTML, and both reference PNGs remain
+unchanged. This reduced rendering result does not qualify the full site.
+
+The complete **134-test / 140-capture** rendering suite also passes with zero
+differing RGBA pixels and unchanged inputs. The production build completed
+while the header change was uncommitted; its receipt brackets identical
+aggregate build-input hashes, and each comparison pins executable, libraries,
+tools, fixtures and owned source identities. This is working-copy build
+provenance, not a sealed-C proof or a performance claim. Full-page Pikabu work
+remains deferred as recorded in the original site report.
+
+Fresh complete-cache Hacker News and WIRED checks pass all strict gates.
+Slate remains **0 native / 0 independent replay / 19,064 source pixels**.
+The unchanged Engadget candidate `fa56c7ca…` remains **0 native / 0 independent
+replay / 295 source pixels** and is not registered. These cohorts keep stable
+browser, fixture and tool identities; all 16 full-uBO oracle processes exit
+normally without surviving observed helpers. The site source gaps remain open.
+
+[Check receipts, identities and limits](evidence/pikabu-direct-overflow-20261105.json),
+[raw probes and browser captures](evidence/pikabu-direct-overflow-20261105.zip).
 
 ## WIRED: exact frozen first-frame viewport (2026-11-05)
 
