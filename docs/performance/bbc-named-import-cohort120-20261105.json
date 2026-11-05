@@ -1,0 +1,1357 @@
+{
+  "status": "Cohort120 passes all21capture audits; strict10%target fails. Named import member filter median point reduction750,947,238 (2.7952%), paired median595,012,366 with7improvements/0regressions. Conservative control ratio1.02266916 fails; no robust saving or catalog credit.",
+  "implementation_commit": "54699c2c4",
+  "control_commit": "41907c4a5",
+  "statistics": {
+    "valid_capture_cohort": true,
+    "full_comparison_available": true,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 26633588200,
+            "upper": 26633588200
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27245321494,
+            "upper": 27245321494
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17419811421,
+            "upper": 17449811612
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 26049296888,
+            "upper": 26049296888
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26810260069,
+            "upper": 26810260069
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17585057568,
+            "upper": 17591638374
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 26851138507,
+            "upper": 26851138507
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26865367149,
+            "upper": 26865367149
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17482992101,
+            "upper": 17483292700
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 25356598425,
+            "upper": 25356598425
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27743301950,
+            "upper": 27743301950
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17405587069,
+            "upper": 17434213956
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 26114419911,
+            "upper": 26114419911
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26480180792,
+            "upper": 26480180792
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17458464212,
+            "upper": 17485421527
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 27028711501,
+            "upper": 27028711501
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27623723867,
+            "upper": 27623723867
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17440922093,
+            "upper": 17480678824
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 26020882606,
+            "upper": 26020882606
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26429575351,
+            "upper": 26429575351
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17405248765,
+            "upper": 17425840935
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      }
+    ],
+    "failed_attempts": [],
+    "attempts_retained": 21,
+    "capture_audits_passed": 21,
+    "median_vox": 26114419911,
+    "median_control": 26865367149,
+    "median_brave_lower": 17440922093,
+    "point_reduction": 750947238,
+    "point_fraction": 0.0279522417778665,
+    "observed_complete_vox_control_pairs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "partial_point_reduction": 750947238,
+    "paired_control_minus_vox": [
+      611733294,
+      760963181,
+      14228642,
+      2386703525,
+      365760881,
+      595012366,
+      408692745
+    ],
+    "improvements": 7,
+    "regressions": 0,
+    "worst_vox_over_best_control": 1.0226691553701914,
+    "strict_left": 270287115010,
+    "strict_right": 156647238885,
+    "conservative_brave_ratio": 1.5529057852566694,
+    "target_met": false,
+    "broad_trigger": true,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 115,
+      "acceptance_browser_attempts": 2482,
+      "last_measured_id": 120,
+      "preflight_only_ids": [
+        104,
+        110,
+        111,
+        113,
+        118
+      ]
+    },
+    "qualification": "Everyattempt retained;acceptance requires7complete successfultriples.No counter replacedwithzero;unavailablefullstatistics remainnull. Invalidpixel/ownership/identity/nativeexit cohort earnsnoacceptance/savingcredit. Observedpositivefull/partialmatchedpoint>=5M conservativelytriggersbroadchecks.Medians/gate alwaysusecreation-to-PNG launch_instruction_interval,never asymmetricnavigationdiagnostic.",
+    "unix": 1793907094.6010072
+  },
+  "median_paired_control_minus_vox": 595012366,
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "named_import_scan_before_png": true,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "named_import_scan_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "204af825dde1e4b83942a925970bcfd7dd6b4c6dce9cef71c3e701b6ce3d5c65",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "69d568da66a7789e7e3a6ecbc5a8a502f708eae0f190cf6a367aafd6768c0326",
+        "dirty": true,
+        "head": "c68b4bdd82d6cee20b92c25dd628cc974a34e1c2",
+        "repository_sha256": "1f8a46fdeeed240de787e41e6745be27305ea647b8a3c88846d6db5f8283d99c"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "c68b4bdd82d6cee20b92c25dd628cc974a34e1c2",
+        "id": "2eabad612c824b6b899eeb5ef41aa9c2"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "69d568da66a7789e7e3a6ecbc5a8a502f708eae0f190cf6a367aafd6768c0326",
+        "dirty": true,
+        "head": "c68b4bdd82d6cee20b92c25dd628cc974a34e1c2",
+        "repository_sha256": "1f8a46fdeeed240de787e41e6745be27305ea647b8a3c88846d6db5f8283d99c"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; only earlier classic import call filtering retained in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793906889.333211
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/call-filter-control arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793906900.064339
+  },
+  "broad": {
+    "no_new_failures": true,
+    "full_suite_pass": false,
+    "cadence_reset": false,
+    "inputs_unchanged": true,
+    "rows": [
+      {
+        "mode": "default",
+        "layout": {
+          "cases": 555,
+          "passes": 552,
+          "failures": [
+            "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+            "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+            "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+          ]
+        },
+        "main": {
+          "candidate": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "fresh_css": {
+          "cases": 64,
+          "passes": 64
+        },
+        "carried_current_browser_js_cases": 12,
+        "browser_js_arms": 2,
+        "unique_cases": 705,
+        "unique_passes": 700,
+        "unique_known_failures": 5
+      },
+      {
+        "mode": "none",
+        "layout": {
+          "cases": 555,
+          "passes": 552,
+          "failures": [
+            "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+            "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+            "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+          ]
+        },
+        "main": {
+          "candidate": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "fresh_css": {
+          "cases": 64,
+          "passes": 64
+        },
+        "carried_current_browser_js_cases": 12,
+        "browser_js_arms": 2,
+        "unique_cases": 705,
+        "unique_passes": 700,
+        "unique_known_failures": 5
+      }
+    ],
+    "current_pins": {
+      "/Users/alex/code/vox2/layout/block_layout_test.v": "1a2948c977fe7282033a5c4925970b21d2811d1563ca93bee96dc0014571891d",
+      "/Users/alex/code/vox2/layout/chromium_control_intrinsics_test.v": "5411bd3c4968972a2432c30bb91a17c0077affb304e6472f7425db081e35bc4c",
+      "/Users/alex/code/vox2/layout/chromium_definite_flex_basis_test.v": "c8af646fc803be3d5189466d3ca7923647570322b5ca81ef733b1fd272202c32",
+      "/Users/alex/code/vox2/layout/chromium_grid_flex_test.v": "3a60962eec6ab121b2dc641aa0115c0e33d1884bd03001df94b82d44136e750c",
+      "/Users/alex/code/vox2/layout/chromium_inline_block_baseline_test.v": "4f09c3aa2c0cfe0df5b49f7539a765fccb34ecea5001a6a88ef66338487bdaee",
+      "/Users/alex/code/vox2/layout/chromium_middle_atomic_baseline_test.v": "97e4b22aaf3ff687bbf18235a7e797d90899c19988eb6a89e51752d81a3c2c85",
+      "/Users/alex/code/vox2/layout/chromium_text_control_baseline_test.v": "b762eb48952a7089d479ccdc744d31936107eab7142c38250846e38229386571",
+      "/Users/alex/code/vox2/layout/definite_intrinsic_contribution_test.v": "4a5f47af1b9ce5c43afce99825313b86bccfccc172180d9f2626643055ab0354",
+      "/Users/alex/code/vox2/layout/document_geometry_scratch_test.v": "e2ae2ad82fc1fd115301cf561f4b7d29eb3ec5c229362207ab45662fea5b74e8",
+      "/Users/alex/code/vox2/layout/dom_grid_bridge_test.v": "4574c7a0c2be079c17b83eb4b207857bffefaccd88170fdb9f0d808923b504a4",
+      "/Users/alex/code/vox2/layout/dominant_baseline_test.v": "8f5c78bb6de70ecf3c517bdfa32858f09770ea0c1d607fd3c4f60b28823e34c8",
+      "/Users/alex/code/vox2/layout/flex_all_frozen_test.v": "dde38d4dba1e6fae97c655a180ddea0bbf8110cc4511cca9682ef8cf100b4246",
+      "/Users/alex/code/vox2/layout/flex_geometry_scratch_test.v": "dd8c81a45ed3746fc642443dd101ebe91c19c9010fbc523d179c93a01b663884",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+      "/Users/alex/code/vox2/layout/flex_relayout_test.v": "16a9d24178c55b4572976c9cd5b23ee5c4f8a75386ccf46820a3ed4191d5bc48",
+      "/Users/alex/code/vox2/layout/formatting_contexts_test.v": "58a75404a6e8a85eed14951d840c13f205d9c0f031148c9c89bb2b1b72264236",
+      "/Users/alex/code/vox2/layout/grid_auto_height_seed_test.v": "015df0f70d73b29ae6060816186ee4bb31aacd504876b808f2ab3ac8b74e7e45",
+      "/Users/alex/code/vox2/layout/grid_block_intrinsic_reuse_test.v": "05501b7861b55975585722784e2b07a63d7738c0a3a98d153e5d0e6c2eec5288",
+      "/Users/alex/code/vox2/layout/grid_flexible_contributions_test.v": "aa08ee40a7bad38a995d08f6a1404c6bf62cfc1b6d6d46fea3081afdbc23be0f",
+      "/Users/alex/code/vox2/layout/grid_item_relayout_test.v": "36b1220b9570c397609d37f2ae9f37a2eb72980f1334bcd24b7bd77b44f96814",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+      "/Users/alex/code/vox2/layout/image_contents_repaint_test.v": "c712647e4ad2bf36da6b087d73c2c46329d893e6f74e5885512415a031c89ac7",
+      "/Users/alex/code/vox2/layout/inline_chunk_font_owner_test.v": "dfda318cd70ac7be2476474b79b6c909984fc1bdf6c5499764e918107d506393",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace_test.v": "59f7076900a967052ca44666db2f0d4b9e26ea262504302bb02f24934090bb3c",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+      "/Users/alex/code/vox2/layout/intrinsic_border_box_constraints_test.v": "4862e201bd940e9d39e5e5c037423e539af9cd6626b9bb5d8dcc5ec272a725a6",
+      "/Users/alex/code/vox2/layout/intrinsic_column_geometry_reuse_test.v": "19a78e1e9ab4ece09fd5e7d9db309d826219ffb458513e4d5619c8d8e7794ec7",
+      "/Users/alex/code/vox2/layout/intrinsic_combined_seed_test.v": "76aa3d0c6c761ff1f542c3e58239381de163c6f81d401173e73e4c8156d902ec",
+      "/Users/alex/code/vox2/layout/intrinsic_containing_block_seed_test.v": "75e45eae6e47310ba94c126f1692317eaa49ebadd071c3b37d4f66611c29adec",
+      "/Users/alex/code/vox2/layout/intrinsic_font_reuse_test.v": "0df50f83a0e550082f05e8cb47c879f71c4880911085a3dad0360898caaa4344",
+      "/Users/alex/code/vox2/layout/intrinsic_glyph_borrow_test.v": "18880e78f0b3dad6d3e60278d8bc0ee0f6284da80114876bc638e388165cfa0c",
+      "/Users/alex/code/vox2/layout/intrinsic_height_cache_storage_test.v": "8cf149b82a118470e784cf7368da3601181efae64394b2a2256e151a43aa4be5",
+      "/Users/alex/code/vox2/layout/intrinsic_line_fit_test.v": "b8aca27456e748204a37e148bfd11ce73a7b5a8b346991b1cf53ea987a39f165",
+      "/Users/alex/code/vox2/layout/intrinsic_line_recycling_test.v": "bada23901664806b1fb26de241a2e8044c01f91c1eda000d15ea80404d64e1d3",
+      "/Users/alex/code/vox2/layout/intrinsic_seed_visits_test.v": "d70b720317888bf752e174b2a9aa1bbd0f6d98d4938794d133ab51c19b9c7c53",
+      "/Users/alex/code/vox2/layout/intrinsic_shape_cache_owner_test.v": "7b63ff64911102753b1cacbdc9a58a6938dbdee53c60eb2ac102b923f20faf32",
+      "/Users/alex/code/vox2/layout/intrinsic_shape_order_test.v": "ff38981adb2e58b2a46dc01ca99fd0a58e01bdd909f4c983e98271ddca93de01",
+      "/Users/alex/code/vox2/layout/intrinsic_width_only_test.v": "e1a48066a65a420672ac3c34dcea0ebd29ba546cd15c18a9b4fed486a7594bcd",
+      "/Users/alex/code/vox2/layout/measurement_chunk_pool_test.v": "ed890116c8c0f0d59b023f854a4711b61fad7efcad8a28370ae7a90dd8b63cf0",
+      "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+      "/Users/alex/code/vox2/layout/measurement_scratch_test.v": "5f1215716e45b66ccf50baf0b7523e90d1baea869ec8ec087c8bde549a0790cc",
+      "/Users/alex/code/vox2/layout/nested_grid_block_size_test.v": "39a30a30aa87cd420e10270d50b3045fe6e65474c4a9947e39b325db8aa6b66c",
+      "/Users/alex/code/vox2/layout/positioned_definite_image_repaint_test.v": "4c0e2066eed47075f05334f4bee34cfefa926d95cdd81d52f816017296d2bcf2",
+      "/Users/alex/code/vox2/layout/retained_block_images_test.v": "62ca7a15cfa9267ac9ddf4c88c21cf7cc65845ba2b994a1e37024e195bc56a56",
+      "/Users/alex/code/vox2/layout/retained_block_layout_test.v": "b7cfee8178b6332a189a240222d8ce15e2f111b5620d00109b48fa1d2922c07d",
+      "/Users/alex/code/vox2/layout/retained_flex_layout_test.v": "f205d520e782fa2c81f8b2e24d5ed5225a997f441751d70d9a79b418d5a2da3d",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees_test.v": "eaee83120bbd52c7269bea5ef77bb5c931f8514b3c9d18eb7dc8bafc854fb5e8",
+      "/Users/alex/code/vox2/layout/retained_flow_items_test.v": "a23b3b3703dbbd24ab5e15dc398d5b927d736afa79afcd3a43063a2fef4d159c",
+      "/Users/alex/code/vox2/layout/retained_flow_pseudo_styles_test.v": "c15469c7efdbb983d293680967fc299f89bd79215c75f9ee184b27832bea00f0",
+      "/Users/alex/code/vox2/layout/retained_flow_styles_test.v": "4564892173e325e312ae0deecb94529c79a8a4148a886b3ebf4b0a26a4ae52be",
+      "/Users/alex/code/vox2/layout/retained_flow_svg_trees_test.v": "ac473e6be0c278b80bd58a832a69e79ef2c74b872da17012e75e10049c3e6e0e",
+      "/Users/alex/code/vox2/layout/retained_formatting_trees_test.v": "cc311f682ae7101b9df1432e6f275813185e46ffd0639fdc51b003697baaaa05",
+      "/Users/alex/code/vox2/layout/retained_grid_layout_test.v": "4724f2e4614ee91c40b517115837526e0bef8f5946db956fadd696a48dd5e77b",
+      "/Users/alex/code/vox2/layout/retained_simple_svg_test.v": "02e21d9d47f78ac0c62a991194dfafab31e8601151efc7cad79b64b52ba86ab9",
+      "/Users/alex/code/vox2/layout/retained_values_restore_test.v": "983a5049164afdaae93fb3ce532fe55a072a1514bbbe69cf7fba36877af9097c",
+      "/Users/alex/code/vox2/layout/svg_intrinsic_metadata_lifetime_test.v": "6a5ae431b6d6414cceaf2ccb33f922c0636fbf4b83fd9e8fd5e3e4d43baf234f",
+      "/Users/alex/code/vox2/layout/svg_path_geometry_invalidation_test.v": "dcf260189775ad86d112ee3c3096d805137f216ac01b58a7064a47f1ad565a8a",
+      "/Users/alex/code/vox2/layout/table_grid_intrinsic_height_test.v": "d362db7703a7847b752e40161828b624edf93d946878af0826c148e02b4c2517",
+      "/Users/alex/code/vox2/layout/text_input_live_intrinsics_test.v": "021a83472a5edf8a7084f6c7a3e5dfe6605c9cb055b574b86516a71bee0be173",
+      "/Users/alex/code/vox2/css/computed_layout_cache.v": "04c7b01e0cb5282d960114001cb2eca7cf29fd01e10b890954fc8b0fa0d4ae4b",
+      "/Users/alex/code/vox2/css/computed_length.v": "5ea9b4c2284f32560cff12892b039251506d463cb7dc6655f714b6d0fbc64c3a",
+      "/Users/alex/code/vox2/css/computed_values.v": "e1dbaee3b5562dba21ee534a37c443a0b171fd8541ed0af718035b2ae1691f3d",
+      "/Users/alex/code/vox2/css/idle_layout_snapshots.v": "c98d23dedf17fb0defdf0f64b1961e51b4e776937bb414b438019330236adfa2",
+      "/Users/alex/code/vox2/css/resolved_box_model_edges.v": "0b75b2e1f3df9dfa2fbcad651141c74ac2e7b5e2e0b12a86320af06d3f8786f9",
+      "/Users/alex/code/vox2/css/resolved_box_model_edges_test.v": "1b5cb3a18fb7ca0c4129b19f2fee88ca409b9d08fefd1cbc5b149f4184609454",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "3ad170bb840450b9f408a42013d743c8c61b70fc797e733c855624b7f7023a31",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/flex_formatting_context.v": "1b7f327d4da7794bcfd9db3df05fc5dd519c113346a6fd8f37d280f37fabf572",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a",
+      "/Users/alex/code/vox2/layout/committed_inline_measurement.v": "6c7866debb5b6d31ebea7b03910984a10d25c662b6c90c2ac9b3ca3397aaed00",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace.v": "cca616e21e2b1d96a2ace5b6dba54cfc0f5564e4398696db1df15010e794d205",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164",
+      "/Users/alex/code/vox2/layout/inline_measurement_height.v": "ba913b52e02b93cca870490e12772c7ae3004d4ef16695dab05d48641a2ec5e5",
+      "/Users/alex/code/vox2/layout/retained_paint_test_helpers.v": "67f28405c54594b298f63e9c893e3f5fd6fadbe49beccdb6436dbf814a8aa9f1",
+      "/Users/alex/code/vox2/css/deleted_conditional_style_rules.v": "9ad30ba5dcf345915c60043f96b6a2b8edfb51ad8280325c27da4fdd9f8d4544",
+      "/Users/alex/code/vox2/css/empty_deleted_conditional_leaves.v": "36e75f6fa19830e07d7faa74704ee35e95c735fd9267b124d75e7b11799dff21",
+      "/Users/alex/code/vox2/css/redundant_sheet_removal.v": "96ce59738435a07af1ff083101dee9095b0a35356cf5dd3dbe5e3ee25d2c30cb",
+      "/Users/alex/code/vox2/layout/typed_paint_adapter.v": "bebc3f3768f53b5304a7105d4c55a1c8acdcf309ceac70fc3bc98647090ed248",
+      "/Users/alex/code/vox2/layout/grid_auto_height_seed.v": "08698eafc9e1252896f6a9cf6bf2f5a7754de6d847877bf0a85a973c9cb1bfcc",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "2bf523eb2bf9c62530e654df60edf57564b7ddf88d892d09a84b0e87646ccceb",
+      "/Users/alex/code/vox2/layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+      "/Users/alex/code/vox2/main_compact_query_request.v": "60eb94c8ccdc0f26f6abe2e1bce8801363680721d7b009970b65fe8b912ce404",
+      "/Users/alex/code/vox2/browserjs/querywire/compact_envelope.v": "594671405412c490735628a5cd00730bc3d9dcc0a5abffa80338134728f4a23b",
+      "/Users/alex/code/vox2/css/covered_style_sheet_invalidation.v": "5b597e636b97678934e9c1760c1251086cc3b4c48aa020997619c3d9d91990b9",
+      "/Users/alex/code/vox2/css/style_sheet_invalidation.v": "1957fee8dde8708d66daea80e354ac1c882e2983229e37f2d802f2bf568ce5a2",
+      "/Users/alex/code/vox2/layout/retained_flow_subtrees.v": "13864cb4bfe2c18c7ae21abe6618793212c6c75c31bb6c0b49a4f101f05a6875",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees.v": "e44b540b9596acd36cb3e506f92b4f0c93b31a7c8e67aa0e933e88f47af4aae4",
+      "/Users/alex/code/vox2/layout/retained_flow_svg_trees.v": "613fce995e0e40e01cc84fa185ebe89cf16eaa76c4cd806c64cc7ace61814cda",
+      "/Users/alex/code/vox2/layout/retained_simple_svg.v": "a4a87c35166f9529a45843832b95a1f99fd09240242ec00ede807579040c70ad",
+      "/Users/alex/code/vox2/layout/measurement_cache_recency.v": "b5da8cd80c28e66c1a0800920976aacc111d6e6068abbf88b94d4c159a714414",
+      "/Users/alex/code/vox2/layout/dom_layout_bridge.v": "267ddd31d2bff051e981d718ddf150ad760a85e2fd5352543c1d77d413e5b30d",
+      "/Users/alex/code/vox2/layout/svg_boxes.v": "1218d12c4c62814f2f01bc14612f787b97c8f0a1fbd5fa6b32e0099ad94b9e40",
+      "/Users/alex/code/vox2/layout/svg_formatting_context.v": "a7062a364c6a46819e6f95529b13a6282db33733e6fc7ac13b3f3d4f341901d4",
+      "/Users/alex/code/vox2/css/retained_layout_style.v": "5a1b42840aa2bffb4dd01e19647c4746f27af13cd418338cd2be694e41341e2c",
+      "/Users/alex/code/vox2/main_frame_task_layout_test.v": "95ed1f2ed168104272e940187e74b77fee13ea1294cc52fe507c000f1991cd5d",
+      "/Users/alex/code/vox2/main_frame_task_focus_test.v": "41e5034f5d88ee1d8da200f3fa774460996e156d5152fd78ef8375ef880b8262",
+      "/Users/alex/code/vox2/main_javascript_task_paint_test.v": "97e87510c442d8a98e8b4760c208a312268351eb39abe41f6da9052f2cf0359e",
+      "/Users/alex/code/vox2/main_frame_paint_test.v": "8192d5720da544a30b7854cc6c5f059602e1e8ae0eac69f00e9ae7809597055b",
+      "/Users/alex/code/vox2/main_initial_frame_layout_test.v": "b5d2a5c5e1f6efa61d0224da041362e60001ba735b74cd4d7c71432489c775a7",
+      "/Users/alex/code/vox2/main_relayout_autofocus_test.v": "aa0181e281ed29f5d9ba14a3ea7fe1d61d7af8baf6331205f5dcf0d5892a60a7",
+      "/Users/alex/code/vox2/main_archived_border_msaa_test.v": "22fd1f1184b24999229f88fff6e9e1eeb791fbc19df604a0b69963a64a12e976",
+      "/Users/alex/code/vox2/main_chromium_border_msaa_test.v": "a8b2c0b7e9b021db661b4720395b124cf7a2c2c95981d97631ba37272d768586",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles_test.v": "f398f4f3e26ee9ae3384fa19dfba185d1fc1d3c629c4438e12e2e813bb667aa9",
+      "/Users/alex/code/vox2/main_adblock_tokens_test.v": "58abe1f79179fd7bb23e15fc0fabcafd0510efc0682dd98b45defaec60cb5bb0",
+      "/Users/alex/code/vox2/main_adblock_token_survey_test.v": "1ae5edd40d86a9cecb5ae8a2a1dedaf0deb5775da9fc09e9f99251eb18dddab2",
+      "/Users/alex/code/vox2/main_frame_task_layout.v": "c403b9852f840d05ea83dc30641986f9751062671063adba83dace75c6624907",
+      "/Users/alex/code/vox2/main_frame_paint.v": "2557bbe0812d23bfbce704475feb5635162362139d30099d8c14c0a82aee2044",
+      "/Users/alex/code/vox2/main_adblock.v": "8b61d0d26204d181fe30f602496e151dabbbb9c402ab40b7ea6356bd8e44c585",
+      "/Users/alex/code/vox2/main_device_layout.v": "20391809cc59f6ccb67afd0a137403aa947163ac149e30a92fa6e94ca0cba385",
+      "/Users/alex/code/vox2/main_archived_border_msaa.v": "303e1d995d6f696cd5dfab338c152a7c275709ab646e495abd0ffd870bc99177",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles.v": "e37d4bdea4187868d8b6eb530b0dfa3d9b62fd852ce3167e23e147de6b086bf8",
+      "/Users/alex/code/vox2/main_chromium_shared_recording.v": "3856d9e3ef9b1be02d73a558c54ce2b32cd1e887925e727a244679675bc73a70",
+      "/Users/alex/code/vox2/main_adblock_tokens.v": "c6a9b6c9d189e420352fe74d0db51a460b27d219148868e4a599efc2b15ed0c4",
+      "/Users/alex/code/vox2/main.v": "7c29610551d73e639f53dcbd38b2836013314545d87dbc6b5028af91538aad3b",
+      "/Users/alex/code/vox2/main_browser_tabs.v": "c3838355754aec5e88cc6073fb918b082d642e8d3938bd3fe22bb6dc3f9d3bde",
+      "/Users/alex/code/vox2/browserjs/classic_import_scan.v": "90998c07738654224ddac3fe545525286a5908c73332f074ddbebbf40d0fe50c",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_scan.v": "48e21cda2e8812aa48bf800661c43af5f74e4f84a21fd522b96553970a3bd1e1",
+      "/Users/alex/code/vox2/browserjs/classic_import_named_method_scan.v": "5a725abb3e4d89d85448a4709b7813062ccd952b87b610ed7e608d44db137ec1",
+      "/Users/alex/code/vox2/browserjs/module_host_jsc.c.v": "01d8c7c3cd9d2509374cbf76b61ebb52bd7939c687fd6b09e720f1a98662f2bb",
+      "/Users/alex/code/vox2/css/covered_style_sheet_invalidation_test.v": "2eefca1f02662d39d5d8407454310771cbd705ae4f6e13732af23444ebe66906",
+      "/Users/alex/code/vox2/css/style_sheet_invalidation_test.v": "e5e0aa965fecd5d9d3311d3c81f9b3b63653e45baf69175d3129767a63fe25f2",
+      "/Users/alex/code/vox2/css/style_sheet_list_invalidation_test.v": "0391b903b00359f85d2f360e9b5d4bd9579fafe0589adc6475125f803eb53525",
+      "/Users/alex/code/vox2/css/redundant_sheet_removal_test.v": "0f1056db9ad088b659f47eee39a56ff1c11e4a244bffcdf422440da06ddb1cbb",
+      "/Users/alex/code/vox2/css/computed_property_store.v": "bc0a4f81b805a571559c126d74e9a5cfb97b921f1653e0fe903d898474bb8bae",
+      "/Users/alex/code/vox2/css/style_computer.v": "7a28a28624fa5aa20b392e112baa865c6e5321df53e0ded1b4ea8767d1f583b5",
+      "/Users/alex/code/vox2/browserjs/classic_import_scan_test.v": "3c6da9ea9149c9a63a8c3649d6873f1a9bd67d1d48b31db306753cf19b301e38",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_scan_test.v": "187b62a5904fed76c0456c8364402ea3dd4e9a1f13518ea72328ff9bd8c832b2",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_host_test.v": "3c54ea5d907395ce56f4b2b7cb4fc4c65127f60156ed7de37968da43f4acc627",
+      "/Users/alex/code/vox2/browserjs/classic_import_named_method_scan_test.v": "574643f871b58b120cf40528f4aa95de4681c16fdab11f8634527b094e809bb4",
+      "/Users/alex/code/vox2/browserjs/module_host_test.v": "877b27b0816d59804923c729721edfaa9211f3bb7b653f95c0ac8e69b127a6a7",
+      "/Users/alex/code/vox2/browserjs/module_source.v": "0a2b2bebbaef26998980c359df5f670c2d7b7a622fae6bb5ffa2b977e0edaaae",
+      "/Users/alex/code/vox2/browserjs/runtime.v": "30156b8a4d87ee1378a49813a8dda1b7b5612ba76983a6474eee2097e28f25ae",
+      "/Users/alex/code/vox2/browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1"
+    },
+    "fresh_case_executions": 1534,
+    "fresh_passes": 1520,
+    "fresh_baseline_failures": 14,
+    "carried_browser_js_executions": 48,
+    "total_case_executions": 1582,
+    "total_passes": 1568,
+    "total_baseline_failures": 14,
+    "qualification": "Fresh layout555/main74/CSS64 cases in default and no-GC modes; main repeats both candidate and call-filter-control arms. Twelve current browser-JS focused cases in both arms are carried for these two modes only, including real imports and trusted-lexer equivalence; preallocation remains separate focused evidence. All explicit checked inputs remain current. No older main/CSS carry, full-suite pass or cadence reset. Every baseline failure and failed attempt remains retained.",
+    "unix": 1793907362.116734
+  },
+  "source_proof": {
+    "checked": {
+      "browserjs/classic_import_scan_test.v": "3c6da9ea9149c9a63a8c3649d6873f1a9bd67d1d48b31db306753cf19b301e38",
+      "browserjs/classic_import_call_scan_test.v": "187b62a5904fed76c0456c8364402ea3dd4e9a1f13518ea72328ff9bd8c832b2",
+      "browserjs/classic_import_call_host_test.v": "3c54ea5d907395ce56f4b2b7cb4fc4c65127f60156ed7de37968da43f4acc627",
+      "browserjs/classic_import_named_method_scan_test.v": "574643f871b58b120cf40528f4aa95de4681c16fdab11f8634527b094e809bb4",
+      "browserjs/module_host_test.v": "877b27b0816d59804923c729721edfaa9211f3bb7b653f95c0ac8e69b127a6a7",
+      "browserjs/classic_import_scan.v": "90998c07738654224ddac3fe545525286a5908c73332f074ddbebbf40d0fe50c",
+      "browserjs/classic_import_call_scan.v": "48e21cda2e8812aa48bf800661c43af5f74e4f84a21fd522b96553970a3bd1e1",
+      "browserjs/classic_import_named_method_scan.v": "5a725abb3e4d89d85448a4709b7813062ccd952b87b610ed7e608d44db137ec1",
+      "browserjs/module_host_jsc.c.v": "01d8c7c3cd9d2509374cbf76b61ebb52bd7939c687fd6b09e720f1a98662f2bb",
+      "browserjs/module_source.v": "0a2b2bebbaef26998980c359df5f670c2d7b7a622fae6bb5ffa2b977e0edaaae",
+      "browserjs/runtime.v": "30156b8a4d87ee1378a49813a8dda1b7b5612ba76983a6474eee2097e28f25ae",
+      "browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1"
+    },
+    "build_head": "c68b4bdd82d6cee20b92c25dd628cc974a34e1c2",
+    "committed_sources_match": true,
+    "generated_c_preserved": false,
+    "qualification": "Final focused source hashes match production build HEAD and current checked files. For parallel receipt,unchanged complete generation input fingerprints are required by canonical driver;no sealedgeneratedC claim."
+  },
+  "lease": {
+    "requested_unix": 1793906876.21614,
+    "purpose": "Read lease through native eligibility, SVG guard and cohort 120; no endpoint/reference/input changes, no optimization credit for coordination.",
+    "helper": "/Users/alex/code/vox2/tools/browser_bundle_lease.py",
+    "helper_sha256": "8ffac841d64df4d5506be45c80970ce195c688d2d7a57d4ceb340b2d4de1b7b1",
+    "acquired_unix": 1793906876.216343,
+    "native_exit": 0,
+    "native_finished_unix": 1793906888.177871,
+    "native-audit_exit": 0,
+    "native-audit_finished_unix": 1793906889.492285,
+    "svg_exit": 0,
+    "svg_finished_unix": 1793906900.069708,
+    "cohort_exit": 1,
+    "cohort_finished_unix": 1793907023.708374,
+    "released_unix": 1793907023.708684
+  },
+  "scope": "Unchanged exclusive coalition creation through encoded document PNG, including startup/window/target setup/readiness/two-second settlement; Vox before file writing, Brave including CDP delivery, audits/teardown afterward. Exited aggregates and allowed owned services included; GPU execution/outside work excluded. Fixed609-response original-origin HTTPS replay/original author scripts/1024x768 CSS/DPR2/fresh private profiles+caches/retained OS caches/original per-engine references/historical rendering policies unchanged. Known DOM/script/font/paint limitations and82.7154%cross-browser pixel difference remain. No live-site, isolated rendering or FPS claim.",
+  "qualifications": "Pinned parallel33-unit204af825dde1 with exact recorded buildHEAD/source pins and complete generation/compiler/runtime metadata; no sealed generated C claim. Candidate-only named member marker beforePNG; original pixels/content/72scripts/native images/ownership/exits pass both arms and SVG guard is exact. Only named-method/property candidate rejection differs; the prior classic-call filter and every module-script lexer remain identical. Seven complete alternating triples retain every result, first launch and variation; no retries/exclusions. Broad fresh layout555/main74/CSS64 plus12current browser-JS focused cases yield705unique/700passes/same5knownfailures per mode.1534fresh+48carried=1582executions/1568passes/14baselinefailures; no full-suite pass or cadence reset. Prior cohorts/preflight118 remain separately preserved. Storage work earns no performance credit.",
+  "storage": {
+    "archive_backed_focus_cleanup": {
+      "archive": "docs/performance/raw/bbc-named-import-focus-20261105.tar.gz",
+      "rows": [
+        {
+          "path": "Build/bbc-named-imports-20261105-2230/default.c",
+          "member": "default.c",
+          "bytes": 25359309,
+          "sha256": "a8e73d9563f84f37e39e6ce453ff6a0da0384af33ec230537fef9e38e1064533"
+        },
+        {
+          "path": "Build/bbc-named-imports-20261105-2230/none.c",
+          "member": "none.c",
+          "bytes": 25350118,
+          "sha256": "a286f3dd981fb3ddd04ca0a66eefa5dab5c73955925573d3a8ceacbb69f6c851"
+        },
+        {
+          "path": "Build/bbc-named-imports-20261105-2230/prealloc.c",
+          "member": "prealloc.c",
+          "bytes": 25788431,
+          "sha256": "1c972650087a60a151a4b08d8f5bf3dcbb02934d5052025af8a35e3f0dd47601"
+        }
+      ],
+      "verified_before_deletion": true,
+      "unix": 1793907362.573178
+    },
+    "additional_historical_compression": {
+      "receipt": {
+        "local_only": true,
+        "purpose": "Lossless compression of retired large V-generated BBC C/preprocessed units with completed guard witnesses, no active command references, exact decoded SHA verification before deleting a duplicate. No canonical source, tools, app bundles, shared production receipts, counters, logs, PNGs, fixtures or references changed. Restore compressed bytes/modes before replaying a historical compiler command.",
+        "selected": [
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/default.c",
+            "bytes": 27531801,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/prealloc-candidate.guard.json",
+            "guard_sha256": "e83e73a89775a2a6748fc7728ed337b17ab1db5847dc2b4d4ad0c53a18aefb72"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/none.c",
+            "bytes": 27522554,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/prealloc-candidate.guard.json",
+            "guard_sha256": "e83e73a89775a2a6748fc7728ed337b17ab1db5847dc2b4d4ad0c53a18aefb72"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/default.c",
+            "bytes": 27511755,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/prealloc-candidate.guard.json",
+            "guard_sha256": "8cc9ca41fbacb88f8d41143067e296d66bc1e3a033f1979bf362b7dbec96fb58"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/none.c",
+            "bytes": 27502522,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/prealloc-candidate.guard.json",
+            "guard_sha256": "8cc9ca41fbacb88f8d41143067e296d66bc1e3a033f1979bf362b7dbec96fb58"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/prealloc.c",
+            "bytes": 27498923,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "edec5f03a35c28f72ac79a49d1fc3589ce510afbcc18cfb751aa0f9d44994840"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/prealloc.c",
+            "bytes": 27498730,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "3d0b157b33af7fd50e1f5517a8edf3803c42d304bd4215d8a43c94608dee8e0a"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/prealloc.c",
+            "bytes": 27497005,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/prealloc-candidate.guard.json",
+            "guard_sha256": "15731fc29561db6d44e13190d4ace13082156aa958f41c6236b88af13cb442c3"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/default.c",
+            "bytes": 27472765,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/prealloc-candidate.guard.json",
+            "guard_sha256": "9f827822e7216c44175db2b15a74c24a1d8b0b807b0b87a3b5674fc19e40da51"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/none.c",
+            "bytes": 27463510,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/prealloc-candidate.guard.json",
+            "guard_sha256": "9f827822e7216c44175db2b15a74c24a1d8b0b807b0b87a3b5674fc19e40da51"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/default.c",
+            "bytes": 27230425,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "edec5f03a35c28f72ac79a49d1fc3589ce510afbcc18cfb751aa0f9d44994840"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/default.c",
+            "bytes": 27230232,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "3d0b157b33af7fd50e1f5517a8edf3803c42d304bd4215d8a43c94608dee8e0a"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/default.c",
+            "bytes": 27228515,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/prealloc-candidate.guard.json",
+            "guard_sha256": "15731fc29561db6d44e13190d4ace13082156aa958f41c6236b88af13cb442c3"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/none.c",
+            "bytes": 27221212,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "edec5f03a35c28f72ac79a49d1fc3589ce510afbcc18cfb751aa0f9d44994840"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/none.c",
+            "bytes": 27221019,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "3d0b157b33af7fd50e1f5517a8edf3803c42d304bd4215d8a43c94608dee8e0a"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/none.c",
+            "bytes": 27219298,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/prealloc-candidate.guard.json",
+            "guard_sha256": "15731fc29561db6d44e13190d4ace13082156aa958f41c6236b88af13cb442c3"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/first.c",
+            "bytes": 27094784,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/first.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/prealloc-candidate.guard.json",
+            "guard_sha256": "9f827822e7216c44175db2b15a74c24a1d8b0b807b0b87a3b5674fc19e40da51"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/prealloc.c",
+            "bytes": 26722962,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/prealloc-candidate.guard.json",
+            "guard_sha256": "2c9e03a5b91f286c401445d4714551afbf12ebd0b4a1268fc1b7870813ec79d9"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/prealloc.c",
+            "bytes": 26476599,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/prealloc-candidate.guard.json",
+            "guard_sha256": "fc0fcb95a50beb7162bcf088ec1c8d4a8c53ef93d3643b724a5be2775098f91f"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/none.c",
+            "bytes": 26439670,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/prealloc-candidate.guard.json",
+            "guard_sha256": "2c9e03a5b91f286c401445d4714551afbf12ebd0b4a1268fc1b7870813ec79d9"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/default.c",
+            "bytes": 26202630,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/default-control.guard.json",
+            "guard_sha256": "9e37ad7798f55109049e79017ccd0ca83ceb10b08286927bd29a46626ad396e6"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/none.c",
+            "bytes": 26193240,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/prealloc-candidate.guard.json",
+            "guard_sha256": "fc0fcb95a50beb7162bcf088ec1c8d4a8c53ef93d3643b724a5be2775098f91f"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/prealloc.c",
+            "bytes": 25495416,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/prealloc-candidate.guard.json",
+            "guard_sha256": "dc760ca8602ffd8b4b4aa90082045c0896f83435f4394be8a112742b926b2655"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/prealloc.c",
+            "bytes": 25494975,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/prealloc-candidate.guard.json",
+            "guard_sha256": "d31d16956cdb35837859be17a0a782e8ed755dd52acbbcd208a34b608e0878b7"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/default.c",
+            "bytes": 25097359,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/default-control.guard.json",
+            "guard_sha256": "9c2b428b9b1efa139281d71ad2a325b35612ae0a4627123e09492973d978723a"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/default.c",
+            "bytes": 25095154,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/default-control.guard.json",
+            "guard_sha256": "f65254a6b3fbb633aca56dbcbeccdcdcff7ddbf990e3476e006d58ec0c19d719"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/none.c",
+            "bytes": 25088085,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/prealloc-candidate.guard.json",
+            "guard_sha256": "d31d16956cdb35837859be17a0a782e8ed755dd52acbbcd208a34b608e0878b7"
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/none.c",
+            "bytes": 25088085,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/prealloc-candidate.guard.json",
+            "guard_sha256": "dc760ca8602ffd8b4b4aa90082045c0896f83435f4394be8a112742b926b2655"
+          }
+        ],
+        "completed": [
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/default.c",
+            "bytes": 27531801,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/prealloc-candidate.guard.json",
+            "guard_sha256": "e83e73a89775a2a6748fc7728ed337b17ab1db5847dc2b4d4ad0c53a18aefb72",
+            "sha256": "6f3a50965d130b5707ff0c505b5f43e31cce7de160383d0a364ec4e00447b043",
+            "compressed_bytes": 4439813,
+            "compressed_sha256": "92d830e2846ba05ca5e55036f0e392ccc44c91ea57304302b5df9c350f8ca909",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/none.c",
+            "bytes": 27522554,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/placement-restored-after-space/prealloc-candidate.guard.json",
+            "guard_sha256": "e83e73a89775a2a6748fc7728ed337b17ab1db5847dc2b4d4ad0c53a18aefb72",
+            "sha256": "acd6ec14efed85ca83027d2ce90386abb6a0c99f9834b18e64a35cf973f28d1f",
+            "compressed_bytes": 4437576,
+            "compressed_sha256": "e51716676c61d42b688d1244a8b6447ed23501dbd13fdb0cc980c73a187c4122",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/default.c",
+            "bytes": 27511755,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/prealloc-candidate.guard.json",
+            "guard_sha256": "8cc9ca41fbacb88f8d41143067e296d66bc1e3a033f1979bf362b7dbec96fb58",
+            "sha256": "0fadd362266df4ed265910bcc500252c5c13aa590547c56756fb765cd80a7474",
+            "compressed_bytes": 4437478,
+            "compressed_sha256": "ce1e19536aadb02ef5fdd0bca561ba83d842a1411bef4180e49b80271d063fe5",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/none.c",
+            "bytes": 27502522,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-markerless-measurements-20261105-0822/all-experiments-restored/prealloc-candidate.guard.json",
+            "guard_sha256": "8cc9ca41fbacb88f8d41143067e296d66bc1e3a033f1979bf362b7dbec96fb58",
+            "sha256": "556faa2634fc2455f2a40ed6d4750a646c80e924259efad63980a09a8a49fe08",
+            "compressed_bytes": 4435316,
+            "compressed_sha256": "af20aea21cb1360d7425ebc12f90a2e98f458566a4a800dc406bbc916818866d",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/prealloc.c",
+            "bytes": 27498923,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "edec5f03a35c28f72ac79a49d1fc3589ce510afbcc18cfb751aa0f9d44994840",
+            "sha256": "8c61f9c3e22ac470b98e4c9d143e530632bc27a4f5dded922fa244ef5438cb7a",
+            "compressed_bytes": 4445764,
+            "compressed_sha256": "56c75491e2a82231fcb528f7df57d32893e4ec84d429f170fee1abce2f726da3",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/prealloc.c",
+            "bytes": 27498730,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "3d0b157b33af7fd50e1f5517a8edf3803c42d304bd4215d8a43c94608dee8e0a",
+            "sha256": "77ab62149ca4e0a4adaac66b4be554f7c4c8eda6a8aaed15ba4c38322eb18e9d",
+            "compressed_bytes": 4445727,
+            "compressed_sha256": "39bac4355857e994f357bacab3389758800e865f4fea655762addbf44b83e3b0",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/prealloc.c",
+            "bytes": 27497005,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/prealloc-candidate.guard.json",
+            "guard_sha256": "15731fc29561db6d44e13190d4ace13082156aa958f41c6236b88af13cb442c3",
+            "sha256": "b5c6336cc69ef8bc6de68839795cc697a4d00eb593f931aff900ef315837af73",
+            "compressed_bytes": 4445175,
+            "compressed_sha256": "3916d2e188acb0a6b07eec46be3e4feb05e136d065e05e6998e9f637366f09e1",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/default.c",
+            "bytes": 27472765,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/prealloc-candidate.guard.json",
+            "guard_sha256": "9f827822e7216c44175db2b15a74c24a1d8b0b807b0b87a3b5674fc19e40da51",
+            "sha256": "e15e486b10289a0c177035afbbf728f0a2f44224fe5bb471768f7ccfb673874d",
+            "compressed_bytes": 4432567,
+            "compressed_sha256": "0d116e8592d236b0d0b1c26415c132c165d761a51f7ff0d5cebeca3323120946",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/none.c",
+            "bytes": 27463510,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/prealloc-candidate.guard.json",
+            "guard_sha256": "9f827822e7216c44175db2b15a74c24a1d8b0b807b0b87a3b5674fc19e40da51",
+            "sha256": "4ea2c1f537972321afd7f0a1841b2b6854711ed98549c265ece656bba7904c59",
+            "compressed_bytes": 4430833,
+            "compressed_sha256": "7b561b8891aa8e625e0ef6abf0975f24c37fe69b870fe167676025bcac0afc41",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/default.c",
+            "bytes": 27230425,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "edec5f03a35c28f72ac79a49d1fc3589ce510afbcc18cfb751aa0f9d44994840",
+            "sha256": "51382ec3562930874b272fe4669f93c860e9abae639811c68baef7b003957411",
+            "compressed_bytes": 4399172,
+            "compressed_sha256": "90952305e706dd87dbeb91a8c4845d1c65bf4bbb838cbba443d5576e830076ff",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/default.c",
+            "bytes": 27230232,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "3d0b157b33af7fd50e1f5517a8edf3803c42d304bd4215d8a43c94608dee8e0a",
+            "sha256": "ca247aec0dde869ced0eb4f4484cf5c46651a67dec701bd17332209e0dc8859b",
+            "compressed_bytes": 4399137,
+            "compressed_sha256": "b875c44bdab2c13bd4950885c3900e4d410a964b7412e4dc804a8858f26cb646",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/default.c",
+            "bytes": 27228515,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/prealloc-candidate.guard.json",
+            "guard_sha256": "15731fc29561db6d44e13190d4ace13082156aa958f41c6236b88af13cb442c3",
+            "sha256": "75d4223166aeaa0ac08c3d033646604ccac361dd789b6f6dbae12ab5a1bb28b7",
+            "compressed_bytes": 4398977,
+            "compressed_sha256": "b44b0878239188bfcddf7eb2c5dcb41b2e14ee6279987a847d3bca85a6566eb2",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/none.c",
+            "bytes": 27221212,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/absolute-dom-guard-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "edec5f03a35c28f72ac79a49d1fc3589ce510afbcc18cfb751aa0f9d44994840",
+            "sha256": "a5bd484a71c46f087ffc3329bb7acab2d368489579378965cd25310c045f0c2d",
+            "compressed_bytes": 4397420,
+            "compressed_sha256": "b2eb8b847ec450e48920a14c06f68cbc89435cf24e5ae06f4bc58a7bc53351ec",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/none.c",
+            "bytes": 27221019,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/transition-and-eligibility-checks/prealloc-candidate.guard.json",
+            "guard_sha256": "3d0b157b33af7fd50e1f5517a8edf3803c42d304bd4215d8a43c94608dee8e0a",
+            "sha256": "8244ed6409a24e48f42a06e3e9b212c79be81e920c8783cb87474b43d3507f17",
+            "compressed_bytes": 4397381,
+            "compressed_sha256": "c3809581bf2aa7f2ff3c643f6c4971aa840f26e6c427b6f5e7891e67472695c7",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/none.c",
+            "bytes": 27219298,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-pending-image-trees-20261105-0120/prealloc-candidate.guard.json",
+            "guard_sha256": "15731fc29561db6d44e13190d4ace13082156aa958f41c6236b88af13cb442c3",
+            "sha256": "328502a5494df548a9b3aea1e85949113603328c1e6baba72a49c518fd401ac7",
+            "compressed_bytes": 4396982,
+            "compressed_sha256": "2e9dbc86b93ccce7de61adb5d2186782f75295cb2f74a377035e083373978084",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/first.c",
+            "bytes": 27094784,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/first.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-measurement-images-20261105-0550/prealloc-candidate.guard.json",
+            "guard_sha256": "9f827822e7216c44175db2b15a74c24a1d8b0b807b0b87a3b5674fc19e40da51",
+            "sha256": "8ea6b4f6669710f14f62dc83f4b3479cdf83668fe339eb8c539d7edcaae7d3a5",
+            "compressed_bytes": 4383308,
+            "compressed_sha256": "00b6b023ea733b65788f554d311a62d2aa78cc7f87aa05301a3c6cfc2caa8fe5",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/prealloc.c",
+            "bytes": 26722962,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/prealloc-candidate.guard.json",
+            "guard_sha256": "2c9e03a5b91f286c401445d4714551afbf12ebd0b4a1268fc1b7870813ec79d9",
+            "sha256": "84ddfcd8063c307bf3b93a6adf072a0d041cd5f7893c63b6f96d527fdff22b80",
+            "compressed_bytes": 4318782,
+            "compressed_sha256": "8374375b24a538c354cd50b114a8e24e629102644a62261b910440f2f1627d76",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/prealloc.c",
+            "bytes": 26476599,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/prealloc-candidate.guard.json",
+            "guard_sha256": "fc0fcb95a50beb7162bcf088ec1c8d4a8c53ef93d3643b724a5be2775098f91f",
+            "sha256": "cedc4edeea0121d6cbfe27bfe15bc0cfd3c77ef7cecbce99ac5e739729cf1e58",
+            "compressed_bytes": 4277054,
+            "compressed_sha256": "04cb53335f03671ab2aefba1e72813b369534d94beeac86f1b211aa0d8117828",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/none.c",
+            "bytes": 26439670,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-auto-grid-height-20261105-1210/prealloc-candidate.guard.json",
+            "guard_sha256": "2c9e03a5b91f286c401445d4714551afbf12ebd0b4a1268fc1b7870813ec79d9",
+            "sha256": "3206bf78441573c34009883562063e04d11ae93e6dbe2b59ffd2273aaa018440",
+            "compressed_bytes": 4267624,
+            "compressed_sha256": "695f7abd368144178030285235fdfcfd37fd7f70a38c543ca4b95d2e4ccf4b73",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/default.c",
+            "bytes": 26202630,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/default-control.guard.json",
+            "guard_sha256": "9e37ad7798f55109049e79017ccd0ca83ceb10b08286927bd29a46626ad396e6",
+            "sha256": "c2664091932df0927e03f21be5c2478dc54b334e2c63aab4850d6cae2ec8887d",
+            "compressed_bytes": 4228537,
+            "compressed_sha256": "eaf62995294093f0530695437828b4269aea536f28b8c1f9886e03f6a52b4f85",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/none.c",
+            "bytes": 26193240,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/none.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-committed-grid-20261104-1727/prealloc-candidate.guard.json",
+            "guard_sha256": "fc0fcb95a50beb7162bcf088ec1c8d4a8c53ef93d3643b724a5be2775098f91f",
+            "sha256": "7ea856b6a9658e68597db615087b074cf697d6a76d2de9fa5e845094d376ffc2",
+            "compressed_bytes": 4226028,
+            "compressed_sha256": "3c3957c47ef7e45651cc72e0bc7edb3e1dded4eb389da36b8525f51c5f9ada7b",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/prealloc.c",
+            "bytes": 25495416,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/prealloc-candidate.guard.json",
+            "guard_sha256": "dc760ca8602ffd8b4b4aa90082045c0896f83435f4394be8a112742b926b2655",
+            "sha256": "0a5f087755c7b9b0b92eac6c8b988bf381ed30626ee13cb77a0c09032b7440c5",
+            "compressed_bytes": 4089539,
+            "compressed_sha256": "e6cd599be13f8e7bd27c7dea989766de3ee948bc6e03e973f4393ae625b0e292",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/prealloc.c",
+            "bytes": 25494975,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/prealloc.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/prealloc-candidate.guard.json",
+            "guard_sha256": "d31d16956cdb35837859be17a0a782e8ed755dd52acbbcd208a34b608e0878b7",
+            "sha256": "ac52542c933cc37f29d53f95af5ae1a0e0ec7e35370f376f8160b897ebd8a25a",
+            "compressed_bytes": 4089497,
+            "compressed_sha256": "29c119bbace059ba4799d1a30b87b6e5ebce4b6a1a1f1aa38ec763ff38afaa27",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/default.c",
+            "bytes": 25097359,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/probe-coverage/default-control.guard.json",
+            "guard_sha256": "9c2b428b9b1efa139281d71ad2a325b35612ae0a4627123e09492973d978723a",
+            "sha256": "7dd8e501a62cd46636dc0e72f9ee26335051fa120f1be50b80c95a20ff7712cd",
+            "compressed_bytes": 4023338,
+            "compressed_sha256": "a0ea6fafc743de6aa928ce6e0bdf012f196b9e857aa110ae107456eaf86abdcb",
+            "verified_before_deletion": true
+          },
+          {
+            "original": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/default.c",
+            "bytes": 25095154,
+            "mode": 33188,
+            "compressed": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/default.c.gz",
+            "guard": "/Users/alex/code/vox2/Build/bbc-native-callback-20261105-0618/native-packing/default-control.guard.json",
+            "guard_sha256": "f65254a6b3fbb633aca56dbcbeccdcdcff7ddbf990e3476e006d58ec0c19d719",
+            "sha256": "35e5940f2b8a4ddddcb5a9d60893ee11feb635bc71e758b890f1a705971ebe14",
+            "compressed_bytes": 4022798,
+            "compressed_sha256": "522a3e9ddf6419beaf255db441b77f78a0babbbf7c73ee01d3729e896f30960c",
+            "verified_before_deletion": true
+          }
+        ],
+        "free_before": 2281263104,
+        "unix": 1793906206.9441931,
+        "free_after": 2845286400,
+        "completed_unix": 1793906212.6319292,
+        "bytes_reclaimed": 562897232
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/bbc-classic-import-calls-20261105-2200/storage2/compress-completed-c.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 205373440,
+        "elapsed_seconds": 5.95244325,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-named-import-cohort120-20261105.tar.gz",
+    "bytes": 68074050,
+    "sha256": "b7799ed85c78f70fef1c67fd36bd734307247558ca060f6a6fa09a2cb17ae8cf",
+    "members": 791,
+    "all_members_verified": true
+  },
+  "unix": 1793907424.320138,
+  "packaging_final_paths": {
+    "original": "docs/performance/raw/bbc-classic-import-call-cohort120-20261105.tar.gz",
+    "final": "docs/performance/raw/bbc-named-import-cohort120-20261105.tar.gz",
+    "sha256": "b7799ed85c78f70fef1c67fd36bd734307247558ca060f6a6fa09a2cb17ae8cf",
+    "bytes": 68074050,
+    "reason": "Finalize the artifact name for the named-import-member cohort; bytes are unchanged.",
+    "unix": 1793907497.521746
+  }
+}

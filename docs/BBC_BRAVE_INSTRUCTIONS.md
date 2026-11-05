@@ -1,37 +1,38 @@
 # BBC homepage instruction comparison
 
-Current result — **cohort 119**, on pinned parallel production `8d0d0946f3a2`:
+Current result — **cohort 120**, on pinned parallel production `204af825dde1`:
 all 21 capture audits pass, with normal native exits and unchanged input
-identities. Launch-to-PNG medians are **26,295,216,121 Vox**,
-**26,628,284,976 word-only control**, and **17,493,238,228 Brave lower bound**
+identities. Launch-to-PNG medians are **26,114,419,911 Vox**,
+**26,865,367,149 named-import control**, and **17,440,922,093 Brave lower bound**
 instructions. The strict 10% target fails
-`272645326190 > 156127068990` (conservative ratio **1.57167**).
-The classic import-call filter's difference of medians is +333,068,855
-(1.2508%), but the median paired difference is **−132,844,514**, with three
-improvements and four regressions. Conservative control ratio **1.04471**
-fails; no robust saving or catalog entry is credited. History is **114 measured
-cohorts / 2,461 acceptance browser attempts**; 104, 110, 111, 113 and 118 are
-preflight-only. Cohort 117 and every earlier failing result remain preserved.
-[Complete current evidence](performance/bbc-classic-import-call-cohort119-20261105.json).
+`270287115010 > 156647238885` (conservative ratio **1.55291**).
+The named-import filter's difference of medians is +750,947,238 (2.7952%).
+All seven pairs improve, with median paired reduction **595,012,366**, but
+conservative control ratio **1.02267** still fails. No robust conservative
+saving or catalog entry is credited. History is **115 measured cohorts /
+2,482 acceptance browser attempts**; 104, 110, 111, 113 and 118 are preflight-only.
+Cohort 119 and every earlier failing result remain preserved.
+[Complete current evidence](performance/bbc-named-import-cohort120-20261105.json).
 Earlier checkpoints below retain their historical wording and counts.
 
-Both native captures confirm candidate-only import-call filtering before PNG
-and pass original pixels/content, all 72 external author scripts, actual
-native-library pins, helper ownership and exits. The SVG source-switch guard
-is exact in both arms. Storage preflight 118 launches no measured browser.
-After lossless compression of completed generated artifacts, cohort 119 reuses
-those native checks only after verifying the identical executable and current
-checked sources under a fresh publication lease. The same disk planning
-minimum, counters, thresholds, workload, references and endpoints remain.
+Fresh native captures confirm candidate-only named-import member filtering
+before PNG and pass original pixels/content, all 72 external author scripts,
+actual native-library pins, helper ownership and exits. The SVG source-switch
+guard is exact in both arms. Seven complete alternating triples run under the
+publication lease; no capture is retried, excluded or combined across builds.
+The prior call filter is common to both arms, and module scripts still use the
+same lexer. Workload, references, endpoints, counters, thresholds, cache policy
+and historical rendering policies remain unchanged.
 
-Triggered broader checks cover **702 unique cases per default/no-GC mode:
-697 passes and the same five baseline failures**. Fresh layout 555/main 74/CSS
-64 cases combine with nine current browser-JS focused cases; main and browser-JS
-checks include both candidate and control. There are 1,534 fresh and 36 carried
-executions, with 1,556 passes and 14 baseline failures. There is no full-suite
+Triggered broader checks cover **705 unique cases per default/no-GC mode:
+700 passes and the same five baseline failures**. Fresh layout 555/main 74/CSS
+64 cases combine with 12 current browser-JS focused cases; main and browser-JS
+checks include candidate and control. There are 1,534 fresh and 48 carried
+executions, with 1,568 passes and 14 baseline failures. There is no full-suite
 pass or cadence reset. The parallel build retains complete input/compiler/
 runtime metadata but has no sealed generated C receipt. Known rendering and
-scripting limitations remain unchanged. BBC stays outside `OPTIMIZED_SITES.md`.
+scripting limitations remain. BBC homepage still has no qualifying instruction
+entry in `OPTIMIZED_SITES.md`.
 
 Measurement recency (`f0a747f84`, FIFO control `b90dfdbb9`) keeps recently reused
 disposable grid/flex/inline geometry in the existing four-entry caches. Keys,
