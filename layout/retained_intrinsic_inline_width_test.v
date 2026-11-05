@@ -84,6 +84,11 @@ fn test_intrinsic_inline_scalar_revalidates_text_style_tree_and_font_inputs() {
 		document.create_text_node(' appended').as_node(), ' appended')) })
 	assign_layout_indexes(unsafe { &Node(container) })
 	assert !retained_width_compare(container, space, 0, false)
+	container.remove_child(unsafe { &Node(text) })
+	container.append_child(unsafe { &Node(TextNode.new(document,
+		document.create_text_node('same count, different child').as_node(), 'same count, different child')) })
+	assign_layout_indexes(unsafe { &Node(container) })
+	assert !retained_width_compare(container, space, 0, false)
 	mut computer := css.css_style_computer_for(document).font_computer()
 	computer.did_load_font('UnrelatedRetainedWidthFace')
 	assert !retained_width_compare(container, space, 0, false)
@@ -146,4 +151,27 @@ fn test_intrinsic_inline_scalar_rejects_contexts_requiring_full_geometry() {
 		}
 		assert container.retained_intrinsic_inline_widths_ == unsafe { nil }
 	}
+}
+
+fn test_intrinsic_inline_scalar_revalidates_resolved_context_without_raw_mutation() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	container := intrinsic_width_container(document, 'context dependent text', 'text-indent:1rem')
+	space := retained_width_space(false)
+	assert !retained_width_compare(container, space, 0, false)
+	assert retained_width_compare(container, space, 0, false) == !disable_retained_intrinsic_inline_width
+	mut style := unsafe { &css.ComputedProperties(container.computed_values()) }
+	revision := style.mutation_revision()
+	style.root_font_size_px_ += 5
+	assert style.mutation_revision() == revision
+	assert !retained_width_compare(container, space, 0, false)
+	style.root_line_height_px_ += 5
+	assert !retained_width_compare(container, space, 0, false)
+	style.viewport_rect_ = css.CSSPixelRect.new(0, 0, 999, 777)
+	assert !retained_width_compare(container, space, 0, false)
+	document.set_viewport_rect(dom.Rect{0, 0, 901, 701})
+	assert !retained_width_compare(container, space, 0, false)
+	document.set_layout_coordinate_scale(2)
+	assert !retained_width_compare(container, space, 0, false)
+	assert style.mutation_revision() == revision
 }

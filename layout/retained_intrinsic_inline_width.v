@@ -13,10 +13,18 @@ __global retained_intrinsic_inline_width_reported bool
 struct IntrinsicInlineWidth {
 	key InlineMeasurementKey
 	inputs []RetainedInlineInput
+	contexts []IntrinsicInlineWidthContext
 	font_generation u64
 	font_policy dom.FontRenderingPolicy
 	style_environment u64
+	document_viewport dom.Rect
+	document_scale f64
 	width CSSPixels
+}
+
+struct IntrinsicInlineWidthContext {
+	viewport css.CSSPixelRect
+	scale f64
 }
 
 @[heap]
@@ -40,7 +48,9 @@ fn retained_intrinsic_inline_width(container &BlockContainer, used &UsedValues,
 		if entry.key != key || entry.font_generation != font_generation
 			|| entry.font_policy != root.document().font_rendering_policy()
 			|| entry.style_environment != root.document().style_environment_version()
-			|| !inline_measurement_inputs_are_current(entry.inputs) { continue }
+			|| entry.document_viewport != root.document().viewport_rect()
+			|| entry.document_scale != root.document().layout_coordinate_scale()
+			|| !intrinsic_inline_width_inputs_are_current(entry) { continue }
 		if retained_intrinsic_inline_width_diagnostics && !retained_intrinsic_inline_width_reported {
 			retained_intrinsic_inline_width_reported = true
 			eprintln('Vox intrinsic inline width: reused validated scalar across probes')
@@ -48,6 +58,19 @@ fn retained_intrinsic_inline_width(container &BlockContainer, used &UsedValues,
 		return entry.width
 	}
 	return none
+}
+
+fn intrinsic_inline_width_inputs_are_current(entry &IntrinsicInlineWidth) bool {
+	if !inline_measurement_inputs_are_current(entry.inputs)
+		|| !retained_layout_fonts_are_current(entry.inputs) { return false }
+	// These resolved contexts can change without a raw-property mutation.
+	// A within-pass line cache does not cross that boundary, but this one does.
+	for index, input in entry.inputs {
+		style := input.node.computed_values()
+		if style.viewport_rect_ != entry.contexts[index].viewport
+			|| style.layout_coordinate_scale() != entry.contexts[index].scale { return false }
+	}
+	return true
 }
 
 fn retain_intrinsic_inline_width(container &BlockContainer, key InlineMeasurementKey,
@@ -64,13 +87,23 @@ fn retain_intrinsic_inline_width(container &BlockContainer, key InlineMeasuremen
 	mut inputs := []RetainedInlineInput{}
 	if !collect_retained_inline_inputs(root, true, mut inputs) { return }
 	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
-	for input in inputs { owned_inputs << RetainedInlineInput{ ...input, text: input.text.clone() } }
+	mut contexts := []IntrinsicInlineWidthContext{cap: inputs.len}
+	for input in inputs {
+		owned_inputs << RetainedInlineInput{ ...input, text: input.text.clone() }
+		contexts << IntrinsicInlineWidthContext{
+			viewport: input.style.viewport_rect_
+			scale: input.style.layout_coordinate_scale()
+		}
+	}
 	entry := IntrinsicInlineWidth{
 		key: key
 		inputs: owned_inputs
+		contexts: contexts
 		font_generation: css.css_style_computer_for(root.document()).font_computer().environment_generation()
 		font_policy: root.document().font_rendering_policy()
 		style_environment: root.document().style_environment_version()
+		document_viewport: root.document().viewport_rect()
+		document_scale: root.document().layout_coordinate_scale()
 		width: width
 	}
 	mut mutable := unsafe { &BlockContainer(container) }
