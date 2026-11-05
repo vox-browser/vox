@@ -127,7 +127,8 @@
 - Performance comparisons (instruction counts, scrolling, timings) must use
   builds with the same C mode, recorded with the build identity. Builds before
   the parallel default used one C unit; compare with them only through
-  `--no-parallel-cc` builds.
+  `--no-parallel-cc` builds. The measured difference per site is in
+  [single C unit vs -parallel-cc](docs/PARALLEL_CC_PERFORMANCE.md).
 - The browser builds with current V and fails rather than falling back to the
   0.5.2 compatibility compiler; an outdated `v` on `PATH` needs `V_BIN`.
   `LADYBIRD_V_GC=prealloc` builds use `-prealloc -gc none` and need V's

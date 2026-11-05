@@ -1,0 +1,56 @@
+# Single C unit vs `-parallel-cc` builds: page instruction counts
+
+Recorded 2026-11-05 on the `OPTIMIZED_SITES.md` workloads that still have, or
+could be given, a frozen page. Both builds compile the same generated C; only
+the C compile differs:
+
+- **single**: one clang unit with the production `-O3 -mllvm
+  -inline-threshold=1500` flags (`sh build-prod-browser.sh --no-parallel-cc`).
+- **parallel**: the default build, 33 units with `-flto=thin` and the same
+  inline threshold at link time.
+
+The main Vox process's own retired instructions at `capture_document_encoded`
+(fresh launch through encoded document PNG), median of 7 alternating pairs:
+
+| Site | single | parallel | Median change | Paired change (parallel higher) |
+| --- | ---: | ---: | ---: | ---: |
+| Hacker News homepage (archived) | 1.608B | 1.621B | +0.85% | +1.12% (7/7) |
+| Lobsters homepage (frozen) | 4.973B | 4.977B | +0.09% | +0.27% (5/7) |
+| CNN homepage (frozen) | 21.690B | 22.215B | +2.42% | +1.81% (6/7) |
+| Wikipedia portal (archived 2026-11-05) | 4.204B | 4.220B | +0.38% | +0.45% (5/7) |
+| vlang.io (archived 2026-11-05) | 25.522B | 25.558B | +0.14% | +0.24% (4/7) |
+
+Whole-coalition counts (the `OPTIMIZED_SITES.md` scope, including the filter
+helper) change by +0.68%, +0.40%, +4.93%, +0.43% and −0.13% at the median.
+They are noisier: on several launches of both builds, two extra short-lived
+tasks joined the app's resource coalition and added up to 13B instructions,
+mostly in the first pairs after each site's replay server started. Excluding
+those launches, CNN changes by +3.68% (6/4 trials) and Hacker News by +1.32%.
+Vox's own count is unaffected by them.
+
+Captured PNGs are byte-identical between the builds on Hacker News, Lobsters,
+CNN and Wikipedia. vlang.io's capture varies between launches of either build
+(three hashes occur in both). All 70 launches passed their content checks.
+
+**Reading:** ThinLTO keeps the split build within about 1% of one unit on most
+pages; the JavaScript-heavy CNN page pays about 2%. Use `--no-parallel-cc` for
+maximum binary performance and whenever comparing with single-unit results.
+
+## Method and limits
+
+- One V generation (V branch `parallel-cc-native-headers` at `57cb0da449`,
+  prealloc runtime) of vox2 `d4bb0d8d8` plus the shared working tree; the full
+  C (SHA256 `e8a4a174…`) was compiled both ways. The bundles differ only in
+  `Contents/MacOS/Vox`.
+- Fresh process and private empty profile/cache per launch, 1024×768,
+  JavaScriptCore, 5 s settle, replayed responses only. Wikipedia and vlang.io
+  use new archives because their earlier fixtures were deleted. Old Reddit is
+  not measured: its fixture is gone and the live page redirects to login.
+- Differences from the site reports: no Brave trials, cold caches (the CNN and
+  Lobsters reports used warm cache templates), and the endpoint stable-task-set
+  ownership audit is off because cold-cache helpers start and exit during
+  capture. These are build-to-build comparisons, not new Brave ratios.
+- Host load averaged 45–100 (other sessions); alternation balances it.
+
+Evidence: [per-trial counts and identities](performance/parallel-cc-ab-20261105.json),
+[driver, analysis and receipts](performance/raw/parallel-cc-ab-20261105.tar.gz).
