@@ -9,7 +9,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { captureArchive, captureEncodedResponseCache, installCSSOMAuthorRecorder } from './capture_archive.mjs';
 import { createOracleProfile, saveClosedOracleProfile } from './oracle_profile.mjs';
-import {closeOracleBrowser} from './oracle_shutdown.mjs';
+import {closeOracleBrowser,requestOracleBrowserClose} from './oracle_shutdown.mjs';
 import {recordOracleFailure} from './oracle_failure.mjs';
 import {parseArchiveFocus,restoreArchiveFocus} from './archive_focus.mjs';
 import { capturePixelReference, referenceLaunchArguments, waitForPixelDocument } from './pixel_reference.mjs';
@@ -462,8 +462,7 @@ try {
     throw error;
 } finally {
     try {
-        await closeOracleBrowser(browser,()=>browserControl
-            ? browserControl.send('Browser.close') : Promise.reject(Error('No browser debugger')));
+        await closeOracleBrowser(browser,()=>requestOracleBrowserClose(browserControl,background,page));
         if (completed && options['profile-output']) {
             if (browser.signalCode === 'SIGKILL') throw new Error('Cannot save a forcibly terminated oracle profile');
             await saveClosedOracleProfile(profile, options['profile-output']);

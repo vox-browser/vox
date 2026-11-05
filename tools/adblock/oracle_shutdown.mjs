@@ -4,6 +4,18 @@ import {promisify} from 'node:util';
 const exec = promisify(execFile);
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+export async function requestOracleBrowserClose(control, ...connections) {
+    // Release page/extension debugger clients before browser teardown. Keep
+    // only the browser connection until its close request has been delivered.
+    for (const connection of connections) connection?.close();
+    try {
+        if (!control) throw Error('No browser debugger');
+        await control.send('Browser.close');
+    } finally {
+        control?.close();
+    }
+}
+
 export async function oracleProcessSnapshot() {
     const {stdout} = await exec('ps', ['-axo', 'pid=,ppid=,lstart=']);
     return stdout.trim().split('\n').map(line => {

@@ -1,10 +1,25 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {closeOracleBrowser} from './oracle_shutdown.mjs';
+import {closeOracleBrowser,requestOracleBrowserClose} from './oracle_shutdown.mjs';
 
 const process = () => ({pid:10, exitCode:null, signalCode:null, signals:[],
     kill(signal) {this.signals.push(signal);this.signalCode=signal;}});
 const row = (pid,parent,started=String(pid)) => ({pid,parent,started});
+
+test('page and extension debuggers close before the browser close request',async()=>{
+    const events=[];
+    const control={send:async method=>{events.push(method);},close:()=>events.push('control')};
+    await requestOracleBrowserClose(control,{close:()=>events.push('extension')},
+        {close:()=>events.push('page')});
+    assert.deepEqual(events,['extension','page','Browser.close','control']);
+});
+
+test('a rejected close request releases the control connection and retains the error',async()=>{
+    const error=Error('Browser debugger closed');let released=false;
+    await assert.rejects(requestOracleBrowserClose({send:async()=>{throw error;},
+        close:()=>{released=true;}}),value=>value===error);
+    assert(released);
+});
 
 test('shutdown waits for helpers after their browser parent exits and they are reparented',async()=>{
     const browser=process();let reads=0,closed=false;
