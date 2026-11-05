@@ -6514,3 +6514,25 @@ retained alongside the correction. All **333 instruction-tool tests** pass.
 Native BBC eligibility and the unprofiled matched effect are pending. The latest
 completed bundle lacks this change and a shared build is already running. No
 optimization credit or catalog entry is assigned; the 10% task remains open.
+
+
+## Definite-image production validation pending (2026-11-05)
+
+The canonical published `e05f01a6c418` predates `14e4a4501`. After confirming the
+shared build guard was idle and no available bundle contained the required
+code, one canonical supervised build was requested. Receipts
+`20261105-154221-ff9df610` and `20261105-155115-01ebe610` both compile and smoke
+successfully (exit 0), but publication rejects each because its complete build
+input fingerprint changes. Neither supplies native validation for the candidate.
+The next shared worker remains active; no duplicate build is requested while
+its guard is busy.
+
+The bounded 15-minute completed-build watcher expires without a qualifying
+bundle. **No acceptance browser launches for reserved ID 111**, and history
+stays at 108 measured cohorts / 2,335 attempts. Fresh native eligibility and
+original-reference checks, the SVG source-switch guard, seven alternating
+triples and a conditional 615-case broad inventory are prepared under
+`Build/bbc-positioned-definite-image-20261105-1530`. All candidate code, control
+and focused evidence are committed. Native and matched instruction credit remain
+pending; the 10% target is unmet and BBC homepage remains outside the catalog.
+[Build receipts, identities and pending-validation checkpoint](performance/bbc-definite-image-production-pending-20261105.json).
