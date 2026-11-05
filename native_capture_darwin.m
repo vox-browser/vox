@@ -4366,7 +4366,13 @@ static CIImage *native_css_filter_source_image(CGImageRef image) {
 	size_t width = CGImageGetWidth(image), height = CGImageGetHeight(image);
 	size_t pitch = CGImageGetBytesPerRow(image);
 	if (format && !CGImageGetDecode(image) && height && pitch && height <= SIZE_MAX / pitch) {
+		BOOL timing = getenv("VOX_CSS_FILTER_STAGE_TIMES") != NULL;
+		double started = timing ? CACurrentMediaTime() : 0;
 		CFDataRef bytes = CGDataProviderCopyData(CGImageGetDataProvider(image));
+		if (timing) fprintf(stderr,
+            "VOX_CSS_FILTER_SOURCE width=%zu height=%zu pitch=%zu provider_bytes=%ld copy_us=%.3f\n",
+            width, height, pitch, bytes ? (long)CFDataGetLength(bytes) : -1L,
+            (CACurrentMediaTime() - started) * 1e6);
 		if (bytes && (size_t)CFDataGetLength(bytes) == height * pitch) {
 			CIImage *source = [CIImage imageWithBitmapData:(__bridge NSData *)bytes
 				bytesPerRow:pitch size:CGSizeMake(width, height) format:format
@@ -4562,12 +4568,21 @@ static CIContext *native_css_filter_render_context(NativeCSSFilterLayer const *l
 
 static CGImageRef native_render_css_filter_image(NativeCSSFilterLayer const *layer,
     CGImageRef input, CGRect bounds, BOOL allow_software) {
+    BOOL timing = getenv("VOX_CSS_FILTER_STAGE_TIMES") != NULL;
+    double started = timing ? CACurrentMediaTime() : 0;
     native_initialize_css_filter_renderer();
     CIContext *renderer = allow_software
         ? native_css_filter_render_context(layer, input) : native_css_filter_ci_context;
+    double selected = timing ? CACurrentMediaTime() : 0;
     CIImage *filtered = native_apply_css_filter_layer(layer, input);
+    double applied = timing ? CACurrentMediaTime() : 0;
     CGImageRef image = [renderer createCGImage:filtered fromRect:bounds
         format:kCIFormatRGBA8 colorSpace:native_css_filter_color_space];
+    if (timing) fprintf(stderr,
+        "VOX_CSS_FILTER_RENDER width=%.0f height=%.0f software=%d context_us=%.3f apply_us=%.3f render_us=%.3f\n",
+        bounds.size.width, bounds.size.height, renderer == native_css_filter_software_context,
+        (selected - started) * 1e6, (applied - selected) * 1e6,
+        (CACurrentMediaTime() - applied) * 1e6);
     if (renderer == native_css_filter_software_context
         && getenv("VOX_SOFTWARE_POINTWISE_FILTER_VERIFY")) {
         CGImageRef reference = [native_css_filter_ci_context createCGImage:filtered
