@@ -1660,3 +1660,11 @@ unchanged. The [batching receipt](performance/chatgpt-animation-batch-20261105.j
 links every attempt, source proof, component result, raw counter, PNG, ownership
 audit, memory guard and broad check in verified durable archives. The requested
 5% advantage over Brave remains unmet.
+
+The following fresh-profile attempts both finish V code generation but fail
+source sealing because canonical build inputs change before C preprocessing.
+Neither produces a profiled executable or launches a browser. The
+[profile-refresh receipt](performance/chatgpt-profile-refresh-blocked-20261105.json)
+retains both generated C inputs, commands, source identities, failures and memory
+guards. New profiling remains pending a stable canonical input window; neither
+failed build changes the measured workload or supplies optimization credit.

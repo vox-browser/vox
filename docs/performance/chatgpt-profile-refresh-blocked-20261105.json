@@ -1,0 +1,267 @@
+{
+  "version": 1,
+  "status": "blocked_by_mutating_canonical_inputs",
+  "diagnostic": true,
+  "acceptance": false,
+  "instruction_credit": 0,
+  "qualification": "Two diagnostic profile-generation attempts completed V code generation but source sealing rejected changed repository build inputs before native compilation. No profile executable or browser capture resulted. Guard and source checks were retained; no production build, source checkout or bundle copy was made. The current production workload and 5% Brave target remain unchanged and unmet.",
+  "rows": [
+    {
+      "attempt": "r1",
+      "build": {
+        "complete": false,
+        "source_before": {
+          "head": "001db6701be5c2975f620491d55e065bb65797c1",
+          "repository_sha256": "dddadebdea32ff4f9234ab39ae120eb2c87e97c9f0c6d31909dfada0777c689e",
+          "build_inputs_sha256": "af926825d18afebfbb84ea14da1846df477307d64004c28854c2a2b86c21e7ec",
+          "dirty": true
+        },
+        "compiler_sha256": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+        "codegen_command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-prod",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_production",
+          "-d",
+          "vox_ui2",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-w",
+          "-n",
+          "-nocache",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-profile",
+          "-",
+          "-profile-no-inline",
+          "-profile-fns",
+          "main__main",
+          "-cflags",
+          "-DLADYBIRD_V_HAS_RUST_YUV -DLADYBIRD_V_HAS_SKIA_TEXT -DLADYBIRD_V_HAS_FFMPEG -I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include -O1 -D_FORTIFY_SOURCE=0 -include stdio.h",
+          "-ldflags",
+          "-L/Users/alex/code/vox2/Build/v/rust-yuv/release -lladybird_v_yuv -L/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -lLadybirdVSkiaText -Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib -lc++ /Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.dylib",
+          "-dump-c-flags",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r1/Vox.flags",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r1/Vox.c",
+          "/Users/alex/code/vox2"
+        ],
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler",
+        "started_unix": 1793847752.903031,
+        "host": {
+          "cpu_count": 18,
+          "load": [
+            13.845703125,
+            15.0888671875,
+            13.4296875
+          ]
+        },
+        "codegen_exit": 0,
+        "original_generated_sha256": "5a5fa566e071fc111c00c724f6722a5a272d97782ff9dd3a1332c65b01aef0f3",
+        "generated_sha256": "ef5ab1408d199d6ce739a3630f4517cd258acc14bfbd60d356872a282e2747cf",
+        "generated_edit": {
+          "before": "bool profile__v__profile_enabled = true;",
+          "after": "_Thread_local bool profile__v__profile_enabled = false;"
+        },
+        "original_flags_sha256": "0a9954f506cab1cbc00f29aa56e693ef220b3222ff091ac49547ccc447650c37",
+        "flags_optimization_edit": [
+          "-O2",
+          "-O1"
+        ],
+        "flags_sha256": "f01ab728e460859d4b5ca9968ae3587da996e23623d0514878f0aa442693cf93",
+        "profile_mode": "-prod source conditions; C -O1; main-thread TLS gate; instrumentation is diagnostic only",
+        "compile_command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/freeze_browser_compile.py",
+          "--root",
+          "/Users/alex/code/vox2",
+          "--stage",
+          "/Users/alex/code/vox2/Build/v",
+          "--receipt",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r1",
+          "--source",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r1/Vox.c",
+          "--flags",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r1/Vox.flags",
+          "--output",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r1/Vox-profile"
+        ],
+        "compile_exit": 1,
+        "error": "",
+        "source_after": {
+          "head": "001db6701be5c2975f620491d55e065bb65797c1",
+          "repository_sha256": "f1a1f7f5dd718d6c494bb20499dd091bf986868e685e705eb2da3992afe404ca",
+          "build_inputs_sha256": "c0f8a0d2cee1f9656dc61dcfe0a784459ddada22308ee7c54640d92be83fc1b8",
+          "dirty": true
+        },
+        "finished_unix": 1793847911.786344
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-v-profile-production-20261105-r1/build.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 6831734784,
+        "elapsed_seconds": 161.804474583,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "browser_trials": 0
+    },
+    {
+      "attempt": "r2",
+      "build": {
+        "complete": false,
+        "source_before": {
+          "head": "d4bb0d8d8450e662f865c88b952540eaf592f80c",
+          "repository_sha256": "7e02d9c21b0b1dc7bafff266e88af9b0d263d572b924ef0b302dacfd0d76a4de",
+          "build_inputs_sha256": "c0f8a0d2cee1f9656dc61dcfe0a784459ddada22308ee7c54640d92be83fc1b8",
+          "dirty": true
+        },
+        "compiler_sha256": "9d01b571602f69b8e9dcdc25fdf3dcfdedbbe32f2b7a0b47a7592b8d4ce047e2",
+        "codegen_command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler/v",
+          "-prod",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_production",
+          "-d",
+          "vox_ui2",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543|/Users/alex/code/vox2/Build/v/font-runtime/4ed064d27c923ecd80ecb22ce740fdc08fed7cf1bcfd764376c78dbf37510e5c|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-w",
+          "-n",
+          "-nocache",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-profile",
+          "-",
+          "-profile-no-inline",
+          "-profile-fns",
+          "main__main",
+          "-cflags",
+          "-DLADYBIRD_V_HAS_RUST_YUV -DLADYBIRD_V_HAS_SKIA_TEXT -DLADYBIRD_V_HAS_FFMPEG -I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include -O1 -D_FORTIFY_SOURCE=0 -include stdio.h",
+          "-ldflags",
+          "-L/Users/alex/code/vox2/Build/v/rust-yuv/release -lladybird_v_yuv -L/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -lLadybirdVSkiaText -Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS -Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib -lc++ /Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.dylib",
+          "-dump-c-flags",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r2/Vox.flags",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r2/Vox.c",
+          "/Users/alex/code/vox2"
+        ],
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/c4008c1e19ddc5a8ac2b2bd0c518a52d5f662c6191a955ea26c3b711a4d64543/compiler",
+        "started_unix": 1793847998.099445,
+        "host": {
+          "cpu_count": 18,
+          "load": [
+            61.6123046875,
+            29.04931640625,
+            19.2265625
+          ]
+        },
+        "codegen_exit": 0,
+        "original_generated_sha256": "58d116d7f4262e3a6482d6042fed73332942718ab813e8f0c09dd684f54fb245",
+        "generated_sha256": "963d1db90f037cf2b9a7de3c4e6350c79ae15ec31b44b1b1d2d19b5e649b593c",
+        "generated_edit": {
+          "before": "bool profile__v__profile_enabled = true;",
+          "after": "_Thread_local bool profile__v__profile_enabled = false;"
+        },
+        "original_flags_sha256": "0a9954f506cab1cbc00f29aa56e693ef220b3222ff091ac49547ccc447650c37",
+        "flags_optimization_edit": [
+          "-O2",
+          "-O1"
+        ],
+        "flags_sha256": "f01ab728e460859d4b5ca9968ae3587da996e23623d0514878f0aa442693cf93",
+        "profile_mode": "-prod source conditions; C -O1; main-thread TLS gate; instrumentation is diagnostic only",
+        "compile_command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/freeze_browser_compile.py",
+          "--root",
+          "/Users/alex/code/vox2",
+          "--stage",
+          "/Users/alex/code/vox2/Build/v",
+          "--receipt",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r2",
+          "--source",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r2/Vox.c",
+          "--flags",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r2/Vox.flags",
+          "--output",
+          "/Users/alex/code/vox2/Build/chatgpt-v-profile-production-20261105-r2/Vox-profile"
+        ],
+        "compile_exit": 1,
+        "error": "",
+        "source_after": {
+          "head": "d4bb0d8d8450e662f865c88b952540eaf592f80c",
+          "repository_sha256": "1bcf8d7b02235ff3c8b13b10d4980439e659acf00c29e130b18b1b7af959d61a",
+          "build_inputs_sha256": "db2f79ea15892eeef4ecbff04b155d09377ebe7fe8149c924157a5a38622c553",
+          "dirty": true
+        },
+        "finished_unix": 1793848157.8236349
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "Build/chatgpt-v-profile-production-20261105-r2/build.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 6845464576,
+        "elapsed_seconds": 167.109300834,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "browser_trials": 0
+    }
+  ],
+  "repository_status_after": " M OPTIMIZED_SITES.md\n M Tests/Browser/Brave/README.md\n M docs/CHATGPT_BRAVE_INSTRUCTIONS.md\n M docs/FORUM_NEWS_EXPANSION.md\n M docs/REDDIT_COMMENT_MEMORY.md\n M main.v\n M main_capture_audit.v\n M main_capture_audit_test.v\n M main_external_styles.v\n M main_navigation_preload.v\n M main_test.v\n M main_tokenized_preloads.v\n M main_tokenized_preloads_test.v\n?? .OPTIMIZED_SITES.md.swp\n?? .main_navigation_document.v.swp\n?? .vox2.v3cc.68711.7332061041.485435165792\n?? .vox2.v3cc.9583.5497115083.484678953344\n?? Tests/Browser/Brave/expected/classic-worker.png\n?? Tests/Browser/Brave/expected/compositor-parent-resume.png\n?? Tests/Browser/Brave/input/classic-worker.html\n?? Tests/Browser/Brave/input/rounded-svg-css-mask.html\n?? browsersettings/profile_refresh_test.v\n?? css/compositor_geometry_test.v\n?? docs/evidence/register-punctuation-20261105.json\n?? docs/performance/chatgpt-profile-refresh-blocked-20261105-evidence.zip\n?? layout/compositor_geometry_animation_test.v\n?? main_failed_stylesheet_completion_test.v\n?? main_failed_stylesheet_instruction_test.v\n?? main_resource_fetch_pool.v\n?? main_resource_fetch_pool_test.v\n?? platform/platform\n?? skia/bitmap_export.o\n?? skia/canvas_raster.o\n?? skia/font_typeface.o\n?? skia/shadow_raster.o\n?? tools/pixel_diff.c\n?? tools/worker-agent-mini/\n?? tools/worker-entry-mini/\n",
+  "evidence": {
+    "path": "docs/performance/chatgpt-profile-refresh-blocked-20261105-evidence.zip",
+    "sha256": "7a9d09100c1070a581bead596202f3e4befbbc89e14bc39fa9b813f147b74fc1",
+    "bytes": 55087472
+  },
+  "archival_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-v-profile-production-20261105-r2/archive_failures.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 50216960,
+    "elapsed_seconds": 80.203202042,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "archival_recipe": "import hashlib,json,subprocess,zipfile\nfrom pathlib import Path\nroot=Path.cwd();perf=root/'docs/performance';archive=perf/'chatgpt-profile-refresh-blocked-20261105-evidence.zip'\ndef sha(path):\n h=hashlib.sha256()\n with path.open('rb')as stream:\n  for chunk in iter(lambda:stream.read(1024*1024),b''):h.update(chunk)\n return h.hexdigest()\nrows=[];files=[]\nfor name in ['r1','r2']:\n folder=root/('Build/chatgpt-v-profile-production-20261105-'+name)\n r=json.loads((folder/'build.json').read_text());g=json.loads((folder/'build-guard.json').read_text())\n assert r['codegen_exit']==0 and r['compile_exit']==1 and not r['complete']\n assert r['source_before']['build_inputs_sha256']!=r['source_after']['build_inputs_sha256']\n assert g['reason']=='completed' and g['child_exit_code']==1\n assert 'Repository inputs changed before C preprocessing' in (folder/'build.log').read_text()\n rows.append(dict(attempt=name,build=r,guard=g,browser_trials=0))\n files.extend(p for p in folder.iterdir()if p.is_file()and p.name!='archive_failures.py'and p.suffix in['.c','.json','.py','.flags','.log'])\nentries={};seen=set()\nwith zipfile.ZipFile(archive,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6)as z:\n for p in files:\n  digest=sha(p);entries[str(p.relative_to(root))]=dict(sha256=digest,bytes=p.stat().st_size)\n  if digest not in seen:z.write(p,'blobs/'+digest);seen.add(digest)\n  assert sha(p)==digest\n z.writestr('index.json',json.dumps(dict(version=1,entries=entries),indent=2)+'\\n')\nwith zipfile.ZipFile(archive)as z:\n assert z.testzip()is None\n for entry in entries.values():\n  h=hashlib.sha256();size=0\n  with z.open('blobs/'+entry['sha256'])as stream:\n   for chunk in iter(lambda:stream.read(1024*1024),b''):h.update(chunk);size+=len(chunk)\n  assert h.hexdigest()==entry['sha256']and size==entry['bytes']\nreport=dict(version=1,status='blocked_by_mutating_canonical_inputs',diagnostic=True,acceptance=False,instruction_credit=0,\n qualification='Two diagnostic profile-generation attempts completed V code generation but source sealing rejected changed repository build inputs before native compilation. No profile executable or browser capture resulted. Guard and source checks were retained; no production build, source checkout or bundle copy was made. The current production workload and 5% Brave target remain unchanged and unmet.',\n rows=rows,repository_status_after=subprocess.check_output(['git','status','--porcelain'],text=True),\n evidence=dict(path=str(archive.relative_to(root)),sha256=sha(archive),bytes=archive.stat().st_size))\n(perf/'chatgpt-profile-refresh-blocked-20261105.json').write_text(json.dumps(report,indent=2)+'\\n')\nprint(json.dumps(dict(archive=str(archive),bytes=archive.stat().st_size,attempts=len(rows),browser_trials=0)))\n"
+}
