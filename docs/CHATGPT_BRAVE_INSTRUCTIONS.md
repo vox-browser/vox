@@ -2546,3 +2546,53 @@ links counters, audits, PNGs, commands, source proofs, actual exits and six
 verified archives. It preserves the earlier pending receipt and all inspected
 superseded/failed build attempts. The publication lease is released. **The
 requested 5%-below-Brave target remains unmet**.
+
+
+## November 5: direct compact DOM identity replies
+
+Commit `e3a4a961c` serializes already-materialized element replies directly as
+`{"bridgeKey":...}` instead of constructing a one-property JSON map. The
+existing JSON string encoder still owns escaping and byte behavior. Keys over
+256 bytes keep the original map encoder. First-use hydration, non-element
+node states, wrapper identity, live mutation replay and collection reply arenas
+retain their existing behavior. `VOX_RETAIN_IDENTITY_REPLY_MAP=1` selects the
+map control; `VOX_IDENTITY_REPLY_DIAGNOSTICS=1` reports direct execution once.
+
+All **24 final focused jobs pass**, comprising eight compile jobs and sixteen
+runtime jobs: both reply modes under poisoned preallocation, ordinary GC,
+no GC and AddressSanitizer/UndefinedBehaviorSanitizer. Generated-C test calls
+confirm **296 test-function executions**: seven query-wire cases and thirty
+native bridge cases, each in both reply modes and all four allocation/check
+modes. New cases cover arbitrary/escaped/invalid byte keys, the size boundary,
+input-arena retirement, first hydration, non-element state and actual
+JavaScriptCore wrapper identity after live mutations. Existing collection
+checks also retain temporary reply bytes only until the JavaScript copy.
+
+Tooling commit `31d22d688` runs four alternating unprofiled component trials,
+with separate execution diagnostics and exact output/checksum checks. Setup,
+oracle construction and warmup are outside the interval; allocation, batched
+scratch scopes and output checks are counted.
+
+| Synthetic reply-key component | Median observed instruction reduction |
+| --- | ---: |
+| Generated element/query/created keys | 70.305% |
+| Empty key | 74.108% |
+| Escaped keys | 55.360% |
+| Unicode keys | 69.108% |
+| 255-byte key | 37.415% |
+| 256-byte key | 45.304% |
+| 257-byte map fallback | −0.244% |
+| 16 KiB map fallback | −0.872% |
+| Malformed UTF-8 key | 69.417% |
+
+The unrestricted prototype regressed 7.227% on the 16 KiB key, prompting the
+bounded fallback. That cohort and all 24 prototype checks remain retained.
+The initial fixture compile error and an unregistered-parent fixture crash,
+also reproduced with the map control, are retained as failures. The final
+fixture registers the parent before querying child node state. No failed
+attempt is relabeled as a passing check.
+
+The [focused/component receipt](performance/chatgpt-identity-reply-20261105.json)
+links the exact counts, source/executable hashes, commands, guards and verified
+archives. Component gains establish no whole-page saving or Brave acceptance;
+production validation is recorded separately below.
