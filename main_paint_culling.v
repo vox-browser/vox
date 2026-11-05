@@ -6,6 +6,8 @@ import os
 
 const disable_offscreen_video_culling = os.getenv('VOX_DISABLE_OFFSCREEN_VIDEO_CULLING') != ''
 const offscreen_video_culling_diagnostics = os.getenv('VOX_OFFSCREEN_VIDEO_CULLING_DIAGNOSTICS') != ''
+const disable_cull_replay_scope_sync = os.getenv('VOX_DISABLE_CULL_REPLAY_SCOPE_SYNC') != ''
+const cull_replay_scope_diagnostics = os.getenv('VOX_CULL_REPLAY_SCOPE_DIAGNOSTICS') != ''
 
 // Native video always clips its fitted source to this retained rectangle.
 // Compatibility command bounds can differ from it. Keep a rounding fringe
@@ -35,19 +37,48 @@ mut:
     skipped_depth int
 }
 
-fn (mut culling PaintCanvasCulling) skip(command &layout.PaintCommand, page_x f64, page_y f64,
-    width f64, height f64) bool {
-    if !culling.enabled { return false }
+@[inline]
+fn (mut culling PaintCanvasCulling) advance_scope(kind string) {
+    if !culling.enabled { return }
     if culling.skipped_depth > 0 {
-        if command.kind.starts_with('begin_') { culling.skipped_depth++ }
-        else if command.kind.starts_with('end_') { culling.skipped_depth-- }
-        return true
+        if kind.starts_with('begin_') { culling.skipped_depth++ }
+        else if kind.starts_with('end_') { culling.skipped_depth-- }
+        return
     }
-    if command.kind.starts_with('end_') {
+    if kind.starts_with('end_') {
         if culling.depth > 0 {
             if culling.resource_depth == culling.depth { culling.resource_depth = 0 }
             culling.depth--
         }
+    } else if kind.starts_with('begin_') {
+        culling.depth++
+        if culling.resource_depth == 0 && kind != 'begin_css_effect_layer' {
+            culling.resource_depth = culling.depth
+        }
+    }
+}
+
+// Native grouped handlers replay their closing commands too. Account for
+// those boundaries when the outer loop skips their already-painted range;
+// otherwise an ended mask can keep all later leaves in resource-input mode.
+fn (mut culling PaintCanvasCulling) replayed_command(command &layout.PaintCommand) {
+    if disable_cull_replay_scope_sync || !culling.enabled { return }
+    before := culling.resource_depth
+    culling.advance_scope(command.kind)
+    if cull_replay_scope_diagnostics && (command.kind.starts_with('begin_') || command.kind.starts_with('end_')) {
+        eprintln('VOX_CULL_REPLAY_BOUNDARY kind=${command.kind} resource_before=${before} resource_after=${culling.resource_depth} depth=${culling.depth}')
+    }
+}
+
+fn (mut culling PaintCanvasCulling) skip(command &layout.PaintCommand, page_x f64, page_y f64,
+    width f64, height f64) bool {
+    if !culling.enabled { return false }
+    if culling.skipped_depth > 0 {
+        culling.advance_scope(command.kind)
+        return true
+    }
+    if command.kind.starts_with('end_') {
+        culling.advance_scope(command.kind)
         return false
     }
     if command.kind.starts_with('begin_') {
@@ -59,12 +90,9 @@ fn (mut culling PaintCanvasCulling) skip(command &layout.PaintCommand, page_x f6
             culling.skipped_depth = 1
             return true
         }
-        culling.depth++
         // Opacity and blend scopes do not move ink. Other groups may build
         // masks, filter inputs or source-space resources beyond the viewport.
-        if culling.resource_depth == 0 && command.kind != 'begin_css_effect_layer' {
-            culling.resource_depth = culling.depth
-        }
+        culling.advance_scope(command.kind)
         return false
     }
     if culling.resource_depth != 0 { return false }

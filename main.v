@@ -7605,7 +7605,11 @@ fn (mut app BrowserApp) draw() {
 			mut leaf_timing := new_leaf_timing()
 			for command_index in 0 .. app.paint_commands.len {
 				leaf_timing.mark(command_index)
-				if command_index < shared_svg_end || command_index in early_partial_headers { continue }
+				if command_index < shared_svg_end {
+					culling.replayed_command(&app.paint_commands[command_index])
+					continue
+				}
+				if command_index in early_partial_headers { continue }
 				$if macos {
 					if app.ctx.native_rendering && command_index < app.chromium_raster_plan.command_layers.len
 						&& app.chromium_raster_plan.command_layers[command_index] < 0 { continue }

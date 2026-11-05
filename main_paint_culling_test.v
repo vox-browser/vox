@@ -4,6 +4,36 @@ import layout
 import painting
 import math
 
+fn test_grouped_native_replay_closes_resource_culling_scopes() {
+	mut culling := PaintCanvasCulling{enabled: true}
+	assert !culling.skip(layout.PaintCommand{kind: 'begin_svg_mask_layer'}, 0, 0, 100, 100)
+	assert culling.depth == 1 && culling.resource_depth == 1
+	for kind in ['fill_rect', 'begin_css_effect_layer', 'draw_svg_path',
+		'end_css_effect_layer', 'end_svg_mask_layer'] {
+		culling.replayed_command(&layout.PaintCommand{kind: kind})
+	}
+	if !disable_cull_replay_scope_sync {
+		assert culling.depth == 0 && culling.resource_depth == 0
+		assert culling.skip(layout.PaintCommand{kind: 'fill_rect', x: 500, y: 500, width: 20, height: 20}, 0, 0, 100, 100)
+	} else {
+		assert culling.depth == 1 && culling.resource_depth == 1
+	}
+}
+
+fn test_grouped_replay_keeps_an_enclosing_resource_scope_active() {
+	if disable_cull_replay_scope_sync { return }
+	mut culling := PaintCanvasCulling{enabled: true}
+	assert !culling.skip(layout.PaintCommand{kind: 'begin_css_filter_layer'}, 0, 0, 100, 100)
+	assert !culling.skip(layout.PaintCommand{kind: 'begin_svg_mask_layer'}, 0, 0, 100, 100)
+	for kind in ['fill_rect', 'end_svg_mask_layer'] {
+		culling.replayed_command(&layout.PaintCommand{kind: kind})
+	}
+	assert culling.depth == 1 && culling.resource_depth == 1
+	assert !culling.skip(layout.PaintCommand{kind: 'fill_rect', x: 500, y: 500, width: 20, height: 20}, 0, 0, 100, 100)
+	assert !culling.skip(layout.PaintCommand{kind: 'end_css_filter_layer'}, 0, 0, 100, 100)
+	assert culling.depth == 0 && culling.resource_depth == 0
+}
+
 fn test_video_canvas_culling_uses_the_final_clip_before_gpu_command_selection() {
 	mut culling := PaintCanvasCulling{enabled: true}
 	mut video := layout.PaintCommand{kind: 'draw_video', x: 0, y: 0, width: 20, height: 20,
