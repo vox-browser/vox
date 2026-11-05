@@ -2990,3 +2990,50 @@ four verified archives. It retains the unavailable source-proof checks and
 the wider CSS provenance/opacity failures in both variants; **no overall CSS
 suite pass is claimed**. The publication lease is released. This result earns
 no page instruction credit or 5%-below-Brave acceptance.
+
+
+## November 5: refreshed production-condition profile
+
+A fresh standalone V `-profile` executable uses the current canonical source,
+`-prod`, the explicit production runtime module overlay and C `-O1` with the
+generated LTO flags. It retains the main-thread TLS profiling gate and
+thirty-second diagnostic settle. Source sealing succeeds before compilation;
+generated and preprocessed C are preserved. Later repository changes are
+recorded separately and do not alter those sealed inputs. The build, signing
+and memory guard exit zero, with 8,808,333,312 bytes peak sampled RSS under
+12 GiB. The signed executable SHA-256 is
+`a16878db7d45e6b32cc355728b462d461a1680e3ac1d3256b06ba82d51a50889`.
+
+The fresh process passes JavaScriptCore bootstrap, the complete content/button
+audit and every unchanged reference pixel. Browser and guard exit zero; the
+guard adopts the browser identity and peaks at 1,819,869,184 sampled RSS bytes.
+All input fingerprints remain unchanged throughout capture. One-minute host
+load falls from 8.48 to 7.08 on 18 CPUs. There are **11,421 unique profile rows
+and no negative self times**.
+
+The profile records 481 preload/display-eligibility calls, 3,862 animation
+retirement element inspections and 6,414 property computations. These remain
+investigation leads. Recursive inclusive intervals overlap, self intervals
+include native/JSC work and waits, and instrumentation and C optimization
+settings change the workload. In particular, high counts for array/string
+accessors do not establish that those calls survive production inlining.
+The standalone executable also uses an adblock self-worker fallback rather
+than the canonical minimal helper. No engine instruction saving is assigned
+from this profile.
+
+The [refreshed profile receipt](performance/chatgpt-v-profile-refresh-20261105.json)
+links the raw rows, audits, PNGs, commands, actual exits, guarded source seal,
+generated/preprocessed C and verified evidence archive. Native libraries and
+sealed link objects are identified by hashes; no app bundle or source tree is
+copied. The original disk-only SOCKS replay and author scripts are retained,
+with no new download. Thirty seconds applies only to this instrumented
+diagnostic; the unprofiled five-second protocol and references remain unchanged.
+Instruction credit stays zero, the broad cadence stays zero and **the requested
+5% advantage over Brave remains unmet**.
+
+After archive verification, a separate guarded cleanup removes only this job's
+redundant generated and preprocessed main C files. Their exact bytes remain
+recoverable from the 58,110,030-byte lossless archive. The source-storage receipt
+records each removed hash and requires restoration before recompiling or
+rerunning the frozen-source validator. The signed diagnostic, canonical bundle,
+raw measurements and original fixture remain in place.
