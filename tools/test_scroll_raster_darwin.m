@@ -58,7 +58,7 @@ static void test_independent_image_pixels_are_not_reused(void) {
     native_discard_scroll_raster();
     double delta = 0;
     for (int frame = 0; frame < 3; ++frame) {
-        assert(!native_begin_scroll_raster(1, 1, frame, 0, 32, 32, 1, &delta, NULL, 0, 1));
+        assert(!native_begin_scroll_raster(1, 1, frame, 0, 32, 32, 1, &delta, NULL, 0, 1, 1));
         native_scroll_raster_independent_content();
         native_end_scroll_raster();
         assert(!native_scroll_raster.valid);
@@ -132,7 +132,7 @@ static void frame(int width, int height, int top, int scale, double scroll,
         && last_owner == owner;
     last_revision = revision; last_owner = owner;
     assert(native_begin_scroll_raster(owner, revision, scroll, top, width, height,
-        eligible, &delta, NULL, 0, allow_reuse) == expected_reuse);
+        eligible, &delta, NULL, 0, allow_reuse, 1) == expected_reuse);
     if (native_scroll_raster.active) {
         size_t stored_rows = native_scroll_raster.damage_optimized && expected_reuse
             ? (size_t)llround(fabs(scroll - previous_scroll) * scale) : height * scale;
@@ -227,7 +227,7 @@ static void video_frame(int scale, double scroll, int frame_number, int allow_re
     assert(ready == expect_ready);
     double delta = 0;
     int reused = native_begin_scroll_raster(5, 1, scroll, top, width, height, 1, &delta,
-        damage, 1, allow_reuse);
+        damage, 1, allow_reuse, 1);
     assert(reused == expect_reuse);
     white(actual, width, canvas_height);
     paint(actual, width, height, top, scroll, scale);
@@ -296,7 +296,7 @@ static void test_damage_rects_repaint_only_changed_content(int scale) {
     [NSGraphicsContext setCurrentContext:
         [NSGraphicsContext graphicsContextWithCGContext:actual flipped:NO]];
     double delta = 1;
-    assert(native_begin_scroll_raster(3, 2, 100, top, width, height, 1, &delta, rect, 1, 1) == 1);
+    assert(native_begin_scroll_raster(3, 2, 100, top, width, height, 1, &delta, rect, 1, 1, 1) == 1);
     assert(delta == 0);
     // Only the damaged rows return to the ring; there is no exposed strip.
     assert(native_scroll_raster.dirty_rows == 0);
@@ -321,7 +321,7 @@ static void test_damage_rects_repaint_only_changed_content(int scale) {
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:
         [NSGraphicsContext graphicsContextWithCGContext:actual flipped:NO]];
-    assert(native_begin_scroll_raster(3, 2, 107, top, width, height, 1, &delta, NULL, 0, 1) == 1);
+    assert(native_begin_scroll_raster(3, 2, 107, top, width, height, 1, &delta, NULL, 0, 1, 1) == 1);
     assert(delta == 7);
     white(actual, width, canvas_height);
     paint(actual, width, height, top, 107, scale);
@@ -337,7 +337,7 @@ static void test_damage_rects_repaint_only_changed_content(int scale) {
     [NSGraphicsContext saveGraphicsState];
     [NSGraphicsContext setCurrentContext:
         [NSGraphicsContext graphicsContextWithCGContext:actual flipped:NO]];
-    assert(native_begin_scroll_raster(3, 3, 114, top, width, height, 1, &delta, NULL, 0, 0) == 0);
+    assert(native_begin_scroll_raster(3, 3, 114, top, width, height, 1, &delta, NULL, 0, 0, 1) == 0);
     native_end_scroll_raster();
     [NSGraphicsContext restoreGraphicsState];
     CGContextRelease(actual);
@@ -404,7 +404,7 @@ int main(void) {
             [NSGraphicsContext graphicsContextWithCGContext:translated flipped:NO]];
         CGContextTranslateCTM(translated, 1, 0);
         double delta = 0;
-        assert(!native_begin_scroll_raster(2, 2, 406.25, 9, 161, 121, 1, &delta, NULL, 0, 1));
+        assert(!native_begin_scroll_raster(2, 2, 406.25, 9, 161, 121, 1, &delta, NULL, 0, 1, 1));
         assert(!native_scroll_raster.pixels);
         [NSGraphicsContext restoreGraphicsState];
         CGContextRelease(translated);

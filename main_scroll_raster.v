@@ -4,7 +4,7 @@ import layout
 import math
 import os
 
-fn C.native_begin_scroll_raster(u64, u64, f64, f64, f64, f64, int, &f64, &f64, int, int) int
+fn C.native_begin_scroll_raster(u64, u64, f64, f64, f64, f64, int, &f64, &f64, int, int, i32) int
 fn C.native_end_scroll_raster()
 fn C.native_discard_scroll_raster()
 fn C.native_set_scroll_damage_rects(rects &f32, count i32)
@@ -102,9 +102,11 @@ fn (mut app BrowserApp) begin_scroll_raster() ScrollRasterDamage {
 		for restore in damage.restores { clipped << restore.rect }
 		flat := scroll_raster_flatten_rects(clipped)
 		flat_data := if flat.len > 0 { unsafe { &f64(flat.data) } } else { unsafe { &f64(nil) } }
+		// The draw loop immediately clears reused damage to opaque white before
+		// replay, so retained pixels wholly inside it need not be restored.
 		damage.reused = C.native_begin_scroll_raster(document_id, revision, app.scroll_y,
 			app.page_top(), damage.width, damage.height, int(ring_eligible), &damage.delta, flat_data,
-			clipped.len, allow_reuse) != 0
+			clipped.len, allow_reuse, i32(1)) != 0
 		if damage.reused {
 			damage.rects = clipped
 			mut region := scroll_raster_strip_region(damage.delta, damage.width, damage.height)

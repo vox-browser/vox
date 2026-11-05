@@ -120,6 +120,86 @@ static void native_scroll_raster_copy_rows(VoxScrollRaster *cache,
     }
 }
 
+// Copy only the retained pixels that the caller's opaque damage clear will
+// leave visible. Damage edges remain copied: Quartz may cover them partially.
+// Sweep at rectangle boundaries, merging x intervals once per horizontal band
+// instead of sorting them for every row. Unaffected bands keep the bulk copy.
+static size_t native_scroll_raster_restore_visible(VoxScrollRaster *cache,
+    uint8_t *canvas, size_t pitch, size_t first, size_t count, int opaque_clear) {
+    const char *enabled = opaque_clear && native_scroll_repainted_count > 0
+        ? getenv("VOX_SKIP_OVERWRITTEN_SCROLL_COPY") : NULL;
+    size_t area = 0, end = first + count, skipped = 0;
+    if (enabled && *enabled) {
+        for (int index = 0; index < native_scroll_repainted_count; ++index) {
+            const long *rect = native_scroll_repainted[index];
+            size_t top = (size_t)rect[1] > first ? (size_t)rect[1] : first;
+            size_t bottom = (size_t)rect[3] < end ? (size_t)rect[3] : end;
+            if (bottom > top) area += (size_t)(rect[2] - rect[0]) * (bottom - top);
+        }
+    }
+    if (!area || area < cache->width * count / 8) {
+        native_scroll_raster_copy_rows(cache, canvas, pitch, first, count, 0);
+        return 0;
+    }
+    for (size_t y = first; y < end;) {
+        size_t next = end, intervals[VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS + 1][2];
+        int interval_count = 0;
+        for (int index = 0; index < native_scroll_repainted_count; ++index) {
+            const long *rect = native_scroll_repainted[index];
+            size_t top = (size_t)rect[1], bottom = (size_t)rect[3];
+            if (top > y && top < next) next = top;
+            if (bottom > y && bottom < next) next = bottom;
+            if (top <= y && bottom > y) {
+                int slot = interval_count++;
+                while (slot && intervals[slot - 1][0] > (size_t)rect[0]) {
+                    intervals[slot][0] = intervals[slot - 1][0];
+                    intervals[slot][1] = intervals[slot - 1][1];
+                    --slot;
+                }
+                intervals[slot][0] = (size_t)rect[0];
+                intervals[slot][1] = (size_t)rect[2];
+            }
+        }
+        if (!interval_count) {
+            native_scroll_raster_copy_rows(cache, canvas, pitch, y, next - y, 0);
+        } else {
+            size_t spans[VOX_SCROLL_RASTER_MAX_DAMAGE_RECTS + 2][2];
+            size_t x = 0, copied_width = 0;
+            int span_count = 0;
+            for (int index = 0; index < interval_count; ++index) {
+                if (intervals[index][0] > x) {
+                    spans[span_count][0] = x;
+                    spans[span_count++][1] = intervals[index][0];
+                }
+                if (intervals[index][1] > x) x = intervals[index][1];
+            }
+            if (x < cache->width) {
+                spans[span_count][0] = x;
+                spans[span_count++][1] = cache->width;
+            }
+            for (int index = 0; index < span_count; ++index)
+                copied_width += spans[index][1] - spans[index][0];
+            skipped += (cache->width - copied_width) * (next - y) * 4;
+            for (size_t row = y; row < next; ++row) {
+                const uint8_t *source = cache->pixels
+                    + ((cache->row_origin + row) % cache->height) * cache->width * 4;
+                uint8_t *target = canvas + (cache->top + row) * pitch;
+                for (int index = 0; index < span_count; ++index) {
+                    size_t offset = spans[index][0] * 4;
+                    memcpy(target + offset, source + offset,
+                        (spans[index][1] - spans[index][0]) * 4);
+                }
+            }
+        }
+        y = next;
+    }
+    const char *diagnostics = getenv("VOX_SCROLL_COPY_DIAGNOSTICS");
+    if (diagnostics && *diagnostics)
+        fprintf(stderr, "VOX_SCROLL_COPY skipped_bytes=%zu retained_bytes=%zu rects=%d\n",
+            skipped, cache->width * count * 4, native_scroll_repainted_count);
+    return skipped;
+}
+
 // Different damage rectangles can cover the same device rows, even when the
 // rectangles do not overlap horizontally. Each store copies the complete row;
 // publish its final canvas bytes to the ring once, including exposed rows.
@@ -172,11 +252,13 @@ static void native_scroll_raster_store_rows(VoxScrollRaster *cache, uint8_t *pix
 // across a changed revision), so the retained pixels outside them are current.
 // Without it the frame is painted completely and stored: a revision match
 // alone no longer implies reuse, because content that does not translate with
-// the viewport is only repainted through that reconciliation.
+// the viewport is only repainted through that reconciliation. `opaque_clear`
+// promises that replay first replaces every damage pixel with an opaque fill;
+// without this promise all overlapping retained pixels must be restored.
 static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
     double scroll, double page_top, double width, double height, int eligible,
     double *scroll_delta, const double *damage, int damage_count,
-    int allow_reuse) {
+    int allow_reuse, int opaque_clear) {
     VoxScrollRaster *cache = &native_scroll_raster;
     CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
     if (!eligible || getenv("VOX_DISABLE_SCROLL_RASTER_REUSE") || !context) {
@@ -279,11 +361,9 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
         cache->row_origin = (cache->row_origin + h + rows) % h;
         cache->dirty_rows = (size_t)labs(rows);
         cache->dirty_first = rows < 0 ? 0 : h - cache->dirty_rows;
-        native_scroll_raster_copy_rows(cache, pixels, pitch,
-            rows < 0 ? cache->dirty_rows : 0, h - cache->dirty_rows, 0);
         // The caller clears under the damage clip after begin. Preserve the
         // original white canvas outside the cached document as well, without
-        // clearing document pixels that were just restored from the ring.
+        // clearing document pixels that will be restored from the ring.
         CGContextSaveGState(context);
         CGContextSetRGBFillColor(context, 1, 1, 1, 1);
         double canvas_w = canvas_width / scale, canvas_h = canvas_height / scale;
@@ -332,12 +412,17 @@ static int native_begin_scroll_raster(uint64_t owner, uint64_t revision,
             right - left, bottom_edge - top_edge);
         // Only whole device pixels inside the clip are freshly painted.
         long *repainted = native_scroll_repainted[native_scroll_repainted_count];
-        repainted[0] = (long)ceil(left * scale - 0.0000001);
-        repainted[1] = (long)ceil(top_edge * scale - 0.0000001);
-        repainted[2] = (long)floor(right * scale + 0.0000001);
-        repainted[3] = (long)floor(bottom_edge * scale + 0.0000001);
+        repainted[0] = (long)ceil(left * scale);
+        repainted[1] = (long)ceil(top_edge * scale);
+        repainted[2] = (long)floor(right * scale);
+        repainted[3] = (long)floor(bottom_edge * scale);
         if (repainted[2] > repainted[0] && repainted[3] > repainted[1])
             ++native_scroll_repainted_count;
+    }
+    if (damage_optimized) {
+        CGContextFlush(context);
+        native_scroll_raster_restore_visible(cache, pixels, pitch,
+            rows < 0 ? cache->dirty_rows : 0, h - cache->dirty_rows, opaque_clear);
     }
     CGContextClipToRects(context, clips, clip_count);
     return 1;
