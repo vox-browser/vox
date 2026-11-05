@@ -93,7 +93,8 @@ def main():
         assert len(metadata) == 1
         meta = metadata[0]
         assert meta['faults'] == meta['open_frames'] == 0 and meta['maximum_depth'] >= 5
-        assert meta['factory_available'] and Path(meta['executable']).resolve() == fixture
+        assert meta['factory_available'] and meta['objc_call_available'] and meta['script_eval_available']
+        assert Path(meta['executable']).resolve() == fixture
         assert all(r['pid'] == meta['pid'] and 0 < r['self_instructions'] <= r['inclusive_instructions'] for r in rows)
         assert sum(r['self_instructions'] for r in rows) <= meta['process_instructions']
         start, end = text_range(fixture)
@@ -102,8 +103,10 @@ def main():
             assert start <= row['caller_offset'] < end
             assert row['caller'] == row['image_base'] + row['caller_offset']
         counts = {name: sum(r['calls'] for r in main_rows if r['api'] == name)
-                  for name in ['JSEvaluateScript', 'JSObjectCallAsFunction', 'JSScriptFactory']}
-        assert counts == dict(JSEvaluateScript=3, JSObjectCallAsFunction=6, JSScriptFactory=3), counts
+                  for name in ['JSEvaluateScript', 'JSObjectCallAsFunction', 'JSScriptFactory',
+                               'JSValue.callWithArguments', 'JSContext.evaluateJSScript']}
+        assert counts == dict(JSEvaluateScript=3, JSObjectCallAsFunction=6, JSScriptFactory=3,
+                              **{'JSValue.callWithArguments': 2, 'JSContext.evaluateJSScript': 3}), counts
         factories = [r for r in main_rows if r['api'] == 'JSScriptFactory']
         assert all(r['url'] == 'https://probe.test/module.js' and not r['url_truncated'] for r in factories)
         expected_units = sum(len(s.encode('utf-16-le')) // 2 for s in

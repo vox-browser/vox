@@ -27,11 +27,15 @@ static struct Row rows[slots];
 static _Thread_local struct Frame stack[stack_limit];
 static _Thread_local unsigned depth;
 static unsigned faults, maximum_depth;
-static int active, started, factory_available;
+static int active, started, factory_available, objc_call_available, script_eval_available;
 static uint64_t initial_instructions;
 static char factory_encoding[256];
+static char call_encoding[128];
+static char evaluation_encoding[128];
 static mach_timebase_info_data_t timebase;
 static id (*original_factory)(id, SEL, NSInteger, id, id, id, id, id *);
+static id (*original_objc_call)(id, SEL, id);
+static id (*original_script_evaluation)(id, SEL, id);
 
 static uint64_t instructions(void)
 {
@@ -122,6 +126,22 @@ static id counted_factory(id object, SEL selector, NSInteger type, id source,
     leave(entered); return result;
 }
 
+static id counted_objc_call(id object, SEL selector, id arguments)
+{
+    const void *caller = __builtin_extract_return_addr(__builtin_return_address(0));
+    int entered = enter(4, caller, "", 0, 0);
+    id result = original_objc_call(object, selector, arguments);
+    leave(entered); return result;
+}
+
+static id counted_script_evaluation(id object, SEL selector, id script)
+{
+    const void *caller = __builtin_extract_return_addr(__builtin_return_address(0));
+    int entered = enter(5, caller, "", 0, 0);
+    id result = original_script_evaluation(object, selector, script);
+    leave(entered); return result;
+}
+
 static void quoted(const char *text)
 {
     fputc('"', stderr);
@@ -143,8 +163,12 @@ static void report(void)
     fprintf(stderr, "VOX_JSC_SCOPE_META {\"pid\":%d,\"faults\":%u,\"open_frames\":%u,\"maximum_depth\":%u,\"factory_available\":%s,\"process_instructions\":%llu,\"executable\":",
         getpid(), faults, depth, maximum_depth, factory_available ? "true" : "false",
         (unsigned long long)(end >= initial_instructions ? end - initial_instructions : 0));
-    quoted(executable); fputs(",\"factory_encoding\":", stderr); quoted(factory_encoding); fputs("}\n", stderr);
-    static const char *names[] = {"", "JSEvaluateScript", "JSObjectCallAsFunction", "JSScriptFactory"};
+    quoted(executable); fputs(",\"factory_encoding\":", stderr); quoted(factory_encoding);
+    fprintf(stderr, ",\"objc_call_available\":%s,\"call_encoding\":", objc_call_available ? "true" : "false");
+    quoted(call_encoding);
+    fprintf(stderr, ",\"script_eval_available\":%s,\"evaluation_encoding\":", script_eval_available ? "true" : "false");
+    quoted(evaluation_encoding); fputs("}\n", stderr);
+    static const char *names[] = {"", "JSEvaluateScript", "JSObjectCallAsFunction", "JSScriptFactory", "JSValue.callWithArguments", "JSContext.evaluateJSScript"};
     for (unsigned i = 0; i < slots; ++i) {
         struct Row *row = &rows[i]; if (!row->calls) continue;
         Dl_info info = {0};
@@ -187,6 +211,36 @@ __attribute__((constructor)) static void initialize(void)
         if (valid) {
             original_factory = (void *)method_setImplementation(method, (IMP)counted_factory);
             factory_available = original_factory != NULL;
+        }
+    }
+    cls = objc_lookUpClass("JSValue");
+    selector = sel_registerName("callWithArguments:");
+    method = cls ? class_getInstanceMethod(cls, selector) : NULL;
+    snprintf(call_encoding, sizeof(call_encoding), "%s", method ? method_getTypeEncoding(method) : "missing method");
+    if (method && method_getNumberOfArguments(method) == 3) {
+        const char *types[] = {"@", ":", "@"}; char encoding[32]; int valid = 1;
+        method_getReturnType(method, encoding, sizeof(encoding)); valid &= !strcmp(encoding, "@");
+        for (unsigned i = 0; i < 3; ++i) {
+            method_getArgumentType(method, i, encoding, sizeof(encoding)); valid &= !strcmp(encoding, types[i]);
+        }
+        if (valid) {
+            original_objc_call = (void *)method_setImplementation(method, (IMP)counted_objc_call);
+            objc_call_available = original_objc_call != NULL;
+        }
+    }
+    cls = objc_lookUpClass("JSContext");
+    selector = sel_registerName("evaluateJSScript:");
+    method = cls ? class_getInstanceMethod(cls, selector) : NULL;
+    snprintf(evaluation_encoding, sizeof(evaluation_encoding), "%s", method ? method_getTypeEncoding(method) : "missing method");
+    if (method && method_getNumberOfArguments(method) == 3) {
+        const char *types[] = {"@", ":", "@"}; char encoding[32]; int valid = 1;
+        method_getReturnType(method, encoding, sizeof(encoding)); valid &= !strcmp(encoding, "@");
+        for (unsigned i = 0; i < 3; ++i) {
+            method_getArgumentType(method, i, encoding, sizeof(encoding)); valid &= !strcmp(encoding, types[i]);
+        }
+        if (valid) {
+            original_script_evaluation = (void *)method_setImplementation(method, (IMP)counted_script_evaluation);
+            script_eval_available = original_script_evaluation != NULL;
         }
     }
     active = faults == 0;

@@ -61,6 +61,13 @@ int main(void)
         pthread_t thread; assert(!pthread_create(&thread, NULL, background, NULL));
         assert(!pthread_join(thread, NULL));
         JSContext *owner = [JSContext contextWithJSGlobalContextRef:context];
+        owner.exception = nil;
+        JSValue *callable = [JSValue valueWithJSValueRef:recursive inContext:owner];
+        assert([[callable callWithArguments:@[@0]] toInt32] == 1 && !owner.exception);
+        JSValue *thrower = [JSValue valueWithJSValueRef:failure inContext:owner];
+        [thrower callWithArguments:@[]];
+        assert(owner.exception.JSValueRef == sentinel);
+        owner.exception = nil;
         Class cls = NSClassFromString(@"JSScript");
         assert(cls);
         unsigned valid = 0, invalid = 0, deferred = 0;
