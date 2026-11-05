@@ -838,6 +838,113 @@ the source-fidelity gap remains independent.
 [Exact commands, identities and checks](evidence/engadget-ratio-sizing-20261105.json),
 [retained screenshots, logs and failed attempts](evidence/engadget-ratio-sizing-20261105.zip).
 
+## Engadget: degenerate border arcs (2026-11-05)
+
+Commit `c2deb6773` removes the candidate's final **22 native pixel differences**
+on production executable `fc1b35e2…`. Follow-up checks on `68cec440…` with
+verified empty and separately warmed replay caches also give exact Vox and two
+fresh full-uBO Brave pixels. Independent decoded RGBA byte hashes agree for all
+three PNGs under both policies. The **295-pixel saved-source/frozen gap remains
+open**, so this does not qualify Engadget as a strict site pass. Candidate
+manifest `fa56c7ca…` and registered manifest `53ea109a…` are unchanged.
+
+The retained trigger list identifies three ordinary CSS borders: the Latest
+Stories top rule and two vertical dividers. Their packed paths contain
+zero-radius arcs with equal start and end points, such as
+`M 24 733 A 0 0 0 0 0 24 733`. The MSAA classifier treated every arc as a curve
+and enabled multisampling for the photos' bottom-corner tile. The
+[SVG path rules](https://www.w3.org/TR/SVG2/paths.html#ArcImplementationNotes)
+omit an arc with identical endpoints and turn a zero-radius arc into a line.
+The correction applies those rules when classifying CSS border paths. Real
+curves, diagonal segments and dashed borders retain their MSAA selection.
+
+All **seven focused tests pass with default GC and GC disabled**. They include
+the three actual border geometries and controls for omitted arcs, vertical and
+horizontal zero-radius lines, diagonal lines, real curves and dashes. All
+**21 additional MSAA controls pass**. The new
+`chromium-degenerate-border-arcs` browser control, committed as `f93de5999`,
+has exact full-uBO source fidelity, two agreeing fresh Brave references and
+zero native differences. It embeds a small opaque PNG to avoid WebP decoder
+variation; no existing golden or tolerance changed.
+
+The historical attempts before the cache-protocol correction retain their
+reference variation. Their closed uBO template also contains HTTP responses;
+the earlier "cold" label does not establish an empty Brave HTTP cache:
+
+| Build / cache policy | Native versus first Brave | Fresh Brave disagreement | Source versus first Brave | Result |
+| --- | ---: | ---: | ---: | --- |
+| `dd2957bc…` / complete, before fix | 87,153 | 87,131 | 87,413 | Reference replay mismatch |
+| `fc1b35e2…` / complete, fixed | 87,181 | 87,181 | 87,366 | Reference replay mismatch |
+| `fc1b35e2…` / labeled cold, template HTTP cache retained | 0 | 0 | 295 | Source-fidelity mismatch |
+
+The pre-fix native PNG is byte-identical in decoded RGBA to its earlier
+22-pixel result. The fixed native PNG matches the retained agreeing Brave
+pair and the second fresh complete-cache reference at zero pixels. This does
+not discard either complete-cache failure or turn it into acceptance credit.
+These are replay checks of the same complete-acquisition candidate, not new
+acquisitions.
+
+Commit `2fb0edff5` corrects the oracle cache protocol. After uBO is ready and
+before page navigation, cold runs clear the private browser's inherited HTTP
+cache. Warmups also begin empty; only their successfully closed output profiles
+are retained for complete-cache replays. All replay page targets bypass saved
+site service workers. The harness records and validates these operations and
+fails if their proof is absent or differs from the requested policy. Extension
+stores remain intact. All **131 Node checks and 32 Python conformance checks
+pass**, including cache failure and missing-proof controls.
+
+The corrected runs pin `68cec440…` with unchanged browser identities throughout:
+
+| Site / verified replay cache | Native versus Brave | Fresh Brave disagreement | Source versus Brave | Result |
+| --- | ---: | ---: | ---: | --- |
+| Engadget / empty | 0 | 0 | 295 | Source-fidelity mismatch |
+| Engadget / warmed | 0 | 0 | 295 | Source-fidelity mismatch |
+| The Register / empty | 0 | 0 | 0 | Strict pass |
+| The Register / warmed | 0 | 0 | 0 | Strict pass |
+
+The initial corrected launcher fails because its fixture aliases do not yet
+exist; it supplies no pixel result and remains recorded. The corrected cohorts
+retain every completed comparison, including Engadget's source failure. The
+earlier reference failures remain evidence under their original protocol.
+
+The diagnosis uses fresh debugger processes and validates the current C ABI
+against the sealed compiler input before reading bounded scalar path data.
+The first run stops at exec without a screenshot; a second reaches the 3 GiB
+aggregate cap. The instrumented debugger sessions then use the standard
+12 GiB job bound, while normal browser captures and focused runtime tests keep
+their 3 GiB bounds. Intermediate helper errors and every failed attempt remain
+recorded. The final diagnostic preserves the 22 pixels and reports the three
+border paths; it supplies diagnosis, not acceptance pixels.
+
+Shared build attempts fail for disk space before the containing build
+publishes. Cleanup removes only closed task profile copies and obsolete task
+unit binaries, preserving sealed archives, PNGs, logs, receipts and retained
+comparison templates. The containing receipt is
+`20261105-085357-ec81582c`; its frozen compiler input contains the corrected
+classification. No duplicate production build is queued.
+
+The broad run completes **134 tests / 140 captures**, with **137 captures
+exact**, no process errors and all 306 pinned input files and browser identities
+unchanged. Its three failures are the preceding AVIF YUV sampling case
+(34,796 pixels), Pikabu hoisted image clip (1,097), and Pikabu direct composited
+image (1,097). The focused site controls overlap the tail of this single broad
+run because the guard creates an initially empty report file. The private
+scheduler now waits for a completed JSON report; the original helper and
+actual receipts remain available. These checks make no performance claim.
+
+Hacker News and WIRED pass all strict gates on `fc1b35e2…` under the earlier
+prepared-template protocol; WIRED retains its first-frame image policy. The
+Register's earlier complete-cache control has **35,498** native/first-reference,
+source/first-reference and
+independent-reference differences. Its native PNG matches the saved source
+and second reference exactly. A separate control labeled cold also has zero
+pixels, but retained template responses prevent an empty-HTTP-cache claim.
+The corrected empty and warmed Register controls above pass every strict gate;
+the old failure is not attributed to this renderer fix.
+
+[Commands, identities and verdicts](evidence/engadget-degenerate-arcs-20261105.json),
+[raw results and failed attempts](evidence/engadget-degenerate-arcs-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged

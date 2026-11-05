@@ -44,6 +44,16 @@ transfers the final content height to descendants. The production fixture is
 pixel-exact on `557eb0c8…`, alongside four SVG, percentage-height and header
 controls. See the [Engadget sizing evidence](../../../docs/evidence/engadget-ratio-sizing-20261105.json).
 
+`chromium-degenerate-border-arcs` checks square CSS borders beside rounded
+image boxes, with real curved paths in the preceding raster tiles. Its small
+opaque PNG is embedded to avoid decoder-path variation. The live full-uBO
+source and two fresh Brave replays agree exactly at 1024×768, scale 1; the
+native control is exact on `fc1b35e2…`. The Engadget border fix is
+`c2deb6773`; the full candidate is native-exact with verified empty and warmed
+replay caches on `68cec440…`, while its
+295-pixel source-fidelity failure remains open. See the
+[arc classification evidence](../../../docs/evidence/engadget-degenerate-arcs-20261105.json).
+
 The registered CNN archive is pixel-exact against Brave with full uBO at
 1024×768, scale 1, when both browsers start fresh after complete encoded-response
 cache warmups. The separate saved-live/frozen-reference gate remains open.
