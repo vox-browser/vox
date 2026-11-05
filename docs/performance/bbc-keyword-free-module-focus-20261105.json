@@ -1,0 +1,213 @@
+{
+  "status": "All90focused executions and340tooling tests pass. Focused checks alone earn no production saving or catalog credit; native/matched evidence is separate.",
+  "implementation_commit": "29396216b",
+  "control_commit": "cc62e5706",
+  "focused": {
+    "passed": true,
+    "cases_per_run": 15,
+    "arms": 2,
+    "modes": 3,
+    "executions": 90,
+    "new_cases": 3,
+    "new_executions": 18,
+    "inputs": {
+      "/Users/alex/code/vox2/browserjs/classic_import_scan_test.v": "3c6da9ea9149c9a63a8c3649d6873f1a9bd67d1d48b31db306753cf19b301e38",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_scan_test.v": "187b62a5904fed76c0456c8364402ea3dd4e9a1f13518ea72328ff9bd8c832b2",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_host_test.v": "3c54ea5d907395ce56f4b2b7cb4fc4c65127f60156ed7de37968da43f4acc627",
+      "/Users/alex/code/vox2/browserjs/classic_import_named_method_scan_test.v": "574643f871b58b120cf40528f4aa95de4681c16fdab11f8634527b094e809bb4",
+      "/Users/alex/code/vox2/browserjs/keyword_free_module_lexer_test.v": "2cc6ec91c0a81b5823054f563b5043507996b2d4f9afe934b424c16b72b448f6",
+      "/Users/alex/code/vox2/browserjs/module_host_test.v": "877b27b0816d59804923c729721edfaa9211f3bb7b653f95c0ac8e69b127a6a7",
+      "/Users/alex/code/vox2/browserjs/classic_import_scan.v": "90998c07738654224ddac3fe545525286a5908c73332f074ddbebbf40d0fe50c",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_scan.v": "48e21cda2e8812aa48bf800661c43af5f74e4f84a21fd522b96553970a3bd1e1",
+      "/Users/alex/code/vox2/browserjs/classic_import_named_method_scan.v": "5a725abb3e4d89d85448a4709b7813062ccd952b87b610ed7e608d44db137ec1",
+      "/Users/alex/code/vox2/browserjs/keyword_free_module_lexer.v": "dcea06638ee3b6b31465f97a51bd05836b650bca33957cce0443f16dd547dab3",
+      "/Users/alex/code/vox2/browserjs/keyword_free_module_lexer_jsc.c.v": "e20761afcc5e89d400adb359f5f4903491a138dffebf262ff3550712d3b62e18",
+      "/Users/alex/code/vox2/browserjs/module_host_jsc.c.v": "a424af062eb9a20e21c606f182dd4e97c5275cee2e6863c95e354948106ad784",
+      "/Users/alex/code/vox2/browserjs/module_source.v": "cfbb364a2eee4bf2a5238e494c0523862a5d317df8e3e60239a34a9fdc4791d6",
+      "/Users/alex/code/vox2/browserjs/runtime.v": "30156b8a4d87ee1378a49813a8dda1b7b5612ba76983a6474eee2097e28f25ae",
+      "/Users/alex/code/vox2/browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1"
+    },
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_classic_import_scan_rejects_only_ascii_identifier_substrings",
+          "test_classic_import_call_scan_keeps_every_possible_call_and_meta_boundary",
+          "test_classic_import_call_scan_rejects_text_without_a_possible_import_call",
+          "test_classic_import_call_filter_keeps_plain_source_and_classic_parse_goal",
+          "test_classic_import_call_filter_retains_comments_unicode_whitespace_and_later_imports",
+          "test_named_import_filter_recognizes_only_property_and_tightly_delimited_member_forms",
+          "test_named_import_filter_keeps_methods_and_property_calls_on_the_original_native_parse_path",
+          "test_named_import_filter_preserves_later_imports_class_heritage_and_asi_before_a_block",
+          "test_keyword_free_module_filter_keeps_specifier_words_and_lexically_ambiguous_sources",
+          "test_keyword_free_module_bypass_matches_trusted_bytes_and_avoids_actual_lexer_calls",
+          "test_keyword_free_modules_still_execute_once_with_module_parse_goal_and_no_syntax_probe_effects",
+          "test_native_modules_link_cycles_live_exports_import_maps_and_top_level_await",
+          "test_native_dynamic_import_preserves_arguments_nested_imports_and_rejections",
+          "test_module_readiness_does_not_wait_for_top_level_await_and_close_releases_delayers",
+          "test_classic_import_identifier_filter_preserves_execution_and_real_imports"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_classic_import_scan_rejects_only_ascii_identifier_substrings",
+          "test_classic_import_call_scan_keeps_every_possible_call_and_meta_boundary",
+          "test_classic_import_call_scan_rejects_text_without_a_possible_import_call",
+          "test_classic_import_call_filter_keeps_plain_source_and_classic_parse_goal",
+          "test_classic_import_call_filter_retains_comments_unicode_whitespace_and_later_imports",
+          "test_named_import_filter_recognizes_only_property_and_tightly_delimited_member_forms",
+          "test_named_import_filter_keeps_methods_and_property_calls_on_the_original_native_parse_path",
+          "test_named_import_filter_preserves_later_imports_class_heritage_and_asi_before_a_block",
+          "test_keyword_free_module_filter_keeps_specifier_words_and_lexically_ambiguous_sources",
+          "test_keyword_free_module_bypass_matches_trusted_bytes_and_avoids_actual_lexer_calls",
+          "test_keyword_free_modules_still_execute_once_with_module_parse_goal_and_no_syntax_probe_effects",
+          "test_native_modules_link_cycles_live_exports_import_maps_and_top_level_await",
+          "test_native_dynamic_import_preserves_arguments_nested_imports_and_rejections",
+          "test_module_readiness_does_not_wait_for_top_level_await_and_close_releases_delayers",
+          "test_classic_import_identifier_filter_preserves_execution_and_real_imports"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_classic_import_scan_rejects_only_ascii_identifier_substrings",
+          "test_classic_import_call_scan_keeps_every_possible_call_and_meta_boundary",
+          "test_classic_import_call_scan_rejects_text_without_a_possible_import_call",
+          "test_classic_import_call_filter_keeps_plain_source_and_classic_parse_goal",
+          "test_classic_import_call_filter_retains_comments_unicode_whitespace_and_later_imports",
+          "test_named_import_filter_recognizes_only_property_and_tightly_delimited_member_forms",
+          "test_named_import_filter_keeps_methods_and_property_calls_on_the_original_native_parse_path",
+          "test_named_import_filter_preserves_later_imports_class_heritage_and_asi_before_a_block",
+          "test_keyword_free_module_filter_keeps_specifier_words_and_lexically_ambiguous_sources",
+          "test_keyword_free_module_bypass_matches_trusted_bytes_and_avoids_actual_lexer_calls",
+          "test_keyword_free_modules_still_execute_once_with_module_parse_goal_and_no_syntax_probe_effects",
+          "test_native_modules_link_cycles_live_exports_import_maps_and_top_level_await",
+          "test_native_dynamic_import_preserves_arguments_nested_imports_and_rejections",
+          "test_module_readiness_does_not_wait_for_top_level_await_and_close_releases_delayers",
+          "test_classic_import_identifier_filter_preserves_execution_and_real_imports"
+        ],
+        "all_called": true
+      }
+    ],
+    "native_test_bodies": [
+      {
+        "mode": "default",
+        "test": "test_keyword_free_module_bypass_matches_trusted_bytes_and_avoids_actual_lexer_calls",
+        "body_sha256": "c3f8bda5f948ed05c5509d6c3263bb7e08596c7c6301c6caaa52e11507f42341",
+        "required_calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__ModuleHost__rewrite",
+          "browserjs__Runtime__evaluate_host"
+        ],
+        "syntax_gate_sha256": "c5de9c123b6096ad889524ee2872c970873bf17522e68829440f287cd54d3c51",
+        "native_syntax_call_present": true,
+        "JSStringRelease_present": true
+      },
+      {
+        "mode": "default",
+        "test": "test_keyword_free_modules_still_execute_once_with_module_parse_goal_and_no_syntax_probe_effects",
+        "body_sha256": "164ab3b942ecc816843f847b62b3978686b8de13b4bfb97d2436cde8440bb21a",
+        "required_calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__ModuleHost__rewrite",
+          "browserjs__Runtime__evaluate_host"
+        ],
+        "syntax_gate_sha256": "c5de9c123b6096ad889524ee2872c970873bf17522e68829440f287cd54d3c51",
+        "native_syntax_call_present": true,
+        "JSStringRelease_present": true
+      },
+      {
+        "mode": "none",
+        "test": "test_keyword_free_module_bypass_matches_trusted_bytes_and_avoids_actual_lexer_calls",
+        "body_sha256": "8a86f1b611fb5ab784bd933936acb45fed3fc9d649e9397d3c8bb0eaac68a440",
+        "required_calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__ModuleHost__rewrite",
+          "browserjs__Runtime__evaluate_host"
+        ],
+        "syntax_gate_sha256": "c5de9c123b6096ad889524ee2872c970873bf17522e68829440f287cd54d3c51",
+        "native_syntax_call_present": true,
+        "JSStringRelease_present": true
+      },
+      {
+        "mode": "none",
+        "test": "test_keyword_free_modules_still_execute_once_with_module_parse_goal_and_no_syntax_probe_effects",
+        "body_sha256": "bf52c40c3d494bec8bc5f17b28c5616906f190014e0966ef5a6b0a993b89ccec",
+        "required_calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__ModuleHost__rewrite",
+          "browserjs__Runtime__evaluate_host"
+        ],
+        "syntax_gate_sha256": "c5de9c123b6096ad889524ee2872c970873bf17522e68829440f287cd54d3c51",
+        "native_syntax_call_present": true,
+        "JSStringRelease_present": true
+      },
+      {
+        "mode": "prealloc",
+        "test": "test_keyword_free_module_bypass_matches_trusted_bytes_and_avoids_actual_lexer_calls",
+        "body_sha256": "a5c5ccdc7940538d5772724721cdf42f030017320538161fea391da521027c12",
+        "required_calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__ModuleHost__rewrite",
+          "browserjs__Runtime__evaluate_host"
+        ],
+        "syntax_gate_sha256": "c5de9c123b6096ad889524ee2872c970873bf17522e68829440f287cd54d3c51",
+        "native_syntax_call_present": true,
+        "JSStringRelease_present": true
+      },
+      {
+        "mode": "prealloc",
+        "test": "test_keyword_free_modules_still_execute_once_with_module_parse_goal_and_no_syntax_probe_effects",
+        "body_sha256": "cb768b671cf12255f0ac8b4dcaf1c12ce5c06602ca8453ddd9283be90d0db17c",
+        "required_calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__ModuleHost__rewrite",
+          "browserjs__Runtime__evaluate_host"
+        ],
+        "syntax_gate_sha256": "c5de9c123b6096ad889524ee2872c970873bf17522e68829440f287cd54d3c51",
+        "native_syntax_call_present": true,
+        "JSStringRelease_present": true
+      }
+    ],
+    "tool_tests": 340,
+    "tool_tests_exit": 0,
+    "qualification": "Candidate/control native test binaries execute all15cases in default/no-GC/preallocation modes. An instrumented actual private transform independently counts lexer calls and compares exact output with forced trusted parsing; eligible sources skip calls only in candidate. Lexically invalid, TLA, hashbang/HTML-comment/keyword/classic/closed-runtime cases retain fallback. Real module execution proves no syntax-probe effects, private scope, undefined top-level this, strict errors, single evaluation and unchanged no-fetch behavior. All prior module/import cases retained. Production eligibility and matched instructions pending; no credit.",
+    "unix": 1793908022.9340641
+  },
+  "committed_sources": {
+    "browserjs/classic_import_scan_test.v": "3c6da9ea9149c9a63a8c3649d6873f1a9bd67d1d48b31db306753cf19b301e38",
+    "browserjs/classic_import_call_scan_test.v": "187b62a5904fed76c0456c8364402ea3dd4e9a1f13518ea72328ff9bd8c832b2",
+    "browserjs/classic_import_call_host_test.v": "3c54ea5d907395ce56f4b2b7cb4fc4c65127f60156ed7de37968da43f4acc627",
+    "browserjs/classic_import_named_method_scan_test.v": "574643f871b58b120cf40528f4aa95de4681c16fdab11f8634527b094e809bb4",
+    "browserjs/keyword_free_module_lexer_test.v": "2cc6ec91c0a81b5823054f563b5043507996b2d4f9afe934b424c16b72b448f6",
+    "browserjs/module_host_test.v": "877b27b0816d59804923c729721edfaa9211f3bb7b653f95c0ac8e69b127a6a7",
+    "browserjs/classic_import_scan.v": "90998c07738654224ddac3fe545525286a5908c73332f074ddbebbf40d0fe50c",
+    "browserjs/classic_import_call_scan.v": "48e21cda2e8812aa48bf800661c43af5f74e4f84a21fd522b96553970a3bd1e1",
+    "browserjs/classic_import_named_method_scan.v": "5a725abb3e4d89d85448a4709b7813062ccd952b87b610ed7e608d44db137ec1",
+    "browserjs/keyword_free_module_lexer.v": "dcea06638ee3b6b31465f97a51bd05836b650bca33957cce0443f16dd547dab3",
+    "browserjs/keyword_free_module_lexer_jsc.c.v": "e20761afcc5e89d400adb359f5f4903491a138dffebf262ff3550712d3b62e18",
+    "browserjs/module_host_jsc.c.v": "a424af062eb9a20e21c606f182dd4e97c5275cee2e6863c95e354948106ad784",
+    "browserjs/module_source.v": "cfbb364a2eee4bf2a5238e494c0523862a5d317df8e3e60239a34a9fdc4791d6",
+    "browserjs/runtime.v": "30156b8a4d87ee1378a49813a8dda1b7b5612ba76983a6474eee2097e28f25ae",
+    "browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1"
+  },
+  "implementation": "For modules with no import/export word, hashbang/HTML-comment/NUL ambiguity, and a successful nonexecuting native Script syntax check, skip only the private specifier lexer. Preserve the exact metadata rewrite and always retain actual native Module parsing/evaluation. Syntax failures, unsupported Script forms, actual keyword candidates, classic scripts and closed runtimes keep the original path. The fifth private factory argument is an internal Boolean, false in control. No page-visible API or script policy changes.",
+  "qualification": "Actual private-transform lexer-call instrumentation verifies zero eligible calls only in candidate and exact forced-trusted output. Tests cover lexical errors, keyword declarations/re-exports, hashbang/comment forms, top-level await, classic and closed-runtime fallbacks, no syntax-probe execution, strict Module behavior, undefined top-level this, private lexical scope and single native evaluation/no fetch. All previous actual module/import cases retained. Generated C confirms the native syntax API, JSString release and nonempty native test bodies in all three modes. No production or instruction credit from focused checks.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-keyword-free-module-focus-20261105.tar.gz",
+    "bytes": 12464369,
+    "sha256": "8d525219ee42a640f02b2e07ec76542d25a36bd378a5476ed540ee8239091f21",
+    "members": 55,
+    "all_members_verified": true
+  },
+  "unix": 1793908148.807137
+}

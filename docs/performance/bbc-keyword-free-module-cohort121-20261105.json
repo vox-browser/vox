@@ -1,0 +1,819 @@
+{
+  "status": "Cohort121 passes all21capture audits; strict10%target fails. Keyword-free module bypass median point/paired reduction1,220,959,426 (point4.5432%),7improvements/0regressions. Conservative control ratio1.00794954 fails; no robust conservative saving or catalog credit.",
+  "implementation_commit": "29396216b",
+  "control_commit": "cc62e5706",
+  "statistics": {
+    "valid_capture_cohort": true,
+    "full_comparison_available": true,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 24449489552,
+            "upper": 24449489552
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26216060946,
+            "upper": 26216060946
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17652781829,
+            "upper": 17671495560
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 25408740834,
+            "upper": 25408740834
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27274045085,
+            "upper": 27274045085
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17535718236,
+            "upper": 17570240937
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 26424466670,
+            "upper": 26424466670
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27040837617,
+            "upper": 27040837617
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17422791379,
+            "upper": 17423550213
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 25909610428,
+            "upper": 25909610428
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26560440452,
+            "upper": 26560440452
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17453264782,
+            "upper": 17483256728
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 25221637518,
+            "upper": 25221637518
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27280063601,
+            "upper": 27280063601
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17515582224,
+            "upper": 17548487645
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 26001171563,
+            "upper": 26001171563
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26336081757,
+            "upper": 26336081757
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17452281825,
+            "upper": 17452594873
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 25653662719,
+            "upper": 25653662719
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26874622145,
+            "upper": 26874622145
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17463668508,
+            "upper": 17488446774
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      }
+    ],
+    "failed_attempts": [],
+    "attempts_retained": 21,
+    "capture_audits_passed": 21,
+    "median_vox": 25653662719,
+    "median_control": 26874622145,
+    "median_brave_lower": 17463668508,
+    "point_reduction": 1220959426,
+    "point_fraction": 0.04543168716614527,
+    "observed_complete_vox_control_pairs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "partial_point_reduction": 1220959426,
+    "paired_control_minus_vox": [
+      1766571394,
+      1865304251,
+      616370947,
+      650830024,
+      2058426083,
+      334910194,
+      1220959426
+    ],
+    "improvements": 7,
+    "regressions": 0,
+    "worst_vox_over_best_control": 1.0079495437712507,
+    "strict_left": 264244666700,
+    "strict_right": 156805122411,
+    "conservative_brave_ratio": 1.5166609124327735,
+    "target_met": false,
+    "broad_trigger": true,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 116,
+      "acceptance_browser_attempts": 2503,
+      "last_measured_id": 121,
+      "preflight_only_ids": [
+        104,
+        110,
+        111,
+        113,
+        118
+      ]
+    },
+    "qualification": "Everyattempt retained;acceptance requires7complete successfultriples.No counter replacedwithzero;unavailablefullstatistics remainnull. Invalidpixel/ownership/identity/nativeexit cohort earnsnoacceptance/savingcredit. Observedpositivefull/partialmatchedpoint>=5M conservativelytriggersbroadchecks.Medians/gate alwaysusecreation-to-PNG launch_instruction_interval,never asymmetricnavigationdiagnostic.",
+    "unix": 1793908407.061213
+  },
+  "median_paired_control_minus_vox": 1220959426,
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "keyword_free_module_before_png": true,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "keyword_free_module_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "ddb9839bcc78ea71c59b6d16a1a86fd4ab3a87f3e8271309da7a59708c1b0959",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "fd4969562532a3332a2b2a10f3e460a914407e73e031178cdc373e44833acf12",
+        "dirty": true,
+        "head": "cc62e57069644030c8ac20122f535adfcbdb1c81",
+        "repository_sha256": "9d73209dd6b4f907ad1ede7c8fb00f4353fa240ac22f6ee0c91661cd477778c5"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "29396216b49edbdeda37953dc57666592561e830",
+        "id": "8a9bdbb970c94f1bb814e4fb6f2db9c6"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "fd4969562532a3332a2b2a10f3e460a914407e73e031178cdc373e44833acf12",
+        "dirty": true,
+        "head": "f81fab935f6d8aa6a3a5a6e406af0c3b1f52303a",
+        "repository_sha256": "7b1f930290d529c6bcae774cb829f01b741b03e2cedf1be492e5b17400edd14c"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; only keyword-free module lexer retained in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793908208.803523
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/module-lexer-control arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793908219.3316128
+  },
+  "broad": {
+    "no_new_failures": true,
+    "full_suite_pass": false,
+    "cadence_reset": false,
+    "inputs_unchanged": true,
+    "rows": [
+      {
+        "mode": "default",
+        "layout": {
+          "cases": 555,
+          "passes": 552,
+          "failures": [
+            "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+            "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+            "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+          ]
+        },
+        "main": {
+          "candidate": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "fresh_css": {
+          "cases": 64,
+          "passes": 64
+        },
+        "carried_current_browser_js_cases": 15,
+        "browser_js_arms": 2,
+        "unique_cases": 708,
+        "unique_passes": 703,
+        "unique_known_failures": 5
+      },
+      {
+        "mode": "none",
+        "layout": {
+          "cases": 555,
+          "passes": 552,
+          "failures": [
+            "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+            "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+            "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+          ]
+        },
+        "main": {
+          "candidate": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "fresh_css": {
+          "cases": 64,
+          "passes": 64
+        },
+        "carried_current_browser_js_cases": 15,
+        "browser_js_arms": 2,
+        "unique_cases": 708,
+        "unique_passes": 703,
+        "unique_known_failures": 5
+      }
+    ],
+    "current_pins": {
+      "/Users/alex/code/vox2/layout/block_layout_test.v": "1a2948c977fe7282033a5c4925970b21d2811d1563ca93bee96dc0014571891d",
+      "/Users/alex/code/vox2/layout/chromium_control_intrinsics_test.v": "5411bd3c4968972a2432c30bb91a17c0077affb304e6472f7425db081e35bc4c",
+      "/Users/alex/code/vox2/layout/chromium_definite_flex_basis_test.v": "c8af646fc803be3d5189466d3ca7923647570322b5ca81ef733b1fd272202c32",
+      "/Users/alex/code/vox2/layout/chromium_grid_flex_test.v": "3a60962eec6ab121b2dc641aa0115c0e33d1884bd03001df94b82d44136e750c",
+      "/Users/alex/code/vox2/layout/chromium_inline_block_baseline_test.v": "4f09c3aa2c0cfe0df5b49f7539a765fccb34ecea5001a6a88ef66338487bdaee",
+      "/Users/alex/code/vox2/layout/chromium_middle_atomic_baseline_test.v": "97e4b22aaf3ff687bbf18235a7e797d90899c19988eb6a89e51752d81a3c2c85",
+      "/Users/alex/code/vox2/layout/chromium_text_control_baseline_test.v": "b762eb48952a7089d479ccdc744d31936107eab7142c38250846e38229386571",
+      "/Users/alex/code/vox2/layout/definite_intrinsic_contribution_test.v": "4a5f47af1b9ce5c43afce99825313b86bccfccc172180d9f2626643055ab0354",
+      "/Users/alex/code/vox2/layout/document_geometry_scratch_test.v": "e2ae2ad82fc1fd115301cf561f4b7d29eb3ec5c229362207ab45662fea5b74e8",
+      "/Users/alex/code/vox2/layout/dom_grid_bridge_test.v": "4574c7a0c2be079c17b83eb4b207857bffefaccd88170fdb9f0d808923b504a4",
+      "/Users/alex/code/vox2/layout/dominant_baseline_test.v": "8f5c78bb6de70ecf3c517bdfa32858f09770ea0c1d607fd3c4f60b28823e34c8",
+      "/Users/alex/code/vox2/layout/flex_all_frozen_test.v": "dde38d4dba1e6fae97c655a180ddea0bbf8110cc4511cca9682ef8cf100b4246",
+      "/Users/alex/code/vox2/layout/flex_geometry_scratch_test.v": "dd8c81a45ed3746fc642443dd101ebe91c19c9010fbc523d179c93a01b663884",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+      "/Users/alex/code/vox2/layout/flex_relayout_test.v": "16a9d24178c55b4572976c9cd5b23ee5c4f8a75386ccf46820a3ed4191d5bc48",
+      "/Users/alex/code/vox2/layout/formatting_contexts_test.v": "58a75404a6e8a85eed14951d840c13f205d9c0f031148c9c89bb2b1b72264236",
+      "/Users/alex/code/vox2/layout/grid_auto_height_seed_test.v": "015df0f70d73b29ae6060816186ee4bb31aacd504876b808f2ab3ac8b74e7e45",
+      "/Users/alex/code/vox2/layout/grid_block_intrinsic_reuse_test.v": "05501b7861b55975585722784e2b07a63d7738c0a3a98d153e5d0e6c2eec5288",
+      "/Users/alex/code/vox2/layout/grid_flexible_contributions_test.v": "aa08ee40a7bad38a995d08f6a1404c6bf62cfc1b6d6d46fea3081afdbc23be0f",
+      "/Users/alex/code/vox2/layout/grid_item_relayout_test.v": "36b1220b9570c397609d37f2ae9f37a2eb72980f1334bcd24b7bd77b44f96814",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+      "/Users/alex/code/vox2/layout/image_contents_repaint_test.v": "c712647e4ad2bf36da6b087d73c2c46329d893e6f74e5885512415a031c89ac7",
+      "/Users/alex/code/vox2/layout/inline_chunk_font_owner_test.v": "dfda318cd70ac7be2476474b79b6c909984fc1bdf6c5499764e918107d506393",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace_test.v": "59f7076900a967052ca44666db2f0d4b9e26ea262504302bb02f24934090bb3c",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+      "/Users/alex/code/vox2/layout/intrinsic_border_box_constraints_test.v": "4862e201bd940e9d39e5e5c037423e539af9cd6626b9bb5d8dcc5ec272a725a6",
+      "/Users/alex/code/vox2/layout/intrinsic_column_geometry_reuse_test.v": "19a78e1e9ab4ece09fd5e7d9db309d826219ffb458513e4d5619c8d8e7794ec7",
+      "/Users/alex/code/vox2/layout/intrinsic_combined_seed_test.v": "76aa3d0c6c761ff1f542c3e58239381de163c6f81d401173e73e4c8156d902ec",
+      "/Users/alex/code/vox2/layout/intrinsic_containing_block_seed_test.v": "75e45eae6e47310ba94c126f1692317eaa49ebadd071c3b37d4f66611c29adec",
+      "/Users/alex/code/vox2/layout/intrinsic_font_reuse_test.v": "0df50f83a0e550082f05e8cb47c879f71c4880911085a3dad0360898caaa4344",
+      "/Users/alex/code/vox2/layout/intrinsic_glyph_borrow_test.v": "18880e78f0b3dad6d3e60278d8bc0ee0f6284da80114876bc638e388165cfa0c",
+      "/Users/alex/code/vox2/layout/intrinsic_height_cache_storage_test.v": "8cf149b82a118470e784cf7368da3601181efae64394b2a2256e151a43aa4be5",
+      "/Users/alex/code/vox2/layout/intrinsic_line_fit_test.v": "b8aca27456e748204a37e148bfd11ce73a7b5a8b346991b1cf53ea987a39f165",
+      "/Users/alex/code/vox2/layout/intrinsic_line_recycling_test.v": "bada23901664806b1fb26de241a2e8044c01f91c1eda000d15ea80404d64e1d3",
+      "/Users/alex/code/vox2/layout/intrinsic_seed_visits_test.v": "d70b720317888bf752e174b2a9aa1bbd0f6d98d4938794d133ab51c19b9c7c53",
+      "/Users/alex/code/vox2/layout/intrinsic_shape_cache_owner_test.v": "7b63ff64911102753b1cacbdc9a58a6938dbdee53c60eb2ac102b923f20faf32",
+      "/Users/alex/code/vox2/layout/intrinsic_shape_order_test.v": "ff38981adb2e58b2a46dc01ca99fd0a58e01bdd909f4c983e98271ddca93de01",
+      "/Users/alex/code/vox2/layout/intrinsic_width_only_test.v": "e1a48066a65a420672ac3c34dcea0ebd29ba546cd15c18a9b4fed486a7594bcd",
+      "/Users/alex/code/vox2/layout/measurement_chunk_pool_test.v": "ed890116c8c0f0d59b023f854a4711b61fad7efcad8a28370ae7a90dd8b63cf0",
+      "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+      "/Users/alex/code/vox2/layout/measurement_scratch_test.v": "5f1215716e45b66ccf50baf0b7523e90d1baea869ec8ec087c8bde549a0790cc",
+      "/Users/alex/code/vox2/layout/nested_grid_block_size_test.v": "39a30a30aa87cd420e10270d50b3045fe6e65474c4a9947e39b325db8aa6b66c",
+      "/Users/alex/code/vox2/layout/positioned_definite_image_repaint_test.v": "4c0e2066eed47075f05334f4bee34cfefa926d95cdd81d52f816017296d2bcf2",
+      "/Users/alex/code/vox2/layout/retained_block_images_test.v": "62ca7a15cfa9267ac9ddf4c88c21cf7cc65845ba2b994a1e37024e195bc56a56",
+      "/Users/alex/code/vox2/layout/retained_block_layout_test.v": "b7cfee8178b6332a189a240222d8ce15e2f111b5620d00109b48fa1d2922c07d",
+      "/Users/alex/code/vox2/layout/retained_flex_layout_test.v": "f205d520e782fa2c81f8b2e24d5ed5225a997f441751d70d9a79b418d5a2da3d",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees_test.v": "eaee83120bbd52c7269bea5ef77bb5c931f8514b3c9d18eb7dc8bafc854fb5e8",
+      "/Users/alex/code/vox2/layout/retained_flow_items_test.v": "a23b3b3703dbbd24ab5e15dc398d5b927d736afa79afcd3a43063a2fef4d159c",
+      "/Users/alex/code/vox2/layout/retained_flow_pseudo_styles_test.v": "c15469c7efdbb983d293680967fc299f89bd79215c75f9ee184b27832bea00f0",
+      "/Users/alex/code/vox2/layout/retained_flow_styles_test.v": "4564892173e325e312ae0deecb94529c79a8a4148a886b3ebf4b0a26a4ae52be",
+      "/Users/alex/code/vox2/layout/retained_flow_svg_trees_test.v": "ac473e6be0c278b80bd58a832a69e79ef2c74b872da17012e75e10049c3e6e0e",
+      "/Users/alex/code/vox2/layout/retained_formatting_trees_test.v": "cc311f682ae7101b9df1432e6f275813185e46ffd0639fdc51b003697baaaa05",
+      "/Users/alex/code/vox2/layout/retained_grid_layout_test.v": "4724f2e4614ee91c40b517115837526e0bef8f5946db956fadd696a48dd5e77b",
+      "/Users/alex/code/vox2/layout/retained_simple_svg_test.v": "02e21d9d47f78ac0c62a991194dfafab31e8601151efc7cad79b64b52ba86ab9",
+      "/Users/alex/code/vox2/layout/retained_values_restore_test.v": "983a5049164afdaae93fb3ce532fe55a072a1514bbbe69cf7fba36877af9097c",
+      "/Users/alex/code/vox2/layout/svg_intrinsic_metadata_lifetime_test.v": "6a5ae431b6d6414cceaf2ccb33f922c0636fbf4b83fd9e8fd5e3e4d43baf234f",
+      "/Users/alex/code/vox2/layout/svg_path_geometry_invalidation_test.v": "dcf260189775ad86d112ee3c3096d805137f216ac01b58a7064a47f1ad565a8a",
+      "/Users/alex/code/vox2/layout/table_grid_intrinsic_height_test.v": "d362db7703a7847b752e40161828b624edf93d946878af0826c148e02b4c2517",
+      "/Users/alex/code/vox2/layout/text_input_live_intrinsics_test.v": "021a83472a5edf8a7084f6c7a3e5dfe6605c9cb055b574b86516a71bee0be173",
+      "/Users/alex/code/vox2/css/computed_layout_cache.v": "04c7b01e0cb5282d960114001cb2eca7cf29fd01e10b890954fc8b0fa0d4ae4b",
+      "/Users/alex/code/vox2/css/computed_length.v": "5ea9b4c2284f32560cff12892b039251506d463cb7dc6655f714b6d0fbc64c3a",
+      "/Users/alex/code/vox2/css/computed_values.v": "e1dbaee3b5562dba21ee534a37c443a0b171fd8541ed0af718035b2ae1691f3d",
+      "/Users/alex/code/vox2/css/idle_layout_snapshots.v": "c98d23dedf17fb0defdf0f64b1961e51b4e776937bb414b438019330236adfa2",
+      "/Users/alex/code/vox2/css/resolved_box_model_edges.v": "0b75b2e1f3df9dfa2fbcad651141c74ac2e7b5e2e0b12a86320af06d3f8786f9",
+      "/Users/alex/code/vox2/css/resolved_box_model_edges_test.v": "1b5cb3a18fb7ca0c4129b19f2fee88ca409b9d08fefd1cbc5b149f4184609454",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "3ad170bb840450b9f408a42013d743c8c61b70fc797e733c855624b7f7023a31",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/flex_formatting_context.v": "1b7f327d4da7794bcfd9db3df05fc5dd519c113346a6fd8f37d280f37fabf572",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a",
+      "/Users/alex/code/vox2/layout/committed_inline_measurement.v": "6c7866debb5b6d31ebea7b03910984a10d25c662b6c90c2ac9b3ca3397aaed00",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace.v": "cca616e21e2b1d96a2ace5b6dba54cfc0f5564e4398696db1df15010e794d205",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "6c01f8a00eb984a4ce774665093e6b276b191820f9cf0636401f9ce8e9c44164",
+      "/Users/alex/code/vox2/layout/inline_measurement_height.v": "ba913b52e02b93cca870490e12772c7ae3004d4ef16695dab05d48641a2ec5e5",
+      "/Users/alex/code/vox2/layout/retained_paint_test_helpers.v": "67f28405c54594b298f63e9c893e3f5fd6fadbe49beccdb6436dbf814a8aa9f1",
+      "/Users/alex/code/vox2/css/deleted_conditional_style_rules.v": "9ad30ba5dcf345915c60043f96b6a2b8edfb51ad8280325c27da4fdd9f8d4544",
+      "/Users/alex/code/vox2/css/empty_deleted_conditional_leaves.v": "36e75f6fa19830e07d7faa74704ee35e95c735fd9267b124d75e7b11799dff21",
+      "/Users/alex/code/vox2/css/redundant_sheet_removal.v": "96ce59738435a07af1ff083101dee9095b0a35356cf5dd3dbe5e3ee25d2c30cb",
+      "/Users/alex/code/vox2/layout/typed_paint_adapter.v": "bebc3f3768f53b5304a7105d4c55a1c8acdcf309ceac70fc3bc98647090ed248",
+      "/Users/alex/code/vox2/layout/grid_auto_height_seed.v": "08698eafc9e1252896f6a9cf6bf2f5a7754de6d847877bf0a85a973c9cb1bfcc",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "2bf523eb2bf9c62530e654df60edf57564b7ddf88d892d09a84b0e87646ccceb",
+      "/Users/alex/code/vox2/layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+      "/Users/alex/code/vox2/main_compact_query_request.v": "60eb94c8ccdc0f26f6abe2e1bce8801363680721d7b009970b65fe8b912ce404",
+      "/Users/alex/code/vox2/browserjs/querywire/compact_envelope.v": "594671405412c490735628a5cd00730bc3d9dcc0a5abffa80338134728f4a23b",
+      "/Users/alex/code/vox2/css/covered_style_sheet_invalidation.v": "5b597e636b97678934e9c1760c1251086cc3b4c48aa020997619c3d9d91990b9",
+      "/Users/alex/code/vox2/css/style_sheet_invalidation.v": "1957fee8dde8708d66daea80e354ac1c882e2983229e37f2d802f2bf568ce5a2",
+      "/Users/alex/code/vox2/layout/retained_flow_subtrees.v": "13864cb4bfe2c18c7ae21abe6618793212c6c75c31bb6c0b49a4f101f05a6875",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees.v": "e44b540b9596acd36cb3e506f92b4f0c93b31a7c8e67aa0e933e88f47af4aae4",
+      "/Users/alex/code/vox2/layout/retained_flow_svg_trees.v": "613fce995e0e40e01cc84fa185ebe89cf16eaa76c4cd806c64cc7ace61814cda",
+      "/Users/alex/code/vox2/layout/retained_simple_svg.v": "a4a87c35166f9529a45843832b95a1f99fd09240242ec00ede807579040c70ad",
+      "/Users/alex/code/vox2/layout/measurement_cache_recency.v": "b5da8cd80c28e66c1a0800920976aacc111d6e6068abbf88b94d4c159a714414",
+      "/Users/alex/code/vox2/layout/dom_layout_bridge.v": "267ddd31d2bff051e981d718ddf150ad760a85e2fd5352543c1d77d413e5b30d",
+      "/Users/alex/code/vox2/layout/svg_boxes.v": "1218d12c4c62814f2f01bc14612f787b97c8f0a1fbd5fa6b32e0099ad94b9e40",
+      "/Users/alex/code/vox2/layout/svg_formatting_context.v": "a7062a364c6a46819e6f95529b13a6282db33733e6fc7ac13b3f3d4f341901d4",
+      "/Users/alex/code/vox2/css/retained_layout_style.v": "5a1b42840aa2bffb4dd01e19647c4746f27af13cd418338cd2be694e41341e2c",
+      "/Users/alex/code/vox2/main_frame_task_layout_test.v": "95ed1f2ed168104272e940187e74b77fee13ea1294cc52fe507c000f1991cd5d",
+      "/Users/alex/code/vox2/main_frame_task_focus_test.v": "41e5034f5d88ee1d8da200f3fa774460996e156d5152fd78ef8375ef880b8262",
+      "/Users/alex/code/vox2/main_javascript_task_paint_test.v": "97e87510c442d8a98e8b4760c208a312268351eb39abe41f6da9052f2cf0359e",
+      "/Users/alex/code/vox2/main_frame_paint_test.v": "8192d5720da544a30b7854cc6c5f059602e1e8ae0eac69f00e9ae7809597055b",
+      "/Users/alex/code/vox2/main_initial_frame_layout_test.v": "b5d2a5c5e1f6efa61d0224da041362e60001ba735b74cd4d7c71432489c775a7",
+      "/Users/alex/code/vox2/main_relayout_autofocus_test.v": "aa0181e281ed29f5d9ba14a3ea7fe1d61d7af8baf6331205f5dcf0d5892a60a7",
+      "/Users/alex/code/vox2/main_archived_border_msaa_test.v": "22fd1f1184b24999229f88fff6e9e1eeb791fbc19df604a0b69963a64a12e976",
+      "/Users/alex/code/vox2/main_chromium_border_msaa_test.v": "a8b2c0b7e9b021db661b4720395b124cf7a2c2c95981d97631ba37272d768586",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles_test.v": "f398f4f3e26ee9ae3384fa19dfba185d1fc1d3c629c4438e12e2e813bb667aa9",
+      "/Users/alex/code/vox2/main_adblock_tokens_test.v": "58abe1f79179fd7bb23e15fc0fabcafd0510efc0682dd98b45defaec60cb5bb0",
+      "/Users/alex/code/vox2/main_adblock_token_survey_test.v": "1ae5edd40d86a9cecb5ae8a2a1dedaf0deb5775da9fc09e9f99251eb18dddab2",
+      "/Users/alex/code/vox2/main_frame_task_layout.v": "c403b9852f840d05ea83dc30641986f9751062671063adba83dace75c6624907",
+      "/Users/alex/code/vox2/main_frame_paint.v": "2557bbe0812d23bfbce704475feb5635162362139d30099d8c14c0a82aee2044",
+      "/Users/alex/code/vox2/main_adblock.v": "8b61d0d26204d181fe30f602496e151dabbbb9c402ab40b7ea6356bd8e44c585",
+      "/Users/alex/code/vox2/main_device_layout.v": "20391809cc59f6ccb67afd0a137403aa947163ac149e30a92fa6e94ca0cba385",
+      "/Users/alex/code/vox2/main_archived_border_msaa.v": "303e1d995d6f696cd5dfab338c152a7c275709ab646e495abd0ffd870bc99177",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles.v": "e37d4bdea4187868d8b6eb530b0dfa3d9b62fd852ce3167e23e147de6b086bf8",
+      "/Users/alex/code/vox2/main_chromium_shared_recording.v": "3856d9e3ef9b1be02d73a558c54ce2b32cd1e887925e727a244679675bc73a70",
+      "/Users/alex/code/vox2/main_adblock_tokens.v": "c6a9b6c9d189e420352fe74d0db51a460b27d219148868e4a599efc2b15ed0c4",
+      "/Users/alex/code/vox2/main.v": "7c29610551d73e639f53dcbd38b2836013314545d87dbc6b5028af91538aad3b",
+      "/Users/alex/code/vox2/main_browser_tabs.v": "c3838355754aec5e88cc6073fb918b082d642e8d3938bd3fe22bb6dc3f9d3bde",
+      "/Users/alex/code/vox2/browserjs/classic_import_scan.v": "90998c07738654224ddac3fe545525286a5908c73332f074ddbebbf40d0fe50c",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_scan.v": "48e21cda2e8812aa48bf800661c43af5f74e4f84a21fd522b96553970a3bd1e1",
+      "/Users/alex/code/vox2/browserjs/classic_import_named_method_scan.v": "5a725abb3e4d89d85448a4709b7813062ccd952b87b610ed7e608d44db137ec1",
+      "/Users/alex/code/vox2/browserjs/keyword_free_module_lexer.v": "dcea06638ee3b6b31465f97a51bd05836b650bca33957cce0443f16dd547dab3",
+      "/Users/alex/code/vox2/browserjs/keyword_free_module_lexer_jsc.c.v": "e20761afcc5e89d400adb359f5f4903491a138dffebf262ff3550712d3b62e18",
+      "/Users/alex/code/vox2/browserjs/module_host_jsc.c.v": "a424af062eb9a20e21c606f182dd4e97c5275cee2e6863c95e354948106ad784",
+      "/Users/alex/code/vox2/browserjs/module_source.v": "cfbb364a2eee4bf2a5238e494c0523862a5d317df8e3e60239a34a9fdc4791d6",
+      "/Users/alex/code/vox2/css/covered_style_sheet_invalidation_test.v": "2eefca1f02662d39d5d8407454310771cbd705ae4f6e13732af23444ebe66906",
+      "/Users/alex/code/vox2/css/style_sheet_invalidation_test.v": "e5e0aa965fecd5d9d3311d3c81f9b3b63653e45baf69175d3129767a63fe25f2",
+      "/Users/alex/code/vox2/css/style_sheet_list_invalidation_test.v": "0391b903b00359f85d2f360e9b5d4bd9579fafe0589adc6475125f803eb53525",
+      "/Users/alex/code/vox2/css/redundant_sheet_removal_test.v": "0f1056db9ad088b659f47eee39a56ff1c11e4a244bffcdf422440da06ddb1cbb",
+      "/Users/alex/code/vox2/css/computed_property_store.v": "bc0a4f81b805a571559c126d74e9a5cfb97b921f1653e0fe903d898474bb8bae",
+      "/Users/alex/code/vox2/css/style_computer.v": "7a28a28624fa5aa20b392e112baa865c6e5321df53e0ded1b4ea8767d1f583b5",
+      "/Users/alex/code/vox2/browserjs/classic_import_scan_test.v": "3c6da9ea9149c9a63a8c3649d6873f1a9bd67d1d48b31db306753cf19b301e38",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_scan_test.v": "187b62a5904fed76c0456c8364402ea3dd4e9a1f13518ea72328ff9bd8c832b2",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_host_test.v": "3c54ea5d907395ce56f4b2b7cb4fc4c65127f60156ed7de37968da43f4acc627",
+      "/Users/alex/code/vox2/browserjs/classic_import_named_method_scan_test.v": "574643f871b58b120cf40528f4aa95de4681c16fdab11f8634527b094e809bb4",
+      "/Users/alex/code/vox2/browserjs/keyword_free_module_lexer_test.v": "2cc6ec91c0a81b5823054f563b5043507996b2d4f9afe934b424c16b72b448f6",
+      "/Users/alex/code/vox2/browserjs/module_host_test.v": "877b27b0816d59804923c729721edfaa9211f3bb7b653f95c0ac8e69b127a6a7",
+      "/Users/alex/code/vox2/browserjs/runtime.v": "30156b8a4d87ee1378a49813a8dda1b7b5612ba76983a6474eee2097e28f25ae",
+      "/Users/alex/code/vox2/browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1"
+    },
+    "fresh_case_executions": 1534,
+    "fresh_passes": 1520,
+    "fresh_baseline_failures": 14,
+    "carried_browser_js_executions": 60,
+    "total_case_executions": 1594,
+    "total_passes": 1580,
+    "total_baseline_failures": 14,
+    "qualification": "Fresh layout555/main74/CSS64 cases in default and no-GC modes; main repeats both candidate and module-lexer-control arms. Fifteen current browser-JS focused cases in both arms are carried for these two modes only, including real imports and trusted-lexer equivalence; preallocation remains separate focused evidence. All explicit checked inputs remain current. No older main/CSS carry, full-suite pass or cadence reset. Every baseline failure and failed attempt remains retained.",
+    "unix": 1793909083.6573792
+  },
+  "source_proof": {
+    "checked": {
+      "browserjs/classic_import_scan_test.v": "3c6da9ea9149c9a63a8c3649d6873f1a9bd67d1d48b31db306753cf19b301e38",
+      "browserjs/classic_import_call_scan_test.v": "187b62a5904fed76c0456c8364402ea3dd4e9a1f13518ea72328ff9bd8c832b2",
+      "browserjs/classic_import_call_host_test.v": "3c54ea5d907395ce56f4b2b7cb4fc4c65127f60156ed7de37968da43f4acc627",
+      "browserjs/classic_import_named_method_scan_test.v": "574643f871b58b120cf40528f4aa95de4681c16fdab11f8634527b094e809bb4",
+      "browserjs/keyword_free_module_lexer_test.v": "2cc6ec91c0a81b5823054f563b5043507996b2d4f9afe934b424c16b72b448f6",
+      "browserjs/module_host_test.v": "877b27b0816d59804923c729721edfaa9211f3bb7b653f95c0ac8e69b127a6a7",
+      "browserjs/classic_import_scan.v": "90998c07738654224ddac3fe545525286a5908c73332f074ddbebbf40d0fe50c",
+      "browserjs/classic_import_call_scan.v": "48e21cda2e8812aa48bf800661c43af5f74e4f84a21fd522b96553970a3bd1e1",
+      "browserjs/classic_import_named_method_scan.v": "5a725abb3e4d89d85448a4709b7813062ccd952b87b610ed7e608d44db137ec1",
+      "browserjs/keyword_free_module_lexer.v": "dcea06638ee3b6b31465f97a51bd05836b650bca33957cce0443f16dd547dab3",
+      "browserjs/keyword_free_module_lexer_jsc.c.v": "e20761afcc5e89d400adb359f5f4903491a138dffebf262ff3550712d3b62e18",
+      "browserjs/module_host_jsc.c.v": "a424af062eb9a20e21c606f182dd4e97c5275cee2e6863c95e354948106ad784",
+      "browserjs/module_source.v": "cfbb364a2eee4bf2a5238e494c0523862a5d317df8e3e60239a34a9fdc4791d6",
+      "browserjs/runtime.v": "30156b8a4d87ee1378a49813a8dda1b7b5612ba76983a6474eee2097e28f25ae",
+      "browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1"
+    },
+    "build_head": "cc62e57069644030c8ac20122f535adfcbdb1c81",
+    "committed_sources_match": true,
+    "generated_c_preserved": false,
+    "qualification": "Final focused source hashes match production build HEAD and current checked files. For parallel receipt,unchanged complete generation input fingerprints are required by canonical driver;no sealedgeneratedC claim."
+  },
+  "lease": {
+    "requested_unix": 1793908195.5315452,
+    "purpose": "Read lease through native eligibility, SVG guard and cohort 121; no endpoint/reference/input changes, no optimization credit for coordination.",
+    "helper": "/Users/alex/code/vox2/tools/browser_bundle_lease.py",
+    "helper_sha256": "8ffac841d64df4d5506be45c80970ce195c688d2d7a57d4ceb340b2d4de1b7b1",
+    "acquired_unix": 1793908195.531786,
+    "native_exit": 0,
+    "native_finished_unix": 1793908207.628953,
+    "native-audit_exit": 0,
+    "native-audit_finished_unix": 1793908208.91969,
+    "svg_exit": 0,
+    "svg_finished_unix": 1793908219.339406,
+    "cohort_exit": 1,
+    "cohort_finished_unix": 1793908346.876286,
+    "released_unix": 1793908346.8766022
+  },
+  "scope": "Unchanged exclusive coalition creation through encoded document PNG, including startup/window/target setup/readiness/two-second settlement; Vox before file writing, Brave including CDP delivery, audits/teardown afterward. Exited aggregates and allowed owned services included; GPU execution/outside work excluded. Fixed609-response original-origin HTTPS replay/original author scripts/1024x768 CSS/DPR2/fresh private profiles+caches/retained OS caches/original per-engine references/historical rendering policies unchanged. Known DOM/script/font/paint limitations and82.7154%cross-browser pixel difference remain. No live-site, isolated rendering or FPS claim.",
+  "qualifications": "Pinned parallel33-unitddb9839bcc78, recorded buildHEADcc62e5706964, exact checked feature/test source hashes and complete compiler/runtime metadata; no sealed generated C claim. Candidate-only keyword-free-module marker beforePNG, original pixels/content/72external scripts/native images/ownership/exits pass both arms, SVG source-switch guard exact. Only keyword-free specifier lexing differs: candidate requires a successful nonexecuting native syntax check and keeps the same metadata/native Module parse/evaluation; prior classic-call/named filters are common. Seven complete alternating triples retain every first launch, variation and result; no retry/exclusion/combination across builds. Fresh layout555/main74/CSS64 plus15current browser-JS cases yield708unique/703passes/same5knownfailures per mode;1534fresh+60carried=1594executions/1580passes/14baselinefailures. No full-suite pass/cadence reset. An inherited phrase in the original comparison paragraph is clarified in a separate retained erratum; actual command/flags/branches/workload/scope/endpoints/counters/refs/gate never change. Every prior cohort/preflight118 remains separately preserved. No profile or storage credit.",
+  "protocol_wording_erratum": {
+    "original_protocol": "/Users/alex/code/vox2/Build/bbc-keyword-free-modules-20261105-2300/cohort121/protocol-before.json",
+    "original_sha256": "cb54e688db57c375e9fd75261b22479866c5afbf56a5781774b123006e3c0be3",
+    "retained_original": true,
+    "explanation": "The comparison paragraph correctly declares candidate-only keyword-free specifier-lexer bypass, then inherits the older phrase \"module scripts are unchanged\". That phrase refers to the author-script policy and native Module parse/evaluation/metadata, not to the private specifier-lexer implementation. The exact command/control flag, candidate-only native marker, unchanged references/content/scripts, endpoints and counters establish the actual declared comparison. No workload, script bytes/policy, scope, endpoint, reference, threshold, browser attempt or measurement is changed by this wording clarification.",
+    "corrected_meaning": "Real import/export candidates keep the trusted lexer; keyword-free modules use the tested native syntax check and bypass in candidate only. Both arms retain the same metadata rewrite and native Module evaluation; earlier classic/named filters are common.",
+    "measurement_scope_or_protocol_action_changed": false,
+    "unix": 1793908575.801864
+  },
+  "storage": {
+    "archive_backed_focus_cleanup": {
+      "archive": "docs/performance/raw/bbc-keyword-free-module-focus-20261105.tar.gz",
+      "rows": [
+        {
+          "path": "Build/bbc-keyword-free-modules-20261105-2300/default.c",
+          "member": "default.c",
+          "bytes": 25403784,
+          "sha256": "fd188638f3ff071c6cfe95d06e1a2aa74a2e4a68439e8edb7d376f32b100ecf0"
+        },
+        {
+          "path": "Build/bbc-keyword-free-modules-20261105-2300/none.c",
+          "member": "none.c",
+          "bytes": 25394581,
+          "sha256": "2d9ed87a10c396b13213be4173b3b39b6a06bb113aa890680f620bc5236a30d6"
+        },
+        {
+          "path": "Build/bbc-keyword-free-modules-20261105-2300/prealloc.c",
+          "member": "prealloc.c",
+          "bytes": 25832907,
+          "sha256": "ba9b715f360bdfb2c78f5354aeaa6032892107b725ad98dcabe1914297827d69"
+        }
+      ],
+      "verified_before_deletion": true,
+      "unix": 1793909084.107411
+    }
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-keyword-free-module-cohort121-20261105.tar.gz",
+    "bytes": 68090565,
+    "sha256": "5969dbb73ad49c7eff00652755d71845d3cc68aa37eecaf97a5868985de65cef",
+    "members": 791,
+    "all_members_verified": true
+  },
+  "unix": 1793909826.064189
+}

@@ -1,34 +1,36 @@
 # BBC homepage instruction comparison
 
-Current result — **cohort 120**, on pinned parallel production `204af825dde1`:
+Current result — **cohort 121**, on pinned parallel production `ddb9839bcc78`:
 all 21 capture audits pass, with normal native exits and unchanged input
-identities. Launch-to-PNG medians are **26,114,419,911 Vox**,
-**26,865,367,149 named-import control**, and **17,440,922,093 Brave lower bound**
-instructions. The strict 10% target fails
-`270287115010 > 156647238885` (conservative ratio **1.55291**).
-The named-import filter's difference of medians is +750,947,238 (2.7952%).
-All seven pairs improve, with median paired reduction **595,012,366**, but
-conservative control ratio **1.02267** still fails. No robust conservative
-saving or catalog entry is credited. History is **115 measured cohorts /
-2,482 acceptance browser attempts**; 104, 110, 111, 113 and 118 are preflight-only.
-Cohort 119 and every earlier failing result remain preserved.
-[Complete current evidence](performance/bbc-named-import-cohort120-20261105.json).
+identities. Launch-to-PNG medians are **25,653,662,719 Vox**,
+**26,874,622,145 full-module-lexer control**, and **17,463,668,508 Brave lower
+bound** instructions. The strict 10% target fails
+`264244666700 > 156805122411` (conservative ratio **1.51666**).
+The keyword-free module bypass's median point and paired reduction are both
+**1,220,959,426** instructions (point **4.5432%**), with seven improvements and
+no regressions. Conservative control ratio **1.00795** still fails; no robust
+conservative saving or catalog entry is credited. History is **116 measured
+cohorts / 2,503 acceptance browser attempts**; 104, 110, 111, 113 and 118 are
+preflight-only. Cohort 120 and every earlier failing result remain preserved.
+[Complete current evidence](performance/bbc-keyword-free-module-cohort121-20261105.json).
 Earlier checkpoints below retain their historical wording and counts.
 
-Fresh native captures confirm candidate-only named-import member filtering
-before PNG and pass original pixels/content, all 72 external author scripts,
-actual native-library pins, helper ownership and exits. The SVG source-switch
-guard is exact in both arms. Seven complete alternating triples run under the
+Fresh native captures confirm candidate-only keyword-free module bypass before
+PNG and pass original pixels/content, all 72 external author scripts, actual
+native-library pins, helper ownership and exits. The SVG source-switch guard
+is exact in both arms. Seven complete alternating triples run under the
 publication lease; no capture is retried, excluded or combined across builds.
-The prior call filter is common to both arms, and module scripts still use the
-same lexer. Workload, references, endpoints, counters, thresholds, cache policy
-and historical rendering policies remain unchanged.
+Earlier classic-call/named-import filters are common to both arms. Author-script
+policy, metadata rewrite and native Module parsing/evaluation stay identical;
+only the tested keyword-free specifier-lexer bypass differs. An inherited
+phrase in the original protocol is clarified separately without changing its
+command, workload, scope, endpoints, counters, references, thresholds or trials.
 
-Triggered broader checks cover **705 unique cases per default/no-GC mode:
-700 passes and the same five baseline failures**. Fresh layout 555/main 74/CSS
-64 cases combine with 12 current browser-JS focused cases; main and browser-JS
-checks include candidate and control. There are 1,534 fresh and 48 carried
-executions, with 1,568 passes and 14 baseline failures. There is no full-suite
+Triggered broader checks cover **708 unique cases per default/no-GC mode:
+703 passes and the same five baseline failures**. Fresh layout 555/main 74/CSS
+64 cases combine with 15 current browser-JS focused cases; main and browser-JS
+checks include candidate and control. There are 1,534 fresh and 60 carried
+executions, with 1,580 passes and 14 baseline failures. There is no full-suite
 pass or cadence reset. The parallel build retains complete input/compiler/
 runtime metadata but has no sealed generated C receipt. Known rendering and
 scripting limitations remain. BBC homepage still has no qualifying instruction
@@ -166,6 +168,23 @@ counts. Generated C independently confirms nonempty native test bodies and
 their document/runtime/module execution calls. These focused checks provide
 no production instruction credit; the matched cohort is recorded separately.
 [Focused matrix, native body proof and control tests](performance/bbc-named-import-focus-20261105.json).
+
+The keyword-free module bypass (`29396216b`, isolated control `cc62e5706`)
+requires no import/export word, no hashbang/HTML-comment/NUL ambiguity and a
+successful nonexecuting native Script syntax check. It skips only the private
+specifier lexer, retaining the exact metadata rewrite and real Module parse
+and execution. Classic scripts, actual keywords, syntax failures, unsupported
+Script forms and closed contexts keep the original path.
+
+All **90 focused executions** and **340 tooling tests** pass. Instrumenting the
+actual private transform proves zero eligible lexer calls only in candidate
+and exact forced-trusted output in both arms. Native checks preserve no syntax
+probe effects, private module scope, undefined top-level `this`, strict errors,
+single evaluation and no-fetch behavior; all previous module/import cases
+remain included. Generated C confirms native syntax calls, JSString release
+and nonempty native test bodies in all three GC modes. These checks provide
+correctness evidence; matched instructions are reported separately above.
+[Focused matrix, actual lexer-call oracle and control tests](performance/bbc-keyword-free-module-focus-20261105.json).
 
 The follow-up pending-full-cascade shortcut now covers pseudo-element and
 trailing-universal anchor walks (`bbdaa7475`, isolated control `99c5cfdbe`).
