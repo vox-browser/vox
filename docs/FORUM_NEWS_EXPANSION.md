@@ -1154,6 +1154,59 @@ comparison; neither that reference nor its tolerance is changed.
 [Commands, identities, receipts and limitations](evidence/forum-news-profile-memory-20261105.json),
 [raw attempts and private probes](evidence/forum-news-profile-memory-20261105.zip).
 
+## TechCrunch: localized frame and image invalidation (2026-11-05)
+
+Two engine corrections are committed separately. `a8f911b70` repaints the
+parent when a hosted child publishes pixels, preserving the parent's layout
+when its own inputs have not changed. Real child navigation still invalidates
+the container through the existing navigable path. Its two regressions cover
+blank-frame initialization and a child timer updating retained paint; both
+fail against the old unconditional parent rebuild.
+
+`9a90227a3` removes full-document tree invalidation from image fallback shadow
+creation, removal and text edits. Shadow attachment and text mutations already
+invalidate the image subtree. Three model checks verify those flags, and one
+layout check verifies sibling identity, current fallback text and identical
+paint after a forced full rebuild. The four regressions fail before the fix.
+
+All **six new cases pass with default GC, GC disabled, and preallocation with
+arena poisoning**. Frame controls supply 33 existing cases per GC mode; image
+controls supply 35, including the same-size SVG source switch. Commit
+`fd35bc907` makes the existing frame-task helpers available to standalone test
+files without changing their bodies. Failed fixture setup, the initial Retina
+scale mismatch and the frame-control wrapper's changed-input rejection remain
+recorded. Positive control credit uses the individual guarded executions,
+not a claim that every wrapper succeeded.
+
+The available production browser, `ae288b90…`, passes fresh **Hacker News and
+WIRED cold-cache strict checks at zero pixels**: saved source, both independent
+Brave replays and Vox agree. WIRED retains its explicit first-frame policy.
+The upstream same-size SVG source-switch reftest also passes at zero pixels.
+Independent decoded RGBA hashes confirm all three comparisons, with browser,
+fixture and tool inputs unchanged throughout the finite bundle lease. These
+results qualify this completed bundle; production validation of the new image
+patch remains pending a bundle with verified inputs containing it.
+
+TechCrunch remains blocked. Native screenshot and JavaScript-disabled diagnostic
+launches exceed the 3 GiB guard; the latter is not an acceptance policy. A
+layout-tree-only command exits at about 337 MiB but finishes before the native
+drawing workflow. Private windowed probes reproduce root-document arena growth
+over successive layout passes, and still exceed the guard after both fixes.
+Their browser exit is `-9` even when the surrounding diagnostic controller exits
+zero. The main browser dominates a separate process RSS sample. Instrumentation,
+source and build differences prevent matched memory or timing credit; the
+incomplete `vmmap` attempt also retains its wrapper exception. No guard, source
+reference or pixel threshold is relaxed.
+
+The diagnostic source is preserved in the evidence and removed from normal test
+discovery. No additional site qualifies and no new broad-suite pass is claimed.
+The previous 134-test/140-capture result retains its original build identity.
+Engadget readiness, Slate's source-image difference and WIRED motion parity
+remain open.
+
+[Check receipts, identities and limitations](evidence/forum-news-subtree-invalidation-20261105.json),
+[all retained raw attempts](evidence/forum-news-subtree-invalidation-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged
