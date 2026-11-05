@@ -582,7 +582,12 @@ pub fn BrowsingContextModel.create_for_page(page &dom.Page, parent ?&BrowsingCon
 }
 
 pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(page &dom.Page, creator ?&dom.Document, embedder ?&dom.Element) !BrowsingContextAndDocument {
-	context := BrowsingContextModel.create_for_page(page, none, '')
+	parent := if element := embedder {
+		if native := element.document().get_browsing_context() {
+			?&BrowsingContextModel(browsing_context_model_for_native(native))
+		} else { none }
+	} else { none }
+	context := BrowsingContextModel.create_for_page(page, parent, if element := embedder { element.get_attribute_value('name') } else { '' })
 
 	// 2. Let unsafeContextCreationTime be the unsafe shared current time.
 	unsafe_context_creation_time := highresolutiontime.unsafe_shared_current_time()

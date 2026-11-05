@@ -1212,6 +1212,9 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 	mut installed_window_before_load := false
 	if state.document == none {
 		mut document := dom.Document.create(entry.url)
+		if owner := model.page() {
+			document.set_page(owner)
+		}
 		document.set_document_type(.html)
 		document.set_content_type('text/html')
 		document.set_origin(state.origin or { entry.url.origin() })
