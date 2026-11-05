@@ -77,6 +77,21 @@ class SealedProfileTests(unittest.TestCase):
         self.assertIn('-fno-inline-functions', actual)
         self.assertEqual(actual.count('-mllvm'), 1)
 
+    def test_current_v_initialization_accepts_tabs_and_preserves_source_bytes(self):
+        inserted = '\n extern void vox_cprofile_start(void *);\n vox_cprofile_start((void *)&main);'
+        for indentation in [' ', '\t', '\t  ', '  \t']:
+            for newline in ['\n', '\r\n']:
+                source = ('int main(int argc, char** argv) {' + newline
+                          + '\tg_main_argc = argc;' + newline
+                          + indentation + '_vinit();' + newline + '\trun();' + newline + '}')
+                changed = profile.inject_entry(source)
+                self.assertEqual(changed.replace(inserted, ''), source)
+                self.assertIn('_vinit();' + inserted, changed)
+        for invalid in ['int main(int argc, char** argv) {\n run();\n}',
+                        'int main(int argc, char** argv) {\n _vinit();\n\t_vinit();\n}']:
+            with self.assertRaisesRegex(ValueError, 'module initialization boundary'):
+                profile.inject_entry(invalid)
+
     def test_production_optimization_preserves_original_flags_without_an_override(self):
         command = ['clang', '-O3', '-x', 'objective-c-cpp-output', '/main.i',
                    '-mllvm', '-inline-threshold=1500', '-O3', '-o', '/old']

@@ -36,10 +36,11 @@ def inject_entry(source):
         if legacy or len(modern) != 1:
             raise ValueError('Expected one supported browser entry definition')
         # Current V emits the user entry directly in C main after module init.
-        init = source.find('\n _vinit();', modern[0].end(), modern[0].end() + 8192)
-        if init < 0:
+        start = modern[0].end()
+        init = list(re.finditer(r'\n[ \t]+_vinit\(\);', source[start:start + 8192]))
+        if len(init) != 1:
             raise ValueError('Missing module initialization boundary')
-        position, name = init + len('\n _vinit();'), 'main'
+        position, name = start + init[0].end(), 'main'
     return (source[:position] + '\n extern void vox_cprofile_start(void *);'
             '\n vox_cprofile_start((void *)&' + name + ');' + source[position:])
 
