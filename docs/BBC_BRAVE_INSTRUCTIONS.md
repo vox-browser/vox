@@ -60,6 +60,18 @@ the completed library lacks a newly referenced graphics API; that attempt and
 two corrected profiler-only compile failures remain preserved.
 [Diagnostic evidence](performance/bbc-v-profile-thread-cpu-20261105.json).
 
+The follow-up pending-full-cascade shortcut now covers pseudo-element and
+trailing-universal anchor walks (`bbdaa7475`, isolated control `99c5cfdbe`).
+Its exact paint oracle exposed an existing retention bug: a newly styled
+generated pseudo can be omitted when its originating element reuses an old
+ordinary child tree. `c878ae2a8` rejects that tree in both cached validation and
+fresh collection. All **783 focused executions** pass: 64 CSS and 23 layout
+cases, each across three GC modes and candidate/anchor-walk/full-walk arms.
+All **336 instruction-tool tests** pass. Failed fixture compiles and the
+original paint failures in all arms remain recorded. Native eligibility and
+matched instructions still need validation; no saving, target acceptance or
+catalog entry is credited. [Focused evidence](performance/bbc-covered-anchor-focus-20261105.json).
+
 **Latest complete comparison — cohort 94:** seven alternating control/Vox/Brave
 triples complete on pinned executable
 `6c57297b8944be97201dec4dc929ac71a75f5be8272f8419830a81070942621b`.

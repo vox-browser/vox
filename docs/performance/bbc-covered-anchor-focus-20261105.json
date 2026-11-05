@@ -1,0 +1,2465 @@
+{
+  "status": "All 783 focused executions and 336 instruction-tool tests pass. Native eligibility, unchanged original BBC pixels/content and matched instruction measurements remain pending. No saving or catalog credit.",
+  "correctness_commit": "c878ae2a8",
+  "optimization_commit": "bbdaa7475",
+  "control_commit": "99c5cfdbe",
+  "focused": {
+    "css": {
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "default-full-walk",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "none-full-walk",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-full-walk",
+          "exit": 0
+        }
+      ],
+      "proof": [
+        {
+          "mode": "default",
+          "calls": [
+            "test_pending_full_cascade_covers_primary_sheet_insert_and_resolves_new_rule",
+            "test_partial_cascade_still_marks_matching_stylesheet_targets",
+            "test_pending_full_cascade_covers_anchor_and_trailing_universal_walks",
+            "test_active_style_batch_and_non_document_roots_keep_primary_walks",
+            "test_pending_full_cascade_covers_trailing_universal_sibling_targets",
+            "test_pending_full_cascade_covers_anchor_rule_removal_and_repaint",
+            "test_active_style_batch_keeps_anchor_walks_even_with_a_pending_full_cascade",
+            "test_covered_anchor_invalidation_preserves_hidden_descendant_style_queries",
+            "test_insert_rule_targets_matching_elements_in_inline_style_sheet",
+            "test_insert_rule_with_only_has_feature_invalidates_whole_tree",
+            "test_style_rule_declaration_mutation_keeps_and_uses_rule_cache",
+            "test_inserted_character_data_schedules_has_ancestor_invalidation",
+            "test_structural_has_invalidation_filters_unrelated_inserted_subtrees",
+            "test_featureless_has_argument_keeps_structural_invalidation_conservative",
+            "test_has_descendant_fanout_ignores_rules_for_other_anchors",
+            "test_has_sibling_scan_preserves_a_feature_filtered_anchor_skip",
+            "test_user_agent_shadow_tree_mutations_use_document_style_scope",
+            "test_light_dom_insert_schedules_has_invalidation_in_host_shadow_scope",
+            "test_light_dom_attribute_change_schedules_has_invalidation_in_host_shadow_scope",
+            "test_shadow_tree_mutations_schedule_has_invalidation_in_outer_document_scope",
+            "test_dir_and_lang_changes_schedule_has_invalidation_across_shadow_scopes",
+            "test_dir_auto_text_change_schedules_has_invalidation",
+            "test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element",
+            "test_insert_rule_targets_matching_elements_inside_shadow_root",
+            "test_shadow_host_escape_selector_classification",
+            "test_shadow_host_outside_escape_selector_classification",
+            "test_insert_keyframes_rule_targets_only_animation_name_users",
+            "test_document_keyframes_insertion_walks_existing_shadow_trees",
+            "test_shadow_keyframes_insertion_reaches_host_without_document_bystanders",
+            "test_shadow_root_style_sheet_effects_include_hosts_light_dom_and_slots",
+            "test_host_attribute_change_invalidates_host_dependent_shadow_subtree",
+            "test_shadow_local_replace_sync_does_not_invalidate_light_dom",
+            "test_shadow_style_replacement_uses_pre_mutation_host_reach",
+            "test_shadow_rule_deletion_uses_pre_mutation_host_reach",
+            "test_shadow_sheet_disabled_toggle_preserves_host_reach_invalidation",
+            "test_shadow_media_list_mutation_uses_pre_mutation_host_reach",
+            "test_inserted_style_only_conditionals_preserve_unrelated_styles_and_match_a_full_cascade",
+            "test_inserted_conditional_groups_keep_global_rule_and_universal_fallbacks",
+            "test_inserted_conditional_group_preserves_preexisting_media_match_changes",
+            "test_inactive_conditional_rule_insertion_waits_for_its_media_to_match",
+            "test_style_sheet_list_add_and_remove_target_document_elements",
+            "test_style_sheet_list_keeps_untitled_alternate_sheet_disabled",
+            "test_shadow_sheet_add_targets_local_elements_and_slot_inheritors",
+            "test_non_style_rules_force_broad_add_remove_but_inactive_sheets_do_not",
+            "test_font_face_sheet_add_and_remove_do_not_force_broad_invalidation",
+            "test_keyframes_sheet_add_and_remove_target_animation_name_users",
+            "test_root_and_hover_sheet_add_target_current_pseudo_matches",
+            "test_first_child_only_sheet_add_targets_boundary_elements",
+            "test_shadow_keyframes_sheet_add_reaches_animation_name_on_host",
+            "test_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_reach",
+            "test_redundant_sheet_removal_keeps_ownership_and_pending_invalidations",
+            "test_redundant_sheet_removal_ignores_only_never_seen_leaf_tags",
+            "test_redundant_sheet_removal_remembers_removed_tag_names",
+            "test_redundant_sheet_removal_requires_the_entire_ordered_sequence",
+            "test_redundant_sheet_removal_does_not_cross_an_intervening_sheet",
+            "test_redundant_sheet_removal_preserves_media_and_global_rule_effects",
+            "test_redundant_sheet_removal_rejects_different_bases_media_and_disabled_sheets",
+            "test_redundant_sheet_removal_rechecks_live_declarations_and_later_edits",
+            "test_redundant_sheet_removal_preserves_future_tag_insertion_and_media_changes",
+            "test_redundant_sheet_removal_accepts_independent_shorthand_expansion_order",
+            "test_redundant_sheet_removal_keeps_competing_logical_declaration_order",
+            "test_redundant_sheet_removal_rejects_duplicate_internal_declaration_names",
+            "test_following_sheet_removal_targets_only_changed_declaration_selectors",
+            "test_following_sheet_removal_does_not_treat_changed_selectors_as_replacements"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "none",
+          "calls": [
+            "test_pending_full_cascade_covers_primary_sheet_insert_and_resolves_new_rule",
+            "test_partial_cascade_still_marks_matching_stylesheet_targets",
+            "test_pending_full_cascade_covers_anchor_and_trailing_universal_walks",
+            "test_active_style_batch_and_non_document_roots_keep_primary_walks",
+            "test_pending_full_cascade_covers_trailing_universal_sibling_targets",
+            "test_pending_full_cascade_covers_anchor_rule_removal_and_repaint",
+            "test_active_style_batch_keeps_anchor_walks_even_with_a_pending_full_cascade",
+            "test_covered_anchor_invalidation_preserves_hidden_descendant_style_queries",
+            "test_insert_rule_targets_matching_elements_in_inline_style_sheet",
+            "test_insert_rule_with_only_has_feature_invalidates_whole_tree",
+            "test_style_rule_declaration_mutation_keeps_and_uses_rule_cache",
+            "test_inserted_character_data_schedules_has_ancestor_invalidation",
+            "test_structural_has_invalidation_filters_unrelated_inserted_subtrees",
+            "test_featureless_has_argument_keeps_structural_invalidation_conservative",
+            "test_has_descendant_fanout_ignores_rules_for_other_anchors",
+            "test_has_sibling_scan_preserves_a_feature_filtered_anchor_skip",
+            "test_user_agent_shadow_tree_mutations_use_document_style_scope",
+            "test_light_dom_insert_schedules_has_invalidation_in_host_shadow_scope",
+            "test_light_dom_attribute_change_schedules_has_invalidation_in_host_shadow_scope",
+            "test_shadow_tree_mutations_schedule_has_invalidation_in_outer_document_scope",
+            "test_dir_and_lang_changes_schedule_has_invalidation_across_shadow_scopes",
+            "test_dir_auto_text_change_schedules_has_invalidation",
+            "test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element",
+            "test_insert_rule_targets_matching_elements_inside_shadow_root",
+            "test_shadow_host_escape_selector_classification",
+            "test_shadow_host_outside_escape_selector_classification",
+            "test_insert_keyframes_rule_targets_only_animation_name_users",
+            "test_document_keyframes_insertion_walks_existing_shadow_trees",
+            "test_shadow_keyframes_insertion_reaches_host_without_document_bystanders",
+            "test_shadow_root_style_sheet_effects_include_hosts_light_dom_and_slots",
+            "test_host_attribute_change_invalidates_host_dependent_shadow_subtree",
+            "test_shadow_local_replace_sync_does_not_invalidate_light_dom",
+            "test_shadow_style_replacement_uses_pre_mutation_host_reach",
+            "test_shadow_rule_deletion_uses_pre_mutation_host_reach",
+            "test_shadow_sheet_disabled_toggle_preserves_host_reach_invalidation",
+            "test_shadow_media_list_mutation_uses_pre_mutation_host_reach",
+            "test_inserted_style_only_conditionals_preserve_unrelated_styles_and_match_a_full_cascade",
+            "test_inserted_conditional_groups_keep_global_rule_and_universal_fallbacks",
+            "test_inserted_conditional_group_preserves_preexisting_media_match_changes",
+            "test_inactive_conditional_rule_insertion_waits_for_its_media_to_match",
+            "test_style_sheet_list_add_and_remove_target_document_elements",
+            "test_style_sheet_list_keeps_untitled_alternate_sheet_disabled",
+            "test_shadow_sheet_add_targets_local_elements_and_slot_inheritors",
+            "test_non_style_rules_force_broad_add_remove_but_inactive_sheets_do_not",
+            "test_font_face_sheet_add_and_remove_do_not_force_broad_invalidation",
+            "test_keyframes_sheet_add_and_remove_target_animation_name_users",
+            "test_root_and_hover_sheet_add_target_current_pseudo_matches",
+            "test_first_child_only_sheet_add_targets_boundary_elements",
+            "test_shadow_keyframes_sheet_add_reaches_animation_name_on_host",
+            "test_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_reach",
+            "test_redundant_sheet_removal_keeps_ownership_and_pending_invalidations",
+            "test_redundant_sheet_removal_ignores_only_never_seen_leaf_tags",
+            "test_redundant_sheet_removal_remembers_removed_tag_names",
+            "test_redundant_sheet_removal_requires_the_entire_ordered_sequence",
+            "test_redundant_sheet_removal_does_not_cross_an_intervening_sheet",
+            "test_redundant_sheet_removal_preserves_media_and_global_rule_effects",
+            "test_redundant_sheet_removal_rejects_different_bases_media_and_disabled_sheets",
+            "test_redundant_sheet_removal_rechecks_live_declarations_and_later_edits",
+            "test_redundant_sheet_removal_preserves_future_tag_insertion_and_media_changes",
+            "test_redundant_sheet_removal_accepts_independent_shorthand_expansion_order",
+            "test_redundant_sheet_removal_keeps_competing_logical_declaration_order",
+            "test_redundant_sheet_removal_rejects_duplicate_internal_declaration_names",
+            "test_following_sheet_removal_targets_only_changed_declaration_selectors",
+            "test_following_sheet_removal_does_not_treat_changed_selectors_as_replacements"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "prealloc",
+          "calls": [
+            "test_pending_full_cascade_covers_primary_sheet_insert_and_resolves_new_rule",
+            "test_partial_cascade_still_marks_matching_stylesheet_targets",
+            "test_pending_full_cascade_covers_anchor_and_trailing_universal_walks",
+            "test_active_style_batch_and_non_document_roots_keep_primary_walks",
+            "test_pending_full_cascade_covers_trailing_universal_sibling_targets",
+            "test_pending_full_cascade_covers_anchor_rule_removal_and_repaint",
+            "test_active_style_batch_keeps_anchor_walks_even_with_a_pending_full_cascade",
+            "test_covered_anchor_invalidation_preserves_hidden_descendant_style_queries",
+            "test_insert_rule_targets_matching_elements_in_inline_style_sheet",
+            "test_insert_rule_with_only_has_feature_invalidates_whole_tree",
+            "test_style_rule_declaration_mutation_keeps_and_uses_rule_cache",
+            "test_inserted_character_data_schedules_has_ancestor_invalidation",
+            "test_structural_has_invalidation_filters_unrelated_inserted_subtrees",
+            "test_featureless_has_argument_keeps_structural_invalidation_conservative",
+            "test_has_descendant_fanout_ignores_rules_for_other_anchors",
+            "test_has_sibling_scan_preserves_a_feature_filtered_anchor_skip",
+            "test_user_agent_shadow_tree_mutations_use_document_style_scope",
+            "test_light_dom_insert_schedules_has_invalidation_in_host_shadow_scope",
+            "test_light_dom_attribute_change_schedules_has_invalidation_in_host_shadow_scope",
+            "test_shadow_tree_mutations_schedule_has_invalidation_in_outer_document_scope",
+            "test_dir_and_lang_changes_schedule_has_invalidation_across_shadow_scopes",
+            "test_dir_auto_text_change_schedules_has_invalidation",
+            "test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element",
+            "test_insert_rule_targets_matching_elements_inside_shadow_root",
+            "test_shadow_host_escape_selector_classification",
+            "test_shadow_host_outside_escape_selector_classification",
+            "test_insert_keyframes_rule_targets_only_animation_name_users",
+            "test_document_keyframes_insertion_walks_existing_shadow_trees",
+            "test_shadow_keyframes_insertion_reaches_host_without_document_bystanders",
+            "test_shadow_root_style_sheet_effects_include_hosts_light_dom_and_slots",
+            "test_host_attribute_change_invalidates_host_dependent_shadow_subtree",
+            "test_shadow_local_replace_sync_does_not_invalidate_light_dom",
+            "test_shadow_style_replacement_uses_pre_mutation_host_reach",
+            "test_shadow_rule_deletion_uses_pre_mutation_host_reach",
+            "test_shadow_sheet_disabled_toggle_preserves_host_reach_invalidation",
+            "test_shadow_media_list_mutation_uses_pre_mutation_host_reach",
+            "test_inserted_style_only_conditionals_preserve_unrelated_styles_and_match_a_full_cascade",
+            "test_inserted_conditional_groups_keep_global_rule_and_universal_fallbacks",
+            "test_inserted_conditional_group_preserves_preexisting_media_match_changes",
+            "test_inactive_conditional_rule_insertion_waits_for_its_media_to_match",
+            "test_style_sheet_list_add_and_remove_target_document_elements",
+            "test_style_sheet_list_keeps_untitled_alternate_sheet_disabled",
+            "test_shadow_sheet_add_targets_local_elements_and_slot_inheritors",
+            "test_non_style_rules_force_broad_add_remove_but_inactive_sheets_do_not",
+            "test_font_face_sheet_add_and_remove_do_not_force_broad_invalidation",
+            "test_keyframes_sheet_add_and_remove_target_animation_name_users",
+            "test_root_and_hover_sheet_add_target_current_pseudo_matches",
+            "test_first_child_only_sheet_add_targets_boundary_elements",
+            "test_shadow_keyframes_sheet_add_reaches_animation_name_on_host",
+            "test_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_reach",
+            "test_redundant_sheet_removal_keeps_ownership_and_pending_invalidations",
+            "test_redundant_sheet_removal_ignores_only_never_seen_leaf_tags",
+            "test_redundant_sheet_removal_remembers_removed_tag_names",
+            "test_redundant_sheet_removal_requires_the_entire_ordered_sequence",
+            "test_redundant_sheet_removal_does_not_cross_an_intervening_sheet",
+            "test_redundant_sheet_removal_preserves_media_and_global_rule_effects",
+            "test_redundant_sheet_removal_rejects_different_bases_media_and_disabled_sheets",
+            "test_redundant_sheet_removal_rechecks_live_declarations_and_later_edits",
+            "test_redundant_sheet_removal_preserves_future_tag_insertion_and_media_changes",
+            "test_redundant_sheet_removal_accepts_independent_shorthand_expansion_order",
+            "test_redundant_sheet_removal_keeps_competing_logical_declaration_order",
+            "test_redundant_sheet_removal_rejects_duplicate_internal_declaration_names",
+            "test_following_sheet_removal_targets_only_changed_declaration_selectors",
+            "test_following_sheet_removal_does_not_treat_changed_selectors_as_replacements"
+          ],
+          "all_called": true
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/css/covered_style_sheet_invalidation_test.v": "2eefca1f02662d39d5d8407454310771cbd705ae4f6e13732af23444ebe66906",
+        "/Users/alex/code/vox2/css/style_sheet_invalidation_test.v": "e5e0aa965fecd5d9d3311d3c81f9b3b63653e45baf69175d3129767a63fe25f2",
+        "/Users/alex/code/vox2/css/style_sheet_list_invalidation_test.v": "0391b903b00359f85d2f360e9b5d4bd9579fafe0589adc6475125f803eb53525",
+        "/Users/alex/code/vox2/css/redundant_sheet_removal_test.v": "0f1056db9ad088b659f47eee39a56ff1c11e4a244bffcdf422440da06ddb1cbb",
+        "/Users/alex/code/vox2/css/covered_style_sheet_invalidation.v": "5b597e636b97678934e9c1760c1251086cc3b4c48aa020997619c3d9d91990b9",
+        "/Users/alex/code/vox2/css/style_sheet_invalidation.v": "1957fee8dde8708d66daea80e354ac1c882e2983229e37f2d802f2bf568ce5a2",
+        "/Users/alex/code/vox2/css/computed_property_store.v": "bc0a4f81b805a571559c126d74e9a5cfb97b921f1653e0fe903d898474bb8bae",
+        "/Users/alex/code/vox2/css/style_computer.v": "9a65786feff850df5b88aad726ae5659d8dae11353644be4b24b5cdecc942241"
+      },
+      "unchanged": true,
+      "cases_per_run": 64,
+      "expected_cases": [
+        "test_pending_full_cascade_covers_primary_sheet_insert_and_resolves_new_rule",
+        "test_partial_cascade_still_marks_matching_stylesheet_targets",
+        "test_pending_full_cascade_covers_anchor_and_trailing_universal_walks",
+        "test_active_style_batch_and_non_document_roots_keep_primary_walks",
+        "test_pending_full_cascade_covers_trailing_universal_sibling_targets",
+        "test_pending_full_cascade_covers_anchor_rule_removal_and_repaint",
+        "test_active_style_batch_keeps_anchor_walks_even_with_a_pending_full_cascade",
+        "test_covered_anchor_invalidation_preserves_hidden_descendant_style_queries",
+        "test_insert_rule_targets_matching_elements_in_inline_style_sheet",
+        "test_insert_rule_with_only_has_feature_invalidates_whole_tree",
+        "test_style_rule_declaration_mutation_keeps_and_uses_rule_cache",
+        "test_inserted_character_data_schedules_has_ancestor_invalidation",
+        "test_structural_has_invalidation_filters_unrelated_inserted_subtrees",
+        "test_featureless_has_argument_keeps_structural_invalidation_conservative",
+        "test_has_descendant_fanout_ignores_rules_for_other_anchors",
+        "test_has_sibling_scan_preserves_a_feature_filtered_anchor_skip",
+        "test_user_agent_shadow_tree_mutations_use_document_style_scope",
+        "test_light_dom_insert_schedules_has_invalidation_in_host_shadow_scope",
+        "test_light_dom_attribute_change_schedules_has_invalidation_in_host_shadow_scope",
+        "test_shadow_tree_mutations_schedule_has_invalidation_in_outer_document_scope",
+        "test_dir_and_lang_changes_schedule_has_invalidation_across_shadow_scopes",
+        "test_dir_auto_text_change_schedules_has_invalidation",
+        "test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element",
+        "test_insert_rule_targets_matching_elements_inside_shadow_root",
+        "test_shadow_host_escape_selector_classification",
+        "test_shadow_host_outside_escape_selector_classification",
+        "test_insert_keyframes_rule_targets_only_animation_name_users",
+        "test_document_keyframes_insertion_walks_existing_shadow_trees",
+        "test_shadow_keyframes_insertion_reaches_host_without_document_bystanders",
+        "test_shadow_root_style_sheet_effects_include_hosts_light_dom_and_slots",
+        "test_host_attribute_change_invalidates_host_dependent_shadow_subtree",
+        "test_shadow_local_replace_sync_does_not_invalidate_light_dom",
+        "test_shadow_style_replacement_uses_pre_mutation_host_reach",
+        "test_shadow_rule_deletion_uses_pre_mutation_host_reach",
+        "test_shadow_sheet_disabled_toggle_preserves_host_reach_invalidation",
+        "test_shadow_media_list_mutation_uses_pre_mutation_host_reach",
+        "test_inserted_style_only_conditionals_preserve_unrelated_styles_and_match_a_full_cascade",
+        "test_inserted_conditional_groups_keep_global_rule_and_universal_fallbacks",
+        "test_inserted_conditional_group_preserves_preexisting_media_match_changes",
+        "test_inactive_conditional_rule_insertion_waits_for_its_media_to_match",
+        "test_style_sheet_list_add_and_remove_target_document_elements",
+        "test_style_sheet_list_keeps_untitled_alternate_sheet_disabled",
+        "test_shadow_sheet_add_targets_local_elements_and_slot_inheritors",
+        "test_non_style_rules_force_broad_add_remove_but_inactive_sheets_do_not",
+        "test_font_face_sheet_add_and_remove_do_not_force_broad_invalidation",
+        "test_keyframes_sheet_add_and_remove_target_animation_name_users",
+        "test_root_and_hover_sheet_add_target_current_pseudo_matches",
+        "test_first_child_only_sheet_add_targets_boundary_elements",
+        "test_shadow_keyframes_sheet_add_reaches_animation_name_on_host",
+        "test_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_reach",
+        "test_redundant_sheet_removal_keeps_ownership_and_pending_invalidations",
+        "test_redundant_sheet_removal_ignores_only_never_seen_leaf_tags",
+        "test_redundant_sheet_removal_remembers_removed_tag_names",
+        "test_redundant_sheet_removal_requires_the_entire_ordered_sequence",
+        "test_redundant_sheet_removal_does_not_cross_an_intervening_sheet",
+        "test_redundant_sheet_removal_preserves_media_and_global_rule_effects",
+        "test_redundant_sheet_removal_rejects_different_bases_media_and_disabled_sheets",
+        "test_redundant_sheet_removal_rechecks_live_declarations_and_later_edits",
+        "test_redundant_sheet_removal_preserves_future_tag_insertion_and_media_changes",
+        "test_redundant_sheet_removal_accepts_independent_shorthand_expansion_order",
+        "test_redundant_sheet_removal_keeps_competing_logical_declaration_order",
+        "test_redundant_sheet_removal_rejects_duplicate_internal_declaration_names",
+        "test_following_sheet_removal_targets_only_changed_declaration_selectors",
+        "test_following_sheet_removal_does_not_treat_changed_selectors_as_replacements"
+      ]
+    },
+    "layout": {
+      "results": [
+        {
+          "name": "default-compile",
+          "exit": 0
+        },
+        {
+          "name": "default-candidate",
+          "exit": 0
+        },
+        {
+          "name": "default-control",
+          "exit": 0
+        },
+        {
+          "name": "default-full-walk",
+          "exit": 0
+        },
+        {
+          "name": "none-compile",
+          "exit": 0
+        },
+        {
+          "name": "none-candidate",
+          "exit": 0
+        },
+        {
+          "name": "none-control",
+          "exit": 0
+        },
+        {
+          "name": "none-full-walk",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-compile",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-candidate",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-control",
+          "exit": 0
+        },
+        {
+          "name": "prealloc-full-walk",
+          "exit": 0
+        }
+      ],
+      "proof": [
+        {
+          "mode": "default",
+          "calls": [
+            "test_style_anchor_insert_and_remove_rebuild_generated_geometry",
+            "test_cached_flow_validation_rejects_new_generated_pseudo_styles",
+            "test_first_layout_reuses_clean_preflight_style_without_another_cascade",
+            "test_first_layout_computes_style_without_a_preflight",
+            "test_first_layout_recascades_for_a_viewport_changed_after_preflight",
+            "test_first_layout_preserves_pending_style_dom_and_sheet_invalidations",
+            "test_first_layout_styles_ua_and_svg_subtrees_created_after_preflight",
+            "test_noop_restyles_preserve_closed_flow_grid_and_flex_layout_trees",
+            "test_restyled_retained_flow_observes_changed_text_color_width_and_tree_order",
+            "test_restyled_flow_keeps_replaced_and_generated_descendants_on_the_builder_path",
+            "test_clean_comment_flow_branches_keep_boxes_text_and_dom_boundaries",
+            "test_retained_flow_tracks_inherited_paint_and_reparented_geometry",
+            "test_retained_flow_replays_counter_order_before_generated_following_content",
+            "test_retained_flow_rebuilds_ineligible_subtrees_and_validates_closed_svg_reuse",
+            "test_clean_action_forms_retain_flow_boxes_and_rebuild_when_their_content_changes",
+            "test_forms_with_rendered_controls_keep_the_complete_builder_path",
+            "test_clean_flow_roots_and_inline_block_action_menus_retain_their_tree_roles",
+            "test_unchanged_flow_validation_reuses_its_snapshot_and_rechecks_changed_styles",
+            "test_flow_validation_rechecks_text_and_roles_after_nested_mutations",
+            "test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations",
+            "test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice",
+            "test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes",
+            "test_retained_formatting_trees_rebuild_ineligible_content_and_retain_closed_svg"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "none",
+          "calls": [
+            "test_style_anchor_insert_and_remove_rebuild_generated_geometry",
+            "test_cached_flow_validation_rejects_new_generated_pseudo_styles",
+            "test_first_layout_reuses_clean_preflight_style_without_another_cascade",
+            "test_first_layout_computes_style_without_a_preflight",
+            "test_first_layout_recascades_for_a_viewport_changed_after_preflight",
+            "test_first_layout_preserves_pending_style_dom_and_sheet_invalidations",
+            "test_first_layout_styles_ua_and_svg_subtrees_created_after_preflight",
+            "test_noop_restyles_preserve_closed_flow_grid_and_flex_layout_trees",
+            "test_restyled_retained_flow_observes_changed_text_color_width_and_tree_order",
+            "test_restyled_flow_keeps_replaced_and_generated_descendants_on_the_builder_path",
+            "test_clean_comment_flow_branches_keep_boxes_text_and_dom_boundaries",
+            "test_retained_flow_tracks_inherited_paint_and_reparented_geometry",
+            "test_retained_flow_replays_counter_order_before_generated_following_content",
+            "test_retained_flow_rebuilds_ineligible_subtrees_and_validates_closed_svg_reuse",
+            "test_clean_action_forms_retain_flow_boxes_and_rebuild_when_their_content_changes",
+            "test_forms_with_rendered_controls_keep_the_complete_builder_path",
+            "test_clean_flow_roots_and_inline_block_action_menus_retain_their_tree_roles",
+            "test_unchanged_flow_validation_reuses_its_snapshot_and_rechecks_changed_styles",
+            "test_flow_validation_rechecks_text_and_roles_after_nested_mutations",
+            "test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations",
+            "test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice",
+            "test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes",
+            "test_retained_formatting_trees_rebuild_ineligible_content_and_retain_closed_svg"
+          ],
+          "all_called": true
+        },
+        {
+          "mode": "prealloc",
+          "calls": [
+            "test_style_anchor_insert_and_remove_rebuild_generated_geometry",
+            "test_cached_flow_validation_rejects_new_generated_pseudo_styles",
+            "test_first_layout_reuses_clean_preflight_style_without_another_cascade",
+            "test_first_layout_computes_style_without_a_preflight",
+            "test_first_layout_recascades_for_a_viewport_changed_after_preflight",
+            "test_first_layout_preserves_pending_style_dom_and_sheet_invalidations",
+            "test_first_layout_styles_ua_and_svg_subtrees_created_after_preflight",
+            "test_noop_restyles_preserve_closed_flow_grid_and_flex_layout_trees",
+            "test_restyled_retained_flow_observes_changed_text_color_width_and_tree_order",
+            "test_restyled_flow_keeps_replaced_and_generated_descendants_on_the_builder_path",
+            "test_clean_comment_flow_branches_keep_boxes_text_and_dom_boundaries",
+            "test_retained_flow_tracks_inherited_paint_and_reparented_geometry",
+            "test_retained_flow_replays_counter_order_before_generated_following_content",
+            "test_retained_flow_rebuilds_ineligible_subtrees_and_validates_closed_svg_reuse",
+            "test_clean_action_forms_retain_flow_boxes_and_rebuild_when_their_content_changes",
+            "test_forms_with_rendered_controls_keep_the_complete_builder_path",
+            "test_clean_flow_roots_and_inline_block_action_menus_retain_their_tree_roles",
+            "test_unchanged_flow_validation_reuses_its_snapshot_and_rechecks_changed_styles",
+            "test_flow_validation_rechecks_text_and_roles_after_nested_mutations",
+            "test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations",
+            "test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice",
+            "test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes",
+            "test_retained_formatting_trees_rebuild_ineligible_content_and_retain_closed_svg"
+          ],
+          "all_called": true
+        }
+      ],
+      "inputs": {
+        "/Users/alex/code/vox2/layout/retained_flow_pseudo_styles_test.v": "c15469c7efdbb983d293680967fc299f89bd79215c75f9ee184b27832bea00f0",
+        "/Users/alex/code/vox2/layout/initial_style_reuse_test.v": "67d183cae41d7d08e0ed8f8e02b6739b0f0d948b70e8b9e9972f4909c773e668",
+        "/Users/alex/code/vox2/layout/retained_flow_styles_test.v": "4564892173e325e312ae0deecb94529c79a8a4148a886b3ebf4b0a26a4ae52be",
+        "/Users/alex/code/vox2/layout/retained_flow_subtrees_test.v": "05b3316ffab99646ad8779f6dc75ef7f2d35b820951fb13e8ef71f87f1e70e38",
+        "/Users/alex/code/vox2/layout/retained_formatting_trees_test.v": "cc311f682ae7101b9df1432e6f275813185e46ffd0639fdc51b003697baaaa05",
+        "/Users/alex/code/vox2/css/covered_style_sheet_invalidation.v": "5b597e636b97678934e9c1760c1251086cc3b4c48aa020997619c3d9d91990b9",
+        "/Users/alex/code/vox2/css/style_sheet_invalidation.v": "1957fee8dde8708d66daea80e354ac1c882e2983229e37f2d802f2bf568ce5a2",
+        "/Users/alex/code/vox2/css/style_computer.v": "9a65786feff850df5b88aad726ae5659d8dae11353644be4b24b5cdecc942241",
+        "/Users/alex/code/vox2/layout/document_tree_builder.v": "0126d353a13fe042b954a14ccc595b5c1767172632a2392493ade0ca44105e3c",
+        "/Users/alex/code/vox2/layout/retained_flow_subtrees.v": "13864cb4bfe2c18c7ae21abe6618793212c6c75c31bb6c0b49a4f101f05a6875",
+        "/Users/alex/code/vox2/layout/retained_flow_styles.v": "5e62de2800eb25cb612591f4249830f454523cb5f38a447624e456ef920cf8cf"
+      },
+      "unchanged": true,
+      "cases_per_run": 23,
+      "expected_cases": [
+        "test_style_anchor_insert_and_remove_rebuild_generated_geometry",
+        "test_cached_flow_validation_rejects_new_generated_pseudo_styles",
+        "test_first_layout_reuses_clean_preflight_style_without_another_cascade",
+        "test_first_layout_computes_style_without_a_preflight",
+        "test_first_layout_recascades_for_a_viewport_changed_after_preflight",
+        "test_first_layout_preserves_pending_style_dom_and_sheet_invalidations",
+        "test_first_layout_styles_ua_and_svg_subtrees_created_after_preflight",
+        "test_noop_restyles_preserve_closed_flow_grid_and_flex_layout_trees",
+        "test_restyled_retained_flow_observes_changed_text_color_width_and_tree_order",
+        "test_restyled_flow_keeps_replaced_and_generated_descendants_on_the_builder_path",
+        "test_clean_comment_flow_branches_keep_boxes_text_and_dom_boundaries",
+        "test_retained_flow_tracks_inherited_paint_and_reparented_geometry",
+        "test_retained_flow_replays_counter_order_before_generated_following_content",
+        "test_retained_flow_rebuilds_ineligible_subtrees_and_validates_closed_svg_reuse",
+        "test_clean_action_forms_retain_flow_boxes_and_rebuild_when_their_content_changes",
+        "test_forms_with_rendered_controls_keep_the_complete_builder_path",
+        "test_clean_flow_roots_and_inline_block_action_menus_retain_their_tree_roles",
+        "test_unchanged_flow_validation_reuses_its_snapshot_and_rechecks_changed_styles",
+        "test_flow_validation_rechecks_text_and_roles_after_nested_mutations",
+        "test_clean_block_grid_and_flex_trees_retain_their_nodes_after_unrelated_mutations",
+        "test_retained_formatting_trees_keep_anonymous_text_items_without_wrapping_twice",
+        "test_retained_formatting_trees_relayout_after_sizing_role_and_text_changes",
+        "test_retained_formatting_trees_rebuild_ineligible_content_and_retain_closed_svg"
+      ]
+    }
+  },
+  "case_executions": 783,
+  "new_case_executions": 54,
+  "tool_tests": 336,
+  "tool_pins": {
+    "/Users/alex/code/vox2/tools/bbc_browser_instructions.py": "df509808258e19b828aef1f03b4de5ebe62a63c5f8310e40f31080c586da0e60",
+    "/Users/alex/code/vox2/tools/bbc_browser_instructions_test.py": "a89895c72bf5984abc852bbcf2b5203e63125a8f0f84ae3c1b65c08b0958a98f",
+    "/Users/alex/code/vox2/tools/run_memory_bounded.py": "92f4b9bd169145e2cc19845ef0779cf39a5bf2e6b737cb11e608039cb0846979"
+  },
+  "implementation": "A pending inactive full document cascade covers pseudo-element and trailing-universal anchor targets as well as primary targets. Preserve repaint scheduling; keep active cascade batches, partial cascades and non-document roots on ordinary walks. Separate anchor-only control preserves the older primary shortcut. A regression oracle also finds a pre-existing tree-retention bug in every arm: newly generated pseudos can be omitted when an originating element retains its old principal box. Cached validation and fresh flow collection now reject DOM styles for box-generating pseudos. The regression warms an existing validation cache and checks both before/after, plus anchor child/sibling insert/remove behavior against a full tree rebuild.",
+  "failures": "Initial layout fixture compile requires explicit u32 CSSOM indices. Once compiled, all three arms fail the exact paint oracle: the retained tree omits newly generated ::before content. The reduced diagnostic reproduces the same failure in all arms. The layout fix passes both cached and uncached eligibility cases; no assertion is weakened. Final matrices use unchanged pinned sources, and all actual native case calls are verified. Initial failures remain in the archive and are not baseline exceptions.",
+  "qualifications": "64 CSS cases and 23 layout cases, each in default/no-GC/preallocation modes and candidate/anchor-walk/full-walk arms. No broad-suite pass or cadence reset. The native production comparison must contain both the correctness fix and the anchor shortcut before credit. The last valid cohort remains 115, with the strict 10% target unmet.",
+  "cleanup": {
+    "scope": "Completed benchmark-only private profiles and caches. Every parent capture has a recorded normal browser exit, and no running process arguments reference the directory. These fresh-per-launch ephemeral directories are excluded from durable evidence by design; their deletion earns no performance credit. Preserve all raw attempts, counters, PNGs, requests, scripts, guards, build receipts, source, fixtures, pixel references and installed/canonical browsers.",
+    "rows": [
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-brave/result.json",
+        "result_sha256": "9370ce53111120d172f0da538bdb1d0ef11c0ea74fb76d1e79f1f16dc884cedd",
+        "files": 336,
+        "bytes": 19457820,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-brave/result.json",
+        "result_sha256": "9370ce53111120d172f0da538bdb1d0ef11c0ea74fb76d1e79f1f16dc884cedd",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-control/result.json",
+        "result_sha256": "79a9151db4d300aca3ea70ee7f56bc28365956a9347b91b142ff30a31e08d8a3",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-control/result.json",
+        "result_sha256": "79a9151db4d300aca3ea70ee7f56bc28365956a9347b91b142ff30a31e08d8a3",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-vox/result.json",
+        "result_sha256": "d88df05bef9ef276d6766ac271ad460eaa57cad5a1142550e49eceedeffa83bc",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-1-vox/result.json",
+        "result_sha256": "d88df05bef9ef276d6766ac271ad460eaa57cad5a1142550e49eceedeffa83bc",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-brave/result.json",
+        "result_sha256": "6adb1eeb05000291b0ec5c8493db74b402ef9a85709853424d580d3c245307d0",
+        "files": 336,
+        "bytes": 19457822,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-brave/result.json",
+        "result_sha256": "6adb1eeb05000291b0ec5c8493db74b402ef9a85709853424d580d3c245307d0",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-control/result.json",
+        "result_sha256": "2bfafe30343a32924f0cf53e3d2cf18c6c3bbe3339cad705c715c75d0df633c6",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-control/result.json",
+        "result_sha256": "2bfafe30343a32924f0cf53e3d2cf18c6c3bbe3339cad705c715c75d0df633c6",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-vox/result.json",
+        "result_sha256": "ceb8e3d9a4024a2e45f90d22d5480491402115570bb73c62f738f75d0e2dfb9d",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-2-vox/result.json",
+        "result_sha256": "ceb8e3d9a4024a2e45f90d22d5480491402115570bb73c62f738f75d0e2dfb9d",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-brave/result.json",
+        "result_sha256": "8beb6c6fbf6ae12321cce97856377c8e17e38310585d57f0918949d74fc0f33c",
+        "files": 336,
+        "bytes": 19459135,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-brave/result.json",
+        "result_sha256": "8beb6c6fbf6ae12321cce97856377c8e17e38310585d57f0918949d74fc0f33c",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-control/result.json",
+        "result_sha256": "e6a5a7910243049e7c9ae747bdaf45c9847329b63ab5fb21e8a067fa09904181",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-control/result.json",
+        "result_sha256": "e6a5a7910243049e7c9ae747bdaf45c9847329b63ab5fb21e8a067fa09904181",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-vox/result.json",
+        "result_sha256": "685706476bec69d0e686a5d0cd1c2e4781cebd2928ecca5cc314aaedde3e8b8c",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-3-vox/result.json",
+        "result_sha256": "685706476bec69d0e686a5d0cd1c2e4781cebd2928ecca5cc314aaedde3e8b8c",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-brave/result.json",
+        "result_sha256": "a1aa48ae505810e7385cb5c9fd84c72fb8b1074432ec3e23bc3d4ca6604b8e2a",
+        "files": 336,
+        "bytes": 19457820,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-brave/result.json",
+        "result_sha256": "a1aa48ae505810e7385cb5c9fd84c72fb8b1074432ec3e23bc3d4ca6604b8e2a",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-control/result.json",
+        "result_sha256": "13be60c26dae6a44f0fabccfe893fa50bde9e0f0aed2db7fb966ca63646fb7da",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-control/result.json",
+        "result_sha256": "13be60c26dae6a44f0fabccfe893fa50bde9e0f0aed2db7fb966ca63646fb7da",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-vox/result.json",
+        "result_sha256": "d470d4db14a30e1b6bbb8267ba667ec73cb0331bc0ac1094b302a267fd405750",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-4-vox/result.json",
+        "result_sha256": "d470d4db14a30e1b6bbb8267ba667ec73cb0331bc0ac1094b302a267fd405750",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-brave/result.json",
+        "result_sha256": "7cd3b40ee66a06334e8798ee4103f815907dfddcc9e4fb0de3ada08686aecf4e",
+        "files": 336,
+        "bytes": 19457822,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-brave/result.json",
+        "result_sha256": "7cd3b40ee66a06334e8798ee4103f815907dfddcc9e4fb0de3ada08686aecf4e",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-control/result.json",
+        "result_sha256": "9d50246643011ed59219e09c6b25e61a2845c6e639ca629a6158fd9c96d9ee04",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-control/result.json",
+        "result_sha256": "9d50246643011ed59219e09c6b25e61a2845c6e639ca629a6158fd9c96d9ee04",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-vox/result.json",
+        "result_sha256": "bb1b0c17803d6e6be2cbe7bc3ce2741c1de92477bd0361902ca9dfb41e5c0e3e",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-5-vox/result.json",
+        "result_sha256": "bb1b0c17803d6e6be2cbe7bc3ce2741c1de92477bd0361902ca9dfb41e5c0e3e",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-brave/result.json",
+        "result_sha256": "bf4bb25f2b8f8d3c1e6342804734f7d8400b97fbcac492834ac65095aae8eb61",
+        "files": 336,
+        "bytes": 19457823,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-brave/result.json",
+        "result_sha256": "bf4bb25f2b8f8d3c1e6342804734f7d8400b97fbcac492834ac65095aae8eb61",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-control/result.json",
+        "result_sha256": "18d35091db810e5f0277d0242e94cb273dbfce0742cab4e68991703e880f305a",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-control/result.json",
+        "result_sha256": "18d35091db810e5f0277d0242e94cb273dbfce0742cab4e68991703e880f305a",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-vox/result.json",
+        "result_sha256": "dc983d82412876c78d54b78dd400b206ca09ae4106a9b3251db298fe2d10cd28",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-6-vox/result.json",
+        "result_sha256": "dc983d82412876c78d54b78dd400b206ca09ae4106a9b3251db298fe2d10cd28",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-brave/result.json",
+        "result_sha256": "6eda0f0a8b0d7af9fdee2615fd5b35107ee6cdb1b26444e833e27c96b2675b9c",
+        "files": 336,
+        "bytes": 19459134,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-brave/result.json",
+        "result_sha256": "6eda0f0a8b0d7af9fdee2615fd5b35107ee6cdb1b26444e833e27c96b2675b9c",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-control/result.json",
+        "result_sha256": "89a729d18620afd879d285dcf3eb45da4d059e2d963af0e9ff61ace1b136a369",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-control/result.json",
+        "result_sha256": "89a729d18620afd879d285dcf3eb45da4d059e2d963af0e9ff61ace1b136a369",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-vox/result.json",
+        "result_sha256": "374f002ec090e06e3685e00248617f642d136cdf2a85683a19492107bd90ec26",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/pair-7-vox/result.json",
+        "result_sha256": "374f002ec090e06e3685e00248617f642d136cdf2a85683a19492107bd90ec26",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-discovery-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-discovery-control/result.json",
+        "result_sha256": "7302e8433b77b927997fcf3c5904937f958d452478031ee19c85f76acdf9be5a",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-discovery-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-discovery-control/result.json",
+        "result_sha256": "7302e8433b77b927997fcf3c5904937f958d452478031ee19c85f76acdf9be5a",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-discovery-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-discovery-vox/result.json",
+        "result_sha256": "96605b8fa756dda91a4f9b19c26958bf9bc95edb18d5dcc398d6d0cc9c789212",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-discovery-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-discovery-vox/result.json",
+        "result_sha256": "96605b8fa756dda91a4f9b19c26958bf9bc95edb18d5dcc398d6d0cc9c789212",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-validation-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-validation-control/result.json",
+        "result_sha256": "326ab41c5f31a90287b49552da062b4b65588ebf6d16313df84feb9dc57e3a2c",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-validation-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-validation-control/result.json",
+        "result_sha256": "326ab41c5f31a90287b49552da062b4b65588ebf6d16313df84feb9dc57e3a2c",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-validation-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-validation-vox/result.json",
+        "result_sha256": "2e5a02120c4786886098b7951ffdffed216089cb568d8f8f1c98b5866517345f",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-validation-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/cohort115/cohort-115/runtime-validation-vox/result.json",
+        "result_sha256": "2e5a02120c4786886098b7951ffdffed216089cb568d8f8f1c98b5866517345f",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/production-01ba55f53219/captures/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/production-01ba55f53219/captures/pair-1-control/result.json",
+        "result_sha256": "247735e3bc8138960fb8c71f00e63f36643efbfad4e72829c0f98ed4818d0428",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/production-01ba55f53219/captures/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/production-01ba55f53219/captures/pair-1-control/result.json",
+        "result_sha256": "247735e3bc8138960fb8c71f00e63f36643efbfad4e72829c0f98ed4818d0428",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/production-01ba55f53219/captures/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/production-01ba55f53219/captures/pair-1-vox/result.json",
+        "result_sha256": "ca6e7e6f60ff099ecbfd377c39d54c41e9d765bd9ebfe80df87c482a977e265e",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/production-01ba55f53219/captures/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-svg-flow-trees-20261105-1910/production-01ba55f53219/captures/pair-1-vox/result.json",
+        "result_sha256": "ca6e7e6f60ff099ecbfd377c39d54c41e9d765bd9ebfe80df87c482a977e265e",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-brave/result.json",
+        "result_sha256": "cc75960471cd864024e5066059d8a62e9652299fe5aab81857be153f0fe493f8",
+        "files": 336,
+        "bytes": 19458003,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-brave/result.json",
+        "result_sha256": "cc75960471cd864024e5066059d8a62e9652299fe5aab81857be153f0fe493f8",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-control/result.json",
+        "result_sha256": "71bc2f2d61171e963aee7e70bb1ae2ffbab218b403fc6e82af6f75402fd14042",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-control/result.json",
+        "result_sha256": "71bc2f2d61171e963aee7e70bb1ae2ffbab218b403fc6e82af6f75402fd14042",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-vox/result.json",
+        "result_sha256": "a1b17406b37f9f22cf69c643274290ca1ffacb4dc74c5124bbc246796bb25817",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-1-vox/result.json",
+        "result_sha256": "a1b17406b37f9f22cf69c643274290ca1ffacb4dc74c5124bbc246796bb25817",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-brave/result.json",
+        "result_sha256": "8905c41228ecf456c3039d6487928e762f7134170cb7af1562f7f137e5fa61d7",
+        "files": 336,
+        "bytes": 19458002,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-brave/result.json",
+        "result_sha256": "8905c41228ecf456c3039d6487928e762f7134170cb7af1562f7f137e5fa61d7",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-control/result.json",
+        "result_sha256": "4a5e953b8d52f96931359614d2ac12df7b3e2c5cb0c63a4d0f60d831fb418331",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-control/result.json",
+        "result_sha256": "4a5e953b8d52f96931359614d2ac12df7b3e2c5cb0c63a4d0f60d831fb418331",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-vox/result.json",
+        "result_sha256": "778f0302120106dba276fe2a17b180b9bc94dead402814fc4b34d25e9395d94b",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-2-vox/result.json",
+        "result_sha256": "778f0302120106dba276fe2a17b180b9bc94dead402814fc4b34d25e9395d94b",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-brave/result.json",
+        "result_sha256": "09cd7c8bfd56835c221e9031ff7e4e27b9c5b566c16a82b3dc8934b70d3277d0",
+        "files": 336,
+        "bytes": 19458001,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-brave/result.json",
+        "result_sha256": "09cd7c8bfd56835c221e9031ff7e4e27b9c5b566c16a82b3dc8934b70d3277d0",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-control/result.json",
+        "result_sha256": "9d0669026f00fbe35f8c06f799ea8d6b1d561f8f0a46542a549416a66da05178",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-control/result.json",
+        "result_sha256": "9d0669026f00fbe35f8c06f799ea8d6b1d561f8f0a46542a549416a66da05178",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-vox/result.json",
+        "result_sha256": "aa93e293065b16ec39538094afd39b9bffbe2a27a0bb2414e542dc22a08fd408",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-3-vox/result.json",
+        "result_sha256": "aa93e293065b16ec39538094afd39b9bffbe2a27a0bb2414e542dc22a08fd408",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-brave/result.json",
+        "result_sha256": "b847b5672b05998765b31d6f18bcf087ff5dfcab9b8788d14bbbf65df0ad4511",
+        "files": 336,
+        "bytes": 19458001,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-brave/result.json",
+        "result_sha256": "b847b5672b05998765b31d6f18bcf087ff5dfcab9b8788d14bbbf65df0ad4511",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-control/result.json",
+        "result_sha256": "4e0d41f7a5e385075a1ea7df4c3cedd1e07110c9b353c41dab3ca724020dc80b",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-control/result.json",
+        "result_sha256": "4e0d41f7a5e385075a1ea7df4c3cedd1e07110c9b353c41dab3ca724020dc80b",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-vox/result.json",
+        "result_sha256": "20a87b30865e41b7ebf8556ec00771e1794590c890c780c2b541b7a3d4e300e0",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-4-vox/result.json",
+        "result_sha256": "20a87b30865e41b7ebf8556ec00771e1794590c890c780c2b541b7a3d4e300e0",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-brave/result.json",
+        "result_sha256": "70e4ea718d16ad8f2875af98b9d501f6579a75b85dafac1dfe3de658cd5284b6",
+        "files": 336,
+        "bytes": 19458002,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-brave/result.json",
+        "result_sha256": "70e4ea718d16ad8f2875af98b9d501f6579a75b85dafac1dfe3de658cd5284b6",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-control/result.json",
+        "result_sha256": "17fdab95fe880742d93957038bdb4d3597fc6f94bf92932371d025be67027414",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-control/result.json",
+        "result_sha256": "17fdab95fe880742d93957038bdb4d3597fc6f94bf92932371d025be67027414",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-vox/result.json",
+        "result_sha256": "062922e2c03486de53783eacd20ff0ac03036b67e7aa7245e92853ab6cad4242",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-5-vox/result.json",
+        "result_sha256": "062922e2c03486de53783eacd20ff0ac03036b67e7aa7245e92853ab6cad4242",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-brave/result.json",
+        "result_sha256": "151f26a41c8e5aa17f33e94febac90d84cce3657ad83fffa79c96e046ea74c01",
+        "files": 336,
+        "bytes": 19458002,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-brave/result.json",
+        "result_sha256": "151f26a41c8e5aa17f33e94febac90d84cce3657ad83fffa79c96e046ea74c01",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-control/result.json",
+        "result_sha256": "63a9f37274f489fbf57e0bcc0b3e38ff84ee7eafddbe940a27a5638653406c1b",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-control/result.json",
+        "result_sha256": "63a9f37274f489fbf57e0bcc0b3e38ff84ee7eafddbe940a27a5638653406c1b",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-vox/result.json",
+        "result_sha256": "cfcf9a972f9e73ce650f06d721f119a9d412c026ff68c276f9ba41d80db10ac4",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-6-vox/result.json",
+        "result_sha256": "cfcf9a972f9e73ce650f06d721f119a9d412c026ff68c276f9ba41d80db10ac4",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-brave/result.json",
+        "result_sha256": "6561eaa1a4dd3aea4864b6995fee0e372c679b304c6f934f3c15da7842b18187",
+        "files": 336,
+        "bytes": 19457999,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-brave/result.json",
+        "result_sha256": "6561eaa1a4dd3aea4864b6995fee0e372c679b304c6f934f3c15da7842b18187",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-control/result.json",
+        "result_sha256": "c82ff81c71007f036d70a7c4ee7c18f7cb79fd08c1f887f03ef3316b983d7472",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-control/result.json",
+        "result_sha256": "c82ff81c71007f036d70a7c4ee7c18f7cb79fd08c1f887f03ef3316b983d7472",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-vox/result.json",
+        "result_sha256": "e641cdbb51c0e3297288ece1eb9b696e2c14362ed128403060adddd8dcfced78",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/pair-7-vox/result.json",
+        "result_sha256": "e641cdbb51c0e3297288ece1eb9b696e2c14362ed128403060adddd8dcfced78",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-discovery-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-discovery-control/result.json",
+        "result_sha256": "f1a3157279d644a7a0b181f5802cb3b5d56a4bc82ff11a7616d30a96d0b5992d",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-discovery-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-discovery-control/result.json",
+        "result_sha256": "f1a3157279d644a7a0b181f5802cb3b5d56a4bc82ff11a7616d30a96d0b5992d",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-discovery-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-discovery-vox/result.json",
+        "result_sha256": "857254a3cbd17fa584cf729b2ca0773e454c3db5cafeebc4252b9ae8d941a0b5",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-discovery-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-discovery-vox/result.json",
+        "result_sha256": "857254a3cbd17fa584cf729b2ca0773e454c3db5cafeebc4252b9ae8d941a0b5",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-validation-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-validation-control/result.json",
+        "result_sha256": "f8a5e9fecf34cd11559074af58e1eecbcd698c8acdb8fb590bc9a289c9705a0a",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-validation-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-validation-control/result.json",
+        "result_sha256": "f8a5e9fecf34cd11559074af58e1eecbcd698c8acdb8fb590bc9a289c9705a0a",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-validation-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-validation-vox/result.json",
+        "result_sha256": "889ddb129d389ea4749f8010b488e2e8318bcb0af79f1deeebb75c7ba1258f97",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-validation-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/cohort114/cohort-114/runtime-validation-vox/result.json",
+        "result_sha256": "889ddb129d389ea4749f8010b488e2e8318bcb0af79f1deeebb75c7ba1258f97",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/native-preflight-diagnostic-name/production-ae288b903196/captures/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/native-preflight-diagnostic-name/production-ae288b903196/captures/pair-1-control/result.json",
+        "result_sha256": "c55adc3741906fd38d1db5bb7090ec921d7cfee4db4f3aaf4853be3625e8bf84",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/native-preflight-diagnostic-name/production-ae288b903196/captures/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/native-preflight-diagnostic-name/production-ae288b903196/captures/pair-1-control/result.json",
+        "result_sha256": "c55adc3741906fd38d1db5bb7090ec921d7cfee4db4f3aaf4853be3625e8bf84",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/native-preflight-diagnostic-name/production-ae288b903196/captures/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/native-preflight-diagnostic-name/production-ae288b903196/captures/pair-1-vox/result.json",
+        "result_sha256": "f6ea8999e294ccdf559f82bec258f5fd431226ff9c0eb08d594c3e9724db25d6",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/native-preflight-diagnostic-name/production-ae288b903196/captures/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/native-preflight-diagnostic-name/production-ae288b903196/captures/pair-1-vox/result.json",
+        "result_sha256": "f6ea8999e294ccdf559f82bec258f5fd431226ff9c0eb08d594c3e9724db25d6",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/operator-ae288b903196/captures/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/operator-ae288b903196/captures/pair-1-vox/result.json",
+        "result_sha256": "35b36cb875d8c5b16422a1ee8fcb7b005f59b3f73b7463c108fb993ef23f24e9",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/operator-ae288b903196/captures/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/operator-ae288b903196/captures/pair-1-vox/result.json",
+        "result_sha256": "35b36cb875d8c5b16422a1ee8fcb7b005f59b3f73b7463c108fb993ef23f24e9",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/production-ae288b903196/captures/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/production-ae288b903196/captures/pair-1-control/result.json",
+        "result_sha256": "e467066fdcc4b095f2ca61b666764ed40b7e4731bc74d8f8657f2cf0e17af95f",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/production-ae288b903196/captures/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/production-ae288b903196/captures/pair-1-control/result.json",
+        "result_sha256": "e467066fdcc4b095f2ca61b666764ed40b7e4731bc74d8f8657f2cf0e17af95f",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/production-ae288b903196/captures/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/production-ae288b903196/captures/pair-1-vox/result.json",
+        "result_sha256": "0cfe12101c0dfc532772d6d62c58bed2e12259be65a82495c62031758f73f8a6",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/production-ae288b903196/captures/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-exact-attribute-buckets-20261105-1830/production-ae288b903196/captures/pair-1-vox/result.json",
+        "result_sha256": "0cfe12101c0dfc532772d6d62c58bed2e12259be65a82495c62031758f73f8a6",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-brave/result.json",
+        "result_sha256": "0647e8e2f39bcecb8a38d54241e5840647674705cf2f54fdd025560024da3ee2",
+        "files": 336,
+        "bytes": 19457940,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-brave/result.json",
+        "result_sha256": "0647e8e2f39bcecb8a38d54241e5840647674705cf2f54fdd025560024da3ee2",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-control/result.json",
+        "result_sha256": "f366eb220998028cb13128388b6a8b448291d94fcf305a69073b40d16efb49c1",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-control/result.json",
+        "result_sha256": "f366eb220998028cb13128388b6a8b448291d94fcf305a69073b40d16efb49c1",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-vox/result.json",
+        "result_sha256": "d099c191bc195506c8c5c321f3f7bb139c5d1751710356f794723259f57d8c04",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-1-vox/result.json",
+        "result_sha256": "d099c191bc195506c8c5c321f3f7bb139c5d1751710356f794723259f57d8c04",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-brave/result.json",
+        "result_sha256": "123dab8e65933aae66a5d3721ff9a6264bb9543c019854aabc0af75b399dfe7f",
+        "files": 336,
+        "bytes": 19457942,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-brave/result.json",
+        "result_sha256": "123dab8e65933aae66a5d3721ff9a6264bb9543c019854aabc0af75b399dfe7f",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-control/result.json",
+        "result_sha256": "bd4bf8db7825f2ddf9379644ae97fbb4dd578b9d57206594e6a5e7ed00806248",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-control/result.json",
+        "result_sha256": "bd4bf8db7825f2ddf9379644ae97fbb4dd578b9d57206594e6a5e7ed00806248",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-vox/result.json",
+        "result_sha256": "5d5e649b0a8780bc604a7b339867c3ef0f50e0b5734c50ceb73bcfa6e985b89c",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-2-vox/result.json",
+        "result_sha256": "5d5e649b0a8780bc604a7b339867c3ef0f50e0b5734c50ceb73bcfa6e985b89c",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-brave/result.json",
+        "result_sha256": "b54a0980b8b56e72b2bc5a1a03b792f824e2cce710d62f08b420add9fa9318f4",
+        "files": 336,
+        "bytes": 19459257,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-brave/result.json",
+        "result_sha256": "b54a0980b8b56e72b2bc5a1a03b792f824e2cce710d62f08b420add9fa9318f4",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-control/result.json",
+        "result_sha256": "891344ef316ec8e8c4883b68140fed18f5931f515c7570a6e9efb38c8cde9086",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-control/result.json",
+        "result_sha256": "891344ef316ec8e8c4883b68140fed18f5931f515c7570a6e9efb38c8cde9086",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-vox/result.json",
+        "result_sha256": "c09d32ea0701806cdbefd4ee5024907e8ae34f985ca6c0c424c23043f010eddd",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-3-vox/result.json",
+        "result_sha256": "c09d32ea0701806cdbefd4ee5024907e8ae34f985ca6c0c424c23043f010eddd",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-brave/result.json",
+        "result_sha256": "e30c59e2a6579692df9157967560cc0c9ff1cb2545aad81b542fb5020a6d0a14",
+        "files": 336,
+        "bytes": 19457942,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-brave/result.json",
+        "result_sha256": "e30c59e2a6579692df9157967560cc0c9ff1cb2545aad81b542fb5020a6d0a14",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-control/result.json",
+        "result_sha256": "87f2aa2fb455cbef084046fecfa8ac5fa8f867ebff3cd5457cb5b9983b2090ad",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-control/result.json",
+        "result_sha256": "87f2aa2fb455cbef084046fecfa8ac5fa8f867ebff3cd5457cb5b9983b2090ad",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-vox/result.json",
+        "result_sha256": "6036103c49ffe2bdbb9c9c8b0a1a06ba0ef798f9381af26dbfbd0ab521d6115c",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-4-vox/result.json",
+        "result_sha256": "6036103c49ffe2bdbb9c9c8b0a1a06ba0ef798f9381af26dbfbd0ab521d6115c",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-brave/result.json",
+        "result_sha256": "47ea5cb25091284295667069e852516898562ac70bf1a3447e07829c637cccd1",
+        "files": 336,
+        "bytes": 19457940,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-brave/result.json",
+        "result_sha256": "47ea5cb25091284295667069e852516898562ac70bf1a3447e07829c637cccd1",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-control/result.json",
+        "result_sha256": "0506579e4c6aaf6dda72c2e705eac97aef37ccfedcd51678ed233f97d36e0849",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-control/result.json",
+        "result_sha256": "0506579e4c6aaf6dda72c2e705eac97aef37ccfedcd51678ed233f97d36e0849",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-vox/result.json",
+        "result_sha256": "8260629148cc5d839f04617db2bbe04cb9c80610bef4a8f307df365fa40ec44b",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-5-vox/result.json",
+        "result_sha256": "8260629148cc5d839f04617db2bbe04cb9c80610bef4a8f307df365fa40ec44b",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-brave/result.json",
+        "result_sha256": "3c0e59832c92d1a9eed2dd799f7d23343492ab83ddfee7a7830dc5fc51ba38e3",
+        "files": 336,
+        "bytes": 19458013,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-brave/result.json",
+        "result_sha256": "3c0e59832c92d1a9eed2dd799f7d23343492ab83ddfee7a7830dc5fc51ba38e3",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-control/result.json",
+        "result_sha256": "c22f907e70ba536e8ee3c19bf2db88d4b4158ccf4a6b3e38d2affaef6fe2095b",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-control/result.json",
+        "result_sha256": "c22f907e70ba536e8ee3c19bf2db88d4b4158ccf4a6b3e38d2affaef6fe2095b",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-vox/result.json",
+        "result_sha256": "361fa84b00c2a2574a1b7ebbc538e8a08c2423c086cbe4b2acf46b76a50ed536",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-6-vox/result.json",
+        "result_sha256": "361fa84b00c2a2574a1b7ebbc538e8a08c2423c086cbe4b2acf46b76a50ed536",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-brave/result.json",
+        "result_sha256": "2c51dbf3f22771e9e2678e44b2827533a16bfae8d651dcbb728efc4494eaeed2",
+        "files": 336,
+        "bytes": 19457940,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-brave/result.json",
+        "result_sha256": "2c51dbf3f22771e9e2678e44b2827533a16bfae8d651dcbb728efc4494eaeed2",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-control/result.json",
+        "result_sha256": "b3c27135be80a7dd54f52792f93640260072b70491801c1f1a778a51a2d1bc1f",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-control/result.json",
+        "result_sha256": "b3c27135be80a7dd54f52792f93640260072b70491801c1f1a778a51a2d1bc1f",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-vox/result.json",
+        "result_sha256": "5acefa3c8ab2120403618eb27471069c86a27529ede64465cf497e0424bd0efc",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/pair-7-vox/result.json",
+        "result_sha256": "5acefa3c8ab2120403618eb27471069c86a27529ede64465cf497e0424bd0efc",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-discovery-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-discovery-control/result.json",
+        "result_sha256": "10b70ba5ef2751e8d0f3bfac7cad95b2c41ec44015b4db8fa99e3376ab1a42df",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-discovery-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-discovery-control/result.json",
+        "result_sha256": "10b70ba5ef2751e8d0f3bfac7cad95b2c41ec44015b4db8fa99e3376ab1a42df",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-discovery-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-discovery-vox/result.json",
+        "result_sha256": "0eae79765996d6703d8e8802d4fa71a95f22638f6bfc9487bd00ec218349810d",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-discovery-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-discovery-vox/result.json",
+        "result_sha256": "0eae79765996d6703d8e8802d4fa71a95f22638f6bfc9487bd00ec218349810d",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-validation-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-validation-control/result.json",
+        "result_sha256": "531cf9aaed68841f739c1cca1ed7098ba427292150a43fc94a4c1b0ee6bdd077",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-validation-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-validation-control/result.json",
+        "result_sha256": "531cf9aaed68841f739c1cca1ed7098ba427292150a43fc94a4c1b0ee6bdd077",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-validation-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-validation-vox/result.json",
+        "result_sha256": "14db01e74e51cb5d1765c67f9773c22d85ec69dd077b6c8b793861e50c1fae22",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-validation-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/cohort112/cohort-112/runtime-validation-vox/result.json",
+        "result_sha256": "14db01e74e51cb5d1765c67f9773c22d85ec69dd077b6c8b793861e50c1fae22",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/production-1e77ee4556ed/captures/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/production-1e77ee4556ed/captures/pair-1-control/result.json",
+        "result_sha256": "5423f901d6869468496057338ac04ef05016c715934b5481f2883d7fd72c2c18",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/production-1e77ee4556ed/captures/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/production-1e77ee4556ed/captures/pair-1-control/result.json",
+        "result_sha256": "5423f901d6869468496057338ac04ef05016c715934b5481f2883d7fd72c2c18",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/production-1e77ee4556ed/captures/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/production-1e77ee4556ed/captures/pair-1-vox/result.json",
+        "result_sha256": "9ffa3248ac76d840a290b2e32448a436dbba47596fa4c2b75c0907b333da7139",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/production-1e77ee4556ed/captures/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/production-1e77ee4556ed/captures/pair-1-vox/result.json",
+        "result_sha256": "9ffa3248ac76d840a290b2e32448a436dbba47596fa4c2b75c0907b333da7139",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-brave/result.json",
+        "result_sha256": "2a7b210e209162be7c618feeed1ead32d5acadf532c643814cbe0b8426cf0c45",
+        "files": 336,
+        "bytes": 19456711,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-brave/result.json",
+        "result_sha256": "2a7b210e209162be7c618feeed1ead32d5acadf532c643814cbe0b8426cf0c45",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-control/result.json",
+        "result_sha256": "98d3833e19a3ae80c2648babf4b14e53a271b384e68453a7b4462ab27c2b44a4",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-control/result.json",
+        "result_sha256": "98d3833e19a3ae80c2648babf4b14e53a271b384e68453a7b4462ab27c2b44a4",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-vox/result.json",
+        "result_sha256": "0430380c40ac4fe9d1a805ff67f2a625856a13ade68d29ed67a93d34514ed254",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-1-vox/result.json",
+        "result_sha256": "0430380c40ac4fe9d1a805ff67f2a625856a13ade68d29ed67a93d34514ed254",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-brave/result.json",
+        "result_sha256": "d53a0211bcf1defaf660df1c405b595737505d854ff82f79302e02d6527f7934",
+        "files": 336,
+        "bytes": 19457955,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-brave/result.json",
+        "result_sha256": "d53a0211bcf1defaf660df1c405b595737505d854ff82f79302e02d6527f7934",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-control/result.json",
+        "result_sha256": "85755bd1cf4e835da5b7741f0563f1ceaabbc3fd299ecd1c22b8d0467e9a6837",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-control/result.json",
+        "result_sha256": "85755bd1cf4e835da5b7741f0563f1ceaabbc3fd299ecd1c22b8d0467e9a6837",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-vox/result.json",
+        "result_sha256": "ad27c9110c5635b4efca0acad65b37d6ba93d18be8003b63daddbf36dfd94535",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-2-vox/result.json",
+        "result_sha256": "ad27c9110c5635b4efca0acad65b37d6ba93d18be8003b63daddbf36dfd94535",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-brave/result.json",
+        "result_sha256": "f09878a31d04e683522d9560716d2fc6ce5d3e06a6d3dc0d76ba6bd97fb51e40",
+        "files": 336,
+        "bytes": 19457882,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-brave/result.json",
+        "result_sha256": "f09878a31d04e683522d9560716d2fc6ce5d3e06a6d3dc0d76ba6bd97fb51e40",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-control/result.json",
+        "result_sha256": "1ed616c20f037bc6bd3b0dd8bd87e34a322d7125457d06336179372ff3ba6197",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-control/result.json",
+        "result_sha256": "1ed616c20f037bc6bd3b0dd8bd87e34a322d7125457d06336179372ff3ba6197",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-vox/result.json",
+        "result_sha256": "f2026241313c67094aa4c32ff9768ec9971482c48cd98a12d0c044df84ad7649",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-3-vox/result.json",
+        "result_sha256": "f2026241313c67094aa4c32ff9768ec9971482c48cd98a12d0c044df84ad7649",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-brave/result.json",
+        "result_sha256": "696e46907bc0cd058e4c66f50c8af1170f08da9c20679779148e26b5e95a428f",
+        "files": 336,
+        "bytes": 19480374,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-brave/result.json",
+        "result_sha256": "696e46907bc0cd058e4c66f50c8af1170f08da9c20679779148e26b5e95a428f",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-control/result.json",
+        "result_sha256": "9337dfe560305ecb5262fa77c57b3227dda779567b2da321752715d22ecbe584",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-control/result.json",
+        "result_sha256": "9337dfe560305ecb5262fa77c57b3227dda779567b2da321752715d22ecbe584",
+        "files": 371,
+        "bytes": 4331187,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-vox/result.json",
+        "result_sha256": "092a479320bd7e7fa7ba3e36e820b3fcf64e8d00e21bb1b157d9604a99a00eb7",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-4-vox/result.json",
+        "result_sha256": "092a479320bd7e7fa7ba3e36e820b3fcf64e8d00e21bb1b157d9604a99a00eb7",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-brave/result.json",
+        "result_sha256": "cc64712efc13643322f4c07cd0390613a91b1e67f6eb3c99e89bb76b735a98fc",
+        "files": 336,
+        "bytes": 19480377,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-brave/result.json",
+        "result_sha256": "cc64712efc13643322f4c07cd0390613a91b1e67f6eb3c99e89bb76b735a98fc",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-control/result.json",
+        "result_sha256": "083d43a2d2e3a6de448b93436951a2fe08e499b9d664d319d4d865f7a30ea5ca",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-control/result.json",
+        "result_sha256": "083d43a2d2e3a6de448b93436951a2fe08e499b9d664d319d4d865f7a30ea5ca",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-vox/result.json",
+        "result_sha256": "632995e348e1af064ec86a2c2351cbba052ae66d7f2eebeac715a19e6936348a",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-5-vox/result.json",
+        "result_sha256": "632995e348e1af064ec86a2c2351cbba052ae66d7f2eebeac715a19e6936348a",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-brave/result.json",
+        "result_sha256": "a196d817932e44ccb43bb916cc58a34200dcd951ca89069bc64adbd804ee3f5c",
+        "files": 336,
+        "bytes": 19457953,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-brave/result.json",
+        "result_sha256": "a196d817932e44ccb43bb916cc58a34200dcd951ca89069bc64adbd804ee3f5c",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-control/result.json",
+        "result_sha256": "c71eb71a6d405aafdccd8f1ab09f27538151a7443c83a8100503ba72fa13eb08",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-control/result.json",
+        "result_sha256": "c71eb71a6d405aafdccd8f1ab09f27538151a7443c83a8100503ba72fa13eb08",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-vox/result.json",
+        "result_sha256": "ce55f61105f9ea83b30fb527feabf5ff861379a09d306d9e901810d5090aa970",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-6-vox/result.json",
+        "result_sha256": "ce55f61105f9ea83b30fb527feabf5ff861379a09d306d9e901810d5090aa970",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-brave/result.json",
+        "result_sha256": "c4fe08ea669794257b08e71d95998b6804dece928b44c5eb7f77eea65b4b7c1e",
+        "files": 336,
+        "bytes": 19457952,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-brave/result.json",
+        "result_sha256": "c4fe08ea669794257b08e71d95998b6804dece928b44c5eb7f77eea65b4b7c1e",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-control/result.json",
+        "result_sha256": "5805ed9574dcc4ba224c360989c195eec9f3c736c6dbb07a18bfb299a2da5b35",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-control/result.json",
+        "result_sha256": "5805ed9574dcc4ba224c360989c195eec9f3c736c6dbb07a18bfb299a2da5b35",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-vox/result.json",
+        "result_sha256": "625f4bcff8c3023a4ca8dbffb3050d7072ea617265f9b4bb34f3244c29c91dfe",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/pair-7-vox/result.json",
+        "result_sha256": "625f4bcff8c3023a4ca8dbffb3050d7072ea617265f9b4bb34f3244c29c91dfe",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-discovery-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-discovery-control/result.json",
+        "result_sha256": "f10962b22b253e23879c1f8a29748c21af9e1af2b17e95ad82768897427b5907",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-discovery-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-discovery-control/result.json",
+        "result_sha256": "f10962b22b253e23879c1f8a29748c21af9e1af2b17e95ad82768897427b5907",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-discovery-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-discovery-vox/result.json",
+        "result_sha256": "16b74f93e1d9fba240fbf3ba7739596c32286c3d5fa2b6bab58ab413816ad6cb",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-discovery-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-discovery-vox/result.json",
+        "result_sha256": "16b74f93e1d9fba240fbf3ba7739596c32286c3d5fa2b6bab58ab413816ad6cb",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-validation-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-validation-control/result.json",
+        "result_sha256": "2a13ac6a4a5e5f39e8c91bb9d5337da0a7cdadb4b9aea7bcfef74de61c2e6e02",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-validation-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-validation-control/result.json",
+        "result_sha256": "2a13ac6a4a5e5f39e8c91bb9d5337da0a7cdadb4b9aea7bcfef74de61c2e6e02",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-validation-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-validation-vox/result.json",
+        "result_sha256": "f3f658bcf7844b541aa810a8c61e784d065ad5dc4752e747063e8f89787b7652",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-validation-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/cohort105/cohort-105/runtime-validation-vox/result.json",
+        "result_sha256": "f3f658bcf7844b541aa810a8c61e784d065ad5dc4752e747063e8f89787b7652",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/production-f2762ca3223b/captures/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/production-f2762ca3223b/captures/pair-1-control/result.json",
+        "result_sha256": "9d7466c0001a12b9d98bd5a9b9ed71354c74c3de01ba8b7d34205eb8c34777f2",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/production-f2762ca3223b/captures/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/production-f2762ca3223b/captures/pair-1-control/result.json",
+        "result_sha256": "9d7466c0001a12b9d98bd5a9b9ed71354c74c3de01ba8b7d34205eb8c34777f2",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/production-f2762ca3223b/captures/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/production-f2762ca3223b/captures/pair-1-vox/result.json",
+        "result_sha256": "1d178c40a5c91afc2d26ddc92e46228de0166fa05cbd9bbf495672f3453faea6",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/production-f2762ca3223b/captures/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-frame-task-layout-20261105-1000/production-f2762ca3223b/captures/pair-1-vox/result.json",
+        "result_sha256": "1d178c40a5c91afc2d26ddc92e46228de0166fa05cbd9bbf495672f3453faea6",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-v-profile-thread-cpu-20261105-2010/sealed-baseline/page-coarse-1/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-v-profile-thread-cpu-20261105-2010/sealed-baseline/page-coarse-1/result.json",
+        "result_sha256": "fd371fa326a86bf231565d65ecff4795990bfdfc99727dff86265aae87e04481",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-v-profile-thread-cpu-20261105-2010/sealed-baseline/page-coarse-1/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-v-profile-thread-cpu-20261105-2010/sealed-baseline/page-coarse-1/result.json",
+        "result_sha256": "fd371fa326a86bf231565d65ecff4795990bfdfc99727dff86265aae87e04481",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      }
+    ],
+    "unix": 1793899489.1316879,
+    "directories_deleted": 224,
+    "bytes_reclaimed": 915020816,
+    "completed_unix": 1793899493.8679621
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+    "bytes": 51579677,
+    "sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+    "members": 242,
+    "all_members_verified": true
+  },
+  "unix": 1793899849.4968479,
+  "post_archive_cleanup": {
+    "scope": "Completed generated C/preprocessed/compiler object inputs only. Every member verified against its durable BBC evidence archive before deletion. Browser bundles, binaries, raw counters, PNGs, references, fixtures, source and canonical tools retained.",
+    "rows": {
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "default.c",
+        "bytes": 15337549,
+        "sha256": "0337b5aad8e5d7be31dbb7a0536ac983975456b9048a8e2989e2ae923b85f547",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/layout-diagnostic/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "layout-diagnostic/default.c",
+        "bytes": 26279829,
+        "sha256": "99cd5062c63f19258b9853ade49563053071bc0e1600959b78aeebd6253be922",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/layout-final/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "layout-final/default.c",
+        "bytes": 27316517,
+        "sha256": "1c254f64fbbd3c67514d68fe4d6c2760c5ac2e68ce1f8e977bc14ab43482530a",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/layout-final/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "layout-final/none.c",
+        "bytes": 27307295,
+        "sha256": "ad73b5f5a4cbbefdd8186f169c9aa272d8764638ac832d470d81d3208615dc80",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/layout-final/prealloc.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "layout-final/prealloc.c",
+        "bytes": 27584947,
+        "sha256": "94eb855317632410f26d77a68327086133f78fed565d6abf57085ce2615fc305",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/layout-pseudo-fix/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "layout-pseudo-fix/default.c",
+        "bytes": 27310586,
+        "sha256": "eea94c74670163327973b04a3c3233b255de2b16a3723b377de68150e98aa79d",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/layout-pseudo-fix/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "layout-pseudo-fix/none.c",
+        "bytes": 27301369,
+        "sha256": "5a4ba3dfd726b683cef30481fca53cbc629ad2d551f6937edb61c8b70c656280",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/layout-pseudo-fix/prealloc.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "layout-pseudo-fix/prealloc.c",
+        "bytes": 27579026,
+        "sha256": "e3eab6d990bf6b88b8db303b3635441619f956c4b5f038d1bc666f60fb92b898",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/layout-refined/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "layout-refined/default.c",
+        "bytes": 27208696,
+        "sha256": "3a2799c1cb817af94252ea586f2d14966f9d0d7ce9040150aa781628707e11fb",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/layout-refined/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "layout-refined/none.c",
+        "bytes": 27199496,
+        "sha256": "6213e3e3280b3f053de0212b028b7c940ebf91ffa2523bec279dd2d27ec916f9",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/layout-refined/prealloc.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "layout-refined/prealloc.c",
+        "bytes": 27477118,
+        "sha256": "adc7ea54765cebcbfdc33c6d688949bd57233d799b3d5f03ec6eab0a2877c5bc",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "none.c",
+        "bytes": 15328439,
+        "sha256": "4d0638a7b83e8702c1905d1df54268e9505030d827d8b254dbf05be4fce8e45d",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/prealloc.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-focus-20261105.tar.gz",
+        "archive_sha256": "836df81e14badb15c10bfa8efd1751fa9cd1f8660da98b5b72a0816bf6baf6ac",
+        "member": "prealloc.c",
+        "bytes": 15584431,
+        "sha256": "4b0554c998bf78ed380f6d76e11f81ca6858c381b9a6d776ef250f183e7ce28d",
+        "verified": true
+      }
+    },
+    "verified_before_deletion": true,
+    "unix": 1793899952.664675,
+    "files_deleted": 13,
+    "bytes_reclaimed": 318815298,
+    "completed_unix": 1793899953.3781078
+  }
+}
