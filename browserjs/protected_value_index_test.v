@@ -28,7 +28,7 @@ fn test_indexed_protections_keep_duplicate_roots_and_moved_positions() {
 	runtime.release_javascript_value(reader)
 	runtime.release_javascript_value(b)
 	assert runtime.protected_values_.len == baseline
-	if !disable_protected_value_index {
+	if !disable_protected_value_index && retain_protected_value_array_index {
 		assert runtime.protected_value_positions_.len == baseline
 		for value, indices in runtime.protected_value_indices_ {
 			for position, index in indices {
@@ -37,10 +37,19 @@ fn test_indexed_protections_keep_duplicate_roots_and_moved_positions() {
 			}
 		}
 	}
+	if !disable_protected_value_index && !retain_protected_value_array_index {
+		assert runtime.protected_value_links_.len == baseline
+		for value, tail in runtime.protected_value_tails_ {
+			assert runtime.protected_values_[tail] == value
+			assert runtime.protected_value_links_[tail].next == -1
+		}
+	}
 	runtime.close()
 	assert runtime.protected_values_.len == 0
 	assert runtime.protected_value_indices_.len == 0
 	assert runtime.protected_value_positions_.len == 0
+	assert runtime.protected_value_tails_.len == 0
+	assert runtime.protected_value_links_.len == 0
 	runtime.release_javascript_value(b)
 }
 

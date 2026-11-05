@@ -9,6 +9,10 @@ const protected_value_index_diagnostics = os.getenv('VOX_PROTECTED_VALUE_INDEX_D
 // repeatedly. The reverse position lets swap removal update the moved entry
 // without scanning its handle's other protections.
 fn (mut runtime Runtime) remember_protected_value(value voidptr) {
+	if !disable_protected_value_index && !retain_protected_value_array_index {
+		runtime.remember_linked_protected_value(value)
+		return
+	}
 	if !disable_protected_value_index {
 		mut indices := runtime.protected_value_indices_[value]
 		runtime.protected_value_positions_ << indices.len
@@ -27,6 +31,9 @@ fn (mut runtime Runtime) forget_protected_value(value voidptr) bool {
 			}
 		}
 		return false
+	}
+	if !retain_protected_value_array_index {
+		return runtime.forget_linked_protected_value(value)
 	}
 	mut indices := runtime.protected_value_indices_[value] or { return false }
 	index := indices.pop()

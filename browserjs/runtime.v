@@ -74,6 +74,9 @@ mut:
 	protected_values_         []voidptr
 	protected_value_indices_  map[voidptr][]int
 	protected_value_positions_ []int
+	protected_value_tails_     map[voidptr]int
+	protected_value_links_     []ProtectedValueLink
+	protected_value_links_reported_ bool
 	value_call_intrinsic_     voidptr
 	promise_observe_intrinsic_ voidptr
 	value_error_intrinsic_     voidptr
@@ -393,6 +396,8 @@ pub fn (mut runtime Runtime) close() {
 			runtime.protected_values_ = []
 			runtime.protected_value_indices_.clear()
 			runtime.protected_value_positions_ = []
+			runtime.protected_value_tails_.clear()
+			runtime.protected_value_links_ = []
 			release_javascript_core_context(runtime.context)
 			runtime.context = unsafe { nil }
 		}
