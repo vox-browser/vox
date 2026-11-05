@@ -3413,3 +3413,52 @@ checks all eight render captures and confirms the absent candidate markers.
 Whole-page instruction credit and the broad cadence remain zero. The
 5%-below-Brave target remains unmet; the original frozen SOCKS capture,
 author scripts, settle period and references are unchanged.
+
+### Optimized selected-function instruction diagnostic (2026-11-05)
+
+A fresh selected-function diagnostic uses ordinary `-prod` V source conditions,
+the explicit production runtime overlay, C `-O3` with inlining threshold 1500,
+and a single generated C unit with ThinLTO. It remains distinct from the shared
+33-unit production bundle. One nonblocking publication lease pins native
+libraries across code generation, sealing, compilation and capture. No
+production build, browser app copy or source-tree copy is requested.
+
+The initial attempt runs out of disk space during preprocessing, then also
+encounters ENOSPC while reporting and archiving the failure. It launches no
+browser. A streaming archival follow-up verifies each complete generated or
+partial preprocessing file against a durable gzip before removing its
+duplicate, reclaiming 344,772,016 bytes. All failed commands and the first
+incomplete archive remain preserved in the
+[rejected-attempt receipt](performance/chatgpt-selected-native-profile-r1-rejected-20261105.json).
+
+The second attempt compiles and captures successfully under the 12 GiB guard,
+peaking at 9,272,672,256 sampled RSS bytes over 302.12 seconds. Its signed
+executable is
+`71316e5e1c63380dcbe9428ac934786fdb14345ef7656135f4bfacb3b3aadba5`.
+The thirty-second frozen-page capture passes JSC bootstrap, the complete
+content/button audit and every unchanged reference pixel. All runtime input
+hashes remain stable; browser and guard exits are zero. Selected counters
+record 64,822,160,774 process instructions with zero faults and one explicit
+partial root frame.
+
+| Selected self scope | Calls | Instrumented process instructions |
+| --- | ---: | ---: |
+| Animation style callback | 3,443 | 9,836,119,633 |
+| Keyframe value computation | 114,650 | 9,613,578,846 |
+| Document layout update | 6,910 | 8,894,694,618 |
+| Module delivery | 288 | 8,812,667,606 |
+| Preload/display eligibility | 518 | 4,902,838,828 |
+| Native effect-layer completion | 156 | 3,180,481,447 |
+| Rounded-rectangle native bridge | 103 | 694,147,899 |
+| Contoured-box native bridge | 36 | 531,364,762 |
+
+These are investigation leads. Counters include other process threads and
+instrumentation; self subtracts only selected children, recursive inclusive
+totals overlap, and module initialization precedes the gate. The standalone
+adblock self-worker differs from production's minimal helper. Native elapsed
+time also includes waits. No unprofiled speedup or Brave acceptance follows.
+The [selected-profile receipt](performance/chatgpt-selected-native-profile-20261105.json)
+retains source seals, raw rows, commands, actual exits, audits and PNGs.
+It also authenticates 399,053,950 bytes of generated C/preprocessing output
+before deleting the duplicates. Profile credit and the broad cadence remain
+zero; the 5%-below-Brave target remains unmet.

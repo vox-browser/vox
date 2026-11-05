@@ -1,0 +1,118 @@
+{
+  "status": "rejected-before-browser",
+  "instruction_credit": 0,
+  "controller": {
+    "started_unix": 1793901993.927377,
+    "complete": false,
+    "diagnostic": true,
+    "acceptance": false,
+    "instruction_credit": 0,
+    "manual_production_builds": 0,
+    "steps": [
+      {
+        "step": "build",
+        "command": [
+          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/Users/alex/code/vox2/Build/chatgpt-selected-native-profile-20261105-r1/build.py"
+        ],
+        "exit": 1
+      }
+    ],
+    "production_before": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "0da65c55cc21a43f1e5ed5b83fb7e203d6d859be44caba4197bc4016354ccefc",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "b7b9b9f43488cc76139f241c418aa156c6df69b82ded21bc2f544497ec91c1ae",
+        "dirty": true,
+        "head": "09893376acf5f46ae12933ea2639589bfe8fbbf2",
+        "repository_sha256": "2859c1d2dbe372bc819f16b9d85f97aea315833cb0430fa638c7462f916f1c46"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "09893376acf5f46ae12933ea2639589bfe8fbbf2",
+        "id": "3bb28833956f444c9b8c5881cacda7bf"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "b7b9b9f43488cc76139f241c418aa156c6df69b82ded21bc2f544497ec91c1ae",
+        "dirty": true,
+        "head": "09893376acf5f46ae12933ea2639589bfe8fbbf2",
+        "repository_sha256": "31497900eb66ac09859e86a095decfa3f701c7169e342916916997f384c8cb8a"
+      }
+    },
+    "error": "build failed",
+    "finished_unix": 1793902015.3079019,
+    "production_after": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "0da65c55cc21a43f1e5ed5b83fb7e203d6d859be44caba4197bc4016354ccefc",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "b7b9b9f43488cc76139f241c418aa156c6df69b82ded21bc2f544497ec91c1ae",
+        "dirty": true,
+        "head": "09893376acf5f46ae12933ea2639589bfe8fbbf2",
+        "repository_sha256": "2859c1d2dbe372bc819f16b9d85f97aea315833cb0430fa638c7462f916f1c46"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "09893376acf5f46ae12933ea2639589bfe8fbbf2",
+        "id": "3bb28833956f444c9b8c5881cacda7bf"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "b7b9b9f43488cc76139f241c418aa156c6df69b82ded21bc2f544497ec91c1ae",
+        "dirty": true,
+        "head": "09893376acf5f46ae12933ea2639589bfe8fbbf2",
+        "repository_sha256": "31497900eb66ac09859e86a095decfa3f701c7169e342916916997f384c8cb8a"
+      }
+    }
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-selected-native-profile-20261105-r1/controller.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 6119768064,
+    "elapsed_seconds": 21.44747325,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "metadata_archive": {
+    "path": "docs/performance/chatgpt-selected-native-profile-r1-rejected-20261105-evidence.zip",
+    "sha256": "d195de29ce911449b4c3b3177fd15881f81da9a0cf51e2c84a079b6ba640a459",
+    "bytes": 46334
+  },
+  "removed_verified_generated_duplicates": [
+    {
+      "path": "Build/chatgpt-selected-native-profile-20261105-r1/Vox.c",
+      "sha256": "df663c315b0959b903ea5d1a19fddb6a4767a7adf4e2a140d5f028ec5cb83fa0",
+      "bytes": 190127536,
+      "archive": "docs/performance/chatgpt-selected-native-profile-r1-generated-0-20261105.gz",
+      "archive_sha256": "3d2d930161ec94043577c0d64664d7a2999c68f8f61f5ca88ab279d637d369a0",
+      "archive_bytes": 22348135
+    },
+    {
+      "path": "Build/chatgpt-selected-native-profile-20261105-r1/frozen-compiler-inputs/0-Vox.c-e0a93c70.i.tmp",
+      "sha256": "99743837cf03780e760cbbeb442cc4037ff42ad0b59457a5ac26a8d1143484f8",
+      "bytes": 154644480,
+      "archive": "docs/performance/chatgpt-selected-native-profile-r1-generated-1-20261105.gz",
+      "archive_sha256": "1d7941580705003194e723287e2f4b08ab8c111bb2681e78f76a39ada1fb248a",
+      "archive_bytes": 17259018
+    }
+  ],
+  "qualification": "Generation succeeded; preprocessing and its error reporting encountered ENOSPC, as did the initial archival attempt. No browser or instruction counters ran. Failed metadata and the first incomplete archive are retained. Follow-up streams each exact generated file to its own gzip, verifies decompressed bytes/hash plus compressed hash, then removes that duplicate before handling the next. No canonical source, app, library or other session artifact is removed."
+}
