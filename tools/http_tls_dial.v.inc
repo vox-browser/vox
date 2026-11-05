@@ -14,8 +14,7 @@ fn vox_http_dial_tls(req &Request, host string, port int, alpn []string) !&ssl.S
         connection.dial(host, port)!
         return connection
     } $else {
-        address := if host.contains(':') { '[${host}]:${port}' } else { '${host}:${port}' }
-        mut tcp := net.dial_tcp(address)!
+        mut tcp := vox_http_dial_tcp(req, host, port)!
         mut transferred := false
         defer {
             if !transferred { tcp.close() or {} }
@@ -43,4 +42,31 @@ fn vox_http_dial_tls(req &Request, host string, port int, alpn []string) !&ssl.S
         transferred = true
         return connection
     }
+}
+
+// Pooled connections to an origin open their TCP stream through the request's
+// proxy. SOCKS5 and HTTP CONNECT both tunnel bytes end to end, so TLS, ALPN and
+// HTTP/1 or HTTP/2 framing inside the tunnel are those of a direct connection.
+fn vox_http_dial_tcp(req &Request, host string, port int) !&net.TcpConn {
+    address := if host.contains(':') { '[${host}]:${port}' } else { '${host}:${port}' }
+    if req.proxy != unsafe { nil } {
+        return req.proxy.connect_tcp(address)!
+    }
+    return net.dial_tcp(address)!
+}
+
+// The OpenSSL and Windows TLS backends dial their own sockets, so proxied
+// requests there keep V's one-shot proxy path.
+fn vox_transport_tunnels_proxy() bool {
+    $if use_openssl ? {
+        return false
+    }
+    $if windows {
+        return false
+    }
+    return true
+}
+
+fn vox_transport_proxy_key(req &Request) string {
+    return if req.proxy == unsafe { nil } { '' } else { req.proxy.str() }
 }

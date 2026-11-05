@@ -135,6 +135,9 @@ fn test_socks_proxy_carries_navigation_redirects_binary_data_and_verified_tls() 
 	before_redirects := json2.decode[ScopedProxyStats](os.read_file(os.join_path(directory, 'stats.json'))!)!.proxy_hosts.len
 	for redirect in ['${address}/proxy-to-direct',
 		'http://127.0.0.1:${ports.http_port}/direct-to-proxy'] {
+		// Proxied requests share pooled tunnels; start each redirect chain
+		// without one so every proxied hop is observed as its own tunnel.
+		http.close_idle_connections()
 		assert get(adblock.Request{ url: redirect, source_url: redirect, request_type: 'main_frame' }, ca)!.response.status_code == 200
 	}
 	after_redirects := json2.decode[ScopedProxyStats](os.read_file(os.join_path(directory, 'stats.json'))!)!.proxy_hosts
@@ -158,4 +161,117 @@ fn test_socks_proxy_carries_navigation_redirects_binary_data_and_verified_tls() 
 	os.rename_dir(external_save, profile)!
 	assert get(adblock.Request{url: '${address}/binary', source_url: address, request_type: 'main_frame'}, ca)!.response.body.bytes() == [u8(0), 1, 127, 128, 255, 0, 42]
 	http.close_idle_connections()
+}
+
+struct PooledProxyFixturePorts {
+	proxy_port int
+	h2_port    int
+	h1_port    int
+}
+
+struct PooledProxyStats {
+	handshakes     map[string]int
+	maximum_active int
+	proxy_hosts    []string
+}
+
+fn pooled_proxy_stats(directory string) PooledProxyStats {
+	return json2.decode[PooledProxyStats](os.read_file(os.join_path(directory, 'stats.json')) or {
+		panic(err)
+	}) or { panic(err) }
+}
+
+fn pooled_proxy_get(address string, ca string, replies chan string) {
+	response := get(adblock.Request{ url: address, source_url: address, request_type: 'image' },
+		ca) or {
+		replies <- err.msg()
+		return
+	}
+	replies <- if response.response.body.bytes() == [u8(0), 1, 127, 128, 255, 0, 42] { '' } else { 'body' }
+}
+
+// Pages with hundreds of subresources must not pay a SOCKS tunnel and TLS
+// handshake per request: proxied requests share pooled HTTP/2 and keep-alive
+// HTTP/1 connections inside one tunnel per origin, like direct requests.
+fn test_socks_proxy_reuses_pooled_tunnels_per_origin_and_proxy() {
+	node := os.find_abs_path_of_executable('node') or { return }
+	openssl := os.find_abs_path_of_executable('openssl') or { return }
+	directory := os.join_path(os.temp_dir(), 'vox-pooled-proxy-${os.getpid()}-${time.sys_mono_now()}')
+	os.mkdir_all(directory)!
+	mut process := os.new_process(node)
+	process.set_args([os.join_path(os.dir(@FILE), 'fixtures/http2_server.mjs'), directory, openssl])
+	process.set_redirect_stdio()
+	process.run()
+	defer {
+		http.close_idle_connections()
+		process.signal_kill()
+		process.wait()
+		process.close()
+		os.rmdir_all(directory) or {}
+	}
+	ready := os.join_path(directory, 'ready.json')
+	for _ in 0 .. 1000 {
+		if os.exists(ready) { break }
+		if !process.is_alive() { panic(process.stderr_slurp()) }
+		time.sleep(10 * time.millisecond)
+	}
+	ports := json2.decode[PooledProxyFixturePorts](os.read_file(ready)!)!
+	mut previous := map[string]string{}
+	for key in ['VOX_PROXY', 'NO_PROXY', 'no_proxy'] {
+		if value := os.getenv_opt(key) { previous[key] = value }
+	}
+	defer {
+		for key in ['VOX_PROXY', 'NO_PROXY', 'no_proxy'] {
+			if key in previous { os.setenv(key, previous[key], true) } else { os.unsetenv(key) }
+		}
+	}
+	os.setenv('VOX_PROXY', 'socks5h://127.0.0.1:${ports.proxy_port}', true)
+	os.setenv('NO_PROXY', '', true)
+	os.setenv('no_proxy', '', true)
+	http.close_idle_connections()
+	ca := os.join_path(directory, 'ca.pem')
+	h2 := 'https://127.0.0.1:${ports.h2_port}'
+	replies := chan string{cap: 6}
+	for index in 0 .. 6 { spawn pooled_proxy_get('${h2}/pooled/${index}', ca, replies) }
+	for _ in 0 .. 6 {
+		reply := <-replies
+		assert reply == ''
+	}
+	assert pooled_proxy_get_sequentially('${h2}/binary', ca, 3)
+	multiplexed := pooled_proxy_stats(directory)
+	assert multiplexed.handshakes['h2'] == 1
+	assert multiplexed.maximum_active > 1
+	assert multiplexed.proxy_hosts == ['127.0.0.1']
+	// An HTTP/1-only origin keeps its keep-alive connection in the tunnel.
+	h1 := 'https://127.0.0.1:${ports.h1_port}'
+	assert pooled_proxy_get_sequentially('${h1}/binary', ca, 4)
+	sequential := pooled_proxy_stats(directory)
+	assert sequential.handshakes['h1'] <= 2
+	assert sequential.proxy_hosts.len == multiplexed.proxy_hosts.len + sequential.handshakes['h1']
+	// A pooled tunnel belongs to its proxy: switching to an unreachable proxy
+	// must fail instead of reusing the connection or reaching the origin directly.
+	os.setenv('VOX_PROXY', 'socks5://127.0.0.1:1', true)
+	if response := get(adblock.Request{ url: '${h2}/binary', source_url: h2, request_type: 'image' },
+		ca)
+	{
+		assert false, 'pooled tunnel outlived its proxy: ${response.url}'
+	}
+	os.setenv('VOX_PROXY', '', true)
+	if response := get(adblock.Request{ url: '${h2}/binary', source_url: h2, request_type: 'image' },
+		ca)
+	{
+		assert response.response.status_code == 200
+	}
+	direct := pooled_proxy_stats(directory)
+	assert direct.handshakes['h2'] == 2
+	assert direct.proxy_hosts == sequential.proxy_hosts
+}
+
+fn pooled_proxy_get_sequentially(address string, ca string, count int) bool {
+	for _ in 0 .. count {
+		response := get(adblock.Request{ url: address, source_url: address, request_type: 'image' },
+			ca) or { return false }
+		if response.response.body.bytes() != [u8(0), 1, 127, 128, 255, 0, 42] { return false }
+	}
+	return true
 }

@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 from http_tls_dial import patch_transport_tls, tls_dial_helper
+from http_proxy_pool import patch_pooled_proxy_request, patch_pooled_proxy_transport
 from http_h2_fairness import patch_h2_pooled_transport
 from http_h2_receive_credit import patch_h2_mux_receive_credit
 from http_h2_wakeup import patch_h2_wakeup
@@ -260,11 +261,11 @@ def main():
     text = header.read_text()
     patched = patch_header(text)
     request_text = (original / 'request.v').read_text()
-    patched_request = patch_receive_buffer(patch_request(request_text))
+    patched_request = patch_pooled_proxy_request(patch_receive_buffer(patch_request(request_text)))
     proxy_text = (original / 'http_proxy.v').read_text()
     patched_proxy = patch_proxy(proxy_text)
     transport_text = (original / 'transport.v').read_text()
-    patched_transport = patch_transport_tls(transport_text) + '\n' + tls_dial_helper()
+    patched_transport = patch_pooled_proxy_transport(patch_transport_tls(transport_text)) + '\n' + tls_dial_helper()
     h2_text = (original / 'transport_h2.v').read_text()
     patched_h2 = patch_transport_tls(h2_text, http2=True)
     h2_pooled_text = (original / 'h2_pooled_transport.v').read_text()
@@ -317,7 +318,7 @@ def main():
         "staged_h2_pooled_sha256": hashlib.sha256(patched_h2_pooled.encode()).hexdigest(),
         "source_h2_mux_sha256": hashlib.sha256(h2_mux_text.encode()).hexdigest(),
         "staged_h2_mux_sha256": hashlib.sha256(patched_h2_mux.encode()).hexdigest(),
-        "adapter": "growable fields; copy-on-write; preserve empty/repeated fields; verified proxy TLS; TCP before TLS setup",
+        "adapter": "growable fields; copy-on-write; preserve empty/repeated fields; verified proxy TLS; TCP before TLS setup; pooled proxy tunnels",
     }, indent=2) + "\n")
     print(modules)
 
