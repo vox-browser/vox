@@ -158,10 +158,12 @@ fn chromium_svg_folded_opacity(commands []layout.PaintCommand, layers []int, sta
 		}
 	}
 	// Preserve the opening scope's ancestor bounds as well as the path clip.
-	if opening.has_clip && (!inner.has_clip || opening.clip_x > inner.clip_x
-		|| opening.clip_y > inner.clip_y || opening.clip_x + opening.clip_width < inner.clip_x + inner.clip_width
-		|| opening.clip_y + opening.clip_height < inner.clip_y + inner.clip_height) {
-		return none
+	if clip := opening.effect_ancestor_clip() {
+		if !inner.has_clip || clip.x > inner.clip_x || clip.y > inner.clip_y
+			|| clip.x + clip.width < inner.clip_x + inner.clip_width
+			|| clip.y + clip.height < inner.clip_y + inner.clip_height {
+			return none
+		}
 	}
 	return opening.visual_layer().opacity
 }

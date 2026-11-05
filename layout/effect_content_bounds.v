@@ -210,6 +210,14 @@ fn bound_visual_effect_contents(mut commands []PaintCommand) {
 				if begin.has_clip {
 					ink = compatibility_intersect_rects(ink, LayoutRect{begin.clip_x, begin.clip_y, begin.clip_width, begin.clip_height})
 				}
+				original := begin.visual_layer()
+				begin.visual_layer_data = &PaintVisualLayer{
+					...original
+					clip_rect: if original.content_bounds_applied { original.clip_rect }
+						else if begin.has_clip { LayoutRect{begin.clip_x, begin.clip_y, begin.clip_width, begin.clip_height} }
+						else { none }
+					content_bounds_applied: true
+				}
 				begin.has_clip = true
 				begin.clip_x = ink.x
 				begin.clip_y = ink.y

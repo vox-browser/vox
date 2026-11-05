@@ -119,3 +119,25 @@ fn test_compositor_identity_scopes_are_balanced_and_keep_real_effect_fallbacks()
 	assert chromium_svg_identity_scope_end(commands[..2], plan.command_layers[..2], 0) == 0
 	assert chromium_svg_identity_scope_end(commands, [1, 1, 2], 0) == 0
 }
+
+fn test_svg_opacity_fixture_keeps_compositor_recording_after_ink_bounding() {
+	source := os.read_file('Tests/Browser/Brave/input/forum-svg-single-paint-opacity.html') or { panic(err) }
+	mut document := html.parse_document(source)
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	layout.enable_native_paint_tree_storage(document)
+	_ = layout.layout_document_typed_in_viewport(document, 1024, 768)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('missing recording') })
+	mut plan := layout.ChromiumRasterLayerPlan{}
+	viewport := layout.LayoutRect{0, 0, 1024, 768}
+	layout.update_chromium_raster_layer_plan_for_viewport(document, commands, 1, viewport, mut plan)
+	mut paths := 0
+	for index, command in commands {
+		if command.kind != 'draw_svg_path' { continue }
+		owner := plan.command_layers[index]
+		assert owner > 0
+		assert chromium_svg_compositor_layer_supported_for_viewport(commands, plan, owner, viewport)
+		paths++
+	}
+	assert paths == 6
+}

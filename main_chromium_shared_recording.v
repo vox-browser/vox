@@ -171,7 +171,7 @@ fn chromium_shared_recording_css_boundary(commands []layout.PaintCommand, index 
 	data := command.visual_layer_data or { return false }
 	if command.kind !in ['begin_css_effect_layer', 'end_css_effect_layer']
 		|| data.kind != .css_effect || data.blend_mode != .normal || data.scope_id == 0
-		|| command.has_clip || command.clip_list != unsafe { nil } || command.clip_outs.len > 0 {
+		|| command.effect_ancestor_clip() != none || command.clip_list != unsafe { nil } || command.clip_outs.len > 0 {
 		return false
 	}
 	step := if command.kind == 'begin_css_effect_layer' { 1 } else { -1 }
@@ -183,7 +183,7 @@ fn chromium_shared_recording_css_boundary(commands []layout.PaintCommand, index 
 			if partner_data.scope_id == data.scope_id {
 				return partner.kind == expected
 					&& partner_data.kind == .css_effect && partner_data.blend_mode == .normal
-					&& partner_data.opacity == data.opacity && !partner.has_clip
+					&& partner_data.opacity == data.opacity && partner.effect_ancestor_clip() == none
 					&& partner.clip_list == unsafe { nil } && partner.clip_outs.len == 0
 			}
 		}

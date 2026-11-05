@@ -742,6 +742,9 @@ pub:
 	filter     ?painting.GfxFilter = ?painting.GfxFilter(none)
 	mask_clip  PaintClip
 	svg_graphics_opacity bool
+	// The command's clip was narrowed to known ink for surface allocation.
+	// clip_rect retains the original ancestor clip for compositor eligibility.
+	content_bounds_applied bool
 }
 
 pub struct PaintVisualLayerList {
@@ -4839,6 +4842,16 @@ pub fn paint_command_for_nested_viewport(command PaintCommand, outer_transform [
 	if command.clip_list != unsafe { nil } {
 		transformed.clip_list = &PaintClipList{
 			items: command.clip_list.items.map(nested_viewport_clip(it, ancestor))
+		}
+	}
+	if layer := command.visual_layer_data {
+		if layer.content_bounds_applied {
+			transformed.visual_layer_data = &PaintVisualLayer{
+				...*layer
+				clip_rect: if clip := layer.clip_rect {
+					compatibility_affine_map_rect(ancestor, clip)
+				} else { none }
+			}
 		}
 	}
 	// The retained layer snapshot can be shared by recordings. Transform only

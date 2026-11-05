@@ -57,7 +57,7 @@ fn chromium_svg_identity_scope_end(commands []layout.PaintCommand, layers []int,
 	data := opening.visual_layer_data or { return start }
 	if opening.kind != 'begin_css_effect_layer' || data.kind != .css_effect
 		|| data.opacity != 1 || data.blend_mode != .normal || data.filter != none
-		|| data.scope_id == 0 || opening.has_clip || opening.clip_list != unsafe { nil }
+		|| data.scope_id == 0 || opening.effect_ancestor_clip() != none || opening.clip_list != unsafe { nil }
 		|| opening.clip_outs.len != 0 || opening.recording_clip != none { return start }
 	mut scopes := []u64{}
 	for index in start .. commands.len {
@@ -70,7 +70,7 @@ fn chromium_svg_identity_scope_end(commands []layout.PaintCommand, layers []int,
 		scopes.delete_last()
 		if scopes.len != 0 { continue }
 		if layers[index] != layers[start] || boundary.opacity != 1 || boundary.blend_mode != .normal
-			|| boundary.filter != none || command.has_clip || command.clip_list != unsafe { nil }
+			|| boundary.filter != none || command.effect_ancestor_clip() != none || command.clip_list != unsafe { nil }
 			|| command.clip_outs.len != 0 || command.recording_clip != none { return start }
 		return index+1
 	}
