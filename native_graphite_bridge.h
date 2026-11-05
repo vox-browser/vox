@@ -240,6 +240,10 @@ int vox_graphite_canvas_draw_shape(const VoxGraphiteShape *shape, const float *d
     const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_draw_image(const VoxGraphiteImage *image, const float *device_bounds,
     const VoxGraphiteCanvasClip *clips, int clip_count);
+// Disjoint device-pixel x/y/width/height rectangles retain Chromium MSAA tile
+// ownership; the rest of the image draws in the ordinary shared pass.
+int vox_graphite_canvas_draw_image_msaa(const VoxGraphiteImage *image, const float *device_bounds,
+    const VoxGraphiteCanvasClip *clips, int clip_count, const int *msaa_rects, int msaa_count);
 int vox_graphite_canvas_draw_shape_msaa(const VoxGraphiteShape *shape, const float *device_bounds,
     const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_draw_path(const VoxGraphitePath *path, const float *device_bounds,

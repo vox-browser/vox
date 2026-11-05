@@ -244,11 +244,10 @@ int vox_graphite_canvas_draw_path(VoxGraphitePath const* path, float const* boun
     return result && drawn;
 }
 
-extern "C" __attribute__((visibility("default")))
-int vox_graphite_canvas_draw_image(VoxGraphiteImage const* image, float const* bounds,
-    VoxGraphiteCanvasClip const* clips, int clip_count)
+static int canvas_draw_image(VoxGraphiteImage const* image, float const* bounds,
+    VoxGraphiteCanvasClip const* clips, int clip_count, int const* msaa_rects, int msaa_count)
 {
-    if (!image || !image_draw_is_valid(image)) return 0;
+    if (!image || !bounds || !image_draw_is_valid(image)) return 0;
     std::lock_guard lock(gpu_mutex);
     if (!canvas_recorder) return 0;
     PreparedImageDraw prepared;
@@ -265,14 +264,83 @@ int vox_graphite_canvas_draw_image(VoxGraphiteImage const* image, float const* b
             if (gpu->insertRecording(insertion) != skgpu::graphite::InsertStatus::kSuccess) return 0;
         }
     }
+    // The ordinary pass excludes the disjoint rectangles owned by MSAA tiles.
     int result = canvas_draw(bounds, clips, clip_count, [&](SkCanvas* canvas, CanvasTile const& tile) {
+        canvas->resetMatrix();
+        for (int index = 0; index < msaa_count; ++index) {
+            auto* rect = msaa_rects + index * 4;
+            canvas->clipRect(SkRect::MakeXYWH(rect[0] - tile.x, rect[1] - tile.y,
+                rect[2], rect[3]), SkClipOp::kDifference, false);
+        }
         auto local = *image;
         local.flags &= ~VOX_GRAPHITE_IMAGE_FORCE_MSAA;
         canvas_local_matrix(image->matrix, local.matrix, tile);
         draw_prepared_image(canvas, &local, prepared);
     });
+    if (msaa_count) {
+        // Like the multisampled shape pass, preserve the backdrop and return
+        // the image through the destination clips without a CPU round trip.
+        SkPaint copy;
+        copy.setBlendMode(SkBlendMode::kSrc);
+        for (auto& tile : canvas_tiles) {
+            auto area = SkRect::MakeLTRB(bounds[0] - tile.x, bounds[1] - tile.y,
+                bounds[2] - tile.x, bounds[3] - tile.y).roundOut();
+            if (!area.intersect(tile.clip)) continue;
+            SkPathBuilder mask;
+            bool intersects = false;
+            for (int index = 0; index < msaa_count; ++index) {
+                auto* rect = msaa_rects + index * 4;
+                auto part = SkIRect::MakeXYWH(rect[0] - tile.x, rect[1] - tile.y,
+                    rect[2], rect[3]);
+                if (!part.intersect(area)) continue;
+                mask.addRect(SkRect::Make(part));
+                intersects = true;
+            }
+            if (!intersects) continue;
+            auto snapshot = tile.surface->makeImageSnapshot(area);
+            auto scratch = snapshot ? SkSurfaces::RenderTarget(canvas_recorder.get(),
+                canvas_info(area.width(), area.height())) : nullptr;
+            if (!scratch) return 0;
+            auto* draw = scratch->getCanvas();
+            draw->drawImage(snapshot, 0, 0, SkSamplingOptions(), &copy);
+            force_msaa_render_pass(draw, area.width(), area.height());
+            auto local = *image;
+            local.flags &= ~VOX_GRAPHITE_IMAGE_FORCE_MSAA;
+            SkMatrix matrix;
+            matrix.set9(image->matrix);
+            matrix.postTranslate(-(tile.x + area.x()), -(tile.y + area.y()));
+            matrix.get9(local.matrix);
+            draw_prepared_image(draw, &local, prepared);
+            auto filtered = scratch->makeImageSnapshot();
+            if (!filtered) return 0;
+            auto* canvas = tile.surface->getCanvas();
+            canvas->save();
+            canvas->resetMatrix();
+            canvas->clipRect(SkRect::Make(area));
+            canvas->clipPath(mask.detach(), SkClipOp::kIntersect, false);
+            apply_canvas_clips(canvas, tile, clips, clip_count);
+            canvas->resetMatrix();
+            canvas->drawImage(filtered, area.x(), area.y(), SkSamplingOptions(), &copy);
+            canvas->restore();
+        }
+    }
     image_upload_cache.finish(std::move(prepared.upload), prepared.texture);
     return result;
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_image(VoxGraphiteImage const* image, float const* bounds,
+    VoxGraphiteCanvasClip const* clips, int clip_count)
+{
+    return canvas_draw_image(image, bounds, clips, clip_count, nullptr, 0);
+}
+
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_image_msaa(VoxGraphiteImage const* image, float const* bounds,
+    VoxGraphiteCanvasClip const* clips, int clip_count, int const* msaa_rects, int msaa_count)
+{
+    if (!msaa_rects || msaa_count <= 0 || msaa_count > 4096) return 0;
+    return canvas_draw_image(image, bounds, clips, clip_count, msaa_rects, msaa_count);
 }
 
 // Premultiplied BGRA pixels rasterized on a transparent CPU target, composited

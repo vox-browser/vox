@@ -18,5 +18,6 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
     -L"$skia_root/lib" -lskia \
     -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
     -Wl,-rpath,"$skia_root/lib" -Wl,-rpath,"$graphite_dir" \
+    -Wl,-rpath,"$repo_dir/Build/v/Vox.app/Contents/MacOS" \
     -o "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test"

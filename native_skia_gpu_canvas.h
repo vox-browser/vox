@@ -54,6 +54,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
     decltype(&vox_graphite_canvas_draw_image) draw_image = nullptr;
+    decltype(&vox_graphite_canvas_draw_image_msaa) draw_image_msaa = nullptr;
     decltype(&vox_graphite_canvas_draw_shape_msaa) draw_shape_msaa = nullptr;
     decltype(&vox_graphite_canvas_draw_picture) draw_picture = nullptr;
     decltype(&vox_graphite_canvas_end) end = nullptr;
@@ -73,6 +74,7 @@ GpuCanvasApi const* gpu_canvas_api()
         value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
         value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
         value.draw_image = reinterpret_cast<decltype(value.draw_image)>(dlsym(library, "vox_graphite_canvas_draw_image"));
+        value.draw_image_msaa = reinterpret_cast<decltype(value.draw_image_msaa)>(dlsym(library, "vox_graphite_canvas_draw_image_msaa"));
         value.draw_shape_msaa = reinterpret_cast<decltype(value.draw_shape_msaa)>(dlsym(library, "vox_graphite_canvas_draw_shape_msaa"));
         value.draw_picture = reinterpret_cast<decltype(value.draw_picture)>(dlsym(library, "vox_graphite_canvas_draw_picture"));
         value.end = reinterpret_cast<decltype(value.end)>(dlsym(library, "vox_graphite_canvas_end"));
@@ -373,28 +375,62 @@ bool gpu_canvas_root_msaa_overlap(CGContextRef destination, RasterRegion const& 
     return overlap;
 }
 
+std::vector<int> gpu_canvas_image_msaa_rects(CGContextRef destination, RasterRegion const& region,
+    float page_x, float page_y, float scroll_y)
+{
+    auto scale = raster_scale_for_context(destination);
+    int width = raster_dimension(region.width(), scale), height = raster_dimension(region.height(), scale);
+    long first_x = std::lround((region.left - page_x - s_raster_origin_x) * scale);
+    long first_y = std::lround((region.top - page_y + scroll_y - s_raster_origin_y + s_root_raster_scroll_y) * scale);
+    int left = int(std::lround(region.left * scale)), top = int(std::lround(region.top * scale));
+    std::vector<int> rects;
+    vox_chromium_msaa_rects(width, height, first_x, first_y, s_msaa_grid_width, s_msaa_grid_height,
+        s_msaa_grid_columns, s_msaa_grid_tiles, [&](int x, int y, int w, int h) {
+            rects.insert(rects.end(), {left + x, top + y, w, h});
+        });
+    return rects;
+}
+
 int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
     VoxGraphiteImage const& descriptor, SkRect device_bounds, RasterRegion const& region,
     float page_x, float page_y, float scroll_y, bool rounded_mask)
 {
     if (!s_gpu_canvas || s_gpu_canvas->destination != destination) return 0;
-    if (rounded_mask || gpu_canvas_root_msaa_overlap(destination, region, page_x, page_y, scroll_y)) {
+    bool msaa = gpu_canvas_root_msaa_overlap(destination, region, page_x, page_y, scroll_y);
+    char const* leaf = descriptor.flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME ? "video" : "image";
+    static bool const disable_video = std::getenv("VOX_GPU_CANVAS_DISABLE_VIDEO") != nullptr;
+    bool video = (descriptor.flags & VOX_GRAPHITE_IMAGE_VIDEO_FRAME) && !disable_video
+        && gpu_canvas_api()->draw_image_msaa;
+    if (rounded_mask || (msaa && !video)) {
+        gpu_canvas_note_miss(destination, leaf, msaa);
         gpu_canvas_decline(destination);
         return 0;
     }
+    // draw_video stays an unapproved command so its CPU backdrop is restored
+    // after a flush. Only the actual frame image rejoins the GPU pass here.
+    if (video) s_gpu_canvas->in_gpu_command = true;
     std::vector<VoxGraphiteCanvasClip> clips;
     auto* frame = gpu_canvas_for_leaf(destination, clips);
-    if (!frame) return 0;
+    if (!frame) {
+        gpu_canvas_note_miss(destination, leaf, false);
+        return 0;
+    }
     auto scale = SkMatrix::Scale(frame->scale, frame->scale);
     auto gpu = descriptor;
     SkMatrix::Concat(scale, matrix).get9(gpu.matrix);
     auto bounds = scale.mapRect(device_bounds).makeOutset(2, 2);
     float canvas_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
-    if (!gpu_canvas_api()->draw_image(&gpu, canvas_bounds, clips.data(), int(clips.size()))) {
+    auto msaa_rects = msaa ? gpu_canvas_image_msaa_rects(destination, region, page_x, page_y, scroll_y)
+        : std::vector<int>{};
+    int drawn = msaa ? gpu_canvas_api()->draw_image_msaa(&gpu, canvas_bounds, clips.data(),
+        int(clips.size()), msaa_rects.data(), int(msaa_rects.size() / 4))
+        : gpu_canvas_api()->draw_image(&gpu, canvas_bounds, clips.data(), int(clips.size()));
+    if (!drawn) {
         gpu_canvas_flush();
         return 0;
     }
-    gpu_canvas_name_leaf(*frame, "image", bounds, descriptor.flags, clips.size());
+    gpu_canvas_name_leaf(*frame, video ? (msaa ? "video-msaa" : "video") : "image",
+        bounds, descriptor.flags, clips.size());
     frame->cpu_stale = true;
     ++frame->draws;
     return gpu_canvas_verify() ? 1 : 2;

@@ -136,6 +136,32 @@ static void draw_pattern_leaves(CGContextRef context, bool canvas)
         1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 230, 240, 250, 140, 1, 0, 1, 1));
 }
 
+static bool s_video_rounded;
+static std::vector<uint8_t> s_video_frame = [] {
+    std::vector<uint8_t> pixels(size_t(1426) * 1080 * 4);
+    for (int y = 0; y < 1080; ++y) for (int x = 0; x < 1426; ++x) {
+        auto* p = pixels.data() + (size_t(y) * 1426 + x) * 4;
+        p[0] = uint8_t(x * 5 + y); p[1] = uint8_t(y * 3);
+        p[2] = uint8_t(x ^ y); p[3] = 255;
+    }
+    return pixels;
+}();
+
+static void draw_video_leaves(CGContextRef context, bool canvas)
+{
+    // Keep the CPU backdrop barrier before the video. Its image opts back in
+    // after that barrier rather than approving the complete draw_video command.
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_video", 10, 0) == 0);
+    float radii[] {13, 13, 13, 13, 0, 0, 0, 0};
+    assert(ladybird_v_skia_draw_rgba_image(context, s_video_frame.data(), 1426, 1080, 1426 * 4,
+        52.5f, 81.25f, 238, 180, 0, 0, 1426, 1080, 52.5f, 81.25f, 238, 180,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 1, 0,
+        2 | VOX_GRAPHITE_IMAGE_VIDEO_FRAME, s_video_rounded ? radii : nullptr));
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0) == 1);
+    assert(ladybird_v_skia_draw_rounded_rect(context, 70, 120, 200, 60, 8, 8, 8, 8, 8, 8, 8, 8,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 230, 240, 250, 140, 1, 0, 1, 1));
+}
+
 static unsigned s_draws, s_uploads, s_flushes, s_declined, s_cpu_leaves;
 
 static std::vector<uint8_t> render(bool canvas, bool shared = false,
@@ -352,10 +378,47 @@ int main()
         std::cerr << "MSAA inset shadows differ from tiled replay by " << msaa_error << '\n';
         return 1;
     }
+    assert(gpu_canvas_api()->draw_image_msaa);
+    int video_error = 0;
+    std::vector<uint8_t> previous_video_reference;
+    for (int coverage : {0, 1, 2}) for (bool rounded : {false, true}) for (int frame : {0, 1}) {
+        s_video_rounded = rounded;
+        for (size_t at = 3; at < s_video_frame.size(); at += 4)
+            s_video_frame[at] = frame ? 128 : 255;
+        s_video_frame[(size_t(400) * 1426 + 50) * 4 + 2] ^= 37;
+        s_raster_layer_height = css_height;
+        ladybird_v_skia_set_msaa_grid(coverage ? msaa_tiles : nullptr,
+            coverage == 1 ? 8 : coverage == 2 ? 1 : 0, 512, 256, 2);
+        auto video_reference = render(false, false, draw_video_leaves);
+        auto video_candidate = render(true, false, draw_video_leaves);
+        if (frame) assert(video_reference != previous_video_reference);
+        previous_video_reference = video_reference;
+        ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
+        s_raster_layer_height = 0;
+        // Preserve mixed MSAA tile ownership without a per-leaf readback.
+        assert(s_draws == 2);
+        assert(s_declined == 0);
+        assert(s_uploads == 1 && s_flushes == 0);
+        for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
+            size_t at = (size_t(y) * width + x) * 4;
+            for (int c = 0; c < 4; ++c) {
+                if (y < strip_top || y >= strip_top + strip_height)
+                    assert(video_candidate[at + c] == original[at + c]);
+                video_error = std::max(video_error,
+                    std::abs(int(video_candidate[at + c]) - int(video_reference[at + c])));
+            }
+        }
+        if (video_error > 3) {
+            std::cerr << "Video coverage=" << coverage << " rounded=" << rounded
+                << " frame=" << frame << " differs by " << video_error << '\n';
+            return 1;
+        }
+    }
     std::cout << "GPU canvas matches per-leaf replay within " << max_error << " levels ("
         << differing << " channels differ), inset shadows within " << inset_error
         << " (" << msaa_error << " in MSAA tiles, where plain replay differs by " << msaa_shift
         << "), outlines and ellipses within " << outline_error
         << ", CSS gradient tiles within " << pattern_error
+        << ", video frames within " << video_error
         << "; outside pixels, CPU paint order, CPU leaves and shared recordings preserved\n";
 }
