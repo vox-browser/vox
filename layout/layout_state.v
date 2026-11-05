@@ -999,6 +999,10 @@ mut:
 	grid_measurement_rejections_ map[u64]bool
 	flex_measurements_ map[u64][]&FlexMeasurementLayout
 	flex_measurement_rejections_ map[u64]bool
+	previous_layouts_ &PreviousMeasurementLayouts = unsafe { nil }
+	previous_grid_attempts_ map[u64]bool
+	previous_flex_attempts_ map[u64]bool
+	previous_measurement_entries_ map[u64]bool
 }
 
 fn (mut pool MeasurementUsedValuesChunkPool) take() &MeasurementUsedValuesChunk {
@@ -1034,6 +1038,10 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	pool.grid_measurement_rejections_ = map[u64]bool{}
 	pool.flex_measurements_ = map[u64][]&FlexMeasurementLayout{}
 	pool.flex_measurement_rejections_ = map[u64]bool{}
+	pool.previous_layouts_ = unsafe { nil }
+	pool.previous_grid_attempts_ = map[u64]bool{}
+	pool.previous_flex_attempts_ = map[u64]bool{}
+	pool.previous_measurement_entries_ = map[u64]bool{}
 	for chunk in pool.chunks {
 		free_measurement_allocation(chunk)
 	}
@@ -1288,6 +1296,7 @@ mut:
 	subgrid_storage_ &LayoutStateSubgridStorage = unsafe { nil }
 	height_dependency_storage_ &LayoutStateHeightDependencyStorage = unsafe { nil }
 	measurement_chunk_pool_ &MeasurementUsedValuesChunkPool = unsafe { nil }
+	measurement_layouts_ &PreviousMeasurementLayouts = unsafe { nil }
 	block_layouts_ map[u64]&RetainedBlockLayout
 	previous_block_layouts_ map[u64]&RetainedBlockLayout
 	block_layout_rejections_ map[u64]bool
