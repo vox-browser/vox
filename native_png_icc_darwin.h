@@ -86,7 +86,10 @@ static int native_png_has_icc_profile(const uint8_t *bytes, size_t length)
 static NSMutableDictionary<NSValue *, VoxPNGICCTag *> *native_png_icc_tags;
 static NSMutableArray<VoxPNGICCTag *> *native_png_icc_lru;
 static size_t native_png_icc_cached_bytes;
-static const size_t native_png_icc_cache_limit = 32 * 1024 * 1024;
+// A conversion larger than the budget is redone on every draw: vlang.io's
+// 3993x2317 tagged mascot converts 37 MB, which took 40-120 ms per scroll
+// frame while it was visible under the former 32 MB budget.
+static const size_t native_png_icc_cache_limit = 96 * 1024 * 1024;
 
 // Decoded PNG buffers are immutable until retagged. Retagging clears both
 // metadata and converted pixels; the conversion cache itself has a byte cap.

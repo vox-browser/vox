@@ -102,8 +102,10 @@ int main(int argc, char **argv) {
         for (int index = 0; index < 129; ++index)
             native_tag_image_color_profile(many[index], 2, 2, NULL, 0, 0);
         assert(native_png_icc_cached_bytes == 0 && native_png_icc_lru.count == 0);
-        uint8_t *large[9];
-        for (int index = 0; index < 9; ++index) {
+        // One more 4 MB conversion than the budget holds evicts the oldest.
+        enum { large_count = native_png_icc_cache_limit / (1000 * 1000 * 4) + 1 };
+        uint8_t *large[large_count];
+        for (int index = 0; index < large_count; ++index) {
             large[index] = calloc(1000 * 1000, 4);
             assert(large[index]);
             native_tag_image_color_profile(large[index], 1000, 1000, png.bytes, png.length, 1);
@@ -111,10 +113,21 @@ int main(int argc, char **argv) {
             assert(native_png_icc_cached_bytes <= native_png_icc_cache_limit);
         }
         assert(!native_png_icc_tags[[NSValue valueWithPointer:large[0]]].converted);
-        for (int index = 0; index < 9; ++index) {
+        for (int index = 0; index < large_count; ++index) {
             native_tag_image_color_profile(large[index], 1000, 1000, NULL, 0, 0);
             free(large[index]);
         }
+        assert(native_png_icc_cached_bytes == 0 && native_png_icc_lru.count == 0);
+        // vlang.io's tagged 3993x2317 mascot converts once, then reuses it.
+        uint8_t *mascot = calloc((size_t)3993 * 2317, 4);
+        assert(mascot);
+        native_tag_image_color_profile(mascot, 3993, 2317, png.bytes, png.length, 1);
+        prior = conversions;
+        NSData *mascot_pixels = native_image_icc_pixels(mascot, 3993, 2317);
+        assert(mascot_pixels && native_image_icc_pixels(mascot, 3993, 2317) == mascot_pixels);
+        assert(conversions == prior + 1);
+        native_tag_image_color_profile(mascot, 3993, 2317, NULL, 0, 0);
+        free(mascot);
         assert(native_png_icc_cached_bytes == 0 && native_png_icc_lru.count == 0);
         puts("ICC metadata routing and retagging passed");
         return 0;
