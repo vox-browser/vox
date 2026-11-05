@@ -2440,3 +2440,36 @@ The [availability receipt](performance/chatgpt-percent-encoding-bytes-production
 preserves that preflight and harness. **No whole-page saving is credited**, no
 broad checkpoint is due, and the cadence stays at zero. The requested **5%
 advantage over Brave remains unmet**.
+
+
+## November 5: tracking audit of the current frozen capture
+
+The existing read-only detector now audits the current v2 SOCKS capture:
+**293 scripts, 3,610,641 bytes, four name-based review candidates and no parse
+errors**. No archived script matches an existing script-blocking rule. All 380
+unresolved imports are computed dynamic imports; an empty direct-importer list
+therefore does not establish an unused module.
+
+| Review candidate | Bytes | Direct static importers | Source files mentioning its filename |
+| --- | ---: | ---: | ---: |
+| `analytics-C3m-dpbI.js` | 4,171 | 8 | 14 |
+| `analytics-ces-business-context-DAjYxggM.js` | 112,410 | 0 | 1 |
+| `native-telemetry-CLXxBfSg.js` | 10,679 | 0 | 1 |
+| `performance-metrics-CiFEOZ7n.js` | 46,391 | 0 | 1 |
+
+Each of the three candidates with no direct importer appears in a wrapped
+dynamic-import expression. Telemetry also contains `visibilitychange`,
+`pagehide` and `pageshow` listener code. These are dependency and lifecycle
+review leads, not proof of execution or of a resolver's semantics. **No safe
+additional script removal is established**, and filtering is not changed.
+
+Existing rules block both XHR and Ping probes for the business, performance and
+stats-flush event endpoints. These are explicit policy probes: retained replay
+logs do not distinguish Fetch from Beacon and do not by themselves establish
+which browser blocked a request. All script, manifest, request-log, detector,
+lexer and filter-engine hashes remain stable throughout the audit. It executes
+no author code, downloads nothing and launches no browser. The
+[receipt and verified archive](performance/chatgpt-tracking-audit-v2-20261105.json)
+retain the dependency graph, wrapped-import contexts, exact decisions and guards.
+
+The requested **5% advantage over Brave remains unmet**.
