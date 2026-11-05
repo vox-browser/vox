@@ -145,3 +145,33 @@ fn test_async_network_failure_releases_load_delay_without_replacing_the_document
 	initial.finalize()
 	parent.finalize()
 }
+
+fn test_child_navigation_checks_response_embedding_policies_before_commit() {
+	cases := [
+		[http.Header{ name: 'X-Frame-Options', value: 'DENY' }],
+		[http.Header{ name: 'Content-Security-Policy', value: "frame-ancestors 'none'" }],
+		[http.Header{ name: 'X-Frame-Options', value: 'SAMEORIGIN' }],
+		[http.Header{ name: 'Content-Security-Policy', value: 'frame-ancestors https://async-parent.test' },
+			http.Header{ name: 'X-Frame-Options', value: 'DENY' }],
+		[http.Header{ name: 'Content-Security-Policy-Report-Only', value: "frame-ancestors 'none'" }],
+	]
+	for index, headers in cases {
+		mut parent, mut child, probe := async_navigation_owner()
+		mut initial := child.active_document()?
+		child.navigate(NavigableNavigateParams{ url: dom.URL{ value: 'https://async-child.test/protected' }, source_document: parent })!
+		resolve_async_navigation(probe, 0, 200, headers, '<p id="protected">child response</p>')
+		mut active := child.active_document()?
+		if index < 3 {
+			assert voidptr(active) == voidptr(initial)
+			assert active.get_element_by_id('protected') == none
+		} else {
+			assert active.get_element_by_id('protected') != none
+		}
+		assert child.ongoing_navigation().kind == .empty
+		assert !child.is_delaying_load_events()
+		child.host_navigable().remove_from_all_navigables()
+		if voidptr(active) != voidptr(initial) { active.finalize() }
+		initial.finalize()
+		parent.finalize()
+	}
+}

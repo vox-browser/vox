@@ -1462,6 +1462,10 @@ fn (mut model NavigableModel) finish_navigation_fetch(entry &SessionHistoryEntry
 		}
 	}
 	if navigation_params := received_navigation_params.navigation_params {
+		if !navigation_response_allows_embedding(navigation_params) {
+			model.set_ongoing_navigation(NavigableOngoingNavigation{})
+			return
+		}
 		state.origin = navigation_params.origin
 		state.about_base_url = navigation_params.about_base_url
 		response := navigation_params.response.unsafe_response()

@@ -34,7 +34,10 @@ fn csp_request(request &Request) csp.Request {
 		destination = match value {
 			.audio { csp.RequestDestination.audio }
 			.audio_worklet { csp.RequestDestination.audio_worklet }
-			.document { csp.RequestDestination.document }
+			.document {
+				if request.target_is_nested_navigable { csp.RequestDestination.iframe }
+				else { csp.RequestDestination.document }
+			}
 			.embed { csp.RequestDestination.embed }
 			.font { csp.RequestDestination.font }
 			.frame { csp.RequestDestination.frame }
