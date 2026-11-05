@@ -6279,3 +6279,27 @@ elements, plus 1,043 font refreshes and eight fallbacks. The capped source trace
 shows two class changes and no existing-styled-element data/ARIA mutations; it
 cannot count all invalidations or precascade edits. This does not establish
 workload eligibility for relaxing data/ARIA invalidation. [Trace and raw evidence](performance/bbc-post-cache-style-trace-20261105.json).
+
+
+## Closed automatic-row grid height candidate (2026-11-05)
+
+`f8836c069` extends the row-sizing scalar height seed to nested grids with
+implicit automatic rows, fixed inline size and unconstrained block size. The
+existing closed-subtree and unused-height proofs exclude percentage-dependent
+geometry and specialized contexts; flex, replaced and SVG descendants retain
+full intrinsic probes. `0d6dd95ef` adds an isolated comparison control.
+
+All **126 focused executions** pass, including **30 executions of five new
+cases** across both arms and three memory modes. Sixteen geometry/glyph digests
+per arm and mode agree exactly. Checks cover row spans, nested grids, wrapped
+text, widths, both font policies, rejected dependencies/constraints, producer
+scratch retirement and live edits. The initial fixture's nested Option argument
+generated a pointer-to-pointer; both arms abort there. The corrected named local
+and retained initial generated C document that fixture repair. All **332
+instruction-tool tests** pass. [Focused evidence](performance/bbc-auto-grid-height-focus-20261105.json)
+is archived with member hashes verified.
+
+Native BBC eligibility and matched instruction effect remain pending at this
+checkpoint. No performance credit is assigned. Cohort 106 remains the last
+verified acceptance comparison, the target remains unmet and the homepage stays
+outside the catalog.

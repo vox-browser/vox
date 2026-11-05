@@ -1,0 +1,75 @@
+{
+  "status": "Committed closed automatic-row grid height seed;126focused executions and30newcase executions pass. Candidate/control scalar geometry/glyph digests exact in all3modes. BBC eligibility/performance pending,target unmet.",
+  "implementation_commit": "f8836c069",
+  "tooling_commit": "0d6dd95ef",
+  "focused": {
+    "passed": true,
+    "cases_per_run": 21,
+    "total_executions": 126,
+    "new_case_executions": 30,
+    "new_case_failures": 0,
+    "rows": [
+      {
+        "mode": "default",
+        "completed_per_arm": 21,
+        "candidate_control_geometry_hashes_exact": true,
+        "oracle_comparisons": 16,
+        "all_native_calls_verified": true
+      },
+      {
+        "mode": "none",
+        "completed_per_arm": 21,
+        "candidate_control_geometry_hashes_exact": true,
+        "oracle_comparisons": 16,
+        "all_native_calls_verified": true
+      },
+      {
+        "mode": "prealloc",
+        "completed_per_arm": 21,
+        "candidate_control_geometry_hashes_exact": true,
+        "oracle_comparisons": 16,
+        "all_native_calls_verified": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/layout/grid_auto_height_seed_test.v": "015df0f70d73b29ae6060816186ee4bb31aacd504876b808f2ab3ac8b74e7e45",
+      "/Users/alex/code/vox2/layout/grid_block_intrinsic_reuse_test.v": "05501b7861b55975585722784e2b07a63d7738c0a3a98d153e5d0e6c2eec5288",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "efa9559bcd7586babaa3813f2cae113a3118e859523c689d5f865503bf030def",
+      "/Users/alex/code/vox2/layout/grid_auto_height_seed.v": "5d7a630c504499985c1b5e267edd8ab5f81f20acd4b26295336401cbe4a771c2",
+      "/Users/alex/code/vox2/layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "d5f1aecf082ededc5a7c0ac38491955b0dc7c18cb7de5cd9d8da7dbecb24f647",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a",
+      "/Users/alex/code/vox2/layout/retained_block_layout.v": "969728a8c1c1ea70fabe9e0194fd8194e5865e7aed6a6804eda00f27edc95ffc",
+      "/Users/alex/code/vox2/layout/node.v": "405ca6b29caebb303e4fa38ee54e95052c97f5133c0cf5bacf12eef25dc16f21",
+      "/Users/alex/code/vox2/layout/intrinsic_sizing.v": "e40c995478ea2fb95cf9f88f3e67e0a0fe02dee7104d73009e79b5d864ae60bf"
+    },
+    "inputs_unchanged": true,
+    "qualifications": "Both arms execute every case in all3GC modes;16normal/intrinsic geometry+glyph digests perarm/mode match. Newcases cover text/nested auto-grid rowspans,widths,Chromium/upstreampolicy,dependency/specialization/rootconstraint misses,producer scratch retirement and live text changes. Initial nested Option argument generates pointer-to-pointer in fixture; botharms abort before latercases. Named local fixes only fixture. No nativeBBCeligibility or instructioncredit yet.",
+    "unix": 1793877620.858958
+  },
+  "instruction_tool_tests": {
+    "cases": 332,
+    "exit": 0
+  },
+  "scope": "Own21case grid height/intrinsic/measurement batch,both arms,all3GCmodes. Compiler10Gcap/12GiBsampledguard,runtime3GiBguard. All checked sources unchanged/allcallsverified. Initial nested Option argument fixture generated pointer-to-pointer and botharms aborted; retained with generatedC,corrected only to namedlocal. No acceptancecohort or optimizationcredit.",
+  "source_commit_verification": {
+    "layout/grid_auto_height_seed_test.v": true,
+    "layout/grid_block_intrinsic_reuse_test.v": true,
+    "layout/grid_measurement_layout_test.v": true,
+    "layout/grid_auto_height_seed.v": true,
+    "layout/grid_formatting_context.v": true,
+    "layout/grid_measurement_layout.v": true,
+    "layout/committed_grid_measurement.v": true,
+    "layout/retained_block_layout.v": true,
+    "layout/node.v": true,
+    "layout/intrinsic_sizing.v": true
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-auto-grid-height-focus-20261105.tar.gz",
+    "bytes": 17221562,
+    "sha256": "4582096e6d0867581591605547f7973d9b66db3652753f6b4d6df60de0dea488",
+    "members": 86,
+    "all_members_verified": true
+  },
+  "recorded_unix": 1793877760.197558
+}
