@@ -431,6 +431,12 @@ pub fn string_to_time_unit(unit string) ?TimeUnit {
 }
 
 pub fn string_to_length_unit(unit string) ?LengthUnit {
+	if retain_length_unit_iteration { return string_to_length_unit_iterated(unit) }
+	if length_unit_lookup_diagnostics { report_packed_length_unit_lookup() }
+	return packed_length_unit(unit)
+}
+
+fn string_to_length_unit_iterated(unit string) ?LengthUnit {
 	return match to_ascii_lowercase(unit) {
 		'cap' { LengthUnit.cap }
 		'ch' { LengthUnit.ch }
