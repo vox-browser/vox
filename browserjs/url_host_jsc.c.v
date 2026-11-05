@@ -166,7 +166,7 @@ fn (mut host URLHost) construct(args []voidptr) !voidptr {
 	if exception != unsafe { nil } { return host.runtime.actual_javascript_exception(exception) }
 	if count < 1 { return error('TypeError: URL requires at least 1 argument') }
 	converted := host.input(args, 1)!
-	record := host.base_parser.parse(converted.input, converted.base) or {
+	record := host.parser.parse(converted.input, converted.base) or {
 		return error('TypeError: Invalid URL')
 	}
 	url := domurl.DOMURL.create(record)
@@ -239,9 +239,9 @@ fn (mut host URLHost) operate(name string, receiver voidptr, args []voidptr) !vo
 	converted := host.input(args, 0)!
 	if name == 'canParse' {
 		return C.vox_jsc_JSValueMakeBoolean(host.runtime.context,
-			host.base_parser.parse(converted.input, converted.base) != none)
+			host.parser.parse(converted.input, converted.base) != none)
 	}
-	if parsed := host.base_parser.parse(converted.input, converted.base) {
+	if parsed := host.parser.parse(converted.input, converted.base) {
 		return host.wrap(domurl.DOMURL.create(parsed))
 	}
 	return C.vox_jsc_JSValueMakeNull(host.runtime.context)

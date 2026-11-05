@@ -69,3 +69,9 @@ fn own_parsed_url(record &URL) URL {
 		blob_url_entry_:    own_url_blob_entry(record.blob_url_entry_)
 	}
 }
+
+// Unlike copy(), this snapshot also owns every component string. Use it when
+// the source belongs to an arena which can be reset before the result dies.
+pub fn (record &URL) owned_copy() URL {
+	return own_parsed_url(record)
+}

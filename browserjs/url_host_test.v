@@ -66,6 +66,19 @@ fn test_native_url_base_cache_preserves_coercion_reentry_and_fresh_objects() {
 	assert native.href() == 'https://user:pass@escaped.test:8443/survivor'
 }
 
+fn test_native_url_input_cache_keeps_coercion_and_query_owners_on_hits_and_close() {
+	$if !darwin { return }
+	mut runtime := native_url_runtime()
+	defer { runtime.close() }
+	assert runtime.evaluate_host(r'(()=>{const calls=[],input={toString(){calls.push("input");new URL("inside","https://inner.test/");return "child?x=1"}},base={toString(){calls.push("base");return "https://outer.test/"}};const a=new URL(input,base),b=new URL(input,base);a.searchParams.set("x","changed");return calls.join(",")==="input,base,input,base"&&a!==b&&b.href==="https://outer.test/child?x=1"&&b.searchParams!==a.searchParams})()')! == 'true'
+	assert runtime.evaluate_host(r'(()=>{const marker={},input={toString(){throw marker}};new URL("child","https://outer.test/");try{new URL(input,"https://outer.test/")}catch(e){return e===marker}return false})()')! == 'true'
+	value := runtime.evaluate_host_value('new URL("https://survivor.test/a/b?query#fragment")')!
+	native := runtime.native_url(value)!
+	assert runtime.evaluate_host('for(let i=0;i<2048;i++)new URL("https://eviction.test/"+i);true')! == 'true'
+	runtime.close()
+	assert native.href() == 'https://survivor.test/a/b?query#fragment'
+}
+
 fn test_native_url_same_object_query_and_live_iterator_share_genuine_owners() {
 	$if !darwin { return }
 	mut runtime := native_url_runtime()

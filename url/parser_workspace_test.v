@@ -55,7 +55,7 @@ fn test_url_owned_snapshot_detaches_blob_bytes_and_origin() {
 			environment: BlobURLEnvironment{ origin: origin }
 		})
 		storage.leave(entry)
-		owned := own_parsed_url(&base)
+		owned := base.owned_copy()
 		storage.release()
 		resolved := owned.with_fragment('owned')
 		assert resolved.serialize(false) == 'blob:https://blob.test/identifier#owned'
