@@ -7,6 +7,19 @@ from page_archive import load_archive
 
 
 class ImageEffectsArchiveTests(TestCase):
+    def test_mask_tile_seed_keeps_its_reference_and_original_encoded_http_image(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            seed = Path(temporary) / 'seed'
+            effects.create_seed(seed, 'mask-tiles')
+            manifest = load_archive(seed)
+            self.assertEqual(manifest['url'], effects.MASK_TILE_URL)
+            self.assertEqual(set(manifest['responses']), {effects.MASK_TILE_URL, effects.IMAGE_URL})
+            document = manifest['responses'][effects.MASK_TILE_URL]
+            self.assertEqual((seed / 'bodies' / document['sha256']).read_bytes(),
+                             effects.MASK_TILE_FIXTURE.read_bytes())
+            self.assertEqual(manifest['responses'][effects.IMAGE_URL]['sha256'], effects.IMAGE_SHA256)
+            self.assertEqual(effects.case_files('mask-tiles')[1], effects.MASK_TILE_REFERENCE)
+
     def test_root_origin_seed_keeps_the_authored_page_and_original_publisher_image(self):
         with tempfile.TemporaryDirectory() as temporary:
             seed = Path(temporary) / 'seed'

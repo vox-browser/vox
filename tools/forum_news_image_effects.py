@@ -30,6 +30,9 @@ REFERENCE = REPO / 'Tests/Browser/Brave/expected/techcrunch-gradient-image.png'
 ROOT_FIXTURE = REPO / 'Tests/Browser/Brave/input/transparent-root-atomic-effects.html'
 ROOT_REFERENCE = REPO / 'Tests/Browser/Brave/expected/transparent-root-atomic-effects.png'
 ROOT_URL = 'https://techcrunch.com/__vox_regressions__/input/transparent-root-atomic-effects.html'
+MASK_TILE_FIXTURE = REPO / 'Tests/Browser/Brave/input/mask-image-parent-tiles.html'
+MASK_TILE_REFERENCE = REPO / 'Tests/Browser/Brave/expected/mask-image-parent-tiles.png'
+MASK_TILE_URL = 'https://techcrunch.com/__vox_regressions__/input/mask-image-parent-tiles.html'
 
 
 def case_files(case='image-effects'):
@@ -37,6 +40,8 @@ def case_files(case='image-effects'):
         return FIXTURE, REFERENCE, URL
     if case == 'root-origin':
         return ROOT_FIXTURE, ROOT_REFERENCE, ROOT_URL
+    if case == 'mask-tiles':
+        return MASK_TILE_FIXTURE, MASK_TILE_REFERENCE, MASK_TILE_URL
     raise ValueError('Unknown image-effects case: ' + case)
 
 
@@ -130,7 +135,7 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--case', choices=['image-effects', 'root-origin'], default='image-effects')
+    parser.add_argument('--case', choices=['image-effects', 'root-origin', 'mask-tiles'], default='image-effects')
     parser.add_argument('--extension', type=Path, required=True)
     parser.add_argument('--checker', type=Path, required=True)
     parser.add_argument('--diff-tool', type=Path, required=True)

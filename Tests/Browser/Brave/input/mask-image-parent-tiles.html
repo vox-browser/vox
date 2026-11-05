@@ -1,0 +1,16 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Masked image inputs retain their parent raster tiles</title>
+<style>
+html,body{margin:0;background:transparent}body{height:4000px}
+.banner{height:48px;background:#512be6;position:relative}.banner svg{position:absolute;left:20px;top:16px}
+main{position:absolute;top:96px;left:0;width:1024px;height:3000px;background:#0a8935}
+.fade{position:absolute;top:500px;left:900px;width:20px;height:20px;background:#f64c38;opacity:.5}
+.card{position:absolute;left:4px;top:229.09375px;width:484px;height:484px;overflow:hidden;background:#0a8935}
+.card img{position:absolute;left:0;top:0;width:484px;height:484px;object-fit:cover;mask-image:linear-gradient(180deg,#000 70%,transparent)}
+.overlay{position:absolute;inset:0;z-index:2;background:linear-gradient(0deg,rgba(0,0,0,.95),rgba(0,0,0,.25))}
+p{position:absolute;top:1500px}
+</style>
+<div class="banner"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="white" d="m13.06 12 6.44-6.44-1.06-1.06L12 10.94 5.56 4.5 4.5 5.56 10.94 12 4.5 18.44l1.06 1.06L12 13.06l6.44 6.44 1.06-1.06z"/></svg></div><main></main><div class="fade"></div>
+<div class="card"><img src="../resources/techcrunch-hero.webp" decoding="async" width="668" height="445"><div class="overlay"></div></div>
+<p>The masked image crosses three parent raster tiles. Each tile creates a separate non-composited mask layer, retaining the horizontal scope origin and its intersection with the parent tile. The original publisher WebP bytes, fractional vertical position, object-fit crop, gradient mask and dark overlay remain part of this authored rendering regression. These words stay below the captured document viewport. The masked image crosses three parent raster tiles. Each tile creates a separate non-composited mask layer, retaining the horizontal scope origin and its intersection with the parent tile. The original publisher WebP bytes, fractional vertical position, object-fit crop, gradient mask and dark overlay remain part of this authored rendering regression. These words stay below the captured document viewport. The masked image crosses three parent raster tiles. Each tile creates a separate non-composited mask layer, retaining the horizontal scope origin and its intersection with the parent tile. The original publisher WebP bytes, fractional vertical position, object-fit crop, gradient mask and dark overlay remain part of this authored rendering regression. These words stay below the captured document viewport. The masked image crosses three parent raster tiles. Each tile creates a separate non-composited mask layer, retaining the horizontal scope origin and its intersection with the parent tile. The original publisher WebP bytes, fractional vertical position, object-fit crop, gradient mask and dark overlay remain part of this authored rendering regression. These words stay below the captured document viewport. </p>
