@@ -5763,6 +5763,11 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
 		}
 	}
+	if pending := app.rounded_rect_underlay {
+		if !rounded_underlay_offset(&pending, source_command).valid {
+			app.flush_rounded_rect_underlay(page_x, page_y, window_height)
+		}
+	}
 	app.paint_effect_depth = background_clip_effect_depth_after_command(app.paint_effect_depth,
 		source_command.kind)
 	app.paint_svg_mask_depth = background_svg_mask_depth_after_command(app.paint_svg_mask_depth,
@@ -6208,8 +6213,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						app.rounded_rect_underlay = none
 						app.rounded_rect_underlay_source = none
 						radius := f32(clamp(underlay.radius, 0.0, math.min(underlay.width, underlay.height) / 2.0))
-						rect := [f32(underlay.x), f32(underlay.y), f32(underlay.width), f32(underlay.height),
-							radius, radius, radius, radius, radius, radius, radius, radius]!
+						rect := rounded_underlay_rect(&underlay, command, radius)
 						C.native_set_rounded_rect_underlay(&rect[0], app.paint_colors.color(underlay.color, underlay.opacity))
 						set_native_chromium_underlay_color(underlay)
 					}
@@ -6313,8 +6317,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						app.rounded_rect_underlay = none
 						app.rounded_rect_underlay_source = none
 						radius := f32(underlay.radius)
-						rect := [f32(underlay.x), f32(underlay.y), f32(underlay.width), f32(underlay.height),
-							radius, radius, radius, radius, radius, radius, radius, radius]!
+						rect := rounded_underlay_rect(&underlay, command, radius)
 						C.native_set_rounded_rect_underlay(&rect[0], app.paint_colors.color(underlay.color, underlay.opacity))
 						set_native_chromium_underlay_color(underlay)
 					}
@@ -6341,8 +6344,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						app.rounded_rect_underlay = none
 						app.rounded_rect_underlay_source = none
 						radius := f32(underlay.radius)
-						rect := [f32(underlay.x), f32(underlay.y), f32(underlay.width), f32(underlay.height),
-							radius, radius, radius, radius, radius, radius, radius, radius]!
+						rect := rounded_underlay_rect(&underlay, command, radius)
 						C.native_set_rounded_rect_underlay(&rect[0], app.paint_colors.color(underlay.color, underlay.opacity))
 						set_native_chromium_underlay_color(underlay)
 					}
@@ -6374,8 +6376,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						app.rounded_rect_underlay = none
 						app.rounded_rect_underlay_source = none
 						radius := f32(clamp(underlay.radius, 0.0, math.min(underlay.width, underlay.height) / 2.0))
-						rect := [f32(underlay.x), f32(underlay.y), f32(underlay.width), f32(underlay.height),
-							radius, radius, radius, radius, radius, radius, radius, radius]!
+						rect := rounded_underlay_rect(&underlay, command, radius)
 						C.native_set_rounded_rect_underlay(&rect[0], app.paint_colors.color(underlay.color, underlay.opacity))
 						set_native_chromium_underlay_color(underlay)
 					}

@@ -20,9 +20,11 @@ fn chromium_uniform_border_shares_inner_background(border &layout.PaintCommand,
 	background &layout.PaintCommand) bool {
 	if border.kind != 'paint_uniform_border' || background.kind != 'fill_rect'
 		|| border.stroke_width <= 0 || background.radius <= 0 { return false }
-	inset := background.x - border.x
+	offset := rounded_underlay_offset(background, border)
+	if !offset.valid { return false }
+	inset := background.x + offset.x - border.x
 	if inset < border.stroke_width / 2
-		|| background.y != border.y + inset
+		|| background.y + offset.y != border.y + inset
 		|| background.width != border.width - 2 * inset
 		|| background.height != border.height - 2 * inset { return false }
 	for corner in [border.corner_radii.top_left, border.corner_radii.top_right,
@@ -40,8 +42,10 @@ fn chromium_uniform_border_shares_outer_clip(border &layout.PaintCommand,
 		|| border.stroke_width <= 0 || background.radius <= 0 {
 		return false
 	}
+	offset := rounded_underlay_offset(background, border)
+	if !offset.valid { return false }
 	half := border.stroke_width / 2
-	if [background.x + half, background.y + half,
+	if [background.x + offset.x + half, background.y + offset.y + half,
 		background.width - half * 2, background.height - half * 2] !=
 		[border.x, border.y, border.width, border.height] { return false }
 	for corner in [border.corner_radii.top_left, border.corner_radii.top_right,
