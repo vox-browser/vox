@@ -19,7 +19,8 @@ static VoxGraphiteImage image(uint8_t const* pixels)
 
 // vlang.io's 1824x1468 screenshot uploads at 912x734. With its source copy the
 // entry costs 13.4 MiB: within half the default budget, so every tile and
-// repaint reuses one upload. An entry above half the budget still bypasses it.
+// repaint reuses one upload. A larger source keeps only its digest, and an
+// upload above half the budget still bypasses the cache.
 static void large_upload_admission()
 {
     VoxGraphiteImageUploadCache<std::shared_ptr<int>> uploads;
@@ -34,10 +35,38 @@ static void large_upload_admission()
     pixels.back()++;
     assert(!uploads.prepare(large, 912, 734, false).texture);
     pixels.back()--;
-    std::vector<uint8_t> oversized(size_t(2048) * 2048 * 4, 5);
+    // vlang.io's 3993x2317 mascot uploads at 999x580: its 37 MB source does
+    // not fit, but every draw after the first reuses the upload.
+    constexpr int mascot_width = 3993, mascot_height = 2317, mascot_pitch = mascot_width * 4 + 12;
+    std::vector<uint8_t> oversized(size_t(mascot_pitch) * mascot_height);
+    for (size_t index = 0; index < oversized.size(); ++index)
+        oversized[index] = uint8_t(index * 2654435761u >> 13);
     auto huge = image(oversized.data());
-    huge.width = 2048; huge.height = 2048; huge.pitch = 2048 * 4;
-    assert(!uploads.prepare(huge, 1024, 1024, false).pending);
+    huge.width = mascot_width; huge.height = mascot_height; huge.pitch = mascot_pitch;
+    upload = uploads.prepare(huge, 999, 580, false);
+    assert(!upload.texture && upload.pending && upload.pending->source.empty());
+    auto mascot = std::make_shared<int>(92);
+    uploads.finish(std::move(upload), mascot);
+    assert(uploads.prepare(huge, 999, 580, false).texture == mascot);
+    // Every decoded byte still selects the upload; row padding does not.
+    for (size_t at : {size_t(0), size_t(mascot_pitch) * 1158 + 7311, size_t(mascot_pitch) * 2316 + 15971}) {
+        oversized[at] ^= 1;
+        assert(!uploads.prepare(huge, 999, 580, false).texture);
+        oversized[at] ^= 1;
+    }
+    oversized[size_t(mascot_pitch) * 1158 + mascot_width * 4 + 3] ^= 0x55;
+    assert(uploads.prepare(huge, 999, 580, false).texture == mascot);
+    auto swapped = huge; swapped.width = mascot_height; swapped.height = mascot_width;
+    swapped.pitch = mascot_height * 4;
+    assert(!uploads.prepare(swapped, 999, 580, false).texture);
+    std::vector<uint8_t> repacked(size_t(mascot_width) * 4 * mascot_height);
+    for (int y = 0; y < mascot_height; ++y)
+        std::memcpy(repacked.data() + size_t(y) * mascot_width * 4,
+            oversized.data() + size_t(y) * mascot_pitch, size_t(mascot_width) * 4);
+    auto packed = huge; packed.pixels = repacked.data(); packed.pitch = mascot_width * 4;
+    assert(uploads.prepare(packed, 999, 580, false).texture == mascot);
+    // An upload texture above half the budget still bypasses the cache.
+    assert(!uploads.prepare(huge, 2100, 2000, false).pending);
     assert(uploads.prepare(large, 912, 734, false).texture == texture);
 }
 
