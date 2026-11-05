@@ -47,9 +47,42 @@ static void draw_leaves(CGContextRef context, bool canvas)
         1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 20, 30, 200, 255, 0, 3, 1, 1));
 }
 
-static unsigned s_draws, s_uploads, s_flushes, s_declined;
+// A solid fill through the native fill path: the platform records it, then
+// lets the GPU canvas take it or fills it on the CPU canvas.
+static void native_fill(CGContextRef context, float x, float y, float w, float h,
+    uint8_t r, uint8_t g, uint8_t b, bool canvas)
+{
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rect", 9, 0) == 1);
+    ladybird_v_skia_record_rect(context, x, y, w, h, r, g, b, 255);
+    if (ladybird_v_skia_defer_recorded_rect(context, x, y, w, h)) return;
+    CGContextSetRGBFillColor(context, r / 255.0, g / 255.0, b / 255.0, 1);
+    CGContextFillRect(context, CGRectMake(x, y, w, h));
+}
 
-static std::vector<uint8_t> render(bool canvas, bool shared = false)
+static unsigned s_first_uploads, s_first_cpu_leaves;
+static bool s_first_begun;
+
+// Text pages draw mostly solid fills and text, which need no GPU round trip.
+// Before any GPU leaf they stay on the CPU canvas, without uploading or even
+// acquiring GPU surfaces; after one, they join the canvas to keep paint order.
+static void draw_cpu_leaves(CGContextRef context, bool canvas)
+{
+    native_fill(context, 20, css_height - 150, 200, 40, 30, 160, 60, canvas);
+    if (canvas) {
+        s_first_uploads = s_gpu_canvas->uploads;
+        s_first_cpu_leaves = s_gpu_canvas->cpu_leaves;
+        s_first_begun = s_gpu_canvas->begun;
+        assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0) == 1);
+    }
+    assert(ladybird_v_skia_draw_rounded_rect(context, 40, 80, 300, 120, 12, 12, 12, 12, 12, 12, 12, 12,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 230, 240, 250, 255, 1, 0, 1, 1));
+    native_fill(context, 120, css_height - 150, 80, 30, 200, 40, 40, canvas);
+}
+
+static unsigned s_draws, s_uploads, s_flushes, s_declined, s_cpu_leaves;
+
+static std::vector<uint8_t> render(bool canvas, bool shared = false,
+    void (*leaves)(CGContextRef, bool) = draw_leaves)
 {
     auto pixels = backdrop();
     auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
@@ -69,7 +102,7 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false)
         int rect[] {0, strip_top, width, strip_height};
         assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
     }
-    draw_leaves(context, canvas);
+    leaves(context, canvas);
     ladybird_v_skia_finish_shared_recording();
     ladybird_v_skia_set_shared_recording(0, 0, 0);
     if (canvas) {
@@ -77,6 +110,7 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false)
         s_uploads = s_gpu_canvas->uploads;
         s_flushes = s_gpu_canvas->flushes;
         s_declined = s_gpu_canvas->declined;
+        s_cpu_leaves = s_gpu_canvas->cpu_leaves;
         ladybird_v_skia_gpu_canvas_end();
         assert(!s_gpu_canvas);
     }
@@ -142,6 +176,38 @@ int main()
             << " declined=" << s_declined << '\n';
         return 1;
     }
+    // Solid fills before any GPU leaf stay on the CPU canvas; one after the
+    // rounded fill joins the GPU canvas above it.
+    auto cpu_reference = render(false, false, draw_cpu_leaves);
+    auto cpu_candidate = render(true, false, draw_cpu_leaves);
+    if (s_first_uploads || s_first_begun || s_first_cpu_leaves != 1 || s_draws != 2
+        || s_uploads != 1 || s_flushes || s_cpu_leaves != 1) {
+        std::cerr << "CPU leaves took the wrong path: first uploads=" << s_first_uploads
+            << " begun=" << s_first_begun << " draws=" << s_draws << " uploads=" << s_uploads
+            << " flushes=" << s_flushes << " cpu_leaves=" << s_cpu_leaves << '\n';
+        return 1;
+    }
+    int cpu_error = 0;
+    for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
+        size_t at = (size_t(y) * width + x) * 4;
+        bool inside = y >= strip_top && y < strip_top + strip_height;
+        for (int c = 0; c < 4; ++c) {
+            if (!inside && cpu_candidate[at + c] != original[at + c]) {
+                std::cerr << "CPU-leaf frame wrote outside the strip at " << x << "," << y << '\n';
+                return 1;
+            }
+            cpu_error = std::max(cpu_error, std::abs(int(cpu_candidate[at + c]) - int(cpu_reference[at + c])));
+        }
+    }
+    // The second fill lies above the rounded fill, which covers the first.
+    size_t above = (size_t(135 * scale) * width + 160 * scale) * 4;
+    size_t below = (size_t(135 * scale) * width + 60 * scale) * 4;
+    if (cpu_error > 3 || cpu_candidate[above] != 200 || cpu_candidate[above + 1] != 40
+        || cpu_candidate[below] != 230) {
+        std::cerr << "CPU-leaf frame differs by " << cpu_error << " or lost paint order\n";
+        return 1;
+    }
     std::cout << "GPU canvas matches per-leaf replay within " << max_error << " levels ("
-        << differing << " channels differ); outside pixels, CPU paint order and shared recordings preserved\n";
+        << differing << " channels differ); outside pixels, CPU paint order, CPU leaves and "
+        "shared recordings preserved\n";
 }

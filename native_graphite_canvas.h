@@ -28,12 +28,33 @@ void canvas_reset()
     canvas_recorder.reset();
 }
 
+// Repainted rectangles change size from frame to frame (scroll steps, damage
+// and the 8-pixel alignment), so surfaces are allocated with rounded-up sizes
+// and reused whenever they are large enough; a tile uses its top-left corner.
+constexpr size_t canvas_pool_byte_limit = 64 * 1024 * 1024;
+
+size_t canvas_surface_bytes(SkSurface const& surface)
+{
+    return size_t(surface.width()) * size_t(surface.height()) * 4;
+}
+
 void canvas_release_tiles()
 {
+    size_t pooled = 0;
+    for (auto const& surface : canvas_surface_pool) pooled += canvas_surface_bytes(*surface);
     for (auto& tile : canvas_tiles) {
-        if (canvas_surface_pool.size() < 8) canvas_surface_pool.push_back(std::move(tile.surface));
+        size_t bytes = canvas_surface_bytes(*tile.surface);
+        if (canvas_surface_pool.size() < 8 && pooled + bytes <= canvas_pool_byte_limit) {
+            pooled += bytes;
+            canvas_surface_pool.push_back(std::move(tile.surface));
+        }
     }
     canvas_tiles.clear();
+}
+
+int canvas_rounded_size(int value, int step)
+{
+    return std::min(16384, (value + step - 1) / step * step);
 }
 
 void apply_canvas_clips(SkCanvas* canvas, CanvasTile const& tile,
@@ -99,14 +120,19 @@ int vox_graphite_canvas_begin(int const* rects, int count)
             return 0;
         }
         sk_sp<SkSurface> surface;
+        auto best = canvas_surface_pool.end();
         for (auto it = canvas_surface_pool.begin(); it != canvas_surface_pool.end(); ++it) {
-            if ((*it)->width() == rect[2] && (*it)->height() == rect[3]) {
-                surface = std::move(*it);
-                canvas_surface_pool.erase(it);
-                break;
-            }
+            if ((*it)->width() >= rect[2] && (*it)->height() >= rect[3]
+                && (best == canvas_surface_pool.end()
+                    || canvas_surface_bytes(**it) < canvas_surface_bytes(**best))) best = it;
         }
-        if (!surface) surface = vox_shared_surface(canvas_recorder.get(), canvas_info(rect[2], rect[3]));
+        if (best != canvas_surface_pool.end()) {
+            surface = std::move(*best);
+            canvas_surface_pool.erase(best);
+        } else {
+            surface = vox_shared_surface(canvas_recorder.get(),
+                canvas_info(canvas_rounded_size(rect[2], 256), canvas_rounded_size(rect[3], 128)));
+        }
         if (!surface) {
             canvas_release_tiles();
             return 0;

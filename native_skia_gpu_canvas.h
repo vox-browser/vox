@@ -17,9 +17,13 @@ struct GpuCanvasFrame {
     std::vector<SkIRect> rects;
     // GPU surfaces: each repainted rectangle widened to the 8-pixel dither grid.
     std::vector<SkIRect> tiles;
+    // Tile and clip rectangles for vox_graphite_canvas_begin. The GPU surfaces
+    // are acquired only when the frame's first GPU leaf needs them.
+    std::vector<int> device;
+    bool begun = false;
     bool gpu_valid = false;
     bool cpu_stale = false;
-    unsigned draws = 0, uploads = 0, flushes = 0, declined = 0;
+    unsigned draws = 0, uploads = 0, flushes = 0, declined = 0, cpu_leaves = 0;
     // Verification: compared pixels, differing pixels and largest channel error.
     uint64_t compared = 0, differing = 0;
     int max_error = 0;
@@ -33,6 +37,9 @@ struct GpuCanvasFrame {
     std::map<std::string, unsigned> flush_reasons;
     // Diagnostics: why GPU-capable leaves still used their own raster path.
     std::map<std::string, unsigned> leaf_misses;
+    // Diagnostics: GPU leaves drawn on the canvas by kind, and their device area.
+    std::map<std::string, unsigned> leaf_kinds;
+    double leaf_area = 0;
     uint64_t leaf_differing = 0;
     int leaf_error = 0;
 };
@@ -186,6 +193,10 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
     auto* api = gpu_canvas_api();
     auto* data = static_cast<uint8_t const*>(CGBitmapContextGetData(frame.destination));
     if (!api || !data) return false;
+    if (!frame.begun) {
+        if (!api->begin(frame.device.data(), int(frame.tiles.size()))) return false;
+        frame.begun = true;
+    }
     CGContextFlush(frame.destination);
     size_t pitch = CGBitmapContextGetBytesPerRow(frame.destination);
     for (size_t index = 0; index < frame.tiles.size(); ++index) {
@@ -204,6 +215,10 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
 
 void gpu_canvas_name_leaf(GpuCanvasFrame& frame, char const* kind, SkRect bounds, int fill, size_t clips)
 {
+    if (gpu_canvas_diagnostics()) {
+        ++frame.leaf_kinds[kind];
+        frame.leaf_area += double(bounds.width()) * bounds.height();
+    }
     if (!gpu_canvas_verify_leaves()) return;
     std::snprintf(frame.leaf, sizeof frame.leaf, "%s fill=%d root=%d clips=%zu msaa_grid=%zu bounds=%.0f,%.0f,%.0fx%.0f",
         kind, fill, int(s_raster_layer_is_root), clips, s_msaa_grid_tiles.size(),
@@ -291,12 +306,15 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
     return false;
 }
 
+bool gpu_canvas_cpu_leaf_stays_on_cpu(CGContextRef destination);
+
 // A solid CoreGraphics fill of an approved command: draw it on the GPU canvas.
 int gpu_canvas_defer_rect(CGContextRef destination, float x, float y, float width, float height,
     uint8_t const* rgba)
 {
     auto* frame = s_gpu_canvas.get();
     if (!frame || frame->destination != destination) return 0;
+    if (gpu_canvas_cpu_leaf_stays_on_cpu(destination)) return 0;
     std::vector<VoxGraphiteCanvasClip> clips;
     auto* canvas = gpu_canvas_for_leaf(destination, clips);
     if (!canvas) return 0;
@@ -377,6 +395,7 @@ int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
     int region_left, int region_top, char const* name, std::function<bool(uint32_t*)> const& raster)
 {
     if (!s_gpu_canvas || s_gpu_canvas->destination != destination) return 0;
+    if (gpu_canvas_cpu_leaf_stays_on_cpu(destination)) return 0;
     std::vector<VoxGraphiteCanvasClip> clips;
     auto* frame = gpu_canvas_for_leaf(destination, clips);
     if (!frame) return 0;
@@ -392,6 +411,21 @@ int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
     frame->cpu_stale = true;
     ++frame->draws;
     return gpu_canvas_verify() ? 1 : 2;
+}
+
+// Text and solid rectangles need no GPU round trip on the CPU canvas. While no
+// GPU work is pending, draw them there and leave the GPU canvas idle: a frame
+// of only such leaves (most of a text page) then costs nothing extra. Once a
+// GPU leaf has drawn, they join the canvas so paint order holds without a read.
+bool gpu_canvas_cpu_leaf_stays_on_cpu(CGContextRef destination)
+{
+    auto* frame = s_gpu_canvas.get();
+    if (!frame || frame->destination != destination || !frame->in_gpu_command || frame->cpu_stale)
+        return false;
+    // The CPU canvas changes underneath any uploaded copy.
+    frame->gpu_valid = false;
+    ++frame->cpu_leaves;
+    return true;
 }
 
 // A leaf of an approved command that must draw on the CPU canvas.
@@ -443,7 +477,8 @@ extern "C" int ladybird_v_skia_gpu_canvas_begin(CGContextRef destination, int co
         device.insert(device.end(), {tile.x(), tile.y(), tile.width(), tile.height(),
             rect.x(), rect.y(), rect.width(), rect.height()});
     }
-    if (frame->rects.empty() || !api->begin(device.data(), int(frame->rects.size()))) return 0;
+    if (frame->rects.empty()) return 0;
+    frame->device = std::move(device);
     s_gpu_canvas = std::move(frame);
     return 1;
 }
@@ -462,9 +497,9 @@ extern "C" void ladybird_v_skia_gpu_canvas_end()
     if (!s_gpu_canvas) return;
     gpu_canvas_flush();
     if (gpu_canvas_diagnostics())
-        std::fprintf(stderr, "VOX_GPU_CANVAS rects=%zu draws=%u uploads=%u flushes=%u declined=%u compared=%llu differing=%llu max_error=%d\n",
+        std::fprintf(stderr, "VOX_GPU_CANVAS rects=%zu draws=%u uploads=%u flushes=%u declined=%u cpu_leaves=%u compared=%llu differing=%llu max_error=%d\n",
             s_gpu_canvas->rects.size(), s_gpu_canvas->draws, s_gpu_canvas->uploads,
-            s_gpu_canvas->flushes, s_gpu_canvas->declined,
+            s_gpu_canvas->flushes, s_gpu_canvas->declined, s_gpu_canvas->cpu_leaves,
             (unsigned long long)s_gpu_canvas->compared, (unsigned long long)s_gpu_canvas->differing,
             s_gpu_canvas->max_error);
     if (gpu_canvas_diagnostics() && !s_gpu_canvas->leaf_misses.empty()) {
@@ -472,6 +507,12 @@ extern "C" void ladybird_v_skia_gpu_canvas_end()
         for (auto const& [name, count] : s_gpu_canvas->leaf_misses)
             misses += " " + name + "=" + std::to_string(count);
         std::fprintf(stderr, "VOX_GPU_CANVAS_MISSES%s\n", misses.c_str());
+    }
+    if (gpu_canvas_diagnostics() && !s_gpu_canvas->leaf_kinds.empty()) {
+        std::string kinds;
+        for (auto const& [name, count] : s_gpu_canvas->leaf_kinds)
+            kinds += " " + name + "=" + std::to_string(count);
+        std::fprintf(stderr, "VOX_GPU_CANVAS_LEAVES%s area=%.0f\n", kinds.c_str(), s_gpu_canvas->leaf_area);
     }
     if (gpu_canvas_diagnostics() && !s_gpu_canvas->flush_reasons.empty()) {
         std::string reasons;
