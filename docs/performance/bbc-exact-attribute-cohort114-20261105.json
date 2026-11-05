@@ -1,0 +1,1210 @@
+{
+  "status": "Cohort114valid21captureaudits but10%targetfails. Medians27.939BVox/27.605Bcontrol/18.387BBravelower. Exactindex pointregression334473632(1.212%),3improvements4regressions; no savingcredit. Experiment/controlremoved5871c29 after330rollbackexecutions/334tooltests pass. No broadtrigger/cadencereset/catalogentry.",
+  "implementation_commit": "24b996c79",
+  "control_commit": "4cc1e8921",
+  "rollback_commit": "5871c29",
+  "statistics": {
+    "valid_capture_cohort": true,
+    "full_comparison_available": true,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 28382981154,
+            "upper": 28382981154
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26309152694,
+            "upper": 26309152694
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17653944938,
+            "upper": 17689419133
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 26842306015,
+            "upper": 26842306015
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27866366528,
+            "upper": 27866366528
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17592335128,
+            "upper": 17613847867
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 27939302206,
+            "upper": 27939302206
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27604828574,
+            "upper": 27604828574
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17881805092,
+            "upper": 17881805092
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 28835455067,
+            "upper": 28835455067
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26642961648,
+            "upper": 26642961648
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 18510107008,
+            "upper": 18547051973
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 28211699809,
+            "upper": 28211699809
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 29919571884,
+            "upper": 29919571884
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 18518987350,
+            "upper": 18520049571
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 27080661760,
+            "upper": 27080661760
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27949774454,
+            "upper": 27949774454
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 18387244433,
+            "upper": 18405848729
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 27401993679,
+            "upper": 27401993679
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26581280820,
+            "upper": 26581280820
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 18602267529,
+            "upper": 18633539548
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      }
+    ],
+    "failed_attempts": [],
+    "attempts_retained": 21,
+    "capture_audits_passed": 21,
+    "median_vox": 27939302206,
+    "median_control": 27604828574,
+    "median_brave_lower": 18387244433,
+    "point_reduction": -334473632,
+    "point_fraction": -0.012116490095324436,
+    "observed_complete_vox_control_pairs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "partial_point_reduction": -334473632,
+    "paired_control_minus_vox": [
+      -2073828460,
+      1024060513,
+      -334473632,
+      -2192493419,
+      1707872075,
+      869112694,
+      -820712859
+    ],
+    "improvements": 3,
+    "regressions": 4,
+    "worst_vox_over_best_control": 1.0960237071251688,
+    "strict_left": 288354550670,
+    "strict_right": 158331016152,
+    "conservative_brave_ratio": 1.639091960060801,
+    "target_met": false,
+    "broad_trigger": false,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 110,
+      "acceptance_browser_attempts": 2377,
+      "last_measured_id": 114,
+      "preflight_only_ids": [
+        104,
+        110,
+        111,
+        113
+      ]
+    },
+    "qualification": "Everyattempt retained;acceptance requires7complete successfultriples.No counter replacedwithzero;unavailablefullstatistics remainnull. Invalidpixel/ownership/identity/nativeexit cohort earnsnoacceptance/savingcredit. Observedpositivefull/partialmatchedpoint>=5M conservativelytriggersbroadchecks.Medians/gate alwaysusecreation-to-PNG launch_instruction_interval,never asymmetricnavigationdiagnostic.",
+    "unix": 1793894182.899992
+  },
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "exact_attribute_before_png": true,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "exact_attribute_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "ae288b903196bc4e3482f587078963672c6df831cda3c5f2595ec16d5feeeaf0",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "daeda92a20e851612ae2b4a8a3c9d72cbdff084de3e192fd5825c13f242131d2",
+        "dirty": true,
+        "head": "0562ce55366e6b9a7ebe3080c0d76d835330ec18",
+        "repository_sha256": "97c04cbab155388644dc77d5ca4c9f8070b174482ea3fd763ec7721f17cbba0f"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "0562ce55366e6b9a7ebe3080c0d76d835330ec18",
+        "id": "973c04952f5e40e285be392cad59f679"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "daeda92a20e851612ae2b4a8a3c9d72cbdff084de3e192fd5825c13f242131d2",
+        "dirty": true,
+        "head": "a8f911b707842459fd805195d91d2c026820a8ae",
+        "repository_sha256": "3207f36fa0c5545989b686c15895303fa64b2c6a1021658c617f136759f033f6"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; only exact attribute rule buckets disabled in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793893930.051221
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/object-receiver-disabled arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793893940.936028
+  },
+  "source_proof": {
+    "checked": {
+      "css/exact_attribute_rule_buckets_test.v": "0dc9134e57a0367b3e7207e63e3d2fe8ae608a84c13a2778e3eda973b2f0ae0c",
+      "css/attribute_tag_bucket_test.v": "8196132d496c6231e73a4c30e63671b9d73fc97ce4f9943928b9b84259dc72ce",
+      "css/selector_attribute_visit_test.v": "3a1daa5b4aa67c0d6b41bf5d2faccc96c8daef9e074c3221f629af855a9061fe",
+      "css/html_attribute_case_test.v": "62469178396938ccdbbe864f98cf51cf87f3736c859e61cd587fd9f5946abb42",
+      "css/direct_rule_bucket_collection_test.v": "7058f5c3ba806336917d7a86b70790e8162af1e5001be36f01a8dbf75b10d513",
+      "css/rule_bucket_iterator_test.v": "5f06622596a77631337dc6ff7b871c7908a4155e6ec775f1ba294dea933e7ccf",
+      "css/cached_rule_bucket_lookup_test.v": "ca02c57afcdfb964d222c167f50129126d5cef6ea3ea639bf77cdf14ce96cfae",
+      "css/rule_bucket_collection_test.v": "58d84030e7e36791bbcbc3586c39c33a1c0f8bd1a02505c847cb1630c6773d8c",
+      "css/sparse_rule_bucket_test.v": "e7ce165cd3638f84462cc957a86cd6bee9e83bcd4dbd0fa7ab7ac92c34c61348",
+      "css/pseudo_candidate_direct_test.v": "f0d7bab51bc1d17955401e56e067ecc41fedeb8fc38a722178838ba55dc37f05",
+      "css/css_scope_matching_test.v": "a05701145b9ba77ae05c88c6bd72bef5a042cfa41390e6c3dfcd931ae2ee2812",
+      "css/quirks_selector_buckets_test.v": "0e034e6ef08a69467ef1d864c0ac879f2ca5f0b20df784ce576a6a551af9b1b2",
+      "css/css_scope_invalidation_test.v": "2a07f2f5072c8abfbc4607f40e7141a6b8a5cb0c22a803fdd47da636aeae7a7c",
+      "css/unchanged_has_invalidation_test.v": "3cf259d8f4167c56663e1944464521bffc709abebd0543a791b20ae460f3fac6",
+      "css/exact_attribute_rule_buckets.v": "16ec57f8bf94389ae716d85243df65499a4af4393454d5980c555791a4ffcb0f",
+      "css/style_scope_cache.v": "8e39792741ef3f0e2d64a0158ae438d7ae6b04025bdb766d3ea38de62fe1c21a",
+      "css/rule_bucket_iterator.v": "a376dc9a3c42d675a93f9c578b263688a360da5f991fc062008ca0372bd3690f",
+      "css/computed_interpolation.v": "2ff7ec1425accddaddeb68bb86039e2ef8e43f3ba7309bf644700bc1b0a4d950",
+      "css/selectors.v": "c7c963f613baa2f0ade2bbdfa25abdc21c1847933a88a990ce5f1c1630bc8307",
+      "css/attribute_tag_bucket.v": "fa6c6862a7908676dbd583d8a43fce55653b8cdb5397d64977627503b9956e35",
+      "css/html_attribute_case.v": "8e4844f5c6d5b5ef67e0fdeac4235a281d9402094535a104dff81d116c33e523"
+    },
+    "build_head": "0562ce55366e6b9a7ebe3080c0d76d835330ec18",
+    "committed_sources_match": true,
+    "matching_focused_matrix": "initial",
+    "current_sources_match_passing_matrix": "current-source",
+    "generated_c_preserved": false,
+    "qualification": "Every checked build-HEAD file matches one complete passed61case matrix, not a per-file mixture. Initial and later shared-comparison-helper versions each pass366executions. Current checked sources match one complete passing matrix too. Validation applies to pinned completed bundle; no claim it contains later shared edits. Parallel receipt requires unchanged complete generation input fingerprints; no sealedgeneratedC claim."
+  },
+  "current_source_focus": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_exact_attribute_buckets_filter_values_and_read_live_replacements",
+          "test_exact_attribute_buckets_preserve_flags_namespaces_and_class_id_priority",
+          "test_exact_attribute_buckets_keep_pseudo_candidates_and_complete_selectors",
+          "test_exact_attribute_buckets_do_not_filter_attributes_of_an_ancestor_or_is_argument",
+          "test_exact_attribute_buckets_keep_cascade_and_attribute_invalidation",
+          "test_exact_attribute_buckets_keep_has_mutation_filtering_live",
+          "test_attribute_tag_bucket_avoids_unrelated_elements_but_keeps_full_matching",
+          "test_attribute_tag_bucket_preserves_class_id_and_namespace_dependent_buckets",
+          "test_attribute_tag_bucket_keeps_pseudo_candidates_and_live_attribute_values",
+          "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+          "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+          "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+          "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+          "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+          "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+          "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+          "test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+          "test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+          "test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity",
+          "test_rule_bucket_iterator_borrows_ordered_vectors_and_keeps_empty_buckets",
+          "test_pseudo_class_rule_comparison_reuses_contexts_without_candidate_vectors",
+          "test_cached_rule_buckets_observe_empty_replaced_and_removed_entries",
+          "test_rule_bucket_collection_preserves_class_id_tag_attribute_and_fallback_order",
+          "test_attribute_bucket_names_borrow_ascii_without_changing_existing_folding",
+          "test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combination",
+          "test_sparse_root_buckets_observe_live_attachment_population_and_removal",
+          "test_direct_pseudo_candidate_preserves_every_bucket_and_abstract_target",
+          "test_direct_pseudo_candidate_observes_mutations_duplicates_empty_buckets_and_gc",
+          "test_direct_pseudo_candidate_keeps_origin_layer_and_shadow_scope_queries",
+          "test_scope_pseudo_candidate_queries_do_not_allocate_origin_lists",
+          "test_scope_rule_only_applies_below_matching_scope_root",
+          "test_scope_limit_excludes_limit_subtree",
+          "test_scope_relative_child_selector_uses_scope_root",
+          "test_scope_direct_declarations_apply_to_root_with_zero_specificity",
+          "test_scope_direct_declarations_are_matched_through_scope_pseudo",
+          "test_scope_does_not_match_its_root_without_scope_or_nesting_selector",
+          "test_scope_searches_past_a_limited_nearest_root",
+          "test_explicit_scope_root_can_be_a_shadow_host",
+          "test_implicit_scope_root_only_matches_through_scope_pseudo",
+          "test_scope_proximity_wins_before_source_order",
+          "test_quirks_class_and_id_buckets_and_ancestor_filter_fold_ascii_case",
+          "test_constructed_shadow_sheet_shared_cache_is_not_reused_by_quirks_scope",
+          "test_scope_boundary_mutations_invalidate_descendant_styles",
+          "test_scope_boundary_selectors_contribute_selector_insights",
+          "test_local_link_selectors_contribute_selector_insights",
+          "test_slotted_argument_contributes_selector_insights",
+          "test_has_invalidation_tracks_featureless_and_sibling_sensitive_arguments",
+          "test_pending_has_invalidations_deduplicate_by_node_without_changing_order",
+          "test_pending_has_invalidation_coalesces_complete_child_list_features",
+          "test_pending_has_mutation_features_track_pseudo_classes_and_sibling_relationships",
+          "test_slotted_argument_builds_invalidation_sets",
+          "test_scope_root_class_change_invalidates_its_subtree",
+          "test_unchanged_has_arguments_keep_descendant_style_after_irrelevant_child_mutations",
+          "test_changed_positive_and_negated_has_arguments_restyle_descendants",
+          "test_short_circuit_has_arguments_keep_later_alternatives_live",
+          "test_has_sibling_results_recheck_featureless_adjacency_changes",
+          "test_later_stylesheet_queries_join_retained_has_observations",
+          "test_scoped_and_namespace_has_observations_keep_conservative_invalidation",
+          "test_has_observation_overflow_keeps_later_state_changes_live",
+          "test_has_observations_outlive_a_retiring_style_query_workspace",
+          "test_equal_has_truth_keeps_new_hover_dependencies_live"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_exact_attribute_buckets_filter_values_and_read_live_replacements",
+          "test_exact_attribute_buckets_preserve_flags_namespaces_and_class_id_priority",
+          "test_exact_attribute_buckets_keep_pseudo_candidates_and_complete_selectors",
+          "test_exact_attribute_buckets_do_not_filter_attributes_of_an_ancestor_or_is_argument",
+          "test_exact_attribute_buckets_keep_cascade_and_attribute_invalidation",
+          "test_exact_attribute_buckets_keep_has_mutation_filtering_live",
+          "test_attribute_tag_bucket_avoids_unrelated_elements_but_keeps_full_matching",
+          "test_attribute_tag_bucket_preserves_class_id_and_namespace_dependent_buckets",
+          "test_attribute_tag_bucket_keeps_pseudo_candidates_and_live_attribute_values",
+          "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+          "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+          "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+          "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+          "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+          "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+          "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+          "test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+          "test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+          "test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity",
+          "test_rule_bucket_iterator_borrows_ordered_vectors_and_keeps_empty_buckets",
+          "test_pseudo_class_rule_comparison_reuses_contexts_without_candidate_vectors",
+          "test_cached_rule_buckets_observe_empty_replaced_and_removed_entries",
+          "test_rule_bucket_collection_preserves_class_id_tag_attribute_and_fallback_order",
+          "test_attribute_bucket_names_borrow_ascii_without_changing_existing_folding",
+          "test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combination",
+          "test_sparse_root_buckets_observe_live_attachment_population_and_removal",
+          "test_direct_pseudo_candidate_preserves_every_bucket_and_abstract_target",
+          "test_direct_pseudo_candidate_observes_mutations_duplicates_empty_buckets_and_gc",
+          "test_direct_pseudo_candidate_keeps_origin_layer_and_shadow_scope_queries",
+          "test_scope_pseudo_candidate_queries_do_not_allocate_origin_lists",
+          "test_scope_rule_only_applies_below_matching_scope_root",
+          "test_scope_limit_excludes_limit_subtree",
+          "test_scope_relative_child_selector_uses_scope_root",
+          "test_scope_direct_declarations_apply_to_root_with_zero_specificity",
+          "test_scope_direct_declarations_are_matched_through_scope_pseudo",
+          "test_scope_does_not_match_its_root_without_scope_or_nesting_selector",
+          "test_scope_searches_past_a_limited_nearest_root",
+          "test_explicit_scope_root_can_be_a_shadow_host",
+          "test_implicit_scope_root_only_matches_through_scope_pseudo",
+          "test_scope_proximity_wins_before_source_order",
+          "test_quirks_class_and_id_buckets_and_ancestor_filter_fold_ascii_case",
+          "test_constructed_shadow_sheet_shared_cache_is_not_reused_by_quirks_scope",
+          "test_scope_boundary_mutations_invalidate_descendant_styles",
+          "test_scope_boundary_selectors_contribute_selector_insights",
+          "test_local_link_selectors_contribute_selector_insights",
+          "test_slotted_argument_contributes_selector_insights",
+          "test_has_invalidation_tracks_featureless_and_sibling_sensitive_arguments",
+          "test_pending_has_invalidations_deduplicate_by_node_without_changing_order",
+          "test_pending_has_invalidation_coalesces_complete_child_list_features",
+          "test_pending_has_mutation_features_track_pseudo_classes_and_sibling_relationships",
+          "test_slotted_argument_builds_invalidation_sets",
+          "test_scope_root_class_change_invalidates_its_subtree",
+          "test_unchanged_has_arguments_keep_descendant_style_after_irrelevant_child_mutations",
+          "test_changed_positive_and_negated_has_arguments_restyle_descendants",
+          "test_short_circuit_has_arguments_keep_later_alternatives_live",
+          "test_has_sibling_results_recheck_featureless_adjacency_changes",
+          "test_later_stylesheet_queries_join_retained_has_observations",
+          "test_scoped_and_namespace_has_observations_keep_conservative_invalidation",
+          "test_has_observation_overflow_keeps_later_state_changes_live",
+          "test_has_observations_outlive_a_retiring_style_query_workspace",
+          "test_equal_has_truth_keeps_new_hover_dependencies_live"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_exact_attribute_buckets_filter_values_and_read_live_replacements",
+          "test_exact_attribute_buckets_preserve_flags_namespaces_and_class_id_priority",
+          "test_exact_attribute_buckets_keep_pseudo_candidates_and_complete_selectors",
+          "test_exact_attribute_buckets_do_not_filter_attributes_of_an_ancestor_or_is_argument",
+          "test_exact_attribute_buckets_keep_cascade_and_attribute_invalidation",
+          "test_exact_attribute_buckets_keep_has_mutation_filtering_live",
+          "test_attribute_tag_bucket_avoids_unrelated_elements_but_keeps_full_matching",
+          "test_attribute_tag_bucket_preserves_class_id_and_namespace_dependent_buckets",
+          "test_attribute_tag_bucket_keeps_pseudo_candidates_and_live_attribute_values",
+          "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+          "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+          "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+          "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+          "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+          "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+          "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+          "test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+          "test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+          "test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity",
+          "test_rule_bucket_iterator_borrows_ordered_vectors_and_keeps_empty_buckets",
+          "test_pseudo_class_rule_comparison_reuses_contexts_without_candidate_vectors",
+          "test_cached_rule_buckets_observe_empty_replaced_and_removed_entries",
+          "test_rule_bucket_collection_preserves_class_id_tag_attribute_and_fallback_order",
+          "test_attribute_bucket_names_borrow_ascii_without_changing_existing_folding",
+          "test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combination",
+          "test_sparse_root_buckets_observe_live_attachment_population_and_removal",
+          "test_direct_pseudo_candidate_preserves_every_bucket_and_abstract_target",
+          "test_direct_pseudo_candidate_observes_mutations_duplicates_empty_buckets_and_gc",
+          "test_direct_pseudo_candidate_keeps_origin_layer_and_shadow_scope_queries",
+          "test_scope_pseudo_candidate_queries_do_not_allocate_origin_lists",
+          "test_scope_rule_only_applies_below_matching_scope_root",
+          "test_scope_limit_excludes_limit_subtree",
+          "test_scope_relative_child_selector_uses_scope_root",
+          "test_scope_direct_declarations_apply_to_root_with_zero_specificity",
+          "test_scope_direct_declarations_are_matched_through_scope_pseudo",
+          "test_scope_does_not_match_its_root_without_scope_or_nesting_selector",
+          "test_scope_searches_past_a_limited_nearest_root",
+          "test_explicit_scope_root_can_be_a_shadow_host",
+          "test_implicit_scope_root_only_matches_through_scope_pseudo",
+          "test_scope_proximity_wins_before_source_order",
+          "test_quirks_class_and_id_buckets_and_ancestor_filter_fold_ascii_case",
+          "test_constructed_shadow_sheet_shared_cache_is_not_reused_by_quirks_scope",
+          "test_scope_boundary_mutations_invalidate_descendant_styles",
+          "test_scope_boundary_selectors_contribute_selector_insights",
+          "test_local_link_selectors_contribute_selector_insights",
+          "test_slotted_argument_contributes_selector_insights",
+          "test_has_invalidation_tracks_featureless_and_sibling_sensitive_arguments",
+          "test_pending_has_invalidations_deduplicate_by_node_without_changing_order",
+          "test_pending_has_invalidation_coalesces_complete_child_list_features",
+          "test_pending_has_mutation_features_track_pseudo_classes_and_sibling_relationships",
+          "test_slotted_argument_builds_invalidation_sets",
+          "test_scope_root_class_change_invalidates_its_subtree",
+          "test_unchanged_has_arguments_keep_descendant_style_after_irrelevant_child_mutations",
+          "test_changed_positive_and_negated_has_arguments_restyle_descendants",
+          "test_short_circuit_has_arguments_keep_later_alternatives_live",
+          "test_has_sibling_results_recheck_featureless_adjacency_changes",
+          "test_later_stylesheet_queries_join_retained_has_observations",
+          "test_scoped_and_namespace_has_observations_keep_conservative_invalidation",
+          "test_has_observation_overflow_keeps_later_state_changes_live",
+          "test_has_observations_outlive_a_retiring_style_query_workspace",
+          "test_equal_has_truth_keeps_new_hover_dependencies_live"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/css/exact_attribute_rule_buckets_test.v": "0dc9134e57a0367b3e7207e63e3d2fe8ae608a84c13a2778e3eda973b2f0ae0c",
+      "/Users/alex/code/vox2/css/attribute_tag_bucket_test.v": "8196132d496c6231e73a4c30e63671b9d73fc97ce4f9943928b9b84259dc72ce",
+      "/Users/alex/code/vox2/css/selector_attribute_visit_test.v": "3a1daa5b4aa67c0d6b41bf5d2faccc96c8daef9e074c3221f629af855a9061fe",
+      "/Users/alex/code/vox2/css/html_attribute_case_test.v": "62469178396938ccdbbe864f98cf51cf87f3736c859e61cd587fd9f5946abb42",
+      "/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v": "7058f5c3ba806336917d7a86b70790e8162af1e5001be36f01a8dbf75b10d513",
+      "/Users/alex/code/vox2/css/rule_bucket_iterator_test.v": "5f06622596a77631337dc6ff7b871c7908a4155e6ec775f1ba294dea933e7ccf",
+      "/Users/alex/code/vox2/css/cached_rule_bucket_lookup_test.v": "ca02c57afcdfb964d222c167f50129126d5cef6ea3ea639bf77cdf14ce96cfae",
+      "/Users/alex/code/vox2/css/rule_bucket_collection_test.v": "58d84030e7e36791bbcbc3586c39c33a1c0f8bd1a02505c847cb1630c6773d8c",
+      "/Users/alex/code/vox2/css/sparse_rule_bucket_test.v": "e7ce165cd3638f84462cc957a86cd6bee9e83bcd4dbd0fa7ab7ac92c34c61348",
+      "/Users/alex/code/vox2/css/pseudo_candidate_direct_test.v": "f0d7bab51bc1d17955401e56e067ecc41fedeb8fc38a722178838ba55dc37f05",
+      "/Users/alex/code/vox2/css/css_scope_matching_test.v": "a05701145b9ba77ae05c88c6bd72bef5a042cfa41390e6c3dfcd931ae2ee2812",
+      "/Users/alex/code/vox2/css/quirks_selector_buckets_test.v": "0e034e6ef08a69467ef1d864c0ac879f2ca5f0b20df784ce576a6a551af9b1b2",
+      "/Users/alex/code/vox2/css/css_scope_invalidation_test.v": "2a07f2f5072c8abfbc4607f40e7141a6b8a5cb0c22a803fdd47da636aeae7a7c",
+      "/Users/alex/code/vox2/css/unchanged_has_invalidation_test.v": "3cf259d8f4167c56663e1944464521bffc709abebd0543a791b20ae460f3fac6",
+      "/Users/alex/code/vox2/css/exact_attribute_rule_buckets.v": "16ec57f8bf94389ae716d85243df65499a4af4393454d5980c555791a4ffcb0f",
+      "/Users/alex/code/vox2/css/style_scope_cache.v": "8e39792741ef3f0e2d64a0158ae438d7ae6b04025bdb766d3ea38de62fe1c21a",
+      "/Users/alex/code/vox2/css/rule_bucket_iterator.v": "a376dc9a3c42d675a93f9c578b263688a360da5f991fc062008ca0372bd3690f",
+      "/Users/alex/code/vox2/css/computed_interpolation.v": "b1dcb8d10b856d484bee801177f8de9b3c6612a99e322531afb17cb8160b3781",
+      "/Users/alex/code/vox2/css/selectors.v": "c7c963f613baa2f0ade2bbdfa25abdc21c1847933a88a990ce5f1c1630bc8307",
+      "/Users/alex/code/vox2/css/attribute_tag_bucket.v": "fa6c6862a7908676dbd583d8a43fce55653b8cdb5397d64977627503b9956e35",
+      "/Users/alex/code/vox2/css/html_attribute_case.v": "8e4844f5c6d5b5ef67e0fdeac4235a281d9402094535a104dff81d116c33e523"
+    },
+    "unchanged": true,
+    "cases_per_run": 61,
+    "expected_cases": [
+      "test_exact_attribute_buckets_filter_values_and_read_live_replacements",
+      "test_exact_attribute_buckets_preserve_flags_namespaces_and_class_id_priority",
+      "test_exact_attribute_buckets_keep_pseudo_candidates_and_complete_selectors",
+      "test_exact_attribute_buckets_do_not_filter_attributes_of_an_ancestor_or_is_argument",
+      "test_exact_attribute_buckets_keep_cascade_and_attribute_invalidation",
+      "test_exact_attribute_buckets_keep_has_mutation_filtering_live",
+      "test_attribute_tag_bucket_avoids_unrelated_elements_but_keeps_full_matching",
+      "test_attribute_tag_bucket_preserves_class_id_and_namespace_dependent_buckets",
+      "test_attribute_tag_bucket_keeps_pseudo_candidates_and_live_attribute_values",
+      "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+      "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+      "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+      "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+      "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+      "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+      "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+      "test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+      "test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+      "test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity",
+      "test_rule_bucket_iterator_borrows_ordered_vectors_and_keeps_empty_buckets",
+      "test_pseudo_class_rule_comparison_reuses_contexts_without_candidate_vectors",
+      "test_cached_rule_buckets_observe_empty_replaced_and_removed_entries",
+      "test_rule_bucket_collection_preserves_class_id_tag_attribute_and_fallback_order",
+      "test_attribute_bucket_names_borrow_ascii_without_changing_existing_folding",
+      "test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combination",
+      "test_sparse_root_buckets_observe_live_attachment_population_and_removal",
+      "test_direct_pseudo_candidate_preserves_every_bucket_and_abstract_target",
+      "test_direct_pseudo_candidate_observes_mutations_duplicates_empty_buckets_and_gc",
+      "test_direct_pseudo_candidate_keeps_origin_layer_and_shadow_scope_queries",
+      "test_scope_pseudo_candidate_queries_do_not_allocate_origin_lists",
+      "test_scope_rule_only_applies_below_matching_scope_root",
+      "test_scope_limit_excludes_limit_subtree",
+      "test_scope_relative_child_selector_uses_scope_root",
+      "test_scope_direct_declarations_apply_to_root_with_zero_specificity",
+      "test_scope_direct_declarations_are_matched_through_scope_pseudo",
+      "test_scope_does_not_match_its_root_without_scope_or_nesting_selector",
+      "test_scope_searches_past_a_limited_nearest_root",
+      "test_explicit_scope_root_can_be_a_shadow_host",
+      "test_implicit_scope_root_only_matches_through_scope_pseudo",
+      "test_scope_proximity_wins_before_source_order",
+      "test_quirks_class_and_id_buckets_and_ancestor_filter_fold_ascii_case",
+      "test_constructed_shadow_sheet_shared_cache_is_not_reused_by_quirks_scope",
+      "test_scope_boundary_mutations_invalidate_descendant_styles",
+      "test_scope_boundary_selectors_contribute_selector_insights",
+      "test_local_link_selectors_contribute_selector_insights",
+      "test_slotted_argument_contributes_selector_insights",
+      "test_has_invalidation_tracks_featureless_and_sibling_sensitive_arguments",
+      "test_pending_has_invalidations_deduplicate_by_node_without_changing_order",
+      "test_pending_has_invalidation_coalesces_complete_child_list_features",
+      "test_pending_has_mutation_features_track_pseudo_classes_and_sibling_relationships",
+      "test_slotted_argument_builds_invalidation_sets",
+      "test_scope_root_class_change_invalidates_its_subtree",
+      "test_unchanged_has_arguments_keep_descendant_style_after_irrelevant_child_mutations",
+      "test_changed_positive_and_negated_has_arguments_restyle_descendants",
+      "test_short_circuit_has_arguments_keep_later_alternatives_live",
+      "test_has_sibling_results_recheck_featureless_adjacency_changes",
+      "test_later_stylesheet_queries_join_retained_has_observations",
+      "test_scoped_and_namespace_has_observations_keep_conservative_invalidation",
+      "test_has_observation_overflow_keeps_later_state_changes_live",
+      "test_has_observations_outlive_a_retiring_style_query_workspace",
+      "test_equal_has_truth_keeps_new_hover_dependencies_live"
+    ]
+  },
+  "rollback": {
+    "results": [
+      {
+        "name": "default-compile",
+        "exit": 0
+      },
+      {
+        "name": "default-candidate",
+        "exit": 0
+      },
+      {
+        "name": "default-control",
+        "exit": 0
+      },
+      {
+        "name": "none-compile",
+        "exit": 0
+      },
+      {
+        "name": "none-candidate",
+        "exit": 0
+      },
+      {
+        "name": "none-control",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-compile",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-candidate",
+        "exit": 0
+      },
+      {
+        "name": "prealloc-control",
+        "exit": 0
+      }
+    ],
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_attribute_tag_bucket_avoids_unrelated_elements_but_keeps_full_matching",
+          "test_attribute_tag_bucket_preserves_class_id_and_namespace_dependent_buckets",
+          "test_attribute_tag_bucket_keeps_pseudo_candidates_and_live_attribute_values",
+          "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+          "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+          "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+          "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+          "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+          "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+          "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+          "test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+          "test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+          "test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity",
+          "test_rule_bucket_iterator_borrows_ordered_vectors_and_keeps_empty_buckets",
+          "test_pseudo_class_rule_comparison_reuses_contexts_without_candidate_vectors",
+          "test_cached_rule_buckets_observe_empty_replaced_and_removed_entries",
+          "test_rule_bucket_collection_preserves_class_id_tag_attribute_and_fallback_order",
+          "test_attribute_bucket_names_borrow_ascii_without_changing_existing_folding",
+          "test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combination",
+          "test_sparse_root_buckets_observe_live_attachment_population_and_removal",
+          "test_direct_pseudo_candidate_preserves_every_bucket_and_abstract_target",
+          "test_direct_pseudo_candidate_observes_mutations_duplicates_empty_buckets_and_gc",
+          "test_direct_pseudo_candidate_keeps_origin_layer_and_shadow_scope_queries",
+          "test_scope_pseudo_candidate_queries_do_not_allocate_origin_lists",
+          "test_scope_rule_only_applies_below_matching_scope_root",
+          "test_scope_limit_excludes_limit_subtree",
+          "test_scope_relative_child_selector_uses_scope_root",
+          "test_scope_direct_declarations_apply_to_root_with_zero_specificity",
+          "test_scope_direct_declarations_are_matched_through_scope_pseudo",
+          "test_scope_does_not_match_its_root_without_scope_or_nesting_selector",
+          "test_scope_searches_past_a_limited_nearest_root",
+          "test_explicit_scope_root_can_be_a_shadow_host",
+          "test_implicit_scope_root_only_matches_through_scope_pseudo",
+          "test_scope_proximity_wins_before_source_order",
+          "test_quirks_class_and_id_buckets_and_ancestor_filter_fold_ascii_case",
+          "test_constructed_shadow_sheet_shared_cache_is_not_reused_by_quirks_scope",
+          "test_scope_boundary_mutations_invalidate_descendant_styles",
+          "test_scope_boundary_selectors_contribute_selector_insights",
+          "test_local_link_selectors_contribute_selector_insights",
+          "test_slotted_argument_contributes_selector_insights",
+          "test_has_invalidation_tracks_featureless_and_sibling_sensitive_arguments",
+          "test_pending_has_invalidations_deduplicate_by_node_without_changing_order",
+          "test_pending_has_invalidation_coalesces_complete_child_list_features",
+          "test_pending_has_mutation_features_track_pseudo_classes_and_sibling_relationships",
+          "test_slotted_argument_builds_invalidation_sets",
+          "test_scope_root_class_change_invalidates_its_subtree",
+          "test_unchanged_has_arguments_keep_descendant_style_after_irrelevant_child_mutations",
+          "test_changed_positive_and_negated_has_arguments_restyle_descendants",
+          "test_short_circuit_has_arguments_keep_later_alternatives_live",
+          "test_has_sibling_results_recheck_featureless_adjacency_changes",
+          "test_later_stylesheet_queries_join_retained_has_observations",
+          "test_scoped_and_namespace_has_observations_keep_conservative_invalidation",
+          "test_has_observation_overflow_keeps_later_state_changes_live",
+          "test_has_observations_outlive_a_retiring_style_query_workspace",
+          "test_equal_has_truth_keeps_new_hover_dependencies_live"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_attribute_tag_bucket_avoids_unrelated_elements_but_keeps_full_matching",
+          "test_attribute_tag_bucket_preserves_class_id_and_namespace_dependent_buckets",
+          "test_attribute_tag_bucket_keeps_pseudo_candidates_and_live_attribute_values",
+          "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+          "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+          "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+          "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+          "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+          "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+          "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+          "test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+          "test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+          "test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity",
+          "test_rule_bucket_iterator_borrows_ordered_vectors_and_keeps_empty_buckets",
+          "test_pseudo_class_rule_comparison_reuses_contexts_without_candidate_vectors",
+          "test_cached_rule_buckets_observe_empty_replaced_and_removed_entries",
+          "test_rule_bucket_collection_preserves_class_id_tag_attribute_and_fallback_order",
+          "test_attribute_bucket_names_borrow_ascii_without_changing_existing_folding",
+          "test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combination",
+          "test_sparse_root_buckets_observe_live_attachment_population_and_removal",
+          "test_direct_pseudo_candidate_preserves_every_bucket_and_abstract_target",
+          "test_direct_pseudo_candidate_observes_mutations_duplicates_empty_buckets_and_gc",
+          "test_direct_pseudo_candidate_keeps_origin_layer_and_shadow_scope_queries",
+          "test_scope_pseudo_candidate_queries_do_not_allocate_origin_lists",
+          "test_scope_rule_only_applies_below_matching_scope_root",
+          "test_scope_limit_excludes_limit_subtree",
+          "test_scope_relative_child_selector_uses_scope_root",
+          "test_scope_direct_declarations_apply_to_root_with_zero_specificity",
+          "test_scope_direct_declarations_are_matched_through_scope_pseudo",
+          "test_scope_does_not_match_its_root_without_scope_or_nesting_selector",
+          "test_scope_searches_past_a_limited_nearest_root",
+          "test_explicit_scope_root_can_be_a_shadow_host",
+          "test_implicit_scope_root_only_matches_through_scope_pseudo",
+          "test_scope_proximity_wins_before_source_order",
+          "test_quirks_class_and_id_buckets_and_ancestor_filter_fold_ascii_case",
+          "test_constructed_shadow_sheet_shared_cache_is_not_reused_by_quirks_scope",
+          "test_scope_boundary_mutations_invalidate_descendant_styles",
+          "test_scope_boundary_selectors_contribute_selector_insights",
+          "test_local_link_selectors_contribute_selector_insights",
+          "test_slotted_argument_contributes_selector_insights",
+          "test_has_invalidation_tracks_featureless_and_sibling_sensitive_arguments",
+          "test_pending_has_invalidations_deduplicate_by_node_without_changing_order",
+          "test_pending_has_invalidation_coalesces_complete_child_list_features",
+          "test_pending_has_mutation_features_track_pseudo_classes_and_sibling_relationships",
+          "test_slotted_argument_builds_invalidation_sets",
+          "test_scope_root_class_change_invalidates_its_subtree",
+          "test_unchanged_has_arguments_keep_descendant_style_after_irrelevant_child_mutations",
+          "test_changed_positive_and_negated_has_arguments_restyle_descendants",
+          "test_short_circuit_has_arguments_keep_later_alternatives_live",
+          "test_has_sibling_results_recheck_featureless_adjacency_changes",
+          "test_later_stylesheet_queries_join_retained_has_observations",
+          "test_scoped_and_namespace_has_observations_keep_conservative_invalidation",
+          "test_has_observation_overflow_keeps_later_state_changes_live",
+          "test_has_observations_outlive_a_retiring_style_query_workspace",
+          "test_equal_has_truth_keeps_new_hover_dependencies_live"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_attribute_tag_bucket_avoids_unrelated_elements_but_keeps_full_matching",
+          "test_attribute_tag_bucket_preserves_class_id_and_namespace_dependent_buckets",
+          "test_attribute_tag_bucket_keeps_pseudo_candidates_and_live_attribute_values",
+          "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+          "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+          "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+          "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+          "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+          "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+          "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+          "test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+          "test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+          "test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity",
+          "test_rule_bucket_iterator_borrows_ordered_vectors_and_keeps_empty_buckets",
+          "test_pseudo_class_rule_comparison_reuses_contexts_without_candidate_vectors",
+          "test_cached_rule_buckets_observe_empty_replaced_and_removed_entries",
+          "test_rule_bucket_collection_preserves_class_id_tag_attribute_and_fallback_order",
+          "test_attribute_bucket_names_borrow_ascii_without_changing_existing_folding",
+          "test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combination",
+          "test_sparse_root_buckets_observe_live_attachment_population_and_removal",
+          "test_direct_pseudo_candidate_preserves_every_bucket_and_abstract_target",
+          "test_direct_pseudo_candidate_observes_mutations_duplicates_empty_buckets_and_gc",
+          "test_direct_pseudo_candidate_keeps_origin_layer_and_shadow_scope_queries",
+          "test_scope_pseudo_candidate_queries_do_not_allocate_origin_lists",
+          "test_scope_rule_only_applies_below_matching_scope_root",
+          "test_scope_limit_excludes_limit_subtree",
+          "test_scope_relative_child_selector_uses_scope_root",
+          "test_scope_direct_declarations_apply_to_root_with_zero_specificity",
+          "test_scope_direct_declarations_are_matched_through_scope_pseudo",
+          "test_scope_does_not_match_its_root_without_scope_or_nesting_selector",
+          "test_scope_searches_past_a_limited_nearest_root",
+          "test_explicit_scope_root_can_be_a_shadow_host",
+          "test_implicit_scope_root_only_matches_through_scope_pseudo",
+          "test_scope_proximity_wins_before_source_order",
+          "test_quirks_class_and_id_buckets_and_ancestor_filter_fold_ascii_case",
+          "test_constructed_shadow_sheet_shared_cache_is_not_reused_by_quirks_scope",
+          "test_scope_boundary_mutations_invalidate_descendant_styles",
+          "test_scope_boundary_selectors_contribute_selector_insights",
+          "test_local_link_selectors_contribute_selector_insights",
+          "test_slotted_argument_contributes_selector_insights",
+          "test_has_invalidation_tracks_featureless_and_sibling_sensitive_arguments",
+          "test_pending_has_invalidations_deduplicate_by_node_without_changing_order",
+          "test_pending_has_invalidation_coalesces_complete_child_list_features",
+          "test_pending_has_mutation_features_track_pseudo_classes_and_sibling_relationships",
+          "test_slotted_argument_builds_invalidation_sets",
+          "test_scope_root_class_change_invalidates_its_subtree",
+          "test_unchanged_has_arguments_keep_descendant_style_after_irrelevant_child_mutations",
+          "test_changed_positive_and_negated_has_arguments_restyle_descendants",
+          "test_short_circuit_has_arguments_keep_later_alternatives_live",
+          "test_has_sibling_results_recheck_featureless_adjacency_changes",
+          "test_later_stylesheet_queries_join_retained_has_observations",
+          "test_scoped_and_namespace_has_observations_keep_conservative_invalidation",
+          "test_has_observation_overflow_keeps_later_state_changes_live",
+          "test_has_observations_outlive_a_retiring_style_query_workspace",
+          "test_equal_has_truth_keeps_new_hover_dependencies_live"
+        ],
+        "all_called": true
+      }
+    ],
+    "inputs": {
+      "/Users/alex/code/vox2/css/attribute_tag_bucket_test.v": "8196132d496c6231e73a4c30e63671b9d73fc97ce4f9943928b9b84259dc72ce",
+      "/Users/alex/code/vox2/css/selector_attribute_visit_test.v": "3a1daa5b4aa67c0d6b41bf5d2faccc96c8daef9e074c3221f629af855a9061fe",
+      "/Users/alex/code/vox2/css/html_attribute_case_test.v": "62469178396938ccdbbe864f98cf51cf87f3736c859e61cd587fd9f5946abb42",
+      "/Users/alex/code/vox2/css/direct_rule_bucket_collection_test.v": "7058f5c3ba806336917d7a86b70790e8162af1e5001be36f01a8dbf75b10d513",
+      "/Users/alex/code/vox2/css/rule_bucket_iterator_test.v": "5f06622596a77631337dc6ff7b871c7908a4155e6ec775f1ba294dea933e7ccf",
+      "/Users/alex/code/vox2/css/cached_rule_bucket_lookup_test.v": "ca02c57afcdfb964d222c167f50129126d5cef6ea3ea639bf77cdf14ce96cfae",
+      "/Users/alex/code/vox2/css/rule_bucket_collection_test.v": "58d84030e7e36791bbcbc3586c39c33a1c0f8bd1a02505c847cb1630c6773d8c",
+      "/Users/alex/code/vox2/css/sparse_rule_bucket_test.v": "e7ce165cd3638f84462cc957a86cd6bee9e83bcd4dbd0fa7ab7ac92c34c61348",
+      "/Users/alex/code/vox2/css/pseudo_candidate_direct_test.v": "f0d7bab51bc1d17955401e56e067ecc41fedeb8fc38a722178838ba55dc37f05",
+      "/Users/alex/code/vox2/css/css_scope_matching_test.v": "a05701145b9ba77ae05c88c6bd72bef5a042cfa41390e6c3dfcd931ae2ee2812",
+      "/Users/alex/code/vox2/css/quirks_selector_buckets_test.v": "0e034e6ef08a69467ef1d864c0ac879f2ca5f0b20df784ce576a6a551af9b1b2",
+      "/Users/alex/code/vox2/css/css_scope_invalidation_test.v": "2a07f2f5072c8abfbc4607f40e7141a6b8a5cb0c22a803fdd47da636aeae7a7c",
+      "/Users/alex/code/vox2/css/unchanged_has_invalidation_test.v": "3cf259d8f4167c56663e1944464521bffc709abebd0543a791b20ae460f3fac6",
+      "/Users/alex/code/vox2/css/style_scope_cache.v": "46f98fa6ac5ea10ba8a66af9dfa42cbd5f80b9feda72e696cd5785aa67965b15",
+      "/Users/alex/code/vox2/css/rule_bucket_iterator.v": "5dacf8b57cdac2696e8fbf130430987c435d16a388f0948607ed8db01181b672",
+      "/Users/alex/code/vox2/css/computed_interpolation.v": "1a2522e14a3493e350728e37aca5aa527d4d7da5af2f30ee66bd953668313b18",
+      "/Users/alex/code/vox2/css/selectors.v": "c7c963f613baa2f0ade2bbdfa25abdc21c1847933a88a990ce5f1c1630bc8307",
+      "/Users/alex/code/vox2/css/attribute_tag_bucket.v": "fa6c6862a7908676dbd583d8a43fce55653b8cdb5397d64977627503b9956e35",
+      "/Users/alex/code/vox2/css/html_attribute_case.v": "8e4844f5c6d5b5ef67e0fdeac4235a281d9402094535a104dff81d116c33e523"
+    },
+    "unchanged": true,
+    "cases_per_run": 55,
+    "expected_cases": [
+      "test_attribute_tag_bucket_avoids_unrelated_elements_but_keeps_full_matching",
+      "test_attribute_tag_bucket_preserves_class_id_and_namespace_dependent_buckets",
+      "test_attribute_tag_bucket_keeps_pseudo_candidates_and_live_attribute_values",
+      "test_direct_attribute_matching_keeps_all_value_operators_and_empty_values",
+      "test_direct_attribute_wildcard_namespace_visits_later_matching_values",
+      "test_direct_attribute_name_and_value_case_keep_html_svg_xml_and_unicode_distinct",
+      "test_direct_attribute_queries_follow_namespace_removal_and_replacement_after_gc",
+      "test_direct_attribute_namespace_names_remain_case_sensitive_and_missing_lists_stay_absent",
+      "test_html_attribute_case_buckets_keep_enumerated_names_and_exact_boundaries",
+      "test_html_attribute_case_buckets_preserve_flags_and_namespace_rules",
+      "test_direct_cached_rules_keep_bucket_order_empty_entries_and_attempt_metadata",
+      "test_direct_cached_rules_preserve_duplicate_rule_identity_and_quirks_folding",
+      "test_direct_cached_rules_include_own_shadow_host_scope_with_its_identity",
+      "test_rule_bucket_iterator_borrows_ordered_vectors_and_keeps_empty_buckets",
+      "test_pseudo_class_rule_comparison_reuses_contexts_without_candidate_vectors",
+      "test_cached_rule_buckets_observe_empty_replaced_and_removed_entries",
+      "test_rule_bucket_collection_preserves_class_id_tag_attribute_and_fallback_order",
+      "test_attribute_bucket_names_borrow_ascii_without_changing_existing_folding",
+      "test_sparse_candidate_buckets_keep_order_identity_and_scope_for_every_combination",
+      "test_sparse_root_buckets_observe_live_attachment_population_and_removal",
+      "test_direct_pseudo_candidate_preserves_every_bucket_and_abstract_target",
+      "test_direct_pseudo_candidate_observes_mutations_duplicates_empty_buckets_and_gc",
+      "test_direct_pseudo_candidate_keeps_origin_layer_and_shadow_scope_queries",
+      "test_scope_pseudo_candidate_queries_do_not_allocate_origin_lists",
+      "test_scope_rule_only_applies_below_matching_scope_root",
+      "test_scope_limit_excludes_limit_subtree",
+      "test_scope_relative_child_selector_uses_scope_root",
+      "test_scope_direct_declarations_apply_to_root_with_zero_specificity",
+      "test_scope_direct_declarations_are_matched_through_scope_pseudo",
+      "test_scope_does_not_match_its_root_without_scope_or_nesting_selector",
+      "test_scope_searches_past_a_limited_nearest_root",
+      "test_explicit_scope_root_can_be_a_shadow_host",
+      "test_implicit_scope_root_only_matches_through_scope_pseudo",
+      "test_scope_proximity_wins_before_source_order",
+      "test_quirks_class_and_id_buckets_and_ancestor_filter_fold_ascii_case",
+      "test_constructed_shadow_sheet_shared_cache_is_not_reused_by_quirks_scope",
+      "test_scope_boundary_mutations_invalidate_descendant_styles",
+      "test_scope_boundary_selectors_contribute_selector_insights",
+      "test_local_link_selectors_contribute_selector_insights",
+      "test_slotted_argument_contributes_selector_insights",
+      "test_has_invalidation_tracks_featureless_and_sibling_sensitive_arguments",
+      "test_pending_has_invalidations_deduplicate_by_node_without_changing_order",
+      "test_pending_has_invalidation_coalesces_complete_child_list_features",
+      "test_pending_has_mutation_features_track_pseudo_classes_and_sibling_relationships",
+      "test_slotted_argument_builds_invalidation_sets",
+      "test_scope_root_class_change_invalidates_its_subtree",
+      "test_unchanged_has_arguments_keep_descendant_style_after_irrelevant_child_mutations",
+      "test_changed_positive_and_negated_has_arguments_restyle_descendants",
+      "test_short_circuit_has_arguments_keep_later_alternatives_live",
+      "test_has_sibling_results_recheck_featureless_adjacency_changes",
+      "test_later_stylesheet_queries_join_retained_has_observations",
+      "test_scoped_and_namespace_has_observations_keep_conservative_invalidation",
+      "test_has_observation_overflow_keeps_later_state_changes_live",
+      "test_has_observations_outlive_a_retiring_style_query_workspace",
+      "test_equal_has_truth_keeps_new_hover_dependencies_live"
+    ]
+  },
+  "tool_guard": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tools",
+      "-p",
+      "*instructions_test.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 99614720,
+    "elapsed_seconds": 3.033506333,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "lease": {
+    "requested_unix": 1793893928.714344,
+    "purpose": "Resume native audit after guard-report filename collision. Reuse completed freshcorrectflag nativecaptures onlyif same executable remains pinned; retainall priorfailures. ThenSVGandseven-triple114.",
+    "acquired_unix": 1793893928.7146409,
+    "tag": "ae288b903196",
+    "reused_completed_native_captures": true,
+    "native-audit_exit": 0,
+    "native-audit_finished_unix": 1793893930.184784,
+    "svg_exit": 0,
+    "svg_finished_unix": 1793893940.942961,
+    "cohort_exit": 1,
+    "cohort_finished_unix": 1793894069.857666,
+    "released_unix": 1793894069.8579562
+  },
+  "scope": "ExclusivecoalitioncreationthroughencodedPNG inclfreshstartup/window/targetsetup/readiness+2ssettle;Voxbeforefilewrite,BraveinclCDPdelivery,audit/teardownafterendpoint. Exitedaggregates/allowedownedservicesincluded,GPUexecution/outsideexcluded.Fixed609originaloriginHTTPSresponses/originalauthorJS/1024x768CSS/DPR2/privateprofiles+caches/retainedOScaches/originalenginePNGreferences/threehistoricalrenderpolicies unchanged. Crossengine82.7154%different,knownDOM/script/font/paintlimitations.No livepage/render-only/FPSclaim.",
+  "qualifications": "Pinnedparallel33unit ae288b903196. EntirebuildHEADsource set matchesoriginalpassed61case matrix;currentlaterhelperversionseparatelypasses366executions,notperfilemixedproofandnolatercodeclaim. Unchangedcompletegenerationinput/compiler/runtime metadata retained, no sealedCclaim. ActualcandidateonlymarkerbeforePNGverifiedafterfixing pluralBUCKETS diagnosticflag typo;wrongflagattempts areinconclusiveandretained. Initialsourceidentitypreflight andguardreportfilenamecollision launchnomeasuredbrowsers. Correctdiagnosticcandidatehasnoextra disableflags,controlonlyEXACT_ATTRIBUTE_BUCKETS. Allnormalnativeexits/identity/ownership passed. Freshcanonicalreadlease releasesfinally. Noacceptedattempt retried/dropped/combined.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-exact-attribute-cohort114-20261105.tar.gz",
+    "bytes": 59032714,
+    "sha256": "68661aafa20531e5e8f7a0696c19edddca15bf267b4e2b2fa86d0bbea5a33159",
+    "members": 546,
+    "all_members_verified": true
+  },
+  "unix": 1793894485.2136261
+}

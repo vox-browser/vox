@@ -1,5 +1,16 @@
 # BBC homepage instruction comparison
 
+Current result — **cohort 114**, on pinned parallel production `ae288b903196`:
+all 21 capture audits pass, but the 10% target fails. Launch-to-PNG medians are
+**27,939,302,206 Vox**, **27,604,828,574 control**, and **18,387,244,433 Brave
+lower bound** instructions. The strict integer check fails
+`288354550670 > 158331016152` (conservative ratio **1.63909**).
+The exact-attribute index has a 334,473,632-instruction median regression and
+is removed in `5871c29`; no saving or catalog entry is credited. History is
+110 measured cohorts / 2,377 acceptance browser attempts; 104, 110, 111 and 113
+are preflight-only. [Complete current evidence](performance/bbc-exact-attribute-cohort114-20261105.json).
+Earlier checkpoints below retain their historical wording and counts.
+
 A fresh production **CPU sampling diagnostic** now captures the correct browser
 PID/start identity, verifies the sample's Vox UUID against dyld and checks all Vox
 frame addresses against the actual executable range. Native exit, original
@@ -6734,3 +6745,52 @@ The corrected oracle and final matrices pass. BBC native eligibility and matched
 instruction measurements remain pending; no performance or catalog credit is
 assigned from focused tests or the preceding profile.
 [Focused checks and retained raw attempts](performance/bbc-exact-attribute-bucket-focus-20261105.json).
+
+
+## Exact attribute cohort 114 and rollback (2026-11-05)
+
+Seven complete alternating triples retain all 21 successful capture audits and
+normal native exits, with unchanged executable/library/fixture/reference/tool
+identities. The observed medians are 27,939,302,206 Vox, 27,604,828,574 control
+and 18,387,244,433 Brave lower-bound instructions. The exact-value index has
+three paired improvements and four regressions: median point regression
+334,473,632 (1.212%), with highest Vox / lowest control 1.09602. The strict
+Brave target fails `288354550670 > 158331016152`, ratio 1.63909. No saving is
+credited; the negative point does not trigger a new broad check or reset its
+cadence. The candidate and control are removed in `5871c29` after all 330
+rollback executions (55 cases, both arms, three memory modes) and 334 tooling
+tests pass. The detached-child validator fix remains.
+
+The correct native diagnostic verifies candidate-only exact-index use before
+PNG, all original pixel/content audits, 72 exact external author scripts,
+loaded images, ownership and actual exits. Four SVG source-switch captures and
+all three comparisons are exact. Its candidate has no extra disable flags;
+only the new index is disabled in control. An earlier wrapper misspelled the
+diagnostic flag with plural `BUCKETS`, making its marker absence inconclusive.
+Those two captures and an equally misconfigured one-arm operator trace are
+retained. The corrected trace logs 5,765 candidate and 5,993 control attribute/tag
+bucket construction events, largely prefix/substring selectors; these are
+repeated construction logs, not unique selectors or instruction savings.
+
+A shared helper edit first stopped the source-identity preflight before browser
+launch. Both entire source variants independently pass 366 focused executions.
+The completed bundle's whole checked build-HEAD source set matches the original
+matrix; current sources match the later matrix. The proof chooses a complete
+matrix, with no per-file mixing or claim that the bundle contains later edits.
+Parallel generation/compiler/runtime receipts remain pinned; no sealed-C claim
+is made. A reused audit report filename stopped postprocessing once; its guard
+failure is retained and uniquely named postprocessing then audits the existing
+captures. No acceptance capture is retried, excluded or combined across builds.
+
+The canonical read lease releases after the cohort. Scope remains exclusive
+coalition creation through encoded document PNG, including fresh startup/window
+and target setup, readiness and two-second settlement. Vox stops before file
+writing, Brave includes CDP delivery; audits and teardown follow. Exited
+aggregates and allowed owned services are included, GPU execution/outside work
+excluded. The fixed 609-response original-origin replay, original scripts,
+1024×768 CSS viewport/scale 2, private profiles/caches, retained OS caches,
+original per-engine references and three historical rendering policies are
+unchanged. Cross-browser pixels still differ by 82.7154%; recorded DOM/script,
+font and paint limitations remain. This is no live-page, isolated rendering or
+scrolling result. The homepage stays outside the catalog.
+[Every capture, preflight failure, source proof and rollback check](performance/bbc-exact-attribute-cohort114-20261105.json).
