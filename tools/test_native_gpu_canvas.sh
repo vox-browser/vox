@@ -32,4 +32,5 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
     -Wl,-rpath,"$repo_dir/Build/v/Vox.app/Contents/MacOS" \
     -o "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test"
+"$output_dir/native_gpu_canvas_test" --failed-readback
 VOX_GPU_CANVAS_VERIFY=2 "$output_dir/native_gpu_canvas_test" --video-backdrop-verify

@@ -46,6 +46,9 @@ struct GpuCanvasFrame {
     int leaf_error = 0;
 };
 std::unique_ptr<GpuCanvasFrame> s_gpu_canvas;
+// A transfer failure loses GPU-only leaves. Reject this replay and use the
+// ordinary renderer for subsequent attempts, rather than publishing old rows.
+bool s_gpu_canvas_read_failed = false;
 
 struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_begin) begin = nullptr;
@@ -98,7 +101,7 @@ GpuCanvasApi const* gpu_canvas_api()
 bool gpu_canvas_enabled()
 {
     static bool const enabled = !std::getenv("VOX_DISABLE_GPU_CANVAS");
-    return enabled;
+    return enabled && !s_gpu_canvas_read_failed;
 }
 
 bool gpu_canvas_isolated_shapes_enabled()
@@ -183,6 +186,10 @@ void gpu_canvas_flush()
         // Retry a failed transfer, but never repeat a successful synchronous
         // read just because this frame is not running pixel verification.
         if (!read && api && data) read = api->read(views.data(), int(views.size()));
+        if (!read) {
+            s_gpu_canvas_read_failed = true;
+            s_deferred_layer_frame_failed = true;
+        }
         if (read && gpu_canvas_verify()) {
             CGContextFlush(frame->destination);
             for (size_t index = 0; index < frame->rects.size(); ++index) {
@@ -235,6 +242,7 @@ void gpu_canvas_flush()
 
 bool gpu_canvas_upload(GpuCanvasFrame& frame)
 {
+    if (s_gpu_canvas_read_failed) return false;
     if (frame.gpu_valid) return true;
     auto* api = gpu_canvas_api();
     auto* data = static_cast<uint8_t const*>(CGBitmapContextGetData(frame.destination));
@@ -298,7 +306,7 @@ GpuCanvasFrame* gpu_canvas_for_leaf(CGContextRef destination,
     std::vector<VoxGraphiteCanvasClip>& clips)
 {
     auto* frame = s_gpu_canvas.get();
-    if (!frame || frame->destination != destination || !frame->in_gpu_command) return nullptr;
+    if (!frame || s_gpu_canvas_read_failed || frame->destination != destination || !frame->in_gpu_command) return nullptr;
     if (gpu_canvas_shared_recording(destination)) {
         if (gpu_canvas_diagnostics()) ++frame->flush_reasons["(shared-recording)"];
         frame->in_gpu_command = false;
@@ -542,7 +550,7 @@ extern "C" int ladybird_v_skia_gpu_canvas_command(char const* kind, int length, 
     auto* frame = s_gpu_canvas.get();
     if (!frame) return 0;
     std::string_view name(kind ? kind : "", kind && length > 0 ? size_t(length) : 0);
-    frame->in_gpu_command = gpu_canvas_kind_supported(name, flags);
+    frame->in_gpu_command = !s_gpu_canvas_read_failed && gpu_canvas_kind_supported(name, flags);
     if (frame->in_gpu_command) return 1;
     if (frame->cpu_stale && gpu_canvas_diagnostics()) ++frame->flush_reasons[std::string(name)];
     gpu_canvas_flush();

@@ -356,6 +356,42 @@ static std::vector<uint8_t> render_video_backdrop(bool canvas, bool callbacks, i
 
 int main(int argc, char** argv)
 {
+    if (argc == 2 && !std::strcmp(argv[1], "--failed-readback")) {
+        auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api()); assert(api);
+        s_backend_read = api->read; api->read = counted_read;
+        auto pixels = backdrop();
+        auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        auto context = CGBitmapContextCreate(pixels.data(), width, height, 8, width * 4, color,
+            kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+        CGColorSpaceRelease(color); assert(context);
+        CGContextScaleCTM(context, scale, scale);
+        ladybird_v_skia_set_chromium_painting(1);
+        ladybird_v_skia_set_shared_recording(0,css_width,css_height);
+        ladybird_v_skia_begin_deferred_layer_frame(0);
+        int rect[] {0,0,width,height};
+        assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
+        assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+        assert(ladybird_v_skia_draw_rounded_rect(context,40,80,300,120,12,12,12,12,12,12,12,12,
+            1,0,0,1,0,0,0,0,0,css_width,css_height,230,240,250,255,1,0,1,1));
+        assert(s_gpu_canvas->cpu_stale);
+        s_fail_reads = 2;
+        ladybird_v_skia_gpu_canvas_cpu_access();
+        assert(s_read_calls == 2 && !s_successful_reads && !s_fail_reads);
+        assert(s_gpu_canvas_read_failed && !gpu_canvas_enabled());
+        assert(!ladybird_v_skia_gpu_canvas_command("fill_rect",9,0));
+        ladybird_v_skia_gpu_canvas_end();
+        assert(!ladybird_v_skia_finish_deferred_layer_frame());
+        ladybird_v_skia_begin_deferred_layer_frame(0);
+        assert(!ladybird_v_skia_gpu_canvas_begin(context,rect,1));
+        native_fill(context,10,20,40,30,20,40,60,false);
+        assert(ladybird_v_skia_finish_deferred_layer_frame());
+        CGContextFlush(context);
+        auto* painted = pixels.data()+((height-60)*width+30)*4;
+        assert(painted[0]==20 && painted[1]==40 && painted[2]==60 && painted[3]==255);
+        CGContextRelease(context);
+        std::cout << "Failed GPU readback rejects replay and disables subsequent GPU attempts\n";
+        return 0;
+    }
     if (argc == 2 && !std::strcmp(argv[1], "--video-backdrop-verify")) {
         assert(gpu_canvas_verify_leaves());
         auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api()); assert(api && api->copy_pixels);
