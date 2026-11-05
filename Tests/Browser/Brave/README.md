@@ -1,5 +1,12 @@
 # Brave rendering fixtures
 
+`avif-yuv-sampling` also covers a full-size nearest-neighbor upload followed
+by a smaller smooth draw of the same original YUV planes. Commit `4b0036718`
+generates GPU mipmaps for that warm upload, removing 34,796 differing pixels
+without changing the reference. The native AVIF test checks repeated upgrades
+across overlapping document tiles and both multisampling modes. See the
+[sampling evidence](../../../docs/evidence/avif-planar-mipmap-upgrade-20261105.json).
+
 `chromium-fractional-fixed-shadow` checks a five-percent shadow in a fixed
 compositor picture at 1024×768, scale 1. Its reference comes from two agreeing
 fresh Brave captures. The older `0bb14e2f…` production bundle differs by 752

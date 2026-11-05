@@ -1380,6 +1380,52 @@ renderer-fix claim.
 [cold-cache comparison](../Build/slate-final-cold-20261104/summary.json),
 [rendering suite](../Build/slate-contained-clip-20261104/final-inline-suite-results.json).
 
+## AVIF: warm planar mipmap upgrades (2026-11-05)
+
+Commit `4b0036718` removes the **34,796-pixel** failure in the existing
+`avif-yuv-sampling` regression. Its original encoded AVIF and reference PNG
+are unchanged. A nearest-neighbor draw first uploads the full-size YUV planes;
+a later smaller smooth draw needs mipmaps. Vox previously regenerated those
+levels on the CPU. It now recognizes the verified earlier planar upload and
+generates mipmaps on the GPU for each plane, preserving YUV conversion until
+final sampling. Fresh planar uploads retain their existing policy.
+
+Chromium's [transfer-cache implementation](https://github.com/chromium/chromium/blob/main/cc/paint/image_transfer_cache_entry.cc)
+also upgrades previously uploaded YUV planes independently on the GPU. This
+correction recreates equivalent base-plane textures before upgrading them;
+it does not retain old plane handles or establish a performance gain.
+
+All **16 exact native AVIF comparisons pass**, including repeated warm
+upgrades, both multisampling modes and overlapping document tiles. The new
+regression reproduces all 34,796 differences against the predecessor-policy
+diagnostic library. Expanded cache checks pass optimized and under ASan/UBSan;
+the sanitized AVIF caller also passes while loading a release GPU library.
+The GPU library itself is not fully sanitizer-instrumented. All **36 shared
+YUV comparisons**, covering 4:2:0, 4:2:2 and 4:4:4, and the disabled-upload
+fallback pass.
+
+The completed production browser `31a7d6dc…`, receipt
+`20261105-142110-95300c82`, contains the correction. Its AVIF browser fixture
+is pixel-exact. Earlier substituted-library and interim installed-bundle
+checks also reach zero, but remain separate diagnostics. Failed mip/filter,
+decode-size, RGBA-conversion and experimental Dawn attempts are retained;
+none changes a dependency pin or supplies acceptance credit.
+
+The complete **134-test / 140-capture** suite finishes without changed inputs:
+**136 captures are exact**. Both existing Pikabu cases retain 1,097 differences.
+This shared build also fails SVG paint opacity at 60 pixels and the Stack
+Overflow header at 16. Both reproduce with the predecessor and candidate
+image libraries; retaining the previous unbounded SVG effects restores both
+fixtures to zero. Those diagnostic switches are not an accepted production
+fix, and this run does not establish a full-suite pass.
+
+Fresh complete-cache Hacker News and WIRED comparisons pass every strict
+gate. Slate remains **0 native / 0 independent replay / 19,064 source pixels**.
+Browser, tool and fixture identities remain unchanged within each cohort.
+
+[Check receipts, identities and limits](evidence/avif-planar-mipmap-upgrade-20261105.json),
+[raw attempts and screenshots](evidence/avif-planar-mipmap-upgrade-20261105.zip).
+
 ## WIRED: exact frozen first-frame viewport (2026-11-05)
 
 The original registered WIRED archive, manifest
