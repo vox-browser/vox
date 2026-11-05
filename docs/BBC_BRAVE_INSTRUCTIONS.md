@@ -1,17 +1,32 @@
 # BBC homepage instruction comparison
 
-Current result — **cohort 115**, on pinned parallel production `01ba55f53219`:
-all 21 capture audits pass, but the 10% target fails. Launch-to-PNG medians are
-**27,202,806,333 Vox**, **27,328,966,175 control**, and **17,646,731,221 Brave
-lower bound** instructions. The strict integer check fails
-`283596498230 > 158209489989` (conservative ratio **1.61328**).
-Closed SVG tree retention has a noisy 126,159,842-instruction median reduction
-(0.4616%), with four paired improvements and three regressions. The conservative
-control ratio is **1.15502**, so no robust saving or catalog entry is credited.
-History is 111 measured cohorts / 2,398 acceptance browser attempts; 104, 110,
+Latest attempt — **cohort 116**, on pinned parallel production `26dca44ac103`:
+Brave pair 3 fails its unchanged pixel reference, invalidating acceptance.
+All 21 attempts remain recorded; 20 capture audits pass, with normal native
+exits and unchanged input identities throughout. Observed launch-to-PNG medians
+are **27,206,714,757 Vox**, **27,566,088,290 control**, and **17,511,734,286
+Brave lower bound** instructions. The strict integer check also fails
+`282926729990 > 155854412919` (conservative ratio **1.63379**).
+The anchor shortcut's difference of medians is +359,373,533 (1.3037%), but the
+median paired difference is **−31,203,801**, with three improvements and four
+regressions. Conservative control ratio **1.05984** fails; no robust saving or
+catalog entry is credited. Last valid cohort remains **115**.
+History is 112 measured cohorts / 2,419 acceptance browser attempts; 104, 110,
 111 and 113 are preflight-only.
-[Complete current evidence](performance/bbc-flow-svg-tree-cohort115-20261105.json).
+[Complete latest evidence](performance/bbc-covered-anchor-cohort116-20261105.json).
 Earlier checkpoints below retain their historical wording and counts.
+
+Both native captures confirm candidate-only anchor-shortcut execution before
+PNG and pass original pixels/content, all 72 external author scripts, actual
+native-library pins, helper ownership and exits. The SVG source-switch guard
+is exact in both arms. The triggered broader checks cover **689 unique cases
+per default/no-GC mode: 684 passes and the same five baseline failures**.
+That includes fresh layout/main checks and the current CSS focused cases;
+there is no full-suite pass or cadence reset. The generated-pseudo correctness
+fix is common to both measured Vox arms. The parallel build preserves complete
+input/compiler metadata but has no sealed generated C receipt. Workload,
+references, endpoints, cache policy and rendering limitations remain unchanged.
+BBC homepage remains outside `OPTIMIZED_SITES.md`.
 
 The closed SVG tree change (`cfec8ea09`, isolated control `8142a72c7`) retains
 only validated shape-tree structure and computes fresh geometry. Native checks
