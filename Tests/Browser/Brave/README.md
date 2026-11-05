@@ -54,6 +54,12 @@ replay caches on `68cec440…`, while its
 295-pixel source-fidelity failure remains open. See the
 [arc classification evidence](../../../docs/evidence/engadget-degenerate-arcs-20261105.json).
 
+Oracle visits now require browser exit code zero, no signal and no surviving
+observed helpers before a profile can qualify. Each report's `.shutdown.json`
+records the initial and remaining owned processes, creation identities,
+states and final exit. See the
+[shutdown and repaint evidence](../../../docs/evidence/engadget-repaint-oracle-20261105.json).
+
 The registered CNN archive is pixel-exact against Brave with full uBO at
 1024×768, scale 1, when both browsers start fresh after complete encoded-response
 cache warmups. The separate saved-live/frozen-reference gate remains open.

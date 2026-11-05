@@ -981,6 +981,61 @@ open.
 [Diagnostic verdicts and limits](evidence/engadget-source-background-20261105.json),
 [raw probes and failed attempts](evidence/engadget-source-background-20261105.zip).
 
+## Engadget: repaint diagnostics and oracle exits (2026-11-05)
+
+The fresh complete-cache acquisition reproduces **0 native / 0 independent
+replay / 295 source pixels** on `c81e92df…`. Its source PNG is unchanged from
+candidate `fa56c7ca…`; the new manifest is `69897e15…`. All six full-uBO browser
+processes, including the request-log oracle, exit normally with no surviving
+observed helpers. The new candidate remains unregistered. Its exact 70 files
+can be restored from the existing candidate ZIP plus the four changed files
+and two removals recorded in the evidence; the reconstructed hashes are checked.
+
+A preceding cold comparison of the older candidate on `d4e842eb…` fails
+independent-reference agreement at **87,131 pixels**, with 87,131 native and
+87,413 source differences from the first reference. Vox matches the second
+reference and its preceding native frame exactly. Both attempts remain
+recorded; the fresh acquisition does not discard that reference variation.
+
+The paint probe reacquires Brave's layer tree after navigation. This itself
+forces repainting: one frozen process changes **295 pixels** and then matches
+the old source exactly, with two agreeing post-inspection frames. The recorded
+picture contains no visible photo-holder background commands. A live process
+also omits those backgrounds and changes zero pixels after inspection, but its
+image samples still differ from the old source by 87,133 pixels. These are
+instrumented diagnostics. Neither the post-inspection PNG nor transparent CSS
+is installed as a replacement reference. The initial stale-layer-ID failure
+and probes interrupted by debugger shutdown remain retained; the completed
+probe defers debugger close until its paint-record reads finish.
+
+Commit `4517407d7` fixes an independent oracle correctness error: waiting for
+the process tree to disappear previously accepted nonzero and signalled
+browser exits. These now fail before saving a prepared profile. Successful
+shutdown requires exit code zero, no signal and no remaining observed helpers.
+An unchanged eight-second watchdog still rejects survivors. Every visit writes
+a separate shutdown receipt with process states, executable names, creation
+identities, remaining ownership and the browser's final status. The original
+comparison-failure receipt remains separate. Older runs do not gain this new
+exit-status proof retroactively.
+
+All **135 Node checks and 32 Python checks pass**. The new nonzero-exit
+regression fails against the old implementation in an in-memory negative
+control. Fresh complete-cache **Hacker News and WIRED pass all strict gates**
+on `c81e92df…`; WIRED retains its explicit first-frame policy. The 14 full-uBO
+processes across those controls and the fresh acquisition have verified normal
+shutdowns. Browser and tool identities stay unchanged within each cohort.
+
+Two fresh ordinary Brave file captures reproduce each of the three retained
+image goldens exactly. Native rendering still differs by **1,097 pixels** in
+each Pikabu image case and **34,796** in AVIF sampling. Disabling shared YUV
+uploads changes neither tested failure. These focused diagnostics preserve
+the existing references and do not establish a new broad-suite pass. The
+earlier baseline uses a parallel build and the subsequent cohorts a single-C
+build; this is pixel evidence, with no performance comparison or claim.
+
+[Commands, exit receipts, hashes and verdicts](evidence/engadget-repaint-oracle-20261105.json),
+[raw attempts and reconstructable candidate delta](evidence/engadget-repaint-oracle-20261105.zip).
+
 ## The Register: block-content centering (2026-11-03)
 
 The Register is the next active site. Its registered archive remains unchanged
