@@ -550,5 +550,10 @@
     "members": 100,
     "all_members_verified": true
   },
-  "unix": 1793855691.166461
+  "unix": 1793855691.166461,
+  "callback_diagnostic_controllers": {
+    "initial_auditor_exit": 1,
+    "independent_pixel_auditor_exit": 0,
+    "qualification": "Initial reference-only row omitted pixels_exact, causing auditor exit1 after successful native/driver/guard0. Independent pixel audit of the same PNG exits0. Both validation records retained in archive."
+  }
 }
