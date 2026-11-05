@@ -230,6 +230,8 @@ def main():
     parser.add_argument("--cache-template", type=Path)
     parser.add_argument("--allow-fixture-navigation", action="store_true",
                         help="Seed only allow_any_site in the private profile for file/loopback fixtures")
+    parser.add_argument("--disable-gpu-canvas", action="store_true",
+                        help="Seed the advanced setting disable_gpu_canvas=true in the private profile")
     parser.add_argument("--v-profile-reset", action="store_true",
                         help="Diagnostic only: reset v -profile counters immediately before native input")
     parser.add_argument("--capture-faults", action="store_true",
@@ -296,8 +298,13 @@ def main():
     # override the requested route. Never read or update the user's profile.
     profile = output / "profile"
     profile.mkdir()
+    seeded = {}
     if args.allow_fixture_navigation:
-        (profile / "settings.json").write_text('{"allow_any_site":true}\n')
+        seeded["allow_any_site"] = True
+    if args.disable_gpu_canvas:
+        seeded["disable_gpu_canvas"] = True
+    if seeded:
+        (profile / "settings.json").write_text(json.dumps(seeded, separators=(",", ":")) + "\n")
     digest = hashlib.sha256()
     for path in sorted(cache.rglob("*")):
         if path.is_file():
@@ -308,8 +315,8 @@ def main():
     # only allow_any_site (its missing enabled field defaults to false).
     # This flag is for file/loopback fixtures, not a replacement for a replay
     # proxy profile. Fail rather than silently bypassing the requested route.
-    if args.allow_fixture_navigation and env.get("VOX_PROXY"):
-        raise ValueError("--allow-fixture-navigation disables profile proxying; cannot combine with VOX_PROXY")
+    if seeded and env.get("VOX_PROXY"):
+        raise ValueError("a seeded private profile disables profile proxying; cannot combine with VOX_PROXY")
     # Diagnostic workload changes are forbidden in this acceptance probe.
     for name in list(env):
         if name.startswith(("VOX_PROFILE_", "VOX_SCROLL_PROFILE_")) or name in {
@@ -370,9 +377,10 @@ def main():
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
                     runtime_input_sha256={str(path): hashes[str(path)] for path in runtime_paths},
                     input_file_identity=file_identities,
-                    initial_profile=("private profile seeded only with allow_any_site=true; "
-                                     "default bookmark bar; explicit direct networking"
-                                     if args.allow_fixture_navigation else
+                    initial_profile=("private profile seeded only with "
+                                     + ", ".join(f"{name}=true" for name in seeded)
+                                     + "; default bookmark bar; explicit direct networking"
+                                     if seeded else
                                      "empty private profile; default bookmark bar; no saved proxy override"),
                     native_configuration="explicit unpublished native candidate" if native_bridge or picture_bridge or image_bridge else "installed bundle",
                     native_renderer_bridge=str(native_bridge) if native_bridge else None,

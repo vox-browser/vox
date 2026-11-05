@@ -43,6 +43,27 @@ class PreciseScrollTests(unittest.TestCase):
     def test_fixture_navigation_seeds_only_allow_any_site(self):
         self.check_isolated_launch(True)
 
+    def test_disabled_gpu_canvas_is_seeded_as_the_advanced_setting(self):
+        self.check_isolated_launch(False, disable_gpu_canvas=True)
+
+    def test_fixture_navigation_and_disabled_gpu_canvas_share_one_profile(self):
+        self.check_isolated_launch(True, disable_gpu_canvas=True)
+
+    def test_disabled_gpu_canvas_profile_cannot_silently_disable_replay_proxy(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "measurement"
+            def compile_probe(command, **kwargs):
+                Path(command[-1]).write_bytes(b"fixture probe")
+            with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
+                    mock.patch.object(measure_precise_scroll.sys, "argv", ["probe", "--output", str(output),
+                        "--disable-gpu-canvas", "--network-policy", "fixture replay"]), \
+                    mock.patch.dict(os.environ, VOX_PROXY="socks5h://127.0.0.1:9000"), \
+                    mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \
+                    mock.patch.object(measure_precise_scroll.subprocess, "Popen") as launch:
+                with self.assertRaisesRegex(ValueError, "cannot combine with VOX_PROXY"):
+                    measure_precise_scroll.main()
+                launch.assert_not_called()
+
     def test_profile_reset_is_explicitly_marked_as_diagnostic(self):
         self.check_isolated_launch(False, v_profile_reset=True)
 
@@ -81,7 +102,12 @@ class PreciseScrollTests(unittest.TestCase):
 
     def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False,
                               capture_faults=False, mutate_worker=False, mutate_packaged=False,
-                              image_bridge=False, mutate_image=False):
+                              image_bridge=False, mutate_image=False, disable_gpu_canvas=False):
+        seeded = {}
+        if allow_fixture_navigation:
+            seeded["allow_any_site"] = True
+        if disable_gpu_canvas:
+            seeded["disable_gpu_canvas"] = True
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             binary = root / ("Vox.app/Contents/MacOS/Vox" if mutate_packaged else "Vox")
@@ -119,14 +145,13 @@ class PreciseScrollTests(unittest.TestCase):
                 env = kwargs["env"]
                 self.assertEqual(Path(env["VOX_PROFILE_DIR"]), output / "profile")
                 profile_files = list((output / "profile").iterdir())
-                self.assertEqual([p.name for p in profile_files],
-                                 ["settings.json"] if allow_fixture_navigation else [])
-                if allow_fixture_navigation:
-                    self.assertEqual(json.loads(profile_files[0].read_text()), {"allow_any_site": True})
+                self.assertEqual([p.name for p in profile_files], ["settings.json"] if seeded else [])
+                if seeded:
+                    self.assertEqual(json.loads(profile_files[0].read_text()), seeded)
                 self.assertEqual(command[command.index("--window-height") + 1], "876")
                 self.assertNotIn("--enable-javascript", command)
                 self.assertNotIn("--disable-javascript", command)
-                self.assertEqual(env["VOX_PROXY"], "" if allow_fixture_navigation else "http://127.0.0.1:9")
+                self.assertEqual(env["VOX_PROXY"], "" if seeded else "http://127.0.0.1:9")
                 self.assertEqual(env["SSL_CERT_FILE"], str(certificate))
                 self.assertNotIn("VOX_PROFILE_FRAMES", env)
                 self.assertNotIn("DYLD_LIBRARY_PATH", env)
@@ -157,6 +182,8 @@ class PreciseScrollTests(unittest.TestCase):
                          "--env", f"VOX_PROFILE_DIR={user_profile}"]
             if allow_fixture_navigation:
                 arguments.append("--allow-fixture-navigation")
+            if disable_gpu_canvas:
+                arguments.append("--disable-gpu-canvas")
             if v_profile_reset:
                 arguments.append("--v-profile-reset")
             if capture_faults:
@@ -171,7 +198,7 @@ class PreciseScrollTests(unittest.TestCase):
                                     VOX_PRECISE_RESET_V_PROFILE="ambient-must-not-enable-profiling",
                                     VOX_PRECISE_CAPTURE_FAULTS="1",
                                     SSL_CERT_FILE=str(certificate),
-                                    VOX_PROXY="" if allow_fixture_navigation else "http://127.0.0.1:9"), \
+                                    VOX_PROXY="" if seeded else "http://127.0.0.1:9"), \
                     mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \
                     mock.patch.object(measure_precise_scroll.subprocess, "Popen", launch), \
                     mock.patch.object(measure_precise_scroll.os, "cpu_count", return_value=18), \
@@ -200,7 +227,9 @@ class PreciseScrollTests(unittest.TestCase):
             header = Path(measure_precise_scroll.__file__).with_name("precise_scroll_faults.h")
             self.assertEqual(evidence["source_and_binary_sha256"][str(header)],
                              hashlib.sha256(header.read_bytes()).hexdigest())
-            self.assertEqual("seeded only" in evidence["initial_profile"], allow_fixture_navigation)
+            self.assertEqual("seeded only" in evidence["initial_profile"], bool(seeded))
+            for name in seeded:
+                self.assertIn(f"{name}=true", evidence["initial_profile"])
             self.assertEqual(evidence["script_policy"], "automatic")
             self.assertEqual(evidence["host"], {"cpu_count": 18,
                              "load_average_before": [1, 2, 3],
