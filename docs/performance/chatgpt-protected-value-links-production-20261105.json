@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "complete": false,
+  "status": "pending-new-production-bundle",
+  "recorded_unix": 1793879174.2514079,
+  "implementation_commits": [
+    "e537b584c",
+    "ea384f9fa"
+  ],
+  "latest_completed": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+      "mode": "parallel",
+      "requested": "parallel",
+      "units": 33
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "d0eac328379f92fcaef0206c83caad98113c17c97b78748df06f1995ba79758e",
+    "exit": 0,
+    "inputs": {
+      "build_inputs_sha256": "6a2e5799b03c08a1ee89a13cd6b045967a72b86d28ee3f8e22fb2bddf5f30058",
+      "dirty": true,
+      "head": "6bdc351ea38bb872a3e37647817238f96c2a7016",
+      "repository_sha256": "41b4cd8bc3a42f6d74aa05aae4f5b7b36c82bd29d3a166ba31136234b287f2f7"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "6bdc351ea38bb872a3e37647817238f96c2a7016",
+      "id": "030ad69d752a46c4b5297bbf5cbde8fb"
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "6a2e5799b03c08a1ee89a13cd6b045967a72b86d28ee3f8e22fb2bddf5f30058",
+      "dirty": true,
+      "head": "af0512461bf68fe25f8efb9376e03f3d5e748185",
+      "repository_sha256": "50d874b4e1a2e1ec3d37ddfb0dd4434dd841434307a306649c2a2f6424e8f556"
+    }
+  },
+  "observed_executable_sha256": "d0eac328379f92fcaef0206c83caad98113c17c97b78748df06f1995ba79758e",
+  "linked_marker": false,
+  "availability_preflight": {
+    "unix": 1793879099.9659252,
+    "latest_completed": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "d0eac328379f92fcaef0206c83caad98113c17c97b78748df06f1995ba79758e",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "6a2e5799b03c08a1ee89a13cd6b045967a72b86d28ee3f8e22fb2bddf5f30058",
+        "dirty": true,
+        "head": "6bdc351ea38bb872a3e37647817238f96c2a7016",
+        "repository_sha256": "41b4cd8bc3a42f6d74aa05aae4f5b7b36c82bd29d3a166ba31136234b287f2f7"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "6bdc351ea38bb872a3e37647817238f96c2a7016",
+        "id": "030ad69d752a46c4b5297bbf5cbde8fb"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "6a2e5799b03c08a1ee89a13cd6b045967a72b86d28ee3f8e22fb2bddf5f30058",
+        "dirty": true,
+        "head": "af0512461bf68fe25f8efb9376e03f3d5e748185",
+        "repository_sha256": "50d874b4e1a2e1ec3d37ddfb0dd4434dd841434307a306649c2a2f6424e8f556"
+      }
+    },
+    "observed_executable_sha256": "d0eac328379f92fcaef0206c83caad98113c17c97b78748df06f1995ba79758e",
+    "linked_marker": false,
+    "locks": {
+      "build": "free",
+      "bundle": "free"
+    },
+    "queued_request": {
+      "c_mode": "parallel",
+      "head": "8a1e4df5f870ea1eff6fb499be1b11b40efc904d",
+      "id": "f79fc0201c0a4e0e888336e9012650b2"
+    },
+    "started_request": {
+      "id": "f79fc0201c0a4e0e888336e9012650b2"
+    },
+    "browser_launches": 0,
+    "build_requests": 0,
+    "qualification": "Read-only availability preflight while preparing production validation; an older bundle cannot validate the new linked registry. No independent production build queued."
+  },
+  "shared_build_failures": [
+    {
+      "path": "Build/production-build/receipts/20261105-143010-c816ee09",
+      "result": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "exit": 1,
+          "mode": "failed",
+          "requested": "parallel"
+        },
+        "exit": 1,
+        "inputs": {
+          "build_inputs_sha256": "82f05c21a915f75659593899387914717b3625289a4ff2eed1e76af3d58ff3a5",
+          "dirty": true,
+          "head": "af0512461bf68fe25f8efb9376e03f3d5e748185",
+          "repository_sha256": "d990504622cdb22ed086bd787540b00262ee20f4259e3d9620346d8e4b7491b3"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "af0512461bf68fe25f8efb9376e03f3d5e748185",
+          "id": "2b1cb388f08246e2a4cafaf4ae9d7949"
+        }
+      }
+    },
+    {
+      "path": "Build/production-build/receipts/20261105-144153-b1975d49",
+      "result": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "mode": "parallel",
+          "requested": "parallel",
+          "units": 33
+        },
+        "exit": 0,
+        "inputs": {
+          "build_inputs_sha256": "c796e487123eece22449292ca4197009b540279aeb2195e4f48f8462c3e9e094",
+          "dirty": true,
+          "head": "6f1ca88fcce9aa8ccf1c12ca72bb734b8506924b",
+          "repository_sha256": "f0e8f666ca04d52fe5ba578c9e764381e33826aa30e5791823d6a19d0415e540"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "6f1ca88fcce9aa8ccf1c12ca72bb734b8506924b",
+          "id": "9c810a0242fa42cfbf23808112f16875"
+        },
+        "superseded": true,
+        "verified_inputs": {
+          "build_inputs_sha256": "379a4d4bae19d9be4c2b4d0b9b9613b2416459438a71c2e2536cce2bf57f7591",
+          "dirty": true,
+          "head": "8a1e4df5f870ea1eff6fb499be1b11b40efc904d",
+          "repository_sha256": "7f9d8a8cbaefdf36eb854b232c4184bdafd8cd93e761e311e60e6f0ad6bd6ecd"
+        }
+      }
+    },
+    {
+      "path": "Build/production-build/receipts/20261105-144354-c665e6c4",
+      "result": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "exit": 1,
+          "mode": "failed",
+          "requested": "parallel"
+        },
+        "exit": 1,
+        "inputs": {
+          "build_inputs_sha256": "379a4d4bae19d9be4c2b4d0b9b9613b2416459438a71c2e2536cce2bf57f7591",
+          "dirty": true,
+          "head": "8a1e4df5f870ea1eff6fb499be1b11b40efc904d",
+          "repository_sha256": "7f9d8a8cbaefdf36eb854b232c4184bdafd8cd93e761e311e60e6f0ad6bd6ecd"
+        },
+        "request": {
+          "c_mode": "parallel",
+          "head": "8a1e4df5f870ea1eff6fb499be1b11b40efc904d",
+          "id": "f79fc0201c0a4e0e888336e9012650b2"
+        }
+      }
+    }
+  ],
+  "browser_captures": 0,
+  "manual_build_requests": 0,
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "qualification": "All focused and component checks are complete in their separate receipt. The latest completed browser lacks the linked registry and cannot validate it. Shared builds failed first on an unfinished navigation method, then on an optional CSP request-pointer conversion in navigation embedding policy. No browser capture or instruction comparison was launched for this feature; prepared diagnostic/control/matched scripts remain retained for a completed bundle. No copied app, separate production build request, or waiting for hours. Existing frozen SOCKS capture, author scripts and pixel/content references remain unchanged.",
+  "evidence": {
+    "path": "docs/performance/chatgpt-protected-value-links-production-pending-20261105-evidence.zip",
+    "sha256": "52680045cd364ec8a3ba8df37ebe25225660b3b172e250324bc4f16acab5ff1a",
+    "bytes": 33209,
+    "entries": 25
+  }
+}

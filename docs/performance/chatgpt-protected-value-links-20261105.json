@@ -1,0 +1,1317 @@
+{
+  "version": 1,
+  "complete": true,
+  "implementation_commit": "e537b584c",
+  "benchmark_commit": "ea384f9fa",
+  "focused": {
+    "complete": true,
+    "passed": true,
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "inputs_before": {
+      "browserjs/runtime.v": "a90987db51c923fe08383fd257a3e77a8be8b64435224dafee8380175657cd10",
+      "browserjs/protected_value_index.v": "d76a0c66cdbce2f69a278ce9a079832e2d7ff0327e1f180e3f9618efecc9e69e",
+      "browserjs/protected_value_links.v": "73833eb44639368b5bce99b87a384c2f5340db00263fae3144e6439ce36219b5",
+      "browserjs/protected_value_index_test.v": "35cc5acfa153f31db7a0bf2275ee2247c7353c43103f4b0ad8f3f663d27ad9f7",
+      "browserjs/protected_value_links_test.v": "2d682de673dde314d068755b6af896685cdacb12d17d34b97353f12313959e52"
+    },
+    "inputs_after": {
+      "browserjs/runtime.v": "a90987db51c923fe08383fd257a3e77a8be8b64435224dafee8380175657cd10",
+      "browserjs/protected_value_index.v": "d76a0c66cdbce2f69a278ce9a079832e2d7ff0327e1f180e3f9618efecc9e69e",
+      "browserjs/protected_value_links.v": "73833eb44639368b5bce99b87a384c2f5340db00263fae3144e6439ce36219b5",
+      "browserjs/protected_value_index_test.v": "35cc5acfa153f31db7a0bf2275ee2247c7353c43103f4b0ad8f3f663d27ad9f7",
+      "browserjs/protected_value_links_test.v": "2d682de673dde314d068755b6af896685cdacb12d17d34b97353f12313959e52"
+    },
+    "rows": [
+      {
+        "label": "compile-regression-prealloc",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/compile-regression-prealloc.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/compile-regression-prealloc-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/protected_value_index_test.v,/Users/alex/code/vox2/browserjs/webidl_binding_test.v,/Users/alex/code/vox2/browserjs/idle_callback_host_test.v,/Users/alex/code/vox2/browserjs/custom_element_registry_binding_test.v,/Users/alex/code/vox2/browserjs/native_value_host_function_test.v,/Users/alex/code/vox2/browserjs/runtime_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-prealloc",
+          "/Users/alex/code/vox2/browserjs/protected_value_links_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793878276.0079339,
+          "load": [
+            13.7724609375,
+            17.59326171875,
+            17.80712890625
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878298.239904,
+          "load": [
+            13.83154296875,
+            17.359375,
+            17.7177734375
+          ]
+        }
+      },
+      {
+        "label": "run-regression-prealloc-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-prealloc-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-prealloc-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878298.250798,
+          "load": [
+            13.83154296875,
+            17.359375,
+            17.7177734375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878300.008624,
+          "load": [
+            13.2041015625,
+            17.17041015625,
+            17.64892578125
+          ]
+        }
+      },
+      {
+        "label": "run-regression-prealloc-array-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-prealloc-array-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-prealloc-array-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "1",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878300.0176451,
+          "load": [
+            13.2041015625,
+            17.17041015625,
+            17.64892578125
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878301.4623098,
+          "load": [
+            13.2041015625,
+            17.17041015625,
+            17.64892578125
+          ]
+        }
+      },
+      {
+        "label": "run-regression-prealloc-scalar-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-prealloc-scalar-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-prealloc-scalar-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-prealloc"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "1",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878301.486062,
+          "load": [
+            13.2041015625,
+            17.17041015625,
+            17.64892578125
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878302.903289,
+          "load": [
+            13.2041015625,
+            17.17041015625,
+            17.64892578125
+          ]
+        }
+      },
+      {
+        "label": "compile-regression-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/compile-regression-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/compile-regression-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/protected_value_index_test.v,/Users/alex/code/vox2/browserjs/webidl_binding_test.v,/Users/alex/code/vox2/browserjs/idle_callback_host_test.v,/Users/alex/code/vox2/browserjs/custom_element_registry_binding_test.v,/Users/alex/code/vox2/browserjs/native_value_host_function_test.v,/Users/alex/code/vox2/browserjs/runtime_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-default",
+          "/Users/alex/code/vox2/browserjs/protected_value_links_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793878302.9136782,
+          "load": [
+            13.2041015625,
+            17.17041015625,
+            17.64892578125
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878321.787585,
+          "load": [
+            12.9462890625,
+            16.83837890625,
+            17.51708984375
+          ]
+        }
+      },
+      {
+        "label": "run-regression-default-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-default-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-default-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878321.7989252,
+          "load": [
+            12.9462890625,
+            16.83837890625,
+            17.51708984375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878323.436905,
+          "load": [
+            12.9462890625,
+            16.83837890625,
+            17.51708984375
+          ]
+        }
+      },
+      {
+        "label": "run-regression-default-array-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-default-array-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-default-array-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "1",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878323.44712,
+          "load": [
+            12.9462890625,
+            16.83837890625,
+            17.51708984375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878324.820993,
+          "load": [
+            12.3095703125,
+            16.6416015625,
+            17.443359375
+          ]
+        }
+      },
+      {
+        "label": "run-regression-default-scalar-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-default-scalar-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-default-scalar-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-default"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "1",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878324.829576,
+          "load": [
+            12.3095703125,
+            16.6416015625,
+            17.443359375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878326.0558898,
+          "load": [
+            12.3095703125,
+            16.6416015625,
+            17.443359375
+          ]
+        }
+      },
+      {
+        "label": "compile-regression-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/compile-regression-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/compile-regression-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/protected_value_index_test.v,/Users/alex/code/vox2/browserjs/webidl_binding_test.v,/Users/alex/code/vox2/browserjs/idle_callback_host_test.v,/Users/alex/code/vox2/browserjs/custom_element_registry_binding_test.v,/Users/alex/code/vox2/browserjs/native_value_host_function_test.v,/Users/alex/code/vox2/browserjs/runtime_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-none",
+          "/Users/alex/code/vox2/browserjs/protected_value_links_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793878326.0658371,
+          "load": [
+            12.3095703125,
+            16.6416015625,
+            17.443359375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878343.158564,
+          "load": [
+            11.3056640625,
+            16.20263671875,
+            17.27197265625
+          ]
+        }
+      },
+      {
+        "label": "run-regression-none-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-none-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-none-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878343.169915,
+          "load": [
+            11.3056640625,
+            16.20263671875,
+            17.27197265625
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878344.843859,
+          "load": [
+            11.04052734375,
+            16.06640625,
+            17.21728515625
+          ]
+        }
+      },
+      {
+        "label": "run-regression-none-array-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-none-array-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-none-array-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "1",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878344.856155,
+          "load": [
+            11.04052734375,
+            16.06640625,
+            17.21728515625
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878346.240682,
+          "load": [
+            11.04052734375,
+            16.06640625,
+            17.21728515625
+          ]
+        }
+      },
+      {
+        "label": "run-regression-none-scalar-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-none-scalar-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-none-scalar-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-none"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "1",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878346.250203,
+          "load": [
+            11.04052734375,
+            16.06640625,
+            17.21728515625
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878347.504778,
+          "load": [
+            11.04052734375,
+            16.06640625,
+            17.21728515625
+          ]
+        }
+      },
+      {
+        "label": "compile-regression-sanitized",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/compile-regression-sanitized.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/compile-regression-sanitized-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-ldflags",
+          "-framework CoreGraphics",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-cflags",
+          "-O0 -fsanitize=address,undefined -fno-omit-frame-pointer",
+          "-ldflags",
+          "-framework CoreGraphics -fsanitize=address,undefined",
+          "-file-list",
+          "/Users/alex/code/vox2/browserjs/protected_value_index_test.v,/Users/alex/code/vox2/browserjs/webidl_binding_test.v,/Users/alex/code/vox2/browserjs/idle_callback_host_test.v,/Users/alex/code/vox2/browserjs/custom_element_registry_binding_test.v,/Users/alex/code/vox2/browserjs/native_value_host_function_test.v,/Users/alex/code/vox2/browserjs/runtime_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-sanitized",
+          "/Users/alex/code/vox2/browserjs/protected_value_links_test.v"
+        ],
+        "environment": {},
+        "host_before": {
+          "unix": 1793878347.515394,
+          "load": [
+            11.04052734375,
+            16.06640625,
+            17.21728515625
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878405.4978461,
+          "load": [
+            8.8916015625,
+            14.4755859375,
+            16.5380859375
+          ]
+        }
+      },
+      {
+        "label": "run-regression-sanitized-candidate",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-sanitized-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-sanitized-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878405.5072691,
+          "load": [
+            8.8916015625,
+            14.4755859375,
+            16.5380859375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878407.815815,
+          "load": [
+            8.8916015625,
+            14.4755859375,
+            16.5380859375
+          ]
+        }
+      },
+      {
+        "label": "run-regression-sanitized-array-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-sanitized-array-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-sanitized-array-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "1",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878407.824064,
+          "load": [
+            8.8916015625,
+            14.4755859375,
+            16.5380859375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878409.640207,
+          "load": [
+            8.8916015625,
+            14.4755859375,
+            16.5380859375
+          ]
+        }
+      },
+      {
+        "label": "run-regression-sanitized-scalar-control",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-sanitized-scalar-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/run-regression-sanitized-scalar-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/regression-sanitized"
+        ],
+        "environment": {
+          "VOX_ARENA_POISON": "1",
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_DISABLE_PROTECTED_VALUE_INDEX": "1",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "ASAN_OPTIONS": "detect_leaks=0",
+          "UBSAN_OPTIONS": "halt_on_error=1"
+        },
+        "host_before": {
+          "unix": 1793878409.652082,
+          "load": [
+            8.8916015625,
+            14.4755859375,
+            16.5380859375
+          ],
+          "cpus": 18
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878411.241248,
+          "load": [
+            9.38037109375,
+            14.48388671875,
+            16.52880859375
+          ]
+        }
+      }
+    ]
+  },
+  "focused_jobs": 16,
+  "focused_cases_per_execution": 32,
+  "focused_case_executions": 384,
+  "preliminary": [
+    {
+      "variant": "candidate",
+      "command": [
+        "python3",
+        "tools/run_memory_bounded.py",
+        "--lock",
+        "Build/chatgpt-protected-value-links-20261105-r1/preflight-candidate.lock",
+        "--report",
+        "Build/chatgpt-protected-value-links-20261105-r1/preflight-candidate-guard.json",
+        "--limit-gib",
+        "3",
+        "--",
+        "Build/chatgpt-protected-value-links-20261105-r1/preflight"
+      ],
+      "exit": 0
+    },
+    {
+      "variant": "array-control",
+      "command": [
+        "python3",
+        "tools/run_memory_bounded.py",
+        "--lock",
+        "Build/chatgpt-protected-value-links-20261105-r1/preflight-array-control.lock",
+        "--report",
+        "Build/chatgpt-protected-value-links-20261105-r1/preflight-array-control-guard.json",
+        "--limit-gib",
+        "3",
+        "--",
+        "Build/chatgpt-protected-value-links-20261105-r1/preflight"
+      ],
+      "exit": 0
+    },
+    {
+      "variant": "scalar-control",
+      "command": [
+        "python3",
+        "tools/run_memory_bounded.py",
+        "--lock",
+        "Build/chatgpt-protected-value-links-20261105-r1/preflight-scalar-control.lock",
+        "--report",
+        "Build/chatgpt-protected-value-links-20261105-r1/preflight-scalar-control-guard.json",
+        "--limit-gib",
+        "3",
+        "--",
+        "Build/chatgpt-protected-value-links-20261105-r1/preflight"
+      ],
+      "exit": 0
+    }
+  ],
+  "preliminary_case_executions": 15,
+  "maximum_compile_rss_bytes": 6366199808,
+  "maximum_runtime_rss_bytes": 233259008,
+  "component": {
+    "complete": true,
+    "identity_stable": true,
+    "inputs_before": {
+      "Build/chatgpt-protected-value-links-20261105-r1/component": "bb4de2b4e4570c12fd1431a27e73a43fc47afaa6ddd62533bd5a8b1f97008e26",
+      "Build/chatgpt-protected-value-links-20261105-r1/component.py": "a0a1abef14793aa0b1eec92cc148f6025a29384d4883f2cd645b05241e07a6eb",
+      "tools/protected_value_links_benchmark.v": "5024886b416e409377ec65496fabf0ecb4b075636efbde3a284278451e40b19d",
+      "browserjs/runtime.v": "a90987db51c923fe08383fd257a3e77a8be8b64435224dafee8380175657cd10",
+      "browserjs/protected_value_links.v": "73833eb44639368b5bce99b87a384c2f5340db00263fae3144e6439ce36219b5",
+      "browserjs/protected_value_index.v": "d76a0c66cdbce2f69a278ce9a079832e2d7ff0327e1f180e3f9618efecc9e69e",
+      "browserjs/host_value_function_jsc.c.v": "18d709baed3bb30519a7b021f0933de75058a41069d66bd9c760fe0ba062760a"
+    },
+    "inputs_after": {
+      "Build/chatgpt-protected-value-links-20261105-r1/component": "bb4de2b4e4570c12fd1431a27e73a43fc47afaa6ddd62533bd5a8b1f97008e26",
+      "Build/chatgpt-protected-value-links-20261105-r1/component.py": "a0a1abef14793aa0b1eec92cc148f6025a29384d4883f2cd645b05241e07a6eb",
+      "tools/protected_value_links_benchmark.v": "5024886b416e409377ec65496fabf0ecb4b075636efbde3a284278451e40b19d",
+      "browserjs/runtime.v": "a90987db51c923fe08383fd257a3e77a8be8b64435224dafee8380175657cd10",
+      "browserjs/protected_value_links.v": "73833eb44639368b5bce99b87a384c2f5340db00263fae3144e6439ce36219b5",
+      "browserjs/protected_value_index.v": "d76a0c66cdbce2f69a278ce9a079832e2d7ff0327e1f180e3f9618efecc9e69e",
+      "browserjs/host_value_function_jsc.c.v": "18d709baed3bb30519a7b021f0933de75058a41069d66bd9c760fe0ba062760a"
+    },
+    "observations": [
+      {
+        "label": "component-0-array-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-0-array-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-0-array-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "1",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "",
+          "VOX_ARENA_POISON": "1"
+        },
+        "host_before": {
+          "unix": 1793878718.891875,
+          "cpus": 18,
+          "load": [
+            8.48876953125,
+            10.53466796875,
+            14.02685546875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878719.694303,
+          "load": [
+            8.48876953125,
+            10.53466796875,
+            14.02685546875
+          ]
+        },
+        "scenes": [
+          {
+            "scene": "distinct-churn",
+            "instructions": 94195569,
+            "protections": 32768,
+            "releases": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "one-handle-duplicates",
+            "instructions": 128716248,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "duplicate-fanout",
+            "instructions": 147491346,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "absent-handles",
+            "instructions": 7547215,
+            "protections": 0,
+            "releases": 65536,
+            "checksum": 0
+          }
+        ]
+      },
+      {
+        "label": "component-1-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-1-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-1-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "",
+          "VOX_ARENA_POISON": "1"
+        },
+        "host_before": {
+          "unix": 1793878719.711943,
+          "cpus": 18,
+          "load": [
+            8.48876953125,
+            10.53466796875,
+            14.02685546875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878719.9857228,
+          "load": [
+            8.48876953125,
+            10.53466796875,
+            14.02685546875
+          ]
+        },
+        "scenes": [
+          {
+            "scene": "distinct-churn",
+            "instructions": 85428101,
+            "protections": 32768,
+            "releases": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "one-handle-duplicates",
+            "instructions": 128658676,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "duplicate-fanout",
+            "instructions": 144830479,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "absent-handles",
+            "instructions": 7547115,
+            "protections": 0,
+            "releases": 65536,
+            "checksum": 0
+          }
+        ]
+      },
+      {
+        "label": "component-2-candidate",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-2-candidate.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-2-candidate-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "",
+          "VOX_ARENA_POISON": "1"
+        },
+        "host_before": {
+          "unix": 1793878720.008961,
+          "cpus": 18,
+          "load": [
+            8.48876953125,
+            10.53466796875,
+            14.02685546875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878720.3110452,
+          "load": [
+            8.609375,
+            10.525390625,
+            14.0029296875
+          ]
+        },
+        "scenes": [
+          {
+            "scene": "distinct-churn",
+            "instructions": 85278807,
+            "protections": 32768,
+            "releases": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "one-handle-duplicates",
+            "instructions": 128523804,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "duplicate-fanout",
+            "instructions": 144869641,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "absent-handles",
+            "instructions": 7628666,
+            "protections": 0,
+            "releases": 65536,
+            "checksum": 0
+          }
+        ]
+      },
+      {
+        "label": "component-3-array-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-3-array-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-3-array-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "1",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "",
+          "VOX_ARENA_POISON": "1"
+        },
+        "host_before": {
+          "unix": 1793878720.334652,
+          "cpus": 18,
+          "load": [
+            8.609375,
+            10.525390625,
+            14.0029296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878720.6334531,
+          "load": [
+            8.609375,
+            10.525390625,
+            14.0029296875
+          ]
+        },
+        "scenes": [
+          {
+            "scene": "distinct-churn",
+            "instructions": 94232864,
+            "protections": 32768,
+            "releases": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "one-handle-duplicates",
+            "instructions": 128755661,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "duplicate-fanout",
+            "instructions": 147328135,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "absent-handles",
+            "instructions": 7569947,
+            "protections": 0,
+            "releases": 65536,
+            "checksum": 0
+          }
+        ]
+      },
+      {
+        "label": "component-4-diagnostic",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-4-diagnostic.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-4-diagnostic-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "VOX_ARENA_POISON": "1"
+        },
+        "host_before": {
+          "unix": 1793878720.6561642,
+          "cpus": 18,
+          "load": [
+            8.609375,
+            10.525390625,
+            14.0029296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878720.958941,
+          "load": [
+            8.609375,
+            10.525390625,
+            14.0029296875
+          ]
+        },
+        "scenes": [
+          {
+            "scene": "distinct-churn",
+            "instructions": 85212123,
+            "protections": 32768,
+            "releases": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "one-handle-duplicates",
+            "instructions": 128889766,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "duplicate-fanout",
+            "instructions": 144987124,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "absent-handles",
+            "instructions": 7634285,
+            "protections": 0,
+            "releases": 65536,
+            "checksum": 0
+          }
+        ]
+      },
+      {
+        "label": "component-5-diagnostic-control",
+        "command": [
+          "python3",
+          "tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-5-diagnostic-control.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component-5-diagnostic-control-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-protected-value-links-20261105-r1/component"
+        ],
+        "environment": {
+          "VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX": "1",
+          "VOX_PROTECTED_VALUE_INDEX_DIAGNOSTICS": "1",
+          "VOX_ARENA_POISON": "1"
+        },
+        "host_before": {
+          "unix": 1793878720.982087,
+          "cpus": 18,
+          "load": [
+            8.609375,
+            10.525390625,
+            14.0029296875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793878721.8205252,
+          "load": [
+            8.609375,
+            10.525390625,
+            14.0029296875
+          ]
+        },
+        "scenes": [
+          {
+            "scene": "distinct-churn",
+            "instructions": 1856831638,
+            "protections": 32768,
+            "releases": 32768,
+            "checksum": 32768
+          },
+          {
+            "scene": "one-handle-duplicates",
+            "instructions": 128773381,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "duplicate-fanout",
+            "instructions": 3589805734,
+            "protections": 65536,
+            "releases": 65536,
+            "checksum": 65536
+          },
+          {
+            "scene": "absent-handles",
+            "instructions": 7559274,
+            "protections": 0,
+            "releases": 65536,
+            "checksum": 0
+          }
+        ]
+      }
+    ],
+    "scenes": {
+      "distinct-churn": {
+        "control": [
+          94195569,
+          94232864
+        ],
+        "candidate": [
+          85428101,
+          85278807
+        ],
+        "median_reduction_fraction": 0.0940491024515393,
+        "conservative_separation": 8767468
+      },
+      "one-handle-duplicates": {
+        "control": [
+          128716248,
+          128755661
+        ],
+        "candidate": [
+          128658676,
+          128523804
+        ],
+        "median_reduction_fraction": 0.0011241187480378612,
+        "conservative_separation": 57572
+      },
+      "duplicate-fanout": {
+        "control": [
+          147491346,
+          147328135
+        ],
+        "candidate": [
+          144830479,
+          144869641
+        ],
+        "median_reduction_fraction": 0.01736439187341221,
+        "conservative_separation": 2458494
+      },
+      "absent-handles": {
+        "control": [
+          7547215,
+          7569947
+        ],
+        "candidate": [
+          7547115,
+          7628666
+        ],
+        "median_reduction_fraction": -0.0038776458173828132,
+        "conservative_separation": -81451
+      }
+    },
+    "page_instruction_credit": 0,
+    "qualification": "Real JSC protection and registry calls, with the JS global independently retaining the object bank. Setup, final bank verification and runtime close are outside each current-process instruction interval. Warm runtime intrinsics and retained OS caches; C -O3/preallocation; no browser or Brave acceptance credit. Diagnostics are separate from the four unprofiled alternating runs."
+  },
+  "retained_failures": [
+    "The first component compile rejected the deprecated usize cast before any measurements. The corrected benchmark verifies the returned handle and counts protections instead of using an address-dependent checksum. The original compiler log and guard remain retained.",
+    "The first archive finalizer expected generated production C beside the output executable; V retained it in its temporary directory. The corrected finalizer records the actual source path/hash and extracts its benchmark and registry bodies. No measurements were rerun or lost."
+  ],
+  "qualification": "Each protection retains one dense root entry. Per-handle newest indices and neighboring duplicate links preserve constant-time release and swap removal without separate per-handle arrays. The original array index and scalar fallback remain controls. Focused checks include real JavaScriptCore GC, duplicate lifetime, moved older duplicates, multiset churn, close, WebIDL bindings, idle callbacks, custom elements and native host functions, with poisoned preallocation, ordinary GC, no GC and C-O0 ASan/UBSan. Component intervals use the real JSC APIs under production C-O3 and exclude setup/close; their instruction reductions establish no whole-page, live-site, rendering, scrolling or Brave acceptance claim.",
+  "production_report": "docs/performance/chatgpt-protected-value-links-production-20261105.json",
+  "acceptance": false,
+  "page_instruction_credit": 0,
+  "broad_cadence_before": 0,
+  "broad_cadence_after": 0,
+  "evidence": {
+    "path": "docs/performance/chatgpt-protected-value-links-20261105-evidence.zip",
+    "sha256": "6b59d36784e6972eec79bc63ba900a26d536ee3b8a545da03eca0bd2c39be5ce",
+    "bytes": 89813,
+    "entries": 78
+  },
+  "archive_guard": {
+    "command": [
+      "python3",
+      "Build/chatgpt-protected-value-links-20261105-r1/finalize.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 712343552,
+    "elapsed_seconds": 4.479371875,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

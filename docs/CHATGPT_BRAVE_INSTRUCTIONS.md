@@ -2261,3 +2261,63 @@ retain the focused checks, source proofs, every raw count, ownership audit,
 capture, command, guard and host condition. The requested **5% advantage over
 Brave remains unmet**. These frozen-page results establish neither live-site
 performance, isolated rendering time nor scrolling FPS; no catalog entry is added.
+
+
+## November 5: shared JavaScript protection links
+
+Commit `e537b584c` replaces the per-handle protection-index arrays with links in
+a shared dense array and a map to each handle's newest protection. Every
+JavaScriptCore protection still owns one root. Releasing a root updates both
+neighbors and any moved root after swap removal, including when an older
+duplicate moves into its removed tail's slot. Runtime close clears the links
+and releases every actual JSC protection. The original array index remains
+available with `VOX_RETAIN_PROTECTED_VALUE_ARRAY_INDEX=1`; the pre-existing
+scalar control also remains available.
+
+All **16 final focused jobs pass**, covering **384 case executions** across
+candidate, array control and scalar control in poisoned preallocation, ordinary
+GC, no GC and C `-O0` ASan/UBSan. The 32-case selection covers duplicate chains,
+multiset churn and full drains, absent releases, actual JSC collection, runtime
+close, WebIDL bindings, idle callbacks, custom elements and native host functions.
+The earlier three-variant preflight also passes its 15 case executions. Final
+focused compile peak is 6,366,199,808 bytes under 12 GiB; runtime peak is
+233,259,008 bytes under 3 GiB.
+
+The component benchmark (`ea384f9fa`) uses real JSC protection APIs on a bank of
+objects independently kept alive by a JS global. Each measured interval excludes
+bank setup, final bank verification and runtime close. One executable, compiled
+with production C `-O3` and preallocation, runs array/candidate/candidate/array;
+two additional diagnostic runs confirm branch execution separately. Checksums
+match the exact number of protections in every run.
+
+| Component scene | Median instruction reduction |
+| --- | ---: |
+| Distinct-handle churn | 9.405% |
+| One handle with many protections | 0.112% |
+| Duplicate fanout | 1.736% |
+| Absent-handle releases | −0.388% |
+
+The absent-handle ranges overlap; the small regression remains retained. These
+component results do not establish browser savings or trigger a whole-page broad
+checkpoint. The initial benchmark compile's deprecated cast and the archive
+finalizer's incorrect generated-C path are retained; corrected independent
+compilation, measurements and archive verification pass without rerunning or
+dropping successful observations.
+
+The [focused/component receipt](performance/chatgpt-protected-value-links-20261105.json)
+links the raw counts, source proofs, guards, host conditions and verified archive.
+
+Browser validation is pending. The latest completed executable is
+`d0eac328379f92fcaef0206c83caad98113c17c97b78748df06f1995ba79758e`;
+it predates the linked registry and contains no execution marker for it. Shared
+builds fail first on an unfinished navigation method, then on a generated-C
+optional CSP request-pointer conversion in navigation embedding policy. Those
+build receipts and errors are retained. No separate production build is queued,
+no app is copied, and no browser captures or page instruction trials are launched
+for this feature. The prepared diagnostic and matched comparison retain the
+original SOCKS fixture, scripts and pixel/content references.
+
+The [production availability receipt](performance/chatgpt-protected-value-links-production-20261105.json)
+records the blocker and preserves the prepared harness and failed shared builds.
+**No whole-page saving is credited**, no broad checkpoint is due, and the cadence
+stays at zero. The requested **5% advantage over Brave remains unmet**.
