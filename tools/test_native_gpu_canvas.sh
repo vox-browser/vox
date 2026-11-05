@@ -19,6 +19,7 @@ source = Path(sys.argv[1]).read_text()
 functions = []
 for signature in ('void native_capture_video_backdrop(', 'int native_gpu_canvas_begin(',
                   'int native_gpu_canvas_begin_rects(',
+                  'static int native_try_gpu_css_filter_image(',
                   'static int native_try_restore_gpu_video_backdrop(', 'void native_restore_video_backdrop('):
     first = source.index(signature)
     functions.append(source[first:source.index('\n}\n', first) + 2])
@@ -37,6 +38,7 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
 "$output_dir/native_gpu_canvas_test" --iosurface-readback
 "$output_dir/native_gpu_canvas_test" --partial-readback
 "$output_dir/native_gpu_canvas_test" --native-grid
+"$output_dir/native_gpu_canvas_test" --filter-image
 VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1 "$output_dir/native_gpu_canvas_test" --overlay-batch
 VOX_GPU_CANVAS_DIRECT_NONAA_SHAPES=1 VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1 "$output_dir/native_gpu_canvas_test" --overlay-batch
 "$output_dir/native_gpu_canvas_test" --overlay-batch

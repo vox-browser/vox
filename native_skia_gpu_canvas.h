@@ -507,6 +507,8 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
     if (kind == "draw_video") return s_gpu_canvas && s_gpu_canvas->video_backdrop_callbacks
         && std::getenv("VOX_GPU_CANVAS_VIDEO_BACKDROP") && gpu_canvas_api()->copy_pixels;
     if (kind == "draw_svg_path" || kind == "fill_gradient" || kind == "draw_replaced_image") return true;
+    if (kind == "begin_css_filter_layer" || kind == "end_css_filter_layer")
+        return std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS") != nullptr;
     static bool const insets = !std::getenv("VOX_GPU_CANVAS_DISABLE_INSET");
     if (kind == "paint_inner_box_shadow") return insets && gpu_canvas_api()->draw_picture;
     return false;
@@ -793,6 +795,62 @@ extern "C" void ladybird_v_skia_gpu_canvas_cpu_access()
         s_gpu_canvas->in_gpu_command = false;
     }
     gpu_canvas_flush();
+}
+
+extern "C" int ladybird_v_skia_gpu_canvas_defer_filters()
+{
+    return s_gpu_canvas && !s_gpu_canvas_read_failed && std::getenv("VOX_GPU_CANVAS_FILTER_LAYERS");
+}
+
+// Core Image's pointwise result maps one-to-one to device pixels. Keep its
+// transparent CPU raster independent of the pending root GPU destination.
+extern "C" int ladybird_v_skia_gpu_canvas_filter_image(CGContextRef destination, CGImageRef image,
+    float x, float y, float width, float height, float canvas_height)
+{
+    if (!ladybird_v_skia_gpu_canvas_defer_filters() || !image || s_gpu_canvas->destination != destination
+        || !s_gpu_canvas->in_gpu_command || CGImageGetBitsPerComponent(image) != 8
+        || CGImageGetBitsPerPixel(image) != 32 || CGImageGetDecode(image)) return 0;
+    auto info = CGImageGetBitmapInfo(image);
+    bool rgba = info == (kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    bool bgra = info == (kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
+    auto ctm = CGContextGetCTM(destination);
+    auto scale = s_gpu_canvas->scale;
+    if ((!rgba && !bgra) || ctm.a != scale || ctm.d != scale || ctm.b || ctm.c || ctm.tx || ctm.ty) return 0;
+    auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    bool srgb = color && CGImageGetColorSpace(image) && CFEqual(color, CGImageGetColorSpace(image));
+    if (color) CGColorSpaceRelease(color);
+    if (!srgb) return 0;
+    double left = double(x) * scale, top = double(canvas_height - y - height) * scale;
+    auto w = CGImageGetWidth(image), h = CGImageGetHeight(image), pitch = CGImageGetBytesPerRow(image);
+    if (!std::isfinite(left) || !std::isfinite(top) || left != std::round(left) || top != std::round(top)
+        || std::abs(left) > INT_MAX / 2 || std::abs(top) > INT_MAX / 2
+        || width * scale != w || height * scale != h || !w || !h || w > 16384 || h > 16384
+        || pitch < w * 4 || pitch > 16 * 1024 * 1024 / h) return 0;
+    auto data = CGDataProviderCopyData(CGImageGetDataProvider(image));
+    if (!data || size_t(CFDataGetLength(data)) != pitch * h) {
+        if (data) CFRelease(data);
+        return 0;
+    }
+    std::vector<VoxGraphiteCanvasClip> clips;
+    auto* frame = gpu_canvas_for_leaf(destination, clips);
+    if (!frame) { CFRelease(data); return 0; }
+    std::vector<uint32_t> pixels(w * h);
+    for (size_t row = 0; row < h; ++row) {
+        auto* output = reinterpret_cast<uint8_t*>(pixels.data() + row * w);
+        auto* input = CFDataGetBytePtr(data) + row * pitch;
+        if (rgba) swap_red_blue_pixels(output, input, w);
+        else std::memcpy(output, input, w * 4);
+    }
+    CFRelease(data);
+    if (!gpu_canvas_api()->draw_pixels(reinterpret_cast<uint8_t const*>(pixels.data()), int(w), int(h), int(w * 4),
+            int(left), int(top), clips.data(), int(clips.size()))) {
+        gpu_canvas_flush();
+        return 0;
+    }
+    gpu_canvas_name_leaf(*frame, "css-color-filter", SkRect::MakeXYWH(left, top, w, h), 0, clips.size());
+    frame->cpu_stale = true;
+    ++frame->draws;
+    return gpu_canvas_verify() ? 2 : 1;
 }
 
 extern "C" void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int enabled)

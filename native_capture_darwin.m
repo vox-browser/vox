@@ -37,6 +37,9 @@ extern void ladybird_v_skia_gpu_canvas_end(void);
 extern void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_frame_surface(void *) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_document_top(int) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_defer_filters(void) __attribute__((weak_import));
+extern int ladybird_v_skia_gpu_canvas_filter_image(CGContextRef, CGImageRef,
+    float, float, float, float, float) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_restore_video_backdrop(CGContextRef,
     const uint8_t *, int, int, int, int, int) __attribute__((weak_import));
 #endif
@@ -2754,7 +2757,8 @@ static void native_initialize_css_filter_renderer(void) {
 
 void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_gpu_canvas_cpu_access();
+	if (!ladybird_v_skia_gpu_canvas_defer_filters || !ladybird_v_skia_gpu_canvas_defer_filters())
+		ladybird_v_skia_gpu_canvas_cpu_access();
 #endif
 	if (native_css_filter_stack_depth >= NATIVE_CSS_FILTER_MAX_DEPTH) {
 		native_css_filter_overflow_depth++;
@@ -4414,7 +4418,8 @@ static unsigned native_test_compact_css_filter_inputs;
 // output already qualifies for the established integer-device crop.
 static CGImageRef native_compact_css_filter_input(NativeCSSFilterLayer const *layer,
     CGContextRef context, CGRect *output_rect) {
-    BOOL tight = (getenv("VOX_TIGHT_CSS_FILTER_INPUT") || getenv("VOX_CACHE_CSS_COLOR_FILTERS"))
+    BOOL tight = (getenv("VOX_TIGHT_CSS_FILTER_INPUT") || getenv("VOX_CACHE_CSS_COLOR_FILTERS")
+        || getenv("VOX_GPU_CANVAS_FILTER_LAYERS"))
         && !getenv("VOX_DISABLE_TIGHT_CSS_FILTER_INPUT");
     if ((!getenv("VOX_COMPACT_CSS_FILTER_INPUT") && !tight) || getenv("VOX_DISABLE_COMPACT_CSS_FILTER_INPUT")
         || !context || CGBitmapContextGetBitsPerComponent(context) != 8
@@ -4606,10 +4611,19 @@ static CGImageRef native_css_filter_grayscale_rows(NativeCSSFilterLayer const *l
 
 #include "native_css_color_filter_cache_darwin.h"
 
-void native_end_css_filter_layer(void) {
+static int native_try_gpu_css_filter_image(CGContextRef destination, CGImageRef image,
+    CGRect target, float canvas_height) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
-	ladybird_v_skia_gpu_canvas_cpu_access();
+    if (destination != native_font_compositing_context || native_font_compositing_transparency_depth) return 0;
+    return ladybird_v_skia_gpu_canvas_filter_image
+        ? ladybird_v_skia_gpu_canvas_filter_image(destination, image, target.origin.x, target.origin.y,
+            target.size.width, target.size.height, canvas_height) : 0;
+#else
+    return 0;
 #endif
+}
+
+void native_end_css_filter_layer(void) {
 	if (native_css_filter_overflow_depth > 0) {
 		native_css_filter_overflow_depth--;
 		return;
@@ -4619,6 +4633,11 @@ void native_end_css_filter_layer(void) {
 	}
 	NativeCSSFilterLayer layer =
 		native_css_filter_stack[--native_css_filter_stack_depth];
+    BOOL deferred_color_filter = native_css_filter_has_pointwise_device_mapping(&layer,
+        CGRectMake(0, 0, layer.canvas_width * layer.scale, layer.canvas_height * layer.scale));
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+    if (!deferred_color_filter) ladybird_v_skia_gpu_canvas_cpu_access();
+#endif
 	if (!layer.active) {
 		free(layer.operations);
 		native_free_svg_filter_graph(&layer);
@@ -4806,8 +4825,15 @@ void native_end_css_filter_layer(void) {
 					filtered_rect.origin.y / layer.scale,
 					filtered_rect.size.width / layer.scale,
 					filtered_rect.size.height / layer.scale);
-			native_layer_draw_document_image(layer.destination, target,
-				filtered_image, layer.copies_to_fresh_frame);
+            int gpu_result = deferred_color_filter
+                ? native_try_gpu_css_filter_image(layer.destination, filtered_image, target, layer.canvas_height) : 0;
+            if (gpu_result != 1) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+                if (!gpu_result) ladybird_v_skia_gpu_canvas_cpu_access();
+#endif
+                native_layer_draw_document_image(layer.destination, target,
+                    filtered_image, layer.copies_to_fresh_frame);
+            }
 			CGImageRelease(filtered_image);
 		}
 	}

@@ -9,6 +9,8 @@
 #include "../native_layer_presentation_darwin.h"
 #define LADYBIRD_V_HAS_SKIA_TEXT
 static CGFloat native_svg_mask_backing_scale() { return 2; }
+static CGContextRef native_font_compositing_context;
+static int native_font_compositing_transparency_depth;
 #include "native_video_backdrop_entry_points.inc"
 #include <cassert>
 #include <cstdlib>
@@ -440,8 +442,92 @@ static std::vector<uint8_t> render_overlay_batch(bool batch,int alpha,bool horiz
     CGContextFlush(context);CGContextRelease(context);return pixels;
 }
 
+static std::vector<uint8_t> render_filter_image(bool canvas, bool bgra, int alpha, bool full, int fallback)
+{
+    auto pixels = backdrop();
+    auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context = CGBitmapContextCreate(pixels.data(), width, height, 8, width * 4, color,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    assert(context);
+    CGContextScaleCTM(context, scale, scale);
+    if (!full) CGContextClipToRect(context, CGRectMake(0,
+        css_height - (strip_top + strip_height) / float(scale), css_width, strip_height / float(scale)));
+    native_font_compositing_context = context;
+    ladybird_v_skia_set_chromium_painting(1);
+    ladybird_v_skia_set_shared_recording(0, css_width, css_height);
+    s_raster_layer_is_root = false;
+    ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
+    if (canvas) {
+        int rect[] {0, full ? 0 : strip_top, width, full ? height : strip_height};
+        assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1));
+        assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0));
+    }
+    assert(ladybird_v_skia_draw_rounded_rect(context, 30, 90, 80, 40, 0,0,0,0,0,0,0,0,
+        1,0,0,1,0,0,0,0,0,css_width,css_height,73,101,139,255,1,0,1,0));
+    if (canvas) {
+        assert(ladybird_v_skia_gpu_canvas_command("begin_css_filter_layer", 22, 0));
+        assert(ladybird_v_skia_gpu_canvas_defer_filters() && s_gpu_canvas->cpu_stale && !s_gpu_canvas->flushes);
+    }
+    constexpr int w = 23, h = 17, pitch = w * 4 + 16;
+    std::vector<uint8_t> source(pitch * h);
+    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+        auto* p = source.data() + y * pitch + x * 4;
+        p[bgra ? 2 : 0] = (x * 13) % (alpha + 1);
+        p[1] = (y * 17) % (alpha + 1);
+        p[bgra ? 0 : 2] = (x * 11 + y * 7) % (alpha + 1);
+        p[3] = alpha;
+    }
+    auto provider = CGDataProviderCreateWithData(nullptr, source.data(), source.size(), nullptr);
+    auto image = CGImageCreate(w, h, 8, 32, pitch, color,
+        bgra ? kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little
+             : kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big,
+        provider, nullptr, true, kCGRenderingIntentDefault);
+    assert(image);
+    CGColorSpaceRelease(color);
+    CGDataProviderRelease(provider);
+    CGRect target = CGRectMake(38.5 + (fallback == 1 ? .125 : 0), css_height - 103.5 - h / 2., w / 2., h / 2.);
+    int result = 0;
+    if (canvas) {
+        assert(ladybird_v_skia_gpu_canvas_command("end_css_filter_layer", 20, 0));
+        native_font_compositing_transparency_depth = fallback == 2;
+        result = native_try_gpu_css_filter_image(context, image, target, css_height);
+        native_font_compositing_transparency_depth = 0;
+        assert(result == (fallback ? 0 : gpu_canvas_verify() ? 2 : 1));
+    }
+    if (result != 1) {
+        if (canvas && !result) ladybird_v_skia_gpu_canvas_cpu_access();
+        native_layer_draw_document_image(context, target, image, 0);
+    }
+    CGImageRelease(image);
+    std::fill(source.begin(), source.end(), 0xdd);
+    source.clear(); source.shrink_to_fit();
+    if (canvas) {
+        if (!fallback && !gpu_canvas_verify())
+            assert(s_gpu_canvas->draws == 2 && s_gpu_canvas->uploads == 1 && s_gpu_canvas->flushes == 0);
+        ladybird_v_skia_gpu_canvas_end();
+    }
+    ladybird_v_skia_set_chromium_painting(0);
+    native_font_compositing_context = nullptr;
+    CGContextFlush(context); CGContextRelease(context);
+    return pixels;
+}
+
 int main(int argc, char** argv)
 {
+    if (argc == 2 && !std::strcmp(argv[1], "--filter-image")) {
+        setenv("VOX_GPU_CANVAS_FILTER_LAYERS", "1", 1);
+        int error = 0;
+        for (bool bgra : {false, true}) for (int alpha : {0, 73, 128, 255})
+            for (bool full : {false, true}) for (int fallback : {0, 1, 2}) {
+                auto reference = render_filter_image(false, bgra, alpha, full, fallback);
+                auto candidate = render_filter_image(true, bgra, alpha, full, fallback);
+                for (size_t index = 0; index < reference.size(); ++index)
+                    error = std::max(error, std::abs(int(reference[index]) - int(candidate[index])));
+            }
+        std::cout << "GPU filter images: RGBA/BGRA, alpha, padding, source lifetime, root order and fallback max error " << error << '\n';
+        assert(error <= 3);
+        return 0;
+    }
     if(argc==2 && !std::strcmp(argv[1],"--native-grid")) {
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->begin_native_grid && api->draw_shape_native_grid);
         s_backend_read=api->read;api->read=counted_read;s_expect_native_grid=true;
