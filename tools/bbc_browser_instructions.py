@@ -370,8 +370,6 @@ def run_trial(engine, app, folder, args):
                 args.vox_environment['VOX_DISABLE_GRID_PLACEMENT_REUSE'] = '1'
             if getattr(args, 'control_disable_unused_measurement_heights', False):
                 args.vox_environment['VOX_DISABLE_UNUSED_MEASUREMENT_HEIGHTS'] = '1'
-            if getattr(args, 'control_disable_retained_intrinsic_inline_width', False):
-                args.vox_environment['VOX_DISABLE_RETAINED_INTRINSIC_INLINE_WIDTH'] = '1'
             if getattr(args, 'control_disable_object_receiver_call', False):
                 args.vox_environment['VOX_DISABLE_OBJECT_RECEIVER_CALL'] = '1'
             if getattr(args, 'control_disable_native_callback_call', False):
@@ -553,8 +551,6 @@ def parse_args(argv=None):
                         help='Recompute grid item placement in the matched Vox control')
     parser.add_argument('--control-disable-unused-measurement-heights', action='store_true',
                         help='Keep unused numeric heights in closed grid/flex measurement keys in the matched Vox control')
-    parser.add_argument('--control-disable-retained-intrinsic-inline-width', action='store_true',
-                        help='Recompute closed intrinsic text widths after measurement pools retire in control')
     parser.add_argument('--control-disable-object-receiver-call', action='store_true',
                         help='Retain the argument-array helper for object receivers in the matched Vox control')
     parser.add_argument('--control-disable-native-callback-call', action='store_true',
@@ -654,8 +650,7 @@ def parse_args(argv=None):
     if (args.control_disable_frame_task_layout_coalescing or args.control_disable_adblock_token_reuse
             or args.control_disable_grid_auto_height_seed
             or args.control_disable_positioned_definite_image_reuse
-            or args.control_disable_object_receiver_call
-            or args.control_disable_retained_intrinsic_inline_width) and not args.control_vox_app:
+            or args.control_disable_object_receiver_call) and not args.control_vox_app:
         parser.error('Disabling the control optimization needs --control-vox-app')
     if any((args.control_disable_markerless_measurements, args.control_disable_grid_placement_reuse, args.control_disable_unused_measurement_heights, args.control_disable_native_callback_call, args.control_disable_extended_image_measurements, args.control_disable_extended_image_trees, args.control_disable_retained_flow_image_trees, args.control_disable_committed_flex_measurement_reuse, args.control_disable_inline_tree_measurement_reuse, args.control_retain_covered_style_sheet_walk, args.control_disable_svg_measurement_reuse, args.control_disable_relative_measurement_reuse, args.control_disable_flex_image_measurement_reuse, args.control_disable_resolved_edge_reuse, args.control_disable_flex_measurement_reuse, args.control_disable_committed_grid_measurement_reuse, args.control_disable_committed_inline_measurement_reuse, args.control_disable_compact_query_envelope, args.control_disable_grid_measurement_reuse, args.control_retain_empty_deleted_conditional_targets, args.control_retain_broad_conditional_rule_deletion, args.control_retain_descendant_navigable_scan, args.control_retain_uncached_item_paint, args.control_retain_inline_measurement_indefinite_height, args.control_retain_initial_resource_viewport_after_style, args.control_retain_parent_longhand_hashing, args.control_retain_invalidation_value_copies, args.control_retain_cascade_value_copies, args.control_retain_absolute_length_context, args.control_retain_image_attribute_source_parse, args.control_retain_flow_style_identities, args.control_retain_ancestor_rehash, args.control_disable_retained_formatting_trees, args.control_retain_property_edge_resolution, args.control_disable_retained_simple_svg, args.control_retain_definite_intrinsic_measurement, args.control_retain_selector_substring_scan, args.control_retain_redundant_sheet_removal, args.control_retain_full_font_input_scan, args.control_disable_early_text_font_requests, args.control_retain_selector_rule_font_sync, args.control_retain_empty_procedural_styles, args.control_copy_stationary_raster_pixels, args.control_disable_inline_measurement_reuse,
             args.control_disable_grid_width_only, args.control_disable_stationary_raster,
@@ -989,7 +984,6 @@ def main():
         control_disable_unused_measurement_heights=args.control_disable_unused_measurement_heights,
         control_disable_native_callback_call=args.control_disable_native_callback_call,
         control_disable_object_receiver_call=args.control_disable_object_receiver_call,
-        control_disable_retained_intrinsic_inline_width=args.control_disable_retained_intrinsic_inline_width,
         control_disable_extended_image_measurements=args.control_disable_extended_image_measurements,
         control_disable_flex_image_measurement_reuse=args.control_disable_flex_image_measurement_reuse,
         control_disable_flex_measurement_reuse=args.control_disable_flex_measurement_reuse,

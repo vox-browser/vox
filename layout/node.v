@@ -1828,8 +1828,6 @@ pub fn (n &Node) as_box() ?&Box {
 @[heap]
 pub struct BlockContainer {
 	Box
-mut:
-	retained_intrinsic_inline_widths_ &IntrinsicInlineWidthCache = unsafe { nil }
 }
 
 pub fn BlockContainer.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &BlockContainer {

@@ -141,14 +141,8 @@ fn measure_disposable_inline_width(mut state LayoutState, containing_block &Bloc
 	}
 	mut retained := retain_geometry_allocations()
 	defer { retained.finish() }
-	if width := retained_intrinsic_inline_width(containing_block, used, space) {
-		return width
-	}
-	key := inline_measurement_key(used, .intrinsic_sizing, space, true)
-	width := run_inline_formatting_context_for_width(mut state, containing_block, mut used,
+	return run_inline_formatting_context_for_width(mut state, containing_block, mut used,
 		.intrinsic_sizing, space, none, true).automatic_content_width
-	retain_intrinsic_inline_width(containing_block, key, width)
-	return width
 }
 
 fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, containing_block &BlockContainer,
