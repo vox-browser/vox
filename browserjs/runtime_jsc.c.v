@@ -1,5 +1,7 @@
 module browserjs
 
+import processmetrics
+
 import libjs
 import platform
 
@@ -123,6 +125,8 @@ fn evaluate_with_javascript_core(context voidptr, source ScriptSource, stringify
 
 fn evaluate_javascript_core_text(context voidptr, source ScriptSource, stringify_result bool,
 	positioned_syntax_errors bool, temporary bool) !TemporaryText {
+	load_instruction_stage := processmetrics.begin_javascript_instruction_stage()
+	defer { load_instruction_stage.finish() }
 	// Both engines must consume the entire same UTF-16 input, including NULs.
 	script := js_source_string(source.code)
 	if script == unsafe { nil } {

@@ -1103,6 +1103,8 @@ fn cached_snapshot_path(resource_url string) string {
 }
 
 fn fetch_page(address string, base string) !LoadedPage {
+	load_instruction_stage := processmetrics.begin_instruction_stage('main_resource_fetch')
+	defer { load_instruction_stage.finish() }
 	fetch_start := time.sys_mono_now()
 	resolved := resolve_url(address, base)
 	if resolved == 'about:home' || resolved == 'about:blank' {
@@ -1435,6 +1437,8 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 
 $if test {
 	fn preload_document_resources(document &dom.Document, base_url string, cached map[string]PreloadedResource) map[string]PreloadedResource {
+	load_instruction_stage := processmetrics.begin_instruction_stage('resource_preload')
+	defer { load_instruction_stage.finish() }
 		urls := document_preload_resource_urls(document, base_url)
 		return preload_document_resource_urls(document, base_url, urls, cached)
 	}
@@ -2808,6 +2812,8 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 }
 
 fn run_document_script_sources_with_media_loader(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, script_loader ?&BrowserScriptRequestLoader, media_loader ?browserjs.MediaElementCreatedHook, mut messages []string) ?string {
+	load_instruction_stage := processmetrics.begin_instruction_stage('script_runtime_setup')
+	defer { load_instruction_stage.finish() }
 	phase_mark := platform.arena_phase_begin()
 	defer {
 		platform.arena_phase_end('scripts', phase_mark)
@@ -3340,6 +3346,8 @@ fn compact_document_can_run_script(document &dom.Document) bool {
 // Native XHR callbacks run on the owning HTML networking task. Their compact
 // JS mutations reach the live document before the next retained paint replay.
 fn (mut app BrowserApp) poll_javascript_tasks() {
+	load_instruction_stage := processmetrics.begin_instruction_stage('script_state_replay')
+	defer { load_instruction_stage.finish() }
 	if app.document == unsafe { nil } || app.js_runtime == unsafe { nil } { return }
 	mut runtime := app.js_runtime
 	if !runtime.take_document_state_dirty() { return }
@@ -3675,6 +3683,8 @@ fn focus_compact_browser_navigable(document &dom.Document) {
 }
 
 fn (mut app BrowserApp) relayout(window_width int, window_height int) {
+	load_instruction_stage := processmetrics.begin_instruction_stage('viewport_relayout')
+	defer { load_instruction_stage.finish() }
 	if app.initial_layout_pending && app.document != unsafe { nil }
 		&& !app.document.layout_is_up_to_date() && !app.initial_text_fonts_are_loading() {
 		// Loaded metrics can change font selection in the already computed
@@ -3789,6 +3799,8 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 }
 
 fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history bool) {
+	load_instruction_stage := processmetrics.begin_instruction_stage('document_install')
+	defer { load_instruction_stage.finish() }
 	app.dismiss_browser_popup()
 	if !app.allow_browser_destination(input_loaded.url) { return }
 	loaded := if is_browser_history_url(input_loaded.url) {
@@ -4108,6 +4120,8 @@ fn (mut app BrowserApp) start_pending_navigation() {
 // are applied. Completing them for the outgoing document would only delay
 // the replacement's first paint, so they stay queued for the next frame.
 fn (mut app BrowserApp) poll_navigation_and_background_resources() {
+	load_instruction_stage := processmetrics.begin_instruction_stage('background_resource_completion')
+	defer { load_instruction_stage.finish() }
 	// Connection threads wake the frame loop; queue their events as tasks.
 	browserjs.poll_websocket_hosts()
 	document_before_navigation := voidptr(app.document)
@@ -7449,6 +7463,8 @@ fn (app &BrowserApp) retarget_document_frame_heap_scope(mut scope platform.Brows
 }
 
 fn (mut app BrowserApp) draw() {
+	load_instruction_stage := processmetrics.begin_instruction_stage('frame')
+	defer { load_instruction_stage.finish() }
 	$if linux { pump_linux_browser_events() }
 	$if macos {
 		// Sokol's parent view also ticks with no drawing context. Only the
@@ -7457,6 +7473,7 @@ fn (mut app BrowserApp) draw() {
 			&& C.vox_browser_has_paint_context() == 0 { return }
 	}
 	if app.navigation_work_depth > 0 { return }
+	preparation_instructions := processmetrics.begin_instruction_stage('frame_preparation')
 	paint_before_frame := app.paint_generation
 	app.poll_deferred_navigation_input()
 	app.poll_deferred_page_input()
@@ -7508,7 +7525,9 @@ fn (mut app BrowserApp) draw() {
 	app.prepare_overlay_scrollbars()
 	app.portable_shadow_image_index = 0
 	app.scroll_profile_prepared()
+	preparation_instructions.finish()
 	processmetrics.instruction_checkpoint('frame_prepared')
+	replay_instructions := processmetrics.begin_instruction_stage('native_document_replay')
 	begin_browser_frame(app.ctx)
 	if frame_part_diagnostics_enabled {
 		processmetrics.instruction_checkpoint('frame_context_ready')
@@ -7811,6 +7830,7 @@ fn (mut app BrowserApp) draw() {
 	if frame_part_diagnostics_enabled {
 		processmetrics.instruction_checkpoint('frame_document_replayed')
 	}
+	replay_instructions.finish()
 	if app.chrome_height() > 0 {
 		$if vox_ui2 ? {
 			app.update_browser_chrome(window.width, window.height)
@@ -8251,6 +8271,8 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 }
 
 fn main() {
+	load_instruction_stage := processmetrics.begin_instruction_stage('browser_main')
+	defer { load_instruction_stage.finish() }
 	configure_browser_javascript_startup()
 	install_browser_script_resource_cache()
 	loader.install_fetch_user_agent_provider()

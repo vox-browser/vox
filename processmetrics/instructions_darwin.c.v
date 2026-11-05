@@ -1,9 +1,15 @@
 module processmetrics
 
 #include "instruction_counter_darwin.h"
+#include <pthread.h>
 
 fn C.vox_process_instructions(&u64) int
 fn C.vox_coalition_instructions(&u64, &u64, &u64, &u64) int
+fn C.pthread_main_np() int
+
+fn instruction_stage_main_thread() bool {
+	return C.pthread_main_np() != 0
+}
 
 pub fn instruction_snapshot() InstructionSnapshot {
 	mut count := u64(0)

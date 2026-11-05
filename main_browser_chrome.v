@@ -1,5 +1,7 @@
 module main
 
+import processmetrics
+
 import gg
 import browsertabs
 import browserui
@@ -244,6 +246,8 @@ $if vox_ui2 ? {
 }
 
 fn (mut app BrowserApp) update_browser_chrome(width int, height int) {
+	load_instruction_stage := processmetrics.begin_instruction_stage('browser_chrome')
+	defer { load_instruction_stage.finish() }
 	$if vox_ui2 ? {
 		if !app.native_address_bar { return }
 		if app.browser_chrome.address_editable && !app.address_bar_editable() {

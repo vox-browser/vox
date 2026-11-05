@@ -10,6 +10,8 @@
 @[has_globals]
 module dom
 
+import processmetrics
+
 import platform
 import rand
 import math
@@ -7388,6 +7390,8 @@ fn (d &Document) create_html_parser_for_scripting() !&HTMLParser {
 }
 
 pub fn (mut d Document) update_style() {
+	load_instruction_stage := processmetrics.begin_instruction_stage('style_update')
+	defer { load_instruction_stage.finish() }
 	mut allocations := d.enter_native_storage()
 	defer { allocations.finish() }
 	phase_mark := platform.arena_phase_begin()
@@ -7553,6 +7557,8 @@ fn (mut d Document) invalidate_pending_size_query_dependents() {
 }
 
 pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
+	load_instruction_stage := processmetrics.begin_instruction_stage('document_layout')
+	defer { load_instruction_stage.finish() }
 	mut allocations := d.enter_native_storage()
 	defer { allocations.finish() }
 	_ = reason

@@ -3,6 +3,8 @@
 @[has_globals]
 module browserjs
 
+import processmetrics
+
 import webidl
 import platform
 
@@ -119,6 +121,8 @@ pub fn (mut runtime Runtime) make_native_value_host_function(name string, length
 }
 
 pub fn (mut runtime Runtime) evaluate_host_value(source string) !voidptr {
+	load_instruction_stage := processmetrics.begin_javascript_instruction_stage()
+	defer { load_instruction_stage.finish() }
 	runtime.require_javascript_value_context()!
 	runtime.prepare_html_script()
 	defer { runtime.clean_up_html_script() }
@@ -184,6 +188,8 @@ fn (runtime &Runtime) actual_javascript_exception(value voidptr) IError {
 }
 
 fn (runtime &Runtime) call_engine_function(function voidptr, arguments []voidptr) !voidptr {
+	load_instruction_stage := processmetrics.begin_javascript_instruction_stage()
+	defer { load_instruction_stage.finish() }
 	// JSC drains Promise reactions before this API entry returns. Native task
 	// completions must keep their owning HTML realm active through that drain.
 	runtime.prepare_html_script()
@@ -195,6 +201,8 @@ fn (runtime &Runtime) call_engine_function(function voidptr, arguments []voidptr
 }
 
 pub fn (runtime &Runtime) call_javascript_function(function voidptr, receiver voidptr, arguments []voidptr) !voidptr {
+	load_instruction_stage := processmetrics.begin_javascript_instruction_stage()
+	defer { load_instruction_stage.finish() }
 	runtime.require_javascript_value_context()!
 	if runtime.can_call_with_object_receiver(function, receiver) {
 		return runtime.call_with_object_receiver(function, receiver, arguments)

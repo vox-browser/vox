@@ -1,5 +1,7 @@
 module css
 
+import processmetrics
+
 import dom
 import math
 import platform
@@ -946,6 +948,8 @@ fn logical_alias_normalize_value(abstract_element dom.AbstractElement, property_
 // driven top-down over the tree (parents before children); invalidation diffing,
 // display-change animation replay, and generated pseudo styles all run here.
 pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractElement) &ComputedProperties {
+	load_instruction_stage := processmetrics.begin_instruction_stage('style_computation')
+	defer { load_instruction_stage.finish() }
 	mut did_change_custom_properties := false
 	_, computed := s.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
 	return computed

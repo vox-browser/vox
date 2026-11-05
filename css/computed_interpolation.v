@@ -1,5 +1,7 @@
 module css
 
+import processmetrics
+
 
 import math
 import dom
@@ -11122,6 +11124,8 @@ pub fn (s &StyleComputer) create_document_style() &ComputedProperties {
 }
 
 pub fn (s &StyleComputer) compute_style(abstract_element dom.AbstractElement) &ComputedProperties {
+	load_instruction_stage := processmetrics.begin_instruction_stage('style_computation')
+	defer { load_instruction_stage.finish() }
 	// StyleComputer::compute_style (StyleComputer.cpp:1780): resolve the element's style scope and run the
 	// normal-mode style computation. In .normal mode compute_style_impl always yields a value; fall back to
 	// an empty ComputedProperties defensively (upstream dereferences the returned pointer).

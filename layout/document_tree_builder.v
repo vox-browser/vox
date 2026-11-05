@@ -221,6 +221,8 @@ pub fn build_layout_tree(document &dom.Document) ?&Node {
 // upstream order (update_style, then optionally rebuild the layout tree)
 // without recascading inside TreeBuilder.
 fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_computer css.StyleComputer, initial_checkpoint u64) ?&Node {
+	load_instruction_stage := processmetrics.begin_instruction_stage('layout_tree_construction')
+	defer { load_instruction_stage.finish() }
 	mut timing_checkpoint := initial_checkpoint
 	root_element := document.document_element() or { return none }
 	// A rebuilt tree can add or remove list-item boxes without a DOM child-list
@@ -920,6 +922,8 @@ fn invalidate_size_queries_after_geometry_commit(previous map[u64]SizeQueryConta
 }
 
 fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64) ?DocumentLayoutResult {
+	load_instruction_stage := processmetrics.begin_instruction_stage('layout_geometry')
+	defer { load_instruction_stage.finish() }
 	mut timing_checkpoint := initial_checkpoint
 	viewport := root.as_viewport() or { return none }
 	// Restore current propagation facts on retained trees as well as new trees.
@@ -964,9 +968,13 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	layout_viewport(mut state, viewport, viewport_width * document.layout_coordinate_scale(),
 		viewport_height * document.layout_coordinate_scale())
 	timing_checkpoint = layout_timing_checkpoint('      formatting_contexts', timing_checkpoint)
+	absolute_positioned_layout_stage := processmetrics.begin_instruction_stage('absolute_positioned_layout')
 	layout_absolutely_positioned_descendants(mut state, root)
+	absolute_positioned_layout_stage.finish()
 	timing_checkpoint = layout_timing_checkpoint('      absolute_descendants', timing_checkpoint)
+	relative_positioned_layout_stage := processmetrics.begin_instruction_stage('relative_positioned_layout')
 	resolve_relative_insets(mut state, root)
+	relative_positioned_layout_stage.finish()
 	timing_checkpoint = layout_timing_checkpoint('      relative_insets', timing_checkpoint)
 	// Offsets and relative insets are final. Overflow measurement and DOM
 	// projection read this geometry without changing the containing-block chain.

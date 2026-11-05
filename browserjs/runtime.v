@@ -5,6 +5,7 @@ import dom
 import html
 import json2
 import platform
+import processmetrics
 
 pub enum Engine {
 	javascriptcore
@@ -230,6 +231,8 @@ fn (runtime &Runtime) check_execution_support(source_type libjs.SourceType) ! {
 // Each backend owns preparation of its executable source. Explicit preparation
 // above remains the complete translated AST API for frontend consumers.
 fn (runtime &Runtime) execute_source(source ScriptSource, stringify_result bool) !string {
+	load_instruction_stage := processmetrics.begin_javascript_instruction_stage()
+	defer { load_instruction_stage.finish() }
 	runtime.check_execution_support(source.source_type)!
 	if source.starting_line < 1 { return error('Script starting line must be positive') }
 	if host := runtime.module_host_ {
@@ -249,6 +252,8 @@ fn (runtime &Runtime) execute_source(source ScriptSource, stringify_result bool)
 }
 
 fn (runtime &Runtime) execute_prepared(script &PreparedScript, stringify_result bool) !string {
+	load_instruction_stage := processmetrics.begin_javascript_instruction_stage()
+	defer { load_instruction_stage.finish() }
 	runtime.check_execution_support(script.source.source_type)!
 	if runtime.module_host_ != none { return runtime.execute_source(script.source, stringify_result) }
 	if runtime.engine == .libjs {

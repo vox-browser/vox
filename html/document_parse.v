@@ -1,5 +1,7 @@
 module html
 
+import processmetrics
+
 import dom
 
 // Top-level "HTML string -> DOM" entry points. These live in the html module (not dom) because the
@@ -34,6 +36,8 @@ pub fn parse_document_with_url_and_origin(markup string, document_url dom.URL, o
 }
 
 fn parse_document_with_url_and_optional_origin(markup string, document_url dom.URL, origin ?dom.Origin) &dom.Document {
+	load_instruction_stage := processmetrics.begin_instruction_stage('html_parsing')
+	defer { load_instruction_stage.finish() }
 	mut document := dom.Document.create(document_url)
 	if response_origin := origin { document.set_origin(response_origin) }
 	document.set_document_type(.html)
@@ -48,6 +52,8 @@ fn parse_document_with_url_and_optional_origin(markup string, document_url dom.U
 // Native navigation has an actual relevant Window/settings before any parser
 // resource or CSS state is initialized, following Document.cpp's source graph.
 pub fn parse_navigation_document(markup string, document_url dom.URL, origin dom.Origin, previous ?&dom.Document) !&dom.Document {
+	load_instruction_stage := processmetrics.begin_instruction_stage('html_parsing')
+	defer { load_instruction_stage.finish() }
 	mut document := create_navigation_document(document_url, origin, previous)!
 	document.set_document_type(.html)
 	document.set_allow_declarative_shadow_roots(true)

@@ -1,6 +1,7 @@
 module processmetrics
 
 $if !darwin {
+	fn instruction_stage_main_thread() bool { return false }
 	pub fn instruction_snapshot() InstructionSnapshot {
 		return InstructionSnapshot{ error_code: -1 }
 	}

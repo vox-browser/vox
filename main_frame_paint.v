@@ -1,5 +1,7 @@
 module main
 
+import processmetrics
+
 import dom
 import layout
 import time
@@ -122,6 +124,8 @@ struct PaintStatusKey {
 }
 
 fn (mut app BrowserApp) record_document_paint_commands() {
+	load_instruction_stage := processmetrics.begin_instruction_stage('paint_command_recording')
+	defer { load_instruction_stage.finish() }
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
 	checkpoint := time.sys_mono_now()

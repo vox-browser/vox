@@ -1,5 +1,7 @@
 module main
 
+import processmetrics
+
 import html
 import css
 import dom
@@ -27,6 +29,8 @@ fn (app &BrowserApp) source_rendering_owns_animation_clock() bool {
 }
 
 fn (mut app BrowserApp) advance_document_animations(window_width int, content_viewport_height int) {
+	load_instruction_stage := processmetrics.begin_instruction_stage('animation_driver')
+	defer { load_instruction_stage.finish() }
 	_ = window_width
 	_ = content_viewport_height
 	if app.document == unsafe { nil } || app.animation_epoch_ns == 0
@@ -54,6 +58,8 @@ fn (mut app BrowserApp) advance_document_animations(window_width int, content_vi
 // receives the native display clock instead of compositor IPC. No author
 // callback runs here: the source HTML event loop queues its rendering task.
 fn (mut app BrowserApp) deliver_rendering_opportunity(frame_time_ns i64, interval_ms f64) {
+	load_instruction_stage := processmetrics.begin_instruction_stage('html_rendering_opportunity')
+	defer { load_instruction_stage.finish() }
 	if app.document == unsafe { nil } || app.page_model == unsafe { nil } { return }
 	if app.initial_layout_waits_for_fonts() { return }
 	mut client := app.page_model.client()

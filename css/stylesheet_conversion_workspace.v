@@ -1,5 +1,7 @@
 module css
 
+import processmetrics
+
 import platform
 
 // The public token-stream API still owns its input. Whole-sheet parsing can
@@ -7,6 +9,8 @@ import platform
 // their retained spans, typed values own decoded text, and lazy declarations
 // retain source spelling rather than tokenizer trees.
 fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location ?string, media_list ?&MediaList, deferred bool) &CSSStyleSheet {
+	load_instruction_stage := processmetrics.begin_instruction_stage('css_parsing')
+	defer { load_instruction_stage.finish() }
 	$if prealloc {
 		scratch := platform.begin_thread_scratch('stylesheet conversion input')
 		mut parser := RuleSelectorParser{
