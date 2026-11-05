@@ -49,11 +49,33 @@
       "focused_sources_unchanged": true,
       "compiler_exit": 0,
       "runtime_exit": 0
+    },
+    "default-r5": {
+      "cases": 14,
+      "focused_sources_unchanged": true,
+      "compiler_exit": 0,
+      "runtime_exit": 0
+    },
+    "prealloc-r5": {
+      "cases": 14,
+      "focused_sources_unchanged": true,
+      "compiler_exit": 0,
+      "runtime_exit": 0
     }
   },
   "additional_checks": {
     "corner_shape_failure": "Expanded and standalone main_chromium_corner_shapes_test.v fail at line 138: complete outer-shadow eligibility accepts a case the test expects rejected. The eligibility implementation is unchanged by these commits. Logs retained in frame-messaging/rounded-underlay-batch-default-r1 and rounded-underlay-corners-alone-default-r1.",
     "libweb_control": "reftest-baseline-r1 passed before the fix because compare_screenshots.sh selected the LibWeb font/rendering test policy. It did not exercise the affected Chromium path; the corrected browser-policy baseline is retained separately."
   },
-  "authentication": "Normal test-account sign-in reaches hCaptcha; authenticated channel behavior remains unverified."
+  "authentication": "Normal test-account sign-in reaches hCaptcha; authenticated channel behavior remains unverified.",
+  "live_validation": {
+    "raw": "Build/discord-resume-20261105/auth-r32",
+    "executable_sha256": "f737176885b42a0043ab2417ac23ff69324095ef21234574ba722c9be2ef4931",
+    "submitted_with_native_input": true,
+    "modal_background_verified": true,
+    "authenticated": false,
+    "human_verification_required": true
+  },
+  "native_control_follow_up": "The compatibility check runs after native control geometry resolution, retaining the common border/background frame at both device scales.",
+  "native_control_follow_up_commit": "36686a18ab781d615ced0f9621437d27150acf21"
 }
