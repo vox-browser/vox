@@ -21038,3 +21038,69 @@ and [raw captures, counters, receipts and complete compiler inputs](performance/
 The [original checkpoint](performance/github-failed-stylesheets-20261105.json)
 and [its local evidence](performance/raw/github-failed-stylesheets-20261105.tar.gz)
 remain unchanged.
+
+
+## IndexedDB index schema binding, November 5, 2026
+
+`a83f246d6` exposes `IDBObjectStore.createIndex(name, keyPath, options)` through
+the existing native IndexedDB algorithms. It addresses the missing JavaScript
+method recorded in the preceding GitHub capture. Returned `IDBIndex` objects
+expose their native name, owning store, key path, `unique` and `multiEntry` flags,
+and a name setter. Store identity and live index-name lists remain stable;
+key-path arrays are copied on output. Retained index metadata remains readable
+after schema deletion and upgrade abort. Index lookup, deletion, queries and
+cursors remain outside this binding slice.
+
+The key-path union conversion reads an object's iterator method once, converts
+each yielded value before advancing, and closes the iterator if conversion
+throws. Name, key-path and dictionary conversions precede native transaction
+checks; dictionary members are read in WebIDL order. Thrown JavaScript values
+retain their identity. The same key-path converter also serves object-store
+creation.
+
+All **24 focused case executions pass** under the guarded current-V C-O0 setup:
+four new JavaScriptCore cases in Boehm, GC-disabled and preallocated modes
+(12 executions), five existing binding cases in Boehm and preallocation (10),
+and one native metadata case in Boehm and GC-disabled modes (2). Compiler
+jobs retain V's 10 GiB limit and the 12 GiB process-tree guard; runtime jobs use
+3 GiB. Each actual compiler, test and guard exit is zero. Complete generated C
+for all three final binding programs resolves to the exact committed factory
+string. Tests cover schema identity/rename, iterable conversion order and
+cleanup, brands/arity/errors, transaction boundaries, temporary inputs and GC.
+
+The failed baseline and preparatory attempts remain archived. A test-quoting
+compile error was corrected before the baseline ran. Three first candidate
+runs overreached on string key-path validation: the translated and upstream
+validators both still accept arbitrary strings. A separate, reversible C-only
+print diagnostic exposed the actual error sequence; the final V tests use an
+empty sequence for the supported `SyntaxError` check. No implementation or
+reference was changed to hide that existing validation limitation. The baseline
+binding compiler had entered native compilation before implementation edits;
+its pooled factory string independently matches the unchanged committed source
+exactly and lacks `createIndex`.
+
+The latest completed shared production receipt remains
+`20261105-090010-d75c20eb`, executable SHA-256
+`68cec44061335b766e80719d474e0efebf28eeaa026caadc7737ac44b8b8debd`.
+Its generated factory lacks `createIndex`, so it cannot validate this feature.
+The normal feature-commit hook coalesces a request into the already active
+shared worker; no manual production build is started. A fresh installed API
+fixture is prepared but unlaunched, as is any new GitHub observation. The
+recorded GitHub exception is therefore addressed by focused implementation
+evidence, not yet by a final-code page capture. The existing bundle and user's
+running browser are preserved.
+
+There are **zero new hardware-counter observations or page-saving credit**.
+The matching-page savings accumulator and broad baseline remain unchanged; no
+broad suites run for this correctness slice. Historical pixel acceptance, full
+hydration and Chrome parity remain open. The five-path feature delta adds five
+IndexedDB implementation lines and 24 native test lines, plus 56 implementation
+and 135 test lines in browser support. Historical/global inventories are
+unchanged.
+
+The [structured checkpoint](performance/github-index-schema-20261105.json)
+records actual exits, source/binary/C hashes, the exact parent and scoped
+inventory. The [raw archive](performance/raw/github-index-schema-20261105.tar.gz)
+contains 125 read-back-verified evidence files, including generated C and all
+failed attempts: SHA-256
+`32e5800a5bbc1f073769679e8c04487201d70d35508dff6944aee7bcf117605a`.

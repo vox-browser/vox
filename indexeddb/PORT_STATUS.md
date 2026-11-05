@@ -160,3 +160,23 @@ per-parent 14-path inventory is `Build/pikabu-story-idb-inventory.json` (SHA-256
 `ec81a39e733e55a4b7abc0fe6e91707c45189545aadb7b36cb41a9c5bdd13b81`).
 The earlier audit table and global ownership inventories retain their original
 dated pins; these counts add no behavioral parity credit.
+
+
+## Browser index schema binding — 2026-11-05
+
+`a83f246d6` adds native `IDBObjectStore.createIndex()` and `IDBIndex` schema
+metadata/name mutation to the JavaScriptCore binding. It preserves owning-store
+identity, live name lists, argument conversion order and thrown-value identity.
+Iterable key paths convert each item once and close on conversion errors.
+Native metadata getters retain their associated schema record after deletion
+and abort.
+
+Twenty-four focused case executions pass: four new binding cases in Boehm,
+no-GC and preallocation; five existing binding cases in Boehm and preallocation;
+one native metadata case in Boehm and no-GC. All run through the repository
+memory guard. The latest completed app lacks the change; installed API and
+GitHub validation remain pending. String key-path identifier validation is
+still permissive, as in the upstream FIXME. Index lookup/query/cursor bindings,
+complete event bubbling, persistence, quota and complete structured clone
+remain open. This slice establishes neither full IndexedDB parity nor page
+instruction savings. See the [focused evidence](../docs/performance/github-index-schema-20261105.json).
