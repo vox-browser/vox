@@ -115,6 +115,22 @@ static void draw_outline_leaves(CGContextRef context, bool canvas)
         1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 240, 80, 60, 255, 1, 0, 1, 1));
 }
 
+static int s_mixed_fill, s_mixed_alpha;
+static float s_mixed_offset;
+static void draw_mixed_shape(CGContextRef context, bool canvas)
+{
+    char const* kind = s_mixed_fill ? "fill_rounded_rect" : "stroke_rounded_rect";
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command(kind, int(std::strlen(kind)), 0)
+        == int(!s_gpu_canvas->complete_viewport));
+    float rect[] {40.25f + s_mixed_offset, 100.125f, 300.375f, 56.25f, 12, 9, 7, 11, 10, 6, 13, 8};
+    if (!s_mixed_fill) ladybird_v_skia_set_rounded_rect_underlay(rect, 38, 63, 94, 255);
+    assert(ladybird_v_skia_draw_rounded_rect(context, rect[0], rect[1], rect[2], rect[3],
+        rect[4], rect[5], rect[6], rect[7], rect[8], rect[9], rect[10], rect[11],
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 49, 83, 123, s_mixed_alpha,
+        s_mixed_fill, 1.25f, 1, 1));
+    ladybird_v_skia_set_rounded_rect_underlay(nullptr, 0, 0, 0, 0);
+}
+
 // vlang.io's code panels: a translucent CSS linear-gradient background in a
 // rounded clip repeats a picture of its generated-image tile.
 static void draw_pattern_leaves(CGContextRef context, bool canvas)
@@ -434,7 +450,7 @@ int main()
     auto msaa_candidate = render(true, false, draw_inset_leaves);
     ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
     s_raster_layer_height = 0;
-    if (s_draws != 3 || s_declined || s_uploads != 1 || s_flushes) {
+    if (s_draws != 2 || s_declined != 1 || s_uploads != 2 || s_flushes != 1) {
         std::cerr << "MSAA inset shadows took the wrong path: draws=" << s_draws << " uploads="
             << s_uploads << " flushes=" << s_flushes << " declined=" << s_declined << '\n';
         return 1;
@@ -461,6 +477,21 @@ int main()
         return 1;
     }
     assert(gpu_canvas_api()->draw_image_msaa);
+    // All four corners can belong to different ordinary/MSAA raster tiles.
+    // Fractional compound strokes and opaque sparse fills must retain their
+    // exact ordinary coverage in both full and partial viewport repainting.
+    for (bool full : {false, true}) for (int tile : {0, 1, 2, 3})
+        for (int fill : {0, 1}) for (int alpha : {128, 255}) for (float offset : {0.f, .375f}) {
+        s_mixed_fill = fill; s_mixed_alpha = alpha; s_mixed_offset = offset;
+        s_raster_layer_height = css_height;
+        ladybird_v_skia_set_msaa_grid(&tile, 1, 512, 256, 2);
+        auto reference = render(false, false, draw_mixed_shape, full);
+        auto candidate = render(true, false, draw_mixed_shape, full);
+        assert(s_draws == 0 && s_uploads == 0 && s_flushes == 0);
+        assert(candidate == reference);
+    }
+    ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
+    s_raster_layer_height = 0;
     int video_error = 0;
     std::vector<uint8_t> previous_video_reference;
     for (int coverage : {0, 1, 2}) for (bool rounded : {false, true}) for (int frame : {0, 1}) {
@@ -478,9 +509,9 @@ int main()
         ladybird_v_skia_set_msaa_grid(nullptr, 0, 0, 0, 0);
         s_raster_layer_height = 0;
         // Preserve mixed MSAA tile ownership without a per-leaf readback.
-        assert(s_draws == 2);
-        assert(s_declined == 0);
-        assert(s_uploads == 1 && s_flushes == 0);
+        assert(s_draws == (coverage ? 1 : 2));
+        assert(s_declined == unsigned(coverage != 0));
+        assert(s_uploads == 1 && s_flushes == unsigned(coverage != 0));
         for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
             size_t at = (size_t(y) * width + x) * 4;
             for (int c = 0; c < 4; ++c) {
@@ -502,5 +533,6 @@ int main()
         << "), outlines and ellipses within " << outline_error
         << ", CSS gradient tiles within " << pattern_error
         << ", video frames within " << video_error
+        << ", mixed-MSAA fills/strokes exact"
         << "; outside pixels, CPU paint order, CPU leaves and shared recordings preserved\n";
 }

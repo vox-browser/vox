@@ -4621,10 +4621,13 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
     }
     bool root_msaa_tile = !msaa_invariant
         && gpu_canvas_root_msaa_overlap(destination, region, page_x, page_y, scroll_y);
-    static bool const msaa_subpass = !std::getenv("VOX_GPU_CANVAS_DISABLE_MSAA_SUBPASS");
-    if (root_msaa_tile && !msaa_subpass) gpu_canvas_decline(destination);
+    // The batched shape pass multisamples its entire bounds, whereas ordinary
+    // replay selects coverage per raster tile. Mixed tiles and fractional
+    // corners can differ substantially; keep that established tile path.
+    // Video has its own API with explicit MSAA rectangles and still batches.
+    if (root_msaa_tile) gpu_canvas_decline(destination);
     bool rounded_on_canvas = false;
-    if ((!root_msaa_tile || msaa_subpass) && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
+    if (!root_msaa_tile && s_gpu_canvas && s_gpu_canvas->destination == destination && !s_plain_rect_prefetch) {
         std::vector<VoxGraphiteCanvasClip> clips;
         if (auto* frame = gpu_canvas_for_leaf(destination, clips)) {
             VoxGraphiteShape descriptor {
@@ -4653,8 +4656,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             SkMatrix::Concat(device, matrix).get9(descriptor.matrix);
             auto bounds = device.mapRect(matrix.mapRect(local_bounds)).makeOutset(2, 2);
             float device_bounds[] {bounds.left(), bounds.top(), bounds.right(), bounds.bottom()};
-            if (root_msaa_tile ? gpu_canvas_api()->draw_shape_msaa(&descriptor, device_bounds, clips.data(), int(clips.size()))
-                    : gpu_canvas_api()->draw_shape(&descriptor, device_bounds, clips.data(), int(clips.size()))) {
+            if (gpu_canvas_api()->draw_shape(&descriptor, device_bounds, clips.data(), int(clips.size()))) {
                 gpu_canvas_name_leaf(*frame, "shape", bounds, fill, clips.size());
                 frame->cpu_stale = true;
                 ++frame->draws;
