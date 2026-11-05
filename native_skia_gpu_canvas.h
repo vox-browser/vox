@@ -17,6 +17,7 @@ struct GpuCanvasFrame {
     std::vector<SkIRect> rects;
     // GPU surfaces: each repainted rectangle widened to the 8-pixel dither grid.
     std::vector<SkIRect> tiles;
+    std::vector<SkIRect> dirty;
     // Tile and clip rectangles for vox_graphite_canvas_begin. The GPU surfaces
     // are acquired only when the frame's first GPU leaf needs them.
     std::vector<int> device;
@@ -146,6 +147,11 @@ bool gpu_canvas_diagnostics()
     return enabled;
 }
 
+bool gpu_canvas_partial_readback()
+{
+    return std::getenv("VOX_GPU_CANVAS_PARTIAL_READBACK")!=nullptr;
+}
+
 // Separate diagnostic runs only: time the interval between native command
 // boundaries, including any CPU fallback and GPU wait in that interval.
 void gpu_canvas_time_command(char const* name, int length)
@@ -169,11 +175,23 @@ void gpu_canvas_flush()
     auto* frame = s_gpu_canvas.get();
     if (!frame) return;
     if (frame->cpu_stale) {
+        auto read_rects=frame->rects;
+        size_t full_area=0,read_area=0;
+        for(size_t index=0;index<read_rects.size();++index) {
+            full_area+=size_t(read_rects[index].width())*read_rects[index].height();
+            if(gpu_canvas_partial_readback() && !gpu_canvas_verify()) read_rects[index]=frame->dirty[index];
+            read_area+=size_t(read_rects[index].width())*read_rects[index].height();
+        }
+        bool verify_partial=std::getenv("VOX_GPU_CANVAS_PARTIAL_READBACK_VERIFY")!=nullptr;
+        // Diagnostic checks need the full GPU output to prove no changed pixel
+        // lies outside the proposed dirty bounds.
+        if(verify_partial) read_rects=frame->rects;
         auto* api = gpu_canvas_api();
         auto* data = static_cast<uint8_t*>(CGBitmapContextGetData(frame->destination));
         size_t pitch = CGBitmapContextGetBytesPerRow(frame->destination);
         if (api && api->read_iosurface && frame->frame_surface && data
             && data == frame->frame_surface_pixels && !gpu_canvas_verify()
+            && !gpu_canvas_partial_readback()
             && std::getenv("VOX_GPU_CANVAS_IOSURFACE_READBACK")) {
             CGContextFlush(frame->destination);
             int result = api->read_iosurface(frame->frame_surface,
@@ -220,7 +238,8 @@ void gpu_canvas_flush()
             }
         }
         if (api && api->read_direct && data && !gpu_canvas_verify()
-            && std::getenv("VOX_GPU_CANVAS_DIRECT_READBACK") && pitch <= INT_MAX) {
+            && std::getenv("VOX_GPU_CANVAS_DIRECT_READBACK") && pitch <= INT_MAX
+            && !gpu_canvas_partial_readback() && !verify_partial) {
             std::vector<VoxGraphitePixelRegion> direct;
             for (size_t index = 0; index < frame->rects.size(); ++index) {
                 auto const& rect = frame->rects[index];
@@ -243,14 +262,15 @@ void gpu_canvas_flush()
                 return;
             }
         }
-        std::vector<std::vector<uint32_t>> pixels(frame->rects.size());
+        std::vector<std::vector<uint32_t>> pixels(read_rects.size());
         std::vector<VoxGraphitePixelRegion> views;
-        for (size_t index = 0; index < frame->rects.size(); ++index) {
-            auto const& rect = frame->rects[index];
+        for (size_t index = 0; index < read_rects.size(); ++index) {
+            auto const& rect = read_rects[index];
             auto const& tile = frame->tiles[index];
-            pixels[index].resize(size_t(rect.width()) * rect.height());
-            views.push_back({rect.left() - tile.left(), rect.top() - tile.top(), rect.width(),
-                rect.height(), rect.width() * 4, reinterpret_cast<uint8_t*>(pixels[index].data())});
+            int width=rect.isEmpty()?1:rect.width(),height=rect.isEmpty()?1:rect.height();
+            pixels[index].resize(size_t(width)*height);
+            views.push_back({rect.isEmpty()?0:rect.left()-tile.left(),rect.isEmpty()?0:rect.top()-tile.top(),
+                width,height,width*4,reinterpret_cast<uint8_t*>(pixels[index].data())});
         }
         bool read = api && data && api->read(views.data(), int(views.size()));
         // Retry a failed transfer, but never repeat a successful synchronous
@@ -260,10 +280,27 @@ void gpu_canvas_flush()
             s_gpu_canvas_read_failed = true;
             s_deferred_layer_frame_failed = true;
         }
+        if(read && verify_partial) {
+            int error=0;size_t outside=0;
+            for(size_t index=0;index<read_rects.size();++index) {
+                auto const& rect=read_rects[index];auto const& dirty=frame->dirty[index];
+                for(int y=rect.top();y<rect.bottom();++y) for(int x=rect.left();x<rect.right();++x) {
+                    if(dirty.contains(x,y)) continue;
+                    auto* cpu=data+size_t(y)*pitch+size_t(x)*4;
+                    auto* gpu=reinterpret_cast<uint8_t*>(pixels[index].data())
+                        +(size_t(y-rect.top())*rect.width()+x-rect.left())*4;
+                    int const order[]={2,1,0,3};
+                    for(int channel=0;channel<4;++channel) error=std::max(error,std::abs(int(cpu[channel])-int(gpu[order[channel]])));
+                    ++outside;
+                }
+            }
+            std::fprintf(stderr,"Vox GPU partial readback verify: outside=%zu max_error=%d read_pixels=%zu full_pixels=%zu\n",
+                outside,error,read_area,full_area);
+        }
         if (read && gpu_canvas_verify()) {
             CGContextFlush(frame->destination);
-            for (size_t index = 0; index < frame->rects.size(); ++index) {
-                auto const& rect = frame->rects[index];
+            for (size_t index = 0; index < read_rects.size(); ++index) {
+                auto const& rect = read_rects[index];
                 for (int row = 0; row < rect.height(); ++row) {
                     auto const* cpu = data + size_t(rect.top() + row) * pitch + size_t(rect.left()) * 4;
                     auto const* gpu = reinterpret_cast<uint8_t const*>(pixels[index].data() + size_t(row) * rect.width());
@@ -288,8 +325,8 @@ void gpu_canvas_flush()
             }
         } else if (read) {
             CGContextFlush(frame->destination);
-            for (size_t index = 0; index < frame->rects.size(); ++index) {
-                auto const& rect = frame->rects[index];
+            for (size_t index = 0; index < read_rects.size(); ++index) {
+                auto const& rect = read_rects[index];
                 for (int row = 0; row < rect.height(); ++row)
                     swap_red_blue_pixels(data + size_t(rect.top() + row) * pitch + size_t(rect.left()) * 4,
                         reinterpret_cast<uint8_t const*>(pixels[index].data() + size_t(row) * rect.width()),
@@ -304,6 +341,9 @@ void gpu_canvas_flush()
         frame->leaf_differing = 0;
         frame->leaf_error = 0;
         frame->cpu_stale = false;
+        for(auto& dirty:frame->dirty) dirty.setEmpty();
+        if(gpu_canvas_partial_readback() && gpu_canvas_diagnostics())
+            std::fprintf(stderr,"Vox GPU partial readback: pixels=%zu full_pixels=%zu\n",read_area,full_area);
         ++frame->flushes;
     }
     // The caller is about to draw on the CPU canvas: the GPU copy goes stale.
@@ -339,6 +379,13 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
 
 void gpu_canvas_name_leaf(GpuCanvasFrame& frame, char const* kind, SkRect bounds, int fill, size_t clips)
 {
+    // These conservative device bounds are also supplied to the GPU draw.
+    // Unknown extents retain the complete damage rectangle.
+    for(size_t index=0;index<frame.rects.size();++index) {
+        auto dirty=frame.rects[index];
+        if(bounds.isFinite()) { bounds.roundOut(&dirty); if(!dirty.intersect(frame.rects[index])) continue; }
+        frame.dirty[index].join(dirty);
+    }
     if (gpu_canvas_diagnostics()) {
         ++frame.leaf_kinds[kind];
         frame.leaf_area += double(bounds.width()) * bounds.height();
@@ -652,6 +699,7 @@ extern "C" int ladybird_v_skia_gpu_canvas_begin(CGContextRef destination, int co
         auto tile = SkIRect::MakeLTRB(rect.left() - rect.left() % 8, rect.top() - rect.top() % 8,
             rect.right(), rect.bottom());
         frame->rects.push_back(rect);
+        frame->dirty.push_back(SkIRect::MakeEmpty());
         frame->tiles.push_back(tile);
         device.insert(device.end(), {tile.x(), tile.y(), tile.width(), tile.height(),
             rect.x(), rect.y(), rect.width(), rect.height()});

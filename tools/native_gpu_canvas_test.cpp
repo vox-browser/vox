@@ -414,6 +414,21 @@ static std::vector<uint8_t> shared_frame_pixels(NSView* view)
 
 int main(int argc, char** argv)
 {
+    if (argc==2 && !std::strcmp(argv[1],"--partial-readback")) {
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api);
+        s_backend_read=api->read;api->read=counted_read;
+        setenv("VOX_GPU_CANVAS_DISABLE_ISOLATED_SHAPES","1",1);
+        for(auto draw:{draw_leaves,draw_cpu_leaves,draw_outline_leaves,draw_inset_leaves,draw_pattern_leaves,draw_video_leaves}) {
+            unsetenv("VOX_GPU_CANVAS_PARTIAL_READBACK");auto reference=render(true,false,draw);
+            setenv("VOX_GPU_CANVAS_PARTIAL_READBACK","1",1);auto candidate=render(true,false,draw);
+            assert(reference==candidate);
+        }
+        unsetenv("VOX_GPU_CANVAS_PARTIAL_READBACK");auto reference=render(true,false,draw_leaves,true);
+        setenv("VOX_GPU_CANVAS_PARTIAL_READBACK","1",1);auto candidate=render(true,false,draw_leaves,true);
+        assert(reference==candidate);
+        std::cout<<"Partial GPU readback matches full transfers exactly for shapes, CPU barriers, shadows, gradients and video\n";
+        return 0;
+    }
     if (argc==2 && !std::strcmp(argv[1],"--iosurface-readback")) { @autoreleasepool {
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api()); assert(api && api->read_iosurface);
         s_surface_read=api->read_iosurface; api->read_iosurface=test_surface_read;

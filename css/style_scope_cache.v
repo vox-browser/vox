@@ -63,7 +63,6 @@ pub fn RuleCache.new() &RuleCache {
 		rules_by_class: map[string][]&MatchingRule{}
 		rules_by_tag_name: map[string][]&MatchingRule{}
 		rules_by_attribute_name: map[string][]&MatchingRule{}
-		rules_by_exact_attribute: map[string]&ExactAttributeRuleBuckets{}
 		rules_by_pseudo_element: map[PseudoElement][]&MatchingRule{}
 		rules_by_animation_keyframes: map[string]&KeyFrameSet{}
 	}
@@ -199,10 +198,6 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 		return
 	}
 	last_compound_selector := compound_selectors[compound_selectors.len - 1]
-	if name, value := exact_attribute_rule_bucket(last_compound_selector) {
-		cache.add_exact_attribute_rule(name, value, matching_rule)
-		return
-	}
 	if attribute_name := style_scope_attribute_before_tag_bucket(last_compound_selector) {
 		style_scope_push_rule(mut cache.rules_by_attribute_name, attribute_name, matching_rule)
 		record_attribute_before_tag_bucket(matching_rule.selector)
@@ -361,15 +356,6 @@ fn (cache &RuleCache) has_candidate_rule_for_pseudo_element(abstract_element dom
 					if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) {
 						return true
 					}
-				}
-			}
-		}
-	}
-	if cache.rules_by_exact_attribute.len > 0 {
-		if attrs := element.attributes_ {
-			for attribute in attrs.attrs {
-				if bucket := cache.exact_attribute_rules(attribute) {
-					if rule_cache_bucket_has_pseudo_element(bucket, pseudo_element) { return true }
 				}
 			}
 		}
@@ -1605,13 +1591,6 @@ fn has_rule_that_may_be_affected_by_mutation(scope &StyleScope, anchor &dom.Elem
 			return true
 		}
 	}
-	for _, buckets in cache.rules_by_exact_attribute {
-		for _, rules in buckets.values {
-			found, affected := matching_rule_vector_has_rule_may_be_affected(rules, anchor, features)
-			found_has_rule = found_has_rule || found
-			if affected { return true }
-		}
-	}
 	for _, rules in cache.rules_by_pseudo_element {
 		found, affected := matching_rule_vector_has_rule_may_be_affected(rules, anchor, features)
 		found_has_rule = found_has_rule || found
@@ -2360,15 +2339,6 @@ fn style_scope_add_cached_rules_to_run(style_computer &StyleComputer, abstract_e
 		}
 	}
 
-	if cache.rules_by_exact_attribute.len > 0 {
-		if attrs := element.attributes_ {
-			for attribute in attrs.attrs {
-				if bucket := cache.exact_attribute_rules(attribute) {
-					style_scope_add_rules_to_run(style_computer, abstract_element, bucket, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
-				}
-			}
-		}
-	}
 	style_scope_add_rules_to_run(style_computer, abstract_element, cache.other_rules, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 }
 

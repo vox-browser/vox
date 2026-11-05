@@ -34,4 +34,5 @@ clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
 "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test" --failed-readback
 "$output_dir/native_gpu_canvas_test" --iosurface-readback
+"$output_dir/native_gpu_canvas_test" --partial-readback
 VOX_GPU_CANVAS_VERIFY=2 "$output_dir/native_gpu_canvas_test" --video-backdrop-verify

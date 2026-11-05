@@ -70,21 +70,8 @@ fn (mut iterator RuleBucketIterator) next() ?[]&MatchingRule {
 					}
 				}
 				iterator.stage++
-				iterator.index = 0
 			}
 			6 {
-				if cache.rules_by_exact_attribute.len > 0 {
-					if attrs := element.attributes_ {
-						for iterator.index < attrs.attrs.len {
-							attribute := attrs.attrs[iterator.index]
-							iterator.index++
-							if bucket := cache.exact_attribute_rules(attribute) { return bucket }
-						}
-					}
-				}
-				iterator.stage++
-			}
-			7 {
 				iterator.stage++
 				return unsafe { cache.other_rules }
 			}
