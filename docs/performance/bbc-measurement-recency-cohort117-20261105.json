@@ -1,0 +1,2122 @@
+{
+  "status": "Cohort 117 passes all 21 capture audits; strict 10% target fails. Recency/FIFO difference of medians is 33,060,785 instructions (0.1211%), but median paired difference is -19,048,210, with three improvements and four regressions. Conservative control comparison fails. No robust saving or catalog credit.",
+  "implementation_commit": "f0a747f84",
+  "control_commit": "b90dfdbb9",
+  "statistics": {
+    "valid_capture_cohort": true,
+    "full_comparison_available": true,
+    "rows": [
+      {
+        "pair": 1,
+        "vox": {
+          "instructions": {
+            "lower": 27992635881,
+            "upper": 27992635881
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26190459420,
+            "upper": 26190459420
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17422201718,
+            "upper": 17447738512
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 2,
+        "vox": {
+          "instructions": {
+            "lower": 27220233529,
+            "upper": 27220233529
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27303652900,
+            "upper": 27303652900
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17598270784,
+            "upper": 17622868326
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 3,
+        "vox": {
+          "instructions": {
+            "lower": 27270592115,
+            "upper": 27270592115
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27251543905,
+            "upper": 27251543905
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17447709901,
+            "upper": 17453590843
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 4,
+        "vox": {
+          "instructions": {
+            "lower": 26774097868,
+            "upper": 26774097868
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 26778953541,
+            "upper": 26778953541
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17609048657,
+            "upper": 17623566325
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 5,
+        "vox": {
+          "instructions": {
+            "lower": 26756693250,
+            "upper": 26756693250
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27719746697,
+            "upper": 27719746697
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17649860578,
+            "upper": 17683104932
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 6,
+        "vox": {
+          "instructions": {
+            "lower": 28254402376,
+            "upper": 28254402376
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27685010284,
+            "upper": 27685010284
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17460462541,
+            "upper": 17460753650
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      },
+      {
+        "pair": 7,
+        "vox": {
+          "instructions": {
+            "lower": 27845247095,
+            "upper": 27845247095
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "control": {
+          "instructions": {
+            "lower": 27481706134,
+            "upper": 27481706134
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        },
+        "brave": {
+          "instructions": {
+            "lower": 17470665268,
+            "upper": 17470944157
+          },
+          "exit": 0,
+          "native_exit": 0,
+          "cleanup_native_exit": null,
+          "pixels": true,
+          "content": true,
+          "ownership": true,
+          "identity": true,
+          "error": null,
+          "passed": true
+        }
+      }
+    ],
+    "failed_attempts": [],
+    "attempts_retained": 21,
+    "capture_audits_passed": 21,
+    "median_vox": 27270592115,
+    "median_control": 27303652900,
+    "median_brave_lower": 17470665268,
+    "point_reduction": 33060785,
+    "point_fraction": 0.001210855745972364,
+    "observed_complete_vox_control_pairs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "partial_point_reduction": 33060785,
+    "paired_control_minus_vox": [
+      -1802176461,
+      83419371,
+      -19048210,
+      4855673,
+      963053447,
+      -569392092,
+      -363540961
+    ],
+    "improvements": 3,
+    "regressions": 4,
+    "worst_vox_over_best_control": 1.07880514514472,
+    "strict_left": 282544023760,
+    "strict_right": 156799815462,
+    "conservative_brave_ratio": 1.6217469429715392,
+    "target_met": false,
+    "broad_trigger": true,
+    "guard_exit": 1,
+    "guard_reason": "completed",
+    "history": {
+      "measured_cohorts": 113,
+      "acceptance_browser_attempts": 2440,
+      "last_measured_id": 117,
+      "preflight_only_ids": [
+        104,
+        110,
+        111,
+        113
+      ]
+    },
+    "qualification": "Everyattempt retained;acceptance requires7complete successfultriples.No counter replacedwithzero;unavailablefullstatistics remainnull. Invalidpixel/ownership/identity/nativeexit cohort earnsnoacceptance/savingcredit. Observedpositivefull/partialmatchedpoint>=5M conservativelytriggersbroadchecks.Medians/gate alwaysusecreation-to-PNG launch_instruction_interval,never asymmetricnavigationdiagnostic.",
+    "unix": 1793901856.0269089
+  },
+  "median_paired_control_minus_vox": -19048210,
+  "native": {
+    "passed": true,
+    "checks": [
+      {
+        "arm": "vox",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "measurement_recency_before_png": true,
+        "border_before_png": true,
+        "ownership_passed": true
+      },
+      {
+        "arm": "control",
+        "passed": true,
+        "native_exit": 0,
+        "content_exact": true,
+        "pixels_exact": true,
+        "scripts72": true,
+        "actual_runtime_images_pinned": true,
+        "measurement_recency_before_png": false,
+        "border_before_png": true,
+        "ownership_passed": true
+      }
+    ],
+    "executable_unchanged": true,
+    "production": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+        "mode": "parallel",
+        "requested": "parallel",
+        "units": 33
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "df6e738381e56ff1829e20e7ccb0ff5a195cf88e459101d8bd1f49e97671528d",
+      "exit": 0,
+      "inputs": {
+        "build_inputs_sha256": "fd9105c7b69517873029b99d5fc8d1cd45200ee2b38d5cd2cdc412662689179a",
+        "dirty": true,
+        "head": "494ae2fd19ceb0873d0af6de61ae211939522944",
+        "repository_sha256": "8d1964b75a7c4415f31aca664f879a7d7344df22d63121edc51ae34eec46f6d5"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "494ae2fd19ceb0873d0af6de61ae211939522944",
+        "id": "43c6282ac39446e3943e3fb6e62fd871"
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "fd9105c7b69517873029b99d5fc8d1cd45200ee2b38d5cd2cdc412662689179a",
+        "dirty": true,
+        "head": "494ae2fd19ceb0873d0af6de61ae211939522944",
+        "repository_sha256": "20bd9f9dce08af13cc66a834b653703433fead48dc4cd4ab05055f2fddf43e25"
+      }
+    },
+    "scope": "Fresh diagnostic launches of the canonical completed production app; only FIFO measurement-cache eviction retained in control. JSCauthor and dyld instrumentation, no instruction credit. Exact original references/content,72original external authorscripts,common3renderpolicies,ownership/actualexits/privatePIDmemoryadoption required.",
+    "unix": 1793901628.132641
+  },
+  "svg": {
+    "passed": true,
+    "rows": [
+      {
+        "name": "on-expected",
+        "exit": 0
+      },
+      {
+        "name": "on-actual",
+        "exit": 0
+      },
+      {
+        "name": "off-expected",
+        "exit": 0
+      },
+      {
+        "name": "off-actual",
+        "exit": 0
+      }
+    ],
+    "pixels": [
+      {
+        "name": "on",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "off",
+        "exit": 0,
+        "exact": true
+      },
+      {
+        "name": "cross-policy",
+        "exit": 0,
+        "exact": true
+      }
+    ],
+    "inputs_unchanged": true,
+    "scope": "Focused SVG source-switch guard in candidate/FIFO-control arms; historical border MSAA retained equally. Completed pinned canonical production; no instruction credit.",
+    "unix": 1793901638.599962
+  },
+  "broad": {
+    "no_new_failures": true,
+    "full_suite_pass": false,
+    "cadence_reset": false,
+    "inputs_unchanged": true,
+    "rows": [
+      {
+        "mode": "default",
+        "layout": {
+          "cases": 555,
+          "passes": 552,
+          "failures": [
+            "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+            "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+            "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+          ]
+        },
+        "main": {
+          "candidate": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "carried_current_css_cases": 64,
+        "css_arms": 3,
+        "unique_cases": 693,
+        "unique_passes": 688,
+        "unique_known_failures": 5
+      },
+      {
+        "mode": "none",
+        "layout": {
+          "cases": 555,
+          "passes": 552,
+          "failures": [
+            "test_trailing_collapsed_margin_does_not_replace_the_last_child_margin",
+            "test_text_control_baseline_ignores_editor_overflow_under_chromium_policy",
+            "test_chromium_toggle_controls_align_their_border_box_with_the_baseline"
+          ]
+        },
+        "main": {
+          "candidate": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          },
+          "control": {
+            "cases": 74,
+            "passes": 72,
+            "failures": [
+              "test_frame_preparation_keeps_layout_current_and_records_only_final_paint",
+              "test_animation_tick_commits_sampled_width_endpoint_and_adopts_current_geometry"
+            ]
+          }
+        },
+        "carried_current_css_cases": 64,
+        "css_arms": 3,
+        "unique_cases": 693,
+        "unique_passes": 688,
+        "unique_known_failures": 5
+      }
+    ],
+    "current_pins": {
+      "/Users/alex/code/vox2/layout/block_layout_test.v": "1a2948c977fe7282033a5c4925970b21d2811d1563ca93bee96dc0014571891d",
+      "/Users/alex/code/vox2/layout/chromium_control_intrinsics_test.v": "5411bd3c4968972a2432c30bb91a17c0077affb304e6472f7425db081e35bc4c",
+      "/Users/alex/code/vox2/layout/chromium_definite_flex_basis_test.v": "c8af646fc803be3d5189466d3ca7923647570322b5ca81ef733b1fd272202c32",
+      "/Users/alex/code/vox2/layout/chromium_grid_flex_test.v": "3a60962eec6ab121b2dc641aa0115c0e33d1884bd03001df94b82d44136e750c",
+      "/Users/alex/code/vox2/layout/chromium_inline_block_baseline_test.v": "4f09c3aa2c0cfe0df5b49f7539a765fccb34ecea5001a6a88ef66338487bdaee",
+      "/Users/alex/code/vox2/layout/chromium_middle_atomic_baseline_test.v": "97e4b22aaf3ff687bbf18235a7e797d90899c19988eb6a89e51752d81a3c2c85",
+      "/Users/alex/code/vox2/layout/chromium_text_control_baseline_test.v": "b762eb48952a7089d479ccdc744d31936107eab7142c38250846e38229386571",
+      "/Users/alex/code/vox2/layout/definite_intrinsic_contribution_test.v": "4a5f47af1b9ce5c43afce99825313b86bccfccc172180d9f2626643055ab0354",
+      "/Users/alex/code/vox2/layout/document_geometry_scratch_test.v": "e2ae2ad82fc1fd115301cf561f4b7d29eb3ec5c229362207ab45662fea5b74e8",
+      "/Users/alex/code/vox2/layout/dom_grid_bridge_test.v": "4574c7a0c2be079c17b83eb4b207857bffefaccd88170fdb9f0d808923b504a4",
+      "/Users/alex/code/vox2/layout/dominant_baseline_test.v": "8f5c78bb6de70ecf3c517bdfa32858f09770ea0c1d607fd3c4f60b28823e34c8",
+      "/Users/alex/code/vox2/layout/flex_all_frozen_test.v": "dde38d4dba1e6fae97c655a180ddea0bbf8110cc4511cca9682ef8cf100b4246",
+      "/Users/alex/code/vox2/layout/flex_geometry_scratch_test.v": "dd8c81a45ed3746fc642443dd101ebe91c19c9010fbc523d179c93a01b663884",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+      "/Users/alex/code/vox2/layout/flex_relayout_test.v": "16a9d24178c55b4572976c9cd5b23ee5c4f8a75386ccf46820a3ed4191d5bc48",
+      "/Users/alex/code/vox2/layout/formatting_contexts_test.v": "58a75404a6e8a85eed14951d840c13f205d9c0f031148c9c89bb2b1b72264236",
+      "/Users/alex/code/vox2/layout/grid_auto_height_seed_test.v": "015df0f70d73b29ae6060816186ee4bb31aacd504876b808f2ab3ac8b74e7e45",
+      "/Users/alex/code/vox2/layout/grid_block_intrinsic_reuse_test.v": "05501b7861b55975585722784e2b07a63d7738c0a3a98d153e5d0e6c2eec5288",
+      "/Users/alex/code/vox2/layout/grid_flexible_contributions_test.v": "aa08ee40a7bad38a995d08f6a1404c6bf62cfc1b6d6d46fea3081afdbc23be0f",
+      "/Users/alex/code/vox2/layout/grid_item_relayout_test.v": "36b1220b9570c397609d37f2ae9f37a2eb72980f1334bcd24b7bd77b44f96814",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+      "/Users/alex/code/vox2/layout/image_contents_repaint_test.v": "c712647e4ad2bf36da6b087d73c2c46329d893e6f74e5885512415a031c89ac7",
+      "/Users/alex/code/vox2/layout/inline_chunk_font_owner_test.v": "dfda318cd70ac7be2476474b79b6c909984fc1bdf6c5499764e918107d506393",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace_test.v": "59f7076900a967052ca44666db2f0d4b9e26ea262504302bb02f24934090bb3c",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+      "/Users/alex/code/vox2/layout/intrinsic_border_box_constraints_test.v": "4862e201bd940e9d39e5e5c037423e539af9cd6626b9bb5d8dcc5ec272a725a6",
+      "/Users/alex/code/vox2/layout/intrinsic_column_geometry_reuse_test.v": "19a78e1e9ab4ece09fd5e7d9db309d826219ffb458513e4d5619c8d8e7794ec7",
+      "/Users/alex/code/vox2/layout/intrinsic_combined_seed_test.v": "76aa3d0c6c761ff1f542c3e58239381de163c6f81d401173e73e4c8156d902ec",
+      "/Users/alex/code/vox2/layout/intrinsic_containing_block_seed_test.v": "75e45eae6e47310ba94c126f1692317eaa49ebadd071c3b37d4f66611c29adec",
+      "/Users/alex/code/vox2/layout/intrinsic_font_reuse_test.v": "0df50f83a0e550082f05e8cb47c879f71c4880911085a3dad0360898caaa4344",
+      "/Users/alex/code/vox2/layout/intrinsic_glyph_borrow_test.v": "18880e78f0b3dad6d3e60278d8bc0ee0f6284da80114876bc638e388165cfa0c",
+      "/Users/alex/code/vox2/layout/intrinsic_height_cache_storage_test.v": "8cf149b82a118470e784cf7368da3601181efae64394b2a2256e151a43aa4be5",
+      "/Users/alex/code/vox2/layout/intrinsic_line_fit_test.v": "b8aca27456e748204a37e148bfd11ce73a7b5a8b346991b1cf53ea987a39f165",
+      "/Users/alex/code/vox2/layout/intrinsic_line_recycling_test.v": "bada23901664806b1fb26de241a2e8044c01f91c1eda000d15ea80404d64e1d3",
+      "/Users/alex/code/vox2/layout/intrinsic_seed_visits_test.v": "d70b720317888bf752e174b2a9aa1bbd0f6d98d4938794d133ab51c19b9c7c53",
+      "/Users/alex/code/vox2/layout/intrinsic_shape_cache_owner_test.v": "7b63ff64911102753b1cacbdc9a58a6938dbdee53c60eb2ac102b923f20faf32",
+      "/Users/alex/code/vox2/layout/intrinsic_shape_order_test.v": "ff38981adb2e58b2a46dc01ca99fd0a58e01bdd909f4c983e98271ddca93de01",
+      "/Users/alex/code/vox2/layout/intrinsic_width_only_test.v": "e1a48066a65a420672ac3c34dcea0ebd29ba546cd15c18a9b4fed486a7594bcd",
+      "/Users/alex/code/vox2/layout/measurement_chunk_pool_test.v": "ed890116c8c0f0d59b023f854a4711b61fad7efcad8a28370ae7a90dd8b63cf0",
+      "/Users/alex/code/vox2/layout/measurement_images_test.v": "83ae70050f07858f7473eb290dcab99204bcf05ac7b60cfe166ca3df9d0edc0e",
+      "/Users/alex/code/vox2/layout/measurement_scratch_test.v": "5f1215716e45b66ccf50baf0b7523e90d1baea869ec8ec087c8bde549a0790cc",
+      "/Users/alex/code/vox2/layout/nested_grid_block_size_test.v": "39a30a30aa87cd420e10270d50b3045fe6e65474c4a9947e39b325db8aa6b66c",
+      "/Users/alex/code/vox2/layout/positioned_definite_image_repaint_test.v": "4c0e2066eed47075f05334f4bee34cfefa926d95cdd81d52f816017296d2bcf2",
+      "/Users/alex/code/vox2/layout/retained_block_images_test.v": "62ca7a15cfa9267ac9ddf4c88c21cf7cc65845ba2b994a1e37024e195bc56a56",
+      "/Users/alex/code/vox2/layout/retained_block_layout_test.v": "b7cfee8178b6332a189a240222d8ce15e2f111b5620d00109b48fa1d2922c07d",
+      "/Users/alex/code/vox2/layout/retained_flex_layout_test.v": "f205d520e782fa2c81f8b2e24d5ed5225a997f441751d70d9a79b418d5a2da3d",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees_test.v": "eaee83120bbd52c7269bea5ef77bb5c931f8514b3c9d18eb7dc8bafc854fb5e8",
+      "/Users/alex/code/vox2/layout/retained_flow_items_test.v": "a23b3b3703dbbd24ab5e15dc398d5b927d736afa79afcd3a43063a2fef4d159c",
+      "/Users/alex/code/vox2/layout/retained_flow_pseudo_styles_test.v": "c15469c7efdbb983d293680967fc299f89bd79215c75f9ee184b27832bea00f0",
+      "/Users/alex/code/vox2/layout/retained_flow_styles_test.v": "4564892173e325e312ae0deecb94529c79a8a4148a886b3ebf4b0a26a4ae52be",
+      "/Users/alex/code/vox2/layout/retained_flow_svg_trees_test.v": "ac473e6be0c278b80bd58a832a69e79ef2c74b872da17012e75e10049c3e6e0e",
+      "/Users/alex/code/vox2/layout/retained_formatting_trees_test.v": "cc311f682ae7101b9df1432e6f275813185e46ffd0639fdc51b003697baaaa05",
+      "/Users/alex/code/vox2/layout/retained_grid_layout_test.v": "4724f2e4614ee91c40b517115837526e0bef8f5946db956fadd696a48dd5e77b",
+      "/Users/alex/code/vox2/layout/retained_simple_svg_test.v": "02e21d9d47f78ac0c62a991194dfafab31e8601151efc7cad79b64b52ba86ab9",
+      "/Users/alex/code/vox2/layout/retained_values_restore_test.v": "983a5049164afdaae93fb3ce532fe55a072a1514bbbe69cf7fba36877af9097c",
+      "/Users/alex/code/vox2/layout/svg_intrinsic_metadata_lifetime_test.v": "6a5ae431b6d6414cceaf2ccb33f922c0636fbf4b83fd9e8fd5e3e4d43baf234f",
+      "/Users/alex/code/vox2/layout/svg_path_geometry_invalidation_test.v": "dcf260189775ad86d112ee3c3096d805137f216ac01b58a7064a47f1ad565a8a",
+      "/Users/alex/code/vox2/layout/table_grid_intrinsic_height_test.v": "d362db7703a7847b752e40161828b624edf93d946878af0826c148e02b4c2517",
+      "/Users/alex/code/vox2/layout/text_input_live_intrinsics_test.v": "021a83472a5edf8a7084f6c7a3e5dfe6605c9cb055b574b86516a71bee0be173",
+      "/Users/alex/code/vox2/css/computed_layout_cache.v": "04c7b01e0cb5282d960114001cb2eca7cf29fd01e10b890954fc8b0fa0d4ae4b",
+      "/Users/alex/code/vox2/css/computed_length.v": "5ea9b4c2284f32560cff12892b039251506d463cb7dc6655f714b6d0fbc64c3a",
+      "/Users/alex/code/vox2/css/computed_values.v": "e1dbaee3b5562dba21ee534a37c443a0b171fd8541ed0af718035b2ae1691f3d",
+      "/Users/alex/code/vox2/css/idle_layout_snapshots.v": "c98d23dedf17fb0defdf0f64b1961e51b4e776937bb414b438019330236adfa2",
+      "/Users/alex/code/vox2/css/resolved_box_model_edges.v": "0b75b2e1f3df9dfa2fbcad651141c74ac2e7b5e2e0b12a86320af06d3f8786f9",
+      "/Users/alex/code/vox2/css/resolved_box_model_edges_test.v": "1b5cb3a18fb7ca0c4129b19f2fee88ca409b9d08fefd1cbc5b149f4184609454",
+      "/Users/alex/code/vox2/layout/flex_measurement_layout.v": "3ad170bb840450b9f408a42013d743c8c61b70fc797e733c855624b7f7023a31",
+      "/Users/alex/code/vox2/layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "/Users/alex/code/vox2/layout/flex_formatting_context.v": "1b7f327d4da7794bcfd9db3df05fc5dd519c113346a6fd8f37d280f37fabf572",
+      "/Users/alex/code/vox2/layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a",
+      "/Users/alex/code/vox2/layout/committed_inline_measurement.v": "6c7866debb5b6d31ebea7b03910984a10d25c662b6c90c2ac9b3ca3397aaed00",
+      "/Users/alex/code/vox2/layout/inline_layout_workspace.v": "cca616e21e2b1d96a2ace5b6dba54cfc0f5564e4398696db1df15010e794d205",
+      "/Users/alex/code/vox2/layout/inline_measurement_layout.v": "f7e2d4cc500a2ec11f997ea771238e55a95f3360f50e453433ef8b58e77a25c4",
+      "/Users/alex/code/vox2/layout/inline_measurement_height.v": "ba913b52e02b93cca870490e12772c7ae3004d4ef16695dab05d48641a2ec5e5",
+      "/Users/alex/code/vox2/layout/retained_paint_test_helpers.v": "67f28405c54594b298f63e9c893e3f5fd6fadbe49beccdb6436dbf814a8aa9f1",
+      "/Users/alex/code/vox2/css/deleted_conditional_style_rules.v": "9ad30ba5dcf345915c60043f96b6a2b8edfb51ad8280325c27da4fdd9f8d4544",
+      "/Users/alex/code/vox2/css/empty_deleted_conditional_leaves.v": "36e75f6fa19830e07d7faa74704ee35e95c735fd9267b124d75e7b11799dff21",
+      "/Users/alex/code/vox2/css/redundant_sheet_removal.v": "96ce59738435a07af1ff083101dee9095b0a35356cf5dd3dbe5e3ee25d2c30cb",
+      "/Users/alex/code/vox2/layout/typed_paint_adapter.v": "bebc3f3768f53b5304a7105d4c55a1c8acdcf309ceac70fc3bc98647090ed248",
+      "/Users/alex/code/vox2/layout/grid_auto_height_seed.v": "08698eafc9e1252896f6a9cf6bf2f5a7754de6d847877bf0a85a973c9cb1bfcc",
+      "/Users/alex/code/vox2/layout/grid_measurement_layout.v": "2bf523eb2bf9c62530e654df60edf57564b7ddf88d892d09a84b0e87646ccceb",
+      "/Users/alex/code/vox2/layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+      "/Users/alex/code/vox2/layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+      "/Users/alex/code/vox2/main_compact_query_request.v": "60eb94c8ccdc0f26f6abe2e1bce8801363680721d7b009970b65fe8b912ce404",
+      "/Users/alex/code/vox2/browserjs/querywire/compact_envelope.v": "594671405412c490735628a5cd00730bc3d9dcc0a5abffa80338134728f4a23b",
+      "/Users/alex/code/vox2/css/covered_style_sheet_invalidation.v": "5b597e636b97678934e9c1760c1251086cc3b4c48aa020997619c3d9d91990b9",
+      "/Users/alex/code/vox2/css/style_sheet_invalidation.v": "1957fee8dde8708d66daea80e354ac1c882e2983229e37f2d802f2bf568ce5a2",
+      "/Users/alex/code/vox2/layout/retained_flow_subtrees.v": "13864cb4bfe2c18c7ae21abe6618793212c6c75c31bb6c0b49a4f101f05a6875",
+      "/Users/alex/code/vox2/layout/retained_flow_image_trees.v": "e44b540b9596acd36cb3e506f92b4f0c93b31a7c8e67aa0e933e88f47af4aae4",
+      "/Users/alex/code/vox2/layout/retained_flow_svg_trees.v": "613fce995e0e40e01cc84fa185ebe89cf16eaa76c4cd806c64cc7ace61814cda",
+      "/Users/alex/code/vox2/layout/retained_simple_svg.v": "a4a87c35166f9529a45843832b95a1f99fd09240242ec00ede807579040c70ad",
+      "/Users/alex/code/vox2/layout/measurement_cache_recency.v": "b5da8cd80c28e66c1a0800920976aacc111d6e6068abbf88b94d4c159a714414",
+      "/Users/alex/code/vox2/layout/dom_layout_bridge.v": "267ddd31d2bff051e981d718ddf150ad760a85e2fd5352543c1d77d413e5b30d",
+      "/Users/alex/code/vox2/layout/svg_boxes.v": "1218d12c4c62814f2f01bc14612f787b97c8f0a1fbd5fa6b32e0099ad94b9e40",
+      "/Users/alex/code/vox2/layout/svg_formatting_context.v": "a7062a364c6a46819e6f95529b13a6282db33733e6fc7ac13b3f3d4f341901d4",
+      "/Users/alex/code/vox2/css/retained_layout_style.v": "5a1b42840aa2bffb4dd01e19647c4746f27af13cd418338cd2be694e41341e2c",
+      "/Users/alex/code/vox2/main_frame_task_layout_test.v": "95ed1f2ed168104272e940187e74b77fee13ea1294cc52fe507c000f1991cd5d",
+      "/Users/alex/code/vox2/main_frame_task_focus_test.v": "41e5034f5d88ee1d8da200f3fa774460996e156d5152fd78ef8375ef880b8262",
+      "/Users/alex/code/vox2/main_javascript_task_paint_test.v": "97e87510c442d8a98e8b4760c208a312268351eb39abe41f6da9052f2cf0359e",
+      "/Users/alex/code/vox2/main_frame_paint_test.v": "8192d5720da544a30b7854cc6c5f059602e1e8ae0eac69f00e9ae7809597055b",
+      "/Users/alex/code/vox2/main_initial_frame_layout_test.v": "b5d2a5c5e1f6efa61d0224da041362e60001ba735b74cd4d7c71432489c775a7",
+      "/Users/alex/code/vox2/main_relayout_autofocus_test.v": "aa0181e281ed29f5d9ba14a3ea7fe1d61d7af8baf6331205f5dcf0d5892a60a7",
+      "/Users/alex/code/vox2/main_archived_border_msaa_test.v": "22fd1f1184b24999229f88fff6e9e1eeb791fbc19df604a0b69963a64a12e976",
+      "/Users/alex/code/vox2/main_chromium_border_msaa_test.v": "a8b2c0b7e9b021db661b4720395b124cf7a2c2c95981d97631ba37272d768586",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles_test.v": "f398f4f3e26ee9ae3384fa19dfba185d1fc1d3c629c4438e12e2e813bb667aa9",
+      "/Users/alex/code/vox2/main_adblock_tokens_test.v": "58abe1f79179fd7bb23e15fc0fabcafd0510efc0682dd98b45defaec60cb5bb0",
+      "/Users/alex/code/vox2/main_adblock_token_survey_test.v": "1ae5edd40d86a9cecb5ae8a2a1dedaf0deb5775da9fc09e9f99251eb18dddab2",
+      "/Users/alex/code/vox2/main_frame_task_layout.v": "c403b9852f840d05ea83dc30641986f9751062671063adba83dace75c6624907",
+      "/Users/alex/code/vox2/main_frame_paint.v": "2557bbe0812d23bfbce704475feb5635162362139d30099d8c14c0a82aee2044",
+      "/Users/alex/code/vox2/main_adblock.v": "8b61d0d26204d181fe30f602496e151dabbbb9c402ab40b7ea6356bd8e44c585",
+      "/Users/alex/code/vox2/main_device_layout.v": "20391809cc59f6ccb67afd0a137403aa947163ac149e30a92fa6e94ca0cba385",
+      "/Users/alex/code/vox2/main_archived_border_msaa.v": "303e1d995d6f696cd5dfab338c152a7c275709ab646e495abd0ffd870bc99177",
+      "/Users/alex/code/vox2/main_chromium_msaa_tiles.v": "e37d4bdea4187868d8b6eb530b0dfa3d9b62fd852ce3167e23e147de6b086bf8",
+      "/Users/alex/code/vox2/main_chromium_shared_recording.v": "3856d9e3ef9b1be02d73a558c54ce2b32cd1e887925e727a244679675bc73a70",
+      "/Users/alex/code/vox2/main_adblock_tokens.v": "c6a9b6c9d189e420352fe74d0db51a460b27d219148868e4a599efc2b15ed0c4",
+      "/Users/alex/code/vox2/main.v": "7c29610551d73e639f53dcbd38b2836013314545d87dbc6b5028af91538aad3b",
+      "/Users/alex/code/vox2/main_browser_tabs.v": "c3838355754aec5e88cc6073fb918b082d642e8d3938bd3fe22bb6dc3f9d3bde",
+      "/Users/alex/code/vox2/css/covered_style_sheet_invalidation_test.v": "2eefca1f02662d39d5d8407454310771cbd705ae4f6e13732af23444ebe66906",
+      "/Users/alex/code/vox2/css/style_sheet_invalidation_test.v": "e5e0aa965fecd5d9d3311d3c81f9b3b63653e45baf69175d3129767a63fe25f2",
+      "/Users/alex/code/vox2/css/style_sheet_list_invalidation_test.v": "0391b903b00359f85d2f360e9b5d4bd9579fafe0589adc6475125f803eb53525",
+      "/Users/alex/code/vox2/css/redundant_sheet_removal_test.v": "0f1056db9ad088b659f47eee39a56ff1c11e4a244bffcdf422440da06ddb1cbb",
+      "/Users/alex/code/vox2/css/computed_property_store.v": "bc0a4f81b805a571559c126d74e9a5cfb97b921f1653e0fe903d898474bb8bae",
+      "/Users/alex/code/vox2/css/style_computer.v": "9a65786feff850df5b88aad726ae5659d8dae11353644be4b24b5cdecc942241"
+    },
+    "fresh_case_executions": 1406,
+    "fresh_passes": 1392,
+    "fresh_baseline_failures": 14,
+    "carried_css_executions": 384,
+    "total_case_executions": 1790,
+    "total_passes": 1776,
+    "total_baseline_failures": 14,
+    "qualification": "Fresh layout555 plus main74 cases in both GC modes; main repeats candidate/control. Current CSS64 focused cases in three arms are carried for these two GC modes only; preallocation remains separate focused evidence. No callback or older main execution carry. Every baseline failure and initial failed attempt retained. No full-suite pass or cadence reset.",
+    "unix": 1793902094.248158
+  },
+  "source_proof": {
+    "checked": {
+      "layout/grid_measurement_layout_test.v": "a2a61ec58b38030badb0ee5589d203cd9e32668877ffd9273a658579571327bb",
+      "layout/flex_measurement_layout_test.v": "ccd5a77138c15b8478ab7760613512405753f9d96ea4043f9d9484cc7b0e0b38",
+      "layout/inline_measurement_layout_test.v": "76466d0a32aafec0d0d8202f84eeca0eda9b1cf44b7f4fe6aeca14ceda1a5313",
+      "layout/inline_measurement_height_test.v": "c4feae7067924a65758860b0a9465dcd3cc657d0ee2054ca7abd5490730b1dbd",
+      "layout/measurement_cache_recency.v": "b5da8cd80c28e66c1a0800920976aacc111d6e6068abbf88b94d4c159a714414",
+      "layout/grid_measurement_layout.v": "2bf523eb2bf9c62530e654df60edf57564b7ddf88d892d09a84b0e87646ccceb",
+      "layout/flex_measurement_layout.v": "3ad170bb840450b9f408a42013d743c8c61b70fc797e733c855624b7f7023a31",
+      "layout/inline_measurement_layout.v": "f7e2d4cc500a2ec11f997ea771238e55a95f3360f50e453433ef8b58e77a25c4",
+      "layout/grid_formatting_context.v": "e37efd35bf0ad2a7928b1ee61eb91d0e22d002ddcba9c6b24e641a58301cbc8d",
+      "layout/flex_formatting_context.v": "1b7f327d4da7794bcfd9db3df05fc5dd519c113346a6fd8f37d280f37fabf572",
+      "layout/layout_state.v": "0acf858cd68ff65e459346b32c49ce43e5ce92909d6b1e2e1942051f7f5a78cc",
+      "layout/measurement_owned_values.v": "6cd458622e3f6b7e374d319cf3b0b9008394a708d5b66d3cc2be83ad5ddc509e",
+      "layout/committed_inline_measurement.v": "6c7866debb5b6d31ebea7b03910984a10d25c662b6c90c2ac9b3ca3397aaed00",
+      "layout/committed_grid_measurement.v": "44154d57775fab291915947caa5ca02efb891dd20c6ff598ce09926e2e07c32a",
+      "layout/inline_measurement_height.v": "ba913b52e02b93cca870490e12772c7ae3004d4ef16695dab05d48641a2ec5e5",
+      "layout/dom_layout_bridge.v": "267ddd31d2bff051e981d718ddf150ad760a85e2fd5352543c1d77d413e5b30d"
+    },
+    "build_head": "494ae2fd19ceb0873d0af6de61ae211939522944",
+    "committed_sources_match": true,
+    "generated_c_preserved": false,
+    "qualification": "Final focused source hashes match production build HEAD and current checked files. For parallel receipt,unchanged complete generation input fingerprints are required by canonical driver;no sealedgeneratedC claim."
+  },
+  "lease": {
+    "requested_unix": 1793901615.317609,
+    "purpose": "Read lease through native eligibility, SVG guard and cohort 117; no endpoint/reference/input changes, no optimization credit for coordination.",
+    "helper": "/Users/alex/code/vox2/tools/browser_bundle_lease.py",
+    "helper_sha256": "8ffac841d64df4d5506be45c80970ce195c688d2d7a57d4ceb340b2d4de1b7b1",
+    "acquired_unix": 1793901615.317802,
+    "native_exit": 0,
+    "native_finished_unix": 1793901626.9753559,
+    "native-audit_exit": 0,
+    "native-audit_finished_unix": 1793901628.2567658,
+    "svg_exit": 0,
+    "svg_finished_unix": 1793901638.6048481,
+    "cohort_exit": 1,
+    "cohort_finished_unix": 1793901762.053395,
+    "released_unix": 1793901762.053681
+  },
+  "scope": "Unchanged exclusive coalition creation through encoded document PNG, including startup/window/target setup/readiness/two-second settlement; Vox before file writing, Brave including CDP delivery, audits/teardown afterward. Exited aggregates and allowed owned services included; GPU execution/outside work excluded. Fixed 609-response original-origin HTTPS replay/original author scripts/1024x768 CSS/DPR2/fresh private profiles+caches/retained OS caches/original per-engine references/historical rendering policies unchanged. Known DOM/script/font/paint limitations and 82.7154% cross-browser pixel difference remain. No live-site, isolated rendering or FPS claim.",
+  "qualifications": "Pinned parallel33-unit df6e738381e5. Build HEAD matches checked source pins; complete generation/compiler/runtime metadata retained, no sealed generated C claim. Recency marker fires only in candidate before PNG; original pixels/content/72 scripts/actual native libraries/ownership/exits pass both arms, and SVG guard is exact. Only successful disposable-probe eviction order differs; four-entry limit, eligibility, keys, snapshots and final-layout policy stay identical. New source/driver digest preflights are retained separately, with no browser launches or instruction credit. The broader cadence runs fresh layout555/main74 in both GC modes and carries current CSS64 cases in three arms for these modes only: 693 unique cases/688passes/same5failures per mode, 1,406 fresh plus384carried executions. No full-suite pass or cadence reset. Every attempt and failed focused fixture retained. Legacy generated files deleted only after archive/local-byte verification; completed private profiles/caches are ephemeral and excluded from durable evidence.",
+  "legacy_cleanup": {
+    "scope": "Only completed BBC generated default/no-GC/preallocation C and standalone-profile C/preprocessed/compiler inputs with exact durable archive copies. No active command references selected files. Preserve binaries, browser bundles, raw attempts/counters/PNGs, fixtures, references, live source and canonical tools. Nonidentical current artifacts are preserved. File bytes are logical artifact sizes; concurrent host activity can change available disk independently.",
+    "rows": {
+      "/Users/alex/code/vox2/Build/bbc-coarse-profile-20261105-0127/Vox.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-coarse-profile-20261105.tar.gz",
+        "archive_sha256": "77100dbfee8c1f9272bdbd81bc7077cceb8a5d451af5d667e8e3582ab4f0eddc",
+        "member": "completed/Vox.c",
+        "bytes": 105085339,
+        "sha256": "7ca8659f86e3d9dcf33d3c8a2ee855bc08bbbd0c49f878a446ac89884ab16353",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-coarse-profile-20261105-0127/frozen-compiler-inputs/0-Vox.c.i": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-coarse-profile-20261105.tar.gz",
+        "archive_sha256": "77100dbfee8c1f9272bdbd81bc7077cceb8a5d451af5d667e8e3582ab4f0eddc",
+        "member": "completed/frozen-compiler-inputs/0-Vox.c.i",
+        "bytes": 122098555,
+        "sha256": "e4339d3ea4cae031255c61ae9b53cab327102de29a50bb9e5fc01b80b37c5c71",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-coarse-profile-20261105-0127/frozen-compiler-inputs/1-module_loader_darwin.m.i": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-coarse-profile-20261105.tar.gz",
+        "archive_sha256": "77100dbfee8c1f9272bdbd81bc7077cceb8a5d451af5d667e8e3582ab4f0eddc",
+        "member": "completed/frozen-compiler-inputs/1-module_loader_darwin.m.i",
+        "bytes": 4748911,
+        "sha256": "2cf055e175372b713340ef64164b42e70d214fe2757249df1e5331bfd0fc3b93",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-coarse-profile-20261105-0127/frozen-compiler-inputs/2-fontstash_impl.c.i": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-coarse-profile-20261105.tar.gz",
+        "archive_sha256": "77100dbfee8c1f9272bdbd81bc7077cceb8a5d451af5d667e8e3582ab4f0eddc",
+        "member": "completed/frozen-compiler-inputs/2-fontstash_impl.c.i",
+        "bytes": 270478,
+        "sha256": "84a8ad5f1e86887c8a5b7447bfafed450967272f8c6a867be387e200e759c374",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-coarse-profile-20261105-0125/Vox.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-coarse-profile-20261105.tar.gz",
+        "archive_sha256": "77100dbfee8c1f9272bdbd81bc7077cceb8a5d451af5d667e8e3582ab4f0eddc",
+        "member": "source-pin-rejection/Vox.c",
+        "bytes": 108703803,
+        "sha256": "c760653367c8d0016912634a7b8fa781483be8d300c9887939bcf5f8aada7434",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/broad-layout/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-cohort116-20261105.tar.gz",
+        "archive_sha256": "0627e1df305396763e41f0d21dcdfd71e772830a7e7a3f9e617817713595d91a",
+        "member": "broad-layout/default.c",
+        "bytes": 31562208,
+        "sha256": "07a1b33e2ae6177f886359fd09335a2be80c50464e3109920ada0786fc6f346e",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/broad-layout/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-cohort116-20261105.tar.gz",
+        "archive_sha256": "0627e1df305396763e41f0d21dcdfd71e772830a7e7a3f9e617817713595d91a",
+        "member": "broad-layout/none.c",
+        "bytes": 31548672,
+        "sha256": "5b1e76b77b7e00b5c09d926b40325acc68e4858b56b8e05841ac4b3aa3cc37fb",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/broad-main/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-cohort116-20261105.tar.gz",
+        "archive_sha256": "0627e1df305396763e41f0d21dcdfd71e772830a7e7a3f9e617817713595d91a",
+        "member": "broad-main/default.c",
+        "bytes": 44378620,
+        "sha256": "b8825ae100f4a194411e1cbcf4ca6506401a018ab0d2055937cfcc69d1ff1248",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/broad-main/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-cohort116-20261105.tar.gz",
+        "archive_sha256": "0627e1df305396763e41f0d21dcdfd71e772830a7e7a3f9e617817713595d91a",
+        "member": "broad-main/none.c",
+        "bytes": 44287574,
+        "sha256": "ca58c20c0a2ca31bd66bf34548d00dafd8d460bea45fb25961c7fba240e02fcf",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/owned/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-focus-20261105.tar.gz",
+        "archive_sha256": "6d1c9226c64b65f8c364711e90f70c95e4b19b902f068befcdd67956ad5bc3da",
+        "member": "owned/default.c",
+        "bytes": 27669983,
+        "sha256": "509a256d9713835d9dfad0daa5ef8a931c24dd51b56548d5b1894b9e381b3a21",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/owned/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-focus-20261105.tar.gz",
+        "archive_sha256": "6d1c9226c64b65f8c364711e90f70c95e4b19b902f068befcdd67956ad5bc3da",
+        "member": "owned/none.c",
+        "bytes": 27660737,
+        "sha256": "09cc94cacf5c8c2866d17bcfb317410a240da8a80525da5f8b34960ba7f6620a",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/owned/prealloc.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-focus-20261105.tar.gz",
+        "archive_sha256": "6d1c9226c64b65f8c364711e90f70c95e4b19b902f068befcdd67956ad5bc3da",
+        "member": "owned/prealloc.c",
+        "bytes": 27938201,
+        "sha256": "3283e315044b983a5d03244b2cd5e0898635991fdf627c28b0cb420730b20c88",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/refined/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-focus-20261105.tar.gz",
+        "archive_sha256": "6d1c9226c64b65f8c364711e90f70c95e4b19b902f068befcdd67956ad5bc3da",
+        "member": "refined/default.c",
+        "bytes": 27667519,
+        "sha256": "5132676d9c3939fdd69324ab259a883ade8245a53465f354c8291944e1ed99f4",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/refined/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-focus-20261105.tar.gz",
+        "archive_sha256": "6d1c9226c64b65f8c364711e90f70c95e4b19b902f068befcdd67956ad5bc3da",
+        "member": "refined/none.c",
+        "bytes": 27658273,
+        "sha256": "78eb3d1a887019959a391167be79413d621357587af4991cbe4be92f51235ef2",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/refined/prealloc.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-focus-20261105.tar.gz",
+        "archive_sha256": "6d1c9226c64b65f8c364711e90f70c95e4b19b902f068befcdd67956ad5bc3da",
+        "member": "refined/prealloc.c",
+        "bytes": 27935737,
+        "sha256": "cddefd9a5d0d08af56c9271cf9cd247e249d36797090f491680e638641536e6f",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/broad-layout/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-object-receiver-call-cohort112-20261105.tar.gz",
+        "archive_sha256": "6773aa99dfd6a98032889edeb80e92b1677cf62c5177a3e86e082cd18578e8bd",
+        "member": "object/broad-layout/default.c",
+        "bytes": 31466186,
+        "sha256": "f6383cdd5d236f3c9a0b5b222af34cba303b2000ee12bf9f3180a2eef9e78c83",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/broad-layout/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-object-receiver-call-cohort112-20261105.tar.gz",
+        "archive_sha256": "6773aa99dfd6a98032889edeb80e92b1677cf62c5177a3e86e082cd18578e8bd",
+        "member": "object/broad-layout/none.c",
+        "bytes": 31452638,
+        "sha256": "77b30343da72eb42bcb53ccbc2329f0267d747e137bae4c382aa33f39b9aafd8",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/broad-main/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-object-receiver-call-cohort112-20261105.tar.gz",
+        "archive_sha256": "6773aa99dfd6a98032889edeb80e92b1677cf62c5177a3e86e082cd18578e8bd",
+        "member": "object/broad-main/default.c",
+        "bytes": 44319285,
+        "sha256": "73c785598ca13d107c3d37776f4eac1c460ce3bd0ac33be28723b5c12e067fbd",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-object-receiver-call-20261105-1642/broad-main/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-object-receiver-call-cohort112-20261105.tar.gz",
+        "archive_sha256": "6773aa99dfd6a98032889edeb80e92b1677cf62c5177a3e86e082cd18578e8bd",
+        "member": "object/broad-main/none.c",
+        "bytes": 44228231,
+        "sha256": "2de8985a54c557b9e9f0a3e44cc2c27355b14fee07301762008b87b94a6467bc",
+        "verified": true
+      }
+    },
+    "mismatches": [],
+    "archives": [
+      {
+        "path": "/Users/alex/code/vox2/docs/performance/raw/bbc-coarse-profile-20261105.tar.gz",
+        "verified_members": 5
+      },
+      {
+        "path": "/Users/alex/code/vox2/docs/performance/raw/bbc-covered-anchor-cohort116-20261105.tar.gz",
+        "verified_members": 4
+      },
+      {
+        "path": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-focus-20261105.tar.gz",
+        "verified_members": 6
+      },
+      {
+        "path": "/Users/alex/code/vox2/docs/performance/raw/bbc-object-receiver-call-cohort112-20261105.tar.gz",
+        "verified_members": 4
+      }
+    ],
+    "free_before": 141975552,
+    "verified_before_deletion": true,
+    "unix": 1793902183.0699131,
+    "files_deleted": 19,
+    "verified_artifact_bytes_removed": 810680950,
+    "free_after": 954761216,
+    "completed_unix": 1793902184.053015
+  },
+  "private_profile_cleanup": {
+    "scope": "Completed benchmark-only private profiles and caches. Every parent capture has a recorded normal browser exit, and no running process arguments reference the directory. These fresh-per-launch ephemeral directories are excluded from durable evidence by design; their deletion earns no performance credit. Preserve all raw attempts, counters, PNGs, requests, scripts, guards, build receipts, source, fixtures, pixel references and installed/canonical browsers.",
+    "rows": [
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-brave/result.json",
+        "result_sha256": "1af737e5facfa7aee5e8e5b26b12c79b9dd55fea370549ecad1b20c170a6988a",
+        "files": 336,
+        "bytes": 19457842,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-brave/result.json",
+        "result_sha256": "1af737e5facfa7aee5e8e5b26b12c79b9dd55fea370549ecad1b20c170a6988a",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-control/result.json",
+        "result_sha256": "e5fa5c83bf8ca906a91be611b4688244520bd8e5a01574e943e2584345b3e958",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-control/result.json",
+        "result_sha256": "e5fa5c83bf8ca906a91be611b4688244520bd8e5a01574e943e2584345b3e958",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-vox/result.json",
+        "result_sha256": "fd33570f148decddd40a132185e127c77035bc6483339f46427dec9f12b64f5c",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-1-vox/result.json",
+        "result_sha256": "fd33570f148decddd40a132185e127c77035bc6483339f46427dec9f12b64f5c",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-brave/result.json",
+        "result_sha256": "44af23cb9986577df8a6f65971cebb82961e9b4605a42c441212a52c82d89938",
+        "files": 336,
+        "bytes": 19459159,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-brave/result.json",
+        "result_sha256": "44af23cb9986577df8a6f65971cebb82961e9b4605a42c441212a52c82d89938",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-control/result.json",
+        "result_sha256": "441660f7184d54cfbb3c6162bab5b5bd3c52146ab7fac6e15195f13cd05f74de",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-control/result.json",
+        "result_sha256": "441660f7184d54cfbb3c6162bab5b5bd3c52146ab7fac6e15195f13cd05f74de",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-vox/result.json",
+        "result_sha256": "ae0f50d196770160883d6bef8c0c9720c75a64a829bd3e182682a3148772ec9a",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-2-vox/result.json",
+        "result_sha256": "ae0f50d196770160883d6bef8c0c9720c75a64a829bd3e182682a3148772ec9a",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-brave/result.json",
+        "result_sha256": "6ff410a056cdede7909914d31244a701f270544f405f13b3b2fbb587214b3a95",
+        "files": 336,
+        "bytes": 19457842,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-brave/result.json",
+        "result_sha256": "6ff410a056cdede7909914d31244a701f270544f405f13b3b2fbb587214b3a95",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-control/result.json",
+        "result_sha256": "c465936b98edeaa65aee1bdd61b54d1491b0a030ef412166f7182015f7dbe099",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-control/result.json",
+        "result_sha256": "c465936b98edeaa65aee1bdd61b54d1491b0a030ef412166f7182015f7dbe099",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-vox/result.json",
+        "result_sha256": "aac8a7b0ab3a66258bbc2a12b53fb253c8e78cb647036b68af3e8cfafda9629f",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-3-vox/result.json",
+        "result_sha256": "aac8a7b0ab3a66258bbc2a12b53fb253c8e78cb647036b68af3e8cfafda9629f",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-brave/result.json",
+        "result_sha256": "5f77b22d956752ca4fc672619a6e63a365e6dd6acbb5c083d137226c516c7ad4",
+        "files": 336,
+        "bytes": 19457843,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-brave/result.json",
+        "result_sha256": "5f77b22d956752ca4fc672619a6e63a365e6dd6acbb5c083d137226c516c7ad4",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-control/result.json",
+        "result_sha256": "5c5459a0ad83ac4ed34e32712fde84acbf74d7300b30d2dc6fb0d91bbf66b394",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-control/result.json",
+        "result_sha256": "5c5459a0ad83ac4ed34e32712fde84acbf74d7300b30d2dc6fb0d91bbf66b394",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-vox/result.json",
+        "result_sha256": "2c841adfb6124185e0a8ed5b1f39b46bb3a69cc50c7027f11789ee0f4d711430",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-4-vox/result.json",
+        "result_sha256": "2c841adfb6124185e0a8ed5b1f39b46bb3a69cc50c7027f11789ee0f4d711430",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-brave/result.json",
+        "result_sha256": "58b5419804980b462219ea6dba281b8061fa3bae831a747c45eaf30f1a257539",
+        "files": 336,
+        "bytes": 19459158,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-brave/result.json",
+        "result_sha256": "58b5419804980b462219ea6dba281b8061fa3bae831a747c45eaf30f1a257539",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-control/result.json",
+        "result_sha256": "60f2229d247672a217e6565bb0d010c9e51f42dd436e4cb75ddb1be0b2453d54",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-control/result.json",
+        "result_sha256": "60f2229d247672a217e6565bb0d010c9e51f42dd436e4cb75ddb1be0b2453d54",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-vox/result.json",
+        "result_sha256": "e50c0b05e892e1170b3efe92c43ba430d350dded2dda843c079949b591f2eee8",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-5-vox/result.json",
+        "result_sha256": "e50c0b05e892e1170b3efe92c43ba430d350dded2dda843c079949b591f2eee8",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-brave/result.json",
+        "result_sha256": "48af715adee3f997e0e81bbc41dc84675406b6847747c061fe3453d6b58d1ced",
+        "files": 336,
+        "bytes": 19457842,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-brave/result.json",
+        "result_sha256": "48af715adee3f997e0e81bbc41dc84675406b6847747c061fe3453d6b58d1ced",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-control/result.json",
+        "result_sha256": "fa3578f5d5d3e14f9dcf051fc8107abe88604dd2cc6808cae2888ada4be24124",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-control/result.json",
+        "result_sha256": "fa3578f5d5d3e14f9dcf051fc8107abe88604dd2cc6808cae2888ada4be24124",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-vox/result.json",
+        "result_sha256": "244d01c69bd27b2d77927f921a25cbdaeafe991304d8313726c8c1832260e475",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-6-vox/result.json",
+        "result_sha256": "244d01c69bd27b2d77927f921a25cbdaeafe991304d8313726c8c1832260e475",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-brave/result.json",
+        "result_sha256": "449e437c7600323d569ec7530b53b0a570542802c9badb4a78b56cd5579f12f7",
+        "files": 336,
+        "bytes": 19457842,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-brave/result.json",
+        "result_sha256": "449e437c7600323d569ec7530b53b0a570542802c9badb4a78b56cd5579f12f7",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-control/result.json",
+        "result_sha256": "efcb891f5a73530a64016d6532c2d56b67453b15d2925c1395097beea6a7a6e6",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-control/result.json",
+        "result_sha256": "efcb891f5a73530a64016d6532c2d56b67453b15d2925c1395097beea6a7a6e6",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-vox/result.json",
+        "result_sha256": "34c31fc53dd23be6cb33afc25da0a261bd5506b83ebcc93176acb29733dbf342",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/pair-7-vox/result.json",
+        "result_sha256": "34c31fc53dd23be6cb33afc25da0a261bd5506b83ebcc93176acb29733dbf342",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-discovery-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-discovery-control/result.json",
+        "result_sha256": "74996f1bda1989b6a24a9d93df9cd27adf4072b01eb98ca947a12031b6c42518",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-discovery-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-discovery-control/result.json",
+        "result_sha256": "74996f1bda1989b6a24a9d93df9cd27adf4072b01eb98ca947a12031b6c42518",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-discovery-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-discovery-vox/result.json",
+        "result_sha256": "d94e834ddaf7fe362f77b4e0fa21da078ca5e93358019c13d1b6a8cc96e7f3d4",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-discovery-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-discovery-vox/result.json",
+        "result_sha256": "d94e834ddaf7fe362f77b4e0fa21da078ca5e93358019c13d1b6a8cc96e7f3d4",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-validation-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-validation-control/result.json",
+        "result_sha256": "a7fac013f3f8831834f0dd2146d017b5cdf4d4795696e3f3c08aedcf5c7835bb",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-validation-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-validation-control/result.json",
+        "result_sha256": "a7fac013f3f8831834f0dd2146d017b5cdf4d4795696e3f3c08aedcf5c7835bb",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-validation-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-validation-vox/result.json",
+        "result_sha256": "307aeeb5882f63584856bcf8a93d3a4d612f3ca129607e5c6a36a48a2ff4c193",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-validation-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/cohort116/cohort-116/runtime-validation-vox/result.json",
+        "result_sha256": "307aeeb5882f63584856bcf8a93d3a4d612f3ca129607e5c6a36a48a2ff4c193",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/production-26dca44ac103/captures/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/production-26dca44ac103/captures/pair-1-control/result.json",
+        "result_sha256": "bb3bb4ff12024f5ade92ce2a5611d523fd55b2fdeb2f8843cfe0f8b1e5941e83",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/production-26dca44ac103/captures/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/production-26dca44ac103/captures/pair-1-control/result.json",
+        "result_sha256": "bb3bb4ff12024f5ade92ce2a5611d523fd55b2fdeb2f8843cfe0f8b1e5941e83",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/production-26dca44ac103/captures/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/production-26dca44ac103/captures/pair-1-vox/result.json",
+        "result_sha256": "d20979e7160aca7496749801215ca0f69effc73ffcd2d4440e00693ac0b2c3f6",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/production-26dca44ac103/captures/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-covered-anchors-20261105-2020/production-26dca44ac103/captures/pair-1-vox/result.json",
+        "result_sha256": "d20979e7160aca7496749801215ca0f69effc73ffcd2d4440e00693ac0b2c3f6",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-brave/result.json",
+        "result_sha256": "4d9a2353d7ad24387360496d0c89d1e46c25262c42e674e93153eade664babf5",
+        "files": 336,
+        "bytes": 19457923,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-brave/result.json",
+        "result_sha256": "4d9a2353d7ad24387360496d0c89d1e46c25262c42e674e93153eade664babf5",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-control/result.json",
+        "result_sha256": "a119c7f8698a7d611728b633b5206715f143dd6a8a107c105d448d9c9b642aec",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-control/result.json",
+        "result_sha256": "a119c7f8698a7d611728b633b5206715f143dd6a8a107c105d448d9c9b642aec",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-vox/result.json",
+        "result_sha256": "0e749b7de09ce12f80afbc1a6b2bd3f687e3823fc38729b2f549062b0e8e97d3",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-1-vox/result.json",
+        "result_sha256": "0e749b7de09ce12f80afbc1a6b2bd3f687e3823fc38729b2f549062b0e8e97d3",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-brave/result.json",
+        "result_sha256": "b3acc44278eb3d8aa02a2f9e6356bc3efb7e6d535cbc1849e0b1fdabd3fb14d0",
+        "files": 336,
+        "bytes": 19457922,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-brave/result.json",
+        "result_sha256": "b3acc44278eb3d8aa02a2f9e6356bc3efb7e6d535cbc1849e0b1fdabd3fb14d0",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-control/result.json",
+        "result_sha256": "191b59e35c764a6b111d61872bba5fd68e01a804d85b93510c3a100720a2edae",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-control/result.json",
+        "result_sha256": "191b59e35c764a6b111d61872bba5fd68e01a804d85b93510c3a100720a2edae",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-vox/result.json",
+        "result_sha256": "350bfd0fae6b92f1fb3ca85e8f8dcd189ed10e97a6b36e69acea4946a5483823",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-2-vox/result.json",
+        "result_sha256": "350bfd0fae6b92f1fb3ca85e8f8dcd189ed10e97a6b36e69acea4946a5483823",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-brave/result.json",
+        "result_sha256": "9f0cb03091a0808aae0c009a6edef2cf2e91f555e8ec7fff8f38185e9e438f7c",
+        "files": 336,
+        "bytes": 19457922,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-brave/result.json",
+        "result_sha256": "9f0cb03091a0808aae0c009a6edef2cf2e91f555e8ec7fff8f38185e9e438f7c",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-control/result.json",
+        "result_sha256": "5707a8da0b8b8b1701aae8d283b44e12844f0f85af94b86234c97edef725b2d6",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-control/result.json",
+        "result_sha256": "5707a8da0b8b8b1701aae8d283b44e12844f0f85af94b86234c97edef725b2d6",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-vox/result.json",
+        "result_sha256": "8ad487a7aa9428062f8f3f53ad53b15a5984217a0f9ee0526bf960d0703eb623",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-3-vox/result.json",
+        "result_sha256": "8ad487a7aa9428062f8f3f53ad53b15a5984217a0f9ee0526bf960d0703eb623",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-brave/result.json",
+        "result_sha256": "91ad69670ecbe674220944fb8969cb3e0c7182a845073478ec38f0c11fd4050d",
+        "files": 336,
+        "bytes": 19457922,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-brave/result.json",
+        "result_sha256": "91ad69670ecbe674220944fb8969cb3e0c7182a845073478ec38f0c11fd4050d",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-control/result.json",
+        "result_sha256": "8da2375a1c7ced358af7ad5fabf41d31fdf5fd3d7ac4d6fb3179e1772c47e93e",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-control/result.json",
+        "result_sha256": "8da2375a1c7ced358af7ad5fabf41d31fdf5fd3d7ac4d6fb3179e1772c47e93e",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-vox/result.json",
+        "result_sha256": "7f748f59e88f8cec3bf66ec8545457f3b559b01bc8285ed3a3c97137e7b19f5b",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-4-vox/result.json",
+        "result_sha256": "7f748f59e88f8cec3bf66ec8545457f3b559b01bc8285ed3a3c97137e7b19f5b",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-brave/result.json",
+        "result_sha256": "02b1e95ce9acb321ef4ea972eddf9d19f719e2483578b271532dbfd18b3f81f7",
+        "files": 336,
+        "bytes": 19457922,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-brave/result.json",
+        "result_sha256": "02b1e95ce9acb321ef4ea972eddf9d19f719e2483578b271532dbfd18b3f81f7",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-control/result.json",
+        "result_sha256": "304c270e83b0de68d695d0ba6abcee35946553846e0c39852f1b63807420876b",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-control/result.json",
+        "result_sha256": "304c270e83b0de68d695d0ba6abcee35946553846e0c39852f1b63807420876b",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-vox/result.json",
+        "result_sha256": "6f4ea9583af195698710c45ebfb9fadb8ceb55e4c446086882752397c0a96667",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-5-vox/result.json",
+        "result_sha256": "6f4ea9583af195698710c45ebfb9fadb8ceb55e4c446086882752397c0a96667",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-brave/result.json",
+        "result_sha256": "a556a3c06e97025e9303ab89daa55db6cee0126d547b18755e1cfd6aa90f2734",
+        "files": 336,
+        "bytes": 19457922,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-brave/result.json",
+        "result_sha256": "a556a3c06e97025e9303ab89daa55db6cee0126d547b18755e1cfd6aa90f2734",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-control/result.json",
+        "result_sha256": "86cd304d82d3d57e4321bb85a9d3cad02620ea35b725669b5e7cccee19229b4b",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-control/result.json",
+        "result_sha256": "86cd304d82d3d57e4321bb85a9d3cad02620ea35b725669b5e7cccee19229b4b",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-vox/result.json",
+        "result_sha256": "9493d3f9e0b6347c94222ca176239b3d1fcfb7836241737aa6e5acd184bbbd22",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-6-vox/result.json",
+        "result_sha256": "9493d3f9e0b6347c94222ca176239b3d1fcfb7836241737aa6e5acd184bbbd22",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-brave/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-brave/result.json",
+        "result_sha256": "f28035bc6a299409095da6222c1b0b5e3dcf561d27b35b9cc064298d07a2e0f6",
+        "files": 336,
+        "bytes": 19457921,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-brave/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-brave/result.json",
+        "result_sha256": "f28035bc6a299409095da6222c1b0b5e3dcf561d27b35b9cc064298d07a2e0f6",
+        "files": 0,
+        "bytes": 0,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-control/result.json",
+        "result_sha256": "6e9677916ddac801ea0f64c80dae5ae2c9e48bae53077e7ca655aa36aa97f0fe",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-control/result.json",
+        "result_sha256": "6e9677916ddac801ea0f64c80dae5ae2c9e48bae53077e7ca655aa36aa97f0fe",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-vox/result.json",
+        "result_sha256": "5afb5e592e44c9ea779d23b323b0a893c7adf6c31ebd1f2a6a64e29a74396e10",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/pair-7-vox/result.json",
+        "result_sha256": "5afb5e592e44c9ea779d23b323b0a893c7adf6c31ebd1f2a6a64e29a74396e10",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-discovery-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-discovery-control/result.json",
+        "result_sha256": "7ac50cc05b93a43b1476ae530d75f9214a0124802cf5e1ea1c481c783a81443a",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-discovery-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-discovery-control/result.json",
+        "result_sha256": "7ac50cc05b93a43b1476ae530d75f9214a0124802cf5e1ea1c481c783a81443a",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-discovery-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-discovery-vox/result.json",
+        "result_sha256": "451157e7b497f7c19c631bd7829d8814983b12ca7879d50e3ea225dd207ac285",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-discovery-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-discovery-vox/result.json",
+        "result_sha256": "451157e7b497f7c19c631bd7829d8814983b12ca7879d50e3ea225dd207ac285",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-validation-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-validation-control/result.json",
+        "result_sha256": "d55631e634b2da3932171be9af582eccca07c10a11dd79670cb38a685008a16c",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-validation-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-validation-control/result.json",
+        "result_sha256": "d55631e634b2da3932171be9af582eccca07c10a11dd79670cb38a685008a16c",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-validation-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-validation-vox/result.json",
+        "result_sha256": "4435dc3a06b5ea1e212395181bfd504614d4c14b4e2e260013bd1507cc637365",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-validation-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/cohort117/cohort-117/runtime-validation-vox/result.json",
+        "result_sha256": "4435dc3a06b5ea1e212395181bfd504614d4c14b4e2e260013bd1507cc637365",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/production-df6e738381e5/captures/pair-1-control/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/production-df6e738381e5/captures/pair-1-control/result.json",
+        "result_sha256": "2c04707d00c9d3cd073b8e4720cd1ea1b52712835c39b20698f919c46fd07416",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/production-df6e738381e5/captures/pair-1-control/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/production-df6e738381e5/captures/pair-1-control/result.json",
+        "result_sha256": "2c04707d00c9d3cd073b8e4720cd1ea1b52712835c39b20698f919c46fd07416",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/production-df6e738381e5/captures/pair-1-vox/profile",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/production-df6e738381e5/captures/pair-1-vox/result.json",
+        "result_sha256": "f0af6d4e1c505d1b15e7b5979df3206e524713fcaed377dd5b9c8fa6e2375be5",
+        "files": 2,
+        "bytes": 304,
+        "native_exit": 0
+      },
+      {
+        "path": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/production-df6e738381e5/captures/pair-1-vox/cache",
+        "completed_result": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/production-df6e738381e5/captures/pair-1-vox/result.json",
+        "result_sha256": "f0af6d4e1c505d1b15e7b5979df3206e524713fcaed377dd5b9c8fa6e2375be5",
+        "files": 373,
+        "bytes": 4407163,
+        "native_exit": 0
+      }
+    ],
+    "unix": 1793902308.576243,
+    "directories_deleted": 108,
+    "bytes_reclaimed": 448711662,
+    "completed_unix": 1793902310.318976
+  },
+  "archive": {
+    "path": "docs/performance/raw/bbc-measurement-recency-cohort117-20261105.tar.gz",
+    "bytes": 63299393,
+    "sha256": "4489ded302da590b05ea630caa53997a8ae05fe09d8367b70bc3ff42ffc319d3",
+    "members": 817,
+    "all_members_verified": true
+  },
+  "unix": 1793902322.6833978,
+  "post_archive_cleanup": {
+    "scope": "Completed generated C/preprocessed/compiler object inputs only. Every member verified against its durable BBC evidence archive before deletion. Browser bundles, binaries, raw counters, PNGs, references, fixtures, source and canonical tools retained.",
+    "rows": {
+      "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/broad-layout/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-cohort117-20261105.tar.gz",
+        "archive_sha256": "4489ded302da590b05ea630caa53997a8ae05fe09d8367b70bc3ff42ffc319d3",
+        "member": "broad-layout/default.c",
+        "bytes": 31592792,
+        "sha256": "2274e55f87c56c4fed72167d466320d95cc965d8de3a20d5480c9f7edf99f46e",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/broad-layout/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-cohort117-20261105.tar.gz",
+        "archive_sha256": "4489ded302da590b05ea630caa53997a8ae05fe09d8367b70bc3ff42ffc319d3",
+        "member": "broad-layout/none.c",
+        "bytes": 31579258,
+        "sha256": "b7f524dc685a75f2cd32832235b066051e3b5071d516bd943ebdcd90b68690db",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/broad-main/default.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-cohort117-20261105.tar.gz",
+        "archive_sha256": "4489ded302da590b05ea630caa53997a8ae05fe09d8367b70bc3ff42ffc319d3",
+        "member": "broad-main/default.c",
+        "bytes": 44383390,
+        "sha256": "ea9d3d38389c317eb7f6acd31a6a35f3ac7940ba65fd3e3f4a6ea57d98989214",
+        "verified": true
+      },
+      "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/broad-main/none.c": {
+        "archive": "/Users/alex/code/vox2/docs/performance/raw/bbc-measurement-recency-cohort117-20261105.tar.gz",
+        "archive_sha256": "4489ded302da590b05ea630caa53997a8ae05fe09d8367b70bc3ff42ffc319d3",
+        "member": "broad-main/none.c",
+        "bytes": 44292344,
+        "sha256": "77e05f7fd6f03479052184a591c06babae3069eaf7ac8fedcc41773772860a27",
+        "verified": true
+      }
+    },
+    "verified_before_deletion": true,
+    "unix": 1793902414.140806,
+    "files_deleted": 4,
+    "bytes_reclaimed": 151847784,
+    "completed_unix": 1793902414.4010692
+  },
+  "completed_test_binary_archives": {
+    "parts": [
+      {
+        "path": "Build/bbc-measurement-recency-20261105-2040/completed-test-binaries-part1.tar.gz",
+        "bytes": 145919474,
+        "sha256": "b76197d95fb1dbfb55c8e6796f2fc4cced4743a1450f6e8b06564bbc9662f8ba",
+        "members": 27,
+        "all_binaries_verified": true,
+        "files": {
+          "bbc-covered-anchors-20261105-2020/broad-layout/default": {
+            "bytes": 15715552,
+            "sha256": "5e475a61aeec321beb928cb6184491f10411db02005c8322d2b999afa96dd164"
+          },
+          "bbc-covered-anchors-20261105-2020/broad-layout/none": {
+            "bytes": 15625392,
+            "sha256": "c3d3b6cc2a7f4edb1a4ecdb0863955e02daca93745cae144da7ca5d09bbdf809"
+          },
+          "bbc-covered-anchors-20261105-2020/broad-main/default": {
+            "bytes": 21726192,
+            "sha256": "0956c9c3d148b999082c84d90d1f5a7f7e13fce3300c4f1a9e834589a91d968f"
+          },
+          "bbc-covered-anchors-20261105-2020/broad-main/none": {
+            "bytes": 21620880,
+            "sha256": "c98812ea6b66e1160243e3dbb69df9e48d547d9ef93ad3741646a84733640bba"
+          },
+          "bbc-covered-anchors-20261105-2020/default": {
+            "bytes": 8867680,
+            "sha256": "5b33b76a7918c9350cf864a777ef2c30c3a348f6b4e4dbff801a8a895399e440"
+          },
+          "bbc-covered-anchors-20261105-2020/layout-diagnostic/default": {
+            "bytes": 12834400,
+            "sha256": "12072ac1deb7e2ada36451d2af906530881f4f25cafb30574b8db006cc288b0b"
+          },
+          "bbc-covered-anchors-20261105-2020/layout-final/default": {
+            "bytes": 13302096,
+            "sha256": "dedf781a0fc1c01f15ce6081f229c1d7717ad219284c3ea290c9fe38b15a0cc9"
+          },
+          "bbc-covered-anchors-20261105-2020/layout-final/none": {
+            "bytes": 13212128,
+            "sha256": "2f8ae8be152a0357d8be603d2882b659dcf69739fd3090a4f8e3abfc2b25e7d9"
+          },
+          "bbc-covered-anchors-20261105-2020/layout-final/prealloc": {
+            "bytes": 13308640,
+            "sha256": "32d63c51663ec58b84733ea79038dd511a59d9354a89991edff59b1f7317307c"
+          },
+          "bbc-covered-anchors-20261105-2020/layout-pseudo-fix/default": {
+            "bytes": 13301808,
+            "sha256": "55cbdf693fa1813d05ecc5bb94e91c032df0e7946e10a25b1ad34aaa6e253090"
+          },
+          "bbc-covered-anchors-20261105-2020/layout-pseudo-fix/none": {
+            "bytes": 13195328,
+            "sha256": "492abac5c41bbdd0184344cbc6ff5340a8bd3be1821842e5b30ede3644c4a762"
+          },
+          "bbc-covered-anchors-20261105-2020/layout-pseudo-fix/prealloc": {
+            "bytes": 13291856,
+            "sha256": "d7c01dc904b19ad9a7423e36f745811c0e43a7e9e1ddfcc62e54012375e2d7c5"
+          },
+          "bbc-covered-anchors-20261105-2020/layout-refined/default": {
+            "bytes": 13247872,
+            "sha256": "6e9ee679e0da408b25abb4a6a80dd4a652553c22a4308e8a04661ba1a0fcfcdd"
+          },
+          "bbc-covered-anchors-20261105-2020/layout-refined/none": {
+            "bytes": 13141408,
+            "sha256": "bdd6b163b8fe23619c52199699da7700716c398057ac28e5a4a018fcbd95b5ce"
+          },
+          "bbc-covered-anchors-20261105-2020/layout-refined/prealloc": {
+            "bytes": 13254416,
+            "sha256": "7345887791e96578ef1f845894ed8684defe702712c943cc83cab5eb232774d5"
+          },
+          "bbc-covered-anchors-20261105-2020/none": {
+            "bytes": 8707168,
+            "sha256": "b54cb4d6262f201d8bb4e68bb8245149c2d6bb95e96ce96d0ffc42b092ea0d50"
+          },
+          "bbc-covered-anchors-20261105-2020/prealloc": {
+            "bytes": 8825552,
+            "sha256": "afce5ec06cc5f61db8011c11e3b943e9857ddaf952e63db9cdad99d29826d522"
+          },
+          "bbc-measurement-recency-20261105-2040/broad-layout/default": {
+            "bytes": 15733616,
+            "sha256": "237deb6a0ff5ae1bb4f7bb5361cd244eae3c1dd5740e3840d3c78e210e009ec8"
+          },
+          "bbc-measurement-recency-20261105-2040/broad-layout/none": {
+            "bytes": 15643456,
+            "sha256": "be2cc5baf3b91337337954a95260c2b2e3294155cd5b86dffc258d8a85e3854e"
+          },
+          "bbc-measurement-recency-20261105-2040/broad-main/default": {
+            "bytes": 21726960,
+            "sha256": "a4a4adb9966d98c469cb18e0ec0d212f75854001ae807f8e4d4f4706bf436c34"
+          },
+          "bbc-measurement-recency-20261105-2040/broad-main/none": {
+            "bytes": 21621648,
+            "sha256": "2b165445e75a9e55001ca481793e2561efb8bbf7a7db03e93cef196a4be066bc"
+          },
+          "bbc-measurement-recency-20261105-2040/owned/default": {
+            "bytes": 13506240,
+            "sha256": "f02f40ec1effb60249f356dd2ea876e62675e0773924c55b88df08c7bca043f5"
+          },
+          "bbc-measurement-recency-20261105-2040/owned/none": {
+            "bytes": 13399808,
+            "sha256": "2c09eb1be2380129999c35a8c5e1dc9b2123dbbb0c307135fcadb24ea6c0a783"
+          },
+          "bbc-measurement-recency-20261105-2040/owned/prealloc": {
+            "bytes": 13496224,
+            "sha256": "357290ff0bc3288ee202e00331fa817d551c264271ead14aca897a896442e99e"
+          },
+          "bbc-measurement-recency-20261105-2040/refined/default": {
+            "bytes": 13506240,
+            "sha256": "c5f15fafb50a42331703689f887c6bd53183b5bbcda1d90d690be1c2217fbade"
+          }
+        },
+        "free_before": 1584939008,
+        "logical_artifact_bytes_removed": 361812560,
+        "free_after": 1768787968,
+        "local_only": true
+      },
+      {
+        "path": "Build/bbc-measurement-recency-20261105-2040/completed-test-binaries-part2.tar.gz",
+        "bytes": 142855108,
+        "sha256": "48ad522dbc66ec8fa113aa6b674ee33ebe67dd29d77db986c9db3e0ded9d5256",
+        "members": 27,
+        "all_binaries_verified": true,
+        "files": {
+          "bbc-measurement-recency-20261105-2040/refined/none": {
+            "bytes": 13399808,
+            "sha256": "6a15f7b488991dd04b082400dcdd119b2e3189ec2cb94ce84665ac571b7451c5"
+          },
+          "bbc-measurement-recency-20261105-2040/refined/prealloc": {
+            "bytes": 13496224,
+            "sha256": "0881928eb7ae8ffba0232c1cd8629eda0591b79b4b18cd926ceb5ca031a13a76"
+          },
+          "bbc-svg-flow-trees-20261105-1910/broad-layout/default": {
+            "bytes": 15696992,
+            "sha256": "c8cf34e472a76b6e02b37d3ff6764ec4132bf0d2da2248ad35b9490642e4c7bb"
+          },
+          "bbc-svg-flow-trees-20261105-1910/broad-layout/none": {
+            "bytes": 15606832,
+            "sha256": "b34bcc79460fff1cbd951ae843ab642c0111db2844e1f3509ada306b5978f2c4"
+          },
+          "bbc-svg-flow-trees-20261105-1910/broad-layout-refined/default": {
+            "bytes": 15697056,
+            "sha256": "88020b3f67c9406b941dbd5c2891bf5434cc9c5662c133e9d30e51b184d4c37d"
+          },
+          "bbc-svg-flow-trees-20261105-1910/broad-layout-refined/none": {
+            "bytes": 15606880,
+            "sha256": "96a15d7e4233ce91afc17066dc05f12f0811606e09d38a834306c48912ed4117"
+          },
+          "bbc-svg-flow-trees-20261105-1910/broad-main/default": {
+            "bytes": 21708480,
+            "sha256": "d38ce7687caf96c88d501284a7535c0bd21d744e96def8a504c596e1b8447f3d"
+          },
+          "bbc-svg-flow-trees-20261105-1910/broad-main/none": {
+            "bytes": 21618720,
+            "sha256": "5499f0d0c29ead536b1ebc35297801d1ba11ef40c7ee9210ce99db117794dc65"
+          },
+          "bbc-svg-flow-trees-20261105-1910/current-source/default": {
+            "bytes": 13043248,
+            "sha256": "290e5a8990799525c25fdd90c0834ae2e6b9e586cc666fb82fd3369ca804edc1"
+          },
+          "bbc-svg-flow-trees-20261105-1910/current-source/none": {
+            "bytes": 12953184,
+            "sha256": "df9e6639de1ac484de28a5687c1c8ae22a0d086f108b3b1bfd2d306d97d996c9"
+          },
+          "bbc-svg-flow-trees-20261105-1910/current-source/prealloc": {
+            "bytes": 13049552,
+            "sha256": "f723a7b1f7f56d66126c85d5818910f5be5b78bbb6526bcbd52ff91b979a0e67"
+          },
+          "bbc-svg-flow-trees-20261105-1910/default": {
+            "bytes": 13042304,
+            "sha256": "880d985beb235e91260a228c7d82f820afa9a76b8dbb6e2b34fded9814b9ba9f"
+          },
+          "bbc-svg-flow-trees-20261105-1910/diagnostic/default": {
+            "bytes": 13043232,
+            "sha256": "844f61cab7196769e840fd95275f1e903b01284f75b40cacda05f88313e917ad"
+          },
+          "bbc-svg-flow-trees-20261105-1910/formatting-refined/default": {
+            "bytes": 13060544,
+            "sha256": "4a17ffe88ecfd66dd68706511070746b808500fd9ce4a291e1e94721a5c9244b"
+          },
+          "bbc-svg-flow-trees-20261105-1910/formatting-refined/none": {
+            "bytes": 12953984,
+            "sha256": "eafbd3da0a2d53bcf77554be5c44d52da397c44b97805c31458bf9641dff060f"
+          },
+          "bbc-svg-flow-trees-20261105-1910/formatting-refined/prealloc": {
+            "bytes": 13066848,
+            "sha256": "3cc136cd3080c0baeafb5ca8a3165b90e425cb74c34d115c94d26d75f52efc26"
+          },
+          "bbc-svg-flow-trees-20261105-1910/geometry-refined/default": {
+            "bytes": 13042768,
+            "sha256": "f05859c99dd6cd07e2b0f0108524e2737487b07d299e32d977ec1ff790929aee"
+          },
+          "bbc-svg-flow-trees-20261105-1910/geometry-refined/none": {
+            "bytes": 12952688,
+            "sha256": "5550e1c60a2780f9151bd4c834c819da0204bf688afdd2d25dcd0b870f9c4106"
+          },
+          "bbc-svg-flow-trees-20261105-1910/geometry-refined/prealloc": {
+            "bytes": 13049072,
+            "sha256": "1189cd6c449c84e58d37e078fef86d0ffc4b9b512e63eb607a4884b84eb1091b"
+          },
+          "bbc-svg-flow-trees-20261105-1910/none": {
+            "bytes": 12935728,
+            "sha256": "57ee0dc62b7dff0712cf7437c78443702be3e201740df02fd0788b5dc80fc42e"
+          },
+          "bbc-svg-flow-trees-20261105-1910/ownership-refined/default": {
+            "bytes": 13042784,
+            "sha256": "d0f6aa2b36d9561ad1030f59e65a97deb7c948215008f49f368088987cb47e8b"
+          },
+          "bbc-svg-flow-trees-20261105-1910/prealloc": {
+            "bytes": 13032064,
+            "sha256": "458519a4ed4cb7fb1bd9c6f578c34e6ab67082bca09c17c9c3726054cf519ce0"
+          },
+          "bbc-svg-flow-trees-20261105-1910/refined/default": {
+            "bytes": 13042336,
+            "sha256": "2a148dde2cb95859ce7730c0e8838ef01b7cdd2d8ecbb852987fc0a42eac14d0"
+          },
+          "bbc-svg-flow-trees-20261105-1910/refined/none": {
+            "bytes": 12935744,
+            "sha256": "9e187f74530eed25d2ce55d71bd84680cc3c08b3d2f7131c50b9fcd883dc115b"
+          },
+          "bbc-svg-flow-trees-20261105-1910/refined/prealloc": {
+            "bytes": 13032080,
+            "sha256": "0be50e354b16a4a068ea6479b807e93f639b9c4b47789b2dc74404f32618d0f7"
+          }
+        },
+        "free_before": 1768747008,
+        "logical_artifact_bytes_removed": 354109152,
+        "free_after": 1970225152,
+        "local_only": true
+      }
+    ],
+    "unix": 1793902676.3586528,
+    "qualification": "Optional generated test executables are preserved in compressed local Build archives. Durable source/command/disassembly/execution receipts remain in the focused/cohort archives; no performance or test credit depends on preserving these optional executables in Git.",
+    "relocation": {
+      "moves": [
+        {
+          "old": "/Users/alex/code/vox2/docs/performance/raw/bbc-completed-test-binaries-part1-20261105.tar.gz",
+          "new": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/completed-test-binaries-part1.tar.gz",
+          "sha256": "b76197d95fb1dbfb55c8e6796f2fc4cced4743a1450f6e8b06564bbc9662f8ba",
+          "bytes": 145919474
+        },
+        {
+          "old": "/Users/alex/code/vox2/docs/performance/raw/bbc-completed-test-binaries-part2-20261105.tar.gz",
+          "new": "/Users/alex/code/vox2/Build/bbc-measurement-recency-20261105-2040/completed-test-binaries-part2.tar.gz",
+          "sha256": "48ad522dbc66ec8fa113aa6b674ee33ebe67dd29d77db986c9db3e0ded9d5256",
+          "bytes": 142855108
+        }
+      ],
+      "unix": 1793902880.9156532,
+      "bytes_unchanged": true
+    }
+  },
+  "test_binary_storage_guard": {
+    "command": [
+      "python3",
+      "Build/bbc-measurement-recency-20261105-2040/archive-completed-test-binaries.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 19660800,
+    "elapsed_seconds": 14.789736791000001,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

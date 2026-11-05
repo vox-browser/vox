@@ -1,32 +1,40 @@
 # BBC homepage instruction comparison
 
-Latest attempt — **cohort 116**, on pinned parallel production `26dca44ac103`:
-Brave pair 3 fails its unchanged pixel reference, invalidating acceptance.
-All 21 attempts remain recorded; 20 capture audits pass, with normal native
-exits and unchanged input identities throughout. Observed launch-to-PNG medians
-are **27,206,714,757 Vox**, **27,566,088,290 control**, and **17,511,734,286
-Brave lower bound** instructions. The strict integer check also fails
-`282926729990 > 155854412919` (conservative ratio **1.63379**).
-The anchor shortcut's difference of medians is +359,373,533 (1.3037%), but the
-median paired difference is **−31,203,801**, with three improvements and four
-regressions. Conservative control ratio **1.05984** fails; no robust saving or
-catalog entry is credited. Last valid cohort remains **115**.
-History is 112 measured cohorts / 2,419 acceptance browser attempts; 104, 110,
+Current result — **cohort 117**, on pinned parallel production `df6e738381e5`:
+all 21 capture audits pass, with normal native exits and unchanged input
+identities. Launch-to-PNG medians are **27,270,592,115 Vox**,
+**27,303,652,900 FIFO control**, and **17,470,665,268 Brave lower bound**
+instructions. The strict 10% target fails
+`282544023760 > 156799815462` (conservative ratio **1.62175**).
+Cache recency's difference of medians is +33,060,785 (0.1211%), but the median
+paired difference is **−19,048,210**, with three improvements and four
+regressions. Conservative control ratio **1.07881** fails; no robust saving or
+catalog entry is credited. The invalid cohort 116 remains recorded separately.
+History is 113 measured cohorts / 2,440 acceptance browser attempts; 104, 110,
 111 and 113 are preflight-only.
-[Complete latest evidence](performance/bbc-covered-anchor-cohort116-20261105.json).
+[Complete current evidence](performance/bbc-measurement-recency-cohort117-20261105.json).
 Earlier checkpoints below retain their historical wording and counts.
 
-Both native captures confirm candidate-only anchor-shortcut execution before
+Both native captures confirm candidate-only cache promotion before
 PNG and pass original pixels/content, all 72 external author scripts, actual
 native-library pins, helper ownership and exits. The SVG source-switch guard
-is exact in both arms. The triggered broader checks cover **689 unique cases
-per default/no-GC mode: 684 passes and the same five baseline failures**.
+is exact in both arms. The triggered broader checks cover **693 unique cases
+per default/no-GC mode: 688 passes and the same five baseline failures**.
 That includes fresh layout/main checks and the current CSS focused cases;
 there is no full-suite pass or cadence reset. The generated-pseudo correctness
-fix is common to both measured Vox arms. The parallel build preserves complete
+fix and anchor shortcut are common to both measured Vox arms. The parallel build preserves complete
 input/compiler metadata but has no sealed generated C receipt. Workload,
 references, endpoints, cache policy and rendering limitations remain unchanged.
 BBC homepage remains outside `OPTIMIZED_SITES.md`.
+
+Measurement recency (`f0a747f84`, FIFO control `b90dfdbb9`) keeps recently reused
+disposable grid/flex/inline geometry in the existing four-entry caches. Keys,
+eligibility, ownership and snapshot validation remain identical; committed
+layout leaves eviction order unchanged. All **252 focused executions** and
+**337 tooling tests** pass, including scratch retirement, uncached geometry,
+copy-on-write and final-hit ordering. Initial preallocation fixture failures
+in both arms are preserved; the corrected fixture enters the same retained
+document arena as the browser. [Focused evidence](performance/bbc-measurement-recency-focus-20261105.json).
 
 The closed SVG tree change (`cfec8ea09`, isolated control `8142a72c7`) retains
 only validated shape-tree structure and computes fresh geometry. Native checks
