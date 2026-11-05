@@ -151,6 +151,21 @@ Lossless compression of 139 completed, guarded test executables reclaims
 counters, captures, source, bundles and shared build receipts are unchanged.
 [Focused checks, control tests and retained attempts](performance/bbc-classic-import-call-focus-20261105.json).
 
+The named-import extension (`54699c2c4`, isolated control `41907c4a5`) also
+recognizes adjacent property names and the exact minified member spelling
+`}import(identifier){`. It retains ellipses/spread, class heritage, line breaks,
+comments, non-ASCII parameters and every ambiguous form on the lexer path,
+and continues scanning for later import calls or meta expressions.
+
+All **72 focused executions** and **339 tooling tests** pass. The three new
+cases account for 18 executions across both arms and three GC modes. Actual
+native checks preserve method results, no-fetch behavior, subsequent imports,
+import maps, class-heritage TypeError, ASI before blocks and cached module URL
+counts. Generated C independently confirms nonempty native test bodies and
+their document/runtime/module execution calls. These focused checks provide
+no production instruction credit; the matched cohort is recorded separately.
+[Focused matrix, native body proof and control tests](performance/bbc-named-import-focus-20261105.json).
+
 The follow-up pending-full-cascade shortcut now covers pseudo-element and
 trailing-universal anchor walks (`bbdaa7475`, isolated control `99c5cfdbe`).
 Its exact paint oracle exposed an existing retention bug: a newly styled

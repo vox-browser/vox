@@ -1,0 +1,186 @@
+{
+  "status": "All72focused executions and339tooling tests pass. Focused checks alone earn no production saving or catalog credit; native/matched evidence is separate.",
+  "implementation_commit": "54699c2c4",
+  "control_commit": "41907c4a5",
+  "focused": {
+    "passed": true,
+    "cases_per_run": 12,
+    "arms": 2,
+    "modes": 3,
+    "executions": 72,
+    "new_cases": 3,
+    "new_executions": 18,
+    "inputs": {
+      "/Users/alex/code/vox2/browserjs/classic_import_scan_test.v": "3c6da9ea9149c9a63a8c3649d6873f1a9bd67d1d48b31db306753cf19b301e38",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_scan_test.v": "187b62a5904fed76c0456c8364402ea3dd4e9a1f13518ea72328ff9bd8c832b2",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_host_test.v": "3c54ea5d907395ce56f4b2b7cb4fc4c65127f60156ed7de37968da43f4acc627",
+      "/Users/alex/code/vox2/browserjs/classic_import_named_method_scan_test.v": "574643f871b58b120cf40528f4aa95de4681c16fdab11f8634527b094e809bb4",
+      "/Users/alex/code/vox2/browserjs/module_host_test.v": "877b27b0816d59804923c729721edfaa9211f3bb7b653f95c0ac8e69b127a6a7",
+      "/Users/alex/code/vox2/browserjs/classic_import_scan.v": "90998c07738654224ddac3fe545525286a5908c73332f074ddbebbf40d0fe50c",
+      "/Users/alex/code/vox2/browserjs/classic_import_call_scan.v": "48e21cda2e8812aa48bf800661c43af5f74e4f84a21fd522b96553970a3bd1e1",
+      "/Users/alex/code/vox2/browserjs/classic_import_named_method_scan.v": "5a725abb3e4d89d85448a4709b7813062ccd952b87b610ed7e608d44db137ec1",
+      "/Users/alex/code/vox2/browserjs/module_host_jsc.c.v": "01d8c7c3cd9d2509374cbf76b61ebb52bd7939c687fd6b09e720f1a98662f2bb",
+      "/Users/alex/code/vox2/browserjs/module_source.v": "0a2b2bebbaef26998980c359df5f670c2d7b7a622fae6bb5ffa2b977e0edaaae",
+      "/Users/alex/code/vox2/browserjs/runtime.v": "30156b8a4d87ee1378a49813a8dda1b7b5612ba76983a6474eee2097e28f25ae",
+      "/Users/alex/code/vox2/browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1"
+    },
+    "proof": [
+      {
+        "mode": "default",
+        "calls": [
+          "test_classic_import_scan_rejects_only_ascii_identifier_substrings",
+          "test_classic_import_call_scan_keeps_every_possible_call_and_meta_boundary",
+          "test_classic_import_call_scan_rejects_text_without_a_possible_import_call",
+          "test_classic_import_call_filter_keeps_plain_source_and_classic_parse_goal",
+          "test_classic_import_call_filter_retains_comments_unicode_whitespace_and_later_imports",
+          "test_named_import_filter_recognizes_only_property_and_tightly_delimited_member_forms",
+          "test_named_import_filter_keeps_methods_and_property_calls_on_the_original_native_parse_path",
+          "test_named_import_filter_preserves_later_imports_class_heritage_and_asi_before_a_block",
+          "test_native_modules_link_cycles_live_exports_import_maps_and_top_level_await",
+          "test_native_dynamic_import_preserves_arguments_nested_imports_and_rejections",
+          "test_module_readiness_does_not_wait_for_top_level_await_and_close_releases_delayers",
+          "test_classic_import_identifier_filter_preserves_execution_and_real_imports"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "none",
+        "calls": [
+          "test_classic_import_scan_rejects_only_ascii_identifier_substrings",
+          "test_classic_import_call_scan_keeps_every_possible_call_and_meta_boundary",
+          "test_classic_import_call_scan_rejects_text_without_a_possible_import_call",
+          "test_classic_import_call_filter_keeps_plain_source_and_classic_parse_goal",
+          "test_classic_import_call_filter_retains_comments_unicode_whitespace_and_later_imports",
+          "test_named_import_filter_recognizes_only_property_and_tightly_delimited_member_forms",
+          "test_named_import_filter_keeps_methods_and_property_calls_on_the_original_native_parse_path",
+          "test_named_import_filter_preserves_later_imports_class_heritage_and_asi_before_a_block",
+          "test_native_modules_link_cycles_live_exports_import_maps_and_top_level_await",
+          "test_native_dynamic_import_preserves_arguments_nested_imports_and_rejections",
+          "test_module_readiness_does_not_wait_for_top_level_await_and_close_releases_delayers",
+          "test_classic_import_identifier_filter_preserves_execution_and_real_imports"
+        ],
+        "all_called": true
+      },
+      {
+        "mode": "prealloc",
+        "calls": [
+          "test_classic_import_scan_rejects_only_ascii_identifier_substrings",
+          "test_classic_import_call_scan_keeps_every_possible_call_and_meta_boundary",
+          "test_classic_import_call_scan_rejects_text_without_a_possible_import_call",
+          "test_classic_import_call_filter_keeps_plain_source_and_classic_parse_goal",
+          "test_classic_import_call_filter_retains_comments_unicode_whitespace_and_later_imports",
+          "test_named_import_filter_recognizes_only_property_and_tightly_delimited_member_forms",
+          "test_named_import_filter_keeps_methods_and_property_calls_on_the_original_native_parse_path",
+          "test_named_import_filter_preserves_later_imports_class_heritage_and_asi_before_a_block",
+          "test_native_modules_link_cycles_live_exports_import_maps_and_top_level_await",
+          "test_native_dynamic_import_preserves_arguments_nested_imports_and_rejections",
+          "test_module_readiness_does_not_wait_for_top_level_await_and_close_releases_delayers",
+          "test_classic_import_identifier_filter_preserves_execution_and_real_imports"
+        ],
+        "all_called": true
+      }
+    ],
+    "tool_tests": 339,
+    "tool_tests_exit": 0,
+    "qualification": "Every final native case is directly called in the generated test main; candidate and isolated named-method control execute in default/no-GC/preallocation modes. Methods/property calls preserve trusted rewrite output and actual values with no fetch. Actual later imports, class heritage and ASI before blocks resolve through an import map, preserve TypeError/order/cached URL count, and reject invalid adjacent-block spelling. Full previous module/call-filter tests retained. No production eligibility or instruction credit.",
+    "unix": 1793906332.160139,
+    "native_test_bodies_verified": [
+      {
+        "mode": "default",
+        "test": "test_named_import_filter_keeps_methods_and_property_calls_on_the_original_native_parse_path",
+        "body_sha256": "e27d9a7277891d2175c843d62cf59ee6ebd3d89a048ae4bfe30d19f878c3ae89",
+        "native_body_present": true,
+        "calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__Runtime__run_document_scripts_collect_errors",
+          "browserjs__Runtime__evaluate_host"
+        ]
+      },
+      {
+        "mode": "default",
+        "test": "test_named_import_filter_preserves_later_imports_class_heritage_and_asi_before_a_block",
+        "body_sha256": "42ebb7e0ff29683b38419d67fbc3420f3224120e21b25fbdfdee6d2c1604a67c",
+        "native_body_present": true,
+        "calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__Runtime__run_document_scripts_collect_errors",
+          "browserjs__Runtime__evaluate_host"
+        ]
+      },
+      {
+        "mode": "none",
+        "test": "test_named_import_filter_keeps_methods_and_property_calls_on_the_original_native_parse_path",
+        "body_sha256": "838736c15ad5d33b47602333330a374050252fb49027e45cc690c88cb715bc08",
+        "native_body_present": true,
+        "calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__Runtime__run_document_scripts_collect_errors",
+          "browserjs__Runtime__evaluate_host"
+        ]
+      },
+      {
+        "mode": "none",
+        "test": "test_named_import_filter_preserves_later_imports_class_heritage_and_asi_before_a_block",
+        "body_sha256": "14d91d213d4db71171758207088d681d7eab79f6840c24928a7da4a9281b3c66",
+        "native_body_present": true,
+        "calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__Runtime__run_document_scripts_collect_errors",
+          "browserjs__Runtime__evaluate_host"
+        ]
+      },
+      {
+        "mode": "prealloc",
+        "test": "test_named_import_filter_keeps_methods_and_property_calls_on_the_original_native_parse_path",
+        "body_sha256": "cffc1b08041437760355336214db0d70419830d2d55245a847949ea8334fafc5",
+        "native_body_present": true,
+        "calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__Runtime__run_document_scripts_collect_errors",
+          "browserjs__Runtime__evaluate_host"
+        ]
+      },
+      {
+        "mode": "prealloc",
+        "test": "test_named_import_filter_preserves_later_imports_class_heritage_and_asi_before_a_block",
+        "body_sha256": "114aafc150cc13e1153312c23426b1f35d15ea3604d38d601d25e75bc1778a56",
+        "native_body_present": true,
+        "calls": [
+          "html__create_navigation_document",
+          "browserjs__ModuleHost__install",
+          "browserjs__Runtime__run_document_scripts_collect_errors",
+          "browserjs__Runtime__evaluate_host"
+        ]
+      }
+    ]
+  },
+  "committed_sources": {
+    "browserjs/classic_import_scan_test.v": "3c6da9ea9149c9a63a8c3649d6873f1a9bd67d1d48b31db306753cf19b301e38",
+    "browserjs/classic_import_call_scan_test.v": "187b62a5904fed76c0456c8364402ea3dd4e9a1f13518ea72328ff9bd8c832b2",
+    "browserjs/classic_import_call_host_test.v": "3c54ea5d907395ce56f4b2b7cb4fc4c65127f60156ed7de37968da43f4acc627",
+    "browserjs/classic_import_named_method_scan_test.v": "574643f871b58b120cf40528f4aa95de4681c16fdab11f8634527b094e809bb4",
+    "browserjs/module_host_test.v": "877b27b0816d59804923c729721edfaa9211f3bb7b653f95c0ac8e69b127a6a7",
+    "browserjs/classic_import_scan.v": "90998c07738654224ddac3fe545525286a5908c73332f074ddbebbf40d0fe50c",
+    "browserjs/classic_import_call_scan.v": "48e21cda2e8812aa48bf800661c43af5f74e4f84a21fd522b96553970a3bd1e1",
+    "browserjs/classic_import_named_method_scan.v": "5a725abb3e4d89d85448a4709b7813062ccd952b87b610ed7e608d44db137ec1",
+    "browserjs/module_host_jsc.c.v": "01d8c7c3cd9d2509374cbf76b61ebb52bd7939c687fd6b09e720f1a98662f2bb",
+    "browserjs/module_source.v": "0a2b2bebbaef26998980c359df5f670c2d7b7a622fae6bb5ffa2b977e0edaaae",
+    "browserjs/runtime.v": "30156b8a4d87ee1378a49813a8dda1b7b5612ba76983a6474eee2097e28f25ae",
+    "browserjs/host_value_function_jsc.c.v": "f31d5538c94d34352880a860a9f15105d653ff3ab5b6d5d45d2643a19d35f6a1"
+  },
+  "implementation": "After the prior conservative classic import-call filter, reject a word only when it is an adjacent single-dot property name (keep ellipses) or exactly }import(ASCII_identifier){. The leading brace excludes class heritage; adjacent ){ excludes ASI before a block. Keep all other contexts, Unicode, comments and parameter shapes on the trusted lexer. Continue scanning for later real calls/meta candidates. No module-script behavior changes.",
+  "qualification": "Tests compare original trusted rewrites and actual method results/no-fetch behavior; imports after named methods/properties, class heritage TypeError, ASI blocks, import-map resolution, cached URL counts, spread/meta/future-phase and ambiguous spellings remain on the trusted path. All prior actual module/call-filter tests retained in both arms across all modes. Generated C confirms native document creation, ModuleHost installation, real script execution and value assertions in the new native case bodies.",
+  "archive": {
+    "path": "docs/performance/raw/bbc-named-import-focus-20261105.tar.gz",
+    "bytes": 12444244,
+    "sha256": "a699e011a87a0f34f9b69d9d126876976804b600c0624b0286d3b6f985986bd4",
+    "members": 64,
+    "all_members_verified": true
+  },
+  "unix": 1793907155.177578
+}
